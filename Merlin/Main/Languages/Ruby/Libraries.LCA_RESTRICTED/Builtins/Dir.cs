@@ -368,7 +368,7 @@ namespace IronRuby.Builtins {
             }
 
             // throw anyway
-            return RubyExceptions.CreateSystemCallError(String.Format("unknown scenario - {0}, {1}, {2}", exceptionType, path, op));
+            return RubyExceptions.CreateSystemCallError("unknown scenario - {0}, {1}, {2}", exceptionType, path, op);
         }
 
         #endregion

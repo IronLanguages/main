@@ -63,7 +63,7 @@ namespace IronRuby.Builtins {
         /// <exception cref="InvalidOperationException">Assumption is object cannot be induced to Integer</exception>
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
         public static int InducedFrom(RubyClass/*!*/ self, object obj) {
-            throw RubyExceptions.CreateTypeError(String.Format("failed to convert {0} into Integer", self.Context.GetClassDisplayName(obj)));
+            throw RubyExceptions.CreateTypeError("failed to convert {0} into Integer", self.Context.GetClassDisplayName(obj));
         }
 
         #endregion
@@ -90,7 +90,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("chr")]
         public static MutableString/*!*/ ToChr(RubyContext/*!*/ context, [DefaultProtocol]int self) {
             if (self < 0 || self > 255) {
-                throw RubyExceptions.CreateRangeError(String.Format("{0} out of char range", self));
+                throw RubyExceptions.CreateRangeError("{0} out of char range", self);
             }
             return MutableString.CreateBinary(new byte[] { (byte)self });
         }

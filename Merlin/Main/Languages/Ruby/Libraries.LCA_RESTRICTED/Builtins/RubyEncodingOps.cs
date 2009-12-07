@@ -22,6 +22,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
     [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), Compatibility = RubyCompatibility.Ruby19, BuildConfig = "!SILVERLIGHT")]
@@ -124,7 +125,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("locale_charmap", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetDefaultCharmap(RubyClass/*!*/ self) {
-            return MutableString.CreateAscii("CP" + StringUtils.DefaultEncoding.CodePage.ToString());
+            return MutableString.CreateAscii("CP" + StringUtils.DefaultEncoding.CodePage.ToString(CultureInfo.InvariantCulture));
         }
 
         #endregion

@@ -21,6 +21,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
 
@@ -73,7 +74,7 @@ namespace IronRuby.Builtins {
             str.Append('@');
             str.Append(self.SourcePath ?? "(unknown)");
             str.Append(':');
-            str.Append(self.SourceLine.ToString());
+            str.Append(self.SourceLine.ToString(CultureInfo.InvariantCulture));
 
             if (context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19 && self.Kind == ProcKind.Lambda) {
                 str.Append(" (lambda)"); 

@@ -40,6 +40,7 @@ namespace IronRuby.Runtime.Calls {
 
         internal SuperCallAction(RubyContext context, RubyCallSignature signature, int lexicalScopeId)
             : base(context) {
+            Debug.Assert(signature.HasImplicitSelf && signature.HasScope && (signature.HasBlock || signature.ResolveOnly));
             _signature = signature;
             _lexicalScopeId = lexicalScopeId;
         }
@@ -73,20 +74,32 @@ namespace IronRuby.Runtime.Calls {
             string currentMethodName;
 
             var scope = args.Scope;
+            var scopeExpr = AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope));
 
-            object target;
-            scope.GetSuperCallTarget(out currentDeclaringModule, out currentMethodName, out target);
+            RubyScope targetScope;
+            int scopeNesting = scope.GetSuperCallTarget(out currentDeclaringModule, out currentMethodName, out targetScope);
 
+            if (scopeNesting == -1) {
+                metaBuilder.AddCondition(Methods.IsSuperOutOfMethodScope.OpCall(scopeExpr));
+                metaBuilder.SetError(Methods.MakeTopLevelSuperException.OpCall());
+                return true;
+            }
+
+            object target = targetScope.SelfObject;
             var targetExpression = metaBuilder.GetTemporary(typeof(object), "#super-self");
-            
-            metaBuilder.AddCondition(
-                Methods.IsSuperCallTarget.OpCall(
-                    AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),
-                    AstUtils.Constant(currentDeclaringModule),
-                    AstUtils.Constant(currentMethodName),
-                    targetExpression
-                )
+            var assignTarget = Ast.Assign(
+                targetExpression,
+                Methods.GetSuperCallTarget.OpCall(scopeExpr, AstUtils.Constant(scopeNesting))
             );
+
+            if (_signature.HasImplicitArguments && targetScope.Kind == ScopeKind.BlockMethod) {
+                metaBuilder.AddCondition(Ast.NotEqual(assignTarget, Ast.Field(null, Fields.NeedsUpdate)));
+                metaBuilder.SetError(Methods.MakeImplicitSuperInBlockMethodError.OpCall());
+                return true;
+            }
+
+            // If we need to update we return RubyOps.NeedsUpdate instance that will cause the subsequent conditions to fail:
+            metaBuilder.AddCondition(Ast.Block(assignTarget, Ast.Constant(true)));
 
             args.SetTarget(targetExpression, target);
 
@@ -94,6 +107,9 @@ namespace IronRuby.Runtime.Calls {
 
             RubyMemberInfo method;
             RubyMemberInfo methodMissing = null;
+
+            // MRI bug: Uses currentDeclaringModule for method look-up so we can end up with an instance method of class C 
+            // called on a target of another class. See http://redmine.ruby-lang.org/issues/show/2419.
 
             // we need to lock the hierarchy of the target class:
             var targetClass = scope.RubyContext.GetImmediateClassOf(target);

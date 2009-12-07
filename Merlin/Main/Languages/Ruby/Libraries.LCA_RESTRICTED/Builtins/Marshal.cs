@@ -26,6 +26,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 using IronRuby.Runtime.Calls;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
 
@@ -273,10 +274,10 @@ namespace IronRuby.Builtins {
 
             private void TestForAnonymous(RubyModule/*!*/ theModule) {
                 if (theModule.Name == null) {
-                    string objectType = (theModule is RubyClass) ? "class" : "module";
-                    string displayName = theModule.GetDisplayName(_context, false).ConvertToString();
-                    string message = String.Format("can't dump anonymous {0} {1}", objectType, displayName);
-                    throw RubyExceptions.CreateTypeError(message);
+                    throw RubyExceptions.CreateTypeError("can't dump anonymous {0} {1}", 
+                        theModule.IsClass ? "class" : "module", 
+                        theModule.GetDisplayName(_context, false)
+                    );
                 }
             }
 
@@ -502,16 +503,19 @@ namespace IronRuby.Builtins {
                 int major = _reader.ReadByte();
                 int minor = _reader.ReadByte();
                 if (major != MAJOR_VERSION || minor > MINOR_VERSION) {
-                    string message = String.Format(
+                    throw RubyExceptions.CreateTypeError(
                         "incompatible marshal file format (can't be read)\n\tformat version {0}.{1} required; {2}.{3} given",
-                        MAJOR_VERSION, MINOR_VERSION, major, minor);
-                    throw RubyExceptions.CreateTypeError(message);
+                        MAJOR_VERSION, MINOR_VERSION, major, minor
+                    );                
                 }
+
                 if (minor < MINOR_VERSION) {
-                    string message = String.Format(
-                        "incompatible marshal file format (can be read)\n\tformat version {0}.{1} required; {2}.{3} given",
-                        MAJOR_VERSION, MINOR_VERSION, major, minor);
-                    Context.ReportWarning(message);
+                    Context.ReportWarning(
+                        String.Format(CultureInfo.InvariantCulture, 
+                            "incompatible marshal file format (can be read)\n\tformat version {0}.{1} required; {2}.{3} given",
+                            MAJOR_VERSION, MINOR_VERSION, major, minor
+                        )
+                    );
                 }
             }
 
@@ -683,17 +687,15 @@ namespace IronRuby.Builtins {
             private object/*!*/ ReadClassOrModule(int typeFlag, string/*!*/ name) {
                 RubyModule result;
                 if (!Context.TryGetModule(_globalScope, name, out result)) {
-                    throw RubyExceptions.CreateArgumentError(String.Format("undefined class/module {0}", name));
+                    throw RubyExceptions.CreateArgumentError("undefined class/module {0}", name);
                 }
 
                 bool isClass = result is RubyClass;
                 if (isClass && typeFlag == 'm') {
-                    throw RubyExceptions.CreateArgumentError(
-                        String.Format("{0} does not refer module", name));
+                    throw RubyExceptions.CreateArgumentError("{0} does not refer module", name);
                 }
                 if (!isClass && typeFlag == 'c') {
-                    throw RubyExceptions.CreateArgumentError(
-                        String.Format("{0} does not refer class", name));
+                    throw RubyExceptions.CreateArgumentError("{0} does not refer class", name);
                 }
                 return result;
             }
@@ -714,8 +716,7 @@ namespace IronRuby.Builtins {
                     string name = ReadSymbol();
                     if (name != names[i]) {
                         RubyClass theClass = Context.GetClassOf(obj);
-                        string message = String.Format("struct {0} not compatible ({1} for {2})", theClass.Name, name, names[i]);
-                        throw RubyExceptions.CreateTypeError(message);
+                        throw RubyExceptions.CreateTypeError("struct {0} not compatible ({1} for {2})", theClass.Name, name, names[i]);
                     }
                     obj[i] = ReadAnObject(false);
                 }
@@ -882,7 +883,7 @@ namespace IronRuby.Builtins {
                                 obj = ReadUserClass();
                                 break;
                             default:
-                                throw RubyExceptions.CreateArgumentError(String.Format("dump format error({0})", (int)typeFlag));
+                                throw RubyExceptions.CreateArgumentError("dump format error({0})", (int)typeFlag);
                         }
                         if (!noCache) {
                             _objects[objectRef] = obj;

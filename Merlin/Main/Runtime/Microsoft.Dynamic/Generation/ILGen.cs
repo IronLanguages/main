@@ -1118,7 +1118,9 @@ namespace Microsoft.Scripting.Generation {
         //CONFORMING
         // (plus support for None, Void conversions)
         internal void EmitConvertToType(Type typeFrom, Type typeTo, bool isChecked) {
-            typeFrom = TypeUtils.GetNonNoneType(typeFrom);
+            if (typeFrom == typeof(DynamicNull)) {
+                typeFrom = typeof(object);
+            }
 
             if (typeFrom == typeTo) {
                 return;

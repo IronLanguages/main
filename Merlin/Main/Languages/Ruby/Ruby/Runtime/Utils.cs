@@ -84,6 +84,30 @@ namespace IronRuby.Runtime {
             return str.Length == 0 ? -1 : str[str.Length - 1];
         }
 
+        internal static IEnumerable<char>/*!*/ EnumerateAsCharacters(byte[]/*!*/ data, int count) {
+            for (int i = 0; i < count; i++) {
+                yield return (char)data[i];
+            }
+        }
+
+        internal static IEnumerable<byte>/*!*/ EnumerateAsBytes(char[]/*!*/ data, int count) {
+            for (int i = 0; i < count; i++) {
+                yield return (byte)data[i];
+            }
+        }
+
+        internal static IEnumerable<byte>/*!*/ EnumerateAsBytes(string/*!*/ data) {
+            for (int i = 0; i < data.Length; i++) {
+                yield return (byte)data[i];
+            }
+        }
+
+        internal static IEnumerable<T>/*!*/ Enumerate<T>(T[]/*!*/ data, int count) {
+            for (int i = 0; i < count; i++) {
+                yield return data[i];
+            }
+        }
+        
         public static int IndexOf(this StringBuilder/*!*/ sb, char value) {
             ContractUtils.RequiresNotNull(sb, "sb");
 
@@ -152,6 +176,24 @@ namespace IronRuby.Runtime {
             int newCount = itemCount + count;
             Resize(ref array, newCount);
             Array.Copy(other, start, array, itemCount, count);
+            return newCount;
+        }
+
+        internal static int Append(ref byte[]/*!*/ array, int byteCount, string/*!*/ other, int start, int count, Encoding/*!*/ encoding) {
+            // TODO: we can special case this for some encodings and calculate the byte count w/o copying the content: 
+            char[] appendChars = new char[count];
+            other.CopyTo(start, appendChars, 0, count);
+
+            int newCount = byteCount + encoding.GetByteCount(appendChars, 0, appendChars.Length);
+            Resize(ref array, newCount);
+            encoding.GetBytes(appendChars, 0, appendChars.Length, array, byteCount);
+            return newCount;
+        }
+
+        internal static int Append(ref byte[]/*!*/ array, int byteCount, char[]/*!*/ other, int start, int count, Encoding/*!*/ encoding) {
+            int newCount = byteCount + encoding.GetByteCount(other, start, count);
+            Resize(ref array, newCount);
+            encoding.GetBytes(other, start, count, array, byteCount);
             return newCount;
         }
 
@@ -281,11 +323,37 @@ namespace IronRuby.Runtime {
         }
 
         internal static int ValueCompareTo(this byte[]/*!*/ array, int itemCount, byte[]/*!*/ other) {
-            int min = itemCount, defaultResult;
-            if (min < other.Length) {
+            return ValueCompareTo(array, itemCount, other, other.Length);
+        }
+
+        internal static int ValueCompareTo(this byte[]/*!*/ array, int itemCount, byte[]/*!*/ other, int otherCount) {
+            int min = itemCount;
+            int defaultResult;
+            if (min < otherCount) {
                 defaultResult = -1;
-            } else if (min > other.Length) {
-                min = other.Length;
+            } else if (min > otherCount) {
+                min = otherCount;
+                defaultResult = +1;
+            } else {
+                defaultResult = 0;
+            }
+
+            for (int i = 0; i < min; i++) {
+                if (array[i] != other[i]) {
+                    return (int)array[i] - other[i];
+                }
+            }
+
+            return defaultResult;
+        }
+
+        internal static int ValueCompareTo(this char[]/*!*/ array, int itemCount, char[]/*!*/ other, int otherCount) {
+            int min = itemCount;
+            int defaultResult;
+            if (min < otherCount) {
+                defaultResult = -1;
+            } else if (min > otherCount) {
+                min = otherCount;
                 defaultResult = +1;
             } else {
                 defaultResult = 0;

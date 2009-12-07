@@ -255,9 +255,9 @@ namespace IronRuby.Compiler.Generation {
                                     name = "[]";
                                 } else if (name == defaultSetter) {
                                     name = "[]=";
-                                } else if (name.StartsWith("get_")) {
+                                } else if (name.StartsWith("get_", StringComparison.Ordinal)) {
                                     name = name.Substring(4);
-                                } else if (name.StartsWith("set_")) {
+                                } else if (name.StartsWith("set_", StringComparison.Ordinal)) {
                                     name = name.Substring(4) + "=";
                                 }
                             }

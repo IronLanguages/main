@@ -21,20 +21,25 @@ using System.Security;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
+using System.Globalization;
 
 namespace IronRuby.Runtime {
     /// <summary>
     /// Helper class for creating the corresponding .NET exceptions from the Ruby error names
     /// </summary>
     public static class RubyExceptions {
-        #region TypeError (InvalidOperationException)
-
-        public static Exception/*!*/ CreateTypeError(string/*!*/ message) {
-            return new InvalidOperationException(message);
+        public static string FormatMessage(string/*!*/ message, params object[] args) {
+            return String.Format(CultureInfo.InvariantCulture, message, args);
         }
 
-        public static Exception/*!*/ CreateTypeError(string/*!*/ message, Exception innerException) {
-            return new InvalidOperationException(message, innerException);
+        #region TypeError (InvalidOperationException)
+
+        public static Exception/*!*/ CreateTypeError(string/*!*/ message, params object[] args) {
+            return CreateTypeError(null, message, args);
+        }
+
+        public static Exception/*!*/ CreateTypeError(Exception innerException, string/*!*/ message, params object[] args) {
+            return new InvalidOperationException(FormatMessage(message, args), innerException);
         }
 
         public static Exception/*!*/ CreateObjectFrozenError() {
@@ -43,11 +48,11 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateTypeConversionError(string/*!*/ fromType, string/*!*/ toType) {
             Assert.NotNull(fromType, toType);
-            return CreateTypeError(String.Format("can't convert {0} into {1}", fromType, toType));
+            return CreateTypeError("can't convert {0} into {1}", fromType, toType);
         }
 
         public static Exception/*!*/ CreateUnexpectedTypeError(RubyContext/*!*/ context, object param, string/*!*/ type) {
-            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", context.GetClassDisplayName(param), type));
+            return CreateTypeError("wrong argument type {0} (expected {1})", context.GetClassDisplayName(param), type);
         }
 
         public static Exception/*!*/ CannotConvertTypeToTargetType(RubyContext/*!*/ context, object param, string/*!*/ toType) {
@@ -56,11 +61,11 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateAllocatorUndefinedError(RubyClass/*!*/ rubyClass) {
-            return CreateTypeError(String.Format("allocator undefined for {0}", rubyClass.Name));
+            return CreateTypeError("allocator undefined for {0}", rubyClass.Name);
         }
 
         public static Exception/*!*/ CreateNotClrTypeError(RubyClass/*!*/ rubyClass) {
-            return CreateTypeError(String.Format("`{0}' doesn't represent a CLR type", rubyClass.Name));
+            return CreateTypeError("`{0}' doesn't represent a CLR type", rubyClass.Name);
         }
 
         public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {
@@ -69,55 +74,55 @@ namespace IronRuby.Runtime {
             Type baseType = rubyClass.GetUnderlyingSystemType().BaseType;
             Debug.Assert(baseType != null);
 
-            return CreateTypeError(String.Format("can't allocate class `{1}' that derives from type `{0}' with no default constructor;" +
+            return CreateTypeError("can't allocate class `{1}' that derives from type `{0}' with no default constructor;" +
                 " define {1}#new singleton method instead of {2}#initialize",
                 rubyClass.Context.GetTypeName(baseType, true), rubyClass.Name, initializerOwnerName
-            ));
+            );
         }
 
         public static Exception/*!*/ MakeCoercionError(RubyContext/*!*/ context, object self, object other) {
             string selfClass = context.GetClassOf(self).Name;
             string otherClass = context.GetClassOf(other).Name;
-            return CreateTypeError(String.Format("{0} can't be coerced into {1}", selfClass, otherClass));
+            return CreateTypeError("{0} can't be coerced into {1}", selfClass, otherClass);
         }
 
         public static Exception/*!*/ CreateReturnTypeError(string/*!*/ className, string/*!*/ methodName, string/*!*/ returnTypeName) {
-            return CreateTypeError(String.Format("{0}#{1} should return {2}", className, methodName, returnTypeName));
+            return CreateTypeError("{0}#{1} should return {2}", className, methodName, returnTypeName);
         }
 
         #endregion
 
         #region NameError (MemberAccessException)
 
-        public static Exception/*!*/ CreateNameError(string/*!*/ message) {
-            return new MemberAccessException(message);
+        public static Exception/*!*/ CreateNameError(string/*!*/ message, params object[] args) {
+            return new MemberAccessException(FormatMessage(message, args));
         }
 
         public static Exception/*!*/ CreateUndefinedMethodError(RubyModule/*!*/ module, string/*!*/ methodName) {
-            return CreateNameError(String.Format("undefined method `{0}' for {2} `{1}'",
-                methodName, module.Name, module.IsClass ? "class" : "module"));
+            return CreateNameError("undefined method `{0}' for {2} `{1}'",
+                methodName, module.Name, module.IsClass ? "class" : "module");
         }
 
         #endregion
 
         #region ArgumentError (ArgumentException)
 
-        public static Exception/*!*/ CreateArgumentError(string/*!*/ message) {
-            return new ArgumentException(message);
+        public static Exception/*!*/ CreateArgumentError(string/*!*/ message, params object[] args) {
+            return CreateArgumentError(null, message, args);
         }
 
-        public static Exception/*!*/ CreateArgumentError(string/*!*/ message, Exception innerException) {
-            return new ArgumentException(message, innerException);
+        public static Exception/*!*/ CreateArgumentError(Exception innerException, string/*!*/ message, params object[] args) {
+            return new ArgumentException(FormatMessage(message, args), innerException);
         }
 
         public static Exception/*!*/ InvalidValueForType(RubyContext/*!*/ context, object obj, string type) {
-            return CreateArgumentError(String.Format("invalid value for {0}: {1}", type, context.Inspect(obj)));
+            return CreateArgumentError("invalid value for {0}: {1}", type, context.Inspect(obj));
         }
 
         public static Exception/*!*/ MakeComparisonError(RubyContext/*!*/ context, object self, object other) {
             string selfClass = context.GetClassOf(self).Name;
             string otherClass = context.GetClassOf(other).Name;
-            return CreateArgumentError(String.Format("comparison of {0} with {1} failed", selfClass, otherClass));
+            return CreateArgumentError("comparison of {0} with {1} failed", selfClass, otherClass);
         }
 
         #endregion
@@ -159,7 +164,7 @@ namespace IronRuby.Runtime {
                 _disableMethodMissingMessageFormatting = true;
                 try {
                     str = context.Inspect(obj).ConvertToString();
-                    if (!str.StartsWith("#")) {
+                    if (!str.StartsWith("#", StringComparison.Ordinal)) {
                         str += ":" + context.GetClassName(obj);
                     }
                 } catch (Exception) {
@@ -170,7 +175,7 @@ namespace IronRuby.Runtime {
                 }
             }
             
-            return String.Format(message, name, str);
+            return FormatMessage(message, name, str);
         }
 
         #endregion
@@ -187,49 +192,49 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        public static Exception/*!*/ CreateNotImplementedError(string/*!*/ message) {
-            return new NotImplementedError(message);
+        public static Exception/*!*/ CreateNotImplementedError(string/*!*/ message, params object[] args) {
+            return new NotImplementedError(FormatMessage(message, args));
         }
 
-        public static Exception/*!*/ CreateNotImplementedError(string/*!*/ message, Exception innerException) {
-            return new NotImplementedError(message, innerException);
+        public static Exception/*!*/ CreateIndexError(string/*!*/ message, params object[] args) {
+            return new IndexOutOfRangeException(FormatMessage(message, args));
         }
 
-        public static Exception/*!*/ CreateIndexError(string/*!*/ message) {
-            return new IndexOutOfRangeException(message);
+        public static Exception/*!*/ CreateRangeError(string/*!*/ message, params object[] args) {
+            return CreateRangeError("", message, args);
         }
 
-        public static Exception/*!*/ CreateIndexError(string/*!*/ message, Exception innerException) {
-            return new IndexOutOfRangeException(message, innerException);
+        public static Exception/*!*/ CreateRangeError(string/*!*/ paramName, string/*!*/ message, params object[] args) {
+            return new ArgumentOutOfRangeException(paramName, FormatMessage(message, args));
         }
 
-        public static Exception/*!*/ CreateRangeError(string/*!*/ message) {
-            return new ArgumentOutOfRangeException(String.Empty, message);
+        public static Exception/*!*/ CreateLocalJumpError(string/*!*/ message, params object[] args) {
+            return new LocalJumpError(FormatMessage(message, args));
         }
 
-        public static Exception/*!*/ CreateLocalJumpError(string/*!*/ message) {
-            return new LocalJumpError(message);
+        public static Exception/*!*/ CreateRuntimeError(string/*!*/ message, params object[] args) {
+            return new RuntimeError(FormatMessage(message, args));
         }
 
         public static Exception/*!*/ NoBlockGiven() {
-            return new LocalJumpError("no block given");
+            return CreateLocalJumpError("no block given");
         }
 
         public static Exception/*!*/ CreateIOError(string/*!*/ message) {
             return new IOException(message);
         }
 
-        public static Exception/*!*/ CreateSystemCallError(string/*!*/ message) {
-            return new ExternalException(message);
+        public static Exception/*!*/ CreateSystemCallError(string/*!*/ message, params object[] args) {
+            return new ExternalException(FormatMessage(message, args));
         }
 
-        public static Exception/*!*/ CreateSecurityError(string/*!*/ message) {
-            throw new SecurityException(message);
+        public static Exception/*!*/ CreateSecurityError(string/*!*/ message, params object[] args) {
+            throw new SecurityException(FormatMessage(message, args));
         }
 
         public static Exception/*!*/ CreateEncodingCompatibilityError(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
             return new EncodingCompatibilityError(
-                String.Format("incompatible character encodings: {0}{1} and {2}{3}",
+                FormatMessage("incompatible character encodings: {0}{1} and {2}{3}",
                     encoding1.Name, encoding1.IsKCoding ? " (KCODE)" : null, encoding2.Name, encoding2.IsKCoding ? " (KCODE)" : null
                 )
             );
@@ -253,36 +258,36 @@ namespace IronRuby.Runtime {
             return new ExistError();
         }
 
-        public static Exception/*!*/ CreateEEXIST(string message) {
-            return new ExistError(message);
+        public static Exception/*!*/ CreateEEXIST(string message, params object[] args) {
+            return CreateEEXIST(null, message, args);
         }
 
-        public static Exception/*!*/ CreateEEXIST(string message, Exception inner) {
-            return new ExistError(message, inner);
+        public static Exception/*!*/ CreateEEXIST(Exception inner, string/*!*/ message, params object[] args) {
+            return new ExistError(FormatMessage(message, args), inner);
         }
 
         public static Exception/*!*/ CreateEINVAL() {
             return new InvalidError();
         }
 
-        public static Exception/*!*/ CreateEINVAL(string message) {
-            return new InvalidError(message);
+        public static Exception/*!*/ CreateEINVAL(string/*!*/ message, params object[] args) {
+            return CreateEINVAL(null, message, args);
         }
 
-        public static Exception/*!*/ CreateEINVAL(string message, Exception inner) {
-            return new InvalidError(message, inner);
+        public static Exception/*!*/ CreateEINVAL(Exception inner, string/*!*/ message, params object[] args) {
+            return new InvalidError(FormatMessage(message, args), inner);
         }
 
         public static Exception/*!*/ CreateENOENT() {
             return new FileNotFoundException();
         }
 
-        public static Exception/*!*/ CreateENOENT(string message, Exception inner) {
-            return new FileNotFoundException(message, inner);
+        public static Exception/*!*/ CreateENOENT(string/*!*/ message, params object[] args) {
+            return CreateENOENT(null, message, args);
         }
 
-        public static Exception/*!*/ CreateENOENT(string message) {
-            return new FileNotFoundException(message);
+        public static Exception/*!*/ CreateENOENT(Exception inner, string/*!*/ message, params object[] args) {
+            return new FileNotFoundException(FormatMessage(message, args), inner);
         }
 
         public static Exception/*!*/ CreateEBADF() {

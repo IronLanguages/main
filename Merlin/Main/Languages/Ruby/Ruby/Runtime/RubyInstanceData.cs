@@ -198,7 +198,7 @@ namespace IronRuby.Runtime {
                 }
             }
 
-            result.Sort((var1, var2) => var1._name.CompareTo(var2._name));
+            result.Sort((var1, var2) => String.CompareOrdinal(var1._name, var2._name));
             return result.ToArray();
         }
 

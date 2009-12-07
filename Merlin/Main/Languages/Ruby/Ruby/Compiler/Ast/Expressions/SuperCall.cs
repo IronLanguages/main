@@ -34,31 +34,55 @@ namespace IronRuby.Compiler.Ast {
     /// super(args)
     /// super
     /// 
-    /// The former case passes the arguments explicitly
-    /// The latter passes all of the arguments that were passed to the current method
-    /// (including the block, if any)
+    /// The former case passes the arguments explicitly.
+    /// The latter passes all of the arguments that were passed to the current method (including the block, if any)
     /// 
-    /// Also works from a method defined using define_method (not supported yet!)
+    /// Also works from a method defined using define_method.
     /// </summary>
     public partial class SuperCall : CallExpression {
+        /// <summary>
+        /// All non-block arguments are passed implicitly.
+        /// </summary>
+        public bool HasImplicitArguments {
+            get { return Arguments == null; }
+        }
+
         public SuperCall(Arguments args, Block block, SourceSpan location)
             : base(args, block, location) {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            // invoke super member action:
-            CallBuilder callBuilder = new CallBuilder(gen);
+            // variable assigned to the transformed block in MakeCallWithBlockRetryable:
+            MSA.Expression blockArgVariable = gen.CurrentScope.DefineHiddenVariable("#super-call-block", typeof(Proc));
 
-            // self:
-            callBuilder.Instance = gen.CurrentSelfVariable;
+            // invoke super member action:
+            var siteBuilder = new CallSiteBuilder(gen, gen.CurrentSelfVariable, blockArgVariable);
 
             // arguments:
-            if (Arguments != null) {
-                Arguments.TransformToCall(gen, callBuilder);
+            if (HasImplicitArguments) {
+                // MRI 1.8: If a block is called via define_method stub its parameters are used here.
+                // MRI 1.9: This scenario is not supported.
+                // We don't support this either. Otherwise we would need to emit super call with dynamic parameters if gen.CurrentBlock != null.
+
+                if (gen.CurrentMethod.Parameters != null) {
+                    gen.CurrentMethod.Parameters.TransformForSuperCall(gen, siteBuilder);
+                } else if (gen.CompilerOptions.TopLevelParameterNames != null) {
+                    bool hasUnsplat = gen.CompilerOptions.TopLevelHasUnsplatParameter;
+                    string[] names = gen.CompilerOptions.TopLevelParameterNames;
+
+                    // dynamic lookup:
+                    for (int i = 0; i < names.Length - (hasUnsplat ? 1 : 0); i++) {
+                        siteBuilder.Add(Methods.GetLocalVariable.OpCall(gen.CurrentScopeVariable, AstUtils.Constant(names[i])));
+                    }
+                    if (hasUnsplat) {
+                        siteBuilder.SplattedArgument =
+                            Methods.GetLocalVariable.OpCall(gen.CurrentScopeVariable, AstUtils.Constant(names[names.Length - 1]));
+                    }
+                } else {
+                    // this means we are not inside any method scope -> an exception will be thrown at the call site
+                }
             } else {
-                // copy parameters from the method:
-                // TODO: parameters in top-level eval
-                LexicalScope.TransformParametersToSuperCall(gen, callBuilder, gen.CurrentMethod.Parameters);
+                Arguments.TransformToCall(gen, siteBuilder);
             }
 
             // block:
@@ -68,16 +92,10 @@ namespace IronRuby.Compiler.Ast {
             } else {
                 transformedBlock = gen.MakeMethodBlockParameterRead();
             }
-
-            // variable assigned to the transformed block in MakeCallWithBlockRetryable:
-            MSA.Expression blockArgVariable = gen.CurrentScope.DefineHiddenVariable("#super-call-block", typeof(Proc));
-            callBuilder.Block = blockArgVariable;
-
-            // TODO: this could be improved, currently the right method name and declaring module is always searched for at run-time (at the site):
-
+            
             return gen.DebugMark(
-                MethodCall.MakeCallWithBlockRetryable(gen, 
-                    callBuilder.MakeSuperCallAction(gen.CurrentFrame.UniqueId), 
+                MethodCall.MakeCallWithBlockRetryable(gen,
+                    siteBuilder.MakeSuperCallAction(gen.CurrentFrame.UniqueId, HasImplicitArguments), 
                     blockArgVariable, 
                     transformedBlock,
                     Block != null && Block.IsDefinition

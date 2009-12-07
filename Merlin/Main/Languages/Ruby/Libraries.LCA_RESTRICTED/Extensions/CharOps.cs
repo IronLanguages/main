@@ -23,7 +23,7 @@ namespace IronRuby.Builtins {
     [Includes(typeof(ClrString), typeof(Enumerable), typeof(Comparable))]
     public static class CharOps {
         private static Exception/*!*/ EmptyError(string/*!*/ argType) {
-            return RubyExceptions.CreateArgumentError(String.Format("cannot convert an empty {0} to System::Char", argType));
+            return RubyExceptions.CreateArgumentError("cannot convert an empty {0} to System::Char", argType);
         }
 
         [RubyConstructor]

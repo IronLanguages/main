@@ -69,7 +69,7 @@ namespace IronPython.Compiler {
 
         private T Compile() {
             if (_shouldInterpret) {
-                return (T)(object)Microsoft.Scripting.Generation.CompilerHelpers.LightCompile(Code, true, _compilationThreshold);
+                return (T)(object)Microsoft.Scripting.Generation.CompilerHelpers.LightCompile(Code, _compilationThreshold);
             }
 
             return Code.Compile();

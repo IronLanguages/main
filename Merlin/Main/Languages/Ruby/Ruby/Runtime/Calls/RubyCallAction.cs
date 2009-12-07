@@ -356,7 +356,7 @@ namespace IronRuby.Runtime.Calls {
 
                 default:
                     postConverter = null;
-                    if (_methodName.EndsWith("=")) {
+                    if (_methodName.EndsWith("=", StringComparison.Ordinal)) {
                         return new InteropBinder.SetMember(context, _methodName.Substring(0, _methodName.Length - 1));
                     } else {
                         return new InteropBinder.InvokeMember(context, _methodName, new CallInfo(args.Count));

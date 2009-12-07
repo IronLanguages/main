@@ -34,6 +34,22 @@ namespace Microsoft.Scripting.Actions {
     using Ast = Expression;
 
     public partial class DefaultBinder : ActionBinder {
+        // TODO: Rename Call to Invoke, obsolete Call
+        // TODO: Invoke overloads should also take CallInfo objects to simplify use for languages which don't need CallSignature features.
+
+        /// <summary>
+        /// Provides default binding for performing a call on the specified meta objects.
+        /// </summary>
+        /// <param name="signature">The signature describing the call</param>
+        /// <param name="target">The meta object to be called.</param>
+        /// <param name="args">
+        /// Additional meta objects are the parameters for the call as specified by the CallSignature in the CallAction.
+        /// </param>
+        /// <returns>A MetaObject representing the call or the error.</returns>
+        public DynamicMetaObject Call(CallSignature signature, DynamicMetaObject target, params DynamicMetaObject[] args) {
+            return Call(signature, new DefaultOverloadResolverFactory(this), target, args);
+        }
+        
         /// <summary>
         /// Provides default binding for performing a call on the specified meta objects.
         /// </summary>

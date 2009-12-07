@@ -26,7 +26,7 @@ namespace IronRuby.Builtins {
     /// Mixed-in all .NET numeric primitive types that cannot be widened to 32 bit signed integer.
     /// (uint, long, ulong, BigInteger). 
     /// </summary>
-    [RubyModule("BigInteger", DefineIn = typeof(IronRubyOps.ClrOps))]
+    [RubyModule("BigInteger", DefineIn = typeof(IronRubyOps.Clr))]
     public sealed class ClrBigInteger {
         #region Arithmetic Operators
 
@@ -923,11 +923,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(BigInteger/*!*/ self, int radix) {
             if (radix < 2 || radix > 36) {
-                throw RubyExceptions.CreateArgumentError(String.Format("illegal radix {0}", radix));
+                throw RubyExceptions.CreateArgumentError("illegal radix {0}", radix);
             }
 
             // TODO: Can we do the ToLower in BigInteger?
-            return MutableString.CreateAscii(self.ToString(radix).ToLower());
+            return MutableString.CreateAscii(self.ToString(radix).ToLowerInvariant());
         }
 
         #endregion
@@ -949,7 +949,7 @@ namespace IronRuby.Builtins {
         /// <exception cref="InvalidOperationException">For any value of other.</exception>
         [RubyMethod("coerce")]
         public static RubyArray Coerce(RubyContext/*!*/ context, BigInteger/*!*/ self, object other) {
-            throw RubyExceptions.CreateTypeError(String.Format("can't coerce {0} to Bignum", context.GetClassDisplayName(other)));
+            throw RubyExceptions.CreateTypeError("can't coerce {0} to Bignum", context.GetClassDisplayName(other));
         }
 
         #endregion

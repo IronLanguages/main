@@ -186,5 +186,47 @@ Backtrace4.rb:0
 ", OutputFlags.Match);
 #endif
         }
+
+        /// <summary>
+        /// Checks if the interpreted frames are aligned with CLR frames.
+        /// TODO: Need some way how to decode Python names and hide PythonOps.
+        /// </summary>
+        public void Backtrace5() {
+            if (!_driver.RunPython) return;
+            var py = Runtime.GetEngine("python");
+
+            var scope = Runtime.CreateScope();
+            py.Execute(@"
+def py_foo():
+  py_bar()
+
+def py_bar():
+  rb_foo()
+", scope);
+
+            Engine.Execute(@"
+def rb_foo
+  rb_bar
+end
+
+def rb_bar
+  trace = caller.to_s
+  ['rb_1', 'rb_2', 'rb_foo', 'py_foo', 'py_bar'].each do |name| 
+    raise 'error' unless trace.include?(name) 
+  end
+end
+
+def rb_1
+  py_foo.call
+end
+
+def rb_2
+  rb_1
+end
+
+rb_2
+", scope);
+        }
+
     }
 }

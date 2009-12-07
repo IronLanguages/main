@@ -89,7 +89,7 @@ namespace IronRuby.Hosting {
         protected override void ParseArgument(string arg) {
             ContractUtils.RequiresNotNull(arg, "arg");
 
-            if (arg.StartsWith("-e")) {
+            if (arg.StartsWith("-e", StringComparison.Ordinal)) {
                 string command;
                 if (arg == "-e") {
                     command = PopNextArg();
@@ -107,7 +107,7 @@ namespace IronRuby.Hosting {
                 return;
             }
 
-            if (arg.StartsWith("-I")) {
+            if (arg.StartsWith("-I", StringComparison.Ordinal)) {
                 string includePaths;
                 if (arg == "-I") {
                     includePaths = PopNextArg();
@@ -120,27 +120,27 @@ namespace IronRuby.Hosting {
             }
 
 #if !SILVERLIGHT
-            if (arg.StartsWith("-K")) {
+            if (arg.StartsWith("-K", StringComparison.Ordinal)) {
                 LanguageSetup.Options["KCode"] = arg.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(arg[2]) : null;
                 return;
             }
 #endif
-            if (arg.StartsWith("-r")) {
+            if (arg.StartsWith("-r", StringComparison.Ordinal)) {
                 _requiredPaths.Add((arg == "-r") ? PopNextArg() : arg.Substring(2));
                 return;
             }
 
-            if (arg.StartsWith("-C")) {
+            if (arg.StartsWith("-C", StringComparison.Ordinal)) {
                 ConsoleOptions.ChangeDirectory = arg.Substring(2);
                 return;
             }
 
-            if (arg.StartsWith("-0") ||
-                arg.StartsWith("-C") ||
-                arg.StartsWith("-F") ||
-                arg.StartsWith("-i") ||
-                arg.StartsWith("-T") ||
-                arg.StartsWith("-x")) {
+            if (arg.StartsWith("-0", StringComparison.Ordinal) ||
+                arg.StartsWith("-C", StringComparison.Ordinal) ||
+                arg.StartsWith("-F", StringComparison.Ordinal) ||
+                arg.StartsWith("-i", StringComparison.Ordinal) ||
+                arg.StartsWith("-T", StringComparison.Ordinal) ||
+                arg.StartsWith("-x", StringComparison.Ordinal)) {
                 throw new InvalidOptionException(String.Format("Option `{0}' not supported", arg));
             }
 
@@ -175,7 +175,6 @@ namespace IronRuby.Hosting {
                 case "--version":
                 case "-v":
                     CommonConsoleOptions.PrintVersion = true;
-                    CommonConsoleOptions.Exit = true;
                     goto case "-W2";
 
                 case "-W0":
@@ -271,7 +270,6 @@ namespace IronRuby.Hosting {
 #else
                             RubyEncoding.GetRubyEncoding(Console.InputEncoding);
 #endif
-                        CommonConsoleOptions.Exit = false;
                     } 
                     break;
             }

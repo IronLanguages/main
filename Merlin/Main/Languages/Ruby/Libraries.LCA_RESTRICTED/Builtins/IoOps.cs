@@ -734,7 +734,7 @@ namespace IronRuby.Builtins {
             }
 
             if (length < 0) {
-                throw RubyExceptions.CreateArgumentError(String.Format("negative length {0} given", length));
+                throw RubyExceptions.CreateArgumentError("negative length {0} given", length);
             }
 
             using (RubyIO io = new RubyFile(self.Context, path.ConvertToString(), IOMode.ReadOnly)) {

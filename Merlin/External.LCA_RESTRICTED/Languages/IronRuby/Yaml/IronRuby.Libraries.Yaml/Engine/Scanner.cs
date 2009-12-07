@@ -43,7 +43,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private bool _done = false;
-        private int _flowLevel = 0;
+        private readonly Stack<Token> _collectionTokens = new Stack<Token>();
         private int _tokensTaken = 0;
         private int _indent = -1;
         private bool _allowSimpleKey = true;
@@ -59,7 +59,9 @@ namespace IronRuby.StandardLibrary.Yaml {
         private int _count = 0;
         private int _pointer = 0;
 
-        private bool _inFlowSequence = false;
+        private int FlowLevel {
+            get { return _collectionTokens.Count; }
+        }
 
         public Scanner(TextReader/*!*/ reader) {
             _reader = reader;
@@ -242,13 +244,28 @@ namespace IronRuby.StandardLibrary.Yaml {
                 case '\0': return FetchStreamEnd();
                 case '\'': return FetchSingle();
                 case '"': return FetchDouble();
-                case '?': if (_flowLevel != 0 || NULL_BL_T_LINEBR(Peek(1))) { return FetchKey(); } break;
+
+                case '?': 
+                    if (FlowLevel != 0 || NULL_BL_T_LINEBR(Peek(1))) { 
+                        return FetchKey(); 
+                    } 
+                    break;
+
                 case ':':
-                    if ( !_inFlowSequence && ( _flowLevel != 0 || NULL_BL_T_LINEBR(Peek(1)) ) ) {
-                        return FetchValue();
+                    if (FlowLevel != 0 || NULL_BL_T_LINEBR(Peek(1))) {
+                        // key: value not allowed in a sequence [...]:
+                        if (FlowLevel == 0 || _collectionTokens.Peek() != FlowSequenceStartToken.Instance) {
+                            return FetchValue();
+                        }
                     }
                     break;
-                case '%': if (colz) { return FetchDirective(); } break;
+
+                case '%': 
+                    if (colz) { 
+                        return FetchDirective();
+                    } 
+                    break;
+
                 case '-':
                     if ((colz || _docStart) && IsEnding()) {
                         return FetchDocumentStart();
@@ -256,21 +273,23 @@ namespace IronRuby.StandardLibrary.Yaml {
                         return FetchBlockEntry();
                     }
                     break;
+
                 case '.':
                     if (colz && IsStart()) {
                         return FetchDocumentEnd();
                     }
                     break;
-                case '[': return FetchFlowSequenceStart();
-                case '{': return FetchFlowMappingStart();
-                case ']': return FetchFlowSequenceEnd();
-                case '}': return FetchFlowMappingEnd();
-                case ',': return fetchFlowEntry();
+
+                case '[': return FetchFlowCollectionStart(FlowSequenceStartToken.Instance);
+                case '{': return FetchFlowCollectionStart(FlowMappingStartToken.Instance);
+                case ']': return FetchFlowCollectionEnd(FlowSequenceEndToken.Instance);
+                case '}': return FetchFlowCollectionEnd(FlowMappingEndToken.Instance);
+                case ',': return FetchFlowEntry();
                 case '*': return FetchAlias();
                 case '&': return FetchAnchor();
                 case '!': return FetchTag();
-                case '|': if (_flowLevel == 0) { return FetchLiteral(); } break;
-                case '>': if (_flowLevel == 0) { return FetchFolded(); } break;
+                case '|': if (FlowLevel == 0) { return FetchLiteral(); } break;
+                case '>': if (FlowLevel == 0) { return FetchFolded(); } break;
             }
 
             //TODO: this is probably incorrect...
@@ -310,7 +329,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     }
                 }
                 if (ScanLineBreak().Length != 0) {
-                    if (_flowLevel == 0) {
+                    if (FlowLevel == 0) {
                         _allowSimpleKey = true;
                     }
                 } else {
@@ -341,7 +360,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private void UnwindIndent(int col) {
-            if (_flowLevel != 0) {
+            if (FlowLevel != 0) {
                 return;
             }
 
@@ -366,7 +385,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private Token FetchBlockEntry() {
             _docStart = false;
-            if (_flowLevel == 0) {
+            if (FlowLevel == 0) {
                 if (!_allowSimpleKey) {
                     throw new ScannerException("sequence entries are not allowed here");
                 }
@@ -398,8 +417,8 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private void RemovePossibleSimpleKey() {
             SimpleKey key;
-            if (_possibleSimpleKeys.TryGetValue(_flowLevel, out key)) {
-                _possibleSimpleKeys.Remove(_flowLevel);
+            if (_possibleSimpleKeys.TryGetValue(FlowLevel, out key)) {
+                _possibleSimpleKeys.Remove(FlowLevel);
                 if (key.Required) {
                     throw new ScannerException("while scanning a simple key: could not find expected ':'");
                 }
@@ -409,7 +428,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         private void SavePossibleSimpleKey() {
             if (_allowSimpleKey) {
                 RemovePossibleSimpleKey();
-                _possibleSimpleKeys.Add(_flowLevel, new SimpleKey(_tokensTaken + _tokens.Count, (_flowLevel == 0) && _indent == _column, -1, -1, _column));
+                _possibleSimpleKeys.Add(FlowLevel, new SimpleKey(_tokensTaken + _tokens.Count, (FlowLevel == 0) && _indent == _column, -1, -1, _column));
             }
         }
 
@@ -532,7 +551,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             int ind = _indent + 1;
             bool f_nzero;
             CharTest r_check, r_check2, r_check3;
-            if (_flowLevel != 0) {
+            if (FlowLevel != 0) {
                 f_nzero = true;
                 r_check = R_FLOWNONZERO;
                 r_check2 = ALL_FALSE;
@@ -565,7 +584,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 chunks.Append(_buffer, _pointer, length);
                 Forward(length);
                 spaces = ScanPlainSpaces(ind);
-                if (spaces == null || (_flowLevel == 0 && _column < ind)) {
+                if (spaces == null || (FlowLevel == 0 && _column < ind)) {
                     break;
                 }
             }
@@ -760,14 +779,14 @@ namespace IronRuby.StandardLibrary.Yaml {
         private Token FetchValue() {
             _docStart = false;
             SimpleKey key;
-            if (!_possibleSimpleKeys.TryGetValue(_flowLevel, out key)) {
-                if (_flowLevel == 0 && !_allowSimpleKey) {
+            if (!_possibleSimpleKeys.TryGetValue(FlowLevel, out key)) {
+                if (FlowLevel == 0 && !_allowSimpleKey) {
                     throw new ScannerException("mapping values are not allowed here");
                 }
-                _allowSimpleKey = _flowLevel == 0;
+                _allowSimpleKey = FlowLevel == 0;
                 RemovePossibleSimpleKey();
             } else {
-                _possibleSimpleKeys.Remove(_flowLevel);
+                _possibleSimpleKeys.Remove(FlowLevel);
 
                 // find the insertion point
                 LinkedListNode<Token> node = _tokens.First;
@@ -778,7 +797,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 }
 
                 node = _tokens.AddBefore(node, KeyToken.Instance);
-                if (_flowLevel == 0 && AddIndent(key.Column)) {
+                if (FlowLevel == 0 && AddIndent(key.Column)) {
                     _tokens.AddBefore(node, BlockMappingStartToken.Instance);
                 }
                 _allowSimpleKey = false;
@@ -787,19 +806,10 @@ namespace IronRuby.StandardLibrary.Yaml {
             return AddToken(ValueToken.Instance);
         }
 
-        private Token FetchFlowSequenceStart() {
-            _inFlowSequence = true;
-            return FetchFlowCollectionStart(FlowSequenceStartToken.Instance);
-        }
-
-        private Token FetchFlowMappingStart() {
-            return FetchFlowCollectionStart(FlowMappingStartToken.Instance);
-        }
-
         private Token FetchFlowCollectionStart(Token tok) {
             _docStart = false;
             SavePossibleSimpleKey();
-            _flowLevel++;
+            _collectionTokens.Push(tok);
             _allowSimpleKey = true;
             Forward(1);
             return AddToken(tok);
@@ -810,24 +820,15 @@ namespace IronRuby.StandardLibrary.Yaml {
             return FetchDocumentIndicator(DocumentEndToken.Instance);
         }
 
-        private Token FetchFlowSequenceEnd() {
-            _inFlowSequence = false;
-            return FetchFlowCollectionEnd(FlowSequenceEndToken.Instance);
-        }
-
-        private Token FetchFlowMappingEnd() {
-            return FetchFlowCollectionEnd(FlowMappingEndToken.Instance);
-        }
-
         private Token FetchFlowCollectionEnd(Token tok) {
             RemovePossibleSimpleKey();
-            _flowLevel--;
+            _collectionTokens.Pop();
             _allowSimpleKey = false;
             Forward(1);
             return AddToken(tok);
         }
 
-        private Token fetchFlowEntry() {
+        private Token FetchFlowEntry() {
             _allowSimpleKey = true;
             RemovePossibleSimpleKey();
             Forward(1);
@@ -1017,7 +1018,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private Token FetchKey() {
-            if (_flowLevel == 0) {
+            if (FlowLevel == 0) {
                 if (!_allowSimpleKey) {
                     throw new ScannerException("mapping keys are not allowed here");
                 }
@@ -1025,7 +1026,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     _tokens.AddLast(BlockMappingStartToken.Instance);
                 }
             }
-            _allowSimpleKey = _flowLevel == 0;
+            _allowSimpleKey = FlowLevel == 0;
             RemovePossibleSimpleKey();
             Forward();
             return AddToken(KeyToken.Instance);

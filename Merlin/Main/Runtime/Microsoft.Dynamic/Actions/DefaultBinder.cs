@@ -39,9 +39,23 @@ namespace Microsoft.Scripting.Actions {
     /// performing operators, and getting members using the ActionBinder's conversion semantics.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
-    public abstract partial class DefaultBinder : ActionBinder {
+    public partial class DefaultBinder : ActionBinder {
+        internal static readonly DefaultBinder Instance = new DefaultBinder();
+
+        public DefaultBinder() {
+        }
+
+        [Obsolete("ScriptDomainManager is no longer required by ActionBinder and will go away, you should call the default constructor instead.  You should also override PrivateBinding which is the only thing which previously used the ScriptDomainManager.")]
         protected DefaultBinder(ScriptDomainManager manager)
             : base(manager) {
+        }
+
+        public override bool CanConvertFrom(Type fromType, Type toType, bool toNotNullable, NarrowingLevel level) {
+            return toType.IsAssignableFrom(fromType);
+        }
+
+        public override Candidate PreferConvert(Type t1, Type t2) {
+            return Candidate.Ambiguous;
         }
 
         /// <summary>

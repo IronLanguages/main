@@ -112,7 +112,7 @@ namespace IronRuby.Builtins {
             for (int i = 1; i < count; i++) {
                 if (index >= length) {
                     throw RubyExceptions.CreateArgumentError(
-                        String.Format("malformed UTF-8 character (expected {0} bytes, given {1} bytes)", count, i)
+                        "malformed UTF-8 character (expected {0} bytes, given {1} bytes)", count, i
                     );
                 }
                 b = data.GetByte(index++);
@@ -689,7 +689,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private static void Write(Stream/*!*/ stream, ulong n, bool swap) {
+        internal static void Write(Stream/*!*/ stream, ulong n, bool swap) {
             if (swap) {
                 stream.WriteByte((byte)(n >> 56));
                 stream.WriteByte((byte)((n >> 48) & 0xff));
@@ -729,7 +729,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private static void Write(Stream/*!*/ stream, uint n, bool swap) {
+        internal static void Write(Stream/*!*/ stream, uint n, bool swap) {
             if (swap) {
                 stream.WriteByte((byte)(n >> 24));
                 stream.WriteByte((byte)((n >> 16) & 0xff));
@@ -929,7 +929,7 @@ namespace IronRuby.Builtins {
                 } else if (c == 'L') {
                     return IntPtr.Size == 4 ? 'I' : 'Q';
                 } else {
-                    throw RubyExceptions.CreateArgumentError(String.Format("'{0}' allowed only after types sSiIlL", modifier));
+                    throw RubyExceptions.CreateArgumentError("'{0}' allowed only after types sSiIlL", modifier);
                 }
             }
 

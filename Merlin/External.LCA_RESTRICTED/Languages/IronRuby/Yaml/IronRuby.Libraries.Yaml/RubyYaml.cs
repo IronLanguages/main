@@ -72,14 +72,14 @@ namespace IronRuby.StandardLibrary.Yaml {
             taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:struct"), context.GetClass(typeof(RubyStruct)));
             taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:sym"), context.GetClass(typeof(SymbolId)));
             taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:symbol"), context.GetClass(typeof(SymbolId)));
-            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:time"), context.GetClass(typeof(Time)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:time"), context.GetClass(typeof(RubyTime)));
             taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:binary"), context.GetClass(typeof(MutableString)));
             taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:float"), context.GetClass(typeof(Double)));
             taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:int"), context.GetClass(typeof(Integer)));
             taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:map"), context.GetClass(typeof(Hash)));
             taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:seq"), context.GetClass(typeof(RubyArray)));
             taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:str"), context.GetClass(typeof(MutableString)));
-            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:timestamp"), context.GetClass(typeof(Time)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:timestamp"), context.GetClass(typeof(RubyTime)));
                                                  
             taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:bool#no"), context.FalseClass);
             taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:bool#yes"), context.TrueClass);

@@ -29,7 +29,7 @@ namespace Microsoft.Scripting.Interpreter {
             _creator = delegateCreator;
         }
 
-        public override int ConsumedStack { get { return _creator.ClosureVariables.Count; } }
+        public override int ConsumedStack { get { return _creator.Interpreter.Locals.ClosureSize; } }
         public override int ProducedStack { get { return 1; } }
 
         public override int Run(InterpretedFrame frame) {

@@ -53,11 +53,10 @@ namespace IronPython.Runtime.Binding {
         [MultiRuntimeAware]
         private static readonly Dictionary<Type/*!*/, ExtensionTypeInfo/*!*/>/*!*/ _sysTypes = MakeSystemTypes();
 
-        public PythonBinder(ScriptDomainManager manager, PythonContext/*!*/ pythonContext, CodeContext context)
-            : base(manager) {
+        public PythonBinder(PythonContext/*!*/ pythonContext, CodeContext context) {
             ContractUtils.RequiresNotNull(pythonContext, "pythonContext");
 
-            _context = pythonContext;
+            _context = pythonContext;           
             if (context != null) {
                 context.LanguageContext.DomainManager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(DomainManager_AssemblyLoaded);
 
@@ -177,6 +176,12 @@ namespace IronPython.Runtime.Binding {
 
         public override Candidate PreferConvert(Type t1, Type t2) {
             return Converter.PreferConvert(t1, t2);
+        }
+
+        public override bool PrivateBinding {
+            get {
+                return _context.DomainManager.Configuration.PrivateBinding;
+            }
         }
 
         public override ErrorInfo MakeSetValueTypeFieldError(FieldTracker field, DynamicMetaObject instance, DynamicMetaObject value) {

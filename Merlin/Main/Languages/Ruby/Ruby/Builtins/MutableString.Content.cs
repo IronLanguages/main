@@ -84,9 +84,15 @@ namespace IronRuby.Builtins {
             public abstract string/*!*/ GetStringSlice(int start, int count);
             public abstract byte[]/*!*/ GetBinarySlice(int start, int count);
 
-            public abstract int CompareTo(string/*!*/ str);
-            public abstract int CompareTo(byte[]/*!*/ bytes);
-            public abstract int ReverseCompareTo(Content/*!*/ str);
+            public abstract IEnumerable<char>/*!*/ GetCharacters();
+            public abstract IEnumerable<byte>/*!*/ GetBytes();
+
+            public abstract int OrdinalCompareTo(string/*!*/ str);
+
+            public abstract int OrdinalCompareTo(Content/*!*/ content);
+            public abstract int ReverseOrdinalCompareTo(BinaryContent/*!*/ content);
+            public abstract int ReverseOrdinalCompareTo(CharArrayContent/*!*/ content);
+            public abstract int ReverseOrdinalCompareTo(StringContent/*!*/ content);
             
             // the owner of the result is the current owner:
             public abstract Content/*!*/ GetSlice(int start, int count);
@@ -110,7 +116,11 @@ namespace IronRuby.Builtins {
             public abstract void Append(char[]/*!*/ chars, int start, int count);
             public abstract void Append(byte[]/*!*/ bytes, int start, int count);
             public abstract void Append(Stream/*!*/ stream, int count);
-            public abstract void AppendTo(Content/*!*/ str, int start, int count);
+
+            public abstract void Append(Content/*!*/ content, int start, int count);
+            public abstract void AppendTo(BinaryContent/*!*/ content, int start, int count);
+            public abstract void AppendTo(CharArrayContent/*!*/ content, int start, int count);
+            public abstract void AppendTo(StringContent/*!*/ content, int start, int count);
 
             public abstract void AppendFormat(IFormatProvider provider, string/*!*/ format, object[]/*!*/ args);
             

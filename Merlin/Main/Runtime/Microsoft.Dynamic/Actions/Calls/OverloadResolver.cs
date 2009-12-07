@@ -515,7 +515,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             // There must be at least one expanded parameter preceding splat index (see MethodBinder.GetSplatLimits):
             ParameterWrapper parameter = candidate.GetParameter(_actualArguments.SplatIndex - 1);
-            Debug.Assert(parameter.ParameterInfo != null && CompilerHelpers.IsParamArray(parameter.ParameterInfo));
+            Debug.Assert(parameter.ParameterInfo != null && parameter.ParameterInfo.IsParamArray());
 
             for (int i = 0; i < _actualArguments.CollapsedCount; i++) {
                 object value = GetCollapsedArgumentValue(i);

@@ -95,5 +95,23 @@ namespace IronRuby.Compiler.Ast {
                 AstUtils.Empty()
             );
         }
+
+        internal void TransformForSuperCall(AstGenerator/*!*/ gen, CallSiteBuilder/*!*/ siteBuilder) {
+            if (_mandatory != null) {
+                foreach (Variable v in _mandatory) {
+                    siteBuilder.Add(v.TransformRead(gen));
+                }
+            }
+
+            if (_optional != null) {
+                foreach (SimpleAssignmentExpression s in _optional) {
+                    siteBuilder.Add(s.Left.TransformRead(gen));
+                }
+            }
+
+            if (_array != null) {
+                siteBuilder.SplattedArgument = _array.TransformRead(gen);
+            }
+        }
     }
 }

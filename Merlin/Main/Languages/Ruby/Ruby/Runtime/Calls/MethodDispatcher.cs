@@ -134,7 +134,7 @@ namespace IronRuby.Runtime.Calls {
         internal Delegate _compiled;
 
         internal T/*!*/ CreateDelegate<T>(Expression/*!*/ binding, int compilationThreshold) where T : class {
-            Delegate d = Stitch<T>(binding).LightCompile(false, compilationThreshold);
+            Delegate d = Stitch<T>(binding).LightCompile(compilationThreshold);
             T result = (T)(object)d;
 
             LightLambda lambda = d.Target as LightLambda;

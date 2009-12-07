@@ -137,7 +137,11 @@ namespace IronPython.Runtime.Binding {
                         case "__name__":
                             return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).GetName);
                         default:
-                            return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).Target);
+                            if (IsNoThrow) {
+                                return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).NoThrowTarget);
+                            } else {
+                                return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).Target);
+                            }
                     }
                 }
             }
@@ -478,6 +482,14 @@ namespace IronPython.Runtime.Binding {
                     }
 
                     throw PythonOps.AttributeErrorForMissingAttribute(self, _name);
+                }
+
+                return Update(site, self, context);
+            }
+
+            public object NoThrowTarget(CallSite site, object self, CodeContext context) {
+                if (self != null && self.GetType() == typeof(NamespaceTracker)) {
+                    return NamespaceTrackerOps.GetCustomMember(context, (NamespaceTracker)self, _name);
                 }
 
                 return Update(site, self, context);

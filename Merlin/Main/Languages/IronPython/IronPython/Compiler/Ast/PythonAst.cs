@@ -17,11 +17,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -512,14 +514,25 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal new MSAst.Expression Constant(object value) {
-            return CompilationMode.GetConstant(value);
+            return new PythonConstantExpression(CompilationMode, value);
         }
-
+        
         #endregion
 
         #region Binder Factories
 
         internal MSAst.Expression/*!*/ Convert(Type/*!*/ type, ConversionResultKind resultKind, MSAst.Expression/*!*/ target) {
+            if (resultKind == ConversionResultKind.ExplicitCast) {
+                return new DynamicConvertExpression(
+                    PyContext.Convert(
+                        type,
+                        resultKind
+                    ),
+                    CompilationMode,
+                    target
+                );
+            }
+
             return CompilationMode.Dynamic(
                 PyContext.Convert(
                     type,
@@ -530,7 +543,19 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
+        
         internal MSAst.Expression/*!*/ Operation(Type/*!*/ resultType, PythonOperationKind operation, MSAst.Expression arg0) {
+            if (resultType == typeof(object)) {
+                return new LazyDynamicExpression(
+                    Binders.UnaryOperationBinder(
+                        PyContext,
+                        operation
+                    ),
+                    CompilationMode,
+                    arg0
+                );
+            }
+           
             return CompilationMode.Dynamic(
                 Binders.UnaryOperationBinder(
                     PyContext,
@@ -542,6 +567,17 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression/*!*/ Operation(Type/*!*/ resultType, PythonOperationKind operation, MSAst.Expression arg0, MSAst.Expression arg1) {
+            if (resultType == typeof(object)) {
+                return new LazyDynamicExpression(
+                    Binders.BinaryOperationBinder(
+                        PyContext,
+                        operation
+                    ),
+                    _mode,
+                    arg0,
+                    arg1
+                );
+            }
             return CompilationMode.Dynamic(
                 Binders.BinaryOperationBinder(
                     PyContext,
@@ -553,25 +589,22 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        internal MSAst.Expression/*!*/ Set(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target, MSAst.Expression/*!*/ value) {
-            return CompilationMode.Dynamic(
+        internal MSAst.Expression/*!*/ Set(string/*!*/ name, MSAst.Expression/*!*/ target, MSAst.Expression/*!*/ value) {
+            return new LazyDynamicExpression(
                 PyContext.SetMember(
                     name
                 ),
-                resultType,
+                CompilationMode,
                 target,
                 value
             );
         }
 
-        internal MSAst.Expression/*!*/ Get(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target) {
-            return Binders.Get(LocalContext, PyContext, resultType, name, target);
+        internal MSAst.Expression/*!*/ Get(string/*!*/ name, MSAst.Expression/*!*/ target) {
+            return new DynamicGetMemberExpression(PyContext.GetMember(name), _mode, target, LocalContext);
         }
 
-        internal MSAst.Expression/*!*/ TryGet(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target) {
-            return Binders.TryGet(LocalContext, PyContext, resultType, name, target);
-        }
-
+        
         internal MSAst.Expression/*!*/ Delete(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target) {
             return CompilationMode.Dynamic(
                 PyContext.DeleteMember(
@@ -582,58 +615,59 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        internal MSAst.Expression/*!*/ GetIndex(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
-            return CompilationMode.Dynamic(
+
+        internal MSAst.Expression/*!*/ GetIndex(MSAst.Expression/*!*/[]/*!*/ expression) {
+            return new LazyDynamicExpression(
                 PyContext.GetIndex(
                     expression.Length
                 ),
-                type,
+                CompilationMode,
                 expression
             );
         }
 
-        internal MSAst.Expression/*!*/ GetSlice(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
-            return CompilationMode.Dynamic(
+        internal MSAst.Expression/*!*/ GetSlice(MSAst.Expression/*!*/[]/*!*/ expression) {
+            return new LazyDynamicExpression(
                 PyContext.GetSlice,
-                type,
+                CompilationMode,
                 expression
             );
         }
 
-        internal MSAst.Expression/*!*/ SetIndex(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
-            return CompilationMode.Dynamic(
+        internal MSAst.Expression/*!*/ SetIndex(MSAst.Expression/*!*/[]/*!*/ expression) {
+            return new LazyDynamicExpression(
                 PyContext.SetIndex(
                     expression.Length - 1
                 ),
-                type,
+                CompilationMode,
                 expression
-            );
+            );           
         }
 
-        internal MSAst.Expression/*!*/ SetSlice(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
-            return CompilationMode.Dynamic(
+        internal MSAst.Expression/*!*/ SetSlice(MSAst.Expression/*!*/[]/*!*/ expression) {
+            return new LazyDynamicExpression(
                 PyContext.SetSliceBinder,
-                type,
+                CompilationMode,
                 expression
-            );
+            );            
         }
 
-        internal MSAst.Expression/*!*/ DeleteIndex(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
+        internal MSAst.Expression/*!*/ DeleteIndex(MSAst.Expression/*!*/[]/*!*/ expression) {           
             return CompilationMode.Dynamic(
                 PyContext.DeleteIndex(
                     expression.Length
                 ),
-                type,
+                typeof(void),
                 expression
             );
         }
 
-        internal MSAst.Expression/*!*/ DeleteSlice(Type/*!*/ type, MSAst.Expression/*!*/[]/*!*/ expression) {
-            return CompilationMode.Dynamic(
+        internal MSAst.Expression/*!*/ DeleteSlice(MSAst.Expression/*!*/[]/*!*/ expression) {
+            return new LazyDynamicExpression(
                 PyContext.DeleteSlice,
-                type,
+                CompilationMode,
                 expression
-            );
+            );            
         }
 
         #endregion

@@ -90,31 +90,31 @@ namespace IronRuby.Compiler.Ast {
             // 3. passed args: normal args, maplets, array
             // 4. RHS of assignment (if present)
 
-            CallBuilder callBuilder = new CallBuilder(gen);
-            callBuilder.Instance = transformedTarget;
-            
-            MSA.Expression blockArgVariable = null;
-            MSA.Expression transformedBlock = null;
+            MSA.Expression blockArgVariable;
+            MSA.Expression transformedBlock;
 
             if (block != null) {
                 blockArgVariable = gen.CurrentScope.DefineHiddenVariable("#block-def", typeof(Proc));
                 transformedBlock = block.Transform(gen);
-                callBuilder.Block = blockArgVariable;
+            } else {
+                blockArgVariable = transformedBlock = null;
             }
 
+            var siteBuilder = new CallSiteBuilder(gen, transformedTarget, blockArgVariable);
+
             if (arguments != null) {
-                arguments.TransformToCall(gen, callBuilder);
+                arguments.TransformToCall(gen, siteBuilder);
             } else if (singleArgument != null) {
-                callBuilder.Add(singleArgument);
+                siteBuilder.Add(singleArgument);
             }
 
             MSA.Expression rhsVariable = null;
             if (assignmentRhsArgument != null) {
                 rhsVariable = gen.CurrentScope.DefineHiddenVariable("#rhs", assignmentRhsArgument.Type);
-                callBuilder.RhsArgument = Ast.Assign(rhsVariable, assignmentRhsArgument);
+                siteBuilder.RhsArgument = Ast.Assign(rhsVariable, assignmentRhsArgument);
             }
 
-            var dynamicSite = callBuilder.MakeCallAction(methodName, hasImplicitSelf);
+            var dynamicSite = siteBuilder.MakeCallAction(methodName, hasImplicitSelf);
             if (gen.Context.CallSiteCreated != null) {
                 gen.Context.CallSiteCreated(node, dynamicSite);
             }
@@ -140,7 +140,7 @@ namespace IronRuby.Compiler.Ast {
 
             // see Ruby Language.doc/Control Flow Implementation/Method Call With a Block
             MSA.Expression resultVariable = gen.CurrentScope.DefineHiddenVariable("#method-result", typeof(object));
-            MSA.ParameterExpression evalUnwinder = gen.CurrentScope.DefineHiddenVariable("#unwinder", typeof(EvalUnwinder));
+            MSA.ParameterExpression evalUnwinder;
 
             MSA.LabelTarget retryLabel = Ast.Label("retry");
                     
@@ -155,7 +155,7 @@ namespace IronRuby.Compiler.Ast {
 
                 AstUtils.Try(
                     Ast.Assign(resultVariable, invoke)
-                ).Catch(evalUnwinder,
+                ).Catch(evalUnwinder = Ast.Parameter(typeof(EvalUnwinder), "#u"),
                     Ast.Assign(
                         resultVariable, 
                         Ast.Field(evalUnwinder, EvalUnwinder.ReturnValueField)

@@ -47,8 +47,8 @@ namespace IronRuby.Builtins {
         internal const int CodePageUTF8 = 65001;
         internal const int CodePageSJIS = 932;
 
-        public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, null);
-        public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), null);
+        public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, null, CodePageBinary);
+        public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), null, CodePageUTF8);
         public static readonly RubyEncoding/*!*/ ClassName = UTF8; // TODO: remove
         public static readonly RubyEncoding/*!*/ Symbol = UTF8; // TODO: remove
         public static readonly RubyEncoding/*!*/ Path = UTF8; // TODO: remove
@@ -95,9 +95,9 @@ namespace IronRuby.Builtins {
 
         private static RubyEncoding/*!*/ CreateKCoding(int codepage, RubyEncoding/*!*/ realEncoding) {
 #if SILVERLIGHT
-            return new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), realEncoding);
+            return new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), realEncoding, CodePageBinary);
 #else
-            return new RubyEncoding(KCoding.Create(codepage, false), KCoding.Create(codepage, true), realEncoding);
+            return new RubyEncoding(KCoding.Create(codepage, false), KCoding.Create(codepage, true), realEncoding, CodePageBinary);
 #endif
         }
 
@@ -108,6 +108,7 @@ namespace IronRuby.Builtins {
         private readonly Encoding/*!*/ _strictEncoding;
         private readonly bool _isKCoding;
         private readonly int _maxBytesPerChar;
+        private readonly int _ordinal;
 
         // UTF8 for KUTF8, SJIS for KSJIS, EUC for KEUC, self for others.
         private readonly RubyEncoding/*!*/ _realEncoding; 
@@ -115,11 +116,12 @@ namespace IronRuby.Builtins {
         // TODO:
         //private readonly Encoder/*!*/ _encoder, _strictEncoder;
         //private readonly Decoder/*!*/ _decoder, _strictDecoder;
-
-        private RubyEncoding(Encoding/*!*/ encoding, Encoding/*!*/ strictEncoding, RubyEncoding realEncoding) {
+        
+        private RubyEncoding(Encoding/*!*/ encoding, Encoding/*!*/ strictEncoding, RubyEncoding realEncoding, int ordinal) {
             Assert.NotNull(encoding, strictEncoding);
             Debug.Assert(encoding is KCoding == strictEncoding is KCoding);
             _isKCoding = encoding is KCoding;
+            _ordinal = ordinal;
             _encoding = encoding;
             _strictEncoding = strictEncoding;
             _realEncoding = realEncoding ?? this;
@@ -192,16 +194,20 @@ namespace IronRuby.Builtins {
             return _isKCoding ? "KCODE: " + Name : Name;
         }
 
+        public int CompareTo(RubyEncoding/*!*/ other) {
+            return _ordinal - other._ordinal;
+        }
+
         /// <exception cref="ArgumentException">Unknown encoding.</exception>
         public static Encoding/*!*/ GetEncodingByRubyName(string/*!*/ name) {
             ContractUtils.RequiresNotNull(name, "name");
 
-            switch (name.ToLower()) {
-                case "binary":
-                case "ascii":
-                case "ascii-8bit": return BinaryEncoding.Instance;
+            switch (name.ToUpperInvariant()) {
+                case "BINARY":
+                case "ASCII":
+                case "ASCII-8BIT": return BinaryEncoding.Instance;
 #if SILVERLIGHT
-                case "utf-8": return Encoding.UTF8;
+                case "UTF-8": return Encoding.UTF8;
                 default: throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name));
 #else
                 default: return Encoding.GetEncoding(name);
@@ -296,7 +302,8 @@ namespace IronRuby.Builtins {
                     result = new RubyEncoding(
                         Encoding.GetEncoding(codepage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback),
                         Encoding.GetEncoding(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback),
-                        null
+                        null,
+                        codepage
                     );
 
                     // Some MutableString operations (GetHashCode, SetChar, etc.) assume that the encoding maps each and every 

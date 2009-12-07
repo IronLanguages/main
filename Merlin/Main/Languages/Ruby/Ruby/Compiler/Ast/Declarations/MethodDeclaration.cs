@@ -129,6 +129,15 @@ namespace IronRuby.Compiler.Ast {
             var selfParameter = parameters[0];
             var blockParameter = parameters[1];
 
+            // exclude block parameter even if it is explicitly specified:
+            int visiblePrameterCountAndSignatureFlags = (parameters.Length - 2) << 2;
+            if (_parameters.Block != null) {
+                visiblePrameterCountAndSignatureFlags |= RubyMethodScope.HasBlockFlag;
+            }
+            if (_parameters.Array != null) {
+                visiblePrameterCountAndSignatureFlags |= RubyMethodScope.HasUnsplatFlag;
+            }
+
             gen.EnterMethodDefinition(
                 scope,
                 selfParameter,
@@ -167,19 +176,19 @@ namespace IronRuby.Compiler.Ast {
                 traceCall = traceReturn = AstUtils.Empty();
             }
 
-            MSA.ParameterExpression unwinder = scope.DefineHiddenVariable("#unwinder", typeof(Exception));
+            MSA.ParameterExpression unwinder;
             
             MSA.Expression body = AstUtils.Try(
                 profileStart,
                 _parameters.TransformOptionalsInitialization(gen),
                 traceCall,
                 Body.TransformResult(gen, ResultOperation.Return)
-            ).Filter(unwinder, Methods.IsMethodUnwinderTargetFrame.OpCall(scopeVariable, unwinder),
+            ).Filter(unwinder = Ast.Parameter(typeof(Exception), "#u"), Methods.IsMethodUnwinderTargetFrame.OpCall(scopeVariable, unwinder),
                 Ast.Return(gen.ReturnLabel, Methods.GetMethodUnwinderReturnValue.OpCall(unwinder))
             ).Finally(  
                 // leave frame:
                 Methods.LeaveMethodFrame.OpCall(scopeVariable),
-                LeaveInterpretedFrameExpression.Instance,
+                Ast.Empty(),
                 profileEnd,
                 traceReturn
             );
@@ -190,6 +199,7 @@ namespace IronRuby.Compiler.Ast {
                     Methods.CreateMethodScope.OpCall(
                         scope.MakeLocalsStorage(),
                         scope.GetVariableNamesExpression(),
+                        Ast.Constant(visiblePrameterCountAndSignatureFlags),
                         Ast.Constant(declaringScope, typeof(RubyScope)),
                         Ast.Constant(declaringModule, typeof(RubyModule)), 
                         Ast.Constant(_name),

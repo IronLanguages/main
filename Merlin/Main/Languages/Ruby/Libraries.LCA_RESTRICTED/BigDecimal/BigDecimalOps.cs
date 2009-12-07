@@ -25,6 +25,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Globalization;
 
 namespace IronRuby.StandardLibrary.BigDecimal {
     [RubyClass("BigDecimal", Inherits = typeof(Numeric), Extends = typeof(BigDecimal))]
@@ -109,7 +110,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 string digits = "";
 
                 if (!(components[0] == null) || components[0].IsEmpty) {
-                    maxDigits = int.Parse(components[0].ToString());
+                    maxDigits = int.Parse(components[0].ToString(), CultureInfo.InvariantCulture);
                 }
                 if (maxDigits != 0) {
                     maxPrecision = maxDigits / BigDecimal.BASE_FIG + (maxDigits % BigDecimal.BASE_FIG == 0 ? 0 : 1);
@@ -148,7 +149,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                     GetConfig(context).RoundingMode = (BigDecimal.RoundingModes)value;
                     return (int)value;
                 } else {
-                    throw RubyExceptions.CreateTypeError("wrong argument type " + value.ToString() + " (expected Fixnum)");
+                    throw RubyExceptions.CreateUnexpectedTypeError(context, value, "Fixnum");
                 }
             } else {
                 if (value is bool) {
@@ -170,6 +171,9 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("limit", RubyMethodAttributes.PublicSingleton)]
         public static int Limit(RubyContext/*!*/ context, RubyClass/*!*/ self, int n) {
+            if (n < 0) {
+                throw RubyExceptions.CreateArgumentError("argument must be positive");
+            }
             BigDecimal.Config config = GetConfig(context);
             int limit = config.Limit;
             config.Limit = n;
@@ -198,12 +202,12 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
         public static BigDecimal InducedFrom(RubyContext/*!*/ context, RubyClass/*!*/ self, int value) {
-            return BigDecimal.Create(GetConfig(context), value.ToString());
+            return BigDecimal.Create(GetConfig(context), value.ToString(CultureInfo.InvariantCulture));
         }
 
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
         public static BigDecimal InducedFrom(RubyContext/*!*/ context, RubyClass/*!*/ self, [NotNull]BigInteger/*!*/ value) {
-            return BigDecimal.Create(GetConfig(context), value.ToString());
+            return BigDecimal.Create(GetConfig(context), value.ToString(CultureInfo.InvariantCulture));
         }
 
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
@@ -279,7 +283,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 posSign = m.Groups["posSign"].Value;
             }
             if (separateAtGroup.Success) {
-                separateAt = Int32.Parse(m.Groups["separateAt"].Value);
+                separateAt = Int32.Parse(m.Groups["separateAt"].Value, CultureInfo.InvariantCulture);
             }
             bool floatFormat = floatFormatGroup.Success;
             return MutableString.CreateAscii(self.ToString(separateAt, posSign, floatFormat));
@@ -292,8 +296,11 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
             str.AppendFormat("#<{0}:", context.GetClassOf(self).Name);
             RubyUtils.AppendFormatHexObjectId(str, RubyUtils.GetObjectId(context, self));
-            str.AppendFormat(",'{0}',", self.ToString(10));
-            str.AppendFormat("{0}({1})>", self.PrecisionDigits.ToString(), self.MaxPrecisionDigits.ToString());
+            str.AppendFormat(",'{0}',{1}({2})>", 
+                self.ToString(10),
+                self.PrecisionDigits,
+                self.MaxPrecisionDigits
+            );
             return str;
         }
 
@@ -311,12 +318,12 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("coerce")]
         public static RubyArray/*!*/ Coerce(RubyContext/*!*/ context, BigDecimal/*!*/ self, int other) {
-            return RubyOps.MakeArray2(BigDecimal.Create(GetConfig(context), other.ToString()), self);
+            return RubyOps.MakeArray2(BigDecimal.Create(GetConfig(context), other.ToString(CultureInfo.InvariantCulture)), self);
         }
 
         [RubyMethod("coerce")]
         public static RubyArray/*!*/ Coerce(RubyContext/*!*/ context, BigDecimal/*!*/ self, BigInteger/*!*/ other) {
-            return RubyOps.MakeArray2(BigDecimal.Create(GetConfig(context), other.ToString()), self);
+            return RubyOps.MakeArray2(BigDecimal.Create(GetConfig(context), other.ToString(CultureInfo.InvariantCulture)), self);
         }
 
         #endregion
@@ -327,7 +334,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         public static MutableString/*!*/ Dump(BigDecimal/*!*/ self, [Optional]object limit) {
             // We ignore the limit value as BigDecimal does not contain other objects.
             return MutableString.CreateMutable(RubyEncoding.Binary).
-                Append(self.MaxPrecisionDigits.ToString()).
+                Append(self.MaxPrecisionDigits.ToString(CultureInfo.InvariantCulture)).
                 Append(':').
                 Append(self.ToString()
             );

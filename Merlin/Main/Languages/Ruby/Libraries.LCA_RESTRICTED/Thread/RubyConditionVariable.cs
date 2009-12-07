@@ -21,6 +21,9 @@ namespace IronRuby.StandardLibrary.Threading {
     [RubyClass("ConditionVariable")]
     public class RubyConditionVariable {
         private RubyMutex _mutex;
+        private readonly AutoResetEvent _signal = new AutoResetEvent(false);
+        private readonly object _lock = new object();
+        private int _waits;
 
         public RubyConditionVariable() {
         }
@@ -29,7 +32,7 @@ namespace IronRuby.StandardLibrary.Threading {
         public static RubyConditionVariable/*!*/ Signal(RubyConditionVariable/*!*/ self) {
             RubyMutex m = self._mutex;
             if (m != null) {
-                Monitor.Pulse(m);
+                self._signal.Set();
             }
             return self;
         }
@@ -38,7 +41,21 @@ namespace IronRuby.StandardLibrary.Threading {
         public static RubyConditionVariable/*!*/ Broadcast(RubyConditionVariable/*!*/ self) {
             RubyMutex m = self._mutex;
             if (m != null) {
-                Monitor.PulseAll(m);
+                lock (self._lock) {
+                    int waits = self._waits;
+                    for (int i = 0; i < waits; i++) {
+                        self._signal.Set();
+                        //
+                        // WARNING
+                        //
+                        // There is no guarantee that every call to the Set method will release a waiting thread.
+                        // If two calls are too close together, so that the second call occurs before a thread 
+                        // has been released, only one thread is released. 
+                        // We add a sleep to increase the chance that all waiting threads will be released.
+                        //
+                        Thread.CurrentThread.Join(1);
+                    }
+                }
             }
             return self;
         }
@@ -46,7 +63,13 @@ namespace IronRuby.StandardLibrary.Threading {
         [RubyMethod("wait")]
         public static RubyConditionVariable/*!*/ Wait(RubyConditionVariable/*!*/ self, [NotNull]RubyMutex/*!*/ mutex) {
             self._mutex = mutex;
-            Monitor.Wait(mutex.Mutex);
+            RubyMutex.Unlock(mutex);
+            lock (self._lock) { self._waits++; }
+
+            self._signal.WaitOne();
+
+            lock (self._lock) { self._waits--; }
+            RubyMutex.Lock(mutex);
             return self;
         }
 

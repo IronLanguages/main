@@ -20,6 +20,7 @@ using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Binding;
 
@@ -105,11 +106,16 @@ namespace IronPython.Compiler.Ast {
             // don't allocate locals below here...
             MSAst.Expression body = _body;
             MSAst.Expression @else = _else;
-
+            MSAst.Expression @catch, result;
             MSAst.ParameterExpression exception;
 
-            MSAst.Expression @catch = TransformHandlers(out exception);
-            MSAst.Expression result;
+            if (_handlers != null && _handlers.Length > 0) {
+                exception = Ast.Variable(typeof(Exception), "$exception");
+                @catch = TransformHandlers(exception);
+            } else {
+                exception = null;
+                @catch = null;
+            }
 
             // We have else clause, must generate guard around it
             if (@else != null) {
@@ -127,9 +133,8 @@ namespace IronPython.Compiler.Ast {
                 //  }
                 result =                        
                     Ast.Block(
-                        new [] { exception },
                         Ast.Assign(runElse, AstUtils.Constant(true)),
-                    // save existing line updated, we could choose to do this only for nested exception handlers.
+                        // save existing line updated, we could choose to do this only for nested exception handlers.
                         PushLineUpdated(false, lineUpdated),
                         AstUtils.Try(
                             Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
@@ -137,7 +142,7 @@ namespace IronPython.Compiler.Ast {
                         ).Catch(exception,
                             Ast.Assign(runElse, AstUtils.Constant(false)),
                             @catch,
-                    // restore existing line updated after exception handler completes
+                            // restore existing line updated after exception handler completes
                             PopLineUpdated(lineUpdated),
                             AstUtils.Default(body.Type)
                         ),
@@ -154,20 +159,18 @@ namespace IronPython.Compiler.Ast {
                 //      ... catch handling ...
                 //  }
                 //
-                result = Ast.Block(
-                        new[] { exception },
-                        AstUtils.Try(
-                            GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
+                result = 
+                    AstUtils.Try(
+                        GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
                         // save existing line updated
-                            PushLineUpdated(false, lineUpdated),
-                            body
-                        ).Catch(exception,
-                            @catch,
+                        PushLineUpdated(false, lineUpdated),
+                        body
+                    ).Catch(exception,
+                        @catch,
                         // restore existing line updated after exception handler completes
-                            PopLineUpdated(lineUpdated),
-                            Ast.Call(AstMethods.ExceptionHandled, Parent.LocalContext),
-                            AstUtils.Default(body.Type)
-                        )
+                        PopLineUpdated(lineUpdated),
+                        Ast.Call(AstMethods.ExceptionHandled, Parent.LocalContext),
+                        AstUtils.Default(body.Type)
                     );
             } else {
                 result = body;
@@ -257,19 +260,12 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Transform multiple python except handlers for a try block into a single catch body.
         /// </summary>
-        /// <param name="variable">The variable for the exception in the catch block.</param>
+        /// <param name="exception">The variable for the exception in the catch block.</param>
         /// <returns>Null if there are no except handlers. Else the statement to go inside the catch handler</returns>
-        private MSAst.Expression TransformHandlers(out MSAst.ParameterExpression variable) {
-            if (_handlers == null || _handlers.Length == 0) {
-                variable = null;
-                return null;
-            }
+        private MSAst.Expression TransformHandlers(MSAst.ParameterExpression exception) {
+            Assert.NotEmpty(_handlers);
 
-            MSAst.ParameterExpression exception = Ast.Variable(typeof(Exception), "$exception");
             MSAst.ParameterExpression extracted = Ast.Variable(typeof(object), "$extracted");
-
-            // The variable where the runtime will store the exception.
-            variable = exception;
 
             var tests = new List<Microsoft.Scripting.Ast.IfStatementTest>(_handlers.Length);
             MSAst.ParameterExpression converted = null;

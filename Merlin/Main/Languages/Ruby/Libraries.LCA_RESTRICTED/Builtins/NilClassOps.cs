@@ -23,6 +23,25 @@ namespace IronRuby.Builtins {
 
     [RubyClass("NilClass", Extends = typeof(DynamicNull))]
     public static class NilClassOps {
+        #region CLR overrides
+
+        [RubyMethod("GetType")]
+        public static Type GetClrType(object self) {
+            return typeof(DynamicNull);
+        }
+
+        [RubyMethod("ToString")]
+        public static string ToClrString(object self) {
+            return "nil";
+        }
+
+        [RubyMethod("GetHashCode")]
+        public static int GetClrHashCode(object self) {
+            return 0;
+        }
+
+        #endregion
+
         #region Public Instance Methods
 
         [RubyMethodAttribute("&")]

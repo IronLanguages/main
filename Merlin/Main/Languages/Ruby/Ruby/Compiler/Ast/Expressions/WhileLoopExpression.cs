@@ -76,8 +76,7 @@ namespace IronRuby.Compiler.Ast {
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             MSA.Expression resultVariable = gen.CurrentScope.DefineHiddenVariable("#loop-result", typeof(object));
             MSA.Expression redoVariable = gen.CurrentScope.DefineHiddenVariable("#skip-condition", typeof(bool));
-            MSA.ParameterExpression blockUnwinder = gen.CurrentScope.DefineHiddenVariable("#unwinder", typeof(BlockUnwinder));
-            MSA.ParameterExpression evalUnwinder = gen.CurrentScope.DefineHiddenVariable("#unwinder", typeof(EvalUnwinder));
+            MSA.ParameterExpression unwinder;
             
             bool isInnerLoop = gen.CurrentLoop != null;
 
@@ -117,14 +116,16 @@ namespace IronRuby.Compiler.Ast {
                         transformedBody,
                         AstUtils.Empty()
 
-                    ).Catch(blockUnwinder, 
+                    ).Catch(unwinder = Ast.Parameter(typeof(BlockUnwinder), "#u"), 
                         // redo = u.IsRedo
-                        Ast.Assign(redoVariable, Ast.Field(blockUnwinder, BlockUnwinder.IsRedoField)),
+                        Ast.Assign(redoVariable, Ast.Field(unwinder, BlockUnwinder.IsRedoField)),
                         AstUtils.Empty()
 
-                    ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), AstFactory.BlockReturnReasonBreak),
+                    ).Filter(unwinder = Ast.Parameter(typeof(EvalUnwinder), "#u"), 
+                        Ast.Equal(Ast.Field(unwinder, EvalUnwinder.ReasonField), AstFactory.BlockReturnReasonBreak),
+
                         // result = unwinder.ReturnValue
-                        Ast.Assign(resultVariable, Ast.Field(evalUnwinder, EvalUnwinder.ReturnValueField)),
+                        Ast.Assign(resultVariable, Ast.Field(unwinder, EvalUnwinder.ReturnValueField)),
                         Ast.Break(breakLabel)
                     )
                 ),

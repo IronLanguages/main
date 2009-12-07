@@ -21,6 +21,7 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
@@ -33,12 +34,93 @@ namespace IronRuby.Tests {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public partial class Tests {
+        #region Tracing Helpers
+
+        [ThreadStatic]
+        public static List<object> _trace = new List<object>();
+
+        public static void Trace(object value) {
+            _trace.Add(value);
+        }
+
+        private Expression TraceCall(Expression arg) {
+            return Ast.Call(null, typeof(Tests).GetMethod("Trace"), Ast.Convert(arg, typeof(object)));
+        }
+
+        private void RunTraceTest(Expression<Action> lambda, Action<Action> invoker, out object[] compiled, out object[] interpreted, out object[] sync) {
+            if (invoker == null) {
+                invoker = (a) => a();
+            }
+            
+            invoker(lambda.Compile());
+            compiled = _trace.ToArray();
+            _trace.Clear();
+
+            // force synchronous compilation:
+            invoker(lambda.LightCompile(0));
+            sync = _trace.ToArray();
+            _trace.Clear();
+
+            // force interpretation:
+            invoker(lambda.LightCompile(Int32.MaxValue));
+            interpreted = _trace.ToArray();
+            _trace.Clear();
+        }
+
+        private void TraceTestLambda(Expression<Action> lambda, Type expectedException) {
+            TraceTestLambda(lambda, (a) => {
+                try {
+                    a();
+                    Assert(false, "Expected exception " + expectedException);
+                } catch (Exception e) {
+                    Assert(e.GetType() == expectedException, "Expected exception " + expectedException);
+                }
+            });
+        }
+
+        private void TraceTestLambda(Expression<Action> lambda) {
+            TraceTestLambda(lambda, (Action<Action>)null);
+        }
+
+        private void TraceTestLambda(Expression<Action> lambda, Action<Action> invoker) {
+            object[] compiled, interpreted, sync;
+            RunTraceTest(lambda, invoker, out compiled, out interpreted, out sync);
+            Assert(compiled.ValueEquals(interpreted));
+            Assert(compiled.ValueEquals(sync));
+        }
+
+        private void XTraceTestLambda(Expression<Action> lambda) {
+            object[] compiled, interpreted, sync;
+            RunTraceTest(lambda, null, out compiled, out interpreted, out sync);
+
+            Console.WriteLine("-- compiled --");
+
+            foreach (var obj in compiled) {
+                Console.WriteLine(obj);
+            }
+
+            Console.WriteLine("-- interpreted --");
+
+            foreach (var obj in interpreted) {
+                Console.WriteLine(obj);
+            }
+
+            Console.WriteLine("-- sync --");
+
+            foreach (var obj in sync) {
+                Console.WriteLine(obj);
+            }
+        }
+
+        #endregion
+
         [Options(NoRuntime = true)]
-        public void Interpreter1() {
+        public void Interpreter1A() {
             var m_AddValue = new Action<StrongBox<int>, int>(Interpreter1_AddValue).Method;
             var m_ThrowNSE = new Action(Interpreter1_ThrowNSE).Method;
             var m_f = new Func<int, int, int, int, int>(Interpreter1_f).Method;
             var m_g = new Func<int, int, int, int>(Interpreter1_g).Method;
+
 
             var value = new StrongBox<int>();
             LabelTarget label;
@@ -71,7 +153,7 @@ namespace IronRuby.Tests {
 
             // cross-block goto in try-catch-finally with an exception thrown and caught in finally:
             label = Ast.Label(typeof(int));
-            l1 = Ast.Lambda<Func<int>>(
+            var l2 = Ast.Lambda<Func<int>>(
                 Ast.Label(label, Ast.TryCatchFinally(
                     Ast.Goto(label, Ast.Constant(1), typeof(int)),
                     Ast.Block(
@@ -88,8 +170,8 @@ namespace IronRuby.Tests {
                 )));
 
             value.Value = 0;
-            rc = l1.Compile()();
-            ri = l1.LightCompile()();
+            rc = l2.Compile()();
+            ri = l2.LightCompile()();
 
             Assert(value.Value == 1212);
             Assert(rc == ri);
@@ -119,7 +201,7 @@ namespace IronRuby.Tests {
 
 
             // try-catch with non-empty stack:
-            var l2 = Ast.Lambda<Func<int>>(
+            var l3 = Ast.Lambda<Func<int>>(
                 Ast.Call(null, m_f,
                     Ast.Constant(1),
                     Ast.Constant(2),
@@ -138,15 +220,15 @@ namespace IronRuby.Tests {
                 )
             );
 
-            rc = l2.Compile()();
-            ri = l2.LightCompile()();
+            rc = l3.Compile()();
+            ri = l3.LightCompile()();
             Assert(rc == ri);
 
 
             // goto carrying a value needs to pop the value from the stack before executing finally
             // clauses to prevent stack overflow (the finally clause doesn't expect the value on the stack):
             var label3 = Ast.Label(typeof(int));
-            var l3 = Ast.Lambda<Func<int>>(
+            var l4 = Ast.Lambda<Func<int>>(
                 Ast.Label(label3, 
                     Ast.Block(
                         Ast.TryFinally(
@@ -158,14 +240,14 @@ namespace IronRuby.Tests {
                 )
             );
 
-            rc = l3.Compile()();
-            ri = l3.LightCompile()();
+            rc = l4.Compile()();
+            ri = l4.LightCompile()();
             Assert(rc == ri);
 
             
             // goto needs to pop unused values from the stack before it executes finally:
             var label4 = Ast.Label(typeof(int));
-            var l4 = Ast.Lambda<Func<int>>(
+            var l5 = Ast.Lambda<Func<int>>(
                 Ast.Label(label4,
                     Ast.Block(
                         Ast.TryFinally(
@@ -177,8 +259,8 @@ namespace IronRuby.Tests {
                 )
             );
 
-            rc = l4.Compile()();
-            ri = l4.LightCompile()();
+            rc = l5.Compile()();
+            ri = l5.LightCompile()();
             Assert(rc == ri);
         }
 
@@ -196,6 +278,283 @@ namespace IronRuby.Tests {
 
         public static int Interpreter1_g(int a, int b, int c) {
             return 20;
+        }
+
+        [Options(NoRuntime = true)]
+        public void Interpreter1B() {
+            LabelTarget label = Ast.Label();
+
+            // throw in a finally that is executed while jumping to a label cancels the jump:
+            var l0 = Ast.Lambda<Action>(
+                Ast.TryFinally(                                                         
+                    Ast.TryCatch(
+                        Ast.Block(
+                            Ast.TryFinally(                                             
+                                Ast.TryFinally(                                         
+                                    Ast.Block(
+                                        TraceCall(Ast.Constant(0)),
+                                        Ast.Goto(label)                                 
+                                    ),
+                                    // F2:
+                                    Ast.Block(                                          
+                                        TraceCall(Ast.Constant(1)),
+                                        Ast.Throw(Ast.Constant(new Exception("foo")))   
+                                    )                                                   
+                                ),
+                                // F1:
+                                TraceCall(Ast.Constant(2))                              
+                            ),
+                            // LABEL:
+                            Ast.Label(label),
+                            TraceCall(Ast.Constant(3))
+                        ),
+                        // CATCH:
+                        Ast.Catch(typeof(Exception),
+                            TraceCall(Ast.Constant(4))
+                        )
+                    ),
+                    // F0:
+                    TraceCall(Ast.Constant(5))
+                )
+            );
+
+            TraceTestLambda(l0);
+
+            // throw in a finally that is executed while jumping to a label cancels the jump:
+            var l1 = Ast.Lambda<Action>(
+                Ast.Block(
+                    Ast.TryFinally(                                                         
+                        Ast.TryCatch(
+                            Ast.Block(
+                                Ast.TryFinally(                                             
+                                    Ast.TryFinally(                                         
+                                        Ast.Block(
+                                            TraceCall(Ast.Constant(0)),
+                                            Ast.Goto(label)                                 
+                                        ),
+                                        // F2:                                              
+                                        Ast.Block(                                          
+                                            TraceCall(Ast.Constant(1)),
+                                            Ast.Throw(Ast.Constant(new Exception("foo")))   
+                                        )                                                   
+                                    ),
+                                    // F1:
+                                    TraceCall(Ast.Constant(2))
+                                ),
+                                
+                                TraceCall(Ast.Constant(3))
+                            ),
+                            // CATCH:
+                            Ast.Catch(typeof(Exception),
+                                TraceCall(Ast.Constant(4))
+                            )
+                        ),
+                        // F0:
+                        TraceCall(Ast.Constant(5))
+                    ),
+                    Ast.Block(
+                        TraceCall(Ast.Constant(6)),
+                        // LABEL:
+                        Ast.Label(label),
+                        TraceCall(Ast.Constant(7))
+                    )
+                )
+            );
+
+            TraceTestLambda(l1);
+
+            // throw caught a try-catch in a finally that is executed while jumping to a label doesn't cancel the jump
+            var l2 = Ast.Lambda<Action>(
+                Ast.TryCatch(
+                    Ast.Block(
+                        Ast.TryFinally(
+                            Ast.TryFinally(
+                                Ast.Block(
+                                    TraceCall(Ast.Constant(0)),
+                                    Ast.Goto(label)
+                                ),
+                                Ast.Block(
+                                    TraceCall(Ast.Constant(1)),
+                                    Ast.TryCatch(
+                                        Ast.Throw(Ast.Constant(new Exception("foo"))),
+                                        Ast.Catch(typeof(Exception),
+                                            TraceCall(Ast.Constant(2))
+                                        )
+                                    )
+                                )
+                            ),
+                            TraceCall(Ast.Constant(3))
+                        ),
+                        TraceCall(Ast.Constant(4)),
+                        Ast.Label(label),
+                        TraceCall(Ast.Constant(5))
+                    ),
+                    Ast.Catch(typeof(Exception),
+                        TraceCall(Ast.Constant(6))
+                    )
+                )
+            );
+
+            TraceTestLambda(l2);
+        }
+
+        /// <summary>
+        /// Faults.
+        /// </summary>
+        [Options(NoRuntime = true)]
+        public void Interpreter1C() {
+            var label1 = Ast.Label();
+            var label2 = Ast.Label();
+
+            var inner =
+                Ast.TryFinally(
+                    Ast.TryCatch(
+                        Ast.TryFinally(
+                            Ast.Block(
+                                TraceCall(Ast.Constant(0)),
+                                Ast.Throw(Ast.Constant(new NotSupportedException("ex1")))
+                            ),
+                            TraceCall(Ast.Constant(1))
+                        ),
+                        Ast.Catch(typeof(Exception),
+                            Ast.Block(
+                                TraceCall(Ast.Constant(2)),
+                                Ast.Rethrow()
+                            )
+                        )
+                    ),
+                    TraceCall(Ast.Constant(3))
+                );
+
+            var l0 = Ast.Lambda<Action>(
+                Ast.TryCatch(
+                    inner,
+                    Ast.Catch(typeof(Exception), 
+                        TraceCall(Ast.Constant(4))
+                    )
+                )
+            );
+
+            TraceTestLambda(l0);
+
+            var l1 = Ast.Lambda<Action>(
+                Ast.TryCatch(
+                    inner,
+                    Ast.Catch(typeof(InvalidOperationException),
+                        TraceCall(Ast.Constant(4))
+                    )
+                )
+            );
+
+            TraceTestLambda(l1, typeof(NotSupportedException));
+
+            var l2 = Ast.Lambda<Action>(
+                inner
+            );
+
+            TraceTestLambda(l2, typeof(NotSupportedException));
+        }
+
+        /// <summary>
+        /// Faults.
+        /// </summary>
+        [Options(NoRuntime = true)]
+        public void Interpreter1D() {
+            var l1 = Ast.Lambda<Action>(
+                TraceCall(
+                    Ast.TryCatch(
+                        Ast.Call(null, new Func<int>(ThrowNSEReturnInt).Method),
+                        Ast.Catch(typeof(Exception),
+                            Ast.Block(
+                                Ast.Constant(2),
+                                Ast.Rethrow(typeof(int))
+                            )
+                        )
+                    )
+                )
+            );
+
+            l1.LightCompile();
+        }
+
+        public static int ThrowNSEReturnInt() {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Jump out of finally.
+        /// </summary>
+        [Options(NoRuntime = true)]
+        public void Interpreter_JumpFromFinally1() {
+            var label1 = Ast.Label();
+            var label2 = Ast.Label();
+
+            var l0 = Ast.Lambda<Action>(
+                Ast.Block(
+                    Ast.TryFinally(                                                         
+                        Ast.Block(
+                            AstUtils.FinallyFlowControl(
+                                Ast.TryFinally(                                             
+                                    Ast.TryFinally(                                         
+                                        Ast.Block(
+                                            TraceCall(Ast.Constant(0)),
+                                            Ast.Goto(label1)                                 
+                                        ),
+                                        // F2:                                              
+                                        Ast.Block(                                          
+                                            TraceCall(Ast.Constant(1)),
+                                            Ast.Goto(label2)
+                                        )                                                   
+                                    ),
+                                    // F1:
+                                    TraceCall(Ast.Constant(2))
+                                )
+                            ),
+                            TraceCall(Ast.Constant(3)),
+
+                            // LABEL2:
+                            Ast.Label(label2),
+                            TraceCall(Ast.Constant(4))
+                        ),
+                        // F0:
+                        TraceCall(Ast.Constant(5))
+                    ),
+                    Ast.Block(
+                        TraceCall(Ast.Constant(6)),
+                        // LABEL1:
+                        Ast.Label(label1),
+                        TraceCall(Ast.Constant(7))
+                    )
+                )
+            );
+
+            TraceTestLambda(l0);
+        }
+
+        /// <summary>
+        /// Pending continuation override: jump from finally should cancel any pending jumps (gotos or throws) from try-block.
+        /// </summary>
+        [Options(NoRuntime = true)]
+        public void Interpreter_JumpFromFinally2() {
+            var label = Ast.Label();
+
+            var l0 = Ast.Lambda<Action>(
+                AstUtils.FinallyFlowControl(
+                    Ast.Block(
+                        Ast.TryFinally(
+                            Ast.Throw(Ast.Constant(new Exception("ex"))),
+                            Ast.Block(
+                                TraceCall(Ast.Constant(0)),
+                                Ast.Goto(label)
+                            )
+                        ),
+                        Ast.Label(label),
+                        TraceCall(Ast.Constant(1))
+                    )
+                )
+            );
+
+            TraceTestLambda(l0);
         }
 
         [Options(NoRuntime = true)]
@@ -473,6 +832,71 @@ namespace IronRuby.Tests {
             Assert(strArray8[0, 0, 0, 0, 0, 0, 0, 0] == "bar");
         }
 
+        /// <summary>
+        /// Variable shadowing.
+        /// </summary>
+        [Options(NoRuntime = true)]
+        public void Interpreter6() {
+            var i_var = Ast.Parameter(typeof(int), "i");
+
+            var l1 = Ast.Lambda<Action>(
+                Ast.Block(new[] { i_var },
+                    Ast.Assign(i_var, Ast.Constant(1)),
+                    TraceCall(i_var),
+
+                    Ast.Block(new[] { i_var },
+                        Ast.Assign(i_var, Ast.Constant(2)),
+                        TraceCall(i_var)
+                    ),
+
+                    Ast.Block(new[] { i_var },
+                        Ast.Assign(i_var, Ast.Constant(3)),
+                        TraceCall(i_var)
+                    ),
+
+                    TraceCall(i_var)
+                )
+            );
+            
+            //XTraceTestLambda(l1);
+
+            var e_var = Ast.Parameter(typeof(Exception), "e");
+            var ex1 = new Exception("ex1");
+            var ex2 = new Exception("ex2");
+
+            // each catch block actually defines e variable again shadowing the block's e variable.
+            // Thus assignments within the catch block don't affect block's e variable.
+            var l2 = Ast.Lambda<Action>(
+                Ast.Block(new[] { e_var },
+                    Ast.TryCatch(Ast.Throw(Ast.Constant(ex1)), Ast.Catch(e_var, TraceCall(Ast.Property(e_var, "Message")))),
+                    TraceCall(e_var),
+                    Ast.TryCatch(Ast.Throw(Ast.Constant(ex2)), Ast.Catch(e_var, TraceCall(Ast.Property(e_var, "Message")))),
+                    TraceCall(e_var)
+                )
+            );
+
+            l2.Compile()();
+
+            //XTraceTestLambda(l2);
+
+            var l3 = Ast.Lambda<Action>(
+                Ast.Block(new[] { i_var },
+                    TraceCall(
+                        Ast.Invoke(
+                            Ast.Lambda<Func<int, int>>(Ast.Add(i_var, Ast.Constant(1)), new[] { i_var }),
+                            Ast.Constant(1)
+                        )
+                    )
+                )
+            );
+
+            l3.Compile()();
+
+            //XTraceTestLambda(l2);
+
+            // TODO: add tests for loop compiler
+        }
+
         [Options(NoRuntime = true)]
         public void InterpreterNumeric1() {
             Assert(Expression.Lambda<Func<short>>(
@@ -600,6 +1024,153 @@ namespace IronRuby.Tests {
             Assert(ArrayUtils.ValueEquals(c_sg_result, i_sg_result));
             Assert(ArrayUtils.ValueEquals(c_g_result, i_g_result));
             Assert(ArrayUtils.ValueEquals(c_list, i_list));
+        }
+
+        [Options(NoRuntime = true)]
+        public void InterpreterLoops1() {
+            ParameterExpression i_var = Ast.Parameter(typeof(int), "i");
+            ParameterExpression s_var = Ast.Parameter(typeof(string), "s");
+            ParameterExpression s2_var = Ast.Parameter(typeof(string), "s2");
+            LabelTarget break2_label = Ast.Label();
+            LabelTarget break1_label = Ast.Label();
+            LabelTarget label1 = Ast.Label();
+
+            var l = Expression.Lambda<Action>(
+                Ast.Block(new[] { i_var },
+                    Ast.Assign(i_var, Ast.Constant(0)),
+                    Ast.Loop(
+                        Ast.Block(new[] { s2_var },
+                            Ast.Assign(s2_var, Ast.Constant("z")),
+                            Ast.Loop(
+                                Ast.Block(
+                                    new[] { s_var },
+                                    Ast.Assign(s_var, Ast.Constant("a")),
+                                    Ast.IfThen(Ast.Equal(Expression.Assign(i_var, Ast.Add(i_var, Ast.Constant(1))), Ast.Constant(3)), Ast.Break(break2_label)),
+                                    Ast.IfThen(Ast.Equal(i_var, Ast.Constant(5)), Ast.Break(label1)),
+                                    TraceCall(s_var),
+                                    TraceCall(s2_var)
+                                ),
+                                break2_label
+                            ),
+                            TraceCall(Ast.Constant("d"))
+                        )
+                    ),
+                    TraceCall(Ast.Constant("b")),
+                    Ast.Label(label1),
+                    TraceCall(Ast.Constant("c"))
+                )
+            );
+
+            TraceTestLambda(l);
+        }
+
+        public static void MethodWithRef(ref int foo) {
+            foo++;
+        }
+
+        [Options(NoRuntime = true)]
+        public void InterpreterLoops2() {
+            ParameterExpression i_var = Ast.Parameter(typeof(int), "i");
+            ParameterExpression k_var = Ast.Parameter(typeof(int), "k");
+            ParameterExpression j_var = Ast.Parameter(typeof(int), "j");
+            ParameterExpression o_var = Ast.Parameter(typeof(object), "o");
+            ParameterExpression d_var = Ast.Parameter(typeof(Func<int>), "d");
+            LabelTarget label1 = Ast.Label();
+            LabelTarget label2 = Ast.Label();
+
+            var innerLambda = Ast.Lambda<Func<int>>(
+                Ast.Block(new[] { k_var }, 
+                    Ast.Assign(k_var, Ast.Constant(0)),
+                    Ast.Loop(
+                        Ast.Block(
+                            Ast.IfThen(Ast.Equal(Ast.Assign(k_var, Ast.Add(k_var, Ast.Constant(1))), Ast.Constant(5)), Ast.Goto(label2)),
+                            Ast.Assign(j_var, Ast.Add(j_var, Ast.Constant(1)))
+                        )
+                    ),
+                    Ast.Label(label2),
+                    j_var                    
+                )
+            );
+
+            var l = Expression.Lambda<Action>(
+                Ast.Block(new[] { i_var, j_var, d_var },
+                    Ast.Assign(i_var, Ast.Constant(0)),
+                    Ast.Assign(j_var, Ast.Constant(-1)),
+
+                    // close over j:
+                    Ast.Assign(d_var, innerLambda),
+                            
+                    Ast.Loop(
+                        Ast.Block(
+                            Ast.IfThen(Ast.Equal(Ast.Assign(i_var, Ast.Add(i_var, Ast.Constant(1))), Ast.Constant(5)), Ast.Return(label1)), 
+                            
+                            // this assignment must be to the closure Value not to the local j_var:
+                            Ast.Assign(j_var, i_var),
+
+                            TraceCall(Ast.Convert(Ast.Invoke(d_var), typeof(Object)))
+                        )
+                    ),
+                    Ast.Label(label1)
+                )
+            );
+
+            TraceTestLambda(l);            
+        }
+
+        /// <summary>
+        /// Gotos with values jumping from the loop.
+        /// </summary>
+        [Options(NoRuntime = true)]
+        public void InterpreterLoops3() {
+            ParameterExpression i_var = Ast.Parameter(typeof(int), "i");
+            LabelTarget label1 = Ast.Label(typeof(int));
+
+            var l = Ast.Lambda<Action>(
+                Ast.Block(new[] { i_var },
+                    Ast.Assign(i_var,     
+                        Ast.Block(
+                            Ast.Loop( 
+                                Ast.Goto(label1, Ast.Constant(123))
+                            ),
+                            Ast.Label(label1, Ast.Constant(5))
+                        )
+                    ),
+                    TraceCall(i_var)
+                )
+            );
+
+            TraceTestLambda(l);
+        }
+        
+        [Options(NoRuntime = true)]
+        public void InterpreterLoops4() {
+            ParameterExpression i_var = Ast.Parameter(typeof(int), "i");
+            ParameterExpression j_var = Ast.Parameter(typeof(int), "j");
+            ParameterExpression k_var = Ast.Parameter(typeof(int), "k");
+            LabelTarget label1 = Ast.Label();
+
+            var l = Ast.Lambda<Action>(
+                Ast.Block(new[] { i_var },
+                    Ast.Loop(
+                        Ast.Block(new[] { j_var },
+                            Ast.IfThen(Ast.Equal(Ast.Assign(i_var, Ast.Add(i_var, Ast.Constant(1))), Ast.Constant(5)), Ast.Break(label1)),
+
+                            Ast.Assign(
+                                j_var,
+                                Ast.Invoke(
+                                    Ast.Lambda<Func<int, int>>(Ast.Add(k_var, i_var), new[] { k_var }),
+                                    Ast.Constant(1)
+                                )
+                            ),
+
+                            TraceCall(j_var)
+                        ),
+                        label1
+                    )
+                )
+            );
+
+            TraceTestLambda(l);
         }
     }
 }

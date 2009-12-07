@@ -34,8 +34,6 @@ namespace IronRuby.Runtime {
     /// </summary>
     [Serializable]
     public sealed class RubyExceptionData {
-        internal static readonly Microsoft.Scripting.Utils.ThreadLocal<InterpretedFrame> CurrentInterpretedFrame = new Microsoft.Scripting.Utils.ThreadLocal<InterpretedFrame>();
-
         private static readonly object/*!*/ _DataKey = typeof(RubyExceptionData);
         internal const string TopLevelMethodName = "#";
 
@@ -91,7 +89,7 @@ namespace IronRuby.Runtime {
             // Compiled trace: contains frames starting with the throw site up to the first filter/catch that the exception was caught by:
             StackTrace throwSiteTrace = DebugInfoAvailable ? new StackTrace(_exception, true) : new StackTrace(_exception);
 
-            var interpretedFrame = handlerFrame ?? CurrentInterpretedFrame.Value;
+            var interpretedFrame = handlerFrame ?? InterpretedFrame.CurrentFrame.Value;
             AddBacktrace(result, throwSiteTrace.GetFrames(), ref interpretedFrame, handlerFrame, hasFileAccessPermissions, 0, context.Options.ExceptionDetail);
 
             // Compiled trace: contains frames above and including the first Ruby filter/catch site that the exception was caught by:
@@ -134,7 +132,7 @@ namespace IronRuby.Runtime {
 
         public static RubyArray/*!*/ CreateBacktrace(RubyContext/*!*/ context, int skipFrames) {
             var trace = DebugInfoAvailable ? new StackTrace(true) : new StackTrace();
-            var interpretedFrame = CurrentInterpretedFrame.Value;
+            var interpretedFrame = InterpretedFrame.CurrentFrame.Value;
             return AddBacktrace(
                 new RubyArray(), trace.GetFrames(), ref interpretedFrame, null, DetectFileAccessPermissions(), 
                 skipFrames, context.Options.ExceptionDetail
@@ -160,17 +158,12 @@ namespace IronRuby.Runtime {
             bool hasFileAccessPermission, int skipFrames, bool exceptionDetail) {
 
             if (stackTrace != null) {
-                foreach (StackFrame frame in stackTrace) {
+                foreach (var frame in InterpretedFrame.GroupStackFrames(stackTrace)) {
                     string methodName, file;
                     int line;
 
-                    if (InterpretedFrame.IsInterpretedFrame(frame.GetMethod())) {
+                    if (interpretedFrame != null && InterpretedFrame.IsInterpretedFrame(frame.GetMethod())) {
                         // TODO: get language context, ask for method name?
-                        // TODO: the trace can get corrupted if Python frame are in the middle - we need to move frame tracing to the interpreter
-                        if (interpretedFrame == null) {
-                            continue;
-                        }
-
                         var debugInfo = interpretedFrame.GetDebugInfo(
                             (interpretedFrame == handlerFrame) ? interpretedFrame.FaultingInstruction : interpretedFrame.InstructionIndex
                         );
@@ -183,9 +176,11 @@ namespace IronRuby.Runtime {
                             line = 0;
                         }
                         methodName = interpretedFrame.Lambda.Name;
-                        TryParseRubyMethodName(ref methodName, ref file, ref line);
-                        
-                        interpretedFrame = interpretedFrame.Parent;                        
+                        interpretedFrame = interpretedFrame.Parent;
+
+                        if (!TryParseRubyMethodName(ref methodName, ref file, ref line)) {
+                            continue;
+                        }
                     } else if (!TryGetStackFrameInfo(frame, hasFileAccessPermission, exceptionDetail, out methodName, out file, out line)) {
                         continue;
                     }
@@ -291,7 +286,7 @@ namespace IronRuby.Runtime {
 
         // \u2111\u211c;{method-name};{file-name};{line-number};{dlr-suffix}
         internal static bool TryParseRubyMethodName(ref string methodName, ref string fileName, ref int line) {
-            if (methodName.StartsWith(RubyMethodPrefix)) {
+            if (methodName != null && methodName.StartsWith(RubyMethodPrefix, StringComparison.Ordinal)) {
                 string[] parts = methodName.Split(';');
                 if (parts.Length > 4) {
                     methodName = parts[1];
@@ -311,7 +306,7 @@ namespace IronRuby.Runtime {
         }
 
         private static string ParseRubyMethodName(string/*!*/ lambdaName) {
-            if (!lambdaName.StartsWith(RubyMethodPrefix)) {
+            if (!lambdaName.StartsWith(RubyMethodPrefix, StringComparison.Ordinal)) {
                 return lambdaName;
             }
 

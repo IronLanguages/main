@@ -52,7 +52,6 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             return GlobalParent.Get(
-                typeof(object),
                 _name,
                 _target
             );
@@ -62,7 +61,6 @@ namespace IronPython.Compiler.Ast {
             if (op == PythonOperationKind.None) {
                 return GlobalParent.AddDebugInfoAndVoid(
                     GlobalParent.Set(
-                        typeof(object),
                         _name,
                         _target,
                         right
@@ -94,14 +92,12 @@ namespace IronPython.Compiler.Ast {
 
         private MSAst.Expression SetMemberOperator(MSAst.Expression right, PythonOperationKind op, MSAst.ParameterExpression temp) {
             return GlobalParent.Set(
-                typeof(object),
                 _name,
                 temp,
                 GlobalParent.Operation(
                     typeof(object),
                     op,
                     GlobalParent.Get(
-                        typeof(object),
                         _name,
                         temp
                     ),

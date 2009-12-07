@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Interpreter;
 
 namespace Microsoft.Scripting.Ast {
     /// <summary>
@@ -36,7 +37,7 @@ namespace Microsoft.Scripting.Ast {
     /// WARNING: this node cannot contain jumps across blocks, because it
     /// assumes any unknown jumps are jumps to an outer scope.
     /// </summary>
-    public sealed class FinallyFlowControlExpression : Expression {
+    public sealed class FinallyFlowControlExpression : Expression, IInstructionProvider {
         private readonly Expression _body;
         private Expression _reduced;
 
@@ -73,6 +74,11 @@ namespace Microsoft.Scripting.Ast {
                 return this;
             }
             return new FinallyFlowControlExpression(b);
+        }
+
+        void IInstructionProvider.AddInstructions(LightCompiler compiler) {
+            // the interpreter deals with jumps out of finally blocks just fine:
+            compiler.Compile(_body);
         }
     }
 

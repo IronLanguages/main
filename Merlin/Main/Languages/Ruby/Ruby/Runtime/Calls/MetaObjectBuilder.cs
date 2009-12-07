@@ -226,7 +226,7 @@ namespace IronRuby.Runtime.Calls {
             // doing fast-path behavior on a subtype which overrides behavior that wasn't
             // present for the base type.
             //TODO there's a question about nulls here
-            if (CompilerHelpers.IsSealed(t) && t == expr.Type) {
+            if (t.IsSealed && t == expr.Type) {
                 if (t.IsValueType) {
                     return AstUtils.Constant(true);
                 }

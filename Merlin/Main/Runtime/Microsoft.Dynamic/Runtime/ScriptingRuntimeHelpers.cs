@@ -22,6 +22,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Interpreter;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -98,6 +99,27 @@ namespace Microsoft.Scripting.Runtime {
             return new string(ch, 1);
         }
 
+        internal static object GetPrimitiveDefaultValue(Type type) {
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Boolean: return ScriptingRuntimeHelpers.False;
+                case TypeCode.SByte: return default(SByte);
+                case TypeCode.Byte: return default(Byte);
+                case TypeCode.Char: return default(Char);
+                case TypeCode.Int16: return default(Int16);
+                case TypeCode.Int32: return ScriptingRuntimeHelpers.Int32ToObject(0);
+                case TypeCode.Int64: return default(Int64);
+                case TypeCode.UInt16: return default(UInt16);
+                case TypeCode.UInt32: return default(UInt32);
+                case TypeCode.UInt64: return default(UInt64);
+                case TypeCode.Single: return default(Single);
+                case TypeCode.Double: return default(Double);
+                case TypeCode.DBNull: return default(DBNull);
+                case TypeCode.DateTime: return default(DateTime);
+                case TypeCode.Decimal: return default(Decimal);
+                default: return null;
+            }
+        }
+
         public static ArgumentTypeException SimpleTypeError(string message) {
             return new ArgumentTypeException(message);
         }
@@ -159,7 +181,7 @@ namespace Microsoft.Scripting.Runtime {
                 clrFrames.AddRange(outermostTrace.GetFrames() ?? new StackFrame[0]);    // rare, sometimes GetFrames returns null
 
                 int lastFound = 0;
-                foreach (StackFrame clrFrame in clrFrames) {
+                foreach (StackFrame clrFrame in InterpretedFrame.GroupStackFrames(clrFrames)) {
                     MethodBase method = clrFrame.GetMethod();
 
                     for (int j = lastFound; j < frames.Count; j++) {

@@ -615,7 +615,7 @@ namespace IronRuby.Runtime {
             string home = null;
 
 #if !SILVERLIGHT
-            if (path.StartsWith("~/") || path.StartsWith("~\\")) {
+            if (path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal)) {
                 try {
                     home = Environment.GetEnvironmentVariable("HOME");
                 } catch (SecurityException) {
@@ -651,7 +651,10 @@ namespace IronRuby.Runtime {
             }
 
             // If load paths are non-empty and the path starts with .\ or ..\ then MRI also ignores the load paths.
-            if (path.StartsWith("./") || path.StartsWith("../") || path.StartsWith(".\\") || path.StartsWith("..\\")) {
+            if (path.StartsWith("./", StringComparison.Ordinal) ||
+                path.StartsWith("../", StringComparison.Ordinal) ||
+                path.StartsWith(".\\", StringComparison.Ordinal) ||
+                path.StartsWith("..\\", StringComparison.Ordinal)) {
                 return ResolveFile(path, extension, appendExtensions, sourceFileExtensions);
             }
 

@@ -122,7 +122,7 @@ namespace IronPython.Compiler {
             }
 
             if (pc.ShouldInterpret((PythonCompilerOptions)Ast.CompilerContext.Options, Ast.CompilerContext.SourceUnit)) {
-                func = CompilerHelpers.LightCompile(lambda, false, pc.Options.CompilationThreshold);
+                func = CompilerHelpers.LightCompile(lambda, pc.Options.CompilationThreshold);
             } else {
                 func = lambda.Compile(Ast.CompilerContext.SourceUnit.EmitDebugSymbols);
             }

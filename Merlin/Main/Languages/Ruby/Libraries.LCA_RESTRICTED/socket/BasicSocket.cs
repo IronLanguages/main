@@ -29,6 +29,8 @@ using IronRuby.Runtime;
 using IronRuby.StandardLibrary.FileControl;
 using Microsoft.Scripting.Math;
 using IronRuby.Runtime.Calls;
+using System.Globalization;
+using IronRuby.Compiler;
 
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("BasicSocket", BuildConfig = "!SILVERLIGHT")]
@@ -36,7 +38,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         // TODO: do these escape out of the library?
         private static readonly MutableString BROADCAST_STRING = MutableString.CreateAscii("<broadcast>").Freeze();
 
-        private readonly Socket/*!*/ _socket;
+        private Socket _socket;
 
         [MultiRuntimeAware]
         private static readonly object BasicSocketClassKey = new object();
@@ -48,6 +50,14 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         /// <summary>
+        /// Creates an uninitialized socket.
+        /// </summary>
+        protected RubyBasicSocket(RubyContext/*!*/ context)
+            : base(context) {
+            Mode = IOMode.ReadWrite | IOMode.PreserveEndOfLines;
+        }
+
+        /// <summary>
         /// Create a new RubyBasicSocket from a specified stream and mode
         /// </summary>
         protected RubyBasicSocket(RubyContext/*!*/ context, Socket/*!*/ socket)
@@ -56,15 +66,25 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         protected internal Socket/*!*/ Socket {
-            get { return _socket; }
+            get {
+                if (_socket == null) {
+                    throw RubyExceptions.CreateIOError("uninitialized stream"); 
+                }
+                return _socket; 
+            }
+            set {
+                ContractUtils.RequiresNotNull(value, "value");
+                Reset(new SocketStream(value), IOMode.ReadWrite | IOMode.PreserveEndOfLines);
+                _socket = value;
+            }
         }
 
         public override WaitHandle/*!*/ CreateReadWaitHandle() {
-            return _socket.BeginReceive(Utils.EmptyBytes, 0, 0, SocketFlags.Peek, null, null).AsyncWaitHandle;
+            return Socket.BeginReceive(Utils.EmptyBytes, 0, 0, SocketFlags.Peek, null, null).AsyncWaitHandle;
         }
 
         public override WaitHandle/*!*/ CreateWriteWaitHandle() {
-            return _socket.BeginSend(Utils.EmptyBytes, 0, 0, SocketFlags.Peek, null, null).AsyncWaitHandle;
+            return Socket.BeginSend(Utils.EmptyBytes, 0, 0, SocketFlags.Peek, null, null).AsyncWaitHandle;
         }
 
         public override WaitHandle/*!*/ CreateErrorWaitHandle() {
@@ -75,7 +95,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         // returns 0 on success, -1 on failure
         private int SetFileControlFlags(int flags) {
             // TODO:
-            _socket.Blocking = (flags & RubyFileOps.Constants.NONBLOCK) != 0;
+            Socket.Blocking = (flags & RubyFileOps.Constants.NONBLOCK) != 0;
             return 0;
         }
 
@@ -415,8 +435,8 @@ namespace IronRuby.StandardLibrary.Sockets {
                 default:
                     string name = Enum.GetName(typeof(AddressFamily), af);
                     return (name != null) ?
-                        "AF_" + name.ToUpper() :
-                        "unknown:" + ((int)af).ToString();
+                        "AF_" + name.ToUpperInvariant() :
+                        "unknown:" + ((int)af).ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -559,7 +579,12 @@ namespace IronRuby.StandardLibrary.Sockets {
                 return service.Port;
             }
 
-            return Protocols.CastToFixnum(fixnumCast, serviceName);
+            int i = 0;
+            if (Int32.TryParse(serviceName.ToString(), out i)) {
+                return i;
+            }
+
+            throw SocketErrorOps.Create(MutableString.FormatMessage("Invalid port number or service name: `{0}'.", serviceName));
         }
 
         internal static ServiceName SearchForService(int port) {

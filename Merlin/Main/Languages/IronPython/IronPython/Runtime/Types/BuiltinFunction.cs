@@ -636,12 +636,13 @@ namespace IronPython.Runtime.Types {
             
             // The function can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
-            if (CompilerHelpers.GetReturnType(result.Target.Method) == typeof(bool)) {
+            var returnType = result.Target.Method.GetReturnType();
+            if (returnType == typeof(bool)) {
                 var tmp = res;
                 res = delegate(object[] callArgs, out bool shouldOptimize) {
                     return ScriptingRuntimeHelpers.BooleanToObject((bool)tmp(callArgs, out shouldOptimize));
-                }; 
-            } else if (CompilerHelpers.GetReturnType(result.Target.Method) == typeof(int)) {
+                };
+            } else if (returnType == typeof(int)) {
                 var tmp = res;
                 res = delegate(object[] callArgs, out bool shouldOptimize) {
                     return ScriptingRuntimeHelpers.Int32ToObject((int)tmp(callArgs, out shouldOptimize));

@@ -77,8 +77,8 @@ namespace IronRuby.Builtins {
             return loaded;
         }
 
-        [RubyModule("Clr", Restrictions = ModuleRestrictions.None)]
-        public static class ClrOps {
+        [RubyModule("Clr", Restrictions = ModuleRestrictions.NoUnderlyingType)]
+        public static class Clr {
             [RubyMethod("profile", RubyMethodAttributes.PublicSingleton)]
             public static Hash/*!*/ GetProfile(RubyContext/*!*/ context, object self) {
                 if (!context.RubyOptions.Profile) {

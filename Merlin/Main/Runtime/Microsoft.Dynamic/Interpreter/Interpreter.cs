@@ -27,6 +27,7 @@ using System.Threading;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Interpreter {
     /// <summary>
@@ -39,109 +40,107 @@ namespace Microsoft.Scripting.Interpreter {
     /// The core loop in the interpreter is the RunInstructions method.
     /// </summary>
     internal sealed class Interpreter {
+        internal static readonly object NoValue = new object();
+        internal const int RethrowOnReturn = Int32.MaxValue;
+
+        // zero: sync compilation
+        // negative: default
         internal readonly int _compilationThreshold;
-        internal readonly int _numberOfLocals;
-        internal readonly int _maxStackDepth;
-        internal readonly bool[] _localIsBoxed;
+
+        private readonly LocalVariables _locals;
+        internal readonly int[] _boxedLocals;
+        private readonly Dictionary<LabelTarget, BranchLabel> _labelMapping;
 
         private readonly InstructionArray _instructions;
         internal readonly object[] _objects;
+        internal readonly RuntimeLabel[] _labels;
 
         internal readonly LambdaExpression _lambda;
         private readonly ExceptionHandler[] _handlers;
         internal readonly DebugInfo[] _debugInfos;
-        private readonly bool _onlyFaultHandlers;
 
-        internal Interpreter(LambdaExpression lambda, bool[] localIsBoxed, int maxStackDepth,
+        internal Interpreter(LambdaExpression lambda, LocalVariables locals, Dictionary<LabelTarget, BranchLabel> labelMapping,
             InstructionArray instructions, ExceptionHandler[] handlers, DebugInfo[] debugInfos, int compilationThreshold) {
 
             _lambda = lambda;
-            _numberOfLocals = localIsBoxed.Length;
-            if (Array.IndexOf(localIsBoxed, true) != -1) {
-                _localIsBoxed = localIsBoxed;
-            } else {
-                _localIsBoxed = null;
-            }
+            _locals = locals;
+            _boxedLocals = locals.GetBoxed();
                 
-            _maxStackDepth = maxStackDepth;
             _instructions = instructions;
             _objects = instructions.Objects;
+            _labels = instructions.Labels;
+            _labelMapping = labelMapping;
+
             _handlers = handlers;
             _debugInfos = debugInfos;
-
-            _onlyFaultHandlers = true;
-            foreach (var handler in handlers) {
-                if (!handler.IsFinallyOrFault) {
-                    _onlyFaultHandlers = false;
-                    break;
-                }
-            }
-
             _compilationThreshold = compilationThreshold;
         }
 
+        internal bool CompileSynchronously {
+            get { return _compilationThreshold <= 1; }
+        }
+
+        internal InstructionArray Instructions {
+            get { return _instructions; }
+        }
+
+        internal LocalVariables Locals {
+            get { return _locals; } 
+        }
+
+        internal Dictionary<LabelTarget, BranchLabel> LabelMapping {
+            get { return _labelMapping; }
+        }
+
+        /// <summary>
+        /// Runs instructions within the given frame.
+        /// </summary>
+        /// <remarks>
+        /// Interpreted stack frames are linked via Parent reference so that each CLR frame of this method corresponds 
+        /// to an interpreted stack frame in the chain. It is therefore possible to combine CLR stack traces with 
+        /// interpreted stack traces by aligning interpreted frames to the frames of this method.
+        /// Each group of subsequent frames of Run method corresponds to a single interpreted frame.
+        /// </remarks>
+        [SpecialName]
         public void Run(InterpretedFrame frame) {
-            if (_onlyFaultHandlers) {
-                bool fault = true;
+            while (true) {
                 try {
                     RunInstructions(frame);
-                    fault = false;
                     return;
-                } finally {
-                    if (fault) {
-                        frame.FaultingInstruction = frame.InstructionIndex;
-                        HandleFault(frame);
-                    }
-                }
-            } else {
-                while (true) {
-                    try {
-                        RunInstructions(frame);
-                        return;
-                    } catch (Exception exc) {
-                        frame.FaultingInstruction = frame.InstructionIndex;
-                        ExceptionHandler handler = HandleCatch(frame, exc);
+                } catch (Exception exception) {
+                    frame.FaultingInstruction = frame.InstructionIndex;
+                    ExceptionHandler handler;
+                    frame.InstructionIndex += GotoHandler(frame, exception, out handler);
 
-                        if (handler == null) {
+                    if (handler == null || handler.IsFault) {
+                        // run finally/fault blocks:
+                        Run(frame);
+
+                        // a finally block can throw an exception caught by a handler, which cancels the previous exception:
+                        if (frame.InstructionIndex == RethrowOnReturn) {
                             throw;
                         }
-
-                        // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
-                        var abort = exc as ThreadAbortException;
-                        if (abort != null) {
-                            _anyAbortException = abort;
-                            frame.CurrentAbortHandler = handler;
-                            Run(frame);
-                            return;
-                        } 
+                        return;
                     }
+
+                    // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
+                    var abort = exception as ThreadAbortException;
+                    if (abort != null) {
+                        _anyAbortException = abort;
+                        frame.CurrentAbortHandler = handler;
+                        Run(frame);
+                        return;
+                    } 
                 }
             }
         }
 
-        internal void RunBlock(InterpretedFrame frame, int endIndex) {
-            while (true) {
-                try {
-                    RunInstructions(frame, endIndex);
-                    return;
-                } catch (Exception exc) {
-                    endIndex = _instructions.Length;
-                    frame.FaultingInstruction = frame.InstructionIndex;
-
-                    ExceptionHandler handler = HandleCatch(frame, exc);
-                    if (handler == null) {
-                        throw;
-                    }
-
-                    // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
-                    var abort = exc as ThreadAbortException;
-                    if (abort != null) {
-                        _anyAbortException = abort;
-                        frame.CurrentAbortHandler = handler;
-                        RunBlock(frame, endIndex);
-                        return;
-                    } 
-                }
+        private void RunInstructions(InterpretedFrame frame) {
+            var instructions = _instructions.Instructions;
+            int index = frame.InstructionIndex;
+            while (index < instructions.Length) {
+                index += instructions[index].Run(frame);
+                frame.InstructionIndex = index;
             }
         }
 
@@ -149,9 +148,9 @@ namespace Microsoft.Scripting.Interpreter {
         // we need to use ExceptionState property of any ThreadAbortException instance.
         private static ThreadAbortException _anyAbortException;
 
-        internal static void AbortThreadIfRequested(InterpretedFrame frame, int targetOffset) {
+        internal static void AbortThreadIfRequested(InterpretedFrame frame, int targetLabelIndex) {
             var abortHandler = frame.CurrentAbortHandler;
-            if (abortHandler != null && !abortHandler.IsInside(frame.InstructionIndex + targetOffset)) {
+            if (abortHandler != null && !abortHandler.IsInside(frame.Interpreter._labels[targetLabelIndex].Index)) {
                 frame.CurrentAbortHandler = null;
 
                 var currentThread = Thread.CurrentThread;
@@ -167,10 +166,10 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        private ExceptionHandler GetBestHandler(InterpretedFrame frame, Type exceptionType) {
+        internal ExceptionHandler GetBestHandler(int instructionIndex, Type exceptionType) {
             ExceptionHandler best = null;
             foreach (var handler in _handlers) {
-                if (handler.Matches(exceptionType, frame.InstructionIndex)) {
+                if (handler.Matches(exceptionType, instructionIndex)) {
                     if (handler.IsBetterThan(best)) {
                         best = handler;
                     }
@@ -179,72 +178,20 @@ namespace Microsoft.Scripting.Interpreter {
             return best;
         }
 
-        private ExceptionHandler HandleCatch(InterpretedFrame frame, Exception exception) {
-            Type exceptionType = exception.GetType();
-            var handler = GetBestHandler(frame, exceptionType);
+        private int ReturnAndRethrowLabelIndex {
+            get {
+                // the last label is "return and rethrow" label:
+                Debug.Assert(_labels[_labels.Length - 1].Index == RethrowOnReturn);
+                return _labels.Length - 1;
+            }
+        }
+
+        internal int GotoHandler(InterpretedFrame frame, object exception, out ExceptionHandler handler) {
+            handler = GetBestHandler(frame.InstructionIndex, exception.GetType());
             if (handler == null) {
-                return null;
-            }
-
-            frame.StackIndex = _numberOfLocals + handler.HandlerStackDepth;
-            if (handler.IsFinallyOrFault) {
-                frame.InstructionIndex = handler.StartHandlerIndex;
-
-                RunBlock(frame, handler.EndHandlerIndex);
-                if (frame.InstructionIndex == handler.EndHandlerIndex) {
-                    frame.InstructionIndex -= 1; // push back into the right range
-
-                    return HandleCatch(frame, exception);
-                } else {
-                    return handler;
-                }
+                return frame.Goto(ReturnAndRethrowLabelIndex, Interpreter.NoValue);
             } else {
-                if (handler.PushException) {
-                    frame.Push(exception);
-                }
-
-                frame.InstructionIndex = handler.StartHandlerIndex;
-                return handler;
-            }
-        }
-
-        private void HandleFault(InterpretedFrame frame) {
-            var handler = GetBestHandler(frame, null);
-            if (handler == null) return;
-            frame.StackIndex = _numberOfLocals + handler.HandlerStackDepth;
-            bool wasFault = true;
-            try {
-                frame.InstructionIndex = handler.StartHandlerIndex;
-                RunInstructions(frame, handler.EndHandlerIndex);
-                wasFault = false;
-            } finally {
-                if (wasFault) {
-                    frame.FaultingInstruction = frame.InstructionIndex;
-                }
-
-                // This assumes that finally faults are propogated always
-                //
-                // Go back one so we are scoped correctly
-                frame.InstructionIndex = handler.EndHandlerIndex - 1;
-                HandleFault(frame);
-            }
-        }
-
-        internal void RunInstructions(InterpretedFrame frame, int endInstruction) {
-            var instructions = _instructions.Instructions;
-            int index = frame.InstructionIndex;
-            while (index < endInstruction) {
-                index += instructions[index].Run(frame);
-                frame.InstructionIndex = index;
-            }
-        }
-
-        private void RunInstructions(InterpretedFrame frame) {
-            var instructions = _instructions.Instructions;
-            int index = frame.InstructionIndex;
-            while (index < instructions.Length) {
-                index += instructions[index].Run(frame);
-                frame.InstructionIndex = index;
+                return frame.Goto(handler.LabelIndex, exception);
             }
         }
     }

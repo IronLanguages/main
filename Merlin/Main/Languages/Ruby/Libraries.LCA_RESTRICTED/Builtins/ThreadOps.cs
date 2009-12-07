@@ -221,7 +221,7 @@ namespace IronRuby.Builtins {
                 return RubyExceptions.CreateTypeError("nil is not a symbol");
             } else {
                 // MRI calls RubyUtils.InspectObject, but this should be good enought as an error message:
-                return RubyExceptions.CreateArgumentError(String.Format("{0} is not a symbol", context.GetClassOf(key).Name));
+                return RubyExceptions.CreateArgumentError("{0} is not a symbol", context.GetClassOf(key).Name);
             }
         }
 

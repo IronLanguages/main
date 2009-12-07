@@ -73,11 +73,8 @@ namespace IronRuby.Runtime {
         private readonly Proc/*!*/ _proc;
         private readonly BlockCallerKind _callerKind;
 
-        // filled by define_method, module_eval, load: if not null than method definition and method alias uses the module
+        // filled by module_eval: if not null than method definition uses the module
         private RubyModule _methodLookupModule;
-
-        // filled by define_method: if not null then injects a scope in super call method lookup:
-        private readonly string _methodName;
         
         // Is the library method call taking this BlockParam a proc converter?
         // Used only for BlockParams that are passed to library method calls.
@@ -89,16 +86,11 @@ namespace IronRuby.Runtime {
         private RuntimeFlowControl _targetFrame;
         private ProcKind _sourceProcKind;
 
-        private void ObjectInvariant() {
-            ContractUtils.Invariant(_methodName == null || _methodLookupModule != null);
-        }
-
         internal BlockCallerKind CallerKind { get { return _callerKind; } }
         internal ProcKind SourceProcKind { get { return _sourceProcKind; } }
         internal BlockReturnReason ReturnReason { get { return _returnReason; } set { _returnReason = value; } }
         internal RuntimeFlowControl TargetFrame { get { return _targetFrame; } }
         internal RubyModule MethodLookupModule { get { return _methodLookupModule; } set { _methodLookupModule = value; } }
-        internal string MethodName { get { return _methodName; } }
         internal bool IsLibProcConverter { get { return _isLibProcConverter; } }
         
         public Proc/*!*/ Proc { get { return _proc; } }
@@ -111,22 +103,17 @@ namespace IronRuby.Runtime {
         }
 
         public bool IsMethod {
-            get {
-                ObjectInvariant();
-                return _methodName != null; 
-            }
+            get { return _proc.Method != null; }
         }
 
         internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(BlockParam).GetProperty("Self"); } }
 
         // friend: RubyOps
-        internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter, RubyModule moduleDeclaration, string methodName) {
+        internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter, RubyModule moduleDeclaration) {
             _callerKind = callerKind;
             _proc = proc;
             _isLibProcConverter = isLibProcConverter;
             _methodLookupModule = moduleDeclaration;
-            _methodName = methodName;
-            ObjectInvariant();
         }
 
         internal void SetFlowControl(BlockReturnReason reason, RuntimeFlowControl targetFrame, ProcKind sourceProcKind) {
@@ -234,22 +221,16 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static BlockParam/*!*/ CreateBfcForYield(Proc proc) {
             if (proc != null) {
-                return new BlockParam(proc, BlockCallerKind.Yield, false, null, null);
+                return new BlockParam(proc, BlockCallerKind.Yield, false, null);
             } else {
                 throw RubyExceptions.NoBlockGiven();
             }
         }
 
         [Emitted]
-        public static BlockParam/*!*/ CreateBfcForMethodProcCall(Proc/*!*/ proc, RubyLambdaMethodInfo/*!*/ method) {
-            Assert.NotNull(proc, method);
-            return new BlockParam(proc, BlockCallerKind.Call, false, method.DeclaringModule, method.DefinitionName);
-        }
-
-        [Emitted]
         public static BlockParam/*!*/ CreateBfcForProcCall(Proc/*!*/ proc) {
             Assert.NotNull(proc);
-            return new BlockParam(proc, BlockCallerKind.Call, false, null, null);
+            return new BlockParam(proc, BlockCallerKind.Call, false, null);
         }
         
         [Emitted]
@@ -267,7 +248,7 @@ namespace IronRuby.Runtime {
                 isProcConverter = false;
             }
 
-            return new BlockParam(proc, BlockCallerKind.Yield, isProcConverter, null, null);
+            return new BlockParam(proc, BlockCallerKind.Yield, isProcConverter, null);
         }
 
         [Emitted] 

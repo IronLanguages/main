@@ -37,16 +37,24 @@ namespace Microsoft.Scripting.Interpreter {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
     [DebuggerTypeProxy(typeof(InstructionArray.DebugView))]
     public struct InstructionArray {
+        internal readonly int MaxStackDepth;
+        internal readonly int MaxContinuationDepth;
         internal readonly Instruction[] Instructions;
         internal readonly object[] Objects;
+        internal readonly RuntimeLabel[] Labels;
 
         // list of (instruction index, cookie) sorted by instruction index:
         internal readonly List<KeyValuePair<int, object>> DebugCookies;
 
-        internal InstructionArray(Instruction[] instructions, object[] objects, List<KeyValuePair<int, object>> debugCookies) {
+        internal InstructionArray(int maxStackDepth, int maxContinuationDepth, Instruction[] instructions, 
+            object[] objects, RuntimeLabel[] labels, List<KeyValuePair<int, object>> debugCookies) {
+
+            MaxStackDepth = maxStackDepth;
+            MaxContinuationDepth = maxContinuationDepth;
             Instructions = instructions;
             DebugCookies = debugCookies;
             Objects = objects;
+            Labels = labels;
         }
 
         internal int Length {
@@ -66,7 +74,12 @@ namespace Microsoft.Scripting.Interpreter {
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public InstructionList.DebugView.InstructionView[]/*!*/ A0 {
                 get {
-                    return InstructionList.DebugView.GetInstructionViews(_array.Instructions, _array.Objects, _array.DebugCookies);
+                    return InstructionList.DebugView.GetInstructionViews(
+                        _array.Instructions, 
+                        _array.Objects, 
+                        (index) => _array.Labels[index].Index, 
+                        _array.DebugCookies
+                    );
                 }
             }
         }
@@ -75,12 +88,17 @@ namespace Microsoft.Scripting.Interpreter {
     }
 
     [DebuggerTypeProxy(typeof(InstructionList.DebugView))]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public sealed class InstructionList {
         private readonly List<Instruction> _instructions = new List<Instruction>();
         private List<object> _objects;
 
         private int _currentStackDepth;
         private int _maxStackDepth;
+        private int _currentContinuationsDepth;
+        private int _maxContinuationDepth;
+        private int _runtimeLabelCount;
+        private List<BranchLabel> _labels;
         
         // list of (instruction index, cookie) sorted by instruction index:
         private List<KeyValuePair<int, object>> _debugCookies = null;
@@ -97,16 +115,22 @@ namespace Microsoft.Scripting.Interpreter {
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public InstructionView[]/*!*/ A0 {
                 get {
-                    return GetInstructionViews(_list._instructions, _list._objects, _list._debugCookies);
+                    return GetInstructionViews(
+                        _list._instructions, 
+                        _list._objects, 
+                        (index) => _list._labels[index].TargetIndex, 
+                        _list._debugCookies
+                    );
                 }
             }
 
             internal static InstructionView[] GetInstructionViews(IList<Instruction> instructions, IList<object> objects,
-                IList<KeyValuePair<int, object>> debugCookies) {
+                Func<int, int> labelIndexer, IList<KeyValuePair<int, object>> debugCookies) {
 
                 var result = new List<InstructionView>();
                 int index = 0;
                 int stackDepth = 0;
+                int continuationsDepth = 0;
 
                 var cookieEnumerator = (debugCookies != null ? debugCookies : new KeyValuePair<int, object>[0]).GetEnumerator();
                 var hasCookie = cookieEnumerator.MoveNext();
@@ -119,11 +143,13 @@ namespace Microsoft.Scripting.Interpreter {
                     }
 
                     int stackDiff = instructions[i].StackBalance;
-                    string name = instructions[i].ToDebugString(cookie, objects);
-                    result.Add(new InstructionView(instructions[i], name, i, stackDepth));
+                    int contDiff = instructions[i].ContinuationsBalance;
+                    string name = instructions[i].ToDebugString(i, cookie, labelIndexer, objects);
+                    result.Add(new InstructionView(instructions[i], name, i, stackDepth, continuationsDepth));
                     
                     index++;
                     stackDepth += stackDiff;
+                    continuationsDepth += contDiff;
                 }
                 return result.ToArray();
             }
@@ -132,11 +158,14 @@ namespace Microsoft.Scripting.Interpreter {
             internal struct InstructionView {
                 private readonly int _index;
                 private readonly int _stackDepth;
+                private readonly int _continuationsDepth;
                 private readonly string _name;
                 private readonly Instruction _instruction;
 
                 internal string GetName() {
-                    return _index.ToString() + (_stackDepth == 0 ? "" : " D(" + _stackDepth.ToString() + ")");
+                    return _index.ToString() +
+                        (_continuationsDepth == 0 ? "" : " C(" + _continuationsDepth.ToString() + ")") +
+                        (_stackDepth == 0 ? "" : " S(" + _stackDepth.ToString() + ")");
                 }
 
                 internal string GetValue() {
@@ -144,14 +173,15 @@ namespace Microsoft.Scripting.Interpreter {
                 }
 
                 internal string GetDisplayType() {
-                    return _instruction.StackBalance.ToString();
+                    return _instruction.ContinuationsBalance.ToString() + "/" + _instruction.StackBalance.ToString();
                 }
 
-                public InstructionView(Instruction instruction, string name, int index, int stackDepth) {
+                public InstructionView(Instruction instruction, string name, int index, int stackDepth, int continuationsDepth) {
                     _instruction = instruction;
                     _name = name;
                     _index = index;
                     _stackDepth = stackDepth;
+                    _continuationsDepth = continuationsDepth;
                 }
             }
         }
@@ -162,17 +192,25 @@ namespace Microsoft.Scripting.Interpreter {
 
         public void Emit(Instruction instruction) {
             _instructions.Add(instruction);
-            UpdateStackDepth(instruction.ConsumedStack, instruction.ProducedStack);
+            UpdateStackDepth(instruction);
         }
 
-        private void UpdateStackDepth(int consumed, int produced) {
-            Debug.Assert(consumed >= 0 && produced >= 0);
+        private void UpdateStackDepth(Instruction instruction) {
+            Debug.Assert(instruction.ConsumedStack >= 0 && instruction.ProducedStack >= 0 &&
+                instruction.ConsumedContinuations >= 0 && instruction.ProducedContinuations >= 0);
 
-            _currentStackDepth -= consumed;
-            Debug.Assert(_currentStackDepth >= 0); // checks that there's enough room to pop
-            _currentStackDepth += produced;
+            _currentStackDepth -= instruction.ConsumedStack;
+            Debug.Assert(_currentStackDepth >= 0);
+            _currentStackDepth += instruction.ProducedStack;
             if (_currentStackDepth > _maxStackDepth) {
                 _maxStackDepth = _currentStackDepth;
+            }
+
+            _currentContinuationsDepth -= instruction.ConsumedContinuations;
+            Debug.Assert(_currentContinuationsDepth >= 0);
+            _currentContinuationsDepth += instruction.ProducedContinuations;
+            if (_currentContinuationsDepth > _maxContinuationDepth) {
+                _maxContinuationDepth = _currentContinuationsDepth;
             }
         }
 
@@ -199,8 +237,16 @@ namespace Microsoft.Scripting.Interpreter {
             get { return _currentStackDepth; }
         }
 
+        public int CurrentContinuationsDepth {
+            get { return _currentContinuationsDepth; }
+        }
+
         public int MaxStackDepth {
             get { return _maxStackDepth; }
+        }
+
+        internal Instruction GetInstruction(int index) {
+            return _instructions[index];
         }
 
 #if STATS
@@ -244,8 +290,11 @@ namespace Microsoft.Scripting.Interpreter {
             }
 #endif
             return new InstructionArray(
-                _instructions.ToArray(), 
+                _maxStackDepth,
+                _maxContinuationDepth,
+                _instructions.ToArray(),                
                 (_objects != null) ? _objects.ToArray() : null,
+                BuildRuntimeLabels(),
                 _debugCookies
             );
         }
@@ -369,18 +418,18 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public void EmitLoadLocalBoxed(int index) {
-            Emit(GetBoxedLocal(index));
+            Emit(LoadLocalBoxed(index));
         }
 
-        internal static Instruction GetBoxedLocal(int index) {
+        internal static Instruction LoadLocalBoxed(int index) {
             if (_loadLocalBoxed == null) {
                 _loadLocalBoxed = new Instruction[LocalInstrCacheSize];
             }
 
             if (index < _loadLocalBoxed.Length) {
-                return _loadLocalBoxed[index] ?? (_loadLocalBoxed[index] = new GetBoxedLocalInstruction(index));
+                return _loadLocalBoxed[index] ?? (_loadLocalBoxed[index] = new LoadLocalBoxedInstruction(index));
             } else {
-                return new GetBoxedLocalInstruction(index);
+                return new LoadLocalBoxedInstruction(index);
             }
         }
 
@@ -390,9 +439,9 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             if (index < _loadLocalFromClosure.Length) {
-                Emit(_loadLocalFromClosure[index] ?? (_loadLocalFromClosure[index] = new GetClosureInstruction(index)));
+                Emit(_loadLocalFromClosure[index] ?? (_loadLocalFromClosure[index] = new LoadLocalFromClosureInstruction(index)));
             } else {
-                Emit(new GetClosureInstruction(index));
+                Emit(new LoadLocalFromClosureInstruction(index));
             }
         }
 
@@ -432,7 +481,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        public void EmitAssignedLocalBoxed(int index) {
+        public void EmitAssignLocalBoxed(int index) {
             Emit(AssignLocalBoxed(index));
         }
 
@@ -476,8 +525,13 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
+        public void EmitStoreLocalToClosure(int index) {
+            EmitAssignLocalToClosure(index);
+            EmitPop();
+        }
+
         public void EmitInitializeLocal(int index, Type type) {
-            object value = LightCompiler.GetImmutableDefaultValue(type);
+            object value = ScriptingRuntimeHelpers.GetPrimitiveDefaultValue(type);
             if (value != null) {
                 Emit(new InitializeLocalInstruction.ImmutableValue(index, value));
             } else if (type.IsValueType) {
@@ -571,9 +625,8 @@ namespace Microsoft.Scripting.Interpreter {
             throw new NotSupportedException();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         public void EmitDiv(Type type) {
-            throw new NotSupportedException();
+            Emit(DivInstruction.Create(type));
         }
 
         #endregion
@@ -732,18 +785,65 @@ namespace Microsoft.Scripting.Interpreter {
 
         #region Control Flow
 
-        internal void FixupBranch(int branchIndex, int offset, int targetStackDepth) {
-            _instructions[branchIndex] = ((OffsetInstruction)_instructions[branchIndex]).Fixup(offset, targetStackDepth);
+        private static readonly RuntimeLabel[] EmptyRuntimeLabels = new RuntimeLabel[] { new RuntimeLabel(Interpreter.RethrowOnReturn, 0, 0) };
+
+        private RuntimeLabel[] BuildRuntimeLabels() {
+            if (_runtimeLabelCount == 0) {
+                return EmptyRuntimeLabels;
+            }
+
+            var result = new RuntimeLabel[_runtimeLabelCount + 1];
+            foreach (BranchLabel label in _labels) {
+                if (label.HasRuntimeLabel) {
+                    result[label.LabelIndex] = label.ToRuntimeLabel();
+                }
+            }
+            // "return and rethrow" label:
+            result[result.Length - 1] = new RuntimeLabel(Interpreter.RethrowOnReturn, 0, 0);
+            return result;
+        }
+
+        public BranchLabel MakeLabel() {
+            if (_labels == null) {
+                _labels = new List<BranchLabel>();
+            }
+
+            var label = new BranchLabel();
+            _labels.Add(label);
+            return label;
+        }
+
+        internal void FixupBranch(int branchIndex, int offset, int targetContinuationDepth, int targetStackDepth) {
+            _instructions[branchIndex] = ((OffsetInstruction)_instructions[branchIndex]).Fixup(offset, targetContinuationDepth, targetStackDepth);
+        }
+
+        private int EnsureLabelIndex(BranchLabel label) {
+            if (label.HasRuntimeLabel) {
+                return label.LabelIndex;
+            }
+
+            label.LabelIndex = _runtimeLabelCount;
+            _runtimeLabelCount++;
+            return label.LabelIndex;
+        }
+
+        public int MarkRuntimeLabel() {
+            BranchLabel handlerLabel = MakeLabel();
+            MarkLabel(handlerLabel);
+            return EnsureLabelIndex(handlerLabel);
+        }
+
+        public void MarkLabel(BranchLabel label) {
+            label.Mark(this);
         }
 
         public void EmitGoto(BranchLabel label, bool hasResult, bool hasValue) {
-            Emit(new GotoInstruction(Count, hasResult, hasValue));
-            label.AddBranch(Count - 1);
+            Emit(GotoInstruction.Create(EnsureLabelIndex(label), hasResult, hasValue));
         }
 
         private void EmitBranch(OffsetInstruction instruction, BranchLabel label) {
             Emit(instruction);
-            label.AddBranch(Count - 1);
+            label.AddBranch(this, Count - 1);
         }
 
         public void EmitBranch(BranchLabel label) {
@@ -766,16 +866,28 @@ namespace Microsoft.Scripting.Interpreter {
             EmitBranch(new BranchFalseInstruction(), elseLabel);
         }
 
-        internal bool AddFinally(int gotoInstructionIndex, int tryStart, int finallyStackDepth, int finallyStart, int finallyEnd) {
-            return ((GotoInstruction)_instructions[gotoInstructionIndex]).AddFinally(tryStart, finallyStackDepth, finallyStart, finallyEnd);
-        }
-
         public void EmitThrow() {
             Emit(ThrowInstruction.Throw);
         }
 
         public void EmitThrowVoid() {
             Emit(ThrowInstruction.VoidThrow);
+        }
+
+        public void EmitEnterTryFinally(BranchLabel finallyStartLabel) {
+            Emit(EnterTryFinallyInstruction.Create(EnsureLabelIndex(finallyStartLabel)));
+        }
+
+        public void EmitEnterFinally() {
+            Emit(EnterFinallyInstruction.Instance);
+        }
+
+        public void EmitLeaveFinally() {
+            Emit(LeaveFinallyInstruction.Instance);
+        }
+
+        public void EmitLeaveFault(bool hasValue) {
+            Emit(hasValue ? LeaveFaultInstruction.NonVoid : LeaveFaultInstruction.Void);
         }
 
         public void EmitEnterExceptionHandlerNonVoid() {
@@ -786,8 +898,8 @@ namespace Microsoft.Scripting.Interpreter {
             Emit(EnterExceptionHandlerInstruction.Void);
         }
 
-        public void EmitLeaveExceptionHandler(bool hasValue, BranchLabel startOfFinally) {
-            EmitBranch(new LeaveExceptionHandlerInstruction(hasValue), startOfFinally);
+        public void EmitLeaveExceptionHandler(bool hasValue, BranchLabel tryExpressionEndLabel) {
+            Emit(LeaveExceptionHandlerInstruction.Create(EnsureLabelIndex(tryExpressionEndLabel), hasValue));
         }
 
         public void EmitSwitch(Dictionary<int, int> cases) {

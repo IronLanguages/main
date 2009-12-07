@@ -18,6 +18,14 @@ describe "Time#<=>" do
     (Time.at(0, 0) <=> Time.at(0, 100)).should == -1
     (Time.at(100, 100) <=> Time.at(101, 100)).should == -1
   end
+  
+  it "returns 0 when comparing UTC time with local time that represents the same point in time" do
+    with_timezone("CET", +1) do
+      u = Time.utc(1994, 11, 6, 8, 49, 37)
+      l = Time.local(1994, 11, 6, 9, 49, 37)
+      (u <=> l).should == 0
+    end
+  end
 
   # see [ruby-core:15333]
   it "returns nil when Time is compared to Numeric" do

@@ -198,16 +198,7 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateTypeError("no implicit conversion from nil to integer");
             }
 
-            IntegerValue integer = CastToInteger(integerConversion, obj);
-            if (integer.IsFixnum) {
-                return unchecked((uint)integer.Fixnum);
-            } 
-
-            uint u;
-            if (integer.Bignum.AsUInt32(out u)) {
-                return u;
-            }
-            throw RubyExceptions.CreateRangeError("bignum too big to convert into 32-bit unsigned integer");
+            return CastToInteger(integerConversion, obj).ToUInt32Unchecked();
         }
 
         /// <summary>

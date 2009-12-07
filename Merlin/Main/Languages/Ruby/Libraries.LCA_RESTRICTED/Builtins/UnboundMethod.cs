@@ -71,7 +71,7 @@ namespace IronRuby.Builtins {
 
             if (!context.IsKindOf(target, self._targetConstraint)) {
                 throw RubyExceptions.CreateTypeError(
-                    String.Format("bind argument must be an instance of {0}", self._targetConstraint.GetName(context))
+                    "bind argument must be an instance of {0}", self._targetConstraint.GetName(context)
                 );
             }
             

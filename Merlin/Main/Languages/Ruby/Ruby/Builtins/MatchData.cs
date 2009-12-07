@@ -173,7 +173,7 @@ namespace IronRuby.Builtins {
 
         public void RequireExistingGroup(int index) {
             if (index >= _match.Groups.Count || index < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of matches", index));
+                throw RubyExceptions.CreateIndexError("index {0} out of matches", index);
             }
         }
 

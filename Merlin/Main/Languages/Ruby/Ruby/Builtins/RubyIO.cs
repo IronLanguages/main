@@ -95,6 +95,12 @@ namespace IronRuby.Builtins {
             _fileDescriptor = descriptor;
         }
 
+        public void Reset(Stream/*!*/ stream, IOMode mode) {
+            _mode = mode;
+            SetStream(stream);
+            SetFileDescriptor(Context.AllocateFileDescriptor(stream));
+        }
+
         #endregion
 
         #region Descriptor, Encoding, Flags

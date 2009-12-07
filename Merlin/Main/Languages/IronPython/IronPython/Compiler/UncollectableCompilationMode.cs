@@ -23,6 +23,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -135,8 +136,47 @@ namespace IronPython.Compiler.Ast {
                     );
                 }
 
-                return new ConstantInfo(expr, fieldInfo, index);
+                return new ConstantInfo(new CodeContextExpression(expr), fieldInfo, index);
             }
+        }
+
+        class CodeContextExpression : MSAst.Expression, IInstructionProvider {
+            private readonly MSAst.Expression _expression;
+            public CodeContext Context;
+
+            public CodeContextExpression(MSAst.Expression expression) {
+                _expression = expression;
+            }
+
+            public override MSAst.Expression Reduce() {
+                return _expression;
+            }
+
+            public override bool CanReduce {
+                get {
+                    return true;
+                }
+            }
+
+            public override Type Type {
+                get {
+                    return typeof(CodeContext);
+                }
+            }
+
+            public override MSAst.ExpressionType NodeType {
+                get {
+                    return MSAst.ExpressionType.Extension;
+                }
+            }
+
+            #region IInstructionProvider Members
+
+            public void AddInstructions(LightCompiler compiler) {
+                compiler.Instructions.EmitLoad(Context);
+            }
+
+            #endregion
         }
 
         private static ConstantInfo/*!*/ NextConstant(int offset, object value) {
@@ -209,6 +249,8 @@ namespace IronPython.Compiler.Ast {
                     StorageData.Contexts[arrIndex] = context;
                 }
             }
+
+            ((CodeContextExpression)codeContextInfo.Expression).Context = context;
         }
         
         private static void PublishConstant(object constant, ConstantInfo info) {

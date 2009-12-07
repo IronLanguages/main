@@ -170,15 +170,20 @@ namespace Microsoft.Scripting.Interpreter {
             //
             // There could be multiple threads racing, but that is okay.
             // Two bad things can happen:
-            //   * We miss increments (one thread sets the counter back)
+            //   * We miss decrements (some thread sets the counter forward)
             //   * We might enter the "if" branch more than once.
             //
             // The first is okay, it just means we take longer to compile.
             // The second we explicitly guard against inside of Compile().
             //
+            // We can't miss 0. The first thread that writes -1 must have read 0 and hence start compilation.
             if (unchecked(_compilationThreshold--) == 0) {
-                // Kick off the compile on another thread so this one can keep going
-                ThreadPool.QueueUserWorkItem(_delegateCreator.Compile, null);
+                if (_interpreter.CompileSynchronously) {
+                    _delegateCreator.Compile(null);
+                } else {
+                    // Kick off the compile on another thread so this one can keep going
+                    ThreadPool.QueueUserWorkItem(_delegateCreator.Compile, null);
+                }
             }
 
             return false;
@@ -198,10 +203,14 @@ namespace Microsoft.Scripting.Interpreter {
             var frame = MakeFrame();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
-            arg0 = (T0)frame.Data[0];
-            arg1 = (T1)frame.Data[1];
+            var currentFrame = frame.Enter();
+            try {
+                _interpreter.Run(frame);
+            } finally {
+                frame.Leave(currentFrame);
+                arg0 = (T0)frame.Data[0];
+                arg1 = (T1)frame.Data[1];
+            }
         }
 
         
@@ -214,8 +223,12 @@ namespace Microsoft.Scripting.Interpreter {
             for (int i = 0; i < arguments.Length; i++) {
                 frame.Data[i] = arguments[i];
             }
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var currentFrame = frame.Enter();
+            try {
+                _interpreter.Run(frame);
+            } finally {
+                frame.Leave(currentFrame);
+            }
             return frame.Pop();
         }
     }

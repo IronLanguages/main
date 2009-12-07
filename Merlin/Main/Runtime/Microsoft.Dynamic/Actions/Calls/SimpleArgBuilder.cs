@@ -51,7 +51,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Type and whether the parameter is a params-array or params-dictionary is derived from info.
         /// </summary>
         public SimpleArgBuilder(ParameterInfo info, int index)
-            : this(info, info.ParameterType, index, CompilerHelpers.IsParamArray(info), BinderHelpers.IsParamDictionary(info)) {
+            : this(info, info.ParameterType, index, info.IsParamArray(), info.IsParamDictionary()) {
         }
         
         protected SimpleArgBuilder(ParameterInfo info, Type parameterType, int index, bool isParams, bool isParamsDict)

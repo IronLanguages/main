@@ -54,6 +54,7 @@ namespace Microsoft.Scripting.Actions {
         private readonly CallSignature _signature;
         private readonly CallTypes _callType;
         private DynamicMetaObject _invalidSplattee;
+        private static readonly DefaultOverloadResolverFactory _factory = new DefaultOverloadResolverFactory(DefaultBinder.Instance);
 
         // instance method call:
         public DefaultOverloadResolver(ActionBinder binder, DynamicMetaObject instance, IList<DynamicMetaObject> args, CallSignature signature)
@@ -74,6 +75,12 @@ namespace Microsoft.Scripting.Actions {
             _args = args;
             _signature = signature;
             _callType = callType;
+        }
+
+        public static OverloadResolverFactory Factory {
+            get {
+                return _factory;
+            }
         }
 
         public CallSignature Signature {

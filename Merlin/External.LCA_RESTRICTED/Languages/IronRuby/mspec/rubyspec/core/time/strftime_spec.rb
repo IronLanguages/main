@@ -2,6 +2,25 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/methods'
 
 describe "Time#strftime" do
+  ruby_version_is ""..."1.9" do
+    it "returns an empty string if any directive is invalid or incomplete" do
+      Time.now.strftime("%$").should == ""
+      Time.now.strftime("%").should == ""
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "ignores invalid or incomplete directives" do
+      Time.now.strftime("%$").should == "%$"
+      Time.now.strftime("%").should == "%"
+    end
+  end
+    
+  it "allows to escape '%'" do
+    Time.now.strftime("%%").should == "%"
+    Time.now.strftime("%%%%").should == "%%"
+  end
+
   it "formats time according to the directives in the given format string" do
     with_timezone("GMT", 0) do
       Time.at(0).strftime("There is %M minutes in epoch").should == "There is 00 minutes in epoch"
@@ -51,31 +70,42 @@ describe "Time#strftime" do
     monday_first.strftime("%U").should == "00"
     monday_first.strftime("%W").should == "01"
   end
-
-  it "supports mm/dd/yy formatting with %D" do
-    now = Time.now
-    mmddyy = now.strftime('%m/%d/%y')
-    now.strftime('%D').should == mmddyy
-  end
-
-  it "supports HH:MM:SS formatting with %T" do
-    now = Time.now
-    hhmmss = now.strftime('%H:%M:%S')
-    now.strftime('%T').should == hhmmss
-  end
-
-  it "supports timezone formatting with %z" do
-    with_timezone("UTC", 0) do
-      time = Time.utc(2005, 2, 21, 17, 44, 30)
-      time.strftime("%z").should == "+0000"
+  
+  ruby_version_is ""..."1.9" do
+    it "supports timezone formatting with %z" do
+      with_timezone("UTC", 0) do
+        time = Time.utc(2005, 2, 21, 17, 44, 30)
+        time.strftime("%z").should == "UTC"
+      end
     end
   end
-
-  it "supports 12-hr formatting with %l" do
-    time = Time.local(2004, 8, 26, 22, 38, 3)
-    time.strftime('%l').should == '10'
-    morning_time = Time.local(2004, 8, 26, 6, 38, 3)
-    morning_time.strftime('%l').should == ' 6'
+  
+  ruby_version_is "1.9" do 
+    it "supports mm/dd/yy formatting with %D" do
+      now = Time.now
+      mmddyy = now.strftime('%m/%d/%y')
+      now.strftime('%D').should == mmddyy
+    end
+  
+    it "supports HH:MM:SS formatting with %T" do
+      now = Time.now
+      hhmmss = now.strftime('%H:%M:%S')
+      now.strftime('%T').should == hhmmss
+    end
+  
+    it "supports timezone formatting with %z" do
+      with_timezone("UTC", 0) do
+        time = Time.utc(2005, 2, 21, 17, 44, 30)
+        time.strftime("%z").should == "+0000"
+      end
+    end
+  
+    it "supports 12-hr formatting with %l" do
+      time = Time.local(2004, 8, 26, 22, 38, 3)
+      time.strftime('%l').should == '10'
+      morning_time = Time.local(2004, 8, 26, 6, 38, 3)
+      morning_time.strftime('%l').should == ' 6'
+    end
   end
 
   it "supports AM/PM formatting with %p" do

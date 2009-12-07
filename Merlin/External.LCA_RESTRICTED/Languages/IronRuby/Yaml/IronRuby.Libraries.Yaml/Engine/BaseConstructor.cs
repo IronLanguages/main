@@ -415,53 +415,67 @@ namespace IronRuby.StandardLibrary.Yaml {
             throw new ConstructorException("could not determine a constructor for the tag: " + node.Tag);
         }
 
-        private static Regex TIMESTAMP_REGEXP = new Regex(@"
-            ^[ \t]*
+        private static Regex _timestampRegexp;
+        
+        private static Regex TimestampRegex { 
+            get { 
+                return _timestampRegexp ?? (_timestampRegexp = new Regex(@"
+                    ^[ \t]*
 
-            (                               # Year
-                -? 
-                [0-9][0-9][0-9][0-9]
-            )
-            -
-            ([0-9][0-9]?)                   # Month
-            -
-            ([0-9][0-9]?)                   # Day
+                    (                               # Year
+                        -? 
+                        [0-9][0-9][0-9][0-9]
+                    )
+                    -
+                    ([0-9][0-9]?)                   # Month
+                    -
+                    ([0-9][0-9]?)                   # Day
 
-            (?:
-                (?:
-                    [Tt]
-                    |
-                    [ \t]+
-                )
-            
-                ([0-9][0-9]?)               # Hour
-                :
-                ([0-9][0-9])                # Minute
-                :
-                ([0-9][0-9])                # Seconds
+                    (?:
+                        (?:
+                            [Tt]
+                            |
+                            [ \t]+
+                        )
+                    
+                        ([0-9][0-9]?)               # Hour
+                        :
+                        ([0-9][0-9])                # Minute
+                        :
+                        ([0-9][0-9])                # Seconds
 
-                (?:
-                    .
-                    ([0-9]*)                # Fractional seconds
-                )?
-
-                (?:
-                    [ \t]*
-                    (                       # utc
-                        Z
-                        |
-                        ([-+][0-9][0-9]?)   # timezoneh
-                        (?:                 # timezonem
-                            :([0-9][0-9])?
+                        (?:
+                            .
+                            ([0-9]*)                # Fractional seconds
                         )?
+
+                        (?:
+                            [ \t]*
+                            (                       # utc
+                                Z
+                                |
+                                ([-+][0-9][0-9]?)   # timezoneh
+                                (?:                 # timezonem
+                                    :([0-9][0-9])?
+                                )?
+                            )?
+                        )
                     )?
-                )
-            )?
 
-            [ \t]*$", 
-            RegexOptions.IgnorePatternWhitespace);
+                    [ \t]*$", 
+                    RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant));
+            }
+        }
 
-        internal static Regex YMD_REGEXP = new Regex("^(-?[0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)$");
+        private static Regex _ymdRegex;
+        
+        internal static Regex YmdRegex {
+            get {
+                return _ymdRegex ?? (_ymdRegex = 
+                    new Regex("^(-?[0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)$", RegexOptions.CultureInvariant)
+                );
+            }
+        }
 
         public static object ConstructYamlTimestampYMD(BaseConstructor ctor, Node node) {
             ScalarNode scalar = node as ScalarNode;
@@ -469,13 +483,14 @@ namespace IronRuby.StandardLibrary.Yaml {
                 throw new ConstructorException("can only contruct timestamp from scalar node");
             }
 
-            Match match = YMD_REGEXP.Match(scalar.Value);
+            Match match = YmdRegex.Match(scalar.Value);
             if (match.Success) {
                 int year_ymd = int.Parse(match.Groups[1].Value);
                 int month_ymd = int.Parse(match.Groups[2].Value);
                 int day_ymd = int.Parse(match.Groups[3].Value);
 
-                return new Time(year_ymd, month_ymd, day_ymd);
+                // TODO: local/utc/...
+                return new RubyTime(new DateTime(year_ymd, month_ymd, day_ymd, 0, 0, 0, 0, DateTimeKind.Local));
             }
             throw new ConstructorException("Invalid tag:yaml.org,2002:timestamp#ymd value.");
         }
@@ -486,7 +501,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 throw new ConstructorException("can only contruct timestamp from scalar node");
             }
 
-            Match match = TIMESTAMP_REGEXP.Match(scalar.Value);
+            Match match = TimestampRegex.Match(scalar.Value);
 
             if (!match.Success) {
                 return ctor.ConstructPrivateType(node);
@@ -506,17 +521,17 @@ namespace IronRuby.StandardLibrary.Yaml {
             bool isUtc = utc == "Z" || utc == "z";
 
             DateTime dt = new DateTime(
-                year_s != "" ? int.Parse(year_s) : 0,
-                month_s != "" ? int.Parse(month_s) : 1,
-                day_s != "" ? int.Parse(day_s) : 1,
-                hour_s != "" ? int.Parse(hour_s) : 0,
-                min_s != "" ? int.Parse(min_s) : 0,
-                sec_s != "" ? int.Parse(sec_s) : 0,
-                isUtc ? DateTimeKind.Utc : DateTimeKind.Local
+                year_s != "" ? Int32.Parse(year_s, CultureInfo.InvariantCulture) : 0,
+                month_s != "" ? Int32.Parse(month_s, CultureInfo.InvariantCulture) : 1,
+                day_s != "" ? Int32.Parse(day_s, CultureInfo.InvariantCulture) : 1,
+                hour_s != "" ? Int32.Parse(hour_s, CultureInfo.InvariantCulture) : 0,
+                min_s != "" ? Int32.Parse(min_s, CultureInfo.InvariantCulture) : 0,
+                sec_s != "" ? Int32.Parse(sec_s, CultureInfo.InvariantCulture) : 0,
+                DateTimeKind.Utc
             );
 
-            if (!string.IsNullOrEmpty(fract_s)) {
-                long fract = int.Parse(fract_s);
+            if (!String.IsNullOrEmpty(fract_s)) {
+                long fract = Int32.Parse(fract_s, CultureInfo.InvariantCulture);
                 if (fract > 0) {
                     while (fract < 1000000) {
                         fract *= 10;
@@ -530,19 +545,19 @@ namespace IronRuby.StandardLibrary.Yaml {
                     int zone = 0;
                     int sign = +1;
                     if (timezoneh_s != "") {
-                        if (timezoneh_s.StartsWith("-")) {
+                        if (timezoneh_s.StartsWith("-", StringComparison.Ordinal)) {
                             sign = -1;
                         }
-                        zone += int.Parse(timezoneh_s.Substring(1)) * 3600000;
+                        zone += Int32.Parse(timezoneh_s.Substring(1), CultureInfo.InvariantCulture) * 3600000;
                     }
                     if (timezonem_s != "") {
-                        zone += int.Parse(timezonem_s) * 60000;
+                        zone += Int32.Parse(timezonem_s, CultureInfo.InvariantCulture) * 60000;
                     }
-                    double utcOffset = TimeZone.CurrentTimeZone.GetUtcOffset(dt).TotalMilliseconds;
-                    dt = dt.AddMilliseconds(utcOffset - sign * zone);
+                    dt = dt.AddMilliseconds(-sign * zone);
                 }
+                dt = RubyTime.ToLocalTime(dt);
             }
-            return new Time(dt);
+            return new RubyTime(dt);
         }
 
         public static object ConstructYamlInt(BaseConstructor ctor, Node node) {

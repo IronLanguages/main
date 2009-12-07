@@ -45,9 +45,44 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="target">
         /// The MetaObject from which the member is retrieved.
         /// </param>
+        /// <returns>
+        /// Returns a DynamicMetaObject which represents the value that will be returned when the member is accessed.
+        /// 
+        /// The returned DynamicMetaObject may be strongly typed to a value type which needs boxing before being
+        /// returned from a standard DLR GetMemberBinder.  The language is responsible for performing any boxing
+        /// so that it has an opportunity to perform custom boxing.
+        /// </returns>
+        public DynamicMetaObject GetMember(string name, DynamicMetaObject target) {
+            return GetMember(
+                name,
+                target,
+                new DefaultOverloadResolverFactory(this),
+                false,
+                null
+            );
+        }
+
+        /// <summary>
+        /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
+        /// GetBoundMember, and StrongBox instances.
+        /// </summary>
+        /// <param name="name">
+        /// The name of the member to retrieve.  This name is not processed by the DefaultBinder and
+        /// is instead handed off to the GetMember API which can do name mangling, case insensitive lookups, etc...
+        /// </param>
+        /// <param name="target">
+        /// The MetaObject from which the member is retrieved.
+        /// </param>
         /// <param name="resolverFactory">
         /// Provides overload resolution and method binding for any calls which need to be performed for the GetMember.
         /// </param>
+        /// <returns>
+        /// Returns a DynamicMetaObject which represents the value that will be returned when the member is accessed.
+        /// 
+        /// The returned DynamicMetaObject may be strongly typed to a value type which needs boxing before being
+        /// returned from a standard DLR GetMemberBinder.  The language is responsible for performing any boxing
+        /// so that it has an opportunity to perform custom boxing.
+        /// </returns>
         public DynamicMetaObject GetMember(string name, DynamicMetaObject target, OverloadResolverFactory resolverFactory) {
             return GetMember(
                 name,
@@ -79,6 +114,13 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="errorSuggestion">
         /// The meta object to be used if the get results in an error.
         /// </param>
+        /// <returns>
+        /// Returns a DynamicMetaObject which represents the value that will be returned when the member is accessed.
+        /// 
+        /// The returned DynamicMetaObject may be strongly typed to a value type which needs boxing before being
+        /// returned from a standard DLR GetMemberBinder.  The language is responsible for performing any boxing
+        /// so that it has an opportunity to perform custom boxing.
+        /// </returns>
         public DynamicMetaObject GetMember(string name, DynamicMetaObject target, OverloadResolverFactory resolverFactory, bool isNoThrow, DynamicMetaObject errorSuggestion) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
@@ -88,6 +130,46 @@ namespace Microsoft.Scripting.Actions {
                 new GetMemberInfo(
                     name,
                     resolverFactory,
+                    isNoThrow,
+                    errorSuggestion
+                ),
+                target
+            );
+        }
+
+        /// <summary>
+        /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
+        /// GetBoundMember, and StrongBox instances.
+        /// </summary>
+        /// <param name="name">
+        /// The name of the member to retrieve.  This name is not processed by the DefaultBinder and
+        /// is instead handed off to the GetMember API which can do name mangling, case insensitive lookups, etc...
+        /// </param>
+        /// <param name="target">
+        /// The MetaObject from which the member is retrieved.
+        /// </param>
+        /// <param name="isNoThrow">
+        /// True if the operation should return Operation.Failed on failure, false if it
+        /// should return the exception produced by MakeMissingMemberError.
+        /// </param>
+        /// <param name="errorSuggestion">
+        /// The meta object to be used if the get results in an error.
+        /// </param>
+        /// <returns>
+        /// Returns a DynamicMetaObject which represents the value that will be returned when the member is accessed.
+        /// 
+        /// The returned DynamicMetaObject may be strongly typed to a value type which needs boxing before being
+        /// returned from a standard DLR GetMemberBinder.  The language is responsible for performing any boxing
+        /// so that it has an opportunity to perform custom boxing.
+        /// </returns>
+        public DynamicMetaObject GetMember(string name, DynamicMetaObject target, bool isNoThrow, DynamicMetaObject errorSuggestion) {
+            ContractUtils.RequiresNotNull(name, "name");
+            ContractUtils.RequiresNotNull(target, "target");
+
+            return MakeGetMemberTarget(
+                new GetMemberInfo(
+                    name,
+                    new DefaultOverloadResolverFactory(this),
                     isNoThrow,
                     errorSuggestion
                 ),

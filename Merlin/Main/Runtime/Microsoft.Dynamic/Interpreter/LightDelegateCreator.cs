@@ -34,23 +34,19 @@ namespace Microsoft.Scripting.Interpreter {
     /// compiled if they are executed often enough.
     /// </summary>
     internal sealed class LightDelegateCreator {
+        // null if we are forced to compile
         private readonly Interpreter _interpreter;
         private readonly LambdaExpression _lambda;
-        private readonly IList<ParameterExpression> _closureVariables;
 
         // Adaptive compilation support:
         private Type _compiledDelegateType;
         private Delegate _compiled;
         private readonly object _compileLock = new object();
 
-        internal LightDelegateCreator(Interpreter interpreter, LambdaExpression lambda, IList<ParameterExpression> closureVariables) {
+        internal LightDelegateCreator(Interpreter interpreter, LambdaExpression lambda) {
+            Assert.NotNull(lambda);
             _interpreter = interpreter;
             _lambda = lambda;
-            _closureVariables = closureVariables;
-        }
-
-        internal IList<ParameterExpression> ClosureVariables {
-            get { return _closureVariables; }
         }
 
         internal Interpreter Interpreter {
@@ -58,7 +54,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private bool HasClosure {
-            get { return _closureVariables.Count > 0; }
+            get { return _interpreter != null && _interpreter.Locals.ClosureSize > 0; }
         }
 
         internal bool HasCompiled {
@@ -134,6 +130,8 @@ namespace Microsoft.Scripting.Interpreter {
                     return;
                 }
 
+                PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Interpreted lambda compiled");
+                
                 // Interpreter needs a standard delegate type.
                 // So change the lambda's delegate type to Func<...> or
                 // Action<...> so it can be called from the LightLambda.Run
@@ -145,7 +143,7 @@ namespace Microsoft.Scripting.Interpreter {
                 }
 
                 if (HasClosure) {
-                    _compiled = LightLambdaClosureVisitor.BindLambda(lambda, _closureVariables);
+                    _compiled = LightLambdaClosureVisitor.BindLambda(lambda, _interpreter.Locals);
                 } else {
                     _compiled = lambda.Compile();
                 }

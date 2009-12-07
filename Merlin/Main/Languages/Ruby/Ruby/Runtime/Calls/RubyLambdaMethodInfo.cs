@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Threading;
 using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Scripting;
@@ -33,18 +34,26 @@ namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
 
     public class RubyLambdaMethodInfo : RubyMemberInfo {
+        private static int _Id = 1;
+
+        private readonly int _id;
         private readonly Proc/*!*/ _lambda;
         private readonly string/*!*/ _definitionName;
 
-        internal RubyLambdaMethodInfo(Proc/*!*/ lambda, string/*!*/ definitionName, RubyMemberFlags flags, RubyModule/*!*/ declaringModule) 
+        internal RubyLambdaMethodInfo(Proc/*!*/ block, string/*!*/ definitionName, RubyMemberFlags flags, RubyModule/*!*/ declaringModule) 
             : base(flags, declaringModule) {
-            Assert.NotNull(lambda, definitionName, declaringModule);
-            _lambda = lambda;
+            Assert.NotNull(block, definitionName, declaringModule);
+            _lambda = block.ToLambda(this);
             _definitionName = definitionName;
+            _id = Interlocked.Increment(ref _Id);
         }
 
         public Proc/*!*/ Lambda {
             get { return _lambda; }
+        }
+
+        internal int Id {
+            get { return _id; }
         }
 
         public string/*!*/ DefinitionName {
@@ -68,8 +77,7 @@ namespace IronRuby.Runtime.Calls {
             Proc.BuildCall(
                 metaBuilder,
                 AstUtils.Constant(_lambda),            // proc object
-                args.TargetExpression,            // self
-                AstUtils.Constant(this),               // this method for super and class_eval
+                args.TargetExpression,                 // self
                 args
             );
         }

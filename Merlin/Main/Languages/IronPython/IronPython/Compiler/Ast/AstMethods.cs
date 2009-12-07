@@ -14,13 +14,16 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.Reflection;
-using IronPython.Runtime.Operations;
-using Microsoft.Scripting.Utils;
-using IronPython.Runtime;
+
+using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler.Ast {
     static class AstMethods {
@@ -69,7 +72,25 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo MakeList = GetMethod((Func<List>)PythonOps.MakeList);
         public static readonly MethodInfo MakeListNoCopy = GetMethod((Func<object[], List>)PythonOps.MakeListNoCopy);
         public static readonly MethodInfo GetEnumeratorValues = GetMethod((Func<CodeContext, object, int, object[]>)PythonOps.GetEnumeratorValues);
-
+        public static readonly MethodInfo GetGlobalContext = GetMethod((Func<CodeContext, CodeContext>)PythonOps.GetGlobalContext);
+        public static readonly MethodInfo GetParentContextFromFunction = GetMethod((Func<PythonFunction, CodeContext>)PythonOps.GetParentContextFromFunction);
+        public static readonly MethodInfo MakeFunction = GetMethod((Func<CodeContext, FunctionCode, object, object[], object>)PythonOps.MakeFunction);
+        public static readonly MethodInfo MakeFunctionDebug = GetMethod((Func<CodeContext/*!*/, FunctionCode, object, object[], Delegate, object>)PythonOps.MakeFunctionDebug);
+        public static readonly MethodInfo MakeClosureCell = GetMethod((Func<ClosureCell>)PythonOps.MakeClosureCell);
+        public static readonly MethodInfo MakeClosureCellWithValue = GetMethod((Func<object, ClosureCell>)PythonOps.MakeClosureCellWithValue);
+        public static readonly MethodInfo LookupName = GetMethod((Func<CodeContext, string, object>)PythonOps.LookupName);
+        public static readonly MethodInfo RemoveName = GetMethod((Action<CodeContext, string>)PythonOps.RemoveName);
+        public static readonly MethodInfo SetName = GetMethod((Func<CodeContext, string, object, object>)PythonOps.SetName);
+        public static readonly MethodInfo KeepAlive = GetMethod((Action<object>)GC.KeepAlive);
+        public static readonly MethodInfo MakeDict = GetMethod((Func<int, PythonDictionary>)PythonOps.MakeDict);
+        public static readonly MethodInfo MakeDictFromItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeDictFromItems);
+        public static readonly MethodInfo MakeHomogeneousDictFromItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeHomogeneousDictFromItems);
+        public static readonly MethodInfo CreateLocalContext = GetMethod((Func<CodeContext, MutableTuple, string[], CodeContext>)PythonOps.CreateLocalContext);
+        public static readonly MethodInfo UpdateStackTrace = GetMethod((Action<CodeContext, FunctionCode, MethodBase, string, string, int>)PythonOps.UpdateStackTrace);
+        public static readonly MethodInfo GetCurrentMethod = GetMethod((Func<MethodBase>)MethodBase.GetCurrentMethod);
+        public static readonly MethodInfo ForLoopDispose = GetMethod((Action<KeyValuePair<IEnumerator, IDisposable>>)PythonOps.ForLoopDispose);
+        public static readonly MethodInfo GetClosureTupleFromContext = GetMethod((Func<CodeContext, MutableTuple>)PythonOps.GetClosureTupleFromContext);
+        
         private static MethodInfo GetMethod(Delegate x) {
             return x.Method;
         }

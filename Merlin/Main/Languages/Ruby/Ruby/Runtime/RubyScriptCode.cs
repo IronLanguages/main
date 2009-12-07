@@ -139,7 +139,7 @@ namespace IronRuby.Runtime {
                 Debug.Assert(!(result.Target is Closure) || ((Closure)result.Target).Locals == null);
                 return result;
             } else {
-                return lambda.LightCompile(false, compilationThreshold);
+                return lambda.LightCompile(compilationThreshold);
             }
         }
     }

@@ -142,7 +142,7 @@ namespace IronRuby.Builtins {
             string strPath = path.ConvertToString();
 
             // NUL/nul is a special-cased filename on Windows
-            if (strPath.ToLower() == "nul") {
+            if (strPath.ToUpperInvariant() == "NUL") {
                 return RubyFileOps.RubyStatOps.IsZeroLength(RubyFileOps.RubyStatOps.Create(self.Context, strPath));
             }
 

@@ -268,6 +268,14 @@ namespace IronRuby.Runtime {
         internal Action<RubyModule>/*!*/ ClassSingletonTrait { get { return _classSingletonTrait; } }
         internal Action<RubyModule>/*!*/ SingletonSingletonTrait { get { return _singletonSingletonTrait; } }
 
+        // Set of names that method_missing defined on any module was resolved for and that are cached. Lazy init.
+        // 
+        // Note: We used to have this set per module but that doesn't work - see unit test MethodCallCaching_MethodMissing4.
+        // Whenever a method is added to a class C we would need to traverse all its subclasses to see if any of them 
+        // has the added method in its MissingMethodsCachedInSites table. 
+        // TODO: Could we optimize this search? If so we could also free the per-module set if mm is removed.
+        internal HashSet<string> MissingMethodsCachedInSites { get; set; }
+
         #endregion
 
         #region Properties
@@ -984,7 +992,7 @@ namespace IronRuby.Runtime {
 
         internal RubyModule/*!*/ DefineLibraryModule(string name, Type/*!*/ type,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
-            RubyModule/*!*/[]/*!*/ mixins, RubyModuleAttributes attributes, bool builtin) {
+            RubyModule/*!*/[]/*!*/ mixins, ModuleRestrictions restrictions, bool builtin) {
             Assert.NotNull(type);
             Assert.NotNullItems(mixins);
 
@@ -1001,8 +1009,8 @@ namespace IronRuby.Runtime {
                     // Use empty constant initializer rather than null so that we don't try to initialize nested types.
                     result = CreateModule(
                         name, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, expandedMixins, null,
-                        GetLibraryModuleTypeTracker(type, attributes),
-                        (ModuleRestrictions)(attributes & RubyModuleAttributes.RestrictionsMask)
+                        GetLibraryModuleTypeTracker(type, restrictions),
+                        restrictions
                     );
 
                     AddModuleToCacheNoLock(type, result);
@@ -1019,7 +1027,7 @@ namespace IronRuby.Runtime {
         // isSelfContained: The traits are defined on type (public static methods marked by RubyMethod attribute).
         internal RubyClass/*!*/ DefineLibraryClass(string name, Type/*!*/ type,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
-            RubyClass super, RubyModule[]/*!*/ mixins, Delegate/*!*/[] factories, RubyModuleAttributes attributes, bool builtin) {
+            RubyClass super, RubyModule[]/*!*/ mixins, Delegate/*!*/[] factories, ModuleRestrictions restrictions, bool builtin) {
             Assert.NotNull(type);
             Assert.NotNullItems(mixins);
 
@@ -1043,8 +1051,8 @@ namespace IronRuby.Runtime {
                     // Use empty constant initializer rather than null so that we don't try to initialize nested types.
                     result = CreateClass(
                         name, type, null, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, factories,
-                        super, expandedMixins, GetLibraryModuleTypeTracker(type, attributes), null, false, false,
-                        (ModuleRestrictions)(attributes & RubyModuleAttributes.RestrictionsMask) 
+                        super, expandedMixins, GetLibraryModuleTypeTracker(type, restrictions), null, false, false,
+                        restrictions
                     );
 
                     AddModuleToCacheNoLock(type, result);
@@ -1070,10 +1078,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        private static TypeTracker GetLibraryModuleTypeTracker(Type/*!*/ type, RubyModuleAttributes attributes) {
-            // Setting tracker on the class makes CLR methods visible.
-            // Hide CLR methods if the type itself defines RubyMethods and is not an extension of another type.
-            return (attributes & RubyModuleAttributes.IsSelfContained) != 0 ? null : ReflectionCache.GetTypeTracker(type);
+        private static TypeTracker GetLibraryModuleTypeTracker(Type/*!*/ type, ModuleRestrictions restrictions) {
+            return (restrictions & ModuleRestrictions.NoUnderlyingType) != 0 ? null : ReflectionCache.GetTypeTracker(type);
         }
 
         #endregion
@@ -1332,7 +1338,7 @@ namespace IronRuby.Runtime {
                 result = _objectClass;
                 int pos = 0;
                 while (true) {
-                    int pos2 = moduleName.IndexOf("::", pos);
+                    int pos2 = moduleName.IndexOf("::", pos, StringComparison.Ordinal);
                     string partialName;
                     if (pos2 < 0) {
                         partialName = moduleName.Substring(pos);

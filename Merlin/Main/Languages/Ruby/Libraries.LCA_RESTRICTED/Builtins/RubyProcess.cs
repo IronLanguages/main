@@ -23,6 +23,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
 
@@ -361,7 +362,7 @@ namespace IronRuby.Builtins {
 
             [RubyMethod("inspect")]
             public static MutableString/*!*/ Inspect(Status/*!*/ self) {
-                return MutableString.CreateAscii(String.Format("#<Process::Status: pid={0},{1}({2})>", 
+                return MutableString.CreateAscii(String.Format(CultureInfo.InvariantCulture, "#<Process::Status: pid={0},{1}({2})>", 
                     Pid(self),
                     Exited(self) ? "exited" : "running",
                     ExitStatus(self)

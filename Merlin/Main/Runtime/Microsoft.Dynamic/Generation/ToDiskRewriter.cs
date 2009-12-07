@@ -38,7 +38,7 @@ namespace Microsoft.Scripting.Generation {
     internal sealed class ToDiskRewriter : ExpressionVisitor {
         private static int _uniqueNameId;
         private List<Expression> _constants;
-        private Dictionary<ConstantExpression, Expression> _constantCache;
+        private Dictionary<object, Expression> _constantCache;
         private ParameterExpression _constantPool;
         private Dictionary<Type, Type> _delegateTypes;
 #if SILVERLIGHT
@@ -163,11 +163,11 @@ namespace Microsoft.Scripting.Generation {
                 EnsureConstantPool();
                 Expression res;
 
-                if (!_constantCache.TryGetValue(node, out res)) {
+                if (!_constantCache.TryGetValue(node.Value, out res)) {
                     Expression serialized = exprSerializable.CreateExpression();
                     _constants.Add(serialized);
 
-                    _constantCache[node] = res = AstUtils.Convert(
+                    _constantCache[node.Value] = res = AstUtils.Convert(
                         Expression.ArrayAccess(_constantPool, AstUtils.Constant(_constants.Count - 1)),
                         serialized.Type
                     );
@@ -301,7 +301,7 @@ namespace Microsoft.Scripting.Generation {
             if (_constantPool == null) {
                 _constantPool = Expression.Variable(typeof(object[]), "$constantPool");
                 _constants = new List<Expression>();
-                _constantCache = new Dictionary<ConstantExpression, Expression>();
+                _constantCache = new Dictionary<object, Expression>();
             }
         }
     }

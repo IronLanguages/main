@@ -115,7 +115,7 @@ describe "Method parameter binding with misc parameters" do
    "ImplementsIInterfaceInstance" => { :GenericArg => "GenericArg[ImplementsIInterface]",
      :RefImplementsIInterfaceArg => "RefImplementsIInterfaceArg",
      :RefBooleanArg => "RefBooleanArg", :ParamsIInterfaceArrTestArg =>"ParamsIInterfaceArrTestArg"},
-   "NoArg" => (Hash.new(AE).merge({:OutNonByRefInt32Arg => "OutNonByRefInt32Arg", 
+   "NoArg" => (Hash.new(AE).merge({ 
      :OutStructImplementsIInterfaceArg => "OutStructImplementsIInterfaceArg",  
      :OutBooleanArg => "OutBooleanArg", :ParamsIInterfaceArrTestArg => "ParamsIInterfaceArrTestArg"}))
   }

@@ -382,6 +382,7 @@ namespace IronRuby.Runtime {
                 case ('i' << 8) | 'n':
                 case ('i' << 8) | 's':
                 case ('g' << 8) | 'o':
+                case ('m' << 8) | 'e':
                 case ('m' << 8) | 'y':
                 case ('o' << 8) | 'f':
                 case ('o' << 8) | 'k':
@@ -579,6 +580,10 @@ namespace IronRuby.Runtime {
             return MapOperator(method) != null;
         }
 
+        internal static bool IsExtension(MethodBase/*!*/ method) {
+            return false;
+        }
+
         internal static string MapOperator(ExpressionType/*!*/ op) {
             switch (op) {
                 case ExpressionType.Add: return "+";
@@ -764,6 +769,8 @@ namespace IronRuby.Runtime {
                 FactoryKind = isModuleEval ? TopScopeFactoryKind.ModuleEval : TopScopeFactoryKind.None,
                 LocalNames = targetScope.GetVisibleLocalNames(),
                 TopLevelMethodName = (methodScope != null) ? methodScope.DefinitionName : null,
+                TopLevelParameterNames = (methodScope != null) ? methodScope.GetVisibleParameterNames() : null,
+                TopLevelHasUnsplatParameter = (methodScope != null) ? methodScope.HasUnsplatParameter : false,
                 InitialLocation = new SourceLocation(0, line <= 0 ? 1 : line, 1),
             };
         }
@@ -1054,7 +1061,7 @@ namespace IronRuby.Runtime {
         }
 
         public static String CombinePaths(string basePath, string path) {
-            return (basePath.EndsWith("\\") || basePath.EndsWith("/") || basePath == string.Empty) ? 
+            return basePath.Length == 0 || basePath.EndsWith("\\", StringComparison.Ordinal) || basePath.EndsWith("/", StringComparison.Ordinal) ? 
                 basePath + path :
                 basePath + "/" + path;
         }

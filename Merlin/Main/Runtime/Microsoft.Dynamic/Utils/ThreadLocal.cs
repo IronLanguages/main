@@ -104,7 +104,7 @@ namespace Microsoft.Scripting.Utils {
         /// <summary>
         /// Gets the StorageInfo for the current thread.
         /// </summary>
-        private StorageInfo GetStorageInfo() {
+        public StorageInfo GetStorageInfo() {
             return GetStorageInfo(_stores);
         }
 
@@ -197,11 +197,12 @@ namespace Microsoft.Scripting.Utils {
         /// Helper class for storing the value.  We need to track if a ManagedThreadId
         /// has been re-used so we also store the thread which owns the value.
         /// </summary>
-        private class StorageInfo {
-            public readonly Thread Thread;                 // the thread that owns the StorageInfo
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")] // TODO
+        public sealed class StorageInfo {
+            internal readonly Thread Thread;                 // the thread that owns the StorageInfo
             public T Value;                                // the current value for the owning thread
 
-            public StorageInfo(Thread curThread) {
+            internal StorageInfo(Thread curThread) {
                 Assert.NotNull(curThread);
 
                 Thread = curThread;

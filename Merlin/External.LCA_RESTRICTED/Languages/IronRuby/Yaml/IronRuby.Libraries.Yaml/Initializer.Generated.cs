@@ -35,7 +35,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             ExtendClass(typeof(IronRuby.Builtins.RubyModule), 0x00000000, null, LoadIronRuby__Builtins__RubyModule_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendModule(typeof(IronRuby.Builtins.RubyRegex), 0x00000000, LoadIronRuby__Builtins__RubyRegex_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendModule(typeof(IronRuby.Builtins.RubyStruct), 0x00000000, LoadIronRuby__Builtins__RubyStruct_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            ExtendModule(typeof(IronRuby.Builtins.Time), 0x00000000, LoadIronRuby__Builtins__Time_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            ExtendModule(typeof(IronRuby.Builtins.RubyTime), 0x00000000, LoadIronRuby__Builtins__Time_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendModule(typeof(IronRuby.Builtins.TrueClass), 0x00000000, LoadIronRuby__Builtins__TrueClass_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendClass(typeof(IronRuby.StandardLibrary.Yaml.Node), 0x00000000, null, LoadIronRuby__StandardLibrary__Yaml__Node_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             ExtendModule(typeof(Microsoft.Scripting.Math.BigInteger), 0x00000000, LoadMicrosoft__Scripting__Math__BigInteger_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -165,12 +165,12 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
         
         private static void LoadIronRuby__Builtins__Time_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            DefineLibraryMethod(module, "taguri", 0x11, 
-                new Func<IronRuby.Builtins.Time, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Yaml.TimeOps.TagUri)
+            DefineLibraryMethod(module, "taguri", 0x11,
+                new Func<IronRuby.Builtins.RubyTime, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Yaml.TimeOps.TagUri)
             );
             
-            DefineLibraryMethod(module, "to_yaml_node", 0x12, 
-                new Func<IronRuby.Builtins.Time, IronRuby.StandardLibrary.Yaml.RubyRepresenter, IronRuby.StandardLibrary.Yaml.Node>(IronRuby.StandardLibrary.Yaml.TimeOps.ToYaml)
+            DefineLibraryMethod(module, "to_yaml_node", 0x12,
+                new Func<IronRuby.Builtins.RubyTime, IronRuby.StandardLibrary.Yaml.RubyRepresenter, IronRuby.StandardLibrary.Yaml.Node>(IronRuby.StandardLibrary.Yaml.TimeOps.ToYaml)
             );
             
         }

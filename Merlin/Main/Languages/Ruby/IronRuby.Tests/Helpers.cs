@@ -231,6 +231,13 @@ namespace IronRuby.Tests {
 
         [DebuggerHiddenAttribute]
         private void AssertOutput(Action f, string expectedOutput, OutputFlags flags) {
+            var error = CompareOutput(f, expectedOutput, flags);
+            if (error != null) {
+                Assert(false, error);
+            }
+        }
+
+        private string CompareOutput(Action f, string expectedOutput, OutputFlags flags) {
 #if !SILVERLIGHT
             StringBuilder builder = new StringBuilder();
 
@@ -248,21 +255,23 @@ namespace IronRuby.Tests {
             if ((flags & OutputFlags.Match) != 0) {
                 Regex regex = new Regex(Regex.Escape(expectedOutput).Replace("\\*", ".*").Replace("\\?", "."));
                 if (!regex.IsMatch(actualOutput)) {
-                    Assert(false, String.Format("Unexpected output: \n\n'{0}'.", actualOutput));
+                    return String.Format("Unexpected output: \n\n'{0}'.", actualOutput);
                 }
             } else {
                 int i = 0;
                 while (i < actualOutput.Length && i < expectedOutput.Length && actualOutput[i] == expectedOutput[i]) i++;
 
                 if (actualOutput != expectedOutput) {
-                    Assert(false, String.Format("Unexpected output: \n\n'{0}'.\n\nFirst difference ({1}):\nactual = '{2}'\nexpected = '{3}'\n",
-                    Escape(builder), i,
-                    (i < actualOutput.Length ? Escape(actualOutput[i]) : "<end>"),
-                    (i < expectedOutput.Length ? Escape(expectedOutput[i]) : "<end>")
-                    ));
+                    return String.Format("Unexpected output: \n\n'{0}'.\n\nFirst difference ({1}):\nactual = '{2}'\nexpected = '{3}'\n",
+                        Escape(builder), i,
+                        (i < actualOutput.Length ? Escape(actualOutput[i]) : "<end>"),
+                        (i < expectedOutput.Length ? Escape(expectedOutput[i]) : "<end>")
+                    );
                 }
             }
+
 #endif
+            return null;
         }
 
         private static string Escape(char ch) {

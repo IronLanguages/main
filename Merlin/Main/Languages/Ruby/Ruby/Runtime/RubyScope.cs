@@ -24,6 +24,7 @@ using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Threading;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime {
 
@@ -31,7 +32,17 @@ namespace IronRuby.Runtime {
         TopLevel,
         Method,
         Module,
-        Block
+        Block,
+
+        /// <summary>
+        /// Block scope used by defined_method.
+        /// </summary>
+        BlockMethod,
+
+        /// <summary>
+        /// Block scope used by module_eval.
+        /// </summary>
+        BlockModule
     }
 
     public class RuntimeFlowControl {
@@ -370,6 +381,8 @@ namespace IronRuby.Runtime {
             while (scope != null) {
                 switch (scope.Kind) {
                     case ScopeKind.Block:
+                    case ScopeKind.BlockMethod:
+                    case ScopeKind.BlockModule:
                         blockScope = (RubyBlockScope)scope;
                         return;
 
@@ -382,7 +395,13 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal void GetSuperCallTarget(out RubyModule declaringModule, out string/*!*/ methodName, out object self) {
+        /// <summary>
+        /// Returns 
+        /// -1 if there is no method or block-method scope,
+        /// 0 if the target scope is a method scope,
+        /// id > 0 of the target lambda for block-method scopes.
+        /// </summary>
+        internal int GetSuperCallTarget(out RubyModule declaringModule, out string/*!*/ methodName, out RubyScope targetScope) {
             RubyScope scope = this;
             while (true) {
                 Debug.Assert(scope != null);
@@ -393,21 +412,22 @@ namespace IronRuby.Runtime {
                         // See RubyOps.DefineMethod for why we can use Method here.
                         declaringModule = methodScope.DeclaringModule;
                         methodName = methodScope.DefinitionName;
-                        self = scope.SelfObject;
-                        return;
+                        targetScope = scope;
+                        return 0;
 
-                    case ScopeKind.Block:
-                        BlockParam blockParam = ((RubyBlockScope)scope).BlockFlowControl;
-                        if (blockParam.MethodName != null) {
-                            declaringModule = blockParam.MethodLookupModule;
-                            methodName = blockParam.MethodName;
-                            self = scope.SelfObject;
-                            return;
-                        }
-                        break;
+                    case ScopeKind.BlockMethod:
+                        RubyLambdaMethodInfo info = ((RubyBlockScope)scope).BlockFlowControl.Proc.Method;
+                        Debug.Assert(info != null);
+                        declaringModule = info.DeclaringModule;
+                        methodName = info.DefinitionName;
+                        targetScope = scope;
+                        return info.Id;
 
                     case ScopeKind.TopLevel:
-                        throw RubyOps.MakeTopLevelSuperException();
+                        declaringModule = null;
+                        methodName = null;
+                        targetScope = null;
+                        return -1;
                 }
 
                 scope = scope.Parent;
@@ -417,13 +437,13 @@ namespace IronRuby.Runtime {
         public RubyScope/*!*/ GetMethodAttributesDefinitionScope() {
             RubyScope scope = this;
             while (true) {
-                if (scope.Kind == ScopeKind.Block) {
-                    BlockParam blockParam = ((RubyBlockScope)scope).BlockFlowControl;
-                    if (blockParam.MethodLookupModule != null && blockParam.MethodName == null) {
+                switch (scope.Kind) {
+                    case ScopeKind.Block:
+                    case ScopeKind.BlockMethod:
+                        break;
+
+                    default:
                         return scope;
-                    }
-                } else {
-                    return scope;
                 }
 
                 scope = scope.Parent;
@@ -454,12 +474,13 @@ namespace IronRuby.Runtime {
                     case ScopeKind.Method:
                         return scope.GetInnerMostModuleForMethodLookup();
 
-                    case ScopeKind.Block:
+                    case ScopeKind.BlockMethod:
+                        return ((RubyBlockScope)scope).BlockFlowControl.Proc.Method.DeclaringModule;
+
+                    case ScopeKind.BlockModule:
                         BlockParam blockParam = ((RubyBlockScope)scope).BlockFlowControl;
-                        if (blockParam.MethodLookupModule != null) {
-                            return blockParam.MethodLookupModule;
-                        }
-                        break;
+                        Debug.Assert(blockParam.MethodLookupModule != null);
+                        return blockParam.MethodLookupModule;
                 }
 
                 scope = scope.Parent;
@@ -695,6 +716,23 @@ var closureScope = scope as RubyClosureScope;
         private readonly string/*!*/ _definitionName;
         private readonly Proc _blockParameter;
 
+        // Lowest 2 bits are flags:
+        internal const int HasBlockFlag = 1;
+        internal const int HasUnsplatFlag = 2;
+        private readonly int _visibleParameterCountAndSignatureFlags;
+
+        internal bool HasUnsplatParameter {
+            get { return (_visibleParameterCountAndSignatureFlags & HasUnsplatFlag) != 0; }
+        }
+
+        internal bool HasBlockParameter {
+            get { return (_visibleParameterCountAndSignatureFlags & HasBlockFlag) != 0; }
+        }
+
+        internal int VisibleParameterCount {
+            get { return _visibleParameterCountAndSignatureFlags >> 2; }
+        }
+
         public override ScopeKind Kind { get { return ScopeKind.Method; } }
         public override bool InheritsLocalVariables { get { return false; } }
 
@@ -711,7 +749,7 @@ var closureScope = scope as RubyClosureScope;
             get { return _blockParameter; }
         }
 
-        internal RubyMethodScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        internal RubyMethodScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, int visibleParameterCountAndSignatureFlags,
             RubyScope/*!*/ parent, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
             object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
             Assert.NotNull(parent, declaringModule, definitionName);
@@ -726,6 +764,7 @@ var closureScope = scope as RubyClosureScope;
             _methodAttributes = RubyMethodAttributes.PublicInstance;
             _locals = locals;
             _variableNames = variableNames;
+            _visibleParameterCountAndSignatureFlags = visibleParameterCountAndSignatureFlags;
             InterpretedFrame = interpretedFrame;
             
             // RubyMethodScope:
@@ -735,6 +774,18 @@ var closureScope = scope as RubyClosureScope;
 
             InitializeRfc(blockParameter);
             SetDebugName("method " + definitionName + ((blockParameter != null) ? "&" : null));
+        }
+
+        public string/*!*/[]/*!*/ GetVisibleParameterNames() {
+            int firstVisibleParameter = HasBlockParameter ? 1 : 0;
+            var result = new string[VisibleParameterCount];
+            
+            // parameters precede other variables:
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = SymbolTable.IdToString(_variableNames[firstVisibleParameter + i]);
+            }
+
+            return result;
         }
     }
 
@@ -817,8 +868,23 @@ var closureScope = scope as RubyClosureScope;
     public sealed class RubyBlockScope : RubyScope {
         private readonly BlockParam/*!*/ _blockFlowControl;
 
-        public override ScopeKind Kind { get { return ScopeKind.Block; } }
-        public override bool InheritsLocalVariables { get { return true; } }
+        public override ScopeKind Kind { 
+            get {
+                if (_blockFlowControl.IsMethod) {
+                    return ScopeKind.BlockMethod;
+                }
+
+                if (_blockFlowControl.MethodLookupModule == null) {
+                    return ScopeKind.Block; 
+                }
+
+                return ScopeKind.BlockModule;
+            } 
+        }
+
+        public override bool InheritsLocalVariables { 
+            get { return true; } 
+        }
 
         public BlockParam/*!*/ BlockFlowControl {
             get { return _blockFlowControl; }

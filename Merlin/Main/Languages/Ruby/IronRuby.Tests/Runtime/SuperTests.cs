@@ -42,28 +42,33 @@ arg"
         public void SuperParameterless1() {
             TestOutputWithEval(@"
 class C
-  def foo a
+  def foo *a
     puts 'C.foo'
-    puts a
+    p a
   end
 end
 
 class D < C
-  def foo a
+  def foo a, b=1, c=2, d=3, e=4, f=5, g=6, h=7, i=8, j=9, k=a, *rest, &blck
     puts 'D.foo'
-    super            # TODO: test with eval
+    p rest
+    y = 1
+    z = 2    
+    #<super#>
   end
 end
 
-D.new.foo 'arg'
-",@"
+D.new.foo 0
+", @"
 D.foo
+[]
 C.foo
-arg"
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+"
             );
         }
 
-        public void SuperParameterless2() {
+        public void SuperParameterless2A() {
             TestOutputWithEval(@"
 class C
   def foo a
@@ -76,7 +81,7 @@ end
 class D < C
   def foo a
     puts 'D.foo'
-    super { puts 'block' }   # TODO: test with eval
+    #<super { puts 'block' }#>
   end
 end
 
@@ -86,6 +91,35 @@ D.foo
 C.foo
 arg
 block
+"
+            );
+        }
+
+        /// <summary>
+        /// Super passes the most recent values of the parameter variables but keeps the original block value.
+        /// This is consistent with yield.
+        /// </summary>
+        public void SuperParameterless2B() {
+            TestOutputWithEval(@"
+class C
+  def foo *a
+    p a
+    yield
+  end
+end
+
+class D < C
+  def foo a, &b
+    a = 2
+    b = lambda { puts '2' }    
+    1.times { #<super#> }
+  end
+end
+
+D.new.foo(1) { puts '1' }
+", @"
+[2]
+1
 "
             );
         }
@@ -268,7 +302,6 @@ M
 ");
         }
 
-        // TODO: parameters
         public void SuperInDefineMethod1() {
             SuperInDefineMethod1_Test(false);
         }
@@ -289,7 +322,7 @@ def def_lambda
     $p = lambda { 
        1.times { 
          p self.class
-         #<super#>
+         #<super()#>
        }
     }
   }
@@ -318,9 +351,8 @@ C.foo
         /// <summary>
         /// Super in a proc invoked via "call" uses the self and parameters captured in closure by the block.
         /// </summary>
-        public void SuperInDefineMethod2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void SuperInBlocks1() {
+            TestOutput(@"
 class A 
   def def_lambda a
     puts 'A.def_lambda'
@@ -334,7 +366,7 @@ class B < A
       $p = lambda { 
         1.times { 
           p self.class
-          super 
+          super
         }
       }
     }
@@ -343,8 +375,7 @@ end
 
 B.new.def_lambda 'arg'
 $p.call 'foo'
-");
-            }, @"
+", @"
 B
 A.def_lambda
 arg
@@ -352,36 +383,176 @@ arg
         }
 
         /// <summary>
-        /// Super call in defined_method's proc: 
-        /// 1.8: parameters are taken from block parameters
-        /// 1.9: not-supported exception is thrown
+        /// define_method returns a lambda that behaves like a method-block when called.
+        /// This behavior is not very well defined in CRuby (see http://redmine.ruby-lang.org/issues/show/2419).
         /// </summary>
-        public void SuperInDefineMethod3() {
-            // TODO:
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void SuperInDefineMethod2() {
+            TestOutput(@"
 class B
-  def m *a
-    p a
+  def m
+    puts self.class.to_s + '::m'    
   end
 end
 
 class C < B
-  define_method :m do |*a|
-    p a
-    super
+  q = nil
+
+  C.new.instance_eval do   # we need to close the block over self that is an instance of C
+    q = Proc.new do
+      super()
+    end
+  end
+
+  mq = define_method :m, &q
+  puts mq.object_id == q.object_id  
+  
+  q.call rescue p $!
+  mq.call
+end
+", @"
+false
+#<NoMethodError: super called outside of method>
+C::m
+");
+        }
+
+        /// <summary>
+        /// Caching - a single super call site can be used for invocation of two different methods,
+        /// if it is defined in a block that is used in define_method.
+        /// </summary>
+        public void SuperInDefineMethod3() {
+            TestOutput(@"
+class B
+  def foo
+    puts 'B::foo'
+  end
+
+  def bar
+    puts 'B::bar'
   end
 end
 
-C.new.m 1,2
+class C < B
+  def foo
+    1.times { $p = Proc.new { 1.times { 1.times { super() } } } }
+    1.times(&$p)
+  end
+end
+
+c = C.new
+c.foo
+
+class C
+  define_method(:bar, &$p)
+end
+
+c.bar
+", @"
+B::foo
+B::bar
 ");
-            }, @"
-[1, 2]
-[1, 2]
+        }
+
+        /// <summary>
+        /// Caching - The same as SuperInDefineMethod4 but with implicit arguments at super call site. 
+        /// This should throw an exception as in Ruby 1.9.
+        /// </summary>
+        public void SuperInDefineMethod4() {
+            TestOutput(@"
+class B
+  def foo
+    puts 'B::foo'
+  end
+
+  def bar
+    puts 'B::bar'
+  end
+end
+
+class C < B
+  def foo
+    1.times { $p = Proc.new { 1.times { 1.times { super } } } }
+    1.times(&$p)
+  end
+end
+
+c = C.new
+c.foo
+
+class C
+  define_method(:bar, &$p)
+end
+
+c.bar rescue p $!
+c.foo
+", @"
+B::foo
+#<RuntimeError: implicit argument passing of super from method defined by define_method() is not supported. Specify all arguments explicitly.>
+B::foo
+");
+        }
+
+        /// <summary>
+        /// Caching - the same super call site can be used to invoke different method names.
+        /// </summary>
+        public void SuperInDefineMethod5() {
+            TestOutput(@"
+class C
+  def a; 'a'; end
+  def b; 'b'; end
+end
+
+class D < C
+  $p = Proc.new do
+    super()
+  end
+
+  [:a, :b].each do |name|
+    define_method(name, &$p)
+  end
+end
+
+puts D.new.a, D.new.b, D.new.a
+", @"
+a
+b
+a
 ");
         }
 
         public void SuperInTopLevelCode1() {
+            TestOutput(@"
+class B
+  def m
+    puts 'B::m'
+  end
+end
+
+1.times do
+  $p = Proc.new do
+    1.times do
+      super()
+    end
+  end
+end
+
+$p.call rescue p $!
+
+class C < B
+  define_method(:m, &$p)
+end
+
+C.new.m
+", @"
+#<NoMethodError: super called outside of method>
+B::m
+");
+        }
+
+        /// <summary>
+        /// Alias doesn't change DeclaringModule of the method => super call uses the class in which the method is defined.
+        /// </summary>
+        public void SuperInAliasedDefinedMethod1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 class B
@@ -392,34 +563,8 @@ end
 
 class C < B
   define_method :m do
-    super
-  end
-end
-
-C.new.m
-");
-            }, @"
-B::m
-");
-        }
-
-        /// <summary>
-        /// Alias doesn't change DeclaringModule of the method => super call uses the class in which the method is defined.
-        /// Parameters
-        /// </summary>
-        public void SuperInAliasedDefinedMethod1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class B
-  def m *a
-    puts 'B::m'
-  end
-end
-
-class C < B
-  define_method :m do
     puts 'C::m'
-    super
+    super()
   end
   
   def n

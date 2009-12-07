@@ -408,13 +408,8 @@ namespace IronRuby.Builtins {
             if (overriddenMethod == null) {
                 // super class and this class have already been updated, no need to update again:
                 if (!superClassUpdated) {
-                    overriddenMethod = ResolveOverriddenMethod(Symbols.MethodMissing, modulesToSkip);
-
-                    var missingMethods = (overriddenMethod != null) ?
-                        overriddenMethod.DeclaringModule.MissingMethodsCachedInSites :
-                        Context.KernelModule.MissingMethodsCachedInSites;
-
-                    if (missingMethods != null && missingMethods.ContainsKey(methodName)) {
+                    var missingMethods = Context.MissingMethodsCachedInSites;
+                    if (missingMethods != null && missingMethods.Contains(methodName)) {
                         MethodsUpdated("SetMethod: " + methodName);
                     }
                 }

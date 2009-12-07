@@ -51,6 +51,51 @@ namespace IronRuby.Builtins {
 #endif
         }
 
+        [RubyClass("EAGAIN"), Serializable]
+        public class ResourceTemporarilyUnavailableError : ExternalException {
+            private const string/*!*/ M = "Resource temporarily unavailable";
+
+            public ResourceTemporarilyUnavailableError() : this(null, null) { }
+            public ResourceTemporarilyUnavailableError(string message) : this(message, null) { }
+            public ResourceTemporarilyUnavailableError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ResourceTemporarilyUnavailableError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ResourceTemporarilyUnavailableError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("ECONNABORTED"), Serializable]
+        public class ConnectionAbortedError : ExternalException {
+            private const string/*!*/ M = "An established connection was aborted by the software in your host machine.";
+
+            public ConnectionAbortedError() : this(null, null) { }
+            public ConnectionAbortedError(string message) : this(message, null) { }
+            public ConnectionAbortedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ConnectionAbortedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ConnectionAbortedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("EINTR"), Serializable]
+        public class InterruptedError : ExternalException {
+            private const string/*!*/ M = "Interrupted function call";
+
+            public InterruptedError() : this(null, null) { }
+            public InterruptedError(string message) : this(message, null) { }
+            public InterruptedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public InterruptedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected InterruptedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
         [RubyClass("EDOM"), Serializable]
         public class DomainError : ExternalException {
             private const string/*!*/ M = "Domain error";

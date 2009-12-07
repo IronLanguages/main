@@ -144,7 +144,7 @@ namespace Microsoft.Scripting.Ast {
             ContractUtils.Requires(instance != null ^ method.IsStatic, "instance");
 
             ParameterInfo[] parameters = method.GetParameters();
-            bool hasParamArray = parameters.Length > 0 && CompilerHelpers.IsParamArray(parameters[parameters.Length - 1]);
+            bool hasParamArray = parameters.Length > 0 && parameters[parameters.Length - 1].IsParamArray();
 
             if (instance != null) {
                 instance = Convert(instance, method.DeclaringType);
@@ -187,7 +187,7 @@ namespace Microsoft.Scripting.Ast {
                         argument = arguments[consumed++];
                     } else {
                         // Missing argument, try default value.
-                        ContractUtils.Requires(!parameter.IsMandatoryParameter(), "arguments", "Argument not provided for a mandatory parameter");
+                        ContractUtils.Requires(!parameter.IsMandatory(), "arguments", "Argument not provided for a mandatory parameter");
                         argument = CreateDefaultValueExpression(parameter);
                     }
                 }

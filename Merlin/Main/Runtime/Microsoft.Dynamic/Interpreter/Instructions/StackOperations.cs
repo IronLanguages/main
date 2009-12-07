@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
+using Microsoft.Scripting.Utils;
 namespace Microsoft.Scripting.Interpreter {
     internal sealed class LoadObjectInstruction : Instruction {
         private readonly object _value;
@@ -50,7 +51,7 @@ namespace Microsoft.Scripting.Interpreter {
             return +1;
         }
 
-        public override string ToDebugString(object cookie, IList<object> objects) {
+        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IList<object> objects) {
             return String.Format("LoadCached({0}: {1})", _index, objects[(int)_index]);
         }
         

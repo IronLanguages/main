@@ -158,17 +158,32 @@ namespace IronRuby.Builtins {
 
             #region CompareTo (read-only)
 
-            public override int CompareTo(string/*!*/ str) {
-                // TODO: Ruby compares characters w/o taking locale into account:
+            public override int OrdinalCompareTo(string/*!*/ str) {
                 return _data.ValueCompareTo(str);
             }
 
-            public override int CompareTo(byte[]/*!*/ bytes) {
-                return SwitchToBinary().CompareTo(bytes);
+            internal int OrdinalCompareTo(char[]/*!*/ chars, int count) {
+                return -chars.ValueCompareTo(count, _data);
             }
 
-            public override int ReverseCompareTo(Content/*!*/ str) {
-                return str.CompareTo(_data);
+            // this <=> content
+            public override int OrdinalCompareTo(Content/*!*/ content) {
+                return content.ReverseOrdinalCompareTo(this);
+            }
+
+            // content.bytes <=> this.chars
+            public override int ReverseOrdinalCompareTo(BinaryContent/*!*/ content) {
+                return SwitchToBinary().ReverseOrdinalCompareTo(content);
+            }
+
+            // content.chars <=> this.chars
+            public override int ReverseOrdinalCompareTo(CharArrayContent/*!*/ content) {
+                return content.OrdinalCompareTo(_data);
+            }
+
+            // content.chars <=> this.chars
+            public override int ReverseOrdinalCompareTo(StringContent/*!*/ content) {
+                return content.OrdinalCompareTo(_data);
             }
 
             #endregion
@@ -195,6 +210,18 @@ namespace IronRuby.Builtins {
                 return new StringContent(_data.Substring(start, count), _owner);
             }
 
+            public override IEnumerable<char>/*!*/ GetCharacters() {
+                return _data;
+            }
+
+            public override IEnumerable<byte>/*!*/ GetBytes() {
+                if (_owner.HasByteCharacters) {
+                    return Utils.EnumerateAsBytes(_data);
+                } else {
+                    return SwitchToBinary().GetBytes();
+                }
+            }
+
             #endregion
 
             #region IndexOf (read-only)
@@ -208,7 +235,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int IndexOf(string/*!*/ str, int start, int count) {
-                return _data.IndexOf(str, start, count);
+                return _data.IndexOf(str, start, count, StringComparison.Ordinal);
             }
 
             public override int IndexOf(byte[]/*!*/ bytes, int start, int count) {
@@ -232,7 +259,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int LastIndexOf(string/*!*/ str, int start, int count) {
-                return _data.LastIndexOf(str, start, count);
+                return _data.LastIndexOf(str, start, count, StringComparison.Ordinal);
             }
 
             public override int LastIndexOf(byte[]/*!*/ bytes, int start, int count) {
@@ -275,8 +302,24 @@ namespace IronRuby.Builtins {
                 SwitchToMutable().AppendFormat(provider, format, args);
             }
 
-            public override void AppendTo(Content/*!*/ str, int start, int count) {
-                str.Append(_data, start, count);
+            // this + content[start, count]
+            public override void Append(Content/*!*/ content, int start, int count) {
+                content.AppendTo(this, start, count);
+            }
+
+            // content.bytes + this.chars[start, count]
+            public override void AppendTo(BinaryContent/*!*/ content, int start, int count) {
+                content.AppendBytes(_data, start, count);
+            }
+
+            // content.chars + this.chars[start, count]
+            public override void AppendTo(CharArrayContent/*!*/ content, int start, int count) {
+                content.Append(_data, start, count);
+            }
+
+            // content.chars + this.chars[start, count]
+            public override void AppendTo(StringContent/*!*/ content, int start, int count) {
+                content.Append(_data, start, count);
             }
 
             #endregion

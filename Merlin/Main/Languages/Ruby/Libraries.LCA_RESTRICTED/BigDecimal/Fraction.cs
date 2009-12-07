@@ -17,6 +17,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using Microsoft.Scripting.Math;
+using System.Globalization;
 
 namespace IronRuby.StandardLibrary.BigDecimal {
     public class Fraction {
@@ -701,13 +702,13 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             int digitIndex;
             int wordIndex = 0;
             for (digitIndex = 0; digitIndex+BASE_FIG <= digits.Length; digitIndex+=BASE_FIG) {
-                fraction._words[wordIndex] = uint.Parse(digits.Substring(digitIndex, BASE_FIG));
+                fraction._words[wordIndex] = uint.Parse(digits.Substring(digitIndex, BASE_FIG), CultureInfo.InvariantCulture);
                 wordIndex++;
             }
 
             // Add on the last few digits, adding extra zeros as necessary
             if (finalDigits > 0) {
-                uint lastWord = uint.Parse(digits.Substring(digitIndex));
+                uint lastWord = uint.Parse(digits.Substring(digitIndex), CultureInfo.InvariantCulture);
                 while (finalDigits < BASE_FIG) {
                     lastWord *= 10;
                     ++finalDigits;

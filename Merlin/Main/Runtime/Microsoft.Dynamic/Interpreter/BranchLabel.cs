@@ -19,53 +19,88 @@ using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
+    internal struct RuntimeLabel {
+        public readonly int Index;
+        public readonly int StackDepth;
+        public readonly int ContinuationStackDepth;
+
+        public RuntimeLabel(int index, int continuationStackDepth, int stackDepth) {
+            Index = index;
+            ContinuationStackDepth = continuationStackDepth;
+            StackDepth = stackDepth;
+        }
+
+        public override string ToString() {
+            return String.Format("->{0} C({1}) S({2})", Index, ContinuationStackDepth, StackDepth);
+        }
+    }
+
     public sealed class BranchLabel {
         internal const int UnknownIndex = Int32.MinValue;
-        internal const int UnknownSize = Int32.MinValue;
+        internal const int UnknownDepth = Int32.MinValue;
 
-        private readonly InstructionList _instructions;
-
-        internal int _index = UnknownIndex;
-        internal int _expectedStackSize = UnknownSize;
+        internal int _labelIndex = UnknownIndex;
+        internal int _targetIndex = UnknownIndex;
+        internal int _stackDepth = UnknownDepth;
+        internal int _continuationStackDepth = UnknownDepth;
 
         // Offsets of forward branching instructions targetting this label 
         // that need to be updated after we emit the label.
         private List<int> _forwardBranchFixups;
 
-        public BranchLabel(InstructionList instructions) {
-            _instructions = instructions;
+        public BranchLabel() {
         }
 
-        public void Mark() {
-            ContractUtils.Requires(_index == UnknownIndex && _expectedStackSize == UnknownSize);
+        internal int LabelIndex {
+            get { return _labelIndex; }
+            set { _labelIndex = value; }
+        }
 
-            _expectedStackSize = _instructions.CurrentStackDepth;
-            _index = _instructions.Count;
+        internal bool HasRuntimeLabel {
+            get { return _labelIndex != UnknownIndex; } 
+        }
+
+        internal int TargetIndex {
+            get { return _targetIndex; }
+        }
+
+        internal RuntimeLabel ToRuntimeLabel() {
+            Debug.Assert(_targetIndex != UnknownIndex && _stackDepth != UnknownDepth && _continuationStackDepth != UnknownDepth);
+            return new RuntimeLabel(_targetIndex, _continuationStackDepth, _stackDepth);
+        }
+
+        internal void Mark(InstructionList instructions) {
+            ContractUtils.Requires(_targetIndex == UnknownIndex && _stackDepth == UnknownDepth && _continuationStackDepth == UnknownDepth);
+
+            _stackDepth = instructions.CurrentStackDepth;
+            _continuationStackDepth = instructions.CurrentContinuationsDepth;
+            _targetIndex = instructions.Count;
 
             if (_forwardBranchFixups != null) {
                 foreach (var branchIndex in _forwardBranchFixups) {
-                    FixupBranch(branchIndex);
+                    FixupBranch(instructions, branchIndex);
                 }
                 _forwardBranchFixups = null;
             }
         }
 
-        internal void AddBranch(int branchIndex) {
-            Debug.Assert((_index == UnknownIndex) == (_expectedStackSize == UnknownSize));
+        internal void AddBranch(InstructionList instructions, int branchIndex) {
+            Debug.Assert(((_targetIndex == UnknownIndex) == (_stackDepth == UnknownDepth)));
+            Debug.Assert(((_targetIndex == UnknownIndex) == (_continuationStackDepth == UnknownDepth)));
 
-            if (_index == UnknownIndex) {
+            if (_targetIndex == UnknownIndex) {
                 if (_forwardBranchFixups == null) {
                     _forwardBranchFixups = new List<int>();
                 }
                 _forwardBranchFixups.Add(branchIndex);
             } else {
-                FixupBranch(branchIndex);
+                FixupBranch(instructions, branchIndex);
             }
         }
 
-        internal void FixupBranch(int branchIndex) {
-            Debug.Assert(_index != UnknownIndex);
-            _instructions.FixupBranch(branchIndex, _index - branchIndex, _expectedStackSize);
+        internal void FixupBranch(InstructionList instructions, int branchIndex) {
+            Debug.Assert(_targetIndex != UnknownIndex);
+            instructions.FixupBranch(branchIndex, _targetIndex - branchIndex, _continuationStackDepth, _stackDepth);
         }
     }
 

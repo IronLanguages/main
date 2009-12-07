@@ -91,8 +91,8 @@ namespace IronRuby.Builtins {
         }
 
         private static object InducedFrom(RubyModule/*!*/ rubyClass, object other) {
-            throw RubyExceptions.CreateTypeError(String.Format("undefined conversion from {0} into {1}",
-                rubyClass.Context.GetClassOf(other).Name, rubyClass.Name));
+            throw RubyExceptions.CreateTypeError("undefined conversion from {0} into {1}",
+                rubyClass.Context.GetClassOf(other).Name, rubyClass.Name);
         }
 
         #endregion

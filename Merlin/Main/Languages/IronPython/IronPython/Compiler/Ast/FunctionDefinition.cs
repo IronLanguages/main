@@ -59,18 +59,14 @@ namespace IronPython.Compiler.Ast {
         private PythonVariable _variable;               // The variable corresponding to the function name or null for lambdas
         internal PythonVariable _nameVariable;          // the variable that refers to the global __name__
         private MSAst.LambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
-
-        private static MSAst.ParameterExpression _functionParam = Ast.Parameter(typeof(PythonFunction), "$function");
-        private static int _lambdaId;
-        private static readonly MethodInfo _GetParentContextFromFunction = typeof(PythonOps).GetMethod("GetParentContextFromFunction");
-        private static readonly MethodInfo _GetGlobalContext = typeof(PythonOps).GetMethod("GetGlobalContext");
-        private static readonly MethodInfo _MakeFunctionDebug = typeof(PythonOps).GetMethod("MakeFunctionDebug");
-        private static readonly MethodInfo _MakeFunction = typeof(PythonOps).GetMethod("MakeFunction");
-        private static readonly MSAst.Expression _GetClosureTupleFromFunctionCall = MSAst.Expression.Call(null, typeof(PythonOps).GetMethod("GetClosureTupleFromFunction"), _functionParam);
-        private static MSAst.Expression _parentContext = MSAst.Expression.Call(_GetParentContextFromFunction, _functionParam);
-        internal static readonly MSAst.LabelTarget _returnLabel = MSAst.Expression.Label(typeof(object), "return");
         internal bool _hasReturn;
-        
+
+        private static int _lambdaId;
+        internal static readonly MSAst.ParameterExpression _functionParam = Ast.Parameter(typeof(PythonFunction), "$function");
+        private static readonly MSAst.Expression _GetClosureTupleFromFunctionCall = MSAst.Expression.Call(null, typeof(PythonOps).GetMethod("GetClosureTupleFromFunction"), _functionParam);
+        private static readonly MSAst.Expression _parentContext = new GetParentContextFromFunctionExpression();
+        internal static readonly MSAst.LabelTarget _returnLabel = MSAst.Expression.Label(typeof(object), "return");
+
         public FunctionDefinition(string name, Parameter[] parameters)
             : this(name, parameters, (Statement)null) {            
         }
@@ -360,7 +356,7 @@ namespace IronPython.Compiler.Ast {
                 // in tracing mode we'll still compile things one off though just to keep things simple.  The code will still
                 // be debuggable but naive debuggers like mdbg will have more issues.
                 ret = Ast.Call(
-                    _MakeFunctionDebug,                                                             // method
+                    AstMethods.MakeFunctionDebug,                                                   // method
                     Parent.LocalContext,                                                            // 1. Emit CodeContext
                     FuncCodeExpr,                                                                   // 2. FunctionCode                        
                     ((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue(),     // 3. module name
@@ -373,7 +369,7 @@ namespace IronPython.Compiler.Ast {
                 );
             } else {
                 ret = Ast.Call(
-                    _MakeFunction,                                                                  // method
+                    AstMethods.MakeFunction,                                                        // method
                     Parent.LocalContext,                                                            // 1. Emit CodeContext
                     FuncCodeExpr,                                                                   // 2. FunctionCode
                     ((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue(),     // 3. module name
@@ -408,12 +404,7 @@ namespace IronPython.Compiler.Ast {
             // emit context if we have a special local context
             CodeContext globalContext = null;
 
-            // potential optimization to avoid loading the context:
-            /*if (Parent.LocalContext == PythonAst._globalContext) {
-                globalContext = GlobalParent.ModuleContext.GlobalContext;
-            } else*/ {
-                compiler.Compile(Parent.LocalContext);
-            }
+            compiler.Compile(Parent.LocalContext);
 
             // emit name if necessary
             PythonGlobalVariableExpression name = GetVariableExpression(_nameVariable) as PythonGlobalVariableExpression;
@@ -464,7 +455,7 @@ namespace IronPython.Compiler.Ast {
 
             MSAst.ParameterExpression functionValueParam = variable as MSAst.ParameterExpression;
             if (functionValueParam != null) {
-                instructions.EmitStoreLocal(compiler.GetVariableIndex(functionValueParam));
+                instructions.EmitStoreLocal(compiler.Locals.GetVariableIndex(functionValueParam));
                 return;
             }
 
@@ -510,7 +501,7 @@ namespace IronPython.Compiler.Ast {
                     modName = frame.Pop();
                 }
 
-                CodeContext context = /*_context ?? */(CodeContext)frame.Pop();
+                CodeContext context = (CodeContext)frame.Pop();
                 
                 frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults));
 
@@ -599,7 +590,7 @@ namespace IronPython.Compiler.Ast {
             init.Add(Ast.ClearDebugInfo(GlobalParent.Document));
 
             locals.Add(PythonAst._globalContext);
-            init.Add(Ast.Assign(PythonAst._globalContext, Ast.Call(_GetGlobalContext, _parentContext)));
+            init.Add(Ast.Assign(PythonAst._globalContext, new GetGlobalContextExpression(_parentContext)));
 
             GlobalParent.PrepareScope(locals, init);
 
@@ -845,6 +836,8 @@ namespace IronPython.Compiler.Ast {
             FuncCodeExpr = funcCode;
             
             Body = new PythonAst.RewrittenBodyStatement(Body, visitor.Visit(Body));
-        }        
+        }
+
+        
     }
 }

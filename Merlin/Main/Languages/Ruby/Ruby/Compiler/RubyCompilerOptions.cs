@@ -74,11 +74,22 @@ namespace IronRuby.Compiler {
         }
 
         /// <summary>
-        /// Method name used by super in eval.
+        /// Method name used by blocks.
         /// </summary>
         internal string TopLevelMethodName { get; set; }
 
+        /// <summary>
+        /// Used by super-calls with implicit parameters.
+        /// </summary>
+        internal string[] TopLevelParameterNames { get; set; }
+
+        internal bool TopLevelHasUnsplatParameter { get; set; }
+
+        /// <summary>
+        /// Used by dynamic variable look-up.
+        /// </summary>
         internal List<string> LocalNames { get; set; }
+
         internal RubyCompatibility Compatibility { get; set; }
 
         public RubyCompilerOptions() {

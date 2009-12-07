@@ -73,7 +73,7 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 return Ast.Call(
-                    typeof(PythonOps).GetMethod(heterogeneous ? "MakeDictFromItems" : "MakeHomogeneousDictFromItems"),
+                    heterogeneous ? AstMethods.MakeDictFromItems : AstMethods.MakeHomogeneousDictFromItems,
                     Ast.NewArrayInit(
                         typeof(object),
                         parts
@@ -83,7 +83,7 @@ namespace IronPython.Compiler.Ast {
 
             // empty dictionary
             return Ast.Call(
-                typeof(PythonOps).GetMethod("MakeDict"),
+                AstMethods.MakeDict,
                 AstUtils.Constant(0)
             );
         }

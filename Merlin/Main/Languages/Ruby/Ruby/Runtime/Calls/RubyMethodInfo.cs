@@ -155,18 +155,19 @@ namespace IronRuby.Runtime.Calls {
             // We could also statically know (via call-site flag) that the current method is not a proc-converter (passed by ref),
             // which would make such calls faster.
             var rfcVariable = metaBuilder.GetTemporary(typeof(RuntimeFlowControl), "#rfc");
-            var methodUnwinder = metaBuilder.GetTemporary(typeof(MethodUnwinder), "#unwinder");
             var resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
+            MSA.ParameterExpression unwinder;
 
             metaBuilder.Result = Ast.Block(
                 // initialize frame (RFC):
                 Ast.Assign(rfcVariable, Methods.CreateRfcForMethod.OpCall(AstUtils.Convert(args.GetBlockExpression(), typeof(Proc)))),
                 AstUtils.Try(
                     Ast.Assign(resultVariable, metaBuilder.Result)
-                ).Filter(methodUnwinder, Ast.Equal(Ast.Field(methodUnwinder, MethodUnwinder.TargetFrameField), rfcVariable),
+                ).Filter(unwinder = Ast.Parameter(typeof(MethodUnwinder), "#unwinder"),
+                    Ast.Equal(Ast.Field(unwinder, MethodUnwinder.TargetFrameField), rfcVariable),
 
                     // return unwinder.ReturnValue;
-                    Ast.Assign(resultVariable, Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField))
+                    Ast.Assign(resultVariable, Ast.Field(unwinder, MethodUnwinder.ReturnValueField))
 
                 ).Finally(
                     // we need to mark the RFC dead snce the block might escape and break later:

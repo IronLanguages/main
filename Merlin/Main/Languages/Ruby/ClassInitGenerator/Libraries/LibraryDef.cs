@@ -259,13 +259,8 @@ internal class LibraryDef {
                 (HasConstantsInitializer ? "Load" + Id + "_Constants" : "null");
         }
 
-        internal string/*!*/ GetModuleAttributes() {
-            RubyModuleAttributes attributes = (RubyModuleAttributes)Restrictions;
-            if (Extends == Trait) {
-                attributes |= RubyModuleAttributes.IsSelfContained;
-            }
-
-            return "0x" + attributes.ToString("X");
+        internal string/*!*/ GetModuleRestrictions() {
+            return "0x" + Restrictions.ToString("X");
         }
     }
 
@@ -1001,7 +996,7 @@ internal class LibraryDef {
                 if (def.IsExtension) {
                     _output.Write("ExtendClass(typeof({0}), {1}, {2}, {3}, ",
                         TypeName(def.Extends),
-                        def.GetModuleAttributes(),
+                        def.GetModuleRestrictions(),
                         def.Super != null ? def.Super.RefName : "null",
                         def.GetInitializerDelegates()
                     );
@@ -1010,7 +1005,7 @@ internal class LibraryDef {
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
-                        def.GetModuleAttributes(),
+                        def.GetModuleRestrictions(),
                         def.Super.RefName,
                         def.GetInitializerDelegates()
                     );
@@ -1037,7 +1032,7 @@ internal class LibraryDef {
                 if (def.IsExtension) {
                     _output.Write("ExtendModule(typeof({0}), {1}, {2}, ", 
                         TypeName(def.Extends),
-                        def.GetModuleAttributes(),
+                        def.GetModuleRestrictions(),
                         def.GetInitializerDelegates()
                     );
                 } else {
@@ -1045,7 +1040,7 @@ internal class LibraryDef {
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
-                        def.GetModuleAttributes(),
+                        def.GetModuleRestrictions(),
                         def.GetInitializerDelegates()
                     );
                 }

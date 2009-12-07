@@ -142,28 +142,6 @@ using MSA = Microsoft.Scripting.Ast;
             return localCount;
         }
 
-        internal static void TransformParametersToSuperCall(AstGenerator/*!*/ gen, CallBuilder/*!*/ callBuilder, Parameters parameters) {
-            if (parameters == null) {
-                return;
-            }
-
-            if (parameters.Mandatory != null) {
-                foreach (Variable v in parameters.Mandatory) {
-                    callBuilder.Add(v.TransformRead(gen));
-                }
-            }
-
-            if (parameters.Optional != null) {
-                foreach (SimpleAssignmentExpression s in parameters.Optional) {
-                    callBuilder.Add(s.Left.TransformRead(gen));
-                }
-            }
-
-            if (parameters.Array != null) {
-                callBuilder.SplattedArgument = parameters.Array.TransformRead(gen);
-            }
-        }
-
         #endregion
     }
 

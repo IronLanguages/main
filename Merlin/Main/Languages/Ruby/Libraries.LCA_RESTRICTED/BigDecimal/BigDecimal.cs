@@ -19,8 +19,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.Scripting.Math;
 using IronRuby.Builtins;
+using Microsoft.Scripting.Math;
 
 namespace IronRuby.StandardLibrary.BigDecimal {
     public class BigDecimal : IComparable<BigDecimal>, IEquatable<BigDecimal> {
@@ -243,7 +243,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                         try {
                             exponent = int.Parse(exponentStr, CultureInfo.InvariantCulture);
                         } catch (OverflowException) {
-                            exponent = exponentStr.StartsWith("-") ? -1 : 1;
+                            exponent = exponentStr.StartsWith("-", StringComparison.Ordinal) ? -1 : 1;
                             return ExponentOverflow(config, sign, exponent);
                         }
                     }

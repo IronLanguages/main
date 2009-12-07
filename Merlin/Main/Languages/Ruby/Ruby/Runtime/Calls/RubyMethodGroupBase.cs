@@ -66,7 +66,7 @@ namespace IronRuby.Runtime.Calls {
         internal MethodBase/*!*/[]/*!*/ SetMethodBasesNoLock(MethodBase/*!*/[]/*!*/ methods) {
             Debug.Assert(
                 CollectionUtils.TrueForAll(methods, (method) => method.IsStatic || method.DeclaringType == typeof(Object)) ||
-                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || CompilerHelpers.IsExtension(method) || RubyUtils.IsOperator(method))
+                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || RubyUtils.IsExtension(method) || RubyUtils.IsOperator(method))
             );
 
             return _methodBases = methods;
@@ -353,14 +353,16 @@ namespace IronRuby.Runtime.Calls {
             // Method call with proc can invoke control flow that returns an arbitrary value from the call, so we need to type result to Object.
             // Otherwise, the result could only be result of targetExpression unless its return type is void.
             Expression resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
-            ParameterExpression methodUnwinder = metaBuilder.GetTemporary(typeof(MethodUnwinder), "#unwinder");
+            ParameterExpression unwinder;
 
             metaBuilder.Result = AstFactory.Block(
                 Ast.Assign(bfcVariable, Methods.CreateBfcForLibraryMethod.OpCall(AstUtils.Convert(args.GetBlockExpression(), typeof(Proc)))),
                 AstUtils.Try(
                     Ast.Assign(resultVariable, AstUtils.Convert(metaBuilder.Result, typeof(object)))
-                ).Filter(methodUnwinder, Methods.IsProcConverterTarget.OpCall(bfcVariable, methodUnwinder),
-                    Ast.Assign(resultVariable, Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField)),
+                ).Filter(unwinder = Ast.Parameter(typeof(MethodUnwinder), "#unwinder"),
+                    Methods.IsProcConverterTarget.OpCall(bfcVariable, unwinder),
+
+                    Ast.Assign(resultVariable, Ast.Field(unwinder, MethodUnwinder.ReturnValueField)),
                     AstUtils.Default(typeof(object))
                 ).Finally(
                     Methods.LeaveProcConverter.OpCall(bfcVariable)

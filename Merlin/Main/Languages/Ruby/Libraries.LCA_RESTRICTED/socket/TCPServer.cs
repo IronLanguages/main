@@ -32,6 +32,13 @@ namespace IronRuby.StandardLibrary.Sockets {
         private object _mutex = new object();
         private IAsyncResult _acceptResult;
 
+        /// <summary>
+        /// Creates an uninitialized socket.
+        /// </summary>
+        public TCPServer(RubyContext/*!*/ context)
+            : base(context) {
+        }
+
         public TCPServer(RubyContext/*!*/ context, Socket/*!*/ socket) 
             : base(context, socket) {
         }
@@ -72,6 +79,19 @@ namespace IronRuby.StandardLibrary.Sockets {
         [RubyConstructor]
         public static TCPServer/*!*/ CreateTCPServer(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
             RubyClass/*!*/ self, [DefaultProtocol]MutableString hostname, [DefaultParameterValue(null)]object port) {
+            return new TCPServer(self.Context, CreateSocket(stringCast, fixnumCast, hostname, port));
+        }
+
+        // Reinitialization. Not called when a factory/non-default ctor is called.
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static TCPServer/*!*/ Reinitialize(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast,
+            TCPServer/*!*/ self, [DefaultProtocol]MutableString hostname, [DefaultParameterValue(null)]object port) {
+            self.Socket = CreateSocket(stringCast, fixnumCast, hostname, port);
+            return self;
+        }
+
+        private static Socket CreateSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast,
+            [DefaultProtocol]MutableString hostname, [DefaultParameterValue(null)]object port) {
 
             IPAddress listeningInterface = null;
             if (hostname == null) {
@@ -104,8 +124,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(new IPEndPoint(listeningInterface, ConvertToPortNum(stringCast, fixnumCast, port)));
             socket.Listen(10);
-
-            return new TCPServer(self.Context, socket);
+            return socket;
         }
 
         [RubyMethod("accept")]

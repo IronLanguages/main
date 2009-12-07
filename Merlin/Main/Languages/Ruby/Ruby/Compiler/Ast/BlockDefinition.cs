@@ -128,8 +128,7 @@ namespace IronRuby.Compiler.Ast {
             );
 
             MSA.Expression paramInit = MakeParametersInitialization(gen, parameters);
-            MSA.ParameterExpression blockUnwinder = scope.DefineHiddenVariable("#unwinder", typeof(BlockUnwinder));
-            MSA.ParameterExpression filterVariable = scope.DefineHiddenVariable("#e", typeof(Exception));
+            MSA.ParameterExpression blockUnwinder, filterVariable;
 
             MSA.Expression traceCall, traceReturn;
 			if (gen.TraceEnabled) {
@@ -148,18 +147,18 @@ namespace IronRuby.Compiler.Ast {
                 Ast.Label(redoLabel),
                 AstUtils.Try(
                     gen.TransformStatements(_body, ResultOperation.Return)
-                ).Catch(blockUnwinder,
+                ).Catch(blockUnwinder = Ast.Parameter(typeof(BlockUnwinder), "#u"),
                     // redo:
                     AstUtils.IfThen(Ast.Field(blockUnwinder, BlockUnwinder.IsRedoField), Ast.Goto(redoLabel)),
 
                     // next:
                     gen.Return(Ast.Field(blockUnwinder, BlockUnwinder.ReturnValueField))
                 )
-            ).Filter(filterVariable,
+            ).Filter(filterVariable = Ast.Parameter(typeof(Exception), "#e"),
                 Methods.FilterBlockException.OpCall(scopeVariable, filterVariable)
             ).Finally(
                 traceReturn,
-                LeaveInterpretedFrameExpression.Instance
+                Ast.Empty()
             );
 
             body = gen.AddReturnTarget(

@@ -64,7 +64,7 @@ namespace IronRuby.Builtins {
             if (value >= Byte.MinValue && value <= Byte.MaxValue) {
                 return (Byte)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
         
         [RubyConstructor]
@@ -73,7 +73,7 @@ namespace IronRuby.Builtins {
             if (value >= Byte.MinValue && value <= Byte.MaxValue) {
                 return (Byte)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
     
         [RubyConstructor]
@@ -82,7 +82,7 @@ namespace IronRuby.Builtins {
             if (value >= Byte.MinValue && value <= Byte.MaxValue) {
                 return (Byte)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
         }
         
         [RubyMethod("inspect")]
@@ -112,7 +112,7 @@ namespace IronRuby.Builtins {
             if (value >= SByte.MinValue && value <= SByte.MaxValue) {
                 return (SByte)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
         
         [RubyConstructor]
@@ -121,7 +121,7 @@ namespace IronRuby.Builtins {
             if (value >= SByte.MinValue && value <= SByte.MaxValue) {
                 return (SByte)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
     
         [RubyConstructor]
@@ -130,7 +130,7 @@ namespace IronRuby.Builtins {
             if (value >= SByte.MinValue && value <= SByte.MaxValue) {
                 return (SByte)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
         }
         
         [RubyMethod("inspect")]
@@ -160,7 +160,7 @@ namespace IronRuby.Builtins {
             if (value >= Int16.MinValue && value <= Int16.MaxValue) {
                 return (Int16)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
         
         [RubyConstructor]
@@ -169,7 +169,7 @@ namespace IronRuby.Builtins {
             if (value >= Int16.MinValue && value <= Int16.MaxValue) {
                 return (Int16)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
     
         [RubyConstructor]
@@ -178,7 +178,7 @@ namespace IronRuby.Builtins {
             if (value >= Int16.MinValue && value <= Int16.MaxValue) {
                 return (Int16)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
         }
         
         [RubyMethod("inspect")]
@@ -208,7 +208,7 @@ namespace IronRuby.Builtins {
             if (value >= 0 && value <= UInt16.MaxValue) {
                 return (UInt16)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
         
         [RubyConstructor]
@@ -217,7 +217,7 @@ namespace IronRuby.Builtins {
             if (value >= UInt16.MinValue && value <= UInt16.MaxValue) {
                 return (UInt16)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
     
         [RubyConstructor]
@@ -226,7 +226,7 @@ namespace IronRuby.Builtins {
             if (value >= UInt16.MinValue && value <= UInt16.MaxValue) {
                 return (UInt16)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
         }
         
         [RubyMethod("inspect")]
@@ -256,7 +256,7 @@ namespace IronRuby.Builtins {
             if (value >= 0) {
                 return (UInt32)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
         
         [RubyConstructor]
@@ -265,7 +265,7 @@ namespace IronRuby.Builtins {
             if (value >= UInt32.MinValue && value <= UInt32.MaxValue) {
                 return (UInt32)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
     
         [RubyConstructor]
@@ -274,7 +274,7 @@ namespace IronRuby.Builtins {
             if (value >= UInt32.MinValue && value <= UInt32.MaxValue) {
                 return (UInt32)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
         }
         
         [RubyMethod("inspect")]
@@ -304,7 +304,7 @@ namespace IronRuby.Builtins {
             if (true) {
                 return (Int64)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
         
         [RubyConstructor]
@@ -313,7 +313,7 @@ namespace IronRuby.Builtins {
             if (value >= Int64.MinValue && value <= Int64.MaxValue) {
                 return (Int64)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
     
         [RubyConstructor]
@@ -322,7 +322,7 @@ namespace IronRuby.Builtins {
             if (value >= Int64.MinValue && value <= Int64.MaxValue) {
                 return (Int64)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
         }
         
         [RubyMethod("inspect")]
@@ -352,7 +352,7 @@ namespace IronRuby.Builtins {
             if (value >= 0) {
                 return (UInt64)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
         
         [RubyConstructor]
@@ -361,7 +361,7 @@ namespace IronRuby.Builtins {
             if (value >= UInt64.MinValue && value <= UInt64.MaxValue) {
                 return (UInt64)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
         }
     
         [RubyConstructor]
@@ -370,7 +370,7 @@ namespace IronRuby.Builtins {
             if (value >= UInt64.MinValue && value <= UInt64.MaxValue) {
                 return (UInt64)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
         }
         
         [RubyMethod("inspect")]

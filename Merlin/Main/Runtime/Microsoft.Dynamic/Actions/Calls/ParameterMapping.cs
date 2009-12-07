@@ -40,7 +40,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private ReturnBuilder _returnBuilder;
 
         private List<ArgBuilder> _defaultArguments;
-        private bool _hasByRefOrOut;
+        private bool _hasByRef;
         private bool _hasDefaults;
         private ParameterWrapper _paramsDict;
 
@@ -63,7 +63,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         internal void MapParameters(bool reduceByRef) {
             if (reduceByRef) {
                 _returnArgs = new List<int>();
-                if (CompilerHelpers.GetReturnType(_method) != typeof(void)) {
+                if (_method.GetReturnType() != typeof(void)) {
                     _returnArgs.Add(-1);
                 }
             }
@@ -125,7 +125,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             // if the parameter is default we need to build a default arg builder and then
             // build a reduced method at the end.  
-            if (!CompilerHelpers.IsMandatoryParameter(pi)) {
+            if (!pi.IsMandatory()) {
                 // We need to build the default builder even if we have a parameter for it already to
                 // get good consistency of our error messages.  But consider a method like 
                 // def foo(a=1, b=2) and the user calls it as foo(b=3). Then adding the default
@@ -146,18 +146,17 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             ArgBuilder ab;
             if (pi.ParameterType.IsByRef) {
-                _hasByRefOrOut = true;
+                _hasByRef = true;
                 Type refType = typeof(StrongBox<>).MakeGenericType(pi.ParameterType.GetElementType());
                 _parameters.Add(new ParameterWrapper(pi, refType, pi.Name, true, false, false, false));
                 ab = new ReferenceArgBuilder(pi, refType, indexForArgBuilder);
-            } else if (BinderHelpers.IsParamDictionary(pi)) {
+            } else if (pi.IsParamDictionary()) {
                 _paramsDict = new ParameterWrapper(pi);
                 ab = new SimpleArgBuilder(pi, indexForArgBuilder);
-            } else if (pi.Position == 0 && CompilerHelpers.IsExtension(pi.Member)) {
-                _parameters.Add(new ParameterWrapper(pi, pi.ParameterType, pi.Name, true, false, false, true));
+            } else if (pi.Position == 0 && pi.Member.IsExtension()) {
+                _parameters.Add(new ParameterWrapper(pi, pi.ParameterType, pi.Name, false, false, false, true));
                 ab = new SimpleArgBuilder(pi, indexForArgBuilder);
             } else {
-                _hasByRefOrOut |= CompilerHelpers.IsOutParameter(pi);
                 _parameters.Add(new ParameterWrapper(pi));
                 ab = new SimpleArgBuilder(pi, indexForArgBuilder);
             }
@@ -177,7 +176,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             int indexForArgBuilder = 0;
 
             int nameIndex = -1;
-            if (!CompilerHelpers.IsOutParameter(pi)) {
+            if (!pi.IsOutParameter()) {
                 nameIndex = _argNames.IndexOf(pi.Name);
                 if (nameIndex == -1) {
                     indexForArgBuilder = _argIndex++;
@@ -185,7 +184,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             ArgBuilder ab;
-            if (CompilerHelpers.IsOutParameter(pi)) {
+            if (pi.IsOutParameter()) {
                 _returnArgs.Add(_arguments.Count);
                 ab = new OutArgBuilder(pi);
             } else if (pi.ParameterType.IsByRef) {
@@ -195,7 +194,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 }
                 _parameters.Add(new ParameterWrapper(pi, pi.ParameterType.GetElementType(), pi.Name, false, false, false, false));
                 ab = new ReturnReferenceArgBuilder(pi, indexForArgBuilder);
-            } else if (BinderHelpers.IsParamDictionary(pi)) {
+            } else if (pi.IsParamDictionary()) {
                 _paramsDict = new ParameterWrapper(pi);
                 ab = new SimpleArgBuilder(pi, indexForArgBuilder);
             } else {
@@ -216,7 +215,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         internal MethodCandidate CreateByRefReducedCandidate() {
-            if (!_hasByRefOrOut) {
+            if (!_hasByRef) {
                 return null;
             }
 
@@ -278,7 +277,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private ReturnBuilder MakeReturnBuilder(BitArray specialParameters) {
             ReturnBuilder returnBuilder = (_returnArgs != null) ?
                 new ByRefReturnBuilder(_returnArgs) :
-                new ReturnBuilder(CompilerHelpers.GetReturnType(_method));
+                new ReturnBuilder(_method.GetReturnType());
             
             if (_argNames.Count > 0 && _resolver.AllowKeywordArgumentSetting(_method)) {
                 List<string> unusedNames = GetUnusedArgNames(specialParameters);

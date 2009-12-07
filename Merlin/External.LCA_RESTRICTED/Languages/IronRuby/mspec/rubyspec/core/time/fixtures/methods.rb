@@ -1,5 +1,9 @@
 # Workaround for bug 1972 - ENV['TZ'] is read only on startup on Windows
 def can_modify_env_tz?()
+  extended_on :ironruby do
+    return true
+  end
+
   platform_is_not :windows do
     return true
   end
@@ -33,8 +37,9 @@ def with_timezone(name, offset = nil, daylight_saving_zone = "")
       ENV["TZ"] = old
     end
   else
+    yield
     # skip the test
-    true.should be_true
+    #true.should be_true
   end
 end
 

@@ -27,7 +27,7 @@ namespace IronRuby.Builtins {
     /// <summary>
     /// TODO: Scope should be IDO so this shouldn't be needed.
     /// </summary>
-    [RubyClass("Scope", Extends = typeof(Scope), DefineIn = typeof(IronRubyOps.ClrOps))]
+    [RubyClass("Scope", Extends = typeof(Scope), DefineIn = typeof(IronRubyOps.Clr))]
     public static class ScopeOps {
         #region method_missing
 

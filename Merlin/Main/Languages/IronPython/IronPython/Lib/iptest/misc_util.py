@@ -28,5 +28,7 @@ ip_supported_encodings += ['Cp1252', 'asciI', 'uTF-8']
 ip_supported_encodings += ['latin1', 'utf-16le', 'utf8']
 #replace '-'s with whitespace
 ip_supported_encodings += ['unicode escape', 'utf 16 be']
+#add a few 'interesting' cases
+ip_supported_encodings += ['uTf!!!8', 'utf_8']
 
 #------------------------------------------------------------------------------

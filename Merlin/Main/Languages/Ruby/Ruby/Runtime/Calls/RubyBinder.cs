@@ -33,8 +33,7 @@ namespace IronRuby.Runtime.Calls {
     public sealed class RubyBinder : DefaultBinder {
         private readonly RubyContext/*!*/ _context;
 
-        internal RubyBinder(RubyContext/*!*/ context)
-            : base(context.DomainManager) {
+        internal RubyBinder(RubyContext/*!*/ context){
             _context = context;
         }
 
@@ -44,6 +43,12 @@ namespace IronRuby.Runtime.Calls {
 
         public override string GetObjectTypeName(object arg) {
             return _context.GetClassDisplayName(arg);
+        }
+
+        public override bool PrivateBinding {
+            get {
+                return _context.DomainManager.Configuration.PrivateBinding;
+            }
         }
 
         #region Conversions

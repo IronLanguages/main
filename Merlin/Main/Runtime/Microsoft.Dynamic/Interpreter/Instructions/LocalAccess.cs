@@ -24,6 +24,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 using System.Collections.Generic;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
     internal interface IBoxableInstruction {
@@ -37,14 +38,14 @@ namespace Microsoft.Scripting.Interpreter {
             _index = index;
         }
 
-        public override string ToDebugString(object cookie, IList<object> objects) {
+        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IList<object> objects) {
             return cookie == null ? 
                 InstructionName + "(" + _index + ")" : 
                 InstructionName + "(" + cookie + ": " + _index + ")";
         }
     }
 
-    #region Get
+    #region Load
 
     internal sealed class LoadLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
         internal LoadLocalInstruction(int index)
@@ -60,12 +61,12 @@ namespace Microsoft.Scripting.Interpreter {
         }
         
         public Instruction BoxIfIndexMatches(int index) {
-            return (index == _index) ? InstructionList.GetBoxedLocal(index) : null;
+            return (index == _index) ? InstructionList.LoadLocalBoxed(index) : null;
         }
     }
 
-    internal sealed class GetBoxedLocalInstruction : LocalAccessInstruction {
-        internal GetBoxedLocalInstruction(int index)
+    internal sealed class LoadLocalBoxedInstruction : LocalAccessInstruction {
+        internal LoadLocalBoxedInstruction(int index)
             : base(index) {
         }
 
@@ -78,8 +79,8 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    internal sealed class GetClosureInstruction : LocalAccessInstruction {
-        internal GetClosureInstruction(int index)
+    internal sealed class LoadLocalFromClosureInstruction : LocalAccessInstruction {
+        internal LoadLocalFromClosureInstruction(int index)
             : base(index) {
         }
 
@@ -108,7 +109,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     #endregion
 
-    #region Set
+    #region Store, Assign
 
     internal sealed class AssignLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
         internal AssignLocalInstruction(int index)

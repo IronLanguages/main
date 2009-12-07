@@ -301,7 +301,7 @@ namespace IronRuby.Builtins {
             return first;
         }
 
-        public MutableString ReadLineOrParagraph(MutableString separator, RubyEncoding encoding, bool preserveEndOfLines) {
+        public MutableString ReadLineOrParagraph(MutableString separator, RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
             if (separator == null) {
                 var result = MutableString.CreateBinary();
                 return AppendBytes(result, Int32.MaxValue, preserveEndOfLines) == 0 ? null : result;
@@ -312,7 +312,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        public MutableString ReadParagraph(RubyEncoding encoding, bool preserveEndOfLines) {
+        public MutableString ReadParagraph(RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
             var result = ReadLine(MutableString.CreateAscii("\n\n"), encoding, preserveEndOfLines);
 
             int c;
@@ -326,19 +326,19 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        public MutableString ReadLine(MutableString/*!*/ separator, RubyEncoding encoding, bool preserveEndOfLines) {
-            int c = ReadByteNormalizeEoln(preserveEndOfLines);
-            if (c == -1) {
+        public MutableString ReadLine(MutableString/*!*/ separator, RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
+            int b = ReadByteNormalizeEoln(preserveEndOfLines);
+            if (b == -1) {
                 return null;
             }
 
             int separatorOffset = 0;
-            MutableString result = MutableString.CreateMutable(encoding);
+            MutableString result = MutableString.CreateBinary(encoding);
 
             do {
-                result.Append((char)c);
+                result.Append((byte)b);
 
-                if (c == separator.GetChar(separatorOffset)) {
+                if (b == separator.GetByte(separatorOffset)) {
                     if (separatorOffset == separator.Length - 1) {
                         break;
                     }
@@ -347,8 +347,8 @@ namespace IronRuby.Builtins {
                     separatorOffset = 0;
                 }
 
-                c = ReadByteNormalizeEoln(preserveEndOfLines);
-            } while (c != -1);
+                b = ReadByteNormalizeEoln(preserveEndOfLines);
+            } while (b != -1);
 
             return result;
         }

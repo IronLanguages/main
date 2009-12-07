@@ -28,7 +28,7 @@ namespace IronRuby.Builtins {
     /// 
     /// TODO: we might want to specialize some of the methods to preserve the exact type if possible (like adding byte and byte).
     /// </summary>
-    [RubyModule("Integer", DefineIn = typeof(IronRubyOps.ClrOps))]
+    [RubyModule("Integer", DefineIn = typeof(IronRubyOps.Clr))]
     public static class ClrInteger {
         public static readonly object Zero = ScriptingRuntimeHelpers.Int32ToObject(0);
         public static readonly object One = ScriptingRuntimeHelpers.Int32ToObject(1);
@@ -872,11 +872,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("to_s")]
         public static object ToString([NotNull]BigInteger/*!*/ self, int radix) {
             if (radix < 2 || radix > 36) {
-                throw RubyExceptions.CreateArgumentError("illegal radix " + radix.ToString());
+                throw RubyExceptions.CreateArgumentError("illegal radix {0}" , radix);
             }
             // TODO: Should we try to use a Fixnum specific ToString?
             // TODO: Can we do the ToLower in BigInteger?
-            return MutableString.CreateAscii(self.ToString(radix).ToLower());
+            return MutableString.CreateAscii(self.ToString(radix).ToLowerInvariant());
         }
 
         #endregion

@@ -23,37 +23,27 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Threading;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Scripting.Interpreter {
-
     public sealed class ExceptionHandler {
         public readonly Type ExceptionType;
         public readonly int StartIndex;
         public readonly int EndIndex;
-        public readonly int StartHandlerIndex;
-        public readonly int EndHandlerIndex;
-        public readonly int HandlerStackDepth;
-        public readonly bool PushException;
+        public readonly int LabelIndex;
+        public readonly int HandlerStartIndex;
 
-        public bool IsFinallyOrFault { get { return ExceptionType == null; } }
+        public bool IsFault { get { return ExceptionType == null; } }
 
-        public ExceptionHandler(int start, int end, int handlerStackDepth, int handlerStart, int handlerEnd)
-            : this(start, end, handlerStackDepth, handlerStart, handlerEnd, null, false) {
-        }
-
-        public ExceptionHandler(int start, int end, int handlerStackDepth, int handlerStart, int handlerEnd, Type exceptionType, bool pushException) {
+        internal ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, Type exceptionType) {
             StartIndex = start;
             EndIndex = end;
-            StartHandlerIndex = handlerStart;
-            HandlerStackDepth = handlerStackDepth;
+            LabelIndex = labelIndex;
             ExceptionType = exceptionType;
-            PushException = pushException;
-            EndHandlerIndex = handlerEnd;
+            HandlerStartIndex = handlerStartIndex;
         }
 
         public bool Matches(Type exceptionType, int index) {
@@ -69,7 +59,7 @@ namespace Microsoft.Scripting.Interpreter {
             if (other == null) return true;
 
             if (StartIndex == other.StartIndex && EndIndex == other.EndIndex) {
-                return StartHandlerIndex < other.StartHandlerIndex;
+                return HandlerStartIndex < other.HandlerStartIndex;
             }
 
             if (StartIndex > other.StartIndex) {
@@ -88,10 +78,10 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override string ToString() {
-            return String.Format("{0} [{1}-{2}] [{3}-{4}]",
-                (IsFinallyOrFault ? "finally/fault" : "catch(" + ExceptionType.Name + ")"),
-                StartIndex, EndIndex, 
-                StartHandlerIndex, EndHandlerIndex
+            return String.Format("{0} [{1}-{2}] [{3}->]",
+                (IsFault ? "fault" : "catch(" + ExceptionType.Name + ")"),
+                StartIndex, EndIndex,
+                HandlerStartIndex
             );
         }
     }
@@ -132,6 +122,14 @@ namespace Microsoft.Scripting.Interpreter {
 
             return debugInfos[i];
         }
+
+        public override string ToString() {
+            if (IsClear) {
+                return String.Format("{0}: clear", Index);
+            } else {
+                return String.Format("{0}: [{1}-{2}] '{3}'", Index, StartLine, EndLine, FileName);
+            }
+        }
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
@@ -144,22 +142,18 @@ namespace Microsoft.Scripting.Interpreter {
             Debug.Assert(_GetCurrentMethod != null && _RunMethod != null);
         }
 #endif
+        // zero: sync compilation
         private readonly int _compilationThreshold;
+
         private readonly InstructionList _instructions;
-        private readonly List<ParameterExpression> _locals = new List<ParameterExpression>();
-        private readonly List<bool> _localIsBoxed = new List<bool>();
-        private readonly List<ParameterExpression> _closureVariables = new List<ParameterExpression>();
+        private readonly LocalVariables _locals = new LocalVariables();
 
         private readonly List<ExceptionHandler> _handlers = new List<ExceptionHandler>();
         
-        // Indices of goto instructions that need to be backpatched by the current try expression to handle jumps from it.
-        // Each try expression with a finally clause sets this up and each goto instruction adds itself into the list if it is not null.
-        private List<int> _currentTryFinallyGotoFixups;
-
         private readonly List<DebugInfo> _debugInfos = new List<DebugInfo>();
         private readonly List<UpdateStackTraceInstruction> _stackTraceUpdates = new List<UpdateStackTraceInstruction>();
 
-        private readonly Dictionary<LabelTarget, BranchLabel> _labels = new Dictionary<LabelTarget, BranchLabel>();
+        private readonly Dictionary<LabelTarget, BranchLabel> _treeLabels = new Dictionary<LabelTarget, BranchLabel>();
 
         private readonly Stack<ParameterExpression> _exceptionForRethrowStack = new Stack<ParameterExpression>();
 
@@ -170,16 +164,14 @@ namespace Microsoft.Scripting.Interpreter {
         private bool _forceCompile;
 
         private readonly LightCompiler _parent;
-        private readonly bool _compileLoops;
 
-        internal LightCompiler(bool compileLoops, int compilationThreshold) {
+        internal LightCompiler(int compilationThreshold) {
             _instructions = new InstructionList();
-            _compileLoops = compileLoops;
-            _compilationThreshold = compilationThreshold <= 0 ? 32 : compilationThreshold;
+            _compilationThreshold = compilationThreshold < 0 ? 32 : compilationThreshold;
         }
 
         private LightCompiler(LightCompiler parent)
-            : this(parent._compileLoops, parent._compilationThreshold) {
+            : this(parent._compilationThreshold) {
             _parent = parent;
         }
 
@@ -187,9 +179,17 @@ namespace Microsoft.Scripting.Interpreter {
             get { return _instructions; }
         }
 
+        public LocalVariables Locals {
+            get { return _locals; }
+        }
+
+        internal static Expression Unbox(Expression strongBoxExpression) {
+            return Expression.Field(strongBoxExpression, typeof(StrongBox<object>).GetField("Value"));
+        }
+
         internal LightDelegateCreator CompileTop(LambdaExpression node) {
             foreach (var p in node.Parameters) {
-                AddVariable(p);
+                _locals.DefineLocal(p);
             }
 
             Compile(node.Body);
@@ -201,7 +201,7 @@ namespace Microsoft.Scripting.Interpreter {
 
             Debug.Assert(_instructions.CurrentStackDepth == (node.ReturnType != typeof(void) ? 1 : 0));
 
-            return new LightDelegateCreator(MakeInterpreter(node), node, _closureVariables);
+            return new LightDelegateCreator(MakeInterpreter(node), node);
         }
 
         private Interpreter MakeInterpreter(LambdaExpression lambda) {
@@ -214,23 +214,17 @@ namespace Microsoft.Scripting.Interpreter {
             foreach (var stackTraceUpdate in _stackTraceUpdates) {
                 stackTraceUpdate._debugInfos = debugInfos;
             }
-            return new Interpreter(
-                lambda, _localIsBoxed.ToArray(), _instructions.MaxStackDepth, _instructions.ToArray(), handlers, debugInfos,
-                _compilationThreshold
-            );
+
+            return new Interpreter(lambda, _locals, _treeLabels, _instructions.ToArray(), handlers, debugInfos, _compilationThreshold);
         }
 
-        private BranchLabel MakeLabel() {
-            return new BranchLabel(_instructions);
-        }
-
-        private BranchLabel ReferenceLabel(LabelTarget target) {
-            BranchLabel ret;
-            if (!_labels.TryGetValue(target, out ret)) {
-                ret = MakeLabel();
-                _labels[target] = ret;
+        private BranchLabel MapLabel(LabelTarget target) {
+            BranchLabel label;
+            if (!_treeLabels.TryGetValue(target, out label)) {
+                label = _instructions.MakeLabel();
+                _treeLabels[target] = label;
             }
-            return ret;
+            return label;
         }
 
         private void CompileConstantExpression(Expression expr) {
@@ -245,7 +239,7 @@ namespace Microsoft.Scripting.Interpreter {
         private void CompileDefaultExpression(Type type) {
             if (type != typeof(void)) {
                 if (type.IsValueType) {
-                    object value = GetImmutableDefaultValue(type);
+                    object value = ScriptingRuntimeHelpers.GetPrimitiveDefaultValue(type);
                     if (value != null) {
                         _instructions.EmitLoad(value);
                     } else {
@@ -257,140 +251,88 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        internal static object GetImmutableDefaultValue(Type type) {
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Boolean: return ScriptingRuntimeHelpers.False;
-                case TypeCode.SByte: return default(SByte);
-                case TypeCode.Byte: return default(Byte);
-                case TypeCode.Char: return default(Char);
-                case TypeCode.Int16: return default(Int16);
-                case TypeCode.Int32: return ScriptingRuntimeHelpers.Int32ToObject(0);
-                case TypeCode.Int64: return default(Int64);
-                case TypeCode.UInt16: return default(UInt16);
-                case TypeCode.UInt32: return default(UInt32);
-                case TypeCode.UInt64: return default(UInt64);
-                case TypeCode.Single: return default(Single);
-                case TypeCode.Double: return default(Double);
-                case TypeCode.DBNull: return default(DBNull);
-                case TypeCode.DateTime: return default(DateTime);
-                case TypeCode.Decimal: return default(Decimal);
-                default: return null;
-            }
-        }
-
-        internal List<ParameterExpression> Locals {
-            get { return _locals; }
-        }
-
-        internal List<ParameterExpression> ClosureVariables {
-            get { return _closureVariables; }
-        }
-
-        private bool IsBoxed(int index) {
-            return _localIsBoxed[index];
-        }
-
-        public int GetVariableIndex(ParameterExpression variable) {
-            return _locals.IndexOf(variable);
-        }
-
-        private void EnsureAvailableForClosure(ParameterExpression expr) {
-            int index = GetVariableIndex(expr);
-            if (index != -1) {
-                if (!_localIsBoxed[index]) {
-                    _localIsBoxed[index] = true;
-                    _instructions.SwitchToBoxed(index);
+        private LocalVariable EnsureAvailableForClosure(ParameterExpression expr) {
+            LocalVariable local;
+            if (_locals.TryGetLocal(expr, out local)) {
+                if (!local.InClosure && !local.IsBoxed) {
+                    _locals.Box(expr);
+                    _instructions.SwitchToBoxed(local.Index);
                 }
-                return;
-            }
-
-            if (!_closureVariables.Contains(expr)) {
-                if (_parent == null) {
-                    throw new InvalidOperationException("unbound variable: " + expr);
-                }
-
+                return local;
+            } else if (_parent != null) {
                 _parent.EnsureAvailableForClosure(expr);
-                _closureVariables.Add(expr);
+                return _locals.AddClosureVariable(expr);
+            } else {
+                throw new InvalidOperationException("unbound variable: " + expr);
             }
         }
 
         public void EnsureVariable(ParameterExpression variable) {
-            int index = GetVariableIndex(variable);
-            if (index == -1) {
+            if (_locals.ContainsVariable(variable)) {
                 EnsureAvailableForClosure(variable);
             }
         }
 
         public void CompileGetVariable(ParameterExpression variable) {
-            int index = GetVariableIndex(variable);
-            if (index != -1) {
-                if (_localIsBoxed[index]) {
-                    _instructions.EmitLoadLocalBoxed(index);
-                } else {
-                    _instructions.EmitLoadLocal(index);
-                }
-            } else {
-                EnsureAvailableForClosure(variable);
+            LocalVariable local;
+            if (!_locals.TryGetLocal(variable, out local)) {
+                local = EnsureAvailableForClosure(variable);
+            }
 
-                index = _closureVariables.IndexOf(variable);
-                Debug.Assert(index != -1);
-                _instructions.EmitLoadLocalFromClosure(index);
+            if (local.InClosure) {
+                _instructions.EmitLoadLocalFromClosure(local.Index);
+            } else if (local.IsBoxed) {
+                _instructions.EmitLoadLocalBoxed(local.Index);
+            } else {
+                _instructions.EmitLoadLocal(local.Index);
             }
 
             _instructions.SetDebugCookie(variable.Name);
         }
 
         public void CompileGetBoxedVariable(ParameterExpression variable) {
-            int index = GetVariableIndex(variable);
-            if (index != -1) {
-                Debug.Assert(_localIsBoxed[index]);
-                _instructions.EmitLoadLocal(index);
-            } else {
-                EnsureAvailableForClosure(variable);
+            LocalVariable local;
+            if (!_locals.TryGetLocal(variable, out local)) {
+                local = EnsureAvailableForClosure(variable);
+            }
 
-                index = _closureVariables.IndexOf(variable);
-                Debug.Assert(index != -1);
-                _instructions.EmitLoadLocalFromClosureBoxed(index);
+            if (local.InClosure) {
+                _instructions.EmitLoadLocalFromClosureBoxed(local.Index);
+            } else {
+                Debug.Assert(local.IsBoxed);
+                _instructions.EmitLoadLocal(local.Index);
             }
 
             _instructions.SetDebugCookie(variable.Name);
         }
 
         public void CompileSetVariable(ParameterExpression variable, bool isVoid) {
-            int index = GetVariableIndex(variable);
-            if (index != -1) {
-                if (_localIsBoxed[index]) {
-                    if (isVoid) {
-                        _instructions.EmitStoreLocalBoxed(index);
-                    } else {
-                        _instructions.EmitAssignedLocalBoxed(index);
-                    }
+            LocalVariable local;
+            if (!_locals.TryGetLocal(variable, out local)) {
+                local = EnsureAvailableForClosure(variable);
+            }
+
+            if (local.InClosure) {
+                if (isVoid) {
+                    _instructions.EmitStoreLocalToClosure(local.Index);
                 } else {
-                    if (isVoid) {
-                        _instructions.EmitStoreLocal(index);
-                    } else {
-                        _instructions.EmitAssignLocal(index);
-                    }
+                    _instructions.EmitAssignLocalToClosure(local.Index);
+                }
+            } else if (local.IsBoxed) {
+                if (isVoid) {
+                    _instructions.EmitStoreLocalBoxed(local.Index);
+                } else {
+                    _instructions.EmitAssignLocalBoxed(local.Index);
                 }
             } else {
-                EnsureAvailableForClosure(variable);
-
-                index = _closureVariables.IndexOf(variable);
-                Debug.Assert(index != -1);
-                _instructions.EmitAssignLocalToClosure(index);
                 if (isVoid) {
-                    _instructions.EmitPop();
+                    _instructions.EmitStoreLocal(local.Index);
+                } else {
+                    _instructions.EmitAssignLocal(local.Index);
                 }
             }
 
             _instructions.SetDebugCookie(variable.Name);
-        }
-
-        private int AddVariable(ParameterExpression expr) {
-            int index = _locals.Count;
-            _locals.Add(expr);
-            _localIsBoxed.Add(false);
-            return index;
         }
 
         private void CompileParameterExpression(Expression expr) {
@@ -404,9 +346,10 @@ namespace Microsoft.Scripting.Interpreter {
             // TODO: pop these off a stack when exiting
             // TODO: basic flow analysis so we don't have to initialize all
             // variables.
-            foreach (var local in node.Variables) {
-                _instructions.EmitInitializeLocal(AddVariable(local), local.Type);
-                _instructions.SetDebugCookie(local.Name);
+            foreach (var variable in node.Variables) {
+                LocalVariable local = _locals.DefineLocal(variable);
+                _instructions.EmitInitializeLocal(local.Index, variable.Type);
+                _instructions.SetDebugCookie(variable.Name);
             }
 
             for (int i = 0; i < node.Expressions.Count - 1; i++) {
@@ -478,12 +421,12 @@ namespace Microsoft.Scripting.Interpreter {
             PropertyInfo pi = member.Member as PropertyInfo;
             if (pi != null) {
                 var method = pi.GetSetMethod();
-                this.Compile(member.Expression);
-                this.Compile(node.Right);
+                Compile(member.Expression);
+                Compile(node.Right);
 
                 int index = 0;
                 if (!asVoid) {
-                    index = AddVariable(Expression.Parameter(node.Right.Type, null));
+                    index = _locals.DefineLocal(Expression.Parameter(node.Right.Type)).Index;
                     _instructions.EmitAssignLocal(index);
                     // TODO: free the variable when it goes out of scope
                 }
@@ -505,7 +448,7 @@ namespace Microsoft.Scripting.Interpreter {
 
                 int index = 0;
                 if (!asVoid) {
-                    index = AddVariable(Expression.Parameter(node.Right.Type, null));
+                    index = _locals.DefineLocal(Expression.Parameter(node.Right.Type)).Index;
                     _instructions.EmitAssignLocal(index);
                     // TODO: free the variable when it goes out of scope
                 }
@@ -729,8 +672,8 @@ namespace Microsoft.Scripting.Interpreter {
             Debug.Assert(node.Left.Type == node.Right.Type);
 
             if (node.Left.Type == typeof(bool)) {
-                var elseLabel = MakeLabel();
-                var endLabel = MakeLabel();
+                var elseLabel = _instructions.MakeLabel();
+                var endLabel = _instructions.MakeLabel();
                 Compile(node.Left);
                 if (andAlso) {
                     _instructions.EmitBranchFalse(elseLabel);
@@ -739,9 +682,9 @@ namespace Microsoft.Scripting.Interpreter {
                 }
                 Compile(node.Right);
                 _instructions.EmitBranch(endLabel, false, true);
-                elseLabel.Mark();
+                _instructions.MarkLabel(elseLabel);
                 _instructions.EmitLoad(!andAlso);
-                endLabel.Mark();
+                _instructions.MarkLabel(endLabel);
                 return;
             }
 
@@ -754,59 +697,50 @@ namespace Microsoft.Scripting.Interpreter {
             Compile(node.Test);
 
             if (node.IfTrue == AstUtils.Empty()) {
-                var endOfFalse = MakeLabel();
+                var endOfFalse = _instructions.MakeLabel();
                 _instructions.EmitBranchTrue(endOfFalse);
                 Compile(node.IfFalse, asVoid);
-                endOfFalse.Mark();
+                _instructions.MarkLabel(endOfFalse);
             } else {
-                var endOfTrue = MakeLabel();
+                var endOfTrue = _instructions.MakeLabel();
                 _instructions.EmitBranchFalse(endOfTrue);
                 Compile(node.IfTrue, asVoid);
 
                 if (node.IfFalse != AstUtils.Empty()) {
-                    var endOfFalse = MakeLabel();
+                    var endOfFalse = _instructions.MakeLabel();
                     _instructions.EmitBranch(endOfFalse, false, !asVoid);
-                    endOfTrue.Mark();
+                    _instructions.MarkLabel(endOfTrue);
                     Compile(node.IfFalse, asVoid);
-                    endOfFalse.Mark();
+                    _instructions.MarkLabel(endOfFalse);
                 } else {
-                    endOfTrue.Mark();
+                    _instructions.MarkLabel(endOfTrue);
                 }
             }
         }
 
+        #region Loops
+
         private void CompileLoopExpression(Expression expr) {
             var node = (LoopExpression)expr;
+            var enterLoop = new EnterLoopInstruction(node, _compilationThreshold, _instructions.Count);
+            
+            var continueLabel = node.ContinueLabel == null ? _instructions.MakeLabel() : MapLabel(node.ContinueLabel);
+            _instructions.MarkLabel(continueLabel);
 
-            //
-            // We don't want to get stuck interpreting a tight loop. Until we
-            // can adaptively compile them, just compile the entire lambda.
-            //
-            // The old code for light-compiling the loop is left here for
-            // reference. It won't do anything because we'll abort and throw
-            // away the instruction stream.
-            //
-            // Finally, we could also detect any backwards branch as a loop.
-            // It's arguably more precise, but it would be bad for IronRuby or
-            // other languages that needs a way to get around this feature.
-            // As it is, you can open code using GotoExpression and still have
-            // the lambda be interpreted.
-            //
-            if (_compileLoops) {
-                _forceCompile = true;
-            }
-
-            var continueLabel = node.ContinueLabel == null ? 
-                MakeLabel() : ReferenceLabel(node.ContinueLabel);
-
-            continueLabel.Mark();
+            // emit loop body:
+            _instructions.Emit(enterLoop);
             CompileAsVoid(node.Body);
-            _instructions.EmitBranch(continueLabel, expr.Type != typeof(void), false);
 
+            // emit loop branch:
+            _instructions.EmitBranch(continueLabel, expr.Type != typeof(void), false);
             if (node.BreakLabel != null) {
-                ReferenceLabel(node.BreakLabel).Mark();
+                _instructions.MarkLabel(MapLabel(node.BreakLabel));
             }
+
+            enterLoop.FinishLoop(_instructions.Count);
         }
+
+        #endregion
 
         private void CompileSwitchExpression(Expression expr) {
             var node = (SwitchExpression)expr;
@@ -821,7 +755,7 @@ namespace Microsoft.Scripting.Interpreter {
                 throw new NotImplementedException();
             }
 
-            BranchLabel end = new BranchLabel(_instructions);
+            BranchLabel end = _instructions.MakeLabel();
             bool hasValue = node.Type != typeof(void);
 
             Compile(node.SwitchValue);
@@ -851,7 +785,7 @@ namespace Microsoft.Scripting.Interpreter {
                 }
             }
 
-            end.Mark();
+            _instructions.MarkLabel(end);
         }
 
         private void CompileLabelExpression(Expression expr) {
@@ -861,22 +795,18 @@ namespace Microsoft.Scripting.Interpreter {
                 this.Compile(node.DefaultValue);
             }
 
-            ReferenceLabel(node.Target).Mark();
+            _instructions.MarkLabel(MapLabel(node.Target));
         }
 
         private void CompileGotoExpression(Expression expr) {
             var node = (GotoExpression)expr;
 
             if (node.Value != null) {
-                this.Compile(node.Value);
+                Compile(node.Value);
             }
 
-            var label = ReferenceLabel(node.Target);
+            var label = MapLabel(node.Target);
             _instructions.EmitGoto(label, node.Type != typeof(void), node.Value != null);
-
-            if (_currentTryFinallyGotoFixups != null) {
-                _currentTryFinallyGotoFixups.Add(_instructions.Count - 1);
-            }
         }
 
         private void CompileThrowUnaryExpression(Expression expr, bool asVoid) {
@@ -920,10 +850,9 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             BlockExpression node = (BlockExpression)expr;
-            foreach (var local in node.Variables) {
-                AddVariable(local);
+            foreach (var variable in node.Variables) {
+                _locals.DefineLocal(variable);
             }
-
 
             for (int i = 0; i < node.Expressions.Count - 1; i++) {
                 CompileAsVoid(node.Expressions[i]);
@@ -937,102 +866,98 @@ namespace Microsoft.Scripting.Interpreter {
         private void CompileTryExpression(Expression expr) {
             var node = (TryExpression)expr;
 
-            BranchLabel startOfFinally = MakeLabel();
-
-            List<int> gotos = null;
-            List<int> parentGotos = _currentTryFinallyGotoFixups;
-            if (node.Finally != null) {
-                _currentTryFinallyGotoFixups = gotos = new List<int>();
-            }
+            BranchLabel end = _instructions.MakeLabel();
+            BranchLabel gotoEnd = _instructions.MakeLabel();
 
             int tryStackDepth = _instructions.CurrentStackDepth;
             int tryStart = _instructions.Count;
+
+            BranchLabel startOfFinally = null;
+            if (node.Finally != null) {
+                startOfFinally = _instructions.MakeLabel();
+                _instructions.EmitEnterTryFinally(startOfFinally);
+            }
+
             Compile(node.Body);
-            int tryEnd = _instructions.Count;
 
             bool hasValue = node.Body.Type != typeof(void);
+            int tryEnd = _instructions.Count;
 
-            // keep the result on the stack:
-            _instructions.EmitBranch(startOfFinally, hasValue, hasValue);
+            // handlers jump here:
+            _instructions.MarkLabel(gotoEnd);
+            _instructions.EmitGoto(end, hasValue, hasValue);
+            
+            // keep the result on the stack:     
+            if (node.Handlers.Count > 0) {
+                int handlerContinuationDepth = _instructions.CurrentContinuationsDepth;
 
-            // TODO: emulates faults (replace by true fault support)
-            if (node.Finally == null && node.Handlers.Count == 1) {
-                var handler = node.Handlers[0];
-                if (handler.Filter == null && handler.Test == typeof(Exception) && handler.Variable == null) {
-                    if (EndsWithRethrow(handler.Body)) {
-                        int handlerStart = _instructions.Count;
-                        CompileAsVoidRemoveRethrow(handler.Body);
-                        startOfFinally.Mark();
-                        int handlerEnd = _instructions.Count;
+                // TODO: emulates faults (replace by true fault support)
+                if (node.Finally == null && node.Handlers.Count == 1) {
+                    var handler = node.Handlers[0];
+                    if (handler.Filter == null && handler.Test == typeof(Exception) && handler.Variable == null) {
+                        if (EndsWithRethrow(handler.Body)) {
+                            if (hasValue) {
+                                _instructions.EmitEnterExceptionHandlerNonVoid();
+                            } else {
+                                _instructions.EmitEnterExceptionHandlerVoid();
+                            }
 
-                        _handlers.Add(new ExceptionHandler(tryStart, tryEnd, tryStackDepth, handlerStart, handlerEnd));
-                        return;
-                    }
-                }
-            }
+                            // at this point the stack balance is prepared for the hidden exception variable:
+                            int handlerLabel = _instructions.MarkRuntimeLabel();
+                            int handlerStart = _instructions.Count;
 
-            foreach (var handler in node.Handlers) {
-                if (handler.Filter != null) throw new NotImplementedException();
-                var parameter = handler.Variable;
+                            CompileAsVoidRemoveRethrow(handler.Body);
+                            _instructions.EmitLeaveFault(hasValue);
+                            _instructions.MarkLabel(end);
 
-                // TODO we should only create one of these if needed for a rethrow
-                if (parameter == null) {
-                    parameter = Expression.Parameter(handler.Test, "currentException");
-                }
-                // TODO: free the variable when it goes out of scope
-                AddVariable(parameter);
-                _exceptionForRethrowStack.Push(parameter);
-
-                int handlerStart = _instructions.Count;
-                // TODO: we can reuse _currentTryFinallyGotoFixups if allocated. If not we still need a different list.
-                
-                // add a stack balancing nop instruction (exception handling pushes the current exception):
-                if (hasValue) {
-                    _instructions.EmitEnterExceptionHandlerNonVoid();
-                } else {
-                    _instructions.EmitEnterExceptionHandlerVoid();
-                }
-                CompileSetVariable(parameter, true);
-                Compile(handler.Body);
-
-                int handlerEnd = _instructions.Count;
-
-                //TODO pop this scoped variable that we no longer need
-                //PopVariable(parameter);
-                _exceptionForRethrowStack.Pop();
-
-                // keep the value of the body on the stack:
-                Debug.Assert(hasValue == (handler.Body.Type != typeof(void)));
-                _instructions.EmitLeaveExceptionHandler(hasValue, startOfFinally);
-
-                _handlers.Add(new ExceptionHandler(tryStart, tryEnd, tryStackDepth, handlerStart, handlerEnd, handler.Test, true));                
-            }
-
-            if (node.Fault != null) {
-                throw new NotImplementedException();
-            }
-
-            startOfFinally.Mark();
-
-            if (node.Finally != null) {
-                _currentTryFinallyGotoFixups = parentGotos;
-                int finallyStart = _instructions.Count;
-                CompileAsVoid(node.Finally);
-                int finallyEnd = _instructions.Count;
-
-                // registeres this finally block for execution to all goto instructions that jump out:
-                foreach (var gt in gotos) {
-                    if (_instructions.AddFinally(gt, tryStart, tryStackDepth, finallyStart, finallyEnd)) {
-                        if (parentGotos != null) {
-                            // we might need to execute parent finally as well:
-                            parentGotos.Add(gt);
+                            _handlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, null));
+                            return;
                         }
                     }
                 }
 
-                // finally handler spans over try body and all catch handlers:
-                _handlers.Add(new ExceptionHandler(tryStart, finallyStart, tryStackDepth, finallyStart, finallyEnd));
+                foreach (var handler in node.Handlers) {
+                    if (handler.Filter != null) throw new NotImplementedException();
+                    var parameter = handler.Variable ?? Expression.Parameter(handler.Test);
+                    _locals.DefineLocal(parameter);
+                    _exceptionForRethrowStack.Push(parameter);
+
+                    // add a stack balancing nop instruction (exception handling pushes the current exception):
+                    if (hasValue) {
+                        _instructions.EmitEnterExceptionHandlerNonVoid();
+                    } else {
+                        _instructions.EmitEnterExceptionHandlerVoid();
+                    }
+
+                    // at this point the stack balance is prepared for the hidden exception variable:
+                    int handlerLabel = _instructions.MarkRuntimeLabel();
+                    int handlerStart = _instructions.Count;
+
+                    CompileSetVariable(parameter, true);
+                    Compile(handler.Body);
+
+                    _exceptionForRethrowStack.Pop();
+
+                    // keep the value of the body on the stack:
+                    Debug.Assert(hasValue == (handler.Body.Type != typeof(void)));
+                    _instructions.EmitLeaveExceptionHandler(hasValue, gotoEnd);
+
+                    _handlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, handler.Test));
+                }
+
+                if (node.Fault != null) {
+                    throw new NotImplementedException();
+                }
             }
+            
+            if (node.Finally != null) {
+                _instructions.MarkLabel(startOfFinally);
+                _instructions.EmitEnterFinally();
+                CompileAsVoid(node.Finally);
+                _instructions.EmitLeaveFinally();
+            }
+
+            _instructions.MarkLabel(end);
         }
 
         private void CompileDynamicExpression(Expression expr) {
@@ -1059,9 +984,12 @@ namespace Microsoft.Scripting.Interpreter {
 
             var parameters = node.Method.GetParameters();
 
-            //TODO support pass by reference and lots of other fancy stuff;
+            // TODO:
+            // Support pass by reference.
+            // Note that LoopCompiler needs to be updated too.
+
             // force compilation for now:
-            if (!CollectionUtils.TrueForAll(parameters, (p) => !p.IsByRefParameter())) {
+            if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef)) {
                 _forceCompile = true;
             }
 
@@ -1281,7 +1209,7 @@ namespace Microsoft.Scripting.Interpreter {
             var node = (LambdaExpression)expr;
             var creator = new LightCompiler(this).CompileTop(node);
 
-            foreach (ParameterExpression variable in creator.ClosureVariables) {
+            foreach (ParameterExpression variable in creator.Interpreter.Locals.GetClosureVariables()) {
                 CompileGetBoxedVariable(variable);
             }
             _instructions.EmitCreateDelegate(creator);
@@ -1295,12 +1223,12 @@ namespace Microsoft.Scripting.Interpreter {
             } else if (node.Conversion != null) {
                 throw new NotImplementedException();
             } else {
-                var leftNotNull = MakeLabel();
+                var leftNotNull = _instructions.MakeLabel();
                 Compile(node.Left);
                 _instructions.EmitCoalescingBranch(leftNotNull);
                 _instructions.EmitPop();
                 Compile(node.Right);
-                leftNotNull.Mark();
+                _instructions.MarkLabel(leftNotNull);
             }
         }
 

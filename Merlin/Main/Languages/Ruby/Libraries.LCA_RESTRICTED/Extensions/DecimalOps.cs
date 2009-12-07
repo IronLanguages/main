@@ -59,7 +59,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
         public static double InducedFrom(RubyModule/*!*/ self, object value) {
-            throw RubyExceptions.CreateTypeError(String.Format("failed to convert {0} into Decimal", self.Context.GetClassDisplayName(value)));
+            throw RubyExceptions.CreateTypeError("failed to convert {0} into Decimal", self.Context.GetClassDisplayName(value));
         }
 
         #endregion

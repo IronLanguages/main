@@ -33,7 +33,8 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             var frame = MakeFrame();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -44,7 +45,8 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             var frame = MakeFrame();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun0<TRet>(LightLambda lambda) {
@@ -60,8 +62,8 @@ namespace Microsoft.Scripting.Interpreter {
 
             var frame = MakeFrame();
             frame.Data[0] = arg0;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -73,8 +75,8 @@ namespace Microsoft.Scripting.Interpreter {
 
             var frame = MakeFrame();
             frame.Data[0] = arg0;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun1<T0,TRet>(LightLambda lambda) {
@@ -91,8 +93,8 @@ namespace Microsoft.Scripting.Interpreter {
             var frame = MakeFrame();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -105,8 +107,8 @@ namespace Microsoft.Scripting.Interpreter {
             var frame = MakeFrame();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun2<T0,T1,TRet>(LightLambda lambda) {
@@ -124,8 +126,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -139,8 +141,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun3<T0,T1,T2,TRet>(LightLambda lambda) {
@@ -159,8 +161,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -175,8 +177,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun4<T0,T1,T2,T3,TRet>(LightLambda lambda) {
@@ -196,8 +198,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -213,8 +215,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun5<T0,T1,T2,T3,T4,TRet>(LightLambda lambda) {
@@ -235,8 +237,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -253,8 +255,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun6<T0,T1,T2,T3,T4,T5,TRet>(LightLambda lambda) {
@@ -276,8 +278,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -295,8 +297,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun7<T0,T1,T2,T3,T4,T5,T6,TRet>(LightLambda lambda) {
@@ -319,8 +321,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -339,8 +341,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun8<T0,T1,T2,T3,T4,T5,T6,T7,TRet>(LightLambda lambda) {
@@ -364,8 +366,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -385,8 +387,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun9<T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet>(LightLambda lambda) {
@@ -411,8 +413,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -433,8 +435,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun10<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet>(LightLambda lambda) {
@@ -460,8 +462,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -483,8 +485,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun11<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet>(LightLambda lambda) {
@@ -511,8 +513,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -535,8 +537,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun12<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet>(LightLambda lambda) {
@@ -564,8 +566,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -589,8 +591,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun13<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet>(LightLambda lambda) {
@@ -619,8 +621,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -645,8 +647,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun14<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet>(LightLambda lambda) {
@@ -676,8 +678,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
             frame.Data[14] = arg14;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -703,8 +705,8 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
             frame.Data[14] = arg14;
-            frame.BoxLocals();
-            _interpreter.Run(frame);
+            var current = frame.Enter();
+            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
         }
 
         internal static Delegate MakeRun15<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet>(LightLambda lambda) {

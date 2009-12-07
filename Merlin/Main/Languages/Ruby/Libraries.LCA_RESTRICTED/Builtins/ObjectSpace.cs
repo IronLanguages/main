@@ -34,7 +34,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("each_object", RubyMethodAttributes.PublicSingleton)]
         public static object EachObject(BlockParam block, RubyModule/*!*/ self, [NotNull]RubyClass/*!*/ theClass) {
             if (!theClass.HasAncestor(self.Context.ModuleClass)) {
-                throw new RuntimeError("each_object only supported for objects of type Class or Module");
+                throw RubyExceptions.CreateRuntimeError("each_object only supported for objects of type Class or Module");
             }
 
             if (block == null) {

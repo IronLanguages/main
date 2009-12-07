@@ -23,6 +23,7 @@ using System.Diagnostics;
 using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Runtime {
+    [ReflectionCached]
     public struct IntegerValue : IEquatable<IntegerValue> {
         private int _fixnum;
         private BigInteger _bignum;
@@ -109,6 +110,20 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateRangeError("Bignum too big to convert into 64-bit signed integer");
             }
             return result;
+        }
+
+        [Emitted]
+        [CLSCompliant(false)]
+        public uint ToUInt32Unchecked() {
+            if (IsFixnum) {
+                return unchecked((uint)_fixnum);
+            }
+
+            uint u;
+            if (_bignum.AsUInt32(out u)) {
+                return u;
+            }
+            throw RubyExceptions.CreateRangeError("bignum too big to convert into 32-bit unsigned integer");
         }
 
         public bool Equals(IntegerValue other) {

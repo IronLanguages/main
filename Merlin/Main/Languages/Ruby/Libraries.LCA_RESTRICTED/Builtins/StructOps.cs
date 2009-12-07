@@ -306,7 +306,7 @@ namespace IronRuby.Builtins {
                 return normalized;
             }
             // MRI reports the normalized index, but we'll report the original one
-            throw RubyExceptions.CreateIndexError(String.Format("offset {0} too small for struct (size:{1})", index, itemCount));
+            throw RubyExceptions.CreateIndexError("offset {0} too small for struct (size:{1})", index, itemCount);
         }
     }
 }

@@ -661,7 +661,7 @@ namespace IronPython.Runtime.Binding {
                 StringBuilder res = new StringBuilder();
                 string comma = "";
 
-                Type retType = CompilerHelpers.GetReturnType(mb);
+                Type retType = mb.GetReturnType();
                 if (retType != typeof(void)) {
                     res.Append(DynamicHelpers.GetPythonTypeFromType(retType).Name);
                     res.Append(" ");

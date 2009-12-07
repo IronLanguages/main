@@ -26,7 +26,15 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Utils {
-    static class TypeUtils {
+    public static class TypeUtils {
+#if SILVERLIGHT
+        public static bool IsNested(this Type t) {
+            return t.DeclaringType != null;
+        }
+#else
+        public static bool IsNested(this Type t) { return t.IsNested; }
+#endif
+
         // keep in sync with System.Core version
         internal static Type GetNonNullableType(Type type) {
             if (IsNullableType(type)) {
@@ -334,10 +342,6 @@ namespace Microsoft.Scripting.Utils {
                 default:
                     return false;
             }
-        }
-
-        internal static Type GetNonNoneType(Type type) {
-            return (type == typeof(DynamicNull)) ? typeof(object) : type;
         }
 
         internal static bool IsFloatingPoint(Type type) {

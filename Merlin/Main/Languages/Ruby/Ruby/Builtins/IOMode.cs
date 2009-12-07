@@ -67,7 +67,7 @@ namespace IronRuby.Builtins {
                 case IOMode.WriteOnly: return FileAccess.Write;
                 case IOMode.ReadOnly: return FileAccess.Read;
                 case IOMode.ReadWrite: return FileAccess.ReadWrite;
-                default: throw RubyExceptions.CreateEINVAL(String.Format("illegal access mode {0}", mode));
+                default: throw RubyExceptions.CreateEINVAL("illegal access mode {0}", mode);
             }
         }
 
@@ -120,8 +120,8 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private static ArgumentException/*!*/ IllegalMode(string/*!*/ modeString) {
-            return new ArgumentException(String.Format("illegal access mode {0}", modeString));
+        private static Exception/*!*/ IllegalMode(string/*!*/ modeString) {
+            return RubyExceptions.CreateArgumentError("illegal access mode {0}", modeString);
         }
     }
 }

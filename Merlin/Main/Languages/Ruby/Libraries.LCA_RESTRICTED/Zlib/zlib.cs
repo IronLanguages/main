@@ -801,7 +801,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 bool fcomment = IsBitSet(flg, 4);
 
                 uint secondsSince1970 = ReadUInt32LE(reader);
-                DateTime mtime = Time.Create(null, (double)secondsSince1970);
+                DateTime mtime = RubyTime.Epoch.AddSeconds((double)secondsSince1970);
                 byte xfl = reader.ReadByte();
                 string os = GZipReader.OSES[reader.ReadByte()];
                 if (fextra) {

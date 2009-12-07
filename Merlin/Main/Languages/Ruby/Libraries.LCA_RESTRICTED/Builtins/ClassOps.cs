@@ -22,7 +22,7 @@ using System.Reflection;
 
 namespace IronRuby.Builtins {
 
-    [RubyClass("Class", Extends = typeof(RubyClass), Inherits = typeof(RubyModule))]
+    [RubyClass("Class", Extends = typeof(RubyClass), Inherits = typeof(RubyModule), Restrictions = ModuleRestrictions.Builtin | ModuleRestrictions.NoUnderlyingType)]
     [UndefineMethod("extend_object")]
     [UndefineMethod("append_features")]
     [UndefineMethod("module_function")]

@@ -142,6 +142,12 @@
   <ItemGroup>
     <Compile Include="Compiler\Ast\AndExpression.cs" />
     <Compile Include="Compiler\Ast\Arg.cs" />
+    <Compile Include="Compiler\Ast\DynamicConvertExpression.cs" />
+    <Compile Include="Compiler\Ast\DynamicGetMemberExpression.cs" />
+    <Compile Include="Compiler\Ast\GetGlobalContextExpression.cs" />
+    <Compile Include="Compiler\Ast\GetParentContextFromFunctionExpression.cs" />
+    <Compile Include="Compiler\Ast\LazyDynamicExpression.cs" />
+    <Compile Include="Compiler\Ast\PythonConstantExpression.cs" />
     <Compile Include="Compiler\Ast\SerializedScopeStatement.cs" />
     <Compile Include="Compiler\CollectableCompilationMode.cs" />
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
@@ -302,6 +308,7 @@
     <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
     <Compile Include="Runtime\BytesConversionAttribute.cs" />
     <Compile Include="Runtime\Python3Warning.cs" />
+    <Compile Include="Runtime\PythonContext.Generated.cs" />
     <Compile Include="Runtime\PythonDynamicStackFrame.cs" />
     <Compile Include="Runtime\PythonFunction.Generated.cs" />
     <Compile Include="Runtime\PythonOptions.cs" />

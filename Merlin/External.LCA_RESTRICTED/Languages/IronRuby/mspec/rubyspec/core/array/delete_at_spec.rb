@@ -18,6 +18,8 @@ describe "Array#delete_at" do
 
   it "returns nil and makes no modification if the index is out of range" do
     a = [1, 2]
+    a.delete_at(2).should == nil
+    a.should == [1, 2]
     a.delete_at(3).should == nil
     a.should == [1, 2]
     a.delete_at(-3).should == nil

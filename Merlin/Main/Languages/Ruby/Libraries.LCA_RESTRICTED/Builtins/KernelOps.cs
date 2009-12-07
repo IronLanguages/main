@@ -47,7 +47,7 @@ namespace IronRuby.Builtins {
             }
 
             if (context.IsObjectFrozen(self)) {
-                throw RubyExceptions.CreateTypeError(String.Format("can't modify frozen {0}", selfClass.Name));
+                throw RubyExceptions.CreateTypeError("can't modify frozen {0}", selfClass.Name);
             }
 
             return self;
@@ -113,7 +113,7 @@ namespace IronRuby.Builtins {
             }
 
             if (i < str.Length) {
-                throw RubyExceptions.CreateArgumentError(String.Format("invalid value for Integer: \"{0}\"", str));
+                throw RubyExceptions.CreateArgumentError("invalid value for Integer: \"{0}\"", str);
             }
 
             return result;
@@ -232,7 +232,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("throw", RubyMethodAttributes.PublicSingleton)]
         public static void Throw(object self, [DefaultProtocol, NotNull]string/*!*/ label, [DefaultParameterValue(null)]object returnValue) {
             if (_catchSymbols == null || !_catchSymbols.Contains(label)) {
-                throw RubyExceptions.CreateNameError(String.Format("uncaught throw `{0}'", label));
+                throw RubyExceptions.CreateNameError("uncaught throw `{0}'", label);
             }
 
             throw new ThrowCatchUnwinder(label, returnValue);
@@ -264,8 +264,7 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");
             }
 
-            // doesn't preserve the class:
-            return block.Proc.ToLambda();
+            return block.Proc.ToLambda(null);
         }
 
         #endregion
@@ -496,7 +495,7 @@ namespace IronRuby.Builtins {
 
             object result;
             if (!RubyUtils.TryDuplicateObject(initializeCopyStorage, allocateStorage, self, isClone, out result)) {
-                throw RubyExceptions.CreateTypeError(String.Format("can't {0} {1}", isClone ? "clone" : "dup", context.GetClassDisplayName(self)));
+                throw RubyExceptions.CreateTypeError("can't {0} {1}", isClone ? "clone" : "dup", context.GetClassDisplayName(self));
             }
             return context.TaintObjectBy(result, self);
         }
@@ -704,7 +703,7 @@ namespace IronRuby.Builtins {
                 // We didn't find it, check if the name is valid
                 context.CheckInstanceVariableName(name);
 
-                throw RubyExceptions.CreateNameError(String.Format("instance variable `{0}' not defined", name));
+                throw RubyExceptions.CreateNameError("instance variable `{0}' not defined", name);
             }
 
             return value;
@@ -924,7 +923,7 @@ namespace IronRuby.Builtins {
             RubyClass cls = context.GetClassOf(self);
             Type type = (asType != null) ? Protocols.ToType(context, asType) : null;
             if (!cls.TryGetClrMember(name, type, out info)) {
-                throw RubyExceptions.CreateNameError(String.Format("undefined CLR method `{0}' for class `{1}'", name, cls.Name));
+                throw RubyExceptions.CreateNameError("undefined CLR method `{0}' for class `{1}'", name, cls.Name);
             }
 
             return new RubyMethod(self, info, name);
@@ -1157,7 +1156,7 @@ namespace IronRuby.Builtins {
                 case 'X': throw new NotImplementedException();
                 case 'z': throw new NotImplementedException();
                 default:
-                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
+                    throw RubyExceptions.CreateArgumentError("unknown command ?{0}", (char)cmd);
             }
         }
 
@@ -1176,7 +1175,7 @@ namespace IronRuby.Builtins {
                 case '<': throw new NotImplementedException();
                 case '>': throw new NotImplementedException();
                 default:
-                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
+                    throw RubyExceptions.CreateArgumentError("unknown command ?{0}", (char)cmd);
             }
         }
 

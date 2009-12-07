@@ -22,9 +22,13 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting;
+using System.Runtime.CompilerServices;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
-    [RubyClass("Name", Extends = typeof(ClrName), DefineIn = typeof(IronRubyOps.ClrOps))]
+    using BinaryOpStorageWithScope = CallSiteStorage<Func<CallSite, RubyScope, object, object, object>>;
+
+    [RubyClass("Name", Extends = typeof(ClrName), DefineIn = typeof(IronRubyOps.Clr))]
     public static class ClrNameOps {
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(ClrName/*!*/ self) {
@@ -68,26 +72,81 @@ namespace IronRuby.Builtins {
             return self.Equals(other);
         }
 
+        #region 1.9 Symbol Methods
+
+        #region <=>
+
         [RubyMethod("<=>")]
         public static int Compare(ClrName/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ other) {
-            return Math.Sign(self.MangledName.CompareTo(other));
+            return Math.Sign(String.CompareOrdinal(self.MangledName, other));
         }
 
         [RubyMethod("<=>")]
         public static int Compare(ClrName/*!*/ self, [NotNull]ClrName/*!*/ other) {
-            return self.MangledName.CompareTo(other.MangledName);
+            return String.CompareOrdinal(self.MangledName, other.MangledName);
         }
 
         [RubyMethod("<=>")]
         public static int Compare(ClrName/*!*/ self, [NotNull]MutableString/*!*/ other) {
             // TODO: do not create MS
-            return -Math.Sign(other.CompareTo(MutableString.Create(self.MangledName, RubyEncoding.UTF8)));
+            return -Math.Sign(other.CompareTo(GetRubyName(self)));
         }
 
         [RubyMethod("<=>")]
         public static object Compare(BinaryOpStorage/*!*/ comparisonStorage, RespondToStorage/*!*/ respondToStorage, ClrName/*!*/ self, object other) {
             return MutableStringOps.Compare(comparisonStorage, respondToStorage, self.MangledName, other);
         }
+
+        #endregion
+
+        #region =~, match
+
+        [RubyMethod("=~")]
+        public static object Match(RubyScope/*!*/ scope, ClrName/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+            return MutableStringOps.Match(scope, GetRubyName(self), regex);
+        }
+
+        [RubyMethod("=~")]
+        public static object Match(ClrName/*!*/ self, [NotNull]ClrName/*!*/ str) {
+            throw RubyExceptions.CreateTypeError("type mismatch: ClrName given");
+        }
+
+        [RubyMethod("=~")]
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, ClrName/*!*/ self, object obj) {
+            return MutableStringOps.Match(storage, scope, GetRubyName(self), obj);
+        }
+
+        [RubyMethod("match")]
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, ClrName/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+            return MutableStringOps.Match(storage, scope, GetRubyName(self), regex);
+        }
+
+        [RubyMethod("match")]
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, ClrName/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
+            return MutableStringOps.Match(storage, scope, GetRubyName(self), pattern);
+        }
+
+        #endregion
+
+        // => 
+        // []
+        // capitalize
+        // casecmp
+        // downcase
+        // empty?
+        // encoding
+        // intern
+        // length
+        // match
+        // next
+        // size
+        // slice
+        // succ
+        // swapcase
+        // to_proc
+        // upcase
+
+        #endregion
 
         /// <summary>
         /// Converts a Ruby name to PascalCase name (e.g. "foo_bar" to "FooBar").

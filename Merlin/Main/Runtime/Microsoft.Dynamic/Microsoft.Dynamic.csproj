@@ -198,6 +198,7 @@
     <Compile Include="Ast\FlowControlRewriter.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />
     <Compile Include="Ast\SkipInterpretExpression.cs" />
+    <Compile Include="Ast\Utils.cs" />
     <Compile Include="Ast\VariableDictionaryExpression.cs" />
     <Compile Include="Ast\NewArrayExpression.cs" />
     <Compile Include="Ast\NewExpression.cs" />
@@ -273,6 +274,7 @@
     <Compile Include="Interpreter\Instructions\CallInstruction.cs" />
     <Compile Include="Interpreter\Instructions\CallInstruction.Generated.cs" />
     <Compile Include="Interpreter\Instructions\ControlFlowInstructions.cs" />
+    <Compile Include="Interpreter\Instructions\DivInstruction.cs" />
     <Compile Include="Interpreter\Instructions\EqualInstruction.cs" />
     <Compile Include="Interpreter\Instructions\FieldOperations.cs" />
     <Compile Include="Interpreter\Instructions\GreaterThanInstruction.cs" />
@@ -293,6 +295,8 @@
     <Compile Include="Interpreter\LightLambda.cs" />
     <Compile Include="Interpreter\Instructions\Instruction.cs" />
     <Compile Include="Interpreter\LightCompiler.cs" />
+    <Compile Include="Interpreter\LocalVariables.cs" />
+    <Compile Include="Interpreter\LoopCompiler.cs" />
     <Compile Include="Interpreter\RuntimeVariables.cs" />
     <Compile Include="Interpreter\InterpretedFrame.cs" />
     <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
@@ -316,7 +320,6 @@
     <Compile Include="Generation\KeyedQueue.cs" />
     <Compile Include="Generation\Snippets.cs" />
     <Compile Include="Generation\TypeGen.cs" />
-    <Compile Include="Actions\BinderHelpers.cs" />
     <Compile Include="Actions\ComboActionRewriter.cs" />
     <Compile Include="Actions\ComboBinder.cs" />
     <Compile Include="Actions\ConditionalBuilder.cs" />
@@ -370,7 +373,6 @@
     <Compile Include="Runtime\Cast.Generated.cs" />
     <Compile Include="Runtime\Cast.cs" />
     <Compile Include="Runtime\CodeDomCodeGen.cs" />
-    <Compile Include="Runtime\DefaultLanguageContext.cs" />
     <Compile Include="Runtime\DelegateInfo.cs" />
     <Compile Include="Runtime\DelegateSignatureInfo.cs" />
     <Compile Include="Runtime\ISlice.cs" />
@@ -394,7 +396,6 @@
     <Compile Include="Utils\HashSet.cs" />
     <Compile Include="Utils\SynchronizedDictionary.cs" />
     <Compile Include="Utils\ThreadLocal.cs" />
-    <Compile Include="Utils\TypeExtensions.cs" />
     <Compile Include="Utils\TypeUtils.cs" />
     <Compile Include="Utils\ValueArray.cs" />
     <Compile Include="Utils\WeakCollection.cs" />

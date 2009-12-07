@@ -62,10 +62,10 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         public ParameterWrapper(ParameterInfo info) 
-            : this(info, info.ParameterType, info.Name, 
-            CompilerHelpers.ProhibitsNull(info),  
-            CompilerHelpers.IsParamArray(info), 
-            BinderHelpers.IsParamDictionary(info),
+            : this(info, info.ParameterType, info.Name,
+            info.ProhibitsNull(),  
+            info.IsParamArray(), 
+            info.IsParamDictionary(),
             false
         ) {
         }
@@ -123,7 +123,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// </summary>
         internal ParameterWrapper Expand() {
             Debug.Assert(_isParams);
-            return new ParameterWrapper(_info, _type.GetElementType(), null, CompilerHelpers.ProhibitsNullItems(_info), false, false, _isHidden);
+            return new ParameterWrapper(_info, _type.GetElementType(), null, _info.ProhibitsNullItems(), false, false, _isHidden);
         }
     }
 

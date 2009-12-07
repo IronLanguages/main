@@ -28,6 +28,8 @@ using Microsoft.Scripting;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Globalization;
+using System.Threading;
 
 namespace IronRuby.Tests {
     public class TestCase {
@@ -77,6 +79,7 @@ namespace IronRuby.Tests {
             runtimeSetup.DebugMode = _driver.IsDebug;
             runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
             languageSetup.Options["NoAdaptiveCompilation"] = _driver.NoAdaptiveCompilation;
+            languageSetup.Options["CompilationThreshold"] = _driver.CompilationThreshold;
             languageSetup.Options["Verbosity"] = 2;
             languageSetup.Options["Compatibility"] = testCase.Options.Compatibility;
 
@@ -102,6 +105,7 @@ namespace IronRuby.Tests {
         private static bool _displayList;
         private static bool _partialTrust;
         private static bool _noAdaptiveCompilation;
+        private static int _compilationThreshold;
         private static bool _runPython = true;
 
         public TestRuntime TestRuntime {
@@ -136,6 +140,10 @@ namespace IronRuby.Tests {
             get { return _noAdaptiveCompilation; }
         }
 
+        public int CompilationThreshold {
+            get { return _compilationThreshold; }
+        }
+
         public bool RunPython {
             get { return _runPython; }
         }
@@ -145,6 +153,8 @@ namespace IronRuby.Tests {
                 Console.WriteLine("Verbose                      : /verbose");
                 Console.WriteLine("Partial trust                : /partial");
                 Console.WriteLine("No adaptive compilation      : /noadaptive");
+                Console.WriteLine("Synchronous compilation      : /sync             (-X:CompilationThreshold 1)");
+                Console.WriteLine("Interpret only               : /interpret        (-X:CompilationThreshold Int32.MaxValue)");
                 Console.WriteLine("Save to assemblies           : /save");
                 Console.WriteLine("Debug Mode                   : /debug");
                 Console.WriteLine("Disable Python interop tests : /py-");
@@ -195,6 +205,16 @@ namespace IronRuby.Tests {
                 _noAdaptiveCompilation = true;
             }
 
+            if (args.Contains("/sync")) {
+                args.Remove("/sync");
+                _compilationThreshold = 1;
+            }
+
+            if (args.Contains("/interpret")) {
+                args.Remove("/interpret");
+                _compilationThreshold = Int32.MaxValue;
+            }
+
             if (args.Contains("/py-")) {
                 args.Remove("/py-");
                 _runPython = false;
@@ -220,11 +240,14 @@ namespace IronRuby.Tests {
 
         public static void Main(string[]/*!*/ arguments) {
             List<string> args = new List<string>(arguments);
+            string culture = Environment.GetEnvironmentVariable("IR_CULTURE");
+
             if (args.Contains("/partial")) {
                 Console.WriteLine("Running in partial trust");
 
                 PermissionSet ps = CreatePermissionSetByName();
                 AppDomainSetup setup = new AppDomainSetup();
+                
                 setup.ApplicationBase = Environment.CurrentDirectory;
                 AppDomain domain = AppDomain.CreateDomain("Tests", null, setup, ps);
 
@@ -233,6 +256,9 @@ namespace IronRuby.Tests {
                 
                 Environment.ExitCode = loader.ExitCode;
             } else {
+                if (!String.IsNullOrEmpty(culture)) {
+                    Thread.CurrentThread.CurrentCulture = new CultureInfo(culture, false);
+                }
                 Environment.ExitCode = Run(args);
             }
         }
@@ -276,6 +302,10 @@ namespace IronRuby.Tests {
         }       
 
         public static int Run(List<string>/*!*/ args) {
+            if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US") {
+                Console.WriteLine("Current culture: {0}", Thread.CurrentThread.CurrentCulture);
+            }
+
             if (!ParseArguments(args)) {
                 return -3;
             }

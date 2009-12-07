@@ -252,7 +252,7 @@ namespace IronRuby.Builtins {
                     end++;
                 }
                 if (end < _format.Length && _format[end] == '$') {
-                    int argIndex = int.Parse(_format.Substring(_index - 1, end - _index + 1));
+                    int argIndex = int.Parse(_format.Substring(_index - 1, end - _index + 1), CultureInfo.InvariantCulture);
                     _index = end + 1; // Point past the '$'
                     _curCh = _format[_index++];
                     return argIndex;
@@ -336,9 +336,9 @@ namespace IronRuby.Builtins {
             if (_useAbsolute.HasValue) {
                 // All arguments must use absolute or relative index. They can't be mixed
                 if (_useAbsolute.Value && !absoluteIndex.HasValue) {
-                    throw RubyExceptions.CreateArgumentError(string.Format("unnumbered({0}) mixed with numbered", _relativeIndex + 1));
+                    throw RubyExceptions.CreateArgumentError("unnumbered({0}) mixed with numbered", _relativeIndex + 1);
                 } else if (!_useAbsolute.Value && absoluteIndex.HasValue) {
-                    throw RubyExceptions.CreateArgumentError(string.Format("numbered({0}) after unnumbered({1})", absoluteIndex.Value, _relativeIndex + 1));
+                    throw RubyExceptions.CreateArgumentError("numbered({0}) after unnumbered({1})", absoluteIndex.Value, _relativeIndex + 1);
                 }
             } else {
                 // First time through, set _useAbsolute based on our current value
@@ -357,8 +357,9 @@ namespace IronRuby.Builtins {
         private void AppendChar() {
             int value = _siteStorage.CastToFixnum(_opts.Value);
             if (value < 0 && _context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19) {
-                throw RubyExceptions.CreateArgumentError(String.Format("invalid character: {0}", value));
+                throw RubyExceptions.CreateArgumentError("invalid character: {0}", value);
             }
+
             char c = (char)(value & 0xff);
             if (_opts.FieldWidth > 1) {
                 if (!_opts.LeftAdj) {
@@ -548,7 +549,7 @@ namespace IronRuby.Builtins {
             if (fPos && (_opts.SignChar || _opts.Space)) {
                 // produce [' '|'+']0000digits
                 // first get 0 padded number to field width
-                string res = String.Format(nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
+                string res = String.Format(nfi, "{0:" + format + _opts.FieldWidth.ToString(CultureInfo.InvariantCulture) + "}", val);
 
                 char signOrSpace = _opts.SignChar ? '+' : ' ';
                 // then if we ended up with a leading zero replace it, otherwise
@@ -560,7 +561,7 @@ namespace IronRuby.Builtins {
                 }
                 _buf.Append(res);
             } else {
-                string res = String.Format(nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
+                string res = String.Format(nfi, "{0:" + format + _opts.FieldWidth.ToString(CultureInfo.InvariantCulture) + "}", val);
 
                 // Difference: 
                 //   System.String.Format("{0:D3}", -1)      '-001'
@@ -628,12 +629,12 @@ namespace IronRuby.Builtins {
                 }
                 _buf.Append(strval);
             } else if (_opts.Precision == UnspecifiedPrecision) {
-                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth.ToString() + ":" + format + "}", val);
+                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth.ToString(CultureInfo.InvariantCulture) + ":" + format + "}", val);
                 if (unsigned && isNegative)
                     _buf.Insert(0, "..");
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
-                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth.ToString() + ":" + format + _opts.Precision.ToString() + "}", val);
+                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth.ToString(CultureInfo.InvariantCulture) + ":" + format + _opts.Precision.ToString(CultureInfo.InvariantCulture) + "}", val);
             } else {
                 StringBuilder res = new StringBuilder();
                 res.AppendFormat("{0:" + format + "}", val);
@@ -747,7 +748,7 @@ namespace IronRuby.Builtins {
             StringBuilder/*!*/ str = new StringBuilder();
             if (value == 0) str.Append('0');
             while (value != 0) {
-                int digit = (value % radix).ToInt32();
+                int digit = (value % radix).ToInt32(CultureInfo.InvariantCulture);
                 str.Append(_LowerDigits[digit]);
                 value /= radix;
             }
@@ -797,8 +798,8 @@ namespace IronRuby.Builtins {
             char[] digits = lowerCase ? _LowerDigits : _UpperDigits;
 
             while (val != limit) {
-                int t = (val & mask).ToInt32();
-                result.Append(digits[(val & mask).ToInt32()]);
+                int t = (val & mask).ToInt32(CultureInfo.InvariantCulture);
+                result.Append(digits[(val & mask).ToInt32(CultureInfo.InvariantCulture)]);
                 val >>= bitsToShift;
                 limit >>= bitsToShift;
             }

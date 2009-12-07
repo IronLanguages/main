@@ -319,16 +319,16 @@ foo
         /// Uninitialized local variables in closure.
         /// </summary>
         public void Scenario_RubyScopes2B() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def foo
   x = 1 if false
   1.times { p x }
 end
 
 foo
-");
-            }, @"nil");
+",
+@"nil"
+);
         }
 
         /// <summary>

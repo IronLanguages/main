@@ -730,14 +730,12 @@ namespace IronPython.Runtime {
             if (_lambda.EmitDebugSymbols) {
                 return CompilerHelpers.CompileToMethod(code, DebugInfoGenerator.CreatePdbGenerator(), true);
             } else if (_lambda.ShouldInterpret) {
-                Delegate result = CompilerHelpers.LightCompile(code, _lambda is Compiler.Ast.FunctionDefinition,
-                    _lambda.GlobalParent.PyContext.Options.CompilationThreshold
-                );
+                Delegate result = CompilerHelpers.LightCompile(code, _lambda.GlobalParent.PyContext.Options.CompilationThreshold);
 
                 // If the adaptive compiler decides to compile this function, we
                 // want to store the new compiled target. This saves us from going
                 // through the interpreter stub every call.
-                var lightLambda = result.Target as Microsoft.Scripting.Interpreter.LightLambda;
+                var lightLambda = result.Target as LightLambda;
                 if (lightLambda != null) {
                     lightLambda.Compile += handler;
                 }

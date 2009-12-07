@@ -206,8 +206,16 @@ namespace IronRuby.Runtime {
             get { return _name; }
         }
         
-        public bool HideClrMembers { get; set; }
+        /// <summary>
+        /// The CLR type extended by this RubyModule.
+        /// </summary>
+        /// <remarks>
+        /// A Ruby class/module defined by this attribute can either <c>extend</c> an existing CLR type, specified by this property, 
+        /// or be <c>self-contained</c>, in which case the value of <see cref="Extends"/> property is <c>null</c>. 
+        /// A self-contained class/module has <see cref="ModuleRestriction.NoUnderlyingType"/> set by default.
+        /// </remarks>
         public Type Extends { get; set; }
+
         public Type DefineIn { get; set; }
 
         public ModuleRestrictions Restrictions {
@@ -216,7 +224,10 @@ namespace IronRuby.Runtime {
         }
 
         public ModuleRestrictions GetRestrictions(bool builtin) {
-            return _restrictions ?? (builtin ? ModuleRestrictions.Builtin : ModuleRestrictions.None);
+            return _restrictions ?? (
+                (builtin ? ModuleRestrictions.Builtin : ModuleRestrictions.None) | 
+                (Extends == null ? ModuleRestrictions.NoUnderlyingType : ModuleRestrictions.None)
+            );
         }
 
         public RubyModuleAttribute() {

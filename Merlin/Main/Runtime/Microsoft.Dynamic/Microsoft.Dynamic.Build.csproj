@@ -61,7 +61,6 @@
       <Compile Include="Actions\ActionBinder.cs" />
       <Compile Include="Actions\Argument.cs" />
       <Compile Include="Actions\ArgumentType.cs" />
-      <Compile Include="Actions\BinderHelpers.cs" />
       <Compile Include="Actions\BoundMemberTracker.cs" />
       <Compile Include="Actions\CallSignature.cs" />
       <Compile Include="Actions\ComboActionRewriter.cs" />
@@ -168,6 +167,7 @@
       <Compile Include="Ast\SymbolConstantExpression.cs" />
       <Compile Include="Ast\TryStatementBuilder.cs" />
       <Compile Include="Ast\UnaryExpression.cs" />
+      <Compile Include="Ast\Utils.cs" />
       <Compile Include="Ast\VariableDictionaryExpression.cs" />
       <Compile Include="Ast\YieldExpression.cs" />
     </ItemGroup>
@@ -293,6 +293,8 @@
       <Compile Include="Interpreter\LightLambda.cs" />
       <Compile Include="Interpreter\LightLambda.Generated.cs" />
       <Compile Include="Interpreter\LightLambdaClosureVisitor.cs" />
+      <Compile Include="Interpreter\LocalVariables.cs" />
+      <Compile Include="Interpreter\LoopCompiler.cs" />
       <Compile Include="Interpreter\RuntimeVariables.cs" />
     </ItemGroup>
     <ItemGroup>
@@ -304,6 +306,7 @@
       <Compile Include="Interpreter\Instructions\CallInstruction.cs" />
       <Compile Include="Interpreter\Instructions\CallInstruction.Generated.cs" />
       <Compile Include="Interpreter\Instructions\ControlFlowInstructions.cs" />
+      <Compile Include="Interpreter\Instructions\DivInstruction.cs" />
       <Compile Include="Interpreter\Instructions\DynamicInstructionN.cs" />
       <Compile Include="Interpreter\Instructions\DynamicInstructions.Generated.cs" />
       <Compile Include="Interpreter\Instructions\EqualInstruction.cs" />
@@ -350,7 +353,6 @@
       <Compile Include="Runtime\CodeDomCodeGen.cs" />
       <Compile Include="Runtime\CompilerContext.cs" />
       <Compile Include="Runtime\CustomSymbolDictionary.cs" />
-      <Compile Include="Runtime\DefaultLanguageContext.cs" />
       <Compile Include="Runtime\DelegateInfo.cs" />
       <Compile Include="Runtime\DelegateSignatureInfo.cs" />
       <Compile Include="Runtime\DlrCachedCodeAttribute.cs" />
@@ -427,7 +429,6 @@
       <Compile Include="Utils\SynchronizedDictionary.cs" />
       <Compile Include="Utils\TextStream.cs" />
       <Compile Include="Utils\ThreadLocal.cs" />
-      <Compile Include="Utils\TypeExtensions.cs" />
       <Compile Include="Utils\TypeUtils.cs" />
       <Compile Include="Utils\ValueArray.cs" />
       <Compile Include="Utils\WeakCollection.cs" />

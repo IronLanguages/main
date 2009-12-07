@@ -116,7 +116,6 @@ namespace IronPython.Compiler.Ast {
                 MakeAssignment(
                     exit,
                     GlobalParent.Get(
-                        typeof(object),
                         "__exit__",
                         manager
                     )
@@ -133,10 +132,9 @@ namespace IronPython.Compiler.Ast {
                     MakeAssignment(
                         value,
                         Parent.Invoke(
-                            typeof(object),
                             new CallSignature(0),
+                            Parent.LocalContext,
                             GlobalParent.Get(
-                                typeof(object),
                                 "__enter__",
                                 manager
                             )
@@ -176,9 +174,8 @@ namespace IronPython.Compiler.Ast {
             //          exit(None, None, None)
             //******************************************************************
 
-            MSAst.ParameterExpression exception = Ast.Variable(typeof(Exception), "exception");
+            MSAst.ParameterExpression exception;
             MSAst.ParameterExpression nestedFrames = Ast.Variable(typeof(List<DynamicStackFrame>), "$nestedFrames");
-            variables.Add(exception);
             variables.Add(nestedFrames);
             statements.Add(
                 // try:
@@ -195,7 +192,7 @@ namespace IronPython.Compiler.Ast {
                             ) :
                 // BLOCK
                             (MSAst.Expression)_body // except:, // try statement location
-                    ).Catch(exception,
+                    ).Catch(exception = Ast.Variable(typeof(Exception), "exception"),
                 // Python specific exception handling code
                         TryStatement.GetTracebackHeader(
                             this,
@@ -289,8 +286,8 @@ namespace IronPython.Compiler.Ast {
                 typeof(bool),
                 ConversionResultKind.ExplicitCast,
                 Parent.Invoke(
-                    typeof(object),
                     new CallSignature(ArgumentType.List),
+                    Parent.LocalContext,
                     exit,
                     Ast.Call(
                         AstMethods.GetExceptionInfoLocal,

@@ -51,23 +51,17 @@ namespace IronRuby.Builtins {
         NotPublished = 4,
 
         /// <summary>
+        /// Module doesn't expose the underlying CLR type. The behavior is the same as if it was written in Ruby.
+        /// (clr_new and clr_ctor won't work on such class/module, CLR methods won't be visible, etc.).
+        /// </summary>
+        NoUnderlyingType = 8,
+
+        /// <summary>
         /// Default restrictions for built-in modules.
         /// </summary>
         Builtin = NoOverrides | NoNameMapping | NotPublished,
 
         All = Builtin
-    }
-
-    [Flags]
-    public enum RubyModuleAttributes {
-        None = 0,
-
-        NoOverrides = ModuleRestrictions.NoOverrides,
-        NoNameMangling = ModuleRestrictions.NoNameMapping,
-        NotPublished = ModuleRestrictions.NotPublished,
-        RestrictionsMask = ModuleRestrictions.All,
-
-        IsSelfContained = 0x100,
     }
 
     [Flags]
@@ -163,9 +157,6 @@ namespace IronRuby.Builtins {
         private MemberTableState _methodsState = MemberTableState.Uninitialized;
         private Dictionary<string, RubyMemberInfo> _methods;
         private Action<RubyModule> _methodsInitializer;
-
-        // Set of names that method_missing defined on this module (if applicable) was resolved for and that are cached. Lazy init.
-        internal Dictionary<string, bool> MissingMethodsCachedInSites { get; set; }
 
         // class variable table:
         private Dictionary<string, object> _classVariables;
@@ -1353,10 +1344,6 @@ namespace IronRuby.Builtins {
                         // Method is used in a dynamic site or group => update version of all dependencies of this module.
                         if (method.InvalidateSitesOnOverride || method.InvalidateGroupsOnRemoval) {
                             MethodsUpdated("RemoveMethod: " + name);
-                        }
-                        
-                        if (method.InvalidateSitesOnOverride && name == Symbols.MethodMissing) {
-                            method.DeclaringModule.MissingMethodsCachedInSites = null;
                         }
 
                         // Method hides CLR overloads => update method groups in all dependencies of this module.

@@ -217,7 +217,7 @@ namespace Microsoft.Scripting.Runtime {
 
             // arguments
             for (int i = 0; i < _parameters.Length; i++) {
-                if (_parameters[i].IsByRefParameter()) {
+                if (_parameters[i].ParameterType.IsByRef) {
                     sig[i + 1] = typeof(object);
                 } else {
                     sig[i + 1] = _parameters[i].ParameterType;

@@ -23,7 +23,7 @@ namespace IronRuby.Builtins {
     /// <summary>
     /// Mixed-in .NET floating point numeric primitive types (float, double).
     /// </summary>
-    [RubyModule("Float", DefineIn = typeof(IronRubyOps.ClrOps))]
+    [RubyModule("Float", DefineIn = typeof(IronRubyOps.Clr))]
     public static class ClrFloat {
 
         #region induced_from
@@ -63,7 +63,7 @@ namespace IronRuby.Builtins {
         /// <returns>Float</returns>
         [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
         public static double InducedFrom(RubyModule/*!*/ self, object value) {
-            throw RubyExceptions.CreateTypeError(String.Format("failed to convert {0} into Float", self.Context.GetClassDisplayName(value)));
+            throw RubyExceptions.CreateTypeError("failed to convert {0} into Float", self.Context.GetClassDisplayName(value));
         }
 
         #endregion

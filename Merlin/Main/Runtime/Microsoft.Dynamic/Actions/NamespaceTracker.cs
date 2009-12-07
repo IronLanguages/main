@@ -114,7 +114,7 @@ namespace Microsoft.Scripting.Actions {
             Assert.NotNull(assem, fullTypeName);
             Type type = assem.GetType(fullTypeName);
             // We should ignore nested types. They will be loaded when the containing type is loaded
-            Debug.Assert(!ReflectionUtils.IsNested(type));
+            Debug.Assert(!type.IsNested());
             return type;
         }
 
@@ -231,7 +231,7 @@ namespace Microsoft.Scripting.Actions {
             string fullTypeName = GetFullChildName(nameString);
             foreach (Assembly assem in _packageAssemblies) {
                 Type type = assem.GetType(fullTypeName, false);
-                if (type == null || ReflectionUtils.IsNested(type)) {
+                if (type == null || type.IsNested()) {
                     continue;
                 }
 

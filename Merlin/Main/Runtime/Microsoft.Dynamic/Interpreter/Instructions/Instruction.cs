@@ -29,9 +29,15 @@ namespace Microsoft.Scripting.Interpreter {
     public abstract partial class Instruction {
         public virtual int ConsumedStack { get { return 0; } }
         public virtual int ProducedStack { get { return 0; } }
+        public virtual int ConsumedContinuations { get { return 0; } }
+        public virtual int ProducedContinuations { get { return 0; } }
 
         public int StackBalance {
             get { return ProducedStack - ConsumedStack; }
+        }
+
+        public int ContinuationsBalance {
+            get { return ProducedContinuations - ConsumedContinuations; }
         }
 
         public abstract int Run(InterpretedFrame frame);
@@ -44,7 +50,7 @@ namespace Microsoft.Scripting.Interpreter {
             return InstructionName + "()";
         }
 
-        public virtual string ToDebugString(object cookie, IList<object> objects) {
+        public virtual string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IList<object> objects) {
             return ToString();
         }
 

@@ -29,6 +29,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -48,7 +49,7 @@ namespace IronPython.Runtime.Binding {
 
         //private static Func<CallSite, object, object, object> DoubleAddSite = new Func<CallSite, object, object, object>(DoubleAdd);
 
-        public override T BindDelegate<T>(CallSite<T> site, object[] args) {    
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
             if (args[0] != null &&
                 CompilerHelpers.GetType(args[0]) == CompilerHelpers.GetType(args[1])) {
                 switch (Operation) {
@@ -56,7 +57,11 @@ namespace IronPython.Runtime.Binding {
                     case ExpressionType.AddAssign:
                         return BindAdd<T>(site, args);
                     case ExpressionType.And:
+                    case ExpressionType.AndAssign:
                         return BindAnd<T>(site, args);
+                    case ExpressionType.Or:
+                    case ExpressionType.OrAssign:
+                        return BindOr<T>(site, args);
                     case ExpressionType.Subtract:
                     case ExpressionType.SubtractAssign:
                         return BindSubtract<T>(site, args);
@@ -64,10 +69,166 @@ namespace IronPython.Runtime.Binding {
                         return BindEqual<T>(site, args);
                     case ExpressionType.NotEqual:
                         return BindNotEqual<T>(site, args);
+                    case ExpressionType.GreaterThan:
+                        return BindGreaterThan<T>(site, args);
+                    case ExpressionType.LessThan:
+                        return BindLessThan<T>(site, args);
+                    case ExpressionType.LessThanOrEqual:
+                        return BindLessThanOrEqual<T>(site, args);
+                    case ExpressionType.GreaterThanOrEqual:
+                        return BindGreaterThanOrEqual<T>(site, args);
+                    case ExpressionType.Multiply:
+                    case ExpressionType.MultiplyAssign:
+                        return BindMultiply<T>(site, args);
+                    case ExpressionType.Divide:
+                    case ExpressionType.DivideAssign:
+                        return BindDivide<T>(site, args);
+                    case ExpressionType.Modulo:
+                        return BindModulo<T>(site, args);
+                }
+            } else {
+                switch(Operation) {
+                    case ExpressionType.Modulo:
+                        return BindModulo<T>(site, args);
+                    case ExpressionType.Multiply:
+                        return BindMultiplyDifferentTypes<T>(site, args);
                 }
             }
 
             return base.BindDelegate<T>(site, args);
+        }
+
+        private T BindModulo<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(string) && !(args[1] is Extensible<string>)) {
+                if (typeof(T) == typeof(Func<CallSite, string, PythonDictionary, object>)) {
+                    return (T)(object)new Func<CallSite, string, PythonDictionary, object>(StringModulo);
+                } else if (typeof(T) == typeof(Func<CallSite, string, PythonTuple, object>)) {
+                    return (T)(object)new Func<CallSite, string, PythonTuple, object>(StringModulo);
+                } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
+                    return (T)(object)new Func<CallSite, string, object, object>(StringModulo);
+                } else if (typeof(T) == typeof(Func<CallSite, object, PythonDictionary, object>)) {
+                    return (T)(object)new Func<CallSite, object, PythonDictionary, object>(StringModulo);
+                } else if (typeof(T) == typeof(Func<CallSite, object, PythonTuple, object>)) {
+                    return (T)(object)new Func<CallSite, object, PythonTuple, object>(StringModulo);
+                } else if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(StringModulo);
+                }
+
+            }
+            return base.BindDelegate(site, args);
+        }
+
+        private T BindMultiply<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(int) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(IntMultiply);
+                } else if (typeof(T) == typeof(Func<CallSite, int, object, object>)) {
+                    return (T)(object)new Func<CallSite, int, object, object>(IntMultiply);
+                } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                    return (T)(object)new Func<CallSite, object, int, object>(IntMultiply);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        private T BindMultiplyDifferentTypes<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(List) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(ListIntMultiply);
+                }
+            } else if (CompilerHelpers.GetType(args[0]) == typeof(string) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(StringIntMultiply);
+                }
+            } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(TupleIntMultiply);
+                }
+            }
+
+
+            return base.BindDelegate(site, args);
+        }
+
+
+        private T BindDivide<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(int) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(IntDivide);
+                } else if (typeof(T) == typeof(Func<CallSite, int, object, object>)) {
+                    return (T)(object)new Func<CallSite, int, object, object>(IntDivide);
+                } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                    return (T)(object)new Func<CallSite, object, int, object>(IntDivide);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        private T BindLessThanOrEqual<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(int) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(IntLessThanOrEqual);
+                } else if (typeof(T) == typeof(Func<CallSite, int, object, object>)) {
+                    return (T)(object)new Func<CallSite, int, object, object>(IntLessThanOrEqual);
+                } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                    return (T)(object)new Func<CallSite, object, int, object>(IntLessThanOrEqual);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        private T BindGreaterThanOrEqual<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(int) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(IntGreaterThanOrEqual);
+                } else if (typeof(T) == typeof(Func<CallSite, int, object, object>)) {
+                    return (T)(object)new Func<CallSite, int, object, object>(IntGreaterThanOrEqual);
+                } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                    return (T)(object)new Func<CallSite, object, int, object>(IntGreaterThanOrEqual);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        private T BindGreaterThan<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(int) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(IntGreaterThan);
+                } else if (typeof(T) == typeof(Func<CallSite, int, object, object>)) {
+                    return (T)(object)new Func<CallSite, int, object, object>(IntGreaterThan);
+                } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                    return (T)(object)new Func<CallSite, object, int, object>(IntGreaterThan);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        private T BindLessThan<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(int) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(IntLessThan);
+                } else if (typeof(T) == typeof(Func<CallSite, int, object, object>)) {
+                    return (T)(object)new Func<CallSite, int, object, object>(IntLessThan);
+                } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                    return (T)(object)new Func<CallSite, object, int, object>(IntLessThan);
+                }
+            }
+
+            return base.BindDelegate(site, args);
         }
 
         private T BindAnd<T>(CallSite<T> site, object[] args) where T : class {
@@ -85,6 +246,21 @@ namespace IronPython.Runtime.Binding {
             return base.BindDelegate(site, args);
         }
 
+        private T BindOr<T>(CallSite<T> site, object[] args) where T : class {
+            if (CompilerHelpers.GetType(args[0]) == typeof(int) &&
+                CompilerHelpers.GetType(args[1]) == typeof(int)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(IntOr);
+                } else if (typeof(T) == typeof(Func<CallSite, int, object, object>)) {
+                    return (T)(object)new Func<CallSite, int, object, object>(IntOr);
+                } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
+                    return (T)(object)new Func<CallSite, object, int, object>(IntOr);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
         private T BindAdd<T>(CallSite<T> site, object[] args) where T : class {
             Type t = args[0].GetType();
             if (t == typeof(string)) {
@@ -95,6 +271,19 @@ namespace IronPython.Runtime.Binding {
                 } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
                     return (T)(object)new Func<CallSite, string, object, object>(StringAdd);
                 }
+            } else if(t == typeof(List)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    if (Operation == ExpressionType.Add) {
+                        return (T)(object)new Func<CallSite, object, object, object>(ListAdd);
+                    } else {
+                        return (T)(object)new Func<CallSite, object, object, object>(ListAddAssign);
+                    }
+                }
+            } else if(t== typeof(PythonTuple)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object>(TupleAdd);
+                }
+
             }else if (!t.IsEnum) {                
                 switch (Type.GetTypeCode(t)) {
                     case TypeCode.Double:
@@ -183,6 +372,42 @@ namespace IronPython.Runtime.Binding {
             return base.BindDelegate(site, args);
         }
 
+        private object StringModulo(CallSite site, string self, PythonDictionary other) {
+            return StringOps.Mod(Context.SharedContext, self, other);
+        }
+
+        private object StringModulo(CallSite site, string self, PythonTuple other) {
+            return StringOps.Mod(Context.SharedContext, self, other);
+        }
+
+        private object StringModulo(CallSite site, string self, object other) {
+            return StringOps.Mod(Context.SharedContext, self, other);
+        }
+
+        private object StringModulo(CallSite site, object self, PythonDictionary other) {
+            if (self != null && self.GetType() == typeof(string)) {
+                return StringOps.Mod(Context.SharedContext, (string)self, other);
+            }
+
+            return ((CallSite<Func<CallSite, object, PythonDictionary, object>>)site).Update(site, self, other);
+        }
+
+        private object StringModulo(CallSite site, object self, PythonTuple other) {
+            if (self != null && self.GetType() == typeof(string)) {
+                return StringOps.Mod(Context.SharedContext, (string)self, other);
+            }
+
+            return ((CallSite<Func<CallSite, object, PythonTuple, object>>)site).Update(site, self, other);
+        }
+
+        private object StringModulo(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(string)) {
+                return StringOps.Mod(Context.SharedContext, (string)self, other);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
         private object DoubleAdd(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(double) && 
                 other != null && other.GetType() == typeof(double)) {
@@ -217,6 +442,83 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
         }
 
+        private object ListIntMultiply(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(List) &&
+                other != null && other.GetType() == typeof(int)) {
+                return ((List)self) * (int)other;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object StringIntMultiply(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(string) &&
+                other != null && other.GetType() == typeof(int)) {
+                return StringOps.Multiply((string)self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object TupleIntMultiply(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(PythonTuple) &&
+                other != null && other.GetType() == typeof(int)) {
+                return ((PythonTuple)self) * (int)other;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntMultiply(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(int) &&
+                other != null && other.GetType() == typeof(int)) {
+                return Int32Ops.Multiply((int)self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntMultiply(CallSite site, object self, int other) {
+            if (self != null && self.GetType() == typeof(int)) {
+                return Int32Ops.Multiply((int)self, other);
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
+        }
+
+        private object IntMultiply(CallSite site, int self, object other) {
+            if (other != null && other.GetType() == typeof(int)) {
+                return Int32Ops.Multiply(self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntDivide(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(int) &&
+                other != null && other.GetType() == typeof(int)) {
+                return Int32Ops.Divide((int)self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntDivide(CallSite site, object self, int other) {
+            if (self != null && self.GetType() == typeof(int)) {
+                return Int32Ops.Divide((int)self, other);
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
+        }
+
+        private object IntDivide(CallSite site, int self, object other) {
+            if (other != null && other.GetType() == typeof(int)) {
+                return Int32Ops.Divide(self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
+        }
+
         private object IntAnd(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(int) &&
                 other != null && other.GetType() == typeof(int)) {
@@ -240,6 +542,58 @@ namespace IronPython.Runtime.Binding {
             }
 
             return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntOr(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(int) &&
+                other != null && other.GetType() == typeof(int)) {
+                return Int32Ops.BitwiseOr((int)self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntOr(CallSite site, object self, int other) {
+            if (self != null && self.GetType() == typeof(int)) {
+                return Int32Ops.BitwiseOr((int)self, other);
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
+        }
+
+        private object IntOr(CallSite site, int self, object other) {
+            if (other != null && other.GetType() == typeof(int)) {
+                return Int32Ops.BitwiseOr(self, (int)other);
+            }
+
+            return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
+        }
+
+        private object ListAdd(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(List) &&
+                other != null && other.GetType() == typeof(List)) {
+                return (List)self + (List)other;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object ListAddAssign(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(List) &&
+                other != null && other.GetType() == typeof(List)) {
+                return ((List)self).InPlaceAdd(other);
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object TupleAdd(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(PythonTuple) &&
+                other != null && other.GetType() == typeof(PythonTuple)) {
+                return (PythonTuple)self + (PythonTuple)other;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
         }
 
         private object StringAdd(CallSite site, object self, object other) {
@@ -391,6 +745,106 @@ namespace IronPython.Runtime.Binding {
             }
 
             return ((CallSite<Func<CallSite, object, string, object>>)site).Update(site, self, other);
+        }
+
+        private object IntGreaterThan(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(int) &&
+                other != null && other.GetType() == typeof(int)) {
+                return (int)self > (int)other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntGreaterThan(CallSite site, object self, int other) {
+            if (self != null && self.GetType() == typeof(int)) {
+                return (int)self > other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
+        }
+
+        private object IntGreaterThan(CallSite site, int self, object other) {
+            if (other != null && other.GetType() == typeof(int)) {
+                return self > (int)other;
+            }
+
+            return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntLessThan(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(int) &&
+                other != null && other.GetType() == typeof(int)) {
+                return (int)self < (int)other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntLessThan(CallSite site, object self, int other) {
+            if (self != null && self.GetType() == typeof(int)) {
+                return (int)self < other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
+        }
+
+        private object IntLessThan(CallSite site, int self, object other) {
+            if (other != null && other.GetType() == typeof(int)) {
+                return self < (int)other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntGreaterThanOrEqual(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(int) &&
+                other != null && other.GetType() == typeof(int)) {
+                return (int)self >= (int)other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntGreaterThanOrEqual(CallSite site, object self, int other) {
+            if (self != null && self.GetType() == typeof(int)) {
+                return (int)self >= other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
+        }
+
+        private object IntGreaterThanOrEqual(CallSite site, int self, object other) {
+            if (other != null && other.GetType() == typeof(int)) {
+                return self >= (int)other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntLessThanOrEqual(CallSite site, object self, object other) {
+            if (self != null && self.GetType() == typeof(int) &&
+                other != null && other.GetType() == typeof(int)) {
+                return (int)self <= (int)other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
+        }
+
+        private object IntLessThanOrEqual(CallSite site, object self, int other) {
+            if (self != null && self.GetType() == typeof(int)) {
+                return (int)self <= other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
+        }
+
+        private object IntLessThanOrEqual(CallSite site, int self, object other) {
+            if (other != null && other.GetType() == typeof(int)) {
+                return self <= (int)other ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
+
+            return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
         }
 
         public override int GetHashCode() {

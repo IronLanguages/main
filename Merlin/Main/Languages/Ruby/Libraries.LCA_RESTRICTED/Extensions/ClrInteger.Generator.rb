@@ -45,7 +45,7 @@ public static partial class $SelfOps {
         if ($RangeCheckFixnum) {
             return ($Self)value;
         }
-        throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+        throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
     }
     
     [RubyConstructor]
@@ -54,7 +54,7 @@ public static partial class $SelfOps {
         if (value >= $Self.MinValue && value <= $Self.MaxValue) {
             return ($Self)value;
         }
-        throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+        throw RubyExceptions.CreateRangeError("Integer {0} out of range of {1}", value, self.Name);
     }
 
     [RubyConstructor]
@@ -63,7 +63,7 @@ public static partial class $SelfOps {
         if (value >= $Self.MinValue && value <= $Self.MaxValue) {
             return ($Self)value;
         }
-        throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+        throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
     }
     
     [RubyMethod("inspect")]

@@ -107,8 +107,8 @@ namespace IronRuby.Compiler.Ast {
                 selfVariable,
                 runtimeScopeVariable,
                 blockParameter,
-                gen.CompilerOptions.TopLevelMethodName, // method name
-                null                                    // parameters
+                gen.CompilerOptions.TopLevelMethodName, // method name for blocks
+                null                                    // parameters for super calls
             );
 
             MSA.Expression body;
@@ -120,7 +120,7 @@ namespace IronRuby.Compiler.Ast {
 
                     var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
                         Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
-                            CallBuilder.InvokeMethod(gen.Context, "inspect", RubyCallSignature.WithScope(0),
+                            CallSiteBuilder.InvokeMethod(gen.Context, "inspect", RubyCallSignature.WithScope(0),
                                 gen.CurrentScopeVariable, resultVariable
                             )
                         )
@@ -137,8 +137,6 @@ namespace IronRuby.Compiler.Ast {
                     body
                 ).Filter(exceptionVariable, Methods.TraceTopLevelCodeFrame.OpCall(runtimeScopeVariable, exceptionVariable),
                     Ast.Empty()
-                ).Finally(
-                    LeaveInterpretedFrameExpression.Instance
                 );
             } else {
                 body = AstUtils.Constant(null);

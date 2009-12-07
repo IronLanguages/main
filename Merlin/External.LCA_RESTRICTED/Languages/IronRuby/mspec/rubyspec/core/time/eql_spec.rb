@@ -11,4 +11,12 @@ describe "Time#eql?" do
   it "returns false when comparing with another type" do
     Time.now.eql?("a string").should == false
   end
+  
+  it "returns true when comparing UTC time with local time that represents the same point in time" do
+    with_timezone("CET", +1) do
+      u = Time.utc(1994, 11, 6, 8, 49, 37)
+      l = Time.local(1994, 11, 6, 9, 49, 37)
+      u.eql?(l).should == true
+    end
+  end
 end

@@ -67,7 +67,6 @@ namespace Microsoft.Scripting.Debugging {
         private static readonly MSAst.ParameterExpression _framePushed = Ast.Variable(typeof(bool), "$framePushed");
         private static readonly MSAst.ParameterExpression _funcInfo = Ast.Parameter(typeof(FunctionInfo), "$funcInfo");
         private static readonly MSAst.ParameterExpression _traceLocations = Ast.Parameter(typeof(bool[]), "$traceLocations");
-        private static readonly MSAst.ParameterExpression _caughtException = Ast.Variable(typeof(Exception), "$caughtException");
         private static readonly MSAst.ParameterExpression _retValAsObject = Ast.Variable(typeof(object), "$retVal");
         private static readonly MSAst.ParameterExpression _retValFromGeneratorLoop = Ast.Variable(typeof(object), "$retValFromGen");
         private static readonly MSAst.ParameterExpression _frameExitException = Ast.Parameter(typeof(bool), "$frameExitException");
@@ -116,10 +115,9 @@ namespace Microsoft.Scripting.Debugging {
         private MSAst.LambdaExpression TransformLambda(MSAst.LambdaExpression lambda) {
             MSAst.Expression body = lambda.Body;
 
-            _lambdaVars.AddRange(new[] { _thread, _framePushed, _caughtException, _funcInfo, _traceLocations, _debugMarker, _frameExitException });
+            _lambdaVars.AddRange(new[] { _thread, _framePushed, _funcInfo, _traceLocations, _debugMarker, _frameExitException });
 
             _generatorParams.Add(_frame);
-            _generatorVars.Add(_caughtException);
 
             Type returnType = lambda.Type.GetMethod("Invoke").ReturnType;
 
@@ -187,7 +185,6 @@ namespace Microsoft.Scripting.Debugging {
             Debug.Assert(_generatorLabelTarget.Type == typeof(object));
 
             _generatorParams.Add(_frame);
-            _generatorVars.Add(_caughtException);
 
             Dictionary<MSAst.ParameterExpression, object> parameters = new Dictionary<MSAst.ParameterExpression, object>();
             foreach (MSAst.ParameterExpression parameter in lambda.Parameters) {
@@ -544,6 +541,8 @@ namespace Microsoft.Scripting.Debugging {
                 );
             }
 
+            MSAst.ParameterExpression caughtException;
+
             // Run the function body
             bodyExpressions.Add(Ast.TryCatchFinally(
                 Ast.TryCatch(
@@ -551,7 +550,7 @@ namespace Microsoft.Scripting.Debugging {
                         ArrayUtils.Append(tryExpressions.ToArray(), Ast.Default(returnType))
                     ),
                     Ast.Catch(
-                        _caughtException, 
+                        caughtException = Ast.Variable(typeof(Exception), "$caughtException"), 
                         Ast.Block(
                             // The expressions below will always throw.
                             // If the exception needs to be cancelled then OnTraceEvent will throw ForceToGeneratorLoopException.
@@ -559,7 +558,7 @@ namespace Microsoft.Scripting.Debugging {
                             AstUtils.If(
                                 Ast.Not(
                                     Ast.TypeIs(
-                                        _caughtException,
+                                        caughtException,
                                         typeof(ForceToGeneratorLoopException)
                                     )
                                 ),
@@ -570,7 +569,7 @@ namespace Microsoft.Scripting.Debugging {
                                         typeof(RuntimeOps).GetMethod("OnTraceEventUnwind"),
                                         _thread,
                                         _debugMarker,
-                                        _caughtException
+                                        caughtException
                                     )
                                 ),
                                 // exception exit

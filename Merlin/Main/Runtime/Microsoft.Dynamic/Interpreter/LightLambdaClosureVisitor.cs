@@ -37,9 +37,9 @@ namespace Microsoft.Scripting.Interpreter {
     /// </summary>
     internal sealed class LightLambdaClosureVisitor : ExpressionVisitor {
         /// <summary>
-        /// Indexes of variables into the closure array
+        /// Local variable mapping.
         /// </summary>
-        private readonly Dictionary<ParameterExpression, int> _closureVars;
+        private readonly LocalVariables _locals;
 
         /// <summary>
         /// The variable that holds onto the StrongBox{object}[] closure from
@@ -54,14 +54,10 @@ namespace Microsoft.Scripting.Interpreter {
         /// </summary>
         private readonly Stack<HashSet<ParameterExpression>> _shadowedVars = new Stack<HashSet<ParameterExpression>>();
 
-        private LightLambdaClosureVisitor(IList<ParameterExpression> closureVars, ParameterExpression closureArray) {
+        private LightLambdaClosureVisitor(LocalVariables locals, ParameterExpression closureArray) {
+            Assert.NotNull(locals, closureArray);
             _closureArray = closureArray;
-            if (closureVars != null) {
-                _closureVars = new Dictionary<ParameterExpression, int>(closureVars.Count);
-                for (int i = 0, n = closureVars.Count; i < n; i++) {
-                    _closureVars.Add(closureVars[i], i);
-                }
-            }
+            _locals = locals;
         }
 
         /// <summary>
@@ -69,12 +65,12 @@ namespace Microsoft.Scripting.Interpreter {
         /// used to bind the lambda to a closure array from the interpreter.
         /// </summary>
         /// <param name="lambda">The lambda to bind.</param>
-        /// <param name="closureVars">The variables that are closed over from an outer scope.</param>
+        /// <param name="locals">Local variables.</param>
         /// <returns>A delegate that can be called to produce a delegate bound to the passed in closure array.</returns>
-        internal static Func<StrongBox<object>[], Delegate> BindLambda(LambdaExpression lambda, IList<ParameterExpression> closureVars) {
+        internal static Func<StrongBox<object>[], Delegate> BindLambda(LambdaExpression lambda, LocalVariables locals) {
             // 1. Create rewriter
             var closure = Expression.Parameter(typeof(StrongBox<object>[]), "closure");
-            var visitor = new LightLambdaClosureVisitor(closureVars, closure);
+            var visitor = new LightLambdaClosureVisitor(locals, closure);
 
             // 2. Visit the lambda
             lambda = (LambdaExpression)visitor.Visit(lambda);
@@ -133,7 +129,7 @@ namespace Microsoft.Scripting.Interpreter {
             var vars = new List<ParameterExpression>();
             var indexes = new int[count];
             for (int i = 0; i < count; i++) {
-                Expression box = GetBox(node.Variables[i]);
+                Expression box = GetClosureItem(node.Variables[i], false);
                 if (box == null) {
                     indexes[i] = vars.Count;
                     vars.Add(node.Variables[i]);
@@ -165,12 +161,12 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         protected override Expression VisitParameter(ParameterExpression node) {
-            Expression box = GetBox(node);
-            if (box == null) {
+            Expression closureItem = GetClosureItem(node, true);
+            if (closureItem == null) {
                 return node;
             }
             // Convert can go away if we switch to strongly typed StrongBox
-            return Ast.Utils.Convert(Expression.Field(box, "Value"), node.Type);
+            return Ast.Utils.Convert(closureItem, node.Type);
         }
 
         protected override Expression VisitBinary(BinaryExpression node) {
@@ -178,13 +174,13 @@ namespace Microsoft.Scripting.Interpreter {
                 node.Left.NodeType == ExpressionType.Parameter) {
 
                 var variable = (ParameterExpression)node.Left;
-                Expression box = GetBox(variable);
-                if (box != null) {
+                Expression closureItem = GetClosureItem(variable, true);
+                if (closureItem != null) {
                     // We need to convert to object to store the value in the box.
                     return Expression.Block(
                         new[] { variable },
                         Expression.Assign(variable, Visit(node.Right)),
-                        Expression.Assign(Expression.Field(box, "Value"), Ast.Utils.Convert(variable, typeof(object))),
+                        Expression.Assign(closureItem, Ast.Utils.Convert(variable, typeof(object))),
                         variable
                     );
                 }
@@ -192,7 +188,7 @@ namespace Microsoft.Scripting.Interpreter {
             return base.VisitBinary(node);
         }
 
-        private IndexExpression GetBox(ParameterExpression variable) {
+        private Expression GetClosureItem(ParameterExpression variable, bool unbox) {
             // Skip variables that are shadowed by a nested scope/lambda
             foreach (HashSet<ParameterExpression> hidden in _shadowedVars) {
                 if (hidden.Contains(variable)) {
@@ -200,12 +196,13 @@ namespace Microsoft.Scripting.Interpreter {
                 }
             }
 
-            int index;
-            if (_closureVars.TryGetValue(variable, out index)) {
-                return Expression.ArrayAccess(_closureArray, AstUtils.Constant(index));
+            LocalVariable loc;
+            if (!_locals.TryGetLocal(variable, out loc)) {
+                throw new InvalidOperationException("unbound variable: " + variable.Name);
             }
 
-            throw new InvalidOperationException("unbound variable: " + variable);
+            var result = loc.LoadFromArray(null, _closureArray);
+            return (unbox) ? LightCompiler.Unbox(result) : result;
         }
 
         protected override Expression VisitExtension(Expression node) {

@@ -18,8 +18,12 @@ using System.Collections.Generic;
 using Microsoft.Scripting;
 using IronRuby.Runtime;
 using IronRuby.Compiler;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Builtins {
+    using BinaryOpStorageWithScope = CallSiteStorage<Func<CallSite, RubyScope, object, object, object>>;
 
     [RubyClass("Symbol", Extends = typeof(SymbolId), Inherits = typeof(Object))]
     [HideMethod("==")]
@@ -131,7 +135,36 @@ namespace IronRuby.Builtins {
         // => 
         // <=>
         // ==
-        // =~
+
+        #region =~, match
+
+        [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
+        public static object Match(RubyScope/*!*/ scope, SymbolId self, [NotNull]RubyRegex/*!*/ regex) {
+            return MutableStringOps.Match(scope, ToString(self), regex);
+        }
+
+        [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
+        public static object Match(ClrName/*!*/ self, SymbolId str) {
+            throw RubyExceptions.CreateTypeError("type mismatch: Symbol given");
+        }
+
+        [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, SymbolId self, object obj) {
+            return MutableStringOps.Match(storage, scope, ToString(self), obj);
+        }
+
+        [RubyMethod("match", Compatibility = RubyCompatibility.Ruby19)]
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, SymbolId self, [NotNull]RubyRegex/*!*/ regex) {
+            return MutableStringOps.Match(storage, scope, ToString(self), regex);
+        }
+
+        [RubyMethod("match", Compatibility = RubyCompatibility.Ruby19)]
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, SymbolId self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
+            return MutableStringOps.Match(storage, scope, ToString(self), pattern);
+        }
+
+        #endregion
+
         // []
         // capitalize
         // casecmp

@@ -56,34 +56,12 @@ namespace IronRuby.Compiler.Ast {
             public override int ProducedStack { get { return 1; } }
 
             public override int Run(InterpretedFrame frame) {
-                frame.Parent = RubyExceptionData.CurrentInterpretedFrame.Update(frame);
-                frame.Push(frame);
+                frame.Push(InterpretedFrame.CurrentFrame.Value);
                 return +1;
             }
 
             public override string InstructionName {
                 get { return "Ruby:EnterInterpretedFrame"; }
-            }
-        }
-    }
-
-    internal sealed class LeaveInterpretedFrameExpression : ReducibleEmptyExpression, IInstructionProvider {
-        internal static readonly MSA.Expression Instance = new LeaveInterpretedFrameExpression();
-
-        public void AddInstructions(LightCompiler compiler) {
-            compiler.Instructions.Emit(_Instruction.Instance);
-        }
-
-        private sealed class _Instruction : Instruction {
-            internal static readonly Instruction Instance = new _Instruction();
-
-            public override int Run(InterpretedFrame frame) {
-                RubyExceptionData.CurrentInterpretedFrame.Value = frame.Parent;
-                return +1;
-            }
-
-            public override string InstructionName {
-                get { return "Ruby:LeaveInterpretedFrame"; }
             }
         }
     }

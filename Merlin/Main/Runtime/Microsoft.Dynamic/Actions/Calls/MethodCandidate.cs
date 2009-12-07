@@ -166,7 +166,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// fill in those spots w/ extra ParameterWrapper's.  
         /// </summary>
         internal MethodCandidate MakeParamsExtended(int count, IList<string> names) {
-            Debug.Assert(BinderHelpers.IsParamsMethod(_method));
+            Debug.Assert(ReflectionUtils.IsParamsMethod(_method));
 
             List<ParameterWrapper> newParameters = new List<ParameterWrapper>(count);
             
@@ -206,7 +206,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             if (_paramsDict != null) {
-                bool nonNullItems = CompilerHelpers.ProhibitsNullItems(_paramsDict.ParameterInfo);
+                bool nonNullItems = _paramsDict.ParameterInfo.ProhibitsNullItems();
 
                 foreach (string name in unusedNames) {
                     newParameters.Add(new ParameterWrapper(_paramsDict.ParameterInfo, typeof(object), name, nonNullItems, false, false, _paramsDict.IsHidden));
@@ -226,7 +226,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         private MethodCandidate MakeParamsExtended(string[] names, int[] nameIndices, List<ParameterWrapper> parameters) {
-            Debug.Assert(BinderHelpers.IsParamsMethod(Method));
+            Debug.Assert(ReflectionUtils.IsParamsMethod(Method));
 
             List<ArgBuilder> newArgBuilders = new List<ArgBuilder>(_argBuilders.Count);
 

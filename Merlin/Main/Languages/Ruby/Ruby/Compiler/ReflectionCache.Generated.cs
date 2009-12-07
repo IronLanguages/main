@@ -68,8 +68,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateArgumentsErrorForProc;
         public static MethodInfo/*!*/ CreateBfcForLibraryMethod { get { return _CreateBfcForLibraryMethod ?? (_CreateBfcForLibraryMethod = GetMethod(typeof(RubyOps), "CreateBfcForLibraryMethod")); } }
         private static MethodInfo _CreateBfcForLibraryMethod;
-        public static MethodInfo/*!*/ CreateBfcForMethodProcCall { get { return _CreateBfcForMethodProcCall ?? (_CreateBfcForMethodProcCall = GetMethod(typeof(RubyOps), "CreateBfcForMethodProcCall")); } }
-        private static MethodInfo _CreateBfcForMethodProcCall;
         public static MethodInfo/*!*/ CreateBfcForProcCall { get { return _CreateBfcForProcCall ?? (_CreateBfcForProcCall = GetMethod(typeof(RubyOps), "CreateBfcForProcCall")); } }
         private static MethodInfo _CreateBfcForProcCall;
         public static MethodInfo/*!*/ CreateBfcForYield { get { return _CreateBfcForYield ?? (_CreateBfcForYield = GetMethod(typeof(RubyOps), "CreateBfcForYield")); } }
@@ -262,6 +260,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetRetrySingleton;
         public static MethodInfo/*!*/ GetSelfClassVersionHandle { get { return _GetSelfClassVersionHandle ?? (_GetSelfClassVersionHandle = GetMethod(typeof(RubyOps), "GetSelfClassVersionHandle")); } }
         private static MethodInfo _GetSelfClassVersionHandle;
+        public static MethodInfo/*!*/ GetSuperCallTarget { get { return _GetSuperCallTarget ?? (_GetSuperCallTarget = GetMethod(typeof(RubyOps), "GetSuperCallTarget")); } }
+        private static MethodInfo _GetSuperCallTarget;
         public static MethodInfo/*!*/ GetUnqualifiedConstant { get { return _GetUnqualifiedConstant ?? (_GetUnqualifiedConstant = GetMethod(typeof(RubyOps), "GetUnqualifiedConstant")); } }
         private static MethodInfo _GetUnqualifiedConstant;
         public static MethodInfo/*!*/ HookupEvent { get { return _HookupEvent ?? (_HookupEvent = GetMethod(typeof(RubyOps), "HookupEvent")); } }
@@ -274,6 +274,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _InitializeScopeNoLocals;
         public static MethodInfo/*!*/ InstantiateBlock { get { return _InstantiateBlock ?? (_InstantiateBlock = GetMethod(typeof(RubyOps), "InstantiateBlock")); } }
         private static MethodInfo _InstantiateBlock;
+        public static MethodInfo/*!*/ IntegerValue_ToUInt32Unchecked { get { return _IntegerValue_ToUInt32Unchecked ?? (_IntegerValue_ToUInt32Unchecked = GetMethod(typeof(IntegerValue), "ToUInt32Unchecked")); } }
+        private static MethodInfo _IntegerValue_ToUInt32Unchecked;
         public static MethodInfo/*!*/ IRubyObject_BaseEquals { get { return _IRubyObject_BaseEquals ?? (_IRubyObject_BaseEquals = GetMethod(typeof(IRubyObject), "BaseEquals")); } }
         private static MethodInfo _IRubyObject_BaseEquals;
         public static MethodInfo/*!*/ IRubyObject_BaseGetHashCode { get { return _IRubyObject_BaseGetHashCode ?? (_IRubyObject_BaseGetHashCode = GetMethod(typeof(IRubyObject), "BaseGetHashCode")); } }
@@ -326,8 +328,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IsProcConverterTarget;
         public static MethodInfo/*!*/ IsRetrySingleton { get { return _IsRetrySingleton ?? (_IsRetrySingleton = GetMethod(typeof(RubyOps), "IsRetrySingleton")); } }
         private static MethodInfo _IsRetrySingleton;
-        public static MethodInfo/*!*/ IsSuperCallTarget { get { return _IsSuperCallTarget ?? (_IsSuperCallTarget = GetMethod(typeof(RubyOps), "IsSuperCallTarget")); } }
-        private static MethodInfo _IsSuperCallTarget;
+        public static MethodInfo/*!*/ IsSuperOutOfMethodScope { get { return _IsSuperOutOfMethodScope ?? (_IsSuperOutOfMethodScope = GetMethod(typeof(RubyOps), "IsSuperOutOfMethodScope")); } }
+        private static MethodInfo _IsSuperOutOfMethodScope;
         public static MethodInfo/*!*/ IsTrue { get { return _IsTrue ?? (_IsTrue = GetMethod(typeof(RubyOps), "IsTrue")); } }
         private static MethodInfo _IsTrue;
         public static MethodInfo/*!*/ LeaveLoop { get { return _LeaveLoop ?? (_LeaveLoop = GetMethod(typeof(RubyOps), "LeaveLoop")); } }
@@ -368,6 +370,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MakeHash;
         public static MethodInfo/*!*/ MakeHash0 { get { return _MakeHash0 ?? (_MakeHash0 = GetMethod(typeof(RubyOps), "MakeHash0")); } }
         private static MethodInfo _MakeHash0;
+        public static MethodInfo/*!*/ MakeImplicitSuperInBlockMethodError { get { return _MakeImplicitSuperInBlockMethodError ?? (_MakeImplicitSuperInBlockMethodError = GetMethod(typeof(RubyOps), "MakeImplicitSuperInBlockMethodError")); } }
+        private static MethodInfo _MakeImplicitSuperInBlockMethodError;
         public static MethodInfo/*!*/ MakeInvalidArgumentTypesError { get { return _MakeInvalidArgumentTypesError ?? (_MakeInvalidArgumentTypesError = GetMethod(typeof(RubyOps), "MakeInvalidArgumentTypesError")); } }
         private static MethodInfo _MakeInvalidArgumentTypesError;
         public static MethodInfo/*!*/ MakeMissingDefaultConstructorError { get { return _MakeMissingDefaultConstructorError ?? (_MakeMissingDefaultConstructorError = GetMethod(typeof(RubyOps), "MakeMissingDefaultConstructorError")); } }
@@ -616,6 +620,8 @@ namespace IronRuby.Compiler {
         private static FieldInfo _IsDefinedConstantSiteCache_Value;
         public static FieldInfo/*!*/ IsDefinedConstantSiteCache_Version { get { return _IsDefinedConstantSiteCache_Version ?? (_IsDefinedConstantSiteCache_Version = GetField(typeof(IsDefinedConstantSiteCache), "Version")); } }
         private static FieldInfo _IsDefinedConstantSiteCache_Version;
+        public static FieldInfo/*!*/ NeedsUpdate { get { return _NeedsUpdate ?? (_NeedsUpdate = GetField(typeof(RubyOps), "NeedsUpdate")); } }
+        private static FieldInfo _NeedsUpdate;
         public static FieldInfo/*!*/ RubyContext_ConstantAccessVersion { get { return _RubyContext_ConstantAccessVersion ?? (_RubyContext_ConstantAccessVersion = GetField(typeof(RubyContext), "ConstantAccessVersion")); } }
         private static FieldInfo _RubyContext_ConstantAccessVersion;
         public static FieldInfo/*!*/ RubyModule_Version { get { return _RubyModule_Version ?? (_RubyModule_Version = GetField(typeof(RubyModule), "Version")); } }

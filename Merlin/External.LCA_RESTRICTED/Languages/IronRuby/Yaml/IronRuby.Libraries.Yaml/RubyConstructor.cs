@@ -25,6 +25,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
+using System.Globalization;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
@@ -298,11 +299,11 @@ namespace IronRuby.StandardLibrary.Yaml {
                 throw new ConstructorException("Can only contruct timestamp from scalar node.");
             }
 
-            Match match = BaseConstructor.YMD_REGEXP.Match(scalar.Value);
+            Match match = BaseConstructor.YmdRegex.Match(scalar.Value);
             if (match.Success) {
-                int year_ymd = int.Parse(match.Groups[1].Value);
-                int month_ymd = int.Parse(match.Groups[2].Value);
-                int day_ymd = int.Parse(match.Groups[3].Value);
+                int year_ymd = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+                int month_ymd = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+                int day_ymd = Int32.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
 
                 RubyModule module;
                 if (ctor.GlobalScope.Context.TryGetModule(ctor.GlobalScope, "Date", out module)) {

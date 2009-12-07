@@ -52,7 +52,7 @@ namespace IronRuby.Builtins {
         internal static int NormalizeIndexThrowIfNegative(IList/*!*/ list, int index) {
             index = NormalizeIndex(list.Count, index);
             if (index < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of array", index));
+                throw RubyExceptions.CreateIndexError("index {0} out of array", index);
             }
             return index;
         }
@@ -179,7 +179,7 @@ namespace IronRuby.Builtins {
                 return result;
             }
 
-            throw RubyExceptions.CreateTypeError(String.Format("{0}#allocate should return IList", cls.Name));
+            throw RubyExceptions.CreateTypeError("{0}#allocate should return IList", cls.Name);
         }
 
         internal static IEnumerable<Int32>/*!*/ ReverseEnumerateIndexes(IList/*!*/ collection) {
@@ -492,7 +492,7 @@ namespace IronRuby.Builtins {
         public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, IList/*!*/ self, 
             [DefaultProtocol]int index, [DefaultProtocol]int length, object value) {
             if (length < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("negative length ({0})", length));
+                throw RubyExceptions.CreateIndexError("negative length ({0})", length);
             }
 
             index = NormalizeIndexThrowIfNegative(self, index);
@@ -551,7 +551,7 @@ namespace IronRuby.Builtins {
 
             begin = begin < 0 ? begin + self.Count : begin;
             if (begin < 0) {
-                throw RubyExceptions.CreateRangeError(String.Format("{0}..{1} out of range", begin, end));
+                throw RubyExceptions.CreateRangeError("{0}..{1} out of range", begin, end);
             }
 
             end = end < 0 ? end + self.Count : end;
@@ -707,7 +707,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region delete, delete_at
+        #region delete, delete_at, reject, reject!
 
         public static bool Remove(BinaryOpStorage/*!*/ equals, IList/*!*/ self, object item) {
             int i = 0;
@@ -743,7 +743,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("delete_at")]
         public static object DeleteAt(IList/*!*/ self, [DefaultProtocol]int index) {
             index = index < 0 ? index + self.Count : index;
-            if (index < 0 || index > self.Count) {
+            if (index < 0 || index >= self.Count) {
                 return null;
             }
 
@@ -764,6 +764,30 @@ namespace IronRuby.Builtins {
             bool changed, jumped;
             object result = DeleteIf(block, self, out changed, out jumped);
             return jumped ? result : changed ? self : null;
+        }
+
+        [RubyMethod("reject")]
+        public static object Reject(CallSiteStorage<EachSite>/*!*/ each, CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
+            BlockParam predicate, IList/*!*/ self) {
+            IList result = CreateResultArray(allocateStorage, self);
+
+            if (predicate == null && self.Count > 0) {
+                throw RubyExceptions.NoBlockGiven();
+            }
+
+            for (int i = 0; i < self.Count; i++) {
+                object item = self[i];
+                object blockResult;
+                if (predicate.Yield(item, out blockResult)) {
+                    return blockResult;
+                }
+
+                if (RubyOps.IsFalse(blockResult)) {
+                    result.Add(item);
+                }
+            }
+
+            return result;
         }
 
         private static object DeleteIf(BlockParam block, IList/*!*/ self, out bool changed, out bool jumped) {
@@ -861,7 +885,7 @@ namespace IronRuby.Builtins {
             }
 
             if (defaultValue == Missing.Value) {
-                throw RubyExceptions.CreateIndexError("index " + convertedIndex + " out of array");
+                throw RubyExceptions.CreateIndexError("index {0} out of array", convertedIndex);
             }
             return defaultValue;
         }
@@ -1407,7 +1431,7 @@ namespace IronRuby.Builtins {
 
             index = index < 0 ? index + self.Count + 1 : index;
             if (index < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of array", index));
+                throw RubyExceptions.CreateIndexError("index {0} out of array", index);
             }
 
             if (index >= self.Count) {
@@ -1598,7 +1622,7 @@ namespace IronRuby.Builtins {
                         result.Add(new RubyArray());
                     }
                 } else if (list.Count != result.Count) {
-                    throw RubyExceptions.CreateIndexError(string.Format("element size differs ({0} should be {1})", list.Count, result.Count));
+                    throw RubyExceptions.CreateIndexError("element size differs ({0} should be {1})", list.Count, result.Count);
                 }
 
                 // add items

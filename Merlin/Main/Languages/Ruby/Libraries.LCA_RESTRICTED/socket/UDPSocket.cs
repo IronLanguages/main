@@ -20,26 +20,39 @@ using System.Net.Sockets;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using System.Runtime.InteropServices;
 
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("UDPSocket", BuildConfig = "!SILVERLIGHT")]
     public class UDPSocket : IPSocket {
+        /// <summary>
+        /// Creates an uninitialized socket.
+        /// </summary>
+        public UDPSocket(RubyContext/*!*/ context)
+            : base(context) {
+        }
+        
         public UDPSocket(RubyContext/*!*/ context, Socket/*!*/ socket)
             : base(context, socket) {
         }
 
         [RubyConstructor]
-        public static UDPSocket/*!*/ CreateUDPSocket(RubyClass/*!*/ self) {
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            return new UDPSocket(self.Context, socket);
+        public static UDPSocket/*!*/ CreateUDPSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyClass/*!*/ self, [DefaultParameterValue(null)]object family) {
+            return new UDPSocket(self.Context, CreateSocket(ConvertToAddressFamily(stringCast, fixnumCast, family)));
         }
 
-        [RubyConstructor]
-        public static UDPSocket/*!*/ CreateUDPSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
-            RubyClass/*!*/ self, object family) {
-            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, family);
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            return new UDPSocket(self.Context, socket);
+        // Reinitialization. Not called when a factory/non-default ctor is called.
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static UDPSocket/*!*/ Reinitialize(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast,
+            UDPSocket/*!*/ self, [DefaultParameterValue(null)]object family) {
+
+            self.Socket = CreateSocket(ConvertToAddressFamily(stringCast, fixnumCast, family));
+            return self;
+        }
+
+        private static Socket/*!*/ CreateSocket(AddressFamily addressFamily) {
+            return new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
         }
 
         #region Public Instance Methods

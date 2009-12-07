@@ -44,7 +44,7 @@ namespace IronRuby.Builtins {
                 _count = count;
             }
 
-            private BinaryContent/*!*/ SwitchToBinary() {
+            internal BinaryContent/*!*/ SwitchToBinary() {
                 return SwitchToBinary(0);
             }
 
@@ -187,17 +187,32 @@ namespace IronRuby.Builtins {
 
             #region CompareTo (read-only)
 
-            public override int CompareTo(string/*!*/ str) {
-                // TODO: Ruby compares characters w/o taking locale into account:
+            public override int OrdinalCompareTo(string/*!*/ str) {
                 return _data.ValueCompareTo(_count, str);
             }
 
-            public override int CompareTo(byte[]/*!*/ bytes) {
-                return SwitchToBinary().CompareTo(bytes);
+            internal int OrdinalCompareTo(char[]/*!*/ chars, int count) {
+                return _data.ValueCompareTo(_count, chars, count);
             }
 
-            public override int ReverseCompareTo(Content/*!*/ str) {
-                return str.CompareTo(ToString());
+            // this <=> content
+            public override int OrdinalCompareTo(Content/*!*/ content) {
+                return content.ReverseOrdinalCompareTo(this);
+            }
+
+            // content.bytes <=> this.chars
+            public override int ReverseOrdinalCompareTo(BinaryContent/*!*/ content) {
+                return SwitchToBinary().ReverseOrdinalCompareTo(content);
+            }
+
+            // content.chars <=> this.chars
+            public override int ReverseOrdinalCompareTo(CharArrayContent/*!*/ content) {
+                return content.OrdinalCompareTo(_data, _count);
+            }
+
+            // content.chars <=> this.chars
+            public override int ReverseOrdinalCompareTo(StringContent/*!*/ content) {
+                return content.OrdinalCompareTo(_data, _count);
             }
 
             #endregion
@@ -233,6 +248,18 @@ namespace IronRuby.Builtins {
                 return new CharArrayContent(_data.GetSlice(start, count), _owner);
             }
 
+            public override IEnumerable<char>/*!*/ GetCharacters() {
+                return Utils.Enumerate(_data, _count);
+            }
+
+            public override IEnumerable<byte>/*!*/ GetBytes() {
+                if (_owner.HasByteCharacters) {
+                    return Utils.EnumerateAsBytes(_data, _count);
+                } else {
+                    return SwitchToBinary().GetBytes();
+                }
+            }
+
             #endregion
 
             #region IndexOf (read-only)
@@ -256,7 +283,7 @@ namespace IronRuby.Builtins {
 
             public override int IndexOf(string/*!*/ str, int start, int count) {
                 // TODO: Unfortunately, BCL doesn't provide IndexOf on char[] (see CompareInfo):
-                return ToString().IndexOf(str, start, count);
+                return ToString().IndexOf(str, start, count, StringComparison.Ordinal);
             }
 
             public override int IndexOf(byte[]/*!*/ bytes, int start, int count) {
@@ -281,7 +308,7 @@ namespace IronRuby.Builtins {
 
             public override int LastIndexOf(string/*!*/ str, int start, int count) {
                 // TODO: Unfortunately, BCL doesn't provide IndexOf on char[] (see CompareInfo):
-                return ToString().LastIndexOf(str, start, count);
+                return ToString().LastIndexOf(str, start, count, StringComparison.Ordinal);
             }
 
             public override int LastIndexOf(byte[]/*!*/ bytes, int start, int count) {
@@ -325,8 +352,36 @@ namespace IronRuby.Builtins {
                 Append(formatted, 0, formatted.Length);
             }
 
-            public override void AppendTo(Content/*!*/ str, int start, int count) {
-                str.Append(_data, start, count);
+            // this + content[start, count]
+            public override void Append(Content/*!*/ content, int start, int count) {
+                content.AppendTo(this, start, count);
+            }
+
+            // content.bytes + this.chars[start, count]
+            public override void AppendTo(BinaryContent/*!*/ content, int start, int count) {
+                if (start > _count - count) {
+                    throw new ArgumentOutOfRangeException("start");
+                }
+
+                content.AppendBytes(_data, start, count);
+            }
+
+            // content.chars + this.chars[start, count]
+            public override void AppendTo(CharArrayContent/*!*/ content, int start, int count) {
+                if (start > _count - count) {
+                    throw new ArgumentOutOfRangeException("start");
+                }
+
+                content.Append(_data, start, count);
+            }
+
+            // content.chars + this.chars[start, count]
+            public override void AppendTo(StringContent/*!*/ content, int start, int count) {
+                if (start > _count - count) {
+                    throw new ArgumentOutOfRangeException("start");
+                }
+
+                content.Append(_data, start, count);
             }
 
             #endregion

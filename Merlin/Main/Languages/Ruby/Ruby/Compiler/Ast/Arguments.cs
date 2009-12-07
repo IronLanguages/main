@@ -95,19 +95,19 @@ namespace IronRuby.Compiler.Ast {
             return args;
         }
 
-        internal void TransformToCall(AstGenerator/*!*/ gen, CallBuilder callBuilder) {
+        internal void TransformToCall(AstGenerator/*!*/ gen, CallSiteBuilder/*!*/ siteBuilder) {
             if (_expressions != null) {
                 foreach (var arg in _expressions) {
-                    callBuilder.Add(arg.TransformRead(gen));
+                    siteBuilder.Add(arg.TransformRead(gen));
                 }
             }
 
             if (_maplets != null) {
-                callBuilder.Add(gen.TransformToHashConstructor(_maplets));
+                siteBuilder.Add(gen.TransformToHashConstructor(_maplets));
             }
 
             if (_array != null) {
-                callBuilder.SplattedArgument = 
+                siteBuilder.SplattedArgument = 
                     Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), _array.TransformRead(gen));
             }
         }

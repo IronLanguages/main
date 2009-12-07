@@ -122,7 +122,7 @@ A.new.foo
         }
 
         public void MethodCallCaching2() {
-            AssertOutput(() => CompilerTest(@"
+            TestOutput(@"
 module M
 end
 
@@ -147,7 +147,7 @@ class C
 end
 
 C.new.foo
-"),
+",
 @"
 error
 foo
@@ -181,7 +181,7 @@ print C.new.f
         /// <summary>
         /// method_missing
         /// </summary>
-        public void MethodCallCaching4() {
+        public void MethodCallCaching_MethodMissing1() {
             LoadTestLibrary();
             
             AssertOutput(() => CompilerTest(@"
@@ -235,7 +235,7 @@ h
         /// <summary>
         /// method_missing
         /// </summary>
-        public void MethodCallCaching5() {
+        public void MethodCallCaching_MethodMissing2() {
             AssertOutput(() => CompilerTest(@"
 class A
   def method_missing name; name.to_s + ':A'; end
@@ -276,7 +276,7 @@ error
         /// <summary>
         /// method_missing
         /// </summary>
-        public void MethodCallCaching6() {
+        public void MethodCallCaching_MethodMissing3() {
             AssertOutput(() => CompilerTest(@"
 class A
   def f; 'f:A' end
@@ -305,6 +305,53 @@ f:A
 f:A
 f:B
 ");
+        }
+
+        public void MethodCallCaching_MethodMissing4() {
+            TestOutput(@"
+class C
+end
+
+class D < C
+  def method_missing(*args)
+    puts 'mm'
+  end
+end
+
+d = D.new
+d.foo
+
+class C
+  def foo
+    puts 'foo'
+  end
+end
+
+d.foo
+",
+@"
+mm
+foo
+");
+        }
+
+        public void MethodCallCaching_MethodMissing5() {
+            Engine.Execute(@"
+obj = Object.new
+class << obj
+  def method_missing(*args)
+    raise
+  end  
+end
+
+obj.f rescue nil
+
+module Kernel
+  def f
+  end
+end
+
+obj.f");
         }
 
         /// <summary>

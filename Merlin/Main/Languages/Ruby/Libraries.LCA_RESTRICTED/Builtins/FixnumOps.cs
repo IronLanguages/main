@@ -75,7 +75,7 @@ namespace IronRuby.Builtins {
             if (value >= Int32.MinValue && value <= Int32.MaxValue) {
                 return (Int32)value;
             }
-            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+            throw RubyExceptions.CreateRangeError("Float {0} out of range of {1}", value, self.Name);
         }
     }
 }

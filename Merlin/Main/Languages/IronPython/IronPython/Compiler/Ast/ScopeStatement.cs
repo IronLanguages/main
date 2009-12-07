@@ -64,8 +64,7 @@ namespace IronPython.Compiler.Ast {
         private readonly DelayedFunctionCode _funcCodeExpr = new DelayedFunctionCode();             // expression that refers to the function code for this scope
 
         internal static MSAst.ParameterExpression LocalCodeContextVariable = Ast.Parameter(typeof(CodeContext), "$localContext");
-        private static readonly MethodInfo _UpdateStackTrace = typeof(PythonOps).GetMethod("UpdateStackTrace");
-        private static readonly MSAst.Expression _GetCurrentMethod = Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod"));
+        private static readonly MSAst.Expression _GetCurrentMethod = Ast.Call(AstMethods.GetCurrentMethod);
         internal const string NameForExec = "module: <exec>";
 
         internal bool ContainsImportStar {
@@ -549,7 +548,7 @@ namespace IronPython.Compiler.Ast {
                 Debug.Assert(Name != null);
 
                 return Ast.Call(
-                    _UpdateStackTrace,
+                    AstMethods.UpdateStackTrace,
                     LocalContext,
                     _funcCodeExpr,
                     _GetCurrentMethod,
@@ -581,7 +580,7 @@ namespace IronPython.Compiler.Ast {
                             LineNumberUpdated
                         ),
                         Ast.Call(
-                            _UpdateStackTrace,
+                            AstMethods.UpdateStackTrace,
                             LocalContext,
                             _funcCodeExpr,
                             _GetCurrentMethod,
@@ -698,7 +697,7 @@ namespace IronPython.Compiler.Ast {
                 closureVariables = new ClosureInfo[0];
             }
             return Ast.Call(
-                typeof(PythonOps).GetMethod("CreateLocalContext"),
+                AstMethods.CreateLocalContext,
                 parentContext,
                 MutableTuple.Create(ArrayUtils.ConvertAll(closureVariables, x => GetClosureCell(x))),
                 Ast.Constant(ArrayUtils.ConvertAll(closureVariables, x => x.AccessedInScope ? x.Variable.Name : null))
@@ -766,8 +765,8 @@ namespace IronPython.Compiler.Ast {
                 for (int i = decorators.Count - 1; i >= 0; i--) {
                     Expression decorator = decorators[i];
                     ret = Parent.Invoke(
-                        typeof(object),
                         new CallSignature(1),
+                        Parent.LocalContext,
                         decorator,
                         ret
                     );
@@ -776,18 +775,18 @@ namespace IronPython.Compiler.Ast {
             return ret;
         }
 
-        internal MSAst.Expression/*!*/ Invoke(Type/*!*/ resultType, CallSignature signature, params MSAst.Expression/*!*/[]/*!*/ args) {
+        internal MSAst.Expression/*!*/ Invoke(CallSignature signature, params MSAst.Expression/*!*/[]/*!*/ args) {
             PythonInvokeBinder invoke = PyContext.Invoke(signature);
             switch (args.Length) {
-                case 0: return GlobalParent.CompilationMode.Dynamic(invoke, resultType, LocalContext);
-                case 1: return GlobalParent.CompilationMode.Dynamic(invoke, resultType, LocalContext, args[0]);
-                case 2: return GlobalParent.CompilationMode.Dynamic(invoke, resultType, LocalContext, args[0], args[1]);
-                case 3: return GlobalParent.CompilationMode.Dynamic(invoke, resultType, LocalContext, args[0], args[1], args[2]);
+                case 1: return GlobalParent.CompilationMode.Dynamic(invoke, typeof(object), args[0]);
+                case 2: return GlobalParent.CompilationMode.Dynamic(invoke, typeof(object), args[0], args[1]);
+                case 3: return GlobalParent.CompilationMode.Dynamic(invoke, typeof(object), args[0], args[1], args[2]);
+                case 4: return GlobalParent.CompilationMode.Dynamic(invoke, typeof(object), args[0], args[1], args[2], args[3]);
                 default:
                     return GlobalParent.CompilationMode.Dynamic(
                         invoke,
-                        resultType,
-                        ArrayUtils.Insert(LocalContext, args)
+                        typeof(object),
+                        args
                     );
             }
         }

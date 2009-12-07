@@ -26,6 +26,10 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace Microsoft.Scripting.Actions {
 
     public partial class DefaultBinder : ActionBinder {
+        public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target) {
+            return DeleteMember(name, target, new DefaultOverloadResolverFactory(this));
+        }
+
         public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target, OverloadResolverFactory resolutionFactory) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");

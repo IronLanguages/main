@@ -322,16 +322,24 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
     }
 
-    [RubyModule(Extends = typeof(Time))]
+    [RubyModule(Extends = typeof(RubyTime))]
     public static class TimeOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(Time self, [NotNull]RubyRepresenter/*!*/ rep) {
-            string format = (self.DateTime.Millisecond != 0) ? "yyyy-MM-dd HH:mm:ss.fffffff K" : "yyyy-MM-dd HH:mm:ss K";
-            return rep.Scalar(self, MutableString.CreateAscii(self.ToString(format, CultureInfo.InvariantCulture)));
+        public static Node/*!*/ ToYaml(RubyTime self, [NotNull]RubyRepresenter/*!*/ rep) {
+            TimeSpan offset = self.GetCurrentZoneOffset();
+            long fractional = self.Microseconds;
+            return rep.Scalar(self, MutableString.CreateAscii(String.Format(CultureInfo.InvariantCulture,
+                "{0:yyyy-MM-dd HH:mm:ss}" + (fractional == 0 ? "" : ".{1:D6}") + (self.Kind == DateTimeKind.Utc ? " Z" : " {2}{3:D2}:{4:D2}"),
+                self.DateTime,
+                fractional,
+                offset.Hours >= 0 ? "+" : "",
+                offset.Hours, 
+                offset.Minutes
+            )));
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(Time self) {
+        public static MutableString/*!*/ TagUri(RubyTime self) {
             return MutableString.CreateAscii("tag:yaml.org,2002:timestamp");
         }
     }

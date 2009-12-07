@@ -22,22 +22,16 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Utils {
     public static class ReflectionUtils {
+        #region Signature and Type Formatting
 
         // Generic type names have the arity (number of generic type paramters) appended at the end. 
         // For eg. the mangled name of System.List<T> is "List`1". This mangling is done to enable multiple 
         // generic types to exist as long as they have different arities.
         public const char GenericArityDelimiter = '`';
-
-#if SILVERLIGHT
-        public static bool IsNested(Type t) {
-            return t.DeclaringType != null;
-        }
-#else
-        public static bool IsNested(Type t) { return t.IsNested; }
-#endif
 
         public static StringBuilder FormatSignature(StringBuilder result, MethodBase method) {
             return FormatSignature(result, method, (t) => t.FullName);
@@ -149,6 +143,10 @@ namespace Microsoft.Scripting.Utils {
             return result;
         }
 
+        #endregion
+
+        #region Delegates
+
         /// <summary>
         /// Creates an open delegate for the given (dynamic)method.
         /// </summary>
@@ -189,6 +187,10 @@ namespace Microsoft.Scripting.Utils {
             returnInfo = invokeMethod.ReturnParameter;
         }
 
+        #endregion
+
+        #region Methods and Parameters
+
         public static MethodInfo[] GetMethodInfos(Delegate[] delegates) {
             MethodInfo[] result = new MethodInfo[delegates.Length];
             for (int i = 0; i < delegates.Length; i++) result[i] = delegates[i].Method;
@@ -209,6 +211,10 @@ namespace Microsoft.Scripting.Utils {
             return result;
         }
 
+        public static Type GetReturnType(this MethodBase mi) {
+            return (mi.IsConstructor) ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
+        }
+
         public static bool SignatureEquals(MethodInfo method, params Type[] requiredSignature) {
             ContractUtils.RequiresNotNull(method, "method");
 
@@ -222,6 +228,79 @@ namespace Microsoft.Scripting.Utils {
 
             return method.ReturnType == requiredSignature[i];
         }
+
+#if CLR2 && !SILVERLIGHT
+        private static Type _ExtensionAttributeType;
+#endif
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        public static bool IsExtension(this MemberInfo parameter) {
+            var dlrExtension = typeof(ExtensionAttribute);
+            if (parameter.IsDefined(dlrExtension, false)) {
+                return true;
+            }
+
+#if CLR2 && !SILVERLIGHT
+            if (_ExtensionAttributeType == null) {
+                try {
+                    _ExtensionAttributeType = Assembly.Load("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
+                        .GetType("System.Runtime.CompilerServices.ExtensionAttribute");
+                } catch {
+                    _ExtensionAttributeType = dlrExtension;
+                }
+            }
+
+            if (_ExtensionAttributeType != dlrExtension) {
+                return parameter.IsDefined(_ExtensionAttributeType, false);
+            }
+#endif
+            return false;
+        }
+
+        public static bool IsOutParameter(this ParameterInfo pi) {
+            // not using IsIn/IsOut properties as they are not available in Silverlight:
+            return pi.ParameterType.IsByRef && (pi.Attributes & (ParameterAttributes.Out | ParameterAttributes.In)) == ParameterAttributes.Out;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the specified parameter is mandatory, i.e. is not optional and doesn't have a default value.
+        /// </summary>
+        public static bool IsMandatory(this ParameterInfo pi) {
+            return (pi.Attributes & (ParameterAttributes.Optional | ParameterAttributes.HasDefault)) == 0;
+        }
+
+        public static bool HasDefaultValue(this ParameterInfo pi) {
+            return (pi.Attributes & ParameterAttributes.HasDefault) != 0;
+        }
+
+        public static bool ProhibitsNull(this ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(NotNullAttribute), false);
+        }
+
+        public static bool ProhibitsNullItems(this ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(NotNullItemsAttribute), false);
+        }
+
+        public static bool IsParamArray(this ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(ParamArrayAttribute), false);
+        }
+
+        public static bool IsParamDictionary(this ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(ParamDictionaryAttribute), false);
+        }
+
+        public static bool IsParamsMethod(MethodBase method) {
+            return IsParamsMethod(method.GetParameters());
+        }
+
+        public static bool IsParamsMethod(ParameterInfo[] pis) {
+            foreach (ParameterInfo pi in pis) {
+                if (pi.IsParamArray() || pi.IsParamDictionary()) return true;
+            }
+            return false;
+        }
+
+        #endregion
 
         internal static string ToValidTypeName(string str) {
             if (String.IsNullOrEmpty(str)) {

@@ -50,6 +50,24 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="value">
         /// The value being assigned to the target member.
         /// </param>
+        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value) {
+            return SetMember(name, target, value, new DefaultOverloadResolverFactory(this));
+        }
+        
+        /// <summary>
+        /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
+        /// GetBoundMember, and StrongBox instances.
+        /// </summary>
+        /// <param name="name">
+        /// The name of the member to retrieve.  This name is not processed by the DefaultBinder and
+        /// is instead handed off to the GetMember API which can do name mangling, case insensitive lookups, etc...
+        /// </param>
+        /// <param name="target">
+        /// The MetaObject from which the member is retrieved.
+        /// </param>
+        /// <param name="value">
+        /// The value being assigned to the target member.
+        /// </param>
         /// <param name="resolverFactory">
         /// Provides overload resolution and method binding for any calls which need to be performed for the SetMember.
         /// </param>
@@ -67,6 +85,28 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
+        /// <summary>
+        /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
+        /// GetBoundMember, and StrongBox instances.
+        /// </summary>
+        /// <param name="name">
+        /// The name of the member to retrieve.  This name is not processed by the DefaultBinder and
+        /// is instead handed off to the GetMember API which can do name mangling, case insensitive lookups, etc...
+        /// </param>
+        /// <param name="target">
+        /// The MetaObject from which the member is retrieved.
+        /// </param>
+        /// <param name="value">
+        /// The value being assigned to the target member.
+        /// </param>
+        /// <param name="errorSuggestion">
+        /// Provides a DynamicMetaObject that is to be used as the result if the member cannot be set.  If null then then a language
+        /// specific error code is provided by ActionBinder.MakeMissingMemberErrorForAssign which can be overridden by the language.
+        /// </param>
+        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
+            return SetMember(name, target, value, errorSuggestion, new DefaultOverloadResolverFactory(this));
+        }
+        
         /// <summary>
         /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
         /// GetBoundMember, and StrongBox instances.

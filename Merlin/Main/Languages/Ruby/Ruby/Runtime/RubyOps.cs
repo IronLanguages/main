@@ -44,13 +44,19 @@ using IronRuby.Runtime.Conversions;
 namespace IronRuby.Runtime {
     [ReflectionCached, CLSCompliant(false)]
     public static partial class RubyOps {
-
         [Emitted]
         public static readonly object DefaultArgument = new object();
         
         // Returned by a virtual site if a base call should be performed.
         [Emitted]
         public static readonly object ForwardToBase = new object();
+
+        // an instance of a dummy type that causes any rule based on instance type check to fail
+        private sealed class _NeedsUpdate {
+        }
+
+        [Emitted]
+        public static readonly object NeedsUpdate = new _NeedsUpdate();
 
         #region Scopes
 
@@ -128,12 +134,12 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, SymbolId[] variableNames, 
-            RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
+        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, SymbolId[] variableNames, int visibleParameterCount,
+            RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName, 
             object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
 
             return new RubyMethodScope(
-                locals, variableNames ?? SymbolId.EmptySymbols,
+                locals, variableNames ?? SymbolId.EmptySymbols, visibleParameterCount,
                 parentScope, declaringModule, definitionName, selfObject, blockParameter,
                 interpretedFrame
             );            
@@ -163,15 +169,17 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static void TraceBlockCall(RubyBlockScope/*!*/ scope, BlockParam/*!*/ block, string fileName, int lineNumber) {
-            if (block.IsMethod) {
-                scope.RubyContext.ReportTraceEvent("call", scope, block.MethodLookupModule, block.MethodName, fileName, lineNumber);
+            var method = block.Proc.Method;
+            if (method != null) {
+                scope.RubyContext.ReportTraceEvent("call", scope, method.DeclaringModule, method.DefinitionName, fileName, lineNumber);
             }
         }
 
         [Emitted]
         public static void TraceBlockReturn(RubyBlockScope/*!*/ scope, BlockParam/*!*/ block, string fileName, int lineNumber) {
-            if (block.IsMethod) {
-                scope.RubyContext.ReportTraceEvent("return", scope, block.MethodLookupModule, block.MethodName, fileName, lineNumber);
+            var method = block.Proc.Method;
+            if (method != null) {
+                scope.RubyContext.ReportTraceEvent("return", scope, method.DeclaringModule, method.DefinitionName, fileName, lineNumber);
             }
         }
 
@@ -1824,15 +1832,12 @@ namespace IronRuby.Runtime {
             );
         }
 
-        #endregion
-
-        [Emitted] //RubyBinder
-        public static bool IsSuperCallTarget(RubyScope/*!*/ scope, RubyModule/*!*/ module, string/*!*/ methodName, out object self) {
-            RubyModule _currentDeclaringModule;
-            string _currentMethodName;
-            scope.GetSuperCallTarget(out _currentDeclaringModule, out _currentMethodName, out self);
-            return module == _currentDeclaringModule && methodName == _currentMethodName;
+        [Emitted]
+        public static Exception/*!*/ MakeImplicitSuperInBlockMethodError() {
+            return RubyExceptions.CreateRuntimeError("implicit argument passing of super from method defined by define_method() is not supported. Specify all arguments explicitly.");
         }
+
+        #endregion
 
         #region Ranges
 
@@ -1907,6 +1912,45 @@ namespace IronRuby.Runtime {
             return versionHandle.Method == expectedVersion
                 // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
                 && !(context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass);
+        }
+
+        // super call condition
+        [Emitted]
+        public static object GetSuperCallTarget(RubyScope/*!*/ scope, int targetId) {
+            while (true) {
+                switch (scope.Kind) {
+                    case ScopeKind.Method:
+                        return targetId == 0 ? scope.SelfObject : NeedsUpdate;
+
+                    case ScopeKind.BlockMethod:
+                        return targetId == ((RubyBlockScope)scope).BlockFlowControl.Proc.Method.Id ? scope.SelfObject : NeedsUpdate;
+
+                    case ScopeKind.TopLevel:
+                        // This method is only called if there was method or block-method scope in lexical scope chain.
+                        // Once there is it cannot be undone. It can only be shadowed by a block scope that became block-method scope, or
+                        // a block-method scope's target-id can be changed.
+                        throw Assert.Unreachable;
+                }
+
+                scope = scope.Parent;
+            }
+        }
+
+        // super call condition
+        [Emitted]
+        public static bool IsSuperOutOfMethodScope(RubyScope/*!*/ scope) {
+            while (true) {
+                switch (scope.Kind) {
+                    case ScopeKind.Method:
+                    case ScopeKind.BlockMethod:
+                        return false;
+
+                    case ScopeKind.TopLevel:
+                        return true;
+                }
+
+                scope = scope.Parent;
+            }
         }
 
         #endregion
@@ -2013,7 +2057,7 @@ namespace IronRuby.Runtime {
                 if (bignum.AsInt32(out fixnum)) {
                     return fixnum;
                 }
-                throw RubyExceptions.CreateRangeError(String.Format("bignum too big to convert into {0}", targetType));
+                throw RubyExceptions.CreateRangeError("bignum too big to convert into {0}", targetType);
             }
 
             throw RubyExceptions.CreateReturnTypeError(className, "to_int", "Integer");
@@ -2304,7 +2348,7 @@ namespace IronRuby.Runtime {
             immediateClass = (RubyClass)info.GetValue(RubyUtils.SerializationInfoClassKey, typeof(RubyClass));
             RubyInstanceData newInstanceData = null;
             foreach (SerializationEntry entry in info) {
-                if (entry.Name.StartsWith("@")) {
+                if (entry.Name.StartsWith("@", StringComparison.Ordinal)) {
                     if (newInstanceData == null) {
                         newInstanceData = new RubyInstanceData();
                     }

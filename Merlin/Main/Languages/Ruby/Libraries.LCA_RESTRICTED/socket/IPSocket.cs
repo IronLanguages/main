@@ -27,7 +27,14 @@ namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("IPSocket", BuildConfig = "!SILVERLIGHT")]
     public abstract class IPSocket : RubyBasicSocket {
 
-        public IPSocket(RubyContext/*!*/ context, Socket/*!*/ socket)
+        /// <summary>
+        /// Creates an uninitialized socket.
+        /// </summary>
+        protected IPSocket(RubyContext/*!*/ context)
+            : base(context) {
+        }
+
+        protected IPSocket(RubyContext/*!*/ context, Socket/*!*/ socket)
             : base(context, socket) {
         }
         

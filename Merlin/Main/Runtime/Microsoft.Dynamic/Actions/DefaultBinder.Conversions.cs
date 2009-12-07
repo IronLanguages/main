@@ -33,6 +33,10 @@ namespace Microsoft.Scripting.Actions {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
     
     public partial class DefaultBinder : ActionBinder {
+        public DynamicMetaObject ConvertTo(Type toType, ConversionResultKind kind, DynamicMetaObject arg) {
+            return ConvertTo(toType, kind, arg, new DefaultOverloadResolverFactory(this));
+        }
+
         public DynamicMetaObject ConvertTo(Type toType, ConversionResultKind kind, DynamicMetaObject arg, OverloadResolverFactory resolverFactory) {
             ContractUtils.RequiresNotNull(toType, "toType");
             ContractUtils.RequiresNotNull(arg, "arg");

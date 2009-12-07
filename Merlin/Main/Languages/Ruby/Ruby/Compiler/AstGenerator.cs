@@ -313,14 +313,12 @@ namespace IronRuby.Compiler.Ast {
                 set { _parentMethod = value; }
             }
 
-            // TODO: super call
-            // null for top-level code
+            // null for top-level code, used by block definition (to encode method name into stack frame)
             public string MethodName {
                 get { return _methodName; }
             }
 
-            // TODO: super call
-            // null for top-level code
+            // null for code that is evaluated outside a method scope, used by super-call
             public Parameters Parameters {
                 get { return _parameters; }
             }

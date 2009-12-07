@@ -21,6 +21,7 @@ using System.Text;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
 
@@ -661,35 +662,57 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Comparisons (read-only) (TODO: Encodings)
-
-        public static bool operator ==(MutableString self, MutableString other) {
-            return Equals(self, other);
-        }
-
-        public static bool operator !=(MutableString self, MutableString other) {
-            return !Equals(self, other);
-        }
-
-        private static bool Equals(MutableString self, MutableString other) {
-            if (ReferenceEquals(self, other)) return true;
-            if (ReferenceEquals(self, null)) return false;
-            if (ReferenceEquals(other, null)) return false;
-            return other._content.ReverseCompareTo(self._content) == 0;
-        }
+        #region Comparisons (read-only)
 
         public override bool Equals(object other) {
             return Equals(other as MutableString);
         }
 
         public bool Equals(MutableString other) {
-            return CompareTo(other) == 0;
+            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(other, null)) return false;
+
+            if (KnowsHashCode && other.KnowsHashCode && _hashCode != other._hashCode) {
+                return false;
+            }
+
+            if (_encoding != other._encoding) {
+                if (_encoding.CompareTo(other._encoding) != 0) {
+                    // only ASCII strings might compare equal if their encodings are different:
+                    if (!IsAscii() || !other.IsAscii()) {
+                        return false;
+                    }
+                } else {
+                    // we can't compare char representations if they are encoded with different k-codings:
+                    Debug.Assert(_encoding.IsKCoding || other._encoding.IsKCoding);
+                    SwitchToBytes();
+                    other.SwitchToBytes();
+                }
+            }
+
+            return _content.OrdinalCompareTo(other._content) == 0;
         }
 
         public int CompareTo(MutableString other) {
             if (ReferenceEquals(this, other)) return 0;
             if (ReferenceEquals(other, null)) return 1;
-            return other._content.ReverseCompareTo(_content);
+
+            if (_encoding != other._encoding) {
+                int result = _encoding.CompareTo(other._encoding);
+                if (result != 0) {
+                    // only ASCII strings might compare equal if their encodings are different:
+                    if (!IsAscii() || !other.IsAscii()) {
+                        return result;
+                    }
+                } else {
+                    // we can't compare char representations if they are encoded with different k-codings:
+                    Debug.Assert(_encoding.IsKCoding || other._encoding.IsKCoding);
+                    SwitchToBytes();
+                    other.SwitchToBytes();
+                }
+            }
+
+            return _content.OrdinalCompareTo(other._content);
         }
 
         #endregion
@@ -768,9 +791,21 @@ namespace IronRuby.Builtins {
         
         public bool EndsWith(string/*!*/ value) {
             // TODO:
-            return _content.ConvertToString().EndsWith(value);
+            return _content.ConvertToString().EndsWith(value, StringComparison.Ordinal);
         }
         
+        #endregion
+
+        #region Enumerations (read-only)
+
+        public IEnumerable<char>/*!*/ GetCharacters() {
+            return _content.GetCharacters();
+        }
+
+        public IEnumerable<byte>/*!*/ GetBytes() {
+            return _content.GetBytes(); 
+        }
+
         #endregion
 
         #region Slices (read-only)
@@ -997,6 +1032,9 @@ namespace IronRuby.Builtins {
 
         #region Append
 
+        /// <summary>
+        /// Value should only contain characters that can be represented in the string's encoding.
+        /// </summary>
         public MutableString/*!*/ Append(char value) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
@@ -1010,6 +1048,9 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        /// <summary>
+        /// Value should only contain characters that can be represented in the string's encoding.
+        /// </summary>
         public MutableString/*!*/ Append(char value, int repeatCount) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
@@ -1049,6 +1090,9 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        /// <summary>
+        /// Value should only contain characters that can be represented in the string's encoding.
+        /// </summary>
         public MutableString/*!*/ Append(char[] value) {
             if (value != null) {
                 Mutate();
@@ -1057,6 +1101,9 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        /// <summary>
+        /// Value should only contain characters that can be represented in the string's encoding.
+        /// </summary>
         public MutableString/*!*/ Append(char[]/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
             ContractUtils.RequiresArrayRange(value, start, count, "startIndex", "count");
@@ -1066,6 +1113,9 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        /// <summary>
+        /// Value should only contain characters that can be represented in the string's encoding.
+        /// </summary>
         public MutableString/*!*/ Append(string value) {
             if (value != null) {
                 Mutate();
@@ -1074,6 +1124,9 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        /// <summary>
+        /// Value should only contain characters that can be represented in the string's encoding.
+        /// </summary>
         public MutableString/*!*/ Append(string/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
             ContractUtils.RequiresArrayRange(value, start, count, "start", "count");
@@ -1114,20 +1167,26 @@ namespace IronRuby.Builtins {
         }
 
         public MutableString/*!*/ Append(MutableString value) {
-            if (value != null) {
+            if ((object)value != null) {
                 Mutate(value);
-                value._content.AppendTo(_content, 0, value._content.Count);
+                _content.Append(value._content, 0, value._content.Count);
             }
             return this;
         }
 
-        // TODO: start, count measured in characters or bytes?
+        /// <summary>
+        /// Appends a substring of a given string to this string.
+        /// <c>start</c> and <c>count</c> are specified
+        /// in characters if the <c>value</c> is represented in characters and 
+        /// in bytes if the <c>value</c> is represented in bytes.
+        /// </summary>
         public MutableString/*!*/ Append(MutableString/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            //RequiresArrayRange(start, count);
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0, "count");
 
             Mutate(value);
-            value._content.AppendTo(_content, start, count);
+            _content.Append(value._content, start, count);
             return this;
         }
 
@@ -1139,27 +1198,25 @@ namespace IronRuby.Builtins {
             var other = value._content;
             EnsureCapacity(other.Count * repeatCount);
             while (repeatCount-- > 0) {
-                other.AppendTo(_content, 0, other.Count);
+                _content.Append(other, 0, other.Count);
             }
             return this;
         }
 
+        /// <summary>
+        /// Format and values should only contain characters that can be represented in the string's encoding.
+        /// </summary>
         public MutableString/*!*/ AppendFormat(string/*!*/ format, params object[] args) {
-            Mutate();
-            return AppendFormat(null, format, args);
-        }
-
-        public MutableString/*!*/ AppendFormat(IFormatProvider provider, string/*!*/ format, params object[] args) {
             ContractUtils.RequiresNotNull(format, "format");
             Mutate();
 
-            _content.AppendFormat(provider, format, args);
+            _content.AppendFormat(CultureInfo.InvariantCulture, format, args);
             return this;
         }
 
         #endregion
 
-        #region Insert
+        #region Insert // TODO: Insert(MS) like Append(MS)
 
         public void SetChar(int index, char value) {
             #region Optimization: MutateOne inlined
@@ -1647,9 +1704,10 @@ namespace IronRuby.Builtins {
             result.Append((char)('0' + (c & 7)));
         }
 
-        private string/*!*/ ToStringWithEscapedInvalidCharacters(bool octalEscapes, out int escapePlaceholder) {
-            if (IsBinary) {
-                return ToStringWithEscapedInvalidCharacters(ToByteArray(), _encoding.Encoding, octalEscapes, out escapePlaceholder);
+        private string/*!*/ ToStringWithEscapedInvalidCharacters(RubyEncoding/*!*/ encoding, bool octalEscapes, out int escapePlaceholder) {
+            Debug.Assert(encoding != RubyEncoding.Binary);
+            if (IsBinary || encoding != _encoding) {
+                return ToStringWithEscapedInvalidCharacters(ToByteArray(), encoding.Encoding, octalEscapes, out escapePlaceholder);
             } else {
                 escapePlaceholder = -1;
                 return ToString();
@@ -1660,32 +1718,31 @@ namespace IronRuby.Builtins {
         /// Returns a string with all non-ASCII characters replaced by escaped Unicode or hexadecimal numeric sequences.
         /// </summary>
         public string/*!*/ ToAsciiString() {
-            var result = AppendRepresentation(new StringBuilder(), false, true, -1).ToString();
+            var result = AppendRepresentation(new StringBuilder(), null, false, true, -1).ToString();
             Debug.Assert(result.IsAscii());
             return result;
         }
 
-        public StringBuilder/*!*/ AppendRepresentation(StringBuilder/*!*/ result, bool octalEscapes, bool forceEscapes, int quote) {
+        public StringBuilder/*!*/ AppendRepresentation(StringBuilder/*!*/ result, RubyEncoding forceEncoding, bool octalEscapes, bool forceEscapes, int quote) {
             ContractUtils.RequiresNotNull(result, "result");
+            ContractUtils.Requires(forceEncoding == null || forceEncoding.IsKCoding || forceEncoding == RubyEncoding.Binary);
 
-            if (_encoding == RubyEncoding.Binary) {
+            RubyEncoding encoding = forceEncoding ?? _encoding;
+
+            if (encoding == RubyEncoding.Binary || (forceEscapes && encoding != RubyEncoding.UTF8)) {
                 if (IsBinary) {
                     AppendBinaryRepresentation(result, ToByteArray(), octalEscapes, true, quote);
                 } else {
                     AppendStringRepresentation(result, ToString(), octalEscapes, true, quote, -1);
                 }
-            } else if (_encoding == RubyEncoding.UTF8 || _encoding == RubyEncoding.KCodeUTF8 || !forceEscapes) {
+            } else {
                 int escapePlaceholder;
-                var str = ToStringWithEscapedInvalidCharacters(octalEscapes, out escapePlaceholder);
-                if (_encoding == RubyEncoding.UTF8) {
+                var str = ToStringWithEscapedInvalidCharacters(encoding, octalEscapes, out escapePlaceholder);
+                if (encoding == RubyEncoding.UTF8) {
                     AppendUnicodeRepresentation(result, str, octalEscapes, forceEscapes, quote, escapePlaceholder);
-                } else if (forceEscapes) {
-                    AppendBinaryRepresentation(result, ToByteArray(), octalEscapes, true, quote);
                 } else {
                     AppendStringRepresentation(result, str, octalEscapes, forceEscapes, quote, escapePlaceholder);
                 }
-            } else {
-                AppendBinaryRepresentation(result, ToByteArray(), octalEscapes, true, quote);
             }
             
             return result;
@@ -1718,7 +1775,7 @@ namespace IronRuby.Builtins {
         }
 
         internal string/*!*/ GetDebugValue() {
-            return AppendRepresentation(new StringBuilder(), false, false, '"').ToString();
+            return AppendRepresentation(new StringBuilder(), null, false, false, '"').ToString();
         }
 
         internal string/*!*/ GetDebugType() {

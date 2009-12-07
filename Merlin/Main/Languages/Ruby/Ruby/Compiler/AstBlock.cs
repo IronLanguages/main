@@ -22,9 +22,6 @@ using Microsoft.Scripting.Ast;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler {
     internal struct AstBlock : IEnumerable<Expression> {

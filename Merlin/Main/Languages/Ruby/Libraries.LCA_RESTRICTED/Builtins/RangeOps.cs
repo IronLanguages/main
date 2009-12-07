@@ -524,7 +524,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         private static void CheckBegin(RespondToStorage/*!*/ respondToStorage, object begin) {
             if (!Protocols.RespondTo(respondToStorage, begin, "succ")) {
-                throw RubyExceptions.CreateTypeError(String.Format("can't iterate from {0}", respondToStorage.Context.GetClassDisplayName(begin)));
+                throw RubyExceptions.CreateTypeError("can't iterate from {0}", respondToStorage.Context.GetClassDisplayName(begin));
             }
         }
 

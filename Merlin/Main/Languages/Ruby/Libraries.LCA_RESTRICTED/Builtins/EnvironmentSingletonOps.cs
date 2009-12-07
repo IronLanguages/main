@@ -20,6 +20,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -30,6 +31,24 @@ namespace IronRuby.Builtins {
     public static class EnvironmentSingletonOps {
         private static MutableString/*!*/ FrozenString(object/*!*/ value) {
             return MutableString.Create((string)value, RubyEncoding.UTF8).Freeze();
+        }
+
+        private static void SetEnvironmentVariable(RubyContext/*!*/ context, string/*!*/ name, string value) {
+            context.DomainManager.Platform.SetEnvironmentVariable(name, value);
+#if !SILVERLIGHT
+            if (name == "TZ") {
+                TimeZone zone;
+                if (RubyTime.TryParseTimeZone(value, out zone)) {
+                    RubyTime._CurrentTimeZone = zone;
+                } else {
+                    context.ReportWarning(String.Format(CultureInfo.InvariantCulture,
+                        "`{0}' is not a valid time zone specification; using the current time zone `{1}'", 
+                        value, 
+                        RubyTime._CurrentTimeZone.StandardName
+                    ));
+                }
+            }
+#endif
         }
 
         #region Public Instance Methods
@@ -45,8 +64,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]=", RubyMethodAttributes.PublicInstance)]
         [RubyMethod("store", RubyMethodAttributes.PublicInstance)]
         public static MutableString SetVariable(RubyContext/*!*/ context, object/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ name, [DefaultProtocol]MutableString value) {
-            PlatformAdaptationLayer pal = context.DomainManager.Platform;
-            pal.SetEnvironmentVariable(name.ConvertToString(), (value != null) ? value.ConvertToString() : null);
+            SetEnvironmentVariable(context, name.ConvertToString(), (value != null) ? value.ConvertToString() : null);
             return value;
         }
 
@@ -54,7 +72,7 @@ namespace IronRuby.Builtins {
         public static object Clear(RubyContext/*!*/ context, object/*!*/ self) {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             foreach (DictionaryEntry entry in pal.GetEnvironmentVariables()) {
-                pal.SetEnvironmentVariable(entry.Key.ToString(), null);
+                SetEnvironmentVariable(context, entry.Key.ToString(), null);
             }
             return self;
         }
@@ -247,12 +265,11 @@ namespace IronRuby.Builtins {
         }
 
         private static void Update(ConversionStorage<MutableString>/*!*/ stringCast, Hash/*!*/ values) {
-            PlatformAdaptationLayer pal = stringCast.Context.DomainManager.Platform;
             foreach (var pair in values) {
                 var name = Protocols.CastToString(stringCast, pair.Key).ToString();
                 var value = Protocols.CastToString(stringCast, pair.Value).ToString();
-                
-                pal.SetEnvironmentVariable(name, value);
+
+                SetEnvironmentVariable(stringCast.Context, name, value);
             }
         }
 
@@ -280,7 +297,7 @@ namespace IronRuby.Builtins {
             foreach (DictionaryEntry entry in pal.GetEnvironmentVariables()) {
                 result.Add(FrozenString(entry.Key));
                 result.Add(FrozenString(entry.Value));
-                pal.SetEnvironmentVariable((string)entry.Key, null);
+                SetEnvironmentVariable(context, (string)entry.Key, null);
                 break;
             }
             return result;

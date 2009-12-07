@@ -22,6 +22,7 @@ using Microsoft.Scripting.Ast;
 using System;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Reflection;
 
 namespace Microsoft.Scripting.Ast {
     public static partial class Utils {
@@ -56,14 +57,26 @@ namespace Microsoft.Scripting.Ast {
             // TODO: this is not the right level for this to be at. It should
             // be pushed into languages if they really want this behavior.
             if (type == typeof(object)) {
-                if (expression.Type == typeof(int)) {
-                    return Expression.Convert(expression, typeof(object), ScriptingRuntimeHelpers.Int32ToObjectMethod);
-                } else if (expression.Type == typeof(bool)) {
-                    return Expression.Convert(expression, typeof(object), ScriptingRuntimeHelpers.BooleanToObjectMethod);
-                }
+                return Box(expression);
             }
 
             return Expression.Convert(expression, type);
+        }
+
+        /// <summary>
+        /// Returns an expression that boxes a given value. Uses boxed objects cache for Int32 and Boolean types.
+        /// </summary>
+        public static Expression Box(Expression expression) {
+            MethodInfo m;
+            if (expression.Type == typeof(int)) {
+                m = ScriptingRuntimeHelpers.Int32ToObjectMethod;
+            } else if (expression.Type == typeof(bool)) {
+                m = ScriptingRuntimeHelpers.BooleanToObjectMethod;
+            } else {
+                m = null;
+            }
+
+            return Expression.Convert(expression, typeof(object), m);
         }
     }
 }

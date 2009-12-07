@@ -66,7 +66,7 @@ namespace IronPython.Compiler.Ast {
 
             if (_reference.PythonVariable == null) {
                 read = Ast.Call(
-                    typeof(PythonOps).GetMethod("LookupName"),
+                    AstMethods.LookupName,
                     Parent.LocalContext,
                     Ast.Constant(_name)                    
                 );
@@ -107,12 +107,10 @@ namespace IronPython.Compiler.Ast {
             } else {
                 assignment = Ast.Call(
                     null,
-                    typeof(PythonOps).GetMethod("SetName"),
-                    new[] {
-                        Parent.LocalContext, 
-                        Ast.Constant(_name),
-                        AstUtils.Convert(right, typeof(object))
-                    }
+                    AstMethods.SetName,
+                    Parent.LocalContext, 
+                    Ast.Constant(_name),
+                    AstUtils.Convert(right, typeof(object))
                 );
             }
 
@@ -134,7 +132,7 @@ namespace IronPython.Compiler.Ast {
                 // better match CPython's lifetimes
                 MSAst.Expression del = Ast.Block(
                     Ast.Call(
-                        typeof(GC).GetMethod("KeepAlive"),
+                        AstMethods.KeepAlive,
                         variable
                     ),
                     Delete(variable)
@@ -150,11 +148,9 @@ namespace IronPython.Compiler.Ast {
                 return del;
             } else {
                 return Ast.Call(
-                    typeof(PythonOps).GetMethod("RemoveName"),
-                    new[] {
-                        Parent.LocalContext,
-                        Ast.Constant(_name)
-                    }
+                    AstMethods.RemoveName,
+                    Parent.LocalContext,
+                    Ast.Constant(_name)
                 );
             }
         }

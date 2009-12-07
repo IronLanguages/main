@@ -22,13 +22,13 @@ describe "Array#reject" do
     array.reject { true }.should == []
   end
 
-  not_compliant_on :rubinius, :ironruby do
+  not_compliant_on :rubinius do
     it "returns subclass instance on Array subclasses" do
       ArraySpecs::MyArray[1, 2, 3].reject { |x| x % 2 == 0 }.class.should == ArraySpecs::MyArray
     end
   end
 
-  deviates_on :rubinius, :ironruby do
+  deviates_on :rubinius do
     it "does not return subclass instance on Array subclasses" do
       ArraySpecs::MyArray[1, 2, 3].reject { |x| x % 2 == 0 }.class.should == Array
     end

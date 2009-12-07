@@ -116,13 +116,11 @@ outer2: !ruby/object:YamlSpecs::InnerToYaml\s
 EOF
   end
 
-  not_compliant_on :ironruby do
-    it "calls to_yaml on nested objects with Emitter" do
-      ScratchPad.record({})
-      YamlSpecs::OuterToYaml.new.to_yaml
+  it "calls to_yaml on nested objects with Emitter" do
+    ScratchPad.record({})
+    YamlSpecs::OuterToYaml.new.to_yaml
 
-      emitter = ScratchPad.recorded[:emitter]
-      ScratchPad.recorded[:level].should == 1
-    end
+    emitter = ScratchPad.recorded[:emitter]
+    ScratchPad.recorded[:level].should == 1
   end
 end

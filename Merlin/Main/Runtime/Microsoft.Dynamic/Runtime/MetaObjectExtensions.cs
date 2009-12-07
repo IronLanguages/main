@@ -32,7 +32,7 @@ namespace Microsoft.Scripting.Runtime {
                 return false;
             }
 
-            if (self.Expression.Type.IsSealedOrValueType()) {
+            if (self.Expression.Type.IsSealed) {
                 return typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.Expression.Type);
             }
 
@@ -49,7 +49,7 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             if (type == self.Expression.Type) {
-                if (type.IsSealedOrValueType() ||
+                if (type.IsSealed ||
                     self.Expression.NodeType == ExpressionType.New ||
                     self.Expression.NodeType == ExpressionType.NewArrayBounds ||
                     self.Expression.NodeType == ExpressionType.NewArrayInit) {

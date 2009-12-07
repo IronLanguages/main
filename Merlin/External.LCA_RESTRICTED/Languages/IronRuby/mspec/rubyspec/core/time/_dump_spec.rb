@@ -38,5 +38,12 @@ describe "Time#_dump" do
            @t.usec
     low.should == @s.unpack("VV").last
   end
+  
+  it "converts the time to UTC before it dumps it" do
+    with_timezone("PST", -8) do
+      t = Time.local(2000)
+      t._dump.should == "(\000\031\200\000\000\000\000"
+    end
+  end
 end
 

@@ -167,11 +167,11 @@ module Mock
   def self.uninstall_method(obj, sym, replaced)
     meta = obj.metaclass
     if mock_respond_to? obj, replaced
-        meta.__send__ :alias_method, sym, replaced
-        meta.__send__ :remove_method, replaced
-      else
-        meta.__send__ :remove_method, sym
-      end
+      meta.__send__ :alias_method, sym, replaced
+      meta.__send__ :remove_method, replaced
+    else
+      meta.__send__ :remove_method, sym
+    end
   end
 
   def self.cleanup

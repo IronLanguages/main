@@ -42,14 +42,31 @@ namespace Microsoft.Scripting.Actions {
     public abstract class ActionBinder {
         private ScriptDomainManager _manager;
 
-        public bool PrivateBinding {
-            get { return _manager.Configuration.PrivateBinding; }
+        /// <summary>
+        /// Determines if the binder should allow access to non-public members.
+        /// 
+        /// By default the binder does not allow access to non-public members.  Base classes
+        /// can inherit and override this value to customize whether or not private binding
+        /// is available.
+        /// </summary>
+        public virtual bool PrivateBinding {
+            get {
+                if (_manager != null) {
+                    return _manager.Configuration.PrivateBinding;
+                }
+                return false; 
+            }
         }
 
+        protected ActionBinder() {
+        }
+
+        [Obsolete("ScriptDomainManager is no longer required by ActionBinder and will go away, you should call the default constructor instead.  You should also override PrivateBinding which is the only thing which previously used the ScriptDomainManager.")]
         protected ActionBinder(ScriptDomainManager manager) {
             _manager = manager;
         }
 
+        [Obsolete("ScriptDomainManager is no longer required by ActionBinder and will no longer be available on the base class.")]
         public ScriptDomainManager Manager {
             get {
                 return _manager;
@@ -394,9 +411,9 @@ namespace Microsoft.Scripting.Actions {
         }
 
         /// <summary>
-        /// Provides an opportunity for languages to replace all MemberInfo's with their own type.
+        /// Provides an opportunity for languages to replace all MemberTracker's with their own type.
         /// 
-        /// Alternatlely a language can expose MemberInfo's directly.
+        /// Alternatlely a language can expose MemberTracker's directly.
         /// </summary>
         /// <param name="memberTracker">The member which is being returned to the user.</param>
         /// <param name="type">Tthe type which the memberTrack was accessed from</param>

@@ -37,6 +37,9 @@ describe "Time#_load" do
   end
   
   it "loads local time" do
-    Time._load("\004\002\031\200\000\000\020\004").should == @t
+    with_timezone("PST", -8) do
+      t = Time.local(2000, 1, 15, 20, 1, 1)
+      Time._load("\004\002\031\200\000\000\020\004").should == t
+    end
   end
 end

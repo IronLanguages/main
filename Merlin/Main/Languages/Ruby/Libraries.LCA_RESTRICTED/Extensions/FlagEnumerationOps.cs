@@ -26,8 +26,8 @@ namespace IronRuby.Builtins {
     /// <summary>
     /// Implements operations on flag enumeration.
     /// </summary>
-    [RubyModule("FlagEnumeration", DefineIn = typeof(IronRubyOps.ClrOps), Extends = typeof(FlagEnumeration), Restrictions = ModuleRestrictions.None)]
-    public static class FlagEnumOps {
+    [RubyModule("FlagEnumeration", DefineIn = typeof(IronRubyOps.Clr), Extends = typeof(FlagEnumeration), Restrictions = ModuleRestrictions.NoUnderlyingType)]
+    public static class FlagEnumerationOps {
         [RubyMethod("|")]
         public static object/*!*/ BitwiseOr(RubyContext/*!*/ context, object/*!*/ self, [NotNull]object/*!*/ other) {
             Debug.Assert(self is Enum);

@@ -465,9 +465,14 @@ namespace IronPython.Compiler {
             );
         }
 
-        // This is copied from the base implementation. 
-        // Just want to make sure we disallow yield in filters
+        // Mostly copied from the base implementation. 
+        // - makes sure we disallow yield in filters
+        // - lifts exception variable
         protected override CatchBlock VisitCatchBlock(CatchBlock node) {
+            if (node.Variable != null) {
+                LiftVariable(node.Variable);
+            }
+
             Expression v = Visit(node.Variable);
             int yields = _yields.Count;
             Expression f = Visit(node.Filter);
@@ -484,7 +489,6 @@ namespace IronPython.Compiler {
             // if we have variable and no yields in the catch block then
             // we need to hoist the variable into a closure
             if (v != node.Variable && yields == _yields.Count) {
-                _temps.Add(node.Variable);
                 return Expression.MakeCatchBlock(
                     node.Test,
                     node.Variable,

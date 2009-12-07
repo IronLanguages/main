@@ -61,7 +61,7 @@ namespace IronRuby.Builtins {
     /// <summary>
     /// Mixed into System::String and System::Char.
     /// </summary>
-    [RubyModule("String", DefineIn = typeof(IronRubyOps.ClrOps))]
+    [RubyModule("String", DefineIn = typeof(IronRubyOps.Clr))]
     public static class ClrString {
         #region %, *, +
 
@@ -97,7 +97,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("<=>")]
         public static int Compare(string/*!*/ self, [NotNull]string/*!*/ other) {
-            return Math.Sign(self.CompareTo(other));
+            return Math.Sign(String.CompareOrdinal(self, other));
         }
 
         [RubyMethod("<=>")]
@@ -163,7 +163,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static string GetSubstring(string/*!*/ self, [NotNull]string/*!*/ searchStr) {
-            return (self.IndexOf(searchStr) != -1) ? searchStr : null;
+            return (self.IndexOf(searchStr, StringComparison.Ordinal) != -1) ? searchStr : null;
         }
 
         [RubyMethod("[]")]
@@ -273,7 +273,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("include?")]
         public static bool Include(string/*!*/ str, [DefaultProtocol, NotNull]string/*!*/ subString) {
-            return str.IndexOf(subString) != -1;
+            return str.IndexOf(subString, StringComparison.Ordinal) != -1;
         }
 
         #endregion
@@ -350,7 +350,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("to_i")]
         public static object/*!*/ ToInteger(string/*!*/ self, [DefaultProtocol, DefaultParameterValue(10)]int @base) {
             if (@base == 1 || @base < 0 || @base > 36) {
-                throw RubyExceptions.CreateArgumentError(String.Format("illegal radix {0}", @base));
+                throw RubyExceptions.CreateArgumentError("illegal radix {0}", @base);
             }
             return Tokenizer.ParseInteger(self, @base).ToObject();
         }
@@ -463,8 +463,8 @@ namespace IronRuby.Builtins {
         public static object MethodMissing(RubyScope/*!*/ scope, BlockParam block, string/*!*/ self, SymbolId symbol, [NotNull]params object[]/*!*/ args) {
             string name = SymbolTable.IdToString(symbol);
 
-            if (name.EndsWith("=") || name.EndsWith("!")) {
-                throw new InvalidOperationException(String.Format("Mutating method `{0}' called for an immutable string (System::String)", name));
+            if (name.EndsWith("=", StringComparison.Ordinal) || name.EndsWith("!", StringComparison.Ordinal)) {
+                throw RubyExceptions.CreateTypeError("Mutating method `{0}' called for an immutable string (System::String)", name);
             }
 
             // TODO: forward to MutableString until we implement the methods here:

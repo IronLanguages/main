@@ -41,8 +41,7 @@ namespace IronRuby.Compiler.Ast {
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             MSA.Expression bfcVariable = gen.CurrentScope.DefineHiddenVariable("#yielded-bfc", typeof(BlockParam));
             MSA.Expression resultVariable = gen.CurrentScope.DefineHiddenVariable("#result", typeof(object));
-            MSA.Expression evalUnwinder = gen.CurrentScope.DefineHiddenVariable("#unwinder", typeof(EvalUnwinder));
-
+            
             MSA.Expression postYield;
 
             if (gen.CompilerOptions.IsEval) {

@@ -57,7 +57,10 @@ namespace IronRuby.Builtins {
         private readonly RubyScope/*!*/ _scope;
 
         private readonly BlockDispatcher/*!*/ _dispatcher;
+
+        // TODO: can we remove _kind and use _method and Converter fields intead?
         private ProcKind _kind;
+        private RubyLambdaMethodInfo _method;
 
         // The frame that converted this block to a proc:
         internal RuntimeFlowControl Converter { get; set; }
@@ -66,6 +69,10 @@ namespace IronRuby.Builtins {
             get { return _kind; }
             // friend: RuntimeFlowControl
             internal set { _kind = value; }
+        }
+
+        internal RubyLambdaMethodInfo Method {
+            get { return _method; }
         }
 
         public BlockDispatcher/*!*/ Dispatcher {
@@ -115,9 +122,10 @@ namespace IronRuby.Builtins {
         /// Creates a lambda Proc that has the same target, context and self object as this block.
         /// Doesn't preserve the class of the Proc.
         /// </summary>
-        public Proc/*!*/ ToLambda() {
+        public Proc/*!*/ ToLambda(RubyLambdaMethodInfo method) {
             Proc result = new Proc(this);
             result.Kind = ProcKind.Lambda;
+            result._method = method;
             return result;
         }
 
@@ -137,9 +145,9 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        public static RubyMemberInfo/*!*/ ToLambdaMethodInfo(Proc/*!*/ lambda, string/*!*/ definitionName, RubyMethodVisibility visibility,
+        public static RubyLambdaMethodInfo/*!*/ ToLambdaMethodInfo(Proc/*!*/ block, string/*!*/ definitionName, RubyMethodVisibility visibility,
             RubyModule/*!*/ owner) {
-            return new RubyLambdaMethodInfo(lambda, definitionName, (RubyMemberFlags)visibility, owner);
+            return new RubyLambdaMethodInfo(block, definitionName, (RubyMemberFlags)visibility, owner);
         }
 
         #endregion
@@ -158,7 +166,6 @@ namespace IronRuby.Builtins {
                 metaBuilder,
                 convertedTarget,                       // proc object  
                 Methods.GetProcSelf.OpCall(convertedTarget),  // self captured by the block closure
-                null,
                 args
             );
         }
@@ -170,23 +177,13 @@ namespace IronRuby.Builtins {
             MetaObjectBuilder/*!*/ metaBuilder,
             Expression/*!*/ procExpression,     // proc object
             Expression/*!*/ selfExpression,     // self passed to the proc
-            Expression callingMethodExpression, // RubyLambdaMethodInfo passed to the proc via BlockParam
             CallArguments/*!*/ args             // user arguments passed to the proc
         ) {
             var bfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
             var resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
 
             metaBuilder.Result = AstFactory.Block(
-                Ast.Assign(bfcVariable,
-                    (callingMethodExpression != null) ?
-                        Methods.CreateBfcForMethodProcCall.OpCall(
-                            AstUtils.Convert(procExpression, typeof(Proc)),
-                            callingMethodExpression
-                        ) :
-                        Methods.CreateBfcForProcCall.OpCall(
-                            AstUtils.Convert(procExpression, typeof(Proc))
-                        )
-                ),
+                Ast.Assign(bfcVariable, Methods.CreateBfcForProcCall.OpCall(AstUtils.Convert(procExpression, typeof(Proc)))),
                 Ast.Assign(resultVariable, AstFactory.YieldExpression(
                     args.RubyContext,
                     args.GetSimpleArgumentExpressions(),

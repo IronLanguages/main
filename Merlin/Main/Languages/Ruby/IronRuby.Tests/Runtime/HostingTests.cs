@@ -249,7 +249,7 @@ bar
 
             // a class from standard library:
             Assert(Context.ObjectClass.TryGetConstant(null, "Fcntl", out value)
-                && ((RubyModule)value).Restrictions == ModuleRestrictions.None);
+                && ((RubyModule)value).Restrictions == (ModuleRestrictions.None | ModuleRestrictions.NoUnderlyingType));
 
             // standard library classes are also published (whether implemented in C# or not):
             var module = Runtime.Globals.GetVariable("Fcntl");
@@ -301,13 +301,13 @@ a = 'ba'.gsub /b/, '1'
             AssertExceptionThrown<SyntaxErrorException>(() => Engine.Execute("}"));
         }
 
-        public void Scenario_RubyInteractive1() {
+        public void Interactive1() {
             ScriptScope scope = Runtime.CreateScope();
             AssertOutput(() => Engine.CreateScriptSourceFromString("", SourceCodeKind.InteractiveCode).Execute(scope), "");
             AssertOutput(() => Engine.CreateScriptSourceFromString("x = 1 + 1", SourceCodeKind.InteractiveCode).Execute(scope), "=> 2");
         }
 
-        public void Scenario_RubyInteractive2() {
+        public void Interactive2() {
             string s;
             Assert((s = Engine.Operations.Format(new RubyArray(new[] { 1,2,3 }))) == "[1, 2, 3]");
             

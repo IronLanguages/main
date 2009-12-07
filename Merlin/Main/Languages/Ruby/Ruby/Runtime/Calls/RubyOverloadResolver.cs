@@ -103,7 +103,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyUtils.IsOperator(method) || CompilerHelpers.IsExtension(method));
+                    Debug.Assert(RubyUtils.IsOperator(method) || RubyUtils.IsExtension(method));
 
                     // receiver maps to the first parameter:
                     mapping.AddParameter(new ParameterWrapper(infos[i], infos[i].ParameterType, null, true, false, false, true));
@@ -161,7 +161,7 @@ namespace IronRuby.Runtime.Calls {
             if (i < infos.Length && infos[i].ParameterType == typeof(BlockParam)) {
                 var info = infos[i];
                 mapping.AddBuilder(new SimpleArgBuilder(info, mapping.ArgIndex));
-                mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, CompilerHelpers.ProhibitsNull(info), false, false, true));
+                mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, info.ProhibitsNull(), false, false, true));
                 special[i++] = true;
             } else if (i >= infos.Length || infos[i].ParameterType != typeof(BlockParam)) {
                 mapping.AddBuilder(new MissingBlockArgBuilder(mapping.ArgIndex));
@@ -175,7 +175,7 @@ namespace IronRuby.Runtime.Calls {
                 var info = infos[i];
 
                 // receiver maps to the first visible parameter:
-                mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, CompilerHelpers.ProhibitsNull(info), false, false, true));
+                mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, info.ProhibitsNull(), false, false, true));
                 mapping.AddBuilder(new SimpleArgBuilder(info, mapping.ArgIndex));
                 special[i++] = true;
             }
@@ -188,7 +188,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyUtils.IsOperator(method) || CompilerHelpers.IsExtension(method));
+                    Debug.Assert(RubyUtils.IsOperator(method) || RubyUtils.IsExtension(method));
                     i++;
                 }
             }
@@ -230,14 +230,14 @@ namespace IronRuby.Runtime.Calls {
             for (int i = GetHiddenParameterCount(method, parameterInfos, callConvention); i < parameterInfos.Length; i++) {
                 var info = parameterInfos[i];
 
-                if (CompilerHelpers.IsParamArray(info)) {
+                if (info.IsParamArray()) {
                     // TODO: indicate splat args separately?
                     optional++;
-                } else if (CompilerHelpers.IsOutParameter(info)) {
+                } else if (info.IsOutParameter()) {
                     // Python allows passing of optional "clr.Reference" to capture out parameters
                     // Ruby should allow similar
                     optional++;
-                } else if (CompilerHelpers.IsMandatoryParameter(info)) {
+                } else if (info.IsMandatory()) {
                     mandatory++;
                 } else {
                     optional++;

@@ -49,9 +49,10 @@ namespace IronRuby.StandardLibrary.Win32API {
     using Ast = Expression;
     using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using System.Globalization;
 
     [RubyClass("Win32API", BuildConfig = "!SILVERLIGHT")]
-    public class Win32API {
+    public class Win32API : RubyObject {
         private enum ArgType : byte {
             // ignored
             None,
@@ -70,7 +71,8 @@ namespace IronRuby.StandardLibrary.Win32API {
         private MethodInfo _calliStub;
         private readonly RubyContext/*!*/ _context;
 
-        public Win32API(RubyClass/*!*/ cls) {
+        public Win32API(RubyClass/*!*/ cls) 
+            : base(cls) {
             // invalid:
             _context = cls.Context;
             _version = 0;
@@ -314,19 +316,25 @@ namespace IronRuby.StandardLibrary.Win32API {
                         return AstUtils.Convert(arg.Expression, typeof(int));
                     }
 
-                    return Ast.Dynamic(ConvertToFixnumAction.Make(_context), typeof(int), arg.Expression);
+                    return Ast.Convert(
+                        Ast.Call(
+                            Ast.Dynamic(ConvertToIntAction.Make(_context), typeof(IntegerValue), arg.Expression), 
+                            Methods.IntegerValue_ToUInt32Unchecked
+                        ), 
+                        typeof(int)
+                    );
             }
             throw Assert.Unreachable;
         }
 
         [Emitted]
         public static Exception/*!*/ UninitializedFunctionError() {
-            return new RuntimeError("uninitialized Win32 function");
+            return RubyExceptions.CreateRuntimeError("uninitialized Win32 function");
         }
 
         [Emitted]
         public static Exception/*!*/ InvalidParameterCountError(int expected, int actual) {
-            return new RuntimeError(String.Format("wrong number of parameters: expected {0}, got {1}", expected, actual));
+            return RubyExceptions.CreateRuntimeError("wrong number of parameters: expected {0}, got {1}", expected, actual);
         }
 
         #endregion

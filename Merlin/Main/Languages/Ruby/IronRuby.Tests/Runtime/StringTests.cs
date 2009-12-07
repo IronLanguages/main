@@ -263,16 +263,28 @@ SUB
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, true, sq).ToString();
             Assert(s == @"'\360\222\215\205'");
 
+            Context.KCode = RubyEncoding.KCodeUTF8;
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.KCodeUTF8), Context, false, sq).ToString();
             Assert(s == "'" + utf16 + "'");
 
+            Context.KCode = RubyEncoding.KCodeUTF8;
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.KCodeSJIS), Context, false, sq).ToString();
+            Assert(s == "'" + utf16 + "'");
+
+            Context.KCode = RubyEncoding.KCodeUTF8;
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.KCodeUTF8), Context, true, sq).ToString();
             Assert(s == @"'\360\222\215\205'");
 
+            Context.KCode = RubyEncoding.KCodeSJIS;
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, RubyEncoding.KCodeSJIS), Context, false, sq).ToString();
             Assert(s == @"'あ'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, RubyEncoding.KCodeSJIS), Context, true, sq).ToString();
+            Context.KCode = RubyEncoding.KCodeSJIS;
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, RubyEncoding.Binary), Context, false, sq).ToString();
+            Assert(s == @"'あ'");
+            
+            Context.KCode = RubyEncoding.KCodeSJIS;
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, RubyEncoding.KCodeUTF8), Context, true, sq).ToString();
             Assert(s == @"'\202\240'");
         }
 

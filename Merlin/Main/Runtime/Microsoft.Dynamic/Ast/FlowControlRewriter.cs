@@ -159,6 +159,13 @@ namespace Microsoft.Scripting.Ast {
                 // We can generate better code by walking all of them now
                 return Visit(ffc.Body);
             }
+
+            // Reduce extensions before we visit them so that we operate on a plain DLR tree,
+            // where we can keep tracke of all gotos and try-finally blocks.
+            if (node.CanReduce) {
+                return Visit(node.Reduce());
+            }
+
             return base.VisitExtension(node);
         }
 

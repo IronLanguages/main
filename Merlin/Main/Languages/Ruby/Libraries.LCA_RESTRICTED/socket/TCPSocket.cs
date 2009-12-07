@@ -25,67 +25,86 @@ using System.Net;
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("TCPSocket", BuildConfig = "!SILVERLIGHT")]
     public class TCPSocket : IPSocket {
+        /// <summary>
+        /// Creates an uninitialized socket.
+        /// </summary>
+        public TCPSocket(RubyContext/*!*/ context)
+            : base(context) {
+        }
+        
         public TCPSocket(RubyContext/*!*/ context, Socket/*!*/ socket)
             : base(context, socket) {
+        }
+
+        [RubyConstructor]
+        public static TCPSocket/*!*/ CreateTCPSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost, object remotePort, [Optional]int localPort) {
+
+            // Not sure what the semantics should be in this case but we make sure not to blow up.
+            // Real-world code (Server.connect_to in memcache.rb in the memcache-client gem) does do "TCPSocket.new(host, port, 0)"
+            if (localPort != 0) {
+                throw new NotImplementedError();
+            }
+
+            return new TCPSocket(self.Context, CreateSocket(remoteHost, ConvertToPortNum(stringCast, fixnumCast, remotePort)));
+        }
+
+        [RubyConstructor]
+        public static TCPSocket/*!*/ CreateTCPSocket(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            RubyClass/*!*/ self, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost, object remotePort,
+            [DefaultProtocol, NotNull]MutableString/*!*/ localHost, object localPort) {
+
+            return BindLocalEndPoint(
+                CreateTCPSocket(stringCast, fixnumCast, self, remoteHost, remotePort, 0),
+                localHost,
+                ConvertToPortNum(stringCast, fixnumCast, localPort)
+            );
+        }
+
+        // Reinitialization. Not called when a factory/non-default ctor is called.
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static TCPServer/*!*/ Reinitialize(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast,
+            TCPServer/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost, object remotePort, [Optional]int localPort) {
+
+            // Not sure what the semantics should be in this case but we make sure not to blow up.
+            // Real-world code (Server.connect_to in memcache.rb in the memcache-client gem) does do "TCPSocket.new(host, port, 0)"
+            if (localPort != 0) {
+                throw new NotImplementedError();
+            }
+
+            self.Socket = CreateSocket(remoteHost, ConvertToPortNum(stringCast, fixnumCast, remotePort));
+            return self;
+        }
+
+        // Reinitialization. Not called when a factory/non-default ctor is called.
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static TCPServer/*!*/ Reinitialize(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast,
+            TCPServer/*!*/ self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost, object remotePort,
+            [DefaultProtocol, NotNull]MutableString/*!*/ localHost, object localPort) {
+
+            self.Socket = CreateSocket(remoteHost, ConvertToPortNum(stringCast, fixnumCast, remotePort));
+            BindLocalEndPoint(self, localHost, ConvertToPortNum(stringCast, fixnumCast, localPort));
+            return self;
+        }
+
+        private static Socket/*!*/ CreateSocket(MutableString/*!*/ remoteHost, int port) {
+            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket.Connect(remoteHost.ConvertToString(), port);
+            return socket;
+        }
+
+        private static TCPSocket/*!*/ BindLocalEndPoint(TCPSocket/*!*/ socket, MutableString/*!*/ localHost, int localPort) {
+            IPAddress localIPAddress = GetHostAddress(localHost.ConvertToString());
+            IPEndPoint localEndPoint = new IPEndPoint(localIPAddress, localPort);
+            socket.Socket.Bind(localEndPoint);
+            return socket;
         }
 
         [RubyMethod("gethostbyname", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetHostByName(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, object hostNameOrAddress) {
             return GetHostByName(ConvertToHostString(stringCast, hostNameOrAddress), false);
-        }
-
-        [RubyConstructor]
-        public static TCPSocket/*!*/ CreateTCPSocket(
-            ConversionStorage<MutableString>/*!*/ stringCast, 
-            ConversionStorage<int>/*!*/ fixnumCast, 
-            RubyClass/*!*/ self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost, 
-            object remotePort) {
-
-            int port = ConvertToPortNum(stringCast, fixnumCast, remotePort);
-
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.Connect(remoteHost.ConvertToString(), port);
-
-            return new TCPSocket(self.Context, socket);
-        }
-
-        [RubyConstructor]
-        public static TCPSocket/*!*/ CreateTCPSocket(
-            ConversionStorage<MutableString>/*!*/ stringCast,
-            ConversionStorage<int>/*!*/ fixnumCast,
-            RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost,
-            object remotePort,
-            int localPort) {
-
-            if (localPort == 0) {
-                // Not sure what the semantics should be in this case but we make sure not to blow up.
-                // Real-world code (Server.connect_to in memcache.rb in the memcache-client gem) does do "TCPSocket.new(host, port, 0)"
-                return CreateTCPSocket(stringCast, fixnumCast, self, remoteHost, remotePort);
-            }
-
-            throw new NotImplementedError();
-        }
-
-        [RubyConstructor]
-        public static TCPSocket/*!*/ CreateTCPSocket(
-            ConversionStorage<MutableString>/*!*/ stringCast,
-            ConversionStorage<int>/*!*/ fixnumCast,
-            RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ remoteHost,
-            object remotePort,
-            [DefaultProtocol, NotNull]MutableString/*!*/ localHost,
-            [DefaultProtocol, NotNull]MutableString/*!*/ localPort) {
-
-            TCPSocket/*!*/ socket = CreateTCPSocket(stringCast, fixnumCast, self, remoteHost, remotePort);
-
-            IPAddress localIPAddress = GetHostAddress(localHost.ConvertToString());
-            int localPortNum = ConvertToPortNum(stringCast, fixnumCast, localPort);
-            IPEndPoint localEndPoint = new IPEndPoint(localIPAddress, localPortNum);
-            socket.Socket.Bind(localEndPoint);
-
-            return socket;
         }
     }
 }

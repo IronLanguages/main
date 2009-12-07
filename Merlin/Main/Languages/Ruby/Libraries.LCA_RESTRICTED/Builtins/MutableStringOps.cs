@@ -15,23 +15,22 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using IronRuby.Runtime.Calls;
-using Microsoft.Scripting.Generation;
-using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
+    using BinaryOpStorageWithScope = CallSiteStorage<Func<CallSite, RubyScope, object, object, object>>;
 
     [RubyClass("String", Extends = typeof(MutableString), Inherits = typeof(Object))]
     [Includes(typeof(Enumerable), typeof(Comparable))]
@@ -101,7 +100,7 @@ namespace IronRuby.Builtins {
         internal static int NormalizeInsertIndex(int index, int length) {
             int result = index < 0 ? index + length + 1 : index;
             if (result > length || result < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of string", index));
+                throw RubyExceptions.CreateIndexError("index {0} out of string", index);
             }
             return result;
         }
@@ -439,8 +438,8 @@ namespace IronRuby.Builtins {
                 var site = comparisonStorage.GetCallSite("<=>");
                 object result = Integer.TryUnaryMinus(site.Target(site, other, self));
                 if (result == null) {
-                    throw RubyExceptions.CreateTypeError(String.Format("{0} can't be coerced into Fixnum",
-                        comparisonStorage.Context.GetClassDisplayName(result)));
+                    throw RubyExceptions.CreateTypeError("{0} can't be coerced into Fixnum",
+                        comparisonStorage.Context.GetClassDisplayName(result));
                 }
 
                 return result;
@@ -656,7 +655,7 @@ namespace IronRuby.Builtins {
 
             index = index < 0 ? index + self.Length : index;
             if (index < 0 || index >= self.Length) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of string", index));
+                throw RubyExceptions.CreateIndexError("index {0} out of string", index);
             }
 
             if (value.IsEmpty) {
@@ -674,7 +673,7 @@ namespace IronRuby.Builtins {
 
             index = index < 0 ? index + self.Length : index;
             if (index < 0 || index >= self.Length) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of string", index));
+                throw RubyExceptions.CreateIndexError("index {0} out of string", index);
             }
 
             self.SetByte(index, unchecked((byte)value));
@@ -686,11 +685,11 @@ namespace IronRuby.Builtins {
             [DefaultProtocol]int start, [DefaultProtocol]int charsToOverwrite, [DefaultProtocol, NotNull]MutableString/*!*/ value) {
             
             if (charsToOverwrite < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("negative length {0}", charsToOverwrite));
+                throw RubyExceptions.CreateIndexError("negative length {0}", charsToOverwrite);
             }
 
             if (System.Math.Abs(start) > self.Length) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of string", start));
+                throw RubyExceptions.CreateIndexError("index {0} out of string", start);
             }
 
             start = start < 0 ? start + self.Length : start;
@@ -728,7 +727,7 @@ namespace IronRuby.Builtins {
             begin = begin < 0 ? begin + self.Length : begin;
 
             if (begin < 0 || begin > self.Length) {
-                throw RubyExceptions.CreateRangeError(String.Format("{0}..{1} out of range", begin, end));
+                throw RubyExceptions.CreateRangeError("{0}..{1} out of range", begin, end);
             }
 
             end = end < 0 ? end + self.Length : end;
@@ -768,7 +767,7 @@ namespace IronRuby.Builtins {
         public static bool UpCaseChar(MutableString/*!*/ self, int index) {
             char current = self.GetChar(index);
             if (current >= 'a' && current <= 'z') {
-                self.SetChar(index, Char.ToUpper(current));
+                self.SetChar(index, current.ToUpperInvariant());
                 return true;
             }
             return false;
@@ -777,7 +776,7 @@ namespace IronRuby.Builtins {
         public static bool DownCaseChar(MutableString/*!*/ self, int index) {
             char current = self.GetChar(index);
             if (current >= 'A' && current <= 'Z') {
-                self.SetChar(index, Char.ToLower(current));
+                self.SetChar(index, current.ToLowerInvariant());
                 return true;
             }
             return false;
@@ -786,10 +785,10 @@ namespace IronRuby.Builtins {
         public static bool SwapCaseChar(MutableString/*!*/ self, int index) {
             char current = self.GetChar(index);
             if (current >= 'A' && current <= 'Z') {
-                self.SetChar(index, Char.ToLower(current));
+                self.SetChar(index, current.ToLowerInvariant());
                 return true;
             } else if (current >= 'a' && current <= 'z') {
-                self.SetChar(index, Char.ToUpper(current));
+                self.SetChar(index, current.ToUpperInvariant());
                 return true;
             }
             return false;
@@ -1071,11 +1070,14 @@ namespace IronRuby.Builtins {
 
         #region dump, inspect
 
-        public static string/*!*/ GetQuotedStringRepresentation(MutableString/*!*/ self, RubyContext/*!*/ context, bool forceEscapes, char quote) {
+        public static string/*!*/ GetQuotedStringRepresentation(MutableString/*!*/ self, RubyContext/*!*/ context, bool isDump, char quote) {
+            bool is18 = context.RubyOptions.Compatibility == RubyCompatibility.Ruby18;
+            
             return self.AppendRepresentation(
-                new StringBuilder().Append(quote), 
-                context.RubyOptions.Compatibility == RubyCompatibility.Ruby18, 
-                forceEscapes,
+                new StringBuilder().Append(quote),
+                (isDump || !is18) ? null : context.KCode ?? RubyEncoding.Binary,
+                is18, 
+                isDump,
                 quote
             ).Append(quote).ToString();
         }
@@ -1088,12 +1090,12 @@ namespace IronRuby.Builtins {
             return self.CreateInstance().Append(GetQuotedStringRepresentation(self, context, true, '"')).TaintBy(self);
         }
 
-        // encoding aware
+        // encoding aware, uses the current KCODE
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, MutableString/*!*/ self) {
             // Note that "self" could be a subclass of MutableString, but the return value should 
             // always be just a MutableString
-            return MutableString.Create(GetQuotedStringRepresentation(self, context, false, '"'), self.Encoding).TaintBy(self);
+            return MutableString.Create(GetQuotedStringRepresentation(self, context, false, '"'), context.KCode ?? self.Encoding).TaintBy(self);
         }
 
         #endregion
@@ -1527,7 +1529,7 @@ namespace IronRuby.Builtins {
             RequireNoVersionChange(self);
 
             if (self.IsFrozen) {
-                throw new RuntimeError("string frozen");
+                throw RubyExceptions.CreateRuntimeError("string frozen");
             }
 
             // replace content of self with content of the builder:
@@ -1822,22 +1824,19 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("=~")]
-        public static object Match(CallSiteStorage<Func<CallSite, RubyScope, object, MutableString, object>>/*!*/ storage,
-            RubyScope/*!*/ scope, MutableString/*!*/ self, object obj) {
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, MutableString/*!*/ self, object obj) {
             var site = storage.GetCallSite("=~", new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf));
             return site.Target(site, scope, obj, self);
         }
 
         [RubyMethod("match")]
-        public static object MatchRegexp(CallSiteStorage<Func<CallSite, RubyScope, RubyRegex, MutableString, object>>/*!*/ storage, 
-            RubyScope/*!*/ scope, MutableString/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, MutableString/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
             var site = storage.GetCallSite("match", new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope));
             return site.Target(site, scope, regex, self);
         }
 
         [RubyMethod("match")]
-        public static object MatchObject(CallSiteStorage<Func<CallSite, RubyScope, RubyRegex, MutableString, object>>/*!*/ storage, 
-            RubyScope/*!*/ scope, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
             var site = storage.GetCallSite("match", new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope));
             return site.Target(site, scope, new RubyRegex(pattern, RubyRegexOptions.NONE), self);
         }
@@ -1924,22 +1923,25 @@ namespace IronRuby.Builtins {
                 int nextIndex = GetIndexOfRightmostAlphaNumericCharacter(str, index - 1);
                 if (c == 'z') {
                     str.SetChar(index, 'a');
-                    if (nextIndex == -1)
-                        str.Insert(index, "a");
-                    else
+                    if (nextIndex == -1) {
+                        str.Insert(index, 'a');
+                    } else {
                         IncrementAlphaNumericChar(str, nextIndex);
+                    }
                 } else if (c == 'Z') {
                     str.SetChar(index, 'A');
-                    if (nextIndex == -1)
-                        str.Insert(index, "A");
-                    else
+                    if (nextIndex == -1) {
+                        str.Insert(index, 'A');
+                    } else {
                         IncrementAlphaNumericChar(str, nextIndex);
+                    }
                 } else {
                     str.SetChar(index, '0');
-                    if (nextIndex == -1)
-                        str.Insert(index, "1");
-                    else
+                    if (nextIndex == -1) {
+                        str.Insert(index, '1');
+                    } else {
                         IncrementAlphaNumericChar(str, nextIndex);
+                    }
                 }
             } else {
                 IncrementChar(str, index);
@@ -2625,7 +2627,7 @@ namespace IronRuby.Builtins {
 
         private static void RequireNoVersionChange(MutableString/*!*/ self) {
             if (self.HasChanged) {
-                throw new RuntimeError("string modified");
+                throw RubyExceptions.CreateRuntimeError("string modified");
             }
         }
     }

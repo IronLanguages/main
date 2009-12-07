@@ -35,12 +35,25 @@ namespace Microsoft.Scripting.Actions {
     using Ast = Expression;
 
     public partial class DefaultBinder : ActionBinder {
-        public DynamicMetaObject DoOperation(string operation, params DynamicMetaObject[] args) {
+        [Obsolete("You should use the overload which takes ExpressionType instead")]
+        public DynamicMetaObject DoOperation(string operation, params DynamicMetaObject[] args) {            
             return DoOperation(operation, new DefaultOverloadResolverFactory(this), args);
         }
 
+        [Obsolete("You should use the overload which takes ExpressionType instead")]
         public DynamicMetaObject DoOperation(string operation, OverloadResolverFactory resolverFactory, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(operation, "operation");
+            ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
+            ContractUtils.RequiresNotNullItems(args, "args");
+
+            return MakeGeneralOperatorRule(operation, resolverFactory, args);   // Then try comparison / other ExpressionType
+        }
+
+        public DynamicMetaObject DoOperation(ExpressionType operation, params DynamicMetaObject[] args) {
+            return DoOperation(operation, new DefaultOverloadResolverFactory(this), args);
+        }
+
+        public DynamicMetaObject DoOperation(ExpressionType operation, OverloadResolverFactory resolverFactory, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
             ContractUtils.RequiresNotNullItems(args, "args");
 
@@ -149,6 +162,20 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         private DynamicMetaObject MakeGeneralOperatorRule(string operation, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             OperatorInfo info = OperatorInfo.GetOperatorInfo(operation);
+            return MakeGeneratorOperatorRule(resolverFactory, args, info);
+        }
+
+        /// <summary>
+        /// Creates the meta object for the rest of the operations: comparisons and all other
+        /// ExpressionType.  If the operation cannot be completed a MetaObject which indicates an
+        /// error will be returned.
+        /// </summary>
+        private DynamicMetaObject MakeGeneralOperatorRule(ExpressionType operation, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
+            OperatorInfo info = OperatorInfo.GetOperatorInfo(operation);
+            return MakeGeneratorOperatorRule(resolverFactory, args, info);
+        }
+
+        private DynamicMetaObject MakeGeneratorOperatorRule(OverloadResolverFactory resolverFactory, DynamicMetaObject[] args, OperatorInfo info) {
             DynamicMetaObject res;
 
             if (CompilerHelpers.IsComparisonOperator(info.Operator)) {

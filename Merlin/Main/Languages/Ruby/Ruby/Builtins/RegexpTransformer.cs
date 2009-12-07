@@ -115,7 +115,7 @@ namespace IronRuby.Builtins {
         private bool CheckReplacePredefinedCharacterClass() {
             string remainingString = _rubyPattern.Substring(_index);
             foreach (string[] predefinedCharacterClass in _PredefinedCharacterClasses) {
-                if (remainingString.StartsWith(predefinedCharacterClass[0])) {
+                if (remainingString.StartsWith(predefinedCharacterClass[0], StringComparison.Ordinal)) {
                     _sb.Append(predefinedCharacterClass[1]);
                     _index += predefinedCharacterClass[0].Length - 1;
                     return true;

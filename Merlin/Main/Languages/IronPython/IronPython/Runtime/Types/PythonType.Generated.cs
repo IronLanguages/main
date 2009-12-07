@@ -46,6 +46,23 @@ namespace IronPython.Runtime.Types {
         /// of the same types and improved startup time due to reduced code generation.
         /// </summary>
         FastBindResult<T> IFastInvokable.MakeInvokeBinding<T>(CallSite<T> site, PythonInvokeBinder binder, CodeContext context, object[] args) {
+            ParameterInfo[] paramTypes = typeof(T).GetMethod("Invoke").GetParameters();
+            if (paramTypes[2].ParameterType != typeof(object)) {
+                // strongly typed to PythonType, we don't optimize these sites yet.
+                return new FastBindResult<T>();
+            }
+
+            // common fast paths
+            if (binder.Signature.IsSimple) {
+                if (this == TypeCache.PythonType && args.Length == 1 && paramTypes[3].ParameterType == typeof(object)) {
+                    return new FastBindResult<T>((T)(object)new Func<CallSite, CodeContext, object, object, object>(GetPythonType), true);
+                } else if (this == TypeCache.Set && args.Length == 0) {
+                    return new FastBindResult<T>((T)(object)new Func<CallSite, CodeContext, object, object>(EmptySet), true);
+                } else if (this == TypeCache.Object && args.Length == 0) {
+                    return new FastBindResult<T>((T)(object)new Func<CallSite, CodeContext, object, object>(NewObject), true);
+                }
+            }
+
             if (IsSystemType ||                                         // limited numbers of these, just generate optimal code
                 IsMixedNewStyleOldStyle() ||                            // old-style classes shouldn't be commonly used
                 args.Length > 5 ||                                      // and we only generate optimal code for a small number of calls.
@@ -54,12 +71,8 @@ namespace IronPython.Runtime.Types {
                 return new FastBindResult<T>();
             }
 
-            ParameterInfo[] paramTypes = typeof(T).GetMethod("Invoke").GetParameters();
-            if (paramTypes[2].ParameterType != typeof(object)) {
-                // strongly typed to PythonType, we don't optimize these sites yet.
-                return new FastBindResult<T>();
-            }
 
+            
             Type[] genTypeArgs = new Type[paramTypes.Length - 3]; // minus CallSite, CodeContext, type
             for (int i = 0; i < paramTypes.Length - 3; i++) {
                 genTypeArgs[i] = paramTypes[i + 3].ParameterType;
@@ -93,6 +106,30 @@ namespace IronPython.Runtime.Types {
             }
 
             return new FastBindResult<T>((T)(object)fastBindBuilder.MakeBindingResult(), true);
+        }
+
+        private object GetPythonType(CallSite site, CodeContext context, object type, object instance) {
+            if (type == TypeCache.PythonType) {
+                return DynamicHelpers.GetPythonType(instance);
+            }
+
+            return ((CallSite<Func<CallSite, CodeContext, object, object, object>>)site).Update(site, context, type, instance);
+        }
+
+        private object EmptySet(CallSite site, CodeContext context, object type) {
+            if (type == TypeCache.Set) {
+                return new SetCollection();
+            }
+
+            return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, type);
+        }
+
+        private object NewObject(CallSite site, CodeContext context, object type) {
+            if (type == TypeCache.Object) {
+                return new object();
+            }
+
+            return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, type);
         }
 
         /// <summary>

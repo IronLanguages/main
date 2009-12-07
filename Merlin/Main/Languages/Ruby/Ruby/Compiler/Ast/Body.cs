@@ -103,12 +103,11 @@ namespace IronRuby.Compiler.Ast {
             Assert.NotNull(gen);
 
             MSA.Expression exceptionThrownVariable = gen.CurrentScope.DefineHiddenVariable("#exception-thrown", typeof(bool));
-            MSA.ParameterExpression exceptionVariable = gen.CurrentScope.DefineHiddenVariable("#exception", typeof(Exception));
             MSA.Expression exceptionRethrowVariable = gen.CurrentScope.DefineHiddenVariable("#exception-rethrow", typeof(bool));
             MSA.Expression retryingVariable = gen.CurrentScope.DefineHiddenVariable("#retrying", typeof(bool));
-            MSA.ParameterExpression evalUnwinder = gen.CurrentScope.DefineHiddenVariable("#unwinder", typeof(EvalUnwinder));
             MSA.Expression oldExceptionVariable = gen.CurrentScope.DefineHiddenVariable("#old-exception", typeof(Exception));
 
+            MSA.ParameterExpression unwinder, exceptionVariable;
             MSA.Expression transformedBody;
             MSA.Expression transformedEnsure;
             MSA.Expression transformedElse;
@@ -177,7 +176,9 @@ namespace IronRuby.Compiler.Ast {
                     AstUtils.Try(
                         enterRescue,
                         AstUtils.If(handlers, Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)))
-                    ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), AstUtils.Constant(BlockReturnReason.Retry)),
+                    ).Filter(unwinder = Ast.Parameter(typeof(EvalUnwinder), "#u"),
+                        Ast.Equal(Ast.Field(unwinder, EvalUnwinder.ReasonField), AstUtils.Constant(BlockReturnReason.Retry)),
+
                         Ast.Block(
                             Ast.Assign(retryingVariable, AstUtils.Constant(true)),
                             Ast.Continue(retryLabel),
@@ -209,7 +210,9 @@ namespace IronRuby.Compiler.Ast {
 
                     AstUtils.Try(
                         Ast.Block(transformedBody, AstUtils.Empty())
-                    ).Filter(exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentScopeVariable, exceptionVariable),
+                    ).Filter(exceptionVariable = Ast.Parameter(typeof(Exception), "#e"), 
+                        Methods.CanRescue.OpCall(gen.CurrentScopeVariable, exceptionVariable),
+
                         Ast.Assign(exceptionThrownVariable, AstUtils.Constant(true)),
                         transformedRescue,
                         AstUtils.Empty()
@@ -225,7 +228,9 @@ namespace IronRuby.Compiler.Ast {
                     transformedElse,
                     AstUtils.Empty()
                 ).FilterIf((_rescueClauses != null || _elseStatements != null),
-                    exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentScopeVariable, exceptionVariable),
+                    exceptionVariable = Ast.Parameter(typeof(Exception), "#e"), 
+                    Methods.CanRescue.OpCall(gen.CurrentScopeVariable, exceptionVariable),
+
                     Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)),
                     AstUtils.Empty()
                 ).FinallyWithJumps(

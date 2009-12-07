@@ -40,7 +40,7 @@ namespace IronRuby.Compiler.Generation {
                 foreach (Type t in interfaceTypes) {
                     AddInterface(types, t);
                 }
-                types.Sort(delegate(Type a, Type b) { return a.FullName.CompareTo(b.FullName); });
+                types.Sort((a, b) => String.CompareOrdinal(a.FullName, b.FullName));
                 _interfaces = types.ToArray();
 
                 _hash = typeof(TypeFeature).GetHashCode();

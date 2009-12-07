@@ -161,6 +161,18 @@ namespace IronRuby.Builtins {
     }
 
     [Serializable]
+    public class RuntimeError : SystemException {
+        public RuntimeError() : this(null, null) { }
+        public RuntimeError(string message) : this(message, null) { }
+        public RuntimeError(string message, Exception inner) : base(message, inner) { }
+
+#if !SILVERLIGHT
+        protected RuntimeError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
     public class SyntaxError : ScriptError {
         private readonly string _file;
         private readonly string _lineSourceCode;
