@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using SM = System.Math;
 

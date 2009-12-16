@@ -79,6 +79,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private CallSite<Func<CallSite, object, object, bool>> _eqSite;
         private CallSite<Func<CallSite, object, object, int>> _compareSite;
         private Dictionary<CallSignature, LateBoundInitBinder> _lateBoundInitBinders;
+        private string[] _optimizedInstanceNames;           // optimized names stored in a custom dictionary
+        private int _optimizedInstanceVersion;
 
         private PythonSiteCache _siteCache = new PythonSiteCache();
 
@@ -110,8 +112,17 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// objects), and a dictionary of members is provided.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
-        public PythonType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict) {
-            InitializeUserType(context, name, bases, dict);
+        public PythonType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
+            : this(context, name, bases, dict, String.Empty) {
+        }
+
+        /// <summary>
+        /// Creates a new type for a user defined type.  The name, base classes (a tuple of type
+        /// objects), and a dictionary of members is provided.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        internal PythonType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict, string selfNames) {
+            InitializeUserType(context, name, bases, dict, selfNames);
         }
 
         internal PythonType() {
@@ -196,8 +207,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         #region Public API
-        
+
         public static object __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict) {
+            return __new__(context, cls, name, bases, dict, String.Empty);
+        }
+
+        internal static object __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict, string selfNames) {
             if (name == null) {
                 throw PythonOps.TypeError("type() argument 1 must be string, not None");
             }
@@ -224,7 +239,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             // no custom user type for __new__
-            return new PythonType(context, name, bases, dict);
+            return new PythonType(context, name, bases, dict, selfNames);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
@@ -1542,7 +1557,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (sdo != null) {
                 PythonDictionary iac = sdo.Dict;
                 if (iac == null && sdo.PythonType.HasDictionary) {
-                    iac = PythonDictionary.MakeSymbolDictionary();
+                    iac = MakeDictionary();
 
                     if ((iac = sdo.SetDict(iac)) == null) {
                         return false;
@@ -1583,7 +1598,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (sdo != null) {
                 PythonDictionary dict = sdo.Dict;
                 if (dict == null && sdo.PythonType.HasDictionary) {
-                    dict = PythonDictionary.MakeSymbolDictionary();
+                    dict = MakeDictionary();
 
                     if ((dict = sdo.SetDict(dict)) == null) {
                         return false;
@@ -1737,7 +1752,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         #region User type initialization
 
-        private void InitializeUserType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary vars) {
+        private void InitializeUserType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary vars, string selfNames) {
             // we don't support overriding __mro__
             if (vars.ContainsKey("__mro__"))
                 throw new NotImplementedException("Overriding __mro__ of built-in types is not implemented");
@@ -1775,11 +1790,31 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 pt.AddSubType(this);
             }
 
+            HashSet<string> optimizedInstanceNames = null;
             foreach (PythonType pt in _resolutionOrder) {
                 // we need to calculate the number of slots from resolution
                 // order to deal with multiple bases having __slots__ that
                 // directly inherit from each other.
                 _originalSlotCount += pt.GetUsedSlotCount();
+                if (pt._optimizedInstanceNames != null) {
+                    if (optimizedInstanceNames == null) {
+                        optimizedInstanceNames = new HashSet<string>();
+                    }
+
+                    optimizedInstanceNames.UnionWith(pt._optimizedInstanceNames);
+                }
+            }
+            if (!String.IsNullOrEmpty(selfNames)) {
+                if (optimizedInstanceNames == null) {
+                    optimizedInstanceNames = new HashSet<string>();
+                }
+
+                optimizedInstanceNames.UnionWith(selfNames.Split(','));
+            }
+
+            if (optimizedInstanceNames != null) {
+                _optimizedInstanceVersion = CustomInstanceDictionaryStorage.AllocateVersion();
+                _optimizedInstanceNames = new List<string>(optimizedInstanceNames).ToArray();
             }
 
 
@@ -1830,6 +1865,22 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             UpdateObjectNewAndInit(context);
+        }
+
+        internal PythonDictionary MakeDictionary() {
+            if (_optimizedInstanceNames != null) {
+                return new PythonDictionary(new CustomInstanceDictionaryStorage(_optimizedInstanceNames, _optimizedInstanceVersion));
+            }
+
+            return PythonDictionary.MakeSymbolDictionary();
+        }
+
+        internal IList<string> GetOptimizedInstanceNames() {
+            return _optimizedInstanceNames;
+        }
+
+        internal int GetOptimizedInstanceVersion() {
+            return _optimizedInstanceVersion;
         }
 
         internal IList<string> GetTypeSlots() {
@@ -2598,8 +2649,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private readonly PythonTypeSlot _slot, _getattrSlot;
         private readonly SlotGetValue _slotFunc;
         private readonly Func<CallSite, object, CodeContext, object> _fallback;
+        private readonly int _dictVersion, _dictIndex;
 
-        public GetMemberDelegates(OptimizedGetKind getKind, PythonGetMemberBinder binder, string name, int version, PythonTypeSlot slot, PythonTypeSlot getattrSlot, SlotGetValue slotFunc, Func<CallSite, object, CodeContext, object> fallback)
+        public GetMemberDelegates(OptimizedGetKind getKind, PythonType type, PythonGetMemberBinder binder, string name, int version, PythonTypeSlot slot, PythonTypeSlot getattrSlot, SlotGetValue slotFunc, Func<CallSite, object, CodeContext, object> fallback)
             : base(binder, version) {
             _slot = slot;
             _name = name;
@@ -2607,12 +2659,36 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             _slotFunc = slotFunc;
             _fallback = fallback;
             _isNoThrow = binder.IsNoThrow;
+            var optNames = type.GetOptimizedInstanceNames(); 
+            
             switch (getKind) {
-                case OptimizedGetKind.SlotDict: _func = SlotDict; break;
+                case OptimizedGetKind.SlotDict:
+                    if (optNames != null) {
+                        _dictIndex = optNames.IndexOf(name);
+                    }
+
+                    if (optNames != null && _dictIndex != -1) {
+                        _func = SlotDictOptimized;
+                        _dictVersion = type.GetOptimizedInstanceVersion();                        
+                    } else {
+                        _func = SlotDict;
+                    }
+                    break;
                 case OptimizedGetKind.SlotOnly: _func = SlotOnly; break;
                 case OptimizedGetKind.PropertySlot: _func = UserSlot; break;
                 case OptimizedGetKind.UserSlotDict:
-                    if (_getattrSlot != null) {
+                    if (optNames != null) {
+                        _dictIndex = optNames.IndexOf(name);
+                    }
+
+                    if (optNames != null && _dictIndex != -1) {
+                        _dictVersion = type.GetOptimizedInstanceVersion();
+                        if (_getattrSlot != null) {
+                            _func = UserSlotDictGetAttrOptimized;
+                        } else {
+                            _func = UserSlotDictOptimized;
+                        }
+                    } else if (_getattrSlot != null) {
                         _func = UserSlotDictGetAttr;
                     } else {
                         _func = UserSlotDict;
@@ -2653,6 +2729,33 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return Update(site, self, context);
         }
 
+        public object SlotDictOptimized(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+                _hitCount++;
+
+                object res;
+                PythonDictionary dict = ipo.Dict;
+
+                if (UserTypeOps.TryGetDictionaryValue(dict, _name, _dictVersion, _dictIndex, out res)) {
+                    return res;
+                }
+
+                if (_slot != null && _slot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return res;
+                }
+
+                if (_getattrSlot != null && _getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return GetAttr(context, res);
+                }
+
+                return TypeError(site, ipo, context);
+            }
+
+            return Update(site, self, context);
+        }
+
+
         public object SlotOnly(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
             if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
@@ -2687,6 +2790,22 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return Update(site, self, context);
         }
 
+        public object UserSlotDictOptimized(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version) {
+                object res;
+                PythonDictionary dict = ipo.Dict;
+
+                if (UserTypeOps.TryGetDictionaryValue(dict, _name, _dictVersion, _dictIndex, out res)) {
+                    return res;
+                }
+
+                return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
+            }
+
+            return Update(site, self, context);
+        }
+
         public object UserSlotOnly(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
             if (ipo != null && ipo.PythonType.Version == _version) {
@@ -2701,6 +2820,31 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (ipo != null && ipo.PythonType.Version == _version) {
                 object res;
                 if (ipo.Dict != null && ipo.Dict.TryGetValue(_name, out res)) {
+                    return res;
+                }
+
+                try {
+                    return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
+                } catch (MissingMemberException) {
+                }
+
+                if (_getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return GetAttr(context, res);
+                }
+
+                return TypeError(site, ipo, context);
+            }
+
+            return Update(site, self, context);
+        }
+
+        public object UserSlotDictGetAttrOptimized(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version) {
+                object res;
+                PythonDictionary dict = ipo.Dict;
+
+                if (UserTypeOps.TryGetDictionaryValue(dict, _name, _dictVersion, _dictIndex, out res)) {
                     return res;
                 }
 
@@ -2786,8 +2930,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private readonly PythonTypeSlot _slot;
         private readonly SlotSetValue _slotFunc;
         private readonly CodeContext _context;
+        private readonly int _index, _keysVersion;
 
-        public SetMemberDelegates(CodeContext context, OptimizedSetKind kind, string name, int version, PythonTypeSlot slot, SlotSetValue slotFunc) 
+        public SetMemberDelegates(CodeContext context, PythonType type, OptimizedSetKind kind, string name, int version, PythonTypeSlot slot, SlotSetValue slotFunc) 
             : base(version) {
             _slot = slot;
             _name = name;
@@ -2796,7 +2941,17 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             switch (kind) {
                 case OptimizedSetKind.SetAttr: _func = new Func<CallSite, object, TValue, object>(SetAttr); break;
                 case OptimizedSetKind.UserSlot: _func = new Func<CallSite, object, TValue, object>(UserSlot); break;
-                case OptimizedSetKind.SetDict: _func = new Func<CallSite, object, TValue, object>(SetDict); break;
+                case OptimizedSetKind.SetDict:
+                    var optNames = type.GetOptimizedInstanceNames();
+                    int index;
+                    if (optNames != null && (index = optNames.IndexOf(name)) != -1) {
+                        _index = index;
+                        _keysVersion = type.GetOptimizedInstanceVersion();
+                        _func = new Func<CallSite, object, TValue, object>(SetDictOptimized);
+                    } else {
+                        _func = new Func<CallSite, object, TValue, object>(SetDict);
+                    }
+                    break;
                 case OptimizedSetKind.Error: _func = new Func<CallSite, object, TValue, object>(Error); break;
             }
         }
@@ -2817,6 +2972,18 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return Update(site, self, value);
         }
 
+        public object SetDictOptimized(CallSite site, object self, TValue value) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+                _hitCount++;
+
+                return UserTypeOps.SetDictionaryValueOptimized(ipo, _name, value, _keysVersion, _index);
+            }
+
+            return Update(site, self, value);
+        }
+
+        
         public object SetDict(CallSite site, object self, TValue value) {
             IPythonObject ipo = self as IPythonObject;
             if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {

@@ -1294,7 +1294,7 @@ namespace IronPython.Runtime.Operations {
             if (metaclass == TypeCache.OldInstance) {
                 return new OldClass(name, tupleBases, vars, selfNames);
             } else if (metaclass == TypeCache.PythonType) {
-                return PythonType.__new__(context, TypeCache.PythonType, name, tupleBases, vars);
+                return PythonType.__new__(context, TypeCache.PythonType, name, tupleBases, vars, selfNames);
             }
 
             // eg:
@@ -3203,7 +3203,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object OldInstanceGetOptimizedDictionary(OldInstance instance, int keyVersion) {
-            CustomOldClassDictionaryStorage storage = instance.Dictionary._storage as CustomOldClassDictionaryStorage;
+            CustomInstanceDictionaryStorage storage = instance.Dictionary._storage as CustomInstanceDictionaryStorage;
             if (storage == null || instance._class.HasSetAttr || storage.KeyVersion != keyVersion) {
                 return null;
             }
@@ -3212,11 +3212,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object OldInstanceDictionaryGetValueHelper(object dict, int index, object oldInstance) {
-            return ((CustomOldClassDictionaryStorage)dict).GetValueHelper(index, oldInstance);
+            return ((CustomInstanceDictionaryStorage)dict).GetValueHelper(index, oldInstance);
         }
 
         public static bool TryOldInstanceDictionaryGetValueHelper(object dict, int index, object oldInstance, out object res) {
-            return ((CustomOldClassDictionaryStorage)dict).TryGetValueHelper(index, oldInstance, out res);
+            return ((CustomInstanceDictionaryStorage)dict).TryGetValueHelper(index, oldInstance, out res);
         }
 
         public static object OldInstanceGetBoundMember(CodeContext context, OldInstance instance, string name) {
@@ -3224,7 +3224,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object OldInstanceDictionarySetExtraValue(object dict, int index, object value) {
-            ((CustomOldClassDictionaryStorage)dict).SetExtraValue(index, value);
+            ((CustomInstanceDictionaryStorage)dict).SetExtraValue(index, value);
             return value;
         }
 

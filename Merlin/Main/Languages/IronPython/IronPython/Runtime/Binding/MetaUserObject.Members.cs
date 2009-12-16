@@ -465,21 +465,38 @@ namespace IronPython.Runtime.Binding {
                     );
                 }
 
-                _bindingInfo.Body.AddCondition(
-                    Ast.AndAlso(
-                        Ast.NotEqual(
-                            dict,
-                            Ast.Constant(null)
-                        ),
+                var instanceNames = Value.PythonType.GetOptimizedInstanceNames();
+                int instanceIndex;
+                if (instanceNames != null && (instanceIndex = instanceNames.IndexOf(GetGetMemberName(_bindingInfo.Action))) != -1) {
+                    // optimized instance value access
+                    _bindingInfo.Body.AddCondition(
                         Ast.Call(
+                            typeof(UserTypeOps).GetMethod("TryGetDictionaryValue"),
                             dict,
-                            TypeInfo._PythonDictionary.TryGetvalue,
                             AstUtils.Constant(GetGetMemberName(_bindingInfo.Action)),
+                            Ast.Constant(Value.PythonType.GetOptimizedInstanceVersion()),
+                            Ast.Constant(instanceIndex),
                             _bindingInfo.Result
-                        )
-                    ),
-                    Invoke(new DynamicMetaObject(_bindingInfo.Result, BindingRestrictions.Empty)).Expression
-                );
+                        ),
+                        Invoke(new DynamicMetaObject(_bindingInfo.Result, BindingRestrictions.Empty)).Expression
+                    );
+                } else {
+                    _bindingInfo.Body.AddCondition(
+                        Ast.AndAlso(
+                            Ast.NotEqual(
+                                dict,
+                                Ast.Constant(null)
+                            ),
+                            Ast.Call(
+                                dict,
+                                TypeInfo._PythonDictionary.TryGetvalue,
+                                AstUtils.Constant(GetGetMemberName(_bindingInfo.Action)),
+                                _bindingInfo.Result
+                            )
+                        ),
+                        Invoke(new DynamicMetaObject(_bindingInfo.Result, BindingRestrictions.Empty)).Expression
+                    );
+                }
             }
 
             /// <summary>
@@ -602,18 +619,18 @@ namespace IronPython.Runtime.Binding {
                 ReflectedSlotProperty rsp = _slot as ReflectedSlotProperty;
                 if (rsp != null) {
                     Debug.Assert(!_dictAccess); // properties for __slots__ are get/set descriptors so we should never access the dictionary.
-                    func = new GetMemberDelegates(OptimizedGetKind.PropertySlot, _binder, _binder.Name, _version, _slot, _getattrSlot, rsp.Getter, FallbackError());
+                    func = new GetMemberDelegates(OptimizedGetKind.PropertySlot, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, rsp.Getter, FallbackError());
                 } else if (_dictAccess) {
                     if (_slot is PythonTypeUserDescriptorSlot) {
-                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotDict, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotDict, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
                     } else {
-                        func = new GetMemberDelegates(OptimizedGetKind.SlotDict, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotDict, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
                     }
                 } else {
                     if (_slot is PythonTypeUserDescriptorSlot) {
-                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotOnly, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotOnly, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
                     } else {
-                        func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
                     }
                 }
                 return func;
@@ -862,15 +879,15 @@ namespace IronPython.Runtime.Binding {
 
             protected override SetMemberDelegates<TValue> Finish() {
                 if (_unsupported) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.None, _binder.Name, _version, _setattrSlot, null);
+                    return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.None, _binder.Name, _version, _setattrSlot, null);
                 } else if (_setattrSlot != null) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetAttr, _binder.Name, _version, _setattrSlot, null);
+                    return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.SetAttr, _binder.Name, _version, _setattrSlot, null);
                 } else if (_slotProp != null) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.UserSlot, _binder.Name, _version, null, _slotProp.Setter);
+                    return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.UserSlot, _binder.Name, _version, null, _slotProp.Setter);
                 } else if(_dictSet) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetDict, _binder.Name, _version, null, null);
+                    return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.SetDict, _binder.Name, _version, null, null);
                 } else {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.Error, _binder.Name, _version, null, null);
+                    return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.Error, _binder.Name, _version, null, null);
                 }                
             }
             
@@ -1016,18 +1033,45 @@ namespace IronPython.Runtime.Binding {
                 _resolution += "Dictionary ";
                 FieldInfo fi = _info.Args[0].LimitType.GetField(NewTypeMaker.DictFieldName);
                 if (fi != null) {
-                    // return UserTypeOps.FastSetDictionaryValue(ref this._dict, name, value);
-                    _info.Body.FinishCondition(
-                        Ast.Call(
-                            typeof(UserTypeOps).GetMethod("FastSetDictionaryValue"),
-                            Ast.Field(
-                                Ast.Convert(_info.Args[0].Expression, _info.Args[0].LimitType),
-                                fi
-                            ),
-                            AstUtils.Constant(_info.Action.Name),
-                            AstUtils.Convert(_info.Args[1].Expression, typeof(object))
-                        )
-                    );
+                    FieldInfo classField = _info.Args[0].LimitType.GetField(NewTypeMaker.ClassFieldName);
+                    var optInstanceNames = Instance.PythonType.GetOptimizedInstanceNames();
+                    int keysIndex;
+                    if (classField != null && optInstanceNames != null && (keysIndex = optInstanceNames.IndexOf(_info.Action.Name)) != -1) {
+                        // optimized access which can read directly into an object array avoiding a dictionary lookup.
+                        // return UserTypeOps.FastSetDictionaryValue(this._class, ref this._dict, name, value, keysVersion, keysIndex);
+                        _info.Body.FinishCondition(
+                            Ast.Call(
+                                typeof(UserTypeOps).GetMethod("FastSetDictionaryValueOptimized"),
+                                Ast.Field(
+                                    Ast.Convert(_info.Args[0].Expression, _info.Args[0].LimitType),
+                                    classField
+                                ),
+                                Ast.Field(
+                                    Ast.Convert(_info.Args[0].Expression, _info.Args[0].LimitType),
+                                    fi
+                                ),
+                                AstUtils.Constant(_info.Action.Name),
+                                AstUtils.Convert(_info.Args[1].Expression, typeof(object)),
+                                Ast.Constant(Instance.PythonType.GetOptimizedInstanceVersion()),
+                                Ast.Constant(keysIndex)
+                            )
+                        );
+                    } else {
+                        // return UserTypeOps.FastSetDictionaryValue(ref this._dict, name, value);
+                        _info.Body.FinishCondition(
+                            Ast.Call(
+                                typeof(UserTypeOps).GetMethod("FastSetDictionaryValue"),
+                                Ast.Field(
+                                    Ast.Convert(_info.Args[0].Expression, _info.Args[0].LimitType),
+                                    fi
+                                ),
+                                AstUtils.Constant(_info.Action.Name),
+                                AstUtils.Convert(_info.Args[1].Expression, typeof(object))
+                            )
+                        );
+                    }
+
+
                 } else {
                     // return UserTypeOps.SetDictionaryValue(rule.Parameters[0], name, value);
                     _info.Body.FinishCondition(

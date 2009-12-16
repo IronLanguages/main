@@ -84,6 +84,14 @@ namespace IronPython.Modules {
             /// to Python callable objects that are passed back out to native code.
             /// </summary>
             void EmitReverseMarshalling(ILGenerator/*!*/ method, LocalOrArg/*!*/ value, List<object>/*!*/ constantPool, int constantPoolArgument);
+
+            /// <summary>
+            /// Returns a string which describes the type.  Used for _buffer_info implementation which
+            /// only exists for testing purposes.
+            /// </summary>
+            string TypeFormat {
+                get;
+            }
         }
     }
 }

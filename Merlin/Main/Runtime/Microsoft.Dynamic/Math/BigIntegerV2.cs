@@ -506,20 +506,6 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into long");
         }
 
-        public bool TryToFloat64(out double result) {
-            return StringUtils.TryParseDouble(ToString(10),
-                System.Globalization.NumberStyles.Number,
-                System.Globalization.CultureInfo.InvariantCulture.NumberFormat,
-                out result);
-        }
-
-        public double ToFloat64() {
-            return double.Parse(
-                ToString(10),
-                System.Globalization.CultureInfo.InvariantCulture.NumberFormat
-                );
-        }
-
         public int GetWordCount() {
             return GetLength(data);
         }
@@ -1255,7 +1241,24 @@ namespace Microsoft.Scripting.Math {
                     carry = rot << carryShift;
                 }
             }
-            return new BigInteger(x.sign, zd);
+
+            BigInteger res = new BigInteger(x.sign, zd);
+
+            // We wish to always round down, but shifting our data array (which is not
+            // stored in 2's-complement form) has caused us to round towards zero instead.
+            // Correct that here.
+            if (x.IsNegative()) {
+                for (int i = 0; i < digitShift; i++) {
+                    if (xd[i] != 0u) {
+                        return res - One;
+                    }
+                }
+                if (smallShift > 0 && xd[digitShift] << (BitsPerDigit - smallShift) != 0u) {
+                    return res - One;
+                }
+            }
+
+            return res;
         }
 
         public static BigInteger Negate(BigInteger x) {
@@ -1584,7 +1587,7 @@ namespace Microsoft.Scripting.Math {
 
         [Confined]
         public double ToDouble(IFormatProvider provider) {
-            return ToFloat64();
+            return this.ToFloat64();
         }
 
         [Confined]

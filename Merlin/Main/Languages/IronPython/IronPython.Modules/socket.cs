@@ -1293,7 +1293,7 @@ namespace IronPython.Modules {
         /// <summary>
         /// Convert an object to a 32-bit integer. This adds two features to Converter.ToInt32:
         ///   1. Sign is ignored. For example, 0xffff0000 converts to 4294901760, where Convert.ToInt32
-        ///      would throw because 0xffff000 is less than zero.
+        ///      would throw because 0xffff0000 is less than zero.
         ///   2. Overflow exceptions are thrown. Converter.ToInt32 throws TypeError if x is
         ///      an integer, but is bigger than 32 bits. Instead, we throw OverflowException.
         /// </summary>
@@ -1303,9 +1303,9 @@ namespace IronPython.Modules {
             if (bigValue < 0) {
                 throw PythonOps.OverflowError("can't convert negative number to unsigned long");
             } else if (bigValue <= int.MaxValue) {
-                return bigValue.ToInt32(null);
+                return (int)bigValue;
             } else {
-                return (int)bigValue.ToUInt32(null);
+                return (int)(uint)bigValue;
             }
         }
 
@@ -1320,10 +1320,10 @@ namespace IronPython.Modules {
             BigInteger bigValue = Converter.ConvertToBigInteger(x);
             if (bigValue < 0) {
                 throw PythonOps.OverflowError("can't convert negative number to unsigned long");
-            } else if (bigValue <= int.MinValue) {
-                return bigValue.ToInt16(null);
+            } else if (bigValue <= short.MaxValue) {
+                return (short)bigValue;
             } else {
-                return (short)bigValue.ToUInt16(null);
+                return (short)(ushort)bigValue;
             }
         }
 

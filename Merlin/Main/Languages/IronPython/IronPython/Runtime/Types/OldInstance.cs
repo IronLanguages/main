@@ -59,10 +59,7 @@ namespace IronPython.Runtime.Types {
         private WeakRefTracker _weakRef;       // initialized if user defines finalizer on class or instance
 
         private static PythonDictionary MakeDictionary(OldClass oldClass) {
-            //if (oldClass.OptimizedInstanceNames.Length == 0) {
-            //    return new CustomOldClassDictionar();
-            //}
-            return new PythonDictionary(new CustomOldClassDictionaryStorage(oldClass.OptimizedInstanceNames, oldClass.OptimizedInstanceNamesVersion));
+            return new PythonDictionary(new CustomInstanceDictionaryStorage(oldClass.OptimizedInstanceNames, oldClass.OptimizedInstanceNamesVersion));
         }
 
 

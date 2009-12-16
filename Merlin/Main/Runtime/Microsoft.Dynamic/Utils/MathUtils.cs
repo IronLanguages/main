@@ -316,6 +316,24 @@ namespace Microsoft.Scripting.Utils {
             return new BigInteger(new BigInt(bytes)) % limit;
         }
 #endif
+
+        public static bool TryToFloat64(this BigInteger self, out double result) {
+            return StringUtils.TryParseDouble(
+                self.ToString(10),
+                System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture.NumberFormat,
+                out result
+            );
+        }
+
+        public static double ToFloat64(this BigInteger self) {
+            return double.Parse(
+                self.ToString(10),
+                System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture.NumberFormat
+            );
+        }
+
         #endregion
     }
 

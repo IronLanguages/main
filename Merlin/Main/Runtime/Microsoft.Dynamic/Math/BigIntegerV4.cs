@@ -29,7 +29,7 @@ namespace Microsoft.Scripting.Math {
     /// arbitrary precision integers
     /// </summary>
     [Serializable]
-    public sealed class BigInteger : IFormattable, IComparable, IConvertible, IEquatable<BigInteger> {
+    public sealed class BigInteger : IFormattable, IComparable, IEquatable<BigInteger> {
         private readonly BigInt _value;
 
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
@@ -122,7 +122,6 @@ namespace Microsoft.Scripting.Math {
         public static explicit operator double(BigInteger self) {
             return (double)self._value;
         }
-
 
         public static explicit operator float(BigInteger self) {
             return (float)self._value;
@@ -354,17 +353,6 @@ namespace Microsoft.Scripting.Math {
 
         public long ToInt64() {
             return (long)_value;
-        }
-
-        public bool TryToFloat64(out double result) {
-            return StringUtils.TryParseDouble(ToString(10),
-                System.Globalization.NumberStyles.Number,
-                System.Globalization.CultureInfo.InvariantCulture.NumberFormat,
-                out result);
-        }
-
-        public double ToFloat64() {
-            return (double)_value;
         }
 
         private static int GetLength(uint[] data) {
@@ -633,20 +621,6 @@ namespace Microsoft.Scripting.Math {
 
         #endregion
 
-        #region IConvertible Members
-
-        public TypeCode GetTypeCode() {
-            return TypeCode.Object;
-        }
-
-        public bool ToBoolean(IFormatProvider provider) {
-            return _value != 0;
-        }
-
-        public byte ToByte(IFormatProvider provider) {
-            return (byte)_value;
-        }
-
         /// <summary>
         /// Return the value of this BigInteger as a little-endian twos-complement
         /// byte array, using the fewest number of bytes possible. If the value is zero,
@@ -657,79 +631,9 @@ namespace Microsoft.Scripting.Math {
         }
 
         [Confined]
-        public char ToChar(IFormatProvider provider) {
-            return (char)_value;
-        }
-
-        [Confined]
-        public DateTime ToDateTime(IFormatProvider provider) {
-            throw new NotImplementedException();
-        }
-
-        [Confined]
-        public decimal ToDecimal(IFormatProvider provider) {
-            return (decimal)_value;
-        }
-
-        [Confined]
-        public double ToDouble(IFormatProvider provider) {
-            return (double)_value;
-        }
-
-        [Confined]
-        public short ToInt16(IFormatProvider provider) {
-            return (short)_value;
-        }
-
-        [Confined]
-        public int ToInt32(IFormatProvider provider) {
-            return (int)_value;
-        }
-
-        [Confined]
-        public long ToInt64(IFormatProvider provider) {
-            return (long)_value;
-        }
-
-        [CLSCompliant(false), Confined]
-        public sbyte ToSByte(IFormatProvider provider) {
-            return (sbyte)_value;
-        }
-
-        [Confined]
-        public float ToSingle(IFormatProvider provider) {
-            return (float)_value;
-        }
-
-        [Confined]
         public string ToString(IFormatProvider provider) {
             return _value.ToString(provider);
         }
-
-        [Confined]
-        public object ToType(Type conversionType, IFormatProvider provider) {
-            if (conversionType == typeof(BigInteger)) {
-                return this;
-            }
-            throw new NotImplementedException();
-        }
-
-        [CLSCompliant(false), Confined]
-        public ushort ToUInt16(IFormatProvider provider) {
-            return (ushort)_value;
-        }
-
-        [CLSCompliant(false), Confined]
-        public uint ToUInt32(IFormatProvider provider) {
-            return (uint)_value;
-        }
-
-        [CLSCompliant(false), Confined]
-        public ulong ToUInt64(IFormatProvider provider) {
-            return (ulong)_value;
-        }
-
-        #endregion
 
         #region IFormattable Members
 

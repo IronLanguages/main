@@ -346,7 +346,7 @@ namespace Microsoft.Scripting.Generation {
             get { return _myAssembly; }
         }
 
-        internal ModuleBuilder ModuleBuilder {
+        public ModuleBuilder ModuleBuilder {
             get { return _myModule; }
         }
 

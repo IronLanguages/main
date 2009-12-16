@@ -101,11 +101,31 @@ namespace IronPython.Modules {
             }
 
             object INativeType.GetValue(MemoryHolder owner, object readingFrom, int offset, bool raw) {
-                throw new NotImplementedException("union get value");
+                _Union res = (_Union)CreateInstance(this.Context.SharedContext);
+                res._memHolder = owner.GetSubBlock(offset);
+                return res;
             }
 
             object INativeType.SetValue(MemoryHolder address, int offset, object value) {
-                throw new NotImplementedException("union set value");
+                IList<object> init = value as IList<object>;
+                if (init != null) {
+                    if (init.Count > _fields.Length) {
+                        throw PythonOps.TypeError("too many initializers");
+                    }
+
+                    for (int i = 0; i < init.Count; i++) {
+                        _fields[i].SetValue(address, offset, init[i]);
+                    }
+                } else {
+                    CData data = value as CData;
+                    if (data != null) {
+                        data._memHolder.CopyTo(address, offset, data.Size);
+                        return data._memHolder.EnsureObjects();
+                    } else {
+                        throw new NotImplementedException("Union set value");
+                    }
+                }
+                return null;
             }
 
             Type INativeType.GetNativeType() {
@@ -135,6 +155,12 @@ namespace IronPython.Modules {
             void INativeType.EmitReverseMarshalling(ILGenerator method, LocalOrArg value, List<object> constantPool, int constantPoolArgument) {
                 value.Emit(method);
                 EmitCDataCreation(this, method, constantPool, constantPoolArgument);
+            }
+
+            string INativeType.TypeFormat {
+                get {
+                    return "B";
+                }
             }
 
             #endregion

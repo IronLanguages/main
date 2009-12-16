@@ -30,8 +30,8 @@ namespace Microsoft.Scripting.Runtime {
 
         // Whether to allow multiple forms of EOLN. 
         // If false only '\n' is treated as a line separator otherwise '\n', '\r\n' and '\r' are treated as separators.
-        private readonly bool _multiEolns;
-        private readonly TextReader _reader;
+        private bool _multiEolns;
+        private TextReader _reader;
 
         private char[] _buffer;
 
@@ -109,17 +109,27 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         public TokenizerBuffer(TextReader reader, SourceLocation initialLocation, int initialCapacity, bool multiEolns) {
+            Initialize(reader, initialLocation, initialCapacity, multiEolns);
+        }
+
+        public void Initialize(TextReader reader, SourceLocation initialLocation, int initialCapacity, bool multiEolns) {
             ContractUtils.RequiresNotNull(reader, "reader");
             ContractUtils.Requires(initialCapacity > 0, "initialCapacity");
 
             _reader = reader;
-            _buffer = new char[initialCapacity];
+
+            if (_buffer == null || _buffer.Length < initialCapacity) {
+                _buffer = new char[initialCapacity];
+            }
 
             _tokenEnd = -1;
             _multiEolns = multiEolns;
 
             _tokenEndLocation = SourceLocation.Invalid;
             _tokenStartLocation = initialLocation;
+            
+            _start = _end = 0;
+            _position = 0;
 
             CheckInvariants();
         }

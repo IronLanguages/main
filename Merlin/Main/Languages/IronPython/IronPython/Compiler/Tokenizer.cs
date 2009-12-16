@@ -195,8 +195,11 @@ namespace IronPython.Compiler {
             _sourceUnit = sourceUnit;
             _disableLineFeedLineSeparator = reader is NoLineFeedSourceContentProvider.Reader;
 
-            // TODO: we can reuse the buffer if there is enough free space:
-            _buffer = new TokenizerBuffer(reader, initialLocation, bufferCapacity, !_disableLineFeedLineSeparator);
+            if (_buffer == null) {
+                _buffer = new TokenizerBuffer(reader, initialLocation, bufferCapacity, !_disableLineFeedLineSeparator);
+            } else {
+                _buffer.Initialize(reader, initialLocation, bufferCapacity, !_disableLineFeedLineSeparator);
+            }
 
             DumpBeginningOfUnit();
         }

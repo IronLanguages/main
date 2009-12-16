@@ -73,8 +73,6 @@ namespace IronPython.Runtime.Types {
         private int _attrs;  // actually OldClassAttributes - losing type safety for thread safety
         internal object _name;
 
-        [MultiRuntimeAware]
-        private static int _namesVersion;
         private int _optimizedInstanceNamesVersion;
         private string[] _optimizedInstanceNames;
 
@@ -200,7 +198,7 @@ namespace IronPython.Runtime.Types {
             for (int i = 0; i < names.Length; i++) {
                 _optimizedInstanceNames[i] = names[i];
             }
-            _optimizedInstanceNamesVersion = Interlocked.Increment(ref _namesVersion);
+            _optimizedInstanceNamesVersion = CustomInstanceDictionaryStorage.AllocateVersion();
         }
 
         internal string[] OptimizedInstanceNames {

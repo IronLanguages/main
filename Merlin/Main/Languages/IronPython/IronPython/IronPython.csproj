@@ -470,7 +470,7 @@
     <Compile Include="Modules\sys.cs" />
     <Compile Include="Runtime\ThrowingErrorSink.cs" />
     <Compile Include="Runtime\Types\CustomAttributeTracker.cs" />
-    <Compile Include="Runtime\Types\CustomOldClassDictionary.cs" />
+    <Compile Include="Runtime\Types\CustomInstanceDictionaryStorage.cs" />
     <Compile Include="Runtime\Operations\DelegateOps.cs" />
     <Compile Include="Runtime\Types\DictProxy.cs" />
     <Compile Include="Runtime\Types\FunctionType.cs" />

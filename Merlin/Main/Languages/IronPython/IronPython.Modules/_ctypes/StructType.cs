@@ -27,6 +27,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using System.Text;
 
 #if !SILVERLIGHT
 
@@ -43,6 +44,7 @@ namespace IronPython.Modules {
         public class StructType : PythonType, INativeType {
             internal Field[] _fields;
             private int? _size, _alignment, _pack;
+            private static readonly Field[] _emptyFields = new Field[0]; // fields were never initialized before a type was created
 
             public StructType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {
@@ -243,6 +245,24 @@ namespace IronPython.Modules {
                 EmitCDataCreation(this, method, constantPool, constantPoolArgument);
             }
 
+            string INativeType.TypeFormat {
+                get {
+                    if (_pack != null || _fields == _emptyFields || _fields == null) {
+                        return "B";
+                    }
+                    StringBuilder res = new StringBuilder();
+                    res.Append("T{");
+                    foreach (Field f in _fields) {
+                        res.Append(f.NativeType.TypeFormat);
+                        res.Append(':');
+                        res.Append(f.FieldName);
+                        res.Append(':');
+                    }
+                    res.Append('}');
+                    return res.ToString();
+                }
+            }
+
             #endregion
 
             internal static PythonType MakeSystemType(Type underlyingSystemType) {
@@ -416,6 +436,11 @@ namespace IronPython.Modules {
             internal void EnsureFinal() {
                 if (_fields == null) {
                     SetFields(PythonTuple.EMPTY);
+
+                    if (_fields.Length == 0) {
+                        // track that we were initialized w/o fields.
+                        _fields = _emptyFields;
+                    }
                 }
             }
 

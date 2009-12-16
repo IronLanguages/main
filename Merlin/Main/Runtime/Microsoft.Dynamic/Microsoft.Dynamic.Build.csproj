@@ -360,7 +360,6 @@
       <Compile Include="Runtime\DynamicDelegateCreator.cs" />
       <Compile Include="Runtime\DynamicLanguageProviderAttribute.cs" />
       <Compile Include="Runtime\DynamicNull.cs" />
-      <Compile Include="Runtime\DynamicRuntimeHostingProvider.cs" />
       <Compile Include="Runtime\DynamicStackFrame.cs" />
       <Compile Include="Runtime\ExceptionHelpers.cs" />
       <Compile Include="Runtime\ExplicitConversionMethodAttribute.cs" />

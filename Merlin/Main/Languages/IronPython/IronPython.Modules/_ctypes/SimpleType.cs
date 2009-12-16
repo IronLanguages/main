@@ -777,6 +777,14 @@ namespace IronPython.Modules {
                 return (BigInteger)value;
             }
 
+            string INativeType.TypeFormat {
+                get {
+                    return (BitConverter.IsLittleEndian ? 
+                        '<' :
+                        '>') + 
+                    _charType.ToString();
+                }
+            }
 
             #endregion
         }

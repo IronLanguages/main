@@ -22,6 +22,8 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using System.Collections.Generic;
+using Microsoft.Scripting.Math;
 
 #if !SILVERLIGHT
 namespace IronPython.Modules {
@@ -136,6 +138,26 @@ namespace IronPython.Modules {
                 get {
                     return ((ArrayType)NativeType).ElementType;
                 }
+            }
+
+            
+            internal override PythonTuple GetBufferInfo() {
+                INativeType elemType = ElementType;
+                int dimensions = 1;
+                List<object> shape = new List<object>();
+                shape.Add((BigInteger)__len__());
+                while (elemType is ArrayType) {
+                    dimensions++;
+                    shape.Add((BigInteger)((ArrayType)elemType).Length);
+                    elemType = ((ArrayType)elemType).ElementType;
+                }
+
+
+                return PythonTuple.MakeTuple(
+                    NativeType.TypeFormat,
+                    dimensions,
+                    PythonTuple.Make(shape)
+                );
             }
         }
     }

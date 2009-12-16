@@ -167,6 +167,12 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CreateCFunction"));
             }
 
+            string INativeType.TypeFormat {
+                get {
+                    return "X{}";
+                }
+            }
+
             #endregion
 
             internal CallingConvention CallingConvention {

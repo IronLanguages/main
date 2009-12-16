@@ -18,6 +18,7 @@
 }
 .assembly System.Dynamic
 {
+	.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 	.custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = { bool(true) }
 	.custom instance void [mscorlib]System.Runtime.CompilerServices.InternalsVisibleToAttribute::.ctor(string) = { string('Microsoft.CSharp, PublicKey =002400000480000094000000060200000024000052534131000400000100010007d1fa57c4aed9f0a32e84aa0faefd0de9e8fd6aec8f87fb03766c834c99921eb23be79ad9d5dcc1dd9ad236132102900b723cf980957fc4e177108fc607774f29e8320e92ea05ece4e821c0a5efe8f1645c4c0c93c1ab99285d622caa652c1dfad63d745d6f2de5f17e5eaf0fc4963d261c8a12436518206dc093344d5ad293') }
 	.custom instance void [mscorlib]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) = { bool(false) }
@@ -233,24 +234,29 @@
 	.class private abstract sealed CollectionExtensions
 		extends [mscorlib]System.Object
 	{
+		.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 		.method assembly static hidebysig 
 			!!0[] RemoveFirst<'T'>(!!0[] 'array')
 		{
+			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			!!0[] AddFirst<'T'>(class [mscorlib]'System.Collections.Generic.IList`1'<!!0> list, !!0 item)
 		{
+			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			!!0[] ToArray<'T'>(class [mscorlib]'System.Collections.Generic.IList`1'<!!0> list)
 		{
+			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			!!0[] AddLast<'T'>(class [mscorlib]'System.Collections.Generic.IList`1'<!!0> list, !!0 item)
 		{
+			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 	}
@@ -2047,6 +2053,7 @@
 	.class private abstract sealed TypeUtils
 		extends [mscorlib]System.Object
 	{
+		.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 		.method assembly static hidebysig 
 			class [mscorlib]System.Type GetNonNullableType(class [mscorlib]System.Type 'type')
 		{
@@ -2055,6 +2062,7 @@
 		.method assembly static hidebysig 
 			bool IsNullableType(class [mscorlib]System.Type 'type')
 		{
+			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 

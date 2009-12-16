@@ -476,7 +476,7 @@ namespace IronPython.Modules {
 
         private static double Check(double input, double output) {
             if (double.IsInfinity(input) && double.IsInfinity(output) ||
-                double.IsNaN(input) && double.IsNaN(input)) {
+                double.IsNaN(input) && double.IsNaN(output)) {
                 return output;
             } else {
                 return PythonOps.CheckMath(output);

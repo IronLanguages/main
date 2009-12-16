@@ -23,6 +23,7 @@ using System.Text;
 
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Modules;
 using IronPython.Runtime.Types;
@@ -366,18 +367,10 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static BigInteger RightShift([NotNull]BigInteger x, int y) {
-            BigInteger q;
             if (y < 0) {
                 throw PythonOps.ValueError("negative shift count");
             }
-            if (x < BigInteger.Zero) {
-                q = x >> y;
-                BigInteger r = x - (q << y);
-                if (r != BigInteger.Zero) q -= BigInteger.One; ;
-            } else {
-                q = x >> y;
-            }
-            return q;
+            return x >> y;
         }
 
         [SpecialName]
@@ -502,6 +495,14 @@ namespace IronPython.Runtime.Operations {
 
         public static BigInteger __trunc__(BigInteger self) {
             return self;
+        }
+
+        [SpecialName, ImplicitConversionMethod]
+        public static double ConvertToDouble(BigInteger self) {
+            if (object.ReferenceEquals(self, null)) {
+                throw new ArgumentNullException("self");
+            }
+            return self.ToFloat64();
         }
 
         [SpecialName, ExplicitConversionMethod]

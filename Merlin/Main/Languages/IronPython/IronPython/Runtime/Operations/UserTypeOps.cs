@@ -162,10 +162,37 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
+        public static bool TryGetDictionaryValue(PythonDictionary dict, string name, int keyVersion, int keyIndex, out object res) {
+            CustomInstanceDictionaryStorage dictStorage;
+            if (dict != null) {
+                if ((dictStorage = dict._storage as CustomInstanceDictionaryStorage) != null && dictStorage.KeyVersion == keyVersion) {
+                    if (dictStorage.TryGetValue(keyIndex, out res)) {
+                        return true;
+                    }
+                } else if (dict.TryGetValue(name, out res)) {
+                    return true;
+                }
+            }
+            res = null;
+            return false;
+        }
+
         public static object SetDictionaryValue(IPythonObject self, string name, object value) {
             PythonDictionary dict = GetDictionary(self);
 
             return dict[name] = value;
+        }
+
+        public static object SetDictionaryValueOptimized(IPythonObject ipo, string name, object value, int keysVersion, int index) {
+            var dict = UserTypeOps.GetDictionary(ipo);
+            CustomInstanceDictionaryStorage storage;
+
+            if ((storage = dict._storage as CustomInstanceDictionaryStorage) != null && storage.KeyVersion == keysVersion) {
+                storage.SetExtraValue(index, value);
+            } else {
+                dict[name] = value;
+            }
+            return value;
         }
 
         public static object FastSetDictionaryValue(ref PythonDictionary dict, string name, object value) {
@@ -174,6 +201,21 @@ namespace IronPython.Runtime.Operations {
             }
 
             return dict[name] = value;
+        }
+
+        public static object FastSetDictionaryValueOptimized(PythonType type, ref PythonDictionary dict, string name, object value, int keysVersion, int index) {
+            if (dict == null) {
+                Interlocked.CompareExchange(ref dict, type.MakeDictionary(), null);
+            }
+
+            CustomInstanceDictionaryStorage storage;
+
+            if ((storage = dict._storage as CustomInstanceDictionaryStorage) != null && storage.KeyVersion == keysVersion) {
+                storage.SetExtraValue(index, value);
+                return value;
+            } else {
+                return dict[name] = value;
+            }
         }
 
         public static object RemoveDictionaryValue(IPythonObject self, string name) {
@@ -190,7 +232,7 @@ namespace IronPython.Runtime.Operations {
         internal static PythonDictionary GetDictionary(IPythonObject self) {
             PythonDictionary dict = self.Dict;
             if (dict == null && self.PythonType.HasDictionary) {
-                dict = self.SetDict(PythonDictionary.MakeSymbolDictionary());
+                dict = self.SetDict(self.PythonType.MakeDictionary());
             }
             return dict;
         }

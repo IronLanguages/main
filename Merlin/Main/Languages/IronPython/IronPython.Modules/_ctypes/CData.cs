@@ -91,6 +91,14 @@ namespace IronPython.Modules {
                 Debug.Assert(_memHolder == null);
                 _memHolder = new MemoryHolder(address, NativeType.Size);
             }
+
+            internal virtual PythonTuple GetBufferInfo() {
+                return PythonTuple.MakeTuple(
+                    NativeType.TypeFormat,
+                    0,
+                    PythonTuple.EMPTY
+                );
+            }
         }
     }
 }

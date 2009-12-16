@@ -46,7 +46,7 @@ namespace IronPython.Runtime.Types {
             IPythonObject sdo = instance as IPythonObject;
             if (sdo != null && sdo.PythonType.HasDictionary) {
                 PythonDictionary res = sdo.Dict;
-                if (res != null || (res = sdo.SetDict(PythonDictionary.MakeSymbolDictionary())) != null) {
+                if (res != null || (res = sdo.SetDict(sdo.PythonType.MakeDictionary())) != null) {
                     value = res;
                     return true;
                 }

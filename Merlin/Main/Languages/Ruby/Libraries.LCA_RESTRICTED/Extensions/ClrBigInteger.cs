@@ -18,6 +18,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using System.Globalization;
 
 namespace IronRuby.Builtins {

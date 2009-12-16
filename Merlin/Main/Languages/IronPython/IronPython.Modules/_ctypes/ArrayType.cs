@@ -360,6 +360,19 @@ namespace IronPython.Modules {
                     return _type;
                 }
             }
+
+            string INativeType.TypeFormat {
+                get {
+                    string size = "(" + Length;
+                    INativeType elemType = ElementType;
+                    while (elemType is ArrayType) {
+                        size += "," + ((ArrayType)elemType).Length;
+                        elemType = ((ArrayType)elemType).ElementType;
+                    }
+                    size += ")";
+                    return size + elemType.TypeFormat;
+                }
+            }
         }
 
         private static ArrayType/*!*/ MakeArrayType(PythonType type, int count) {
@@ -384,7 +397,7 @@ namespace IronPython.Modules {
 
                 return res;
             }
-        }
+        }        
     }
 }
 

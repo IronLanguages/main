@@ -748,7 +748,7 @@ namespace IronRuby.Builtins {
             StringBuilder/*!*/ str = new StringBuilder();
             if (value == 0) str.Append('0');
             while (value != 0) {
-                int digit = (value % radix).ToInt32(CultureInfo.InvariantCulture);
+                int digit = (int)(value % radix);
                 str.Append(_LowerDigits[digit]);
                 value /= radix;
             }
@@ -798,8 +798,8 @@ namespace IronRuby.Builtins {
             char[] digits = lowerCase ? _LowerDigits : _UpperDigits;
 
             while (val != limit) {
-                int t = (val & mask).ToInt32(CultureInfo.InvariantCulture);
-                result.Append(digits[(val & mask).ToInt32(CultureInfo.InvariantCulture)]);
+                int t = (int)(val & mask);
+                result.Append(digits[(int)(val & mask)]);
                 val >>= bitsToShift;
                 limit >>= bitsToShift;
             }

@@ -98,6 +98,10 @@ namespace IronPython.Modules {
                 _id = Interlocked.Increment(ref _curId);
             }
 
+            public _CFuncPtr() {
+                _id = Interlocked.Increment(ref _curId);
+            }
+
             public _CFuncPtr(CodeContext context, object function) {
                 if (function != null) {
                     if (!PythonOps.IsCallable(context, function)) {

@@ -649,7 +649,7 @@ namespace IronPython.Compiler {
                         // and returned a different node
                         throw Assert.Unreachable;
                 }
-            } else if (!(left is DelayedTupleExpression)) {
+            } else if (left is BlockExpression) {
                 // Get the last expression of the rewritten left side
                 var leftBlock = (BlockExpression)left;
                 left = leftBlock.Expressions[leftBlock.Expressions.Count - 1];

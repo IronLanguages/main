@@ -21,13 +21,41 @@ using Microsoft.Scripting.Runtime;
 using System.Threading;
 
 namespace IronPython.Runtime.Types {
+    /// <summary>
+    /// Provides custom, versioned, dictionary access for instances.  Used for both
+    /// new-style and old-style instances.
+    /// 
+    /// Each class can allocate a version for instance storage using the 
+    /// CustomInstanceDictionaryStorage.AllocateInstance method.  The version allocated
+    /// is dependent upon the names which are likely to appear in the instance 
+    /// dictionary.  Currently these names are calculated by collecting the names
+    /// that are assigned to during the __init__ method and combining these with
+    /// all such names in the types MRO.
+    /// 
+    /// When creating the dictionary for storing instance values the class can then create
+    /// a PythonDictionary backed by a CustomInstanceDictionaryStorage with it's
+    /// version.  When doing a get/set optimized code can then be produced that
+    /// verifies we have CustomInstanceDictionaryStorage and it has the 
+    /// correct version.  If we have a matching dictionary then gets/sets can turn
+    /// into simple array accesses rather than dictionary gets/sets.  For programs
+    /// which access a large number of instance variables this can dramatically
+    /// speed up the program.
+    /// 
+    /// TODO: Should we attempt to unify all versions which share the same keys?
+    /// </summary>
     [Serializable]
-    internal sealed class CustomOldClassDictionaryStorage : StringDictionaryStorage {
-        private int _keyVersion;
-        private string[] _extraKeys;
-        private object[] _values;
+    internal sealed class CustomInstanceDictionaryStorage : StringDictionaryStorage {
+        private readonly int _keyVersion;
+        private readonly string[] _extraKeys;
+        private readonly object[] _values;
+        [MultiRuntimeAware]
+        private static int _namesVersion;
 
-        public CustomOldClassDictionaryStorage(string[] extraKeys, int keyVersion) {
+        internal static int AllocateVersion() {
+            return Interlocked.Increment(ref _namesVersion);
+        }
+
+        public CustomInstanceDictionaryStorage(string[] extraKeys, int keyVersion) {
             _extraKeys = extraKeys;
             _keyVersion = keyVersion;
             _values = new object[extraKeys.Length];
@@ -148,6 +176,11 @@ namespace IronPython.Runtime.Types {
                 }
             }
             return -1;
+        }
+
+        public bool TryGetValue(int index, out object value) {
+            value = _values[index];
+            return value != Uninitialized.Instance;
         }
 
         public object GetValueHelper(int index, object oldInstance) {

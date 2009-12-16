@@ -39,6 +39,7 @@ namespace IronPython.Modules {
         [PythonType, PythonHidden]
         public class PointerType : PythonType, INativeType {
             internal INativeType _type;
+            private readonly string _typeFormat;
 
             public PointerType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {
@@ -48,6 +49,9 @@ namespace IronPython.Modules {
                     throw PythonOps.TypeError("_type_ must be a type");
                 }
                 _type = (INativeType)type;
+                if (_type != null) {
+                    _typeFormat = _type.TypeFormat;
+                }
             }
 
             private PointerType(Type underlyingSystemType)
@@ -262,6 +266,12 @@ namespace IronPython.Modules {
             void INativeType.EmitReverseMarshalling(ILGenerator method, LocalOrArg value, List<object> constantPool, int constantPoolArgument) {
                 value.Emit(method);
                 EmitCDataCreation(this, method, constantPool, constantPoolArgument);
+            }
+
+            string INativeType.TypeFormat {
+                get {
+                    return "&" + (_typeFormat ?? _type.TypeFormat);
+                }
             }
 
             #endregion
