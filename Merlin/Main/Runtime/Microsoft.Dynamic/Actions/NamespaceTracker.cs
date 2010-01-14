@@ -114,7 +114,7 @@ namespace Microsoft.Scripting.Actions {
             Assert.NotNull(assem, fullTypeName);
             Type type = assem.GetType(fullTypeName);
             // We should ignore nested types. They will be loaded when the containing type is loaded
-            Debug.Assert(!type.IsNested());
+            Debug.Assert(type == null || !type.IsNested());
             return type;
         }
 
@@ -133,17 +133,18 @@ namespace Microsoft.Scripting.Actions {
                 // A similarly named type, namespace, or module already exists.
                 Type newType = LoadType(assem, GetFullChildName(typeName));
 
-                object existingValue = _dict[normalizedTypeName];
-                TypeTracker existingTypeEntity = existingValue as TypeTracker;
-                if (existingTypeEntity == null) {
-                    // Replace the existing namespace or module with the new type
-                    Debug.Assert(existingValue is NamespaceTracker);
-                    _dict[normalizedTypeName] = MemberTracker.FromMemberInfo(newType);
-                } else {
-                    // Unify the new type with the existing type
-                    _dict[normalizedTypeName] = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                if (newType != null) {
+                    object existingValue = _dict[normalizedTypeName];
+                    TypeTracker existingTypeEntity = existingValue as TypeTracker;
+                    if (existingTypeEntity == null) {
+                        // Replace the existing namespace or module with the new type
+                        Debug.Assert(existingValue is NamespaceTracker);
+                        _dict[normalizedTypeName] = MemberTracker.FromMemberInfo(newType);
+                    } else {
+                        // Unify the new type with the existing type
+                        _dict[normalizedTypeName] = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                    }
                 }
-                return;
             }
         }
 
@@ -480,7 +481,9 @@ namespace Microsoft.Scripting.Actions {
                 // Look for a non-generic type
                 if (_simpleTypeNames.Contains(normalizedTypeName)) {
                     Type newType = LoadType(_assembly, GetFullChildName(normalizedTypeName));
-                    existingTypeEntity = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                    if (newType != null) {
+                        existingTypeEntity = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                    }
                 }
 
                 // Look for generic types
@@ -488,7 +491,9 @@ namespace Microsoft.Scripting.Actions {
                     List<string> actualNames = _genericTypeNames[normalizedTypeName];
                     foreach (string actualName in actualNames) {
                         Type newType = LoadType(_assembly, GetFullChildName(actualName));
-                        existingTypeEntity = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                        if (newType != null) {
+                            existingTypeEntity = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                        }
                     }
                 }
 

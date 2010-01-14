@@ -21,6 +21,7 @@ using MSA = Microsoft.Scripting.Ast;
 
 using System.Diagnostics;
 using System.Collections;
+using System.Runtime.CompilerServices;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting;
@@ -30,6 +31,8 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
+    using AstParameters = ReadOnlyCollectionBuilder<MSA.ParameterExpression>;
 
     // rescue type
     //   statements
@@ -101,20 +104,20 @@ namespace IronRuby.Compiler.Ast {
 
                     // forall{i}: <temps[i]> = evaluate type[i]
                     var temps = new MSA.Expression[_types.Length + (_splatType != null ? 1 : 0)];
-                    var exprs = new MSA.Expression[temps.Length  + 1];
+                    var exprs = new BlockBuilder();
                     
                     int i = 0;
                     while (i < _types.Length) {
                         var tmp = gen.CurrentScope.DefineHiddenVariable("#type_" + i, typeof(object));
                         temps[i] = tmp;
-                        exprs[i] = Ast.Assign(tmp, _types[i].TransformRead(gen));
+                        exprs.Add(Ast.Assign(tmp, _types[i].TransformRead(gen)));
                         i++;
                     }
 
                     if (_splatType != null) {
                         var tmp = gen.CurrentScope.DefineHiddenVariable("#type_" + i, typeof(IList));
                         temps[i] = tmp;
-                        exprs[i] = Ast.Assign(tmp, TransformSplatType(gen));
+                        exprs.Add(Ast.Assign(tmp, TransformSplatType(gen)));
 
                         i++;
                     }
@@ -135,8 +138,8 @@ namespace IronRuby.Compiler.Ast {
                     Debug.Assert(i == temps.Length);
 
                     // (temps[0] = type[0], ..., temps[n] == type[n], condition)
-                    exprs[exprs.Length - 1] = condition;
-                    condition = AstFactory.Block(exprs);
+                    exprs.Add(condition);
+                    condition = exprs;
                 }
 
             } else {
@@ -161,7 +164,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private MSA.Expression/*!*/ MakeCompareException(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {
-            return Methods.CompareException.OpCall(comparisonSiteStorage, gen.CurrentScopeVariable, AstFactory.Box(expression));
+            return Methods.CompareException.OpCall(comparisonSiteStorage, gen.CurrentScopeVariable, AstUtils.Box(expression));
         }
 
         private MSA.Expression/*!*/ MakeCompareSplattedExceptions(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {

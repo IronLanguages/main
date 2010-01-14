@@ -27,10 +27,11 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using AstBlock = Microsoft.Scripting.Ast.BlockBuilder;
     
     /// <summary>
     /// target.method_id(args)
@@ -127,7 +128,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             if (assignmentRhsArgument != null) {
-                result = AstFactory.Block(result, rhsVariable);
+                result = Ast.Block(result, rhsVariable);
             }
 
             return result;
@@ -143,15 +144,13 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression evalUnwinder;
 
             MSA.LabelTarget retryLabel = Ast.Label("retry");
-                    
-            var result = AstFactory.Block(
+
+            var result = new AstBlock {
                 Ast.Assign(blockArgVariable, Ast.Convert(transformedBlock, blockArgVariable.Type)),
 
                 Ast.Label(retryLabel),
 
-                (!isBlockDefinition) ?
-                    (MSA.Expression)AstUtils.Empty() : 
-                    (MSA.Expression)Methods.InitializeBlock.OpCall(blockArgVariable),
+                (isBlockDefinition) ? Methods.InitializeBlock.OpCall(blockArgVariable) : null,
 
                 AstUtils.Try(
                     Ast.Assign(resultVariable, invoke)
@@ -163,7 +162,7 @@ namespace IronRuby.Compiler.Ast {
                 ),
 
                 // if result == RetrySingleton then 
-                Ast.IfThen(Methods.IsRetrySingleton.OpCall(AstFactory.Box(resultVariable)),
+                Ast.IfThen(Methods.IsRetrySingleton.OpCall(AstUtils.Box(resultVariable)),
 
                     // if blockParam == #block then retry end
                     AstUtils.IfThenElse(Ast.Equal(gen.MakeMethodBlockParameterRead(), blockArgVariable),
@@ -173,7 +172,7 @@ namespace IronRuby.Compiler.Ast {
                 ),
 
                 resultVariable
-            );
+            };
 
             return result;
         }
@@ -184,7 +183,7 @@ namespace IronRuby.Compiler.Ast {
                 RubyCallAction.Make(gen.Context, _methodName, RubyCallSignature.IsDefined(_target == null)), 
                 typeof(bool),
                 gen.CurrentScopeVariable,
-                (_target != null) ? AstFactory.Box(_target.TransformRead(gen)) : gen.CurrentSelfVariable
+                (_target != null) ? AstUtils.Box(_target.TransformRead(gen)) : gen.CurrentSelfVariable
             );
 
             return (_target != null) ? gen.TryCatchAny(result, AstFactory.False) : result;

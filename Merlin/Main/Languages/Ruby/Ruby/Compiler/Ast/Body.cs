@@ -79,7 +79,7 @@ namespace IronRuby.Compiler.Ast {
             if (HasExceptionHandling) {
                 MSA.Expression resultVariable = gen.CurrentScope.DefineHiddenVariable("#block-result", typeof(object));
 
-                return AstFactory.Block(
+                return Ast.Block(
                     TransformExceptionHandling(gen, ResultOperation.Store(resultVariable)),
                     resultVariable
                 );

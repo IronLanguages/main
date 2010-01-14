@@ -798,7 +798,6 @@ namespace IronRuby.Builtins {
             char[] digits = lowerCase ? _LowerDigits : _UpperDigits;
 
             while (val != limit) {
-                int t = (int)(val & mask);
                 result.Append(digits[(int)(val & mask)]);
                 val >>= bitsToShift;
                 limit >>= bitsToShift;

@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+//TODO - Parts of this file should NOT be under ClrAssembly as it has dependencies on the DLR!
 
 using System;
 using System.Runtime.InteropServices;

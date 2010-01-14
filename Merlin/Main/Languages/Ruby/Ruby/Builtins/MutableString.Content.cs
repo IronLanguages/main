@@ -61,7 +61,7 @@ namespace IronRuby.Builtins {
             public abstract void CheckEncoding();
 
             public abstract byte[]/*!*/ ToByteArray();
-            internal abstract byte[]/*!*/ GetByteArray();
+            internal abstract byte[]/*!*/ GetByteArray(out int count);
 
             // returns self if there are no characters to be escaped:
             public abstract Content/*!*/ EscapeRegularExpression();

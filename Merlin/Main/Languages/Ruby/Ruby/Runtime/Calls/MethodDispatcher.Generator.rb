@@ -1,6 +1,8 @@
 ﻿require '../../../Scripts/CodeGenerator.rb'
 
 class Generator
+  attr_reader :n
+
   def add_generic_types(n)
     (n - 1).times { |i| @generated << @template.sub('<>', '<,' + (',' * i) + '>') } 
   end

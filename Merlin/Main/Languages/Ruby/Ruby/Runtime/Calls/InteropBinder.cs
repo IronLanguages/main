@@ -102,7 +102,7 @@ namespace IronRuby.Runtime.Calls {
 
                 metaBuilder.AddTypeRestriction(target.GetLimitType(), target.Expression);
 
-                var normalizedArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, callArgs, 0, 0);
+                RubyOverloadResolver.NormalizeArguments(metaBuilder, callArgs, 0, 0);
                 if (!metaBuilder.Error) {
                     // no arguments => just return the target:
                     metaBuilder.Result = target.Expression;
@@ -773,8 +773,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal static bool TryBuildConversionToDelegate(MetaObjectBuilder/*!*/ metaBuilder, RubyMetaObject/*!*/ target, Type/*!*/ delegateType, MethodInfo/*!*/ delegateFactory) {
-            MethodInfo invoke;
-            if (!typeof(Delegate).IsAssignableFrom(delegateType) || (invoke = delegateType.GetMethod("Invoke")) == null) {
+            if (!typeof(Delegate).IsAssignableFrom(delegateType) || delegateType.GetMethod("Invoke") == null) {
                 return false;
             }
 

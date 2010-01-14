@@ -23,6 +23,7 @@ using Microsoft.Scripting.Runtime;
 using System.Reflection;
 using System.Threading;
 using System.IO;
+using System.Globalization;
 
 namespace IronRuby.Hosting {
    
@@ -39,7 +40,8 @@ namespace IronRuby.Hosting {
 
         protected override string Logo {
             get {
-                return String.Format("IronRuby {1} on {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
+                return String.Format(CultureInfo.InvariantCulture, 
+                    "IronRuby {1} on {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
                     Environment.NewLine, RubyContext.IronRubyVersion, GetRuntime());
             }
         }
@@ -48,7 +50,7 @@ namespace IronRuby.Hosting {
             Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
             return mono != null ?
                 (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
-                : string.Format(".NET {0}", Environment.Version);
+                : String.Format(CultureInfo.InvariantCulture, ".NET {0}", Environment.Version);
         }
 
         protected override int? TryInteractiveAction() {
@@ -71,6 +73,11 @@ namespace IronRuby.Hosting {
                 Environment.CurrentDirectory = Options.ChangeDirectory;
             }
 
+            if (Options.DisplayVersion && (Options.Command != null || Options.FileName != null)) {
+                Console.WriteLine(String.Format(CultureInfo.InvariantCulture, "IronRuby {0} on {1}", RubyContext.IronRubyVersion, GetRuntime()
+                ), Style.Out);
+            }
+
             return base.Run();
         }
 
@@ -80,20 +87,20 @@ namespace IronRuby.Hosting {
         }
 
         protected override void ExecuteCommand(string/*!*/ command) {
-            ExecuteCommand(CreateCommandSource(command, SourceCodeKind.InteractiveCode));
+            ExecuteCommand(CreateCommandSource(command, SourceCodeKind.InteractiveCode, "(ir)"));
         }
 
         protected override int RunCommand(string/*!*/ command) {
-            return RunFile(CreateCommandSource(command, SourceCodeKind.Statements));
+            return RunFile(CreateCommandSource(command, SourceCodeKind.Statements, "-e"));
         }
 
-        private ScriptSource/*!*/ CreateCommandSource(string/*!*/ command, SourceCodeKind kind) {
+        private ScriptSource/*!*/ CreateCommandSource(string/*!*/ command, SourceCodeKind kind, string/*!*/ sourceUnitId) {
 #if SILVERLIGHT
             return Engine.CreateScriptSourceFromString(command, kind);
 #else
             var kcode = ((RubyContext)Language).RubyOptions.KCode;
             var encoding = kcode != null ? kcode.Encoding : System.Console.InputEncoding;
-            return Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), null, encoding, kind);
+            return Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), sourceUnitId, encoding, kind);
 #endif
         }
         

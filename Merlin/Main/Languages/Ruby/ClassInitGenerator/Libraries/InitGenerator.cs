@@ -95,6 +95,7 @@ internal class InitGenerator : Generator {
             output.NewLine = "\r\n";
 
             WriteLicenseStatement(writer);
+            output.WriteLine("#pragma warning disable 169 // mcs: unused private method");
 
             foreach (LibraryDef library in _libraries.Values) {
                 output.WriteLine("[assembly: {2}(typeof({0}.{1}))]", library._namespace, library._initializerName, LibraryDef.TypeRubyLibraryAttribute);

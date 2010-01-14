@@ -308,7 +308,7 @@ namespace IronRuby.Runtime.Conversions {
 
         private Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
             var validator = ConversionResultValidator;
-            return (validator != null) ? validator.OpCall(targetClassNameConstant, AstFactory.Box(result)) : result;
+            return (validator != null) ? validator.OpCall(targetClassNameConstant, AstUtils.Box(result)) : result;
         }
 
         private static Expression/*!*/ ConvertResult(Expression/*!*/ expression, Type/*!*/ resultType) {
@@ -496,12 +496,12 @@ namespace IronRuby.Runtime.Conversions {
 
         // return the target object on error:
         protected override Expression/*!*/ MakeErrorExpression(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
-            return AstFactory.Box(args.TargetExpression);
+            return AstUtils.Box(args.TargetExpression);
         }
 
         // return the target object on error:
         protected override void SetError(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
-            metaBuilder.Result = AstFactory.Box(args.TargetExpression);
+            metaBuilder.Result = AstUtils.Box(args.TargetExpression);
         }
 
         protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject>/*!*/ args, out MethodInfo postProcessor) {

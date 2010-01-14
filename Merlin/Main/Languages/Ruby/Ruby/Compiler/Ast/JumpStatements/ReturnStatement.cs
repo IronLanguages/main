@@ -22,7 +22,8 @@ using MSA = Microsoft.Scripting.Ast;
 using Microsoft.Scripting;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = Expression;
+    using Ast = MSA.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public partial class ReturnStatement : JumpStatement {
         public ReturnStatement(Arguments arguments, SourceSpan location)
@@ -36,12 +37,12 @@ namespace IronRuby.Compiler.Ast {
 
             // eval:
             if (gen.CompilerOptions.IsEval) {
-                return gen.Return(Methods.EvalReturn.OpCall(gen.CurrentScopeVariable, AstFactory.Box(transformedReturnValue)));
+                return gen.Return(Methods.EvalReturn.OpCall(gen.CurrentScopeVariable, AstUtils.Box(transformedReturnValue)));
             }
 
             // block:
             if (gen.CurrentBlock != null) {
-                return gen.Return(Methods.BlockReturn.OpCall(gen.CurrentBlock.BfcVariable, AstFactory.Box(transformedReturnValue)));
+                return gen.Return(Methods.BlockReturn.OpCall(gen.CurrentBlock.BfcVariable, AstUtils.Box(transformedReturnValue)));
             }
 
             // method:

@@ -41,4 +41,8 @@ describe "Time.at" do
     t.should_not == Time.at(10)
   end
 
+  it "reliably sets the time" do
+    t = Time.now
+    Time.at(t.to_i).to_i.should == t.to_i
+  end
 end

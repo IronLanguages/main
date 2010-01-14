@@ -26,19 +26,22 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
+using System.Collections.ObjectModel;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
+    using AstParameters = ReadOnlyCollectionBuilder<MSA.ParameterExpression>;
     
     internal sealed class ScopeBuilder {
-        private readonly MSA.ParameterExpression/*!*/[] _parameters;
+        private readonly AstParameters _parameters;
         private readonly int _firstClosureParam;
         private readonly int _localCount;
         private readonly LexicalScope/*!*/ _lexicalScope;
         private readonly ScopeBuilder _parent;
 
-        private readonly ReadOnlyCollectionBuilder<MSA.ParameterExpression>/*!*/ _hiddenVariables;
+        private readonly AstParameters/*!*/ _hiddenVariables;
 
         // constant access site cache variables:
         private MSA.ParameterExpression _csCacheVariable;
@@ -64,7 +67,7 @@ namespace IronRuby.Compiler.Ast {
             : this(null, -1, localCount, parent, lexicalScope) {
         }
 
-        public ScopeBuilder(MSA.ParameterExpression/*!*/[] parameters, int firstClosureParam, int localCount, 
+        public ScopeBuilder(AstParameters parameters, int firstClosureParam, int localCount, 
             ScopeBuilder parent, LexicalScope/*!*/ lexicalScope) {
             Debug.Assert(parent == null || parent.LexicalScope == lexicalScope.OuterScope);
 #if DEBUG
@@ -75,7 +78,7 @@ namespace IronRuby.Compiler.Ast {
             _localCount = localCount;
             _firstClosureParam = firstClosureParam;
             _lexicalScope = lexicalScope;
-            _hiddenVariables = new ReadOnlyCollectionBuilder<MSA.ParameterExpression>();
+            _hiddenVariables = new AstParameters();
             _localsTuple = DefineHiddenVariable("#locals", MakeLocalsTupleType());
             _outermostClosureReferredTo = this;
         }
@@ -147,7 +150,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private int LiftedVisibleVariableCount {
-            get { return (_parameters != null ? _parameters.Length - _firstClosureParam : 0) + _localCount; }
+            get { return (_parameters != null ? _parameters.Count - _firstClosureParam : 0) + _localCount; }
         }
 
         public MSA.Expression/*!*/ GetVariableAccessor(int definitionLexicalDepth, int closureIndex) {
@@ -174,11 +177,11 @@ namespace IronRuby.Compiler.Ast {
             );
             
             if (_parameters != null) {
-                var initializers = new ReadOnlyCollectionBuilder<MSA.Expression>();
+                var initializers = new AstExpressions();
                 initializers.Add(result);
                 
                 // parameters map to the initial elements of the array:
-                for (int i = _firstClosureParam, j = 0; i < _parameters.Length; i++, j++) {
+                for (int i = _firstClosureParam, j = 0; i < _parameters.Count; i++, j++) {
                     initializers.Add(Ast.Assign(GetVariableAccessor(_localsTuple, j), _parameters[i]));
                 }
 
@@ -221,7 +224,7 @@ namespace IronRuby.Compiler.Ast {
                         body
                     ));
                 } else {
-                    var result = new ReadOnlyCollectionBuilder<MSA.Expression>();
+                    var result = new AstExpressions();
                     MSA.Expression tempScope = DefineHiddenVariable("#s", typeof(RubyScope));
                     result.Add(Ast.Assign(scopeVariable, scopeInitializer));
 

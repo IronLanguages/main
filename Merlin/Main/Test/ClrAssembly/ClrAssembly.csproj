@@ -144,7 +144,7 @@
     <Csc TargetType="library" EmitDebugInformation="true" Sources="src\indexerdefinitionscs.cs" OutputAssembly="$(OutputPath)\$(Prefix)indexerdefinitionscs.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
     <Csc TargetType="library" EmitDebugInformation="true" Sources="src\defaultmemberscs.cs" OutputAssembly="$(OutputPath)\$(Prefix)defaultmemberscs.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
     <Csc TargetType="library" EmitDebugInformation="true" Sources="src\baseclasscs.cs" OutputAssembly="$(OutputPath)\$(Prefix)baseclasscs.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
-    <Csc TargetType="library" EmitDebugInformation="true" Sources="src\dynamicobjmodel.cs" OutputAssembly="$(OutputPath)\$(Prefix)dynamicobjmodel.dll" References="$(OutputPath)\Microsoft.Scripting.Core.dll;$(OutputPath)\Microsoft.Dynamic.dll" />
+    <Csc TargetType="library" EmitDebugInformation="true" Sources="src\dynamicobjmodel.cs" OutputAssembly="$(OutputPath)\$(Prefix)dynamicobjmodel.dll" References="$(OutputPath)\Microsoft.Dynamic.dll" />
   </Target>
   <Target Name="VBManyArea" Inputs="@(AreaVBFile)" Outputs="@(AreaCSFile->'$(OutputPath)\$(Prefix)%(Filename).dll')" DependsOnTargets="TypeSample">
     <Vbc TargetType="library" EmitDebugInformation="true" Sources="src\indexerdefinitionsvb.vb" OutputAssembly="$(OutputPath)\$(Prefix)indexerdefinitionsvb.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />

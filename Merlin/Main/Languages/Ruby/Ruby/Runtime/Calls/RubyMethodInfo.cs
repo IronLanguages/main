@@ -27,7 +27,7 @@ using IronRuby.Compiler.Ast;
 using Microsoft.Scripting.Utils;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MethodDeclaration = IronRuby.Compiler.Ast.MethodDeclaration;
+using MethodDeclaration = IronRuby.Compiler.Ast.MethodDefinition;
 using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
@@ -37,13 +37,14 @@ namespace IronRuby.Runtime.Calls {
         // Delegate type for methods with many parameters.
         internal static readonly Type ParamsArrayDelegateType = typeof(Func<object, Proc, object[], object>);
 
-        private RubyMethodBody _body;
+        private readonly RubyMethodBody/*!*/ _body;
         private readonly RubyScope/*!*/ _declaringScope;
 
         public string/*!*/ DefinitionName { get { return _body.Name; } }
         public int MandatoryParamCount { get { return _body.MandatoryParameterCount; } }
         public int OptionalParamCount { get { return _body.OptionalParameterCount; } }
         public bool HasUnsplatParameter { get { return _body.HasUnsplatParameter; } }
+        public MSA.SymbolDocumentInfo Document { get { return _body.Document; } }
         public RubyScope/*!*/ DeclaringScope { get { return _declaringScope; } }
 
         // method:
@@ -111,7 +112,7 @@ namespace IronRuby.Runtime.Calls {
 
             // 2 implicit args: self, block
             var argsBuilder = new ArgsBuilder(2, MandatoryParamCount, OptionalParamCount, _body.HasUnsplatParameter);
-            argsBuilder.SetImplicit(0, AstFactory.Box(args.TargetExpression));
+            argsBuilder.SetImplicit(0, AstUtils.Box(args.TargetExpression));
             argsBuilder.SetImplicit(1, args.Signature.HasBlock ? AstUtils.Convert(args.GetBlockExpression(), typeof(Proc)) : AstFactory.NullOfProc);
             argsBuilder.AddCallArguments(metaBuilder, args);
 
@@ -122,7 +123,7 @@ namespace IronRuby.Runtime.Calls {
             // box explicit arguments:
             var boxedArguments = argsBuilder.GetArguments();
             for (int i = 2; i < boxedArguments.Length; i++) {
-                boxedArguments[i] = AstFactory.Box(boxedArguments[i]);
+                boxedArguments[i] = AstUtils.Box(boxedArguments[i]);
             }
 
             var method = GetDelegate();

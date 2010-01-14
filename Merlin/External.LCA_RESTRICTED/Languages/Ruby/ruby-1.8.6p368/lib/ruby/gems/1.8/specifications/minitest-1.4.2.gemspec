@@ -25,7 +25,7 @@ mini/mock, by Steven Baker, is a beautifully tiny mock object framework.
   s.rdoc_options = ["--main", "README.txt"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{bfts}
-  s.rubygems_version = %q{1.3.4}
+  s.rubygems_version = %q{1.3.5}
   s.summary = %q{minitest/unit is a small and fast replacement for ruby's huge and slow test/unit}
   s.test_files = ["test/test_mini_mock.rb", "test/test_mini_spec.rb", "test/test_mini_test.rb"]
 

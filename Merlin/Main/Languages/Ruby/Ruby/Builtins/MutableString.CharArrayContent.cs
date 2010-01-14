@@ -169,8 +169,8 @@ namespace IronRuby.Builtins {
                 return DataToBytes(0);
             }
 
-            internal override byte[]/*!*/ GetByteArray() {
-                return SwitchToBinary().GetByteArray();
+            internal override byte[]/*!*/ GetByteArray(out int count) {
+                return SwitchToBinary().GetByteArray(out count);
             }
 
             public override Content/*!*/ EscapeRegularExpression() {

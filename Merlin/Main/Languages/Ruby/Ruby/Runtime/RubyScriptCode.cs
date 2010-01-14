@@ -121,7 +121,6 @@ namespace IronRuby.Runtime {
             int compilationThreshold) {
 
             if (debugMode) {
-#if !SILVERLIGHT
                 // try to use PDBs and fallback to CustomGenerator if not allowed to:
                 if (_HasPdbPermissions) {
                     try {
@@ -131,7 +130,6 @@ namespace IronRuby.Runtime {
                         _HasPdbPermissions = false;
                     }
                 }
-#endif
                 return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
             } else if (noAdaptiveCompilation) {
                 Delegate result = lambda.Compile();

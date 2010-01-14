@@ -59,6 +59,10 @@ describe "Setting .NET Fields" do
       @klass.field.should equal_clr_string("bar")
     end
 
+    it "works with send" do
+      @klass.send(:field=, "foo")
+      @klass.field.should equal_clr_string("foo")
+    end
     it "const fields raises NoMethodError" do
       lambda {ClassWithFields.constField = "foo"}.should raise_error(NoMethodError)
     end

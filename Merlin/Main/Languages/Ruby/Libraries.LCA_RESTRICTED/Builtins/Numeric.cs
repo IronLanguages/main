@@ -436,7 +436,7 @@ namespace IronRuby.Builtins {
                 double floatSelf = self is double ? (double)self : site.Target(site, self);
                 double floatLimit = limit is double ? (double)self : site.Target(site, limit);
                 double floatStep = step is double ? (double)self : site.Target(site, step);
-                return Step(block, floatSelf, floatLimit, floatSelf);
+                return Step(block, floatSelf, floatLimit, floatStep);
             } else {
                 #region The generic step algorithm:
                 // current = self

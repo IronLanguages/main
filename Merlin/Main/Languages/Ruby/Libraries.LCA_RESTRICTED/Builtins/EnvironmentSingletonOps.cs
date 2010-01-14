@@ -29,8 +29,8 @@ namespace IronRuby.Builtins {
     [RubyConstant("ENV")]
     [RubySingleton, Includes(typeof(Enumerable))]
     public static class EnvironmentSingletonOps {
-        private static MutableString/*!*/ FrozenString(object/*!*/ value) {
-            return MutableString.Create((string)value, RubyEncoding.UTF8).Freeze();
+        private static MutableString/*!*/ FrozenString(object value) {
+            return MutableString.Create((string)value ?? "", RubyEncoding.UTF8).Freeze();
         }
 
         private static void SetEnvironmentVariable(RubyContext/*!*/ context, string/*!*/ name, string value) {

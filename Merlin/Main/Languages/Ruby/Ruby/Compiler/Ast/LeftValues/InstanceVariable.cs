@@ -38,7 +38,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformWriteVariable(AstGenerator/*!*/ gen, MSA.Expression/*!*/ rightValue) {
-            return Methods.SetInstanceVariable.OpCall(gen.CurrentSelfVariable, AstFactory.Box(rightValue), gen.CurrentScopeVariable, AstUtils.Constant(Name));
+            return Methods.SetInstanceVariable.OpCall(gen.CurrentSelfVariable, AstUtils.Box(rightValue), gen.CurrentScopeVariable, AstUtils.Constant(Name));
         }
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {

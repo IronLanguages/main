@@ -1389,7 +1389,6 @@ namespace IronRuby.Builtins {
                 return Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
-            var bindingFlags = BindingFlags.Public | (Context.DomainManager.Configuration.PrivateBinding ? BindingFlags.NonPublic : 0);
             ConstructorInfo ctor;
             if (IsException()) {
                 if ((ctor = GetConstructor(type, typeof(string))) != null) {
@@ -1420,7 +1419,7 @@ namespace IronRuby.Builtins {
 
         private void BuildDelegateConstructorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ type) {
             if (args.Signature.HasBlock) {
-                var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+                RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
                 if (!metaBuilder.Error) {
                     metaBuilder.Result = Methods.CreateDelegateFromProc.OpCall(
                         AstUtils.Constant(type),

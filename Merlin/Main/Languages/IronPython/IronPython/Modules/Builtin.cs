@@ -1600,10 +1600,12 @@ namespace IronPython.Modules {
             }
         }
 
+        [return: SequenceTypeInfo(typeof(int))]
         public static List range(int stop) {
             return rangeWorker(stop);
         }
 
+        [return: SequenceTypeInfo(typeof(int))]
         public static List range(BigInteger stop) {
             return rangeWorker(stop);
         }
@@ -1629,10 +1631,12 @@ namespace IronPython.Modules {
             throw PythonOps.OverflowError("too many items in the range");
         }
 
+        [return: SequenceTypeInfo(typeof(int))]
         public static List range(int start, int stop) {
             return rangeWorker(start, stop);
         }
 
+        [return: SequenceTypeInfo(typeof(int))]
         public static List range(BigInteger start, BigInteger stop) {
             return rangeWorker(start, stop);
         }
@@ -1667,10 +1671,12 @@ namespace IronPython.Modules {
             throw PythonOps.OverflowError("too many items in the range");
         }
 
+        [return: SequenceTypeInfo(typeof(int))]
         public static List range(int start, int stop, int step) {
             return rangeWorker(start, stop, step);
         }
 
+        [return: SequenceTypeInfo(typeof(int))]
         public static List range(BigInteger start, BigInteger stop, BigInteger step) {
             return rangeWorker(start, stop, step);
         }
@@ -1727,6 +1733,7 @@ namespace IronPython.Modules {
         /// 
         /// The method binder would usally report an OverflowError in this case.
         /// </summary>
+        [return: SequenceTypeInfo(typeof(int))]
         public static List range(CodeContext/*!*/ context, double stop) {
             PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "range: integer argument expected, got float");
             return range(GetRangeAsInt(stop, "end"));
@@ -1737,6 +1744,7 @@ namespace IronPython.Modules {
         /// 
         /// The method binder would usally report an OverflowError in this case.
         /// </summary>
+        [return: SequenceTypeInfo(typeof(int))]
         public static List range(CodeContext/*!*/ context, double start, double stop, [DefaultParameterValue(1.0)]double step) {
             PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "range: integer argument expected, got float");
             return range(GetRangeAsInt(start, "start"), GetRangeAsInt(stop, "end"), GetRangeAsInt(step, "step"));

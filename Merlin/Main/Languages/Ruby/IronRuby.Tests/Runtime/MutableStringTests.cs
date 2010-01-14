@@ -109,7 +109,7 @@ namespace IronRuby.Tests {
             // same content, different encodings:
             // ASCII characters only:
             a = MutableString.Create("hello", RubyEncoding.UTF8);
-            b = MutableString.Create("hello", RubyEncoding.GetRubyEncoding("SJIS"));
+            b = MutableString.Create("hello", RubyEncoding.KCodeSJIS.RealEncoding);
             c = MutableString.CreateAscii("hello");
             Assert(a.GetHashCode() == b.GetHashCode());
             Assert(a.GetHashCode() == c.GetHashCode());
@@ -117,7 +117,7 @@ namespace IronRuby.Tests {
 
             // non-ASCII characters:
             a = MutableString.Create("α", RubyEncoding.UTF8);
-            b = MutableString.Create("α", RubyEncoding.GetRubyEncoding("SJIS"));
+            b = MutableString.Create("α", RubyEncoding.KCodeSJIS.RealEncoding);
             c = MutableString.CreateBinary(Encoding.UTF8.GetBytes("α"), RubyEncoding.Binary);
             Assert(a.GetHashCode() != b.GetHashCode());
             Assert(a.GetHashCode() != c.GetHashCode());
@@ -166,7 +166,7 @@ namespace IronRuby.Tests {
         [Options(NoRuntime = true)]
         public void MutableString_CompareTo() {
             MutableString x, y;
-            RubyEncoding SJIS = RubyEncoding.GetRubyEncoding("SJIS");
+            RubyEncoding SJIS = RubyEncoding.KCodeSJIS.RealEncoding;
 
             // invalid bytes <=> valid string:
             var invalid = new byte[] { 0xe2, 0x85, 0x9c, 0xef };
@@ -605,7 +605,7 @@ namespace IronRuby.Tests {
         }
 
         private byte[] Sjis(string str) {
-            return Encoding.GetEncoding("SJIS").GetBytes(str);
+            return RubyEncoding.KCodeSJIS.StrictEncoding.GetBytes(str);
         }
 
         [Options(NoRuntime = true)]

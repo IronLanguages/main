@@ -103,8 +103,8 @@ namespace IronRuby.Runtime.Conversions {
 
             metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(
                 AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
-                AstFactory.Box(args.TargetExpression),
-                AstFactory.Box(metaBuilder.Result)
+                AstUtils.Box(args.TargetExpression),
+                AstUtils.Box(metaBuilder.Result)
             );
         }
 

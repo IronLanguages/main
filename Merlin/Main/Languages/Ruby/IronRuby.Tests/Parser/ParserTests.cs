@@ -841,7 +841,7 @@ p __ENCODING__
             var enc = Engine.Execute<RubyEncoding>(@"eval('# encoding: SJIS
 __ENCODING__
 ')");
-            Assert(enc == RubyEncoding.GetRubyEncoding("SJIS"));
+            Assert(enc == RubyEncoding.KCodeSJIS.RealEncoding);
         }
 
         [Options(Compatibility = RubyCompatibility.Ruby19)]

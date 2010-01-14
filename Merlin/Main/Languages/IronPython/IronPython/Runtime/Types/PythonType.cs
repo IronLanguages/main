@@ -852,6 +852,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 ret = site.Target(site, o, context);
                 return ret != OperationFailed.Value;
             } catch (MissingMemberException) {
+                ExceptionHelpers.DynamicStackFrames = null;
                 ret = null;
                 return false;
             }
@@ -1374,6 +1375,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 }
             } catch (MissingMemberException) {
                 //!!! when do we let the user see this exception?
+                ExceptionHelpers.DynamicStackFrames = null;
             }
 
             return false;
@@ -1478,6 +1480,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 }
             } catch (MissingMemberException) {
                 //!!! when do we let the user see this exception?
+                ExceptionHelpers.DynamicStackFrames = null;
             }
 
             value = null;
@@ -1580,6 +1583,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 }
             } catch (MissingMemberException) {
                 //!!! when do we let the user see this exception?
+                ExceptionHelpers.DynamicStackFrames = null;
             }
 
             return TryDeleteNonCustomMember(context, instance, name);
@@ -2826,6 +2830,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 try {
                     return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
                 } catch (MissingMemberException) {
+                    ExceptionHelpers.DynamicStackFrames = null;
                 }
 
                 if (_getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
@@ -2851,6 +2856,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 try {
                     return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
                 } catch (MissingMemberException) {
+                    ExceptionHelpers.DynamicStackFrames = null;
                 }
 
                 if (_getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
@@ -2869,6 +2875,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 try {
                     return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
                 } catch (MissingMemberException) {
+                    ExceptionHelpers.DynamicStackFrames = null;
                 }
 
                 object res;
@@ -2905,6 +2912,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 try {
                     return PythonContext.GetContext(context).Call(context, res, _name);
                 } catch (MissingMemberException) {
+                    ExceptionHelpers.DynamicStackFrames = null;
                     return OperationFailed.Value;
                 }
             } else {

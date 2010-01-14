@@ -29,6 +29,7 @@ using Microsoft.Scripting.Utils;
 namespace IronRuby.Hosting {
     public sealed class RubyConsoleOptions : ConsoleOptions {
         public string ChangeDirectory;
+        public bool DisplayVersion;
     }
 
     public sealed class RubyOptionsParser : OptionsParser<RubyConsoleOptions> {
@@ -174,7 +175,7 @@ namespace IronRuby.Hosting {
 
                 case "--version":
                 case "-v":
-                    CommonConsoleOptions.PrintVersion = true;
+                    ConsoleOptions.DisplayVersion = true;
                     goto case "-W2";
 
                 case "-W0":

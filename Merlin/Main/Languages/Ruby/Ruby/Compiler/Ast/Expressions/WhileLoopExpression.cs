@@ -25,10 +25,11 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using AstBlock = Microsoft.Scripting.Ast.BlockBuilder;
 
     // pre-test:
     //   while <expression> do <statements> end
@@ -98,7 +99,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             // make the loop first:
-            MSA.Expression loop = new AstBlock(null) {
+            MSA.Expression loop = new AstBlock {
                 gen.ClearDebugInfo(),
                 Ast.Assign(redoVariable, AstUtils.Constant(_isPostTest)),
 
@@ -143,7 +144,7 @@ namespace IronRuby.Compiler.Ast {
                 );
             }
 
-            return AstFactory.Block(loop, resultVariable);
+            return Ast.Block(loop, resultVariable);
         }
 
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {

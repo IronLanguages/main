@@ -1574,7 +1574,10 @@ namespace IronRuby.Runtime {
 
         [Emitted, Obsolete("Internal only")]
         public static byte[]/*!*/ GetMutableStringBytes(MutableString/*!*/ str) {
-            return str.GetByteArray();
+
+            int byteCount;
+            var result = str.GetByteArray(out byteCount);
+            return result;
         }
 
         #endregion

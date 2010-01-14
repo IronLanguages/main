@@ -205,6 +205,26 @@ namespace IronPython.Runtime.Types {
                 if (mi.ReturnType != typeof(void)) {
                     retType.Append(GetPythonTypeName(mi.ReturnType));
                     returnCount++;
+
+                    var typeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(SequenceTypeInfoAttribute), true);
+                    if (typeAttrs.Length > 0) {
+                        retType.Append(" (of ");
+                        SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs[0];
+                        for (int curTypeAttr = 0; curTypeAttr < typeAttr.Types.Count; curTypeAttr++) {
+                            if (curTypeAttr != 0) {
+                                retType.Append(", ");
+                            }
+
+                            retType.Append(GetPythonTypeName(typeAttr.Types[curTypeAttr]));
+                        }
+                        retType.Append(")");
+                    }
+
+                    var dictTypeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(DictionaryTypeInfoAttribute), true);
+                    if (dictTypeAttrs.Length > 0) {
+                        var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs[0];
+                        retType.Append(String.Format(" (of {0} to {1})", GetPythonTypeName(dictTypeAttr.KeyType), GetPythonTypeName(dictTypeAttr.ValueType)));
+                    }
                 }
 
                 if (name != null) ret.Append(name);
@@ -285,14 +305,15 @@ namespace IronPython.Runtime.Types {
                 retType.Append(')');
             }
 
-            if (retType.Length != 0) retType.Append(' ');
-
-            retType.Append(ret.ToString());
+            if (retType.Length != 0) {
+                ret.Append(" -> ");
+                ret.Append(retType);
+            }
 
             // Append XML Doc Info if available
             if (summary != null) {
-                retType.AppendLine(); retType.AppendLine();
-                retType.AppendLine(StringUtils.SplitWords(summary, true, lineWidth));
+                ret.AppendLine(); ret.AppendLine();
+                ret.AppendLine(StringUtils.SplitWords(summary, true, lineWidth));
             }
 
             if (parameters != null && parameters.Count > 0) {
@@ -300,10 +321,10 @@ namespace IronPython.Runtime.Types {
                 for (int j = 0; j < pis.Length; j++) {
                     for (int i = 0; i < parameters.Count; i++) {
                         if (pis[j].Name == parameters[i].Key) {
-                            retType.Append("    ");
-                            retType.Append(parameters[i].Key);
-                            retType.Append(": ");
-                            retType.AppendLine(StringUtils.SplitWords(parameters[i].Value, false, lineWidth));
+                            ret.Append("    ");
+                            ret.Append(parameters[i].Key);
+                            ret.Append(": ");
+                            ret.AppendLine(StringUtils.SplitWords(parameters[i].Value, false, lineWidth));
                             break;
                         }
                     }
@@ -311,12 +332,12 @@ namespace IronPython.Runtime.Types {
             }
 
             if (returns != null) {
-                retType.AppendLine();
-                retType.Append("    Returns: ");
-                retType.AppendLine(StringUtils.SplitWords(returns, false, lineWidth));
+                ret.AppendLine();
+                ret.Append("    Returns: ");
+                ret.AppendLine(StringUtils.SplitWords(returns, false, lineWidth));
             }
 
-            return retType.ToString();
+            return ret.ToString();
         }
 
         private static string GetPythonTypeName(Type type) {

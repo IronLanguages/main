@@ -454,10 +454,6 @@ namespace IronRuby.Builtins {
 
         private const char UUEncodeZero = '`';
 
-        private static void EncodeUU(byte[]/*!*/ input, Stream/*!*/ output) {
-            EncodeUU(input, 45, output);
-        }
-
         private static void EncodeUU(byte[]/*!*/ input, int bytesPerLine, Stream/*!*/ output) {
             ContractUtils.RequiresNotNull(input, "input");
             ContractUtils.RequiresNotNull(output, "output");
@@ -1454,15 +1450,6 @@ namespace IronRuby.Builtins {
                 }
             }
             return result;
-        }
-
-        private static bool HasCapacity(Stream/*!*/ s, int? n) {
-            if (s.Length < (s.Position + n)) {
-                s.Position = s.Length;
-                return false;
-            } else {
-                return true;
-            }
         }
 
         private static int CalculateCounts(int remaining, int? count, int size, out int leftover) {

@@ -1,7 +1,7 @@
 require 'date' 
 require File.dirname(__FILE__) + '/../../spec_helper'
 
-describe "Date#strftime" do
+describe "Date#strptime" do
 
   it "should be able to parse without arguments" do
     Date.strptime.should == Date.civil(-4712, 1, 1)
@@ -9,7 +9,6 @@ describe "Date#strftime" do
 
   it "should be able to parse the default date format" do
     Date.strptime("2000-04-06").should == Date.civil(2000, 4, 6)
-    Date.civil(2000, 4, 6).strftime.should == Date.civil(2000, 4, 6).to_s
   end
 
   it "should be able to parse the full day name" do
@@ -78,9 +77,9 @@ describe "Date#strftime" do
   end
 
   it "should be able to show the week number with the week starting on sunday and monday" do
-    d = Date.today
-    Date.strptime("14", "%U").should == Date.commercial(d.cwyear, 14, 7)
-    Date.strptime("14", "%W").should == Date.commercial(d.cwyear, 15, 7)
+    #Combining %Y since this spec previously failed on 1/1/2010
+    Date.strptime("14-2009", "%U-%Y").should == Date.commercial(2009, 14, 7)
+    Date.strptime("14-2009", "%W-%Y").should == Date.commercial(2009, 15, 7)
   end
   
   it "should be able to show the commercial week day" do
@@ -88,13 +87,10 @@ describe "Date#strftime" do
   end
 
   it "should be able to show the commercial week" do
-    d = Date.commercial(Date.today.year,1,1)
-    Date.strptime("1", "%V").should == d
-    Date.strptime("15", "%V").should == Date.commercial(d.cwyear, 15, 1)
+    Date.strptime("15", "%V").should == Date.commercial(Date.today.cwyear, 15, 1)
   end
   
   it "should be able to show the week day" do
-    d = Date.today
     Date.strptime("2007 4", "%Y %w").should == Date.civil(2007, 1, 4)
   end
 

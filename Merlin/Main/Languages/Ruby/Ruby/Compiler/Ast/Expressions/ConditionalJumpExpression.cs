@@ -69,7 +69,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             if (_value != null) {
-                return AstFactory.Block(
+                return Ast.Block(
                     AstUtils.IfThen(
                         _condition.TransformReadBoolean(gen, !_negateCondition),
                         _jumpStatement.Transform(gen)
@@ -78,8 +78,8 @@ namespace IronRuby.Compiler.Ast {
                 );
             } else {
                 MSA.Expression tmpVariable = gen.CurrentScope.DefineHiddenVariable("#tmp_cond", typeof(object));
-                return AstFactory.Block(
-                    Ast.Assign(tmpVariable, AstFactory.Box(_condition.TransformRead(gen))),
+                return Ast.Block(
+                    Ast.Assign(tmpVariable, AstUtils.Box(_condition.TransformRead(gen))),
                     AstUtils.IfThen(
                         (_negateCondition ? Methods.IsFalse : Methods.IsTrue).OpCall(tmpVariable),
                         _jumpStatement.Transform(gen)

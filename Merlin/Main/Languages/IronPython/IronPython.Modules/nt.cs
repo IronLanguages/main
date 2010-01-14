@@ -236,9 +236,7 @@ namespace IronPython.Modules {
 
             List ret = PythonOps.MakeList();
             try {
-                string[] files = context.LanguageContext.DomainManager.Platform.GetFiles(path, "*");
-                addBase(files, ret);
-                addBase(context.LanguageContext.DomainManager.Platform.GetDirectories(path, "*"), ret);
+                addBase(context.LanguageContext.DomainManager.Platform.GetFileSystemEntries(path, "*"), ret);
                 return ret;
             } catch (Exception e) {
                 throw ToPythonException(e, path);

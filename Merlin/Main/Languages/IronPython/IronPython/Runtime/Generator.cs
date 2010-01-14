@@ -183,9 +183,11 @@ namespace IronPython.Runtime {
                 // Generator should not have exited normally. 
                 throw new RuntimeException("generator ignored GeneratorExit");
             } catch (StopIterationException) {
-                // Ignore
+                // Ignore, clear any stack frames we built up
+                ExceptionHelpers.DynamicStackFrames = null; 
             } catch (GeneratorExitException) {
-                // Ignore
+                // Ignore, clear any stack frames we built up
+                ExceptionHelpers.DynamicStackFrames = null;
             }
         }
 
@@ -298,6 +300,8 @@ namespace IronPython.Runtime {
                     } catch {
                         // if stderr is closed then ignore any exceptions.
                     }
+
+                    ExceptionHelpers.DynamicStackFrames = null;
                 }
             }
         }
@@ -338,6 +342,7 @@ namespace IronPython.Runtime {
                     }
                 }
             } catch (StopIterationException) {
+                ExceptionHelpers.DynamicStackFrames = null;
                 return false;
             }
             return ret;

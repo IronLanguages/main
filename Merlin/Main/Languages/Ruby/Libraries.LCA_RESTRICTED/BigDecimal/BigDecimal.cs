@@ -2413,7 +2413,6 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 sb.Append("0.");
                 AppendDigits(sb, new string('0', -_exponent) + _fraction.ToString(), 0, Digits - _exponent, separateAt);
             } else {
-                int minExpLen = Math.Min(_exponent, Digits);
                 int expLenDiff = _exponent - Digits;
                 if (expLenDiff >= 0) {
                     AppendDigits(sb, _fraction.ToString() + new string('0', expLenDiff), 0, _exponent, separateAt);

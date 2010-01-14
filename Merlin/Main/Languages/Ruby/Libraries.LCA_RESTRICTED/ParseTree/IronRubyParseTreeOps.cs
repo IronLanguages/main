@@ -37,7 +37,8 @@ namespace IronRuby.StandardLibrary.ParseTree {
             public static RubyArray/*!*/ CreateParseTreeForMethod(object self,
                 [NotNull]RubyModule/*!*/ module, [DefaultProtocol, NotNull]string/*!*/ methodName, bool isClassMethod) {
 
-                bool includeNewLines = IncludeNewLines(module.Context, self);
+                // TODO:
+                // bool includeNewLines = IncludeNewLines(module.Context, self);
 
                 if (isClassMethod) {
                     module = module.SingletonClass;
@@ -70,12 +71,14 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 var options = RubyUtils.CreateCompilerOptionsForEval(scope, line);
 
                 SourceUnitTree ast = new Parser().Parse(source, options, scope.RubyContext.RuntimeErrorSink);
-                bool includeNewLines = IncludeNewLines(scope.RubyContext, self);
+                // TODO:
+                // bool includeNewLines = IncludeNewLines(scope.RubyContext, self);
                 var visitor = new AstVisitor(GetNodeNames(scope.RubyContext, self), false);
                 visitor.Walk(ast);
                 return visitor.Result;
             }
 
+#if TODO
             private static bool IncludeNewLines(RubyContext/*!*/ context, object self) {
                 object value;
                 if (context.TryGetInstanceVariable(self, "@include_newlines", out value)) {
@@ -83,7 +86,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 }
                 return false;
             }
-
+#endif
             private static RubyArray/*!*/ GetNodeNames(RubyContext/*!*/ context, object self) {
                 object value;
                 context.GetClassOf(self).TryGetConstant(null, "NODE_NAMES", out value);
@@ -220,16 +223,6 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     return list;
                 }
 
-                private RubyArray/*!*/ AddSplat(RubyArray/*!*/ list, object value) {
-                    var array = value as RubyArray;
-                    if (array != null) {
-                        list.AddRange(array);
-                    } else {
-                        list.Add(value);
-                    }
-                    return list;
-                }
-
                 private void UsingRhs(Rhs rhs, Action/*!*/ region) {
                     var oldRhs = _rhs;
                     _rhs = rhs;
@@ -308,6 +301,12 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                 public override bool Enter(SymbolLiteral/*!*/ node) {
                     _result = MakeNode(NodeKind.lit, SymbolTable.StringToId(node.GetMutableString(_encoding).ToString()));
+                    return false;
+                }
+
+                public override bool Enter(FileLiteral/*!*/ node) {
+                    // TODO:
+                    _result = MakeNode(NodeKind.lit, SymbolTable.StringToId("__FILE__"));
                     return false;
                 }
 
@@ -1386,11 +1385,11 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                 #region Declarations
 
-                private void AddScope(RubyArray/*!*/ list, DeclarationExpression/*!*/ node) {
+                private void AddScope(RubyArray/*!*/ list, DefinitionExpression/*!*/ node) {
                     list.Add(AddBody(MakeNode(NodeKind.scope), node.Body));
                 }
 
-                public override bool Enter(ModuleDeclaration/*!*/ node) {
+                public override bool Enter(ModuleDefinition/*!*/ node) {
                     var module = MakeNode(NodeKind.module, 2);
 
                     Walk(node.QualifiedName);
@@ -1402,7 +1401,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     return false;
                 }
 
-                public override bool Enter(ClassDeclaration/*!*/ node) {
+                public override bool Enter(ClassDefinition/*!*/ node) {
                     var module = MakeNode(NodeKind.@class, 3);
 
                     Walk(node.QualifiedName);
@@ -1421,7 +1420,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     return false;
                 }
 
-                public override bool Enter(SingletonDeclaration/*!*/ node) {
+                public override bool Enter(SingletonDefinition/*!*/ node) {
                     var module = MakeNode(NodeKind.sclass, 2);
 
                     Walk(node.Singleton);
@@ -1433,7 +1432,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     return false;
                 }
 
-                public override bool Enter(MethodDeclaration/*!*/ node) {
+                public override bool Enter(MethodDefinition/*!*/ node) {
                     bool isMethodAlias = _isMethodAlias;
                     _isMethodAlias = false;
 

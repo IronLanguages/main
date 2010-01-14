@@ -355,7 +355,7 @@ namespace IronRuby.Runtime.Calls {
             Expression resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
             ParameterExpression unwinder;
 
-            metaBuilder.Result = AstFactory.Block(
+            metaBuilder.Result = Ast.Block(
                 Ast.Assign(bfcVariable, Methods.CreateBfcForLibraryMethod.OpCall(AstUtils.Convert(args.GetBlockExpression(), typeof(Proc)))),
                 AstUtils.Try(
                     Ast.Assign(resultVariable, AstUtils.Convert(metaBuilder.Result, typeof(object)))

@@ -75,7 +75,7 @@ namespace IronRuby.Compiler.Ast {
         /// Transform as expression whose value is read as Boolean.
         /// </summary>
         internal virtual MSA.Expression/*!*/ TransformReadBoolean(AstGenerator/*!*/ gen, bool positive) {
-            return (positive ? Methods.IsTrue : Methods.IsFalse).OpCall(AstFactory.Box(TransformRead(gen))); 
+            return (positive ? Methods.IsTrue : Methods.IsFalse).OpCall(AstUtils.Box(TransformRead(gen))); 
         }
         
         /// <summary>

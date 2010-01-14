@@ -55,7 +55,7 @@ namespace IronRuby.Runtime.Calls {
             if (!metaBuilder.Error) {
                 metaBuilder.Result = Methods.GetInstanceVariable.OpCall(
                     AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),
-                    AstFactory.Box(args.TargetExpression),
+                    AstUtils.Box(args.TargetExpression),
                     AstUtils.Constant(InstanceVariableName)
                 );
             }
@@ -79,8 +79,8 @@ namespace IronRuby.Runtime.Calls {
             var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 1, 1);
             if (!metaBuilder.Error) {
                 metaBuilder.Result = Methods.SetInstanceVariable.OpCall(
-                    AstFactory.Box(args.TargetExpression),
-                    AstFactory.Box(actualArgs[0].Expression),
+                    AstUtils.Box(args.TargetExpression),
+                    AstUtils.Box(actualArgs[0].Expression),
                     AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),
                     AstUtils.Constant(InstanceVariableName)
                 );

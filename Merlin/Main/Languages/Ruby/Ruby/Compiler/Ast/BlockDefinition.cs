@@ -20,9 +20,9 @@ using MSA = Microsoft.Scripting.Ast;
 #endif
 
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
@@ -32,6 +32,8 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
+    using AstParameters = ReadOnlyCollectionBuilder<MSA.ParameterExpression>;
     
     public partial class BlockDefinition : Block {
         //	{ |args| body }
@@ -77,29 +79,28 @@ namespace IronRuby.Compiler.Ast {
             _parameters = parameters;
         }
 
-        private MSA.ParameterExpression[]/*!*/ DefineParameters(out MSA.Expression/*!*/ selfVariable, out MSA.Expression/*!*/ blockParamVariable) {
-            var parameters = new MSA.ParameterExpression[
+        private AstParameters/*!*/ DefineParameters(out MSA.ParameterExpression/*!*/ selfVariable, out MSA.ParameterExpression/*!*/ blockParamVariable) {
+            var parameters = new AstParameters(
                 HiddenParameterCount +
                 (HasFormalParametersInArray ? 1 : _parameters.LeftValues.Count) + 
                 (HasUnsplatParameter ? 1 : 0)
-            ];
+            );
 
             // hidden parameters:
             // #proc must be the first one - it is used as instance target for method invocation:
-            blockParamVariable = parameters[0] = Ast.Parameter(typeof(BlockParam), "#proc");
-            selfVariable = parameters[1] = Ast.Parameter(typeof(object), "#self");
+            parameters.Add(blockParamVariable = Ast.Parameter(typeof(BlockParam), "#proc"));
+            parameters.Add(selfVariable = Ast.Parameter(typeof(object), "#self"));
 
-            int i = HiddenParameterCount;
             if (HasFormalParametersInArray) {
-                parameters[i++] = Ast.Parameter(typeof(object[]), "#parameters");
+                parameters.Add(Ast.Parameter(typeof(object[]), "#parameters"));
             } else {
-                for (; i < parameters.Length; i++) {
-                    parameters[i] = Ast.Parameter(typeof(object), "#" + (i - HiddenParameterCount));
+                for (int i = 0; i < _parameters.LeftValues.Count; i++) {
+                    parameters.Add(Ast.Parameter(typeof(object), "#" + i));
                 }
             }
 
             if (HasUnsplatParameter) {
-                parameters[i] = Ast.Parameter(typeof(RubyArray), "#array");
+                parameters.Add(Ast.Parameter(typeof(RubyArray), "#array"));
             }
 
             return parameters;
@@ -113,8 +114,8 @@ namespace IronRuby.Compiler.Ast {
             ScopeBuilder scope = DefineLocals(gen.CurrentScope);
 
             // define hidden parameters and RHS-placeholders (#1..#n will be used as RHS of a parallel assignment):
-            MSA.Expression blockParameter, selfParameter;
-            MSA.ParameterExpression[] parameters = DefineParameters(out selfParameter, out blockParameter);
+            MSA.ParameterExpression blockParameter, selfParameter;
+            var parameters = DefineParameters(out selfParameter, out blockParameter);
 
             MSA.ParameterExpression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyBlockScope));
             MSA.LabelTarget redoLabel = Ast.Label();
@@ -190,7 +191,7 @@ namespace IronRuby.Compiler.Ast {
                     BlockDispatcher.CreateLambda(
                         body,
                         RubyExceptionData.EncodeMethodName(gen.CurrentMethod.MethodName, gen.SourcePath, Location),
-                        new ReadOnlyCollection<MSA.ParameterExpression>(parameters),
+                        parameters,
                         parameterCount,
                         attributes
                     )
@@ -198,36 +199,30 @@ namespace IronRuby.Compiler.Ast {
             );
         }
 
-        private MSA.Expression/*!*/ MakeParametersInitialization(AstGenerator/*!*/ gen, MSA.Expression[]/*!*/ parameters) {
-            Assert.NotNull(gen);
-            Assert.NotNullItems(parameters);
-
-            var result = AstFactory.CreateExpressionArray(
+        private MSA.Expression/*!*/ MakeParametersInitialization(AstGenerator/*!*/ gen, AstParameters/*!*/ parameters) {
+            var result = new AstExpressions(
                 _parameters.LeftValues.Count + 
                 (_parameters.UnsplattedValue != null ? 1 : 0) +
                 1
             );
 
-            int resultIndex = 0;
-
             bool paramsInArray = HasFormalParametersInArray;
             for (int i = 0; i < _parameters.LeftValues.Count; i++) {
-                var parameter = paramsInArray ?
+                var parameter = paramsInArray ? (MSA.Expression)
                     Ast.ArrayAccess(parameters[HiddenParameterCount], AstUtils.Constant(i)) :
                     parameters[HiddenParameterCount + i];
 
-                result[resultIndex++] = _parameters.LeftValues[i].TransformWrite(gen, parameter);
+                result.Add(_parameters.LeftValues[i].TransformWrite(gen, parameter));
             }
 
             if (_parameters.UnsplattedValue != null) {
                 // the last parameter is unsplat:
-                var parameter = parameters[parameters.Length - 1];
-                result[resultIndex++] = _parameters.UnsplattedValue.TransformWrite(gen, parameter);
+                var parameter = parameters[parameters.Count - 1];
+                result.Add(_parameters.UnsplattedValue.TransformWrite(gen, parameter));
             }
 
-            result[resultIndex++] = AstUtils.Empty();
-            Debug.Assert(resultIndex == result.Length);
-            return AstFactory.Block(result);
+            result.Add(AstUtils.Empty());
+            return Ast.Block(result);
         }
     }
 }

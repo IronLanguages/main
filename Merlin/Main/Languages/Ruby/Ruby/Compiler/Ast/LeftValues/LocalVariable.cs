@@ -65,10 +65,10 @@ namespace IronRuby.Compiler.Ast {
         internal override MSA.Expression/*!*/ TransformWriteVariable(AstGenerator/*!*/ gen, MSA.Expression/*!*/ rightValue) {
             if (_definitionLexicalDepth >= 0) {
                 // static lookup:
-                return Ast.Assign(gen.CurrentScope.GetVariableAccessor(_definitionLexicalDepth, _closureIndex), AstFactory.Box(rightValue));
+                return Ast.Assign(gen.CurrentScope.GetVariableAccessor(_definitionLexicalDepth, _closureIndex), AstUtils.Box(rightValue));
             } else {
                 // dynamic lookup:
-                return Methods.SetLocalVariable.OpCall(AstFactory.Box(rightValue), gen.CurrentScopeVariable, AstUtils.Constant(Name));
+                return Methods.SetLocalVariable.OpCall(AstUtils.Box(rightValue), gen.CurrentScopeVariable, AstUtils.Constant(Name));
             }
         }
 

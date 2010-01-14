@@ -14,8 +14,8 @@ flags = ["", "/partial", "/noadaptive", "/partial /noadaptive", "/sync"]
 
 ENV['ROWAN_BIN'] ||= "#{ENV['MERLIN_ROOT']}\\bin\\debug"
 
-flags.each do |flag|
-  cmd = "IronRuby.Tests.exe #{flag}"
+flags.each do |flag|  
+  cmd = "#{ENV['ROWAN_RUNTIME']} IronRuby.Tests.exe #{flag}"
   banner cmd
   Dir.chdir(ENV['ROWAN_BIN']) do
     exit 1 unless system cmd

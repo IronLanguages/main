@@ -37,7 +37,7 @@ namespace IronRuby.Compiler.Ast {
 
             // eval:
             if (gen.CompilerOptions.IsEval) {
-                return Methods.EvalBreak.OpCall(gen.CurrentScopeVariable, AstFactory.Box(transformedReturnValue));
+                return Methods.EvalBreak.OpCall(gen.CurrentScopeVariable, AstUtils.Box(transformedReturnValue));
             }
 
             // loop:
@@ -54,11 +54,11 @@ namespace IronRuby.Compiler.Ast {
 
             // block:
             if (gen.CurrentBlock != null) {
-                return gen.Return(Methods.BlockBreak.OpCall(gen.CurrentBlock.BfcVariable, AstFactory.Box(transformedReturnValue)));
+                return gen.Return(Methods.BlockBreak.OpCall(gen.CurrentBlock.BfcVariable, AstUtils.Box(transformedReturnValue)));
             }
 
             // primary frame:
-            return Methods.MethodBreak.OpCall(AstFactory.Box(transformedReturnValue));
+            return Methods.MethodBreak.OpCall(AstUtils.Box(transformedReturnValue));
         }
     }
 }

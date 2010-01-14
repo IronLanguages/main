@@ -33,7 +33,7 @@ namespace IronRuby.Tests {
                 RubyEncoding.KCodeEUC,
                 RubyEncoding.KCodeSJIS,
                 RubyEncoding.UTF8,
-                RubyEncoding.GetRubyEncoding("SJIS"),
+                RubyEncoding.KCodeSJIS.RealEncoding,
             };
 
             Assert(ArrayUtils.ValueEquals(encodings, Roundtrip(encodings)));

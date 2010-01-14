@@ -29,11 +29,12 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
     using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
+    using AstBlock = Microsoft.Scripting.Ast.BlockBuilder;
 
     public partial class CompoundLeftValue : LeftValue {
         /// <summary>
@@ -82,7 +83,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, MSA.Expression targetValue, MSA.Expression/*!*/ rightValue) {
             Debug.Assert(targetValue == null);
-            return TransformWrite(gen, AstFactory.Expressions(rightValue), null);
+            return TransformWrite(gen, new AstExpressions { rightValue }, null);
         }
 
         internal MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, CompoundRightValue/*!*/ rhs) {
@@ -131,7 +132,7 @@ namespace IronRuby.Compiler.Ast {
                 if (rightOneSplat) {
                     // R(1,*)
                     resultExpression = Methods.SplatPair.OpCall(
-                        AstFactory.Box(rightValues[0]), 
+                        AstUtils.Box(rightValues[0]), 
                         Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue)
                     );
                 } else {
@@ -159,22 +160,12 @@ namespace IronRuby.Compiler.Ast {
                 optimizeReads = !rightNoneSplat;
             }
 
-            int writesCount = _leftValues.Count + (_unsplattedValue != null ? 1 : 0);
-            if (writesCount == 0) {
-                return resultExpression;
-            }
+            var writes = new AstBlock();
 
-            var writes = new MSA.Expression[
-                1 +                // store result to a temp
-                writesCount + 
-                1                  // load from the temp
-            ];
-
-            int writeIndex = 0;
             MSA.Expression result = gen.CurrentScope.DefineHiddenVariable("#rhs", typeof(IList));
-            writes[writeIndex++] = Ast.Assign(result, resultExpression);
+            writes.Add(Ast.Assign(result, resultExpression));
 
-            MethodInfo itemGetter = typeof(IList).GetMethod("get_Item");
+            MethodInfo itemGetter = Methods.IList_get_Item;
             for (int i = 0; i < _leftValues.Count; i++) {
                 MSA.Expression rvalue;
 
@@ -193,7 +184,7 @@ namespace IronRuby.Compiler.Ast {
                     rvalue = Methods.GetArrayItem.OpCall(result, AstUtils.Constant(i));
                 }
 
-                writes[writeIndex++] = _leftValues[i].TransformWrite(gen, rvalue);
+                writes.Add(_leftValues[i].TransformWrite(gen, rvalue));
             }
 
             // unsplatting the rest of rhs values into an array:
@@ -203,13 +194,11 @@ namespace IronRuby.Compiler.Ast {
                 MSA.Expression array = Methods.GetArraySuffix.OpCall(result, AstUtils.Constant(_leftValues.Count));
 
                 // assign the array (possibly empty) to *LHS:
-                writes[writeIndex++] = _unsplattedValue.TransformWrite(gen, array);
+                writes.Add(_unsplattedValue.TransformWrite(gen, array));
             }
 
-            writes[writeIndex++] = result;
-
-            Debug.Assert(writes.Length == writeIndex);
-            return AstFactory.Block(writes);
+            writes.Add(result);
+            return writes;
         }
 
         internal BlockSignatureAttributes GetBlockSignatureAttributes() {

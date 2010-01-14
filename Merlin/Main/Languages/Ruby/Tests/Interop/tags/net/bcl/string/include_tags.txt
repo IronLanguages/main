@@ -1,3 +1,0 @@
-fails:System::String#include? takes System::Strings
-fails:System::String#include? takes Ruby Strings
-fails:System::String#include? takes System::Char's

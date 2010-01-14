@@ -48,45 +48,15 @@ namespace IronRuby.Compiler.Ast {
         internal static readonly MSA.Expression False = Ast.Constant(ScriptingRuntimeHelpers.False);
         internal static readonly MSA.Expression BlockReturnReasonBreak = AstUtils.Constant(BlockReturnReason.Break);
 
-        public static AstExpressions/*!*/ Expressions(MSA.Expression/*!*/ expression) {
-            var result = new AstExpressions();
-            result.Add(expression);
-            return result;
-        }
-
         public static MSA.Expression/*!*/ Infinite(MSA.LabelTarget @break, MSA.LabelTarget @continue, params MSA.Expression[]/*!*/ body) {
             return AstUtils.Infinite(Ast.Block(body), @break, @continue);
-        }
-
-        public static MSA.Expression[]/*!*/ CreateExpressionArray(int count) {
-            return (count > 0) ? new MSA.Expression[count] : EmptyExpressions;
-        }
-
-        public static MSA.Expression/*!*/ Block(params MSA.Expression/*!*/[]/*!*/ expressions) {
-            switch (expressions.Length) {
-                case 0: return AstUtils.Empty();
-                case 1: return expressions[0];
-                default: return Ast.Block(new ReadOnlyCollection<MSA.Expression>(expressions));
-            }
-        }
-
-        public static MSA.Expression/*!*/ Block(List<MSA.Expression/*!*/>/*!*/ expressions) {
-            switch (expressions.Count) {
-                case 0: return AstUtils.Empty();
-                case 1: return expressions[0];
-                default: return Ast.Block(new ReadOnlyCollection<MSA.Expression>(expressions.ToArray()));
-            }
-        }
-
-        public static MSA.Expression/*!*/ Box(MSA.Expression/*!*/ expression) {
-            return AstUtils.Convert(expression, typeof(object));
         }
 
         public static MSA.Expression/*!*/ IsTrue(MSA.Expression/*!*/ expression) {
             if (expression.Type == typeof(bool)) {
                 return expression;
             } else {
-                return Methods.IsTrue.OpCall(Box(expression));
+                return Methods.IsTrue.OpCall(AstUtils.Box(expression));
             }
         }
 
@@ -94,7 +64,7 @@ namespace IronRuby.Compiler.Ast {
             if (expression.Type == typeof(bool)) {
                 return Ast.Not(expression);
             } else {
-                return Methods.IsFalse.OpCall(Box(expression));
+                return Methods.IsFalse.OpCall(AstUtils.Box(expression));
             }
         }
 
@@ -125,8 +95,8 @@ namespace IronRuby.Compiler.Ast {
                 } else if (ifFalse.Type.IsAssignableFrom(ifTrue.Type)) {
                     ifTrue = Ast.Convert(ifTrue, ifFalse.Type);
                 } else {
-                    ifTrue = Box(ifTrue);
-                    ifFalse = Box(ifFalse);
+                    ifTrue = AstUtils.Box(ifTrue);
+                    ifFalse = AstUtils.Box(ifFalse);
                 }
             }
 
@@ -156,17 +126,6 @@ namespace IronRuby.Compiler.Ast {
             }
         }
 
-        internal static Type/*!*/[]/*!*/ GetSignature(MSA.ParameterExpression/*!*/[]/*!*/ parameters, Type/*!*/ returnType) {
-            Type[] result = new Type[parameters.Length + 1];
-            for (int i = 0; i < parameters.Length; i++) {
-                result[i] = parameters[i].Type;
-            }
-
-            // return type:
-            result[result.Length - 1] = returnType;
-            return result;
-        }
-
         internal static MSA.Expression/*!*/ YieldExpression(
             RubyContext/*!*/ context,
             AstExpressions/*!*/ arguments, 
@@ -183,11 +142,11 @@ namespace IronRuby.Compiler.Ast {
             var args = new AstExpressions();
 
             foreach (var arg in arguments) {
-                args.Add(AstFactory.Box(arg));
+                args.Add(AstUtils.Box(arg));
             }
 
             if (hasArgumentArray) {
-                args = AstFactory.Expressions(Ast.NewArrayInit(typeof(object), args));
+                args = new AstExpressions { Ast.NewArrayInit(typeof(object), args) };
             }
 
             if (splattedArgument != null) {
@@ -195,10 +154,10 @@ namespace IronRuby.Compiler.Ast {
             }
 
             if (rhsArgument != null) {
-                args.Add(AstFactory.Box(rhsArgument));
+                args.Add(AstUtils.Box(rhsArgument));
             }
 
-            args.Add(AstFactory.Box(selfArgument));
+            args.Add(AstUtils.Box(selfArgument));
             args.Add(bfcVariable);
 
             return Ast.Call(opMethod, args);

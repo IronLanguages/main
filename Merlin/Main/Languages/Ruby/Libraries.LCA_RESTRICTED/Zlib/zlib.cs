@@ -538,7 +538,8 @@ namespace IronRuby.StandardLibrary.Zlib {
                     }
 
                     bool preset_dictionary_flag = ((flags & 0x20) >> 0x05 == 1);
-                    byte compression_level = (byte)((flags & 0xC0) >> (byte)0x06);
+                    // TODO: ??? 
+                    // byte compression_level = (byte)((flags & 0xC0) >> (byte)0x06);
 
                     //TODO: Add Preset Dictionary Support
                     if (preset_dictionary_flag) {
@@ -793,6 +794,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                     throw new Error("unknown compression method");
                 }
 
+#pragma warning disable 168,219 // TODO: mcs: unused locals
                 byte flg = reader.ReadByte();
                 bool ftext = IsBitSet(flg, 0);
                 bool fhcrc = IsBitSet(flg, 1);
@@ -808,6 +810,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                     int xlen = ReadUInt16LE(reader);
                     _xtraField = MutableString.CreateBinary(reader.ReadBytes(xlen));
                 }
+#pragma warning restore 168,219
 
                 if (fname) {
                     _originalName = ReadStringZ(reader);
@@ -1077,8 +1080,10 @@ namespace IronRuby.StandardLibrary.Zlib {
             private readonly GZipStream/*!*/ _gzipStream;
 
             // TODO:
+#pragma warning disable 414 // mcs: unused field
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
             private int _level, _strategy;
+#pragma warning restore 414
 
             private GzipWriter(RespondToStorage/*!*/ respondToStorage, RubyContext/*!*/ context, IOWrapper/*!*/ ioWrapper, int level, int strategy) 
                 : base(ioWrapper) {

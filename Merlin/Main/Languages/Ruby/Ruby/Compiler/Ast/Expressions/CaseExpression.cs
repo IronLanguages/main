@@ -103,7 +103,7 @@ namespace IronRuby.Compiler.Ast {
                     RubyCallAction.Make(gen.Context, "===", RubyCallSignature.WithImplicitSelf(2))
                 )),
                 Ast.Dynamic(ConvertToArraySplatAction.Make(gen.Context), typeof(object), array), 
-                AstFactory.Box(value)
+                AstUtils.Box(value)
             );
         }
 
@@ -161,7 +161,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             if (_value != null) {
-                result = AstFactory.Block(
+                result = Ast.Block(
                     Ast.Assign(value, Ast.Convert(_value.TransformRead(gen), typeof(object))),
                     result
                 );

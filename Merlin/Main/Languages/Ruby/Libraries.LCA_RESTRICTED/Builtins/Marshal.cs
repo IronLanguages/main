@@ -191,15 +191,14 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            class SubclassData {
-                internal SubclassData(MarshalWriter/*!*/ marshaller, object/*!*/ obj, Type type) {
-                    RubyClass libClass = marshaller._context.GetClass(type);
-                    RubyClass theClass = marshaller._context.GetClassOf(obj);
+            
+            private void WriteSubclassData(object/*!*/ obj, Type type) {
+                RubyClass libClass = _context.GetClass(type);
+                RubyClass theClass = _context.GetClassOf(obj);
 
-                    if (libClass != theClass && !(obj is RubyStruct)) {
-                        marshaller._writer.Write((byte)'C');
-                        marshaller.WriteModuleName(theClass);
-                    }
+                if (libClass != theClass && !(obj is RubyStruct)) {
+                    _writer.Write((byte)'C');
+                    WriteModuleName(theClass);
                 }
             }
 
@@ -220,20 +219,20 @@ namespace IronRuby.Builtins {
             }
 
             private void WriteString(MutableString/*!*/ value) {
-                SubclassData instanceWriter = new SubclassData(this, value, typeof(MutableString));
+                WriteSubclassData(value, typeof(MutableString));
                 _writer.Write((byte)'"');
                 WriteStringValue(value);
             }
 
             private void WriteRegex(RubyRegex/*!*/ value) {
-                SubclassData instanceWriter = new SubclassData(this, value, typeof(RubyRegex));
+                WriteSubclassData(value, typeof(RubyRegex));
                 _writer.Write((byte)'/');
                 WriteStringValue(value.Pattern);
                 _writer.Write((byte)value.Options);
             }
 
             private void WriteArray(RubyArray/*!*/ value) {
-                SubclassData instanceWriter = new SubclassData(this, value, typeof(RubyArray));
+                WriteSubclassData(value, typeof(RubyArray));
                 _writer.Write((byte)'[');
                 WriteInt32(value.Count);
                 foreach (object obj in value) {
@@ -246,7 +245,7 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.CreateTypeError("can't dump hash with default proc");
                 }
 
-                SubclassData instanceWriter = new SubclassData(this, value, typeof(Hash));
+                WriteSubclassData(value, typeof(Hash));
                 char typeFlag = (value.DefaultValue != null) ? '}' : '{';
                 _writer.Write((byte)typeFlag);
                 WriteInt32(value.Count);
@@ -334,7 +333,7 @@ namespace IronRuby.Builtins {
             }
 
             private void WriteStruct(RubyStruct/*!*/ obj) {
-                SubclassData instanceWriter = new SubclassData(this, obj, typeof(RubyStruct));
+                WriteSubclassData(obj, typeof(RubyStruct));
                 _writer.Write((byte)'S');
                 RubyClass theClass = _context.GetClassOf(obj);
                 TestForAnonymous(theClass);

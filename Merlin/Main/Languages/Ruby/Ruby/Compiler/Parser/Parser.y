@@ -64,7 +64,7 @@ using IronRuby.Compiler.Ast;
 %type<Expression> arg
 %type<ArgumentCount> args
 %type<Expression> block_expression                 // (Expression | BlockExpression | Body)
-%type<Expression> declaration_expression           // DeclarationExpression
+%type<Expression> definition_expression            // DefinitionExpression
 %type<Body> body
 %type<Expression> 
 
@@ -93,7 +93,7 @@ using IronRuby.Compiler.Ast;
 %type<Maplets> maplets 
 %type<Maplet> maplet 
 
-%type<Parameters> parameters_declaration parameters
+%type<Parameters> parameters_definition parameters
 %type<LocalVariables> parameter_list
 %type<LocalVariable> parameter array_parameter block_parameter block_parameter_opt
 %type<SimpleAssignmentExpressions> default_parameter_list 
@@ -1306,7 +1306,7 @@ primary:
         {
             $$ = $1;
         }
-    | declaration_expression
+    | definition_expression
         {
             $$ = $1;
         }
@@ -1333,7 +1333,7 @@ block_expression:
         }
 ;
 
-declaration_expression:
+definition_expression:
       CLASS qualified_module_name superclass
         {                
             EnterTopScope();
@@ -1343,7 +1343,7 @@ declaration_expression:
             if (InMethod) {
                 ErrorSink.Add(_sourceUnit, "class definition in method body", @1, -1, Severity.Error);
             }
-            $$ = new ClassDeclaration(CurrentScope, $2, $3, $5, @$);
+            $$ = new ClassDefinition(CurrentScope, $2, $3, $5, @$);
             LeaveScope();
         }
     | CLASS LSHFT expr
@@ -1361,7 +1361,7 @@ declaration_expression:
         {
             _inInstanceMethodDefinition = $<Integer1>4;
             _inSingletonMethodDefinition = $<Integer1>6;
-            $$ = new SingletonDeclaration(LeaveScope(), $3, $7, @$);
+            $$ = new SingletonDefinition(LeaveScope(), $3, $7, @$);
         }
     | MODULE qualified_module_name
         {
@@ -1372,7 +1372,7 @@ declaration_expression:
             if (InMethod) {
                 ErrorSink.Add(_sourceUnit, "module definition in method body", @1, -1, Severity.Error);
             }
-            $$ = new ModuleDeclaration(CurrentScope, $2, $4, @$);
+            $$ = new ModuleDefinition(CurrentScope, $2, $4, @$);
             LeaveScope();
         }
     | DEF method_name
@@ -1380,10 +1380,10 @@ declaration_expression:
             _inInstanceMethodDefinition++;
             EnterTopScope();
         }
-      parameters_declaration body END
+      parameters_definition body END
         {
             _inInstanceMethodDefinition--;
-            $$ = new MethodDeclaration(CurrentScope, null, $2, $4, $5, @$);
+            $$ = new MethodDefinition(CurrentScope, null, $2, $4, $5, @$);
             LeaveScope();
         }
     | DEF singleton dot_or_colon
@@ -1396,10 +1396,10 @@ declaration_expression:
             _tokenizer.SetState(LexicalState.EXPR_END);
             EnterTopScope();
         }
-      parameters_declaration body END
+      parameters_definition body END
         {
             _inSingletonMethodDefinition--;
-            $$ = new MethodDeclaration(CurrentScope, $2, $5, $7, $8, @$);
+            $$ = new MethodDefinition(CurrentScope, $2, $5, $7, $8, @$);
             LeaveScope();
         }
 ;
@@ -1905,7 +1905,7 @@ superclass:
         }
 ;
 
-parameters_declaration:
+parameters_definition:
       '(' parameters opt_nl ')'
           {
               $$ = $2;

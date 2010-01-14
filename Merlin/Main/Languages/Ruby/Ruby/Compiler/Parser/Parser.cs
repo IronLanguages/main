@@ -292,17 +292,6 @@ namespace IronRuby.Compiler {
             );
         }
 
-        // __FILE__
-        internal Expression/*!*/ GetCurrentFileExpression(SourceSpan location) {
-            if (_sourceUnit.Path == null && _sourceUnit.Kind == SourceCodeKind.Statements) {
-                return new StringLiteral("-e", location);
-            } else if (_sourceUnit.Path == null) {
-                return new StringLiteral("(eval)", location);
-            } else {
-                return new StringLiteral(_sourceUnit.Path, location);
-            }
-        }
-
         internal LeftValue/*!*/ CannotAssignError(string/*!*/ constantName, SourceSpan location) {
             Tokenizer.ReportError(Errors.CannotAssignTo, constantName);
             return CurrentScope.ResolveOrAddVariable(GenerateErrorLocalName(), location);

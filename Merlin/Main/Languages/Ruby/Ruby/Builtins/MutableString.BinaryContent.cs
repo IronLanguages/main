@@ -161,7 +161,8 @@ namespace IronRuby.Builtins {
                 return _data.GetSlice(0, _count);
             }
 
-            internal override byte[]/*!*/ GetByteArray() {
+            internal override byte[]/*!*/ GetByteArray(out int count) {
+                count = _count;
                 return _data;
             }
 

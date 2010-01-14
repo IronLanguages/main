@@ -374,10 +374,15 @@ namespace IronRuby.Builtins {
         #region %, *, +
 
         [RubyMethod("%")]
-        public static MutableString/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, MutableString/*!*/ self, object arg) {
-            IList args = arg as IList ?? new object[] { arg };
+        public static MutableString/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, MutableString/*!*/ self, [NotNull]IList/*!*/ args) {
             StringFormatter formatter = new StringFormatter(storage, self.ConvertToString(), self.Encoding, args);
             return formatter.Format().TaintBy(self);
+        }
+
+        [RubyMethod("%")]
+        public static MutableString/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, ConversionStorage<IList>/*!*/ arrayTryCast,
+            MutableString/*!*/ self, object args) {
+            return Format(storage, self, Protocols.TryCastToArray(arrayTryCast, args) ?? new[] { args });
         }
 
         // encoding aware

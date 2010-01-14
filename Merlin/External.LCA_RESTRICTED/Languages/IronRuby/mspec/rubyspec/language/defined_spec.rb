@@ -20,6 +20,15 @@ describe "The defined? keyword" do
       defined? @ivar
     end
 
+    protected
+    def protected_method
+      
+    end
+    
+    private
+    def private_method
+      
+    end
   end
 
   class LanguageDefinedSubclass < LanguageDefinedSpecs
@@ -241,6 +250,11 @@ describe "The defined? keyword" do
 
     o.baz.foo_defined.should == "constant";
     o.baz.bar_defined.should == "constant";
+  end
+
+  it "respects method visibility" do
+    defined?(LanguageDefinedSpecs.new.protected_method).should be_nil
+    defined?(LanguageDefinedSpecs.new.private_method).should be_nil
   end
 end
 
