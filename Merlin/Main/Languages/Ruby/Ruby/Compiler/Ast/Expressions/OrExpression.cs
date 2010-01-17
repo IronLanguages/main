@@ -59,8 +59,8 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression temp;
 
             MSA.Expression result = AstUtils.CoalesceFalse(
-                AstFactory.Box(left),
-                AstFactory.Box(right),
+                AstUtils.Box(left),
+                AstUtils.Box(right),
                 Methods.IsTrue,
                 out temp
             );

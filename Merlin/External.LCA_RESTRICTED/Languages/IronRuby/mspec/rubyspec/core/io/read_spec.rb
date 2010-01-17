@@ -88,6 +88,10 @@ describe "IO#read" do
   end
 
   after :each do
+    platform_is :windows do
+      #Windows will hold a hanlde to this file unless you close it.
+      @io.close unless @io.closed?
+    end
     File.delete(@fname) if File.exists?(@fname)
   end
 
@@ -97,7 +101,7 @@ describe "IO#read" do
     # certain conditions. I can't determine what these conditions are,
     # unfortunately. I believe it's safe to only close @io here because it's
     # instantiated anew before each example.
-    @io.close
+    @io.close unless @io.closed?
   end
 
   it "can be read from consecutively" do

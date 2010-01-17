@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+#pragma warning disable 169 // mcs: unused private method
 [assembly: IronRuby.Runtime.RubyLibraryAttribute(typeof(IronRuby.Builtins.BuiltinsLibraryInitializer))]
 [assembly: IronRuby.Runtime.RubyLibraryAttribute(typeof(IronRuby.StandardLibrary.Threading.ThreadingLibraryInitializer))]
 [assembly: IronRuby.Runtime.RubyLibraryAttribute(typeof(IronRuby.StandardLibrary.Sockets.SocketsLibraryInitializer))]
@@ -85,6 +86,7 @@ namespace IronRuby.Builtins {
             ExtendClass(typeof(Microsoft.Scripting.Actions.TypeGroup), 0x00000000, null, LoadMicrosoft__Scripting__Actions__TypeGroup_Instance, null, null, new IronRuby.Builtins.RubyModule[] {def39});
             // Skipped primitive: Object
             ExtendClass(typeof(System.Char), 0x00000000, null, LoadSystem__Char_Instance, null, null, new IronRuby.Builtins.RubyModule[] {def8, def39, def48}, 
+                new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Char>(IronRuby.Builtins.CharOps.Create), 
                 new Func<IronRuby.Builtins.RubyClass, System.Char, System.Char>(IronRuby.Builtins.CharOps.Create), 
                 new Func<IronRuby.Builtins.RubyClass, System.Char[], System.Char>(IronRuby.Builtins.CharOps.Create), 
                 new Func<IronRuby.Builtins.RubyClass, System.String, System.Char>(IronRuby.Builtins.CharOps.Create), 
@@ -107,7 +109,9 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.CreateArray)
             );
             DefineGlobalClass("Binding", typeof(IronRuby.Builtins.Binding), 0x00000007, Context.ObjectClass, LoadBinding_Instance, LoadBinding_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            DefineGlobalClass("Dir", typeof(IronRuby.Builtins.RubyDir), 0x0000000F, Context.ObjectClass, LoadDir_Instance, LoadDir_Class, null, new IronRuby.Builtins.RubyModule[] {def39});
+            DefineGlobalClass("Dir", typeof(IronRuby.Builtins.RubyDir), 0x0000000F, Context.ObjectClass, LoadDir_Instance, LoadDir_Class, null, new IronRuby.Builtins.RubyModule[] {def39}, 
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyDir>(IronRuby.Builtins.RubyDir.Create)
+            );
             #if !SILVERLIGHT
             if (Context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19) {
             DefineGlobalClass("Encoding", typeof(IronRuby.Builtins.RubyEncoding), 0x00000007, Context.ObjectClass, LoadEncoding_Instance, LoadEncoding_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -583,11 +587,15 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "each", 0x51, 
-                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyDir, IronRuby.Builtins.RubyDir>(IronRuby.Builtins.RubyDir.Each)
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyDir, System.Object>(IronRuby.Builtins.RubyDir.Each)
+            );
+            
+            DefineLibraryMethod(module, "initialize", 0x52, 
+                new Func<IronRuby.Builtins.RubyDir, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyDir>(IronRuby.Builtins.RubyDir.Reinitialize)
             );
             
             DefineLibraryMethod(module, "path", 0x51, 
-                new Func<IronRuby.Builtins.RubyDir, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyDir.GetPath)
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyDir, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyDir.GetPath)
             );
             
             DefineLibraryMethod(module, "pos", 0x51, 
@@ -599,7 +607,7 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "read", 0x51, 
-                new Func<IronRuby.Builtins.RubyDir, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyDir.Read)
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyDir, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyDir.Read)
             );
             
             DefineLibraryMethod(module, "rewind", 0x51, 
@@ -622,9 +630,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "chdir", 0x61, 
-                new Func<IronRuby.Runtime.BlockParam, System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyDir.ChangeDirectory), 
-                new Func<System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyDir.ChangeDirectory), 
-                new Func<IronRuby.Runtime.RubyContext, System.Object, System.Object>(IronRuby.Builtins.RubyDir.ChangeDirectory)
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyDir.ChangeDirectory), 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object>(IronRuby.Builtins.RubyDir.ChangeDirectory)
             );
             
             DefineLibraryMethod(module, "chroot", 0x61, 
@@ -632,19 +639,19 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "delete", 0x61, 
-                new Func<System.Object, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyDir.RemoveDirectory)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyDir.RemoveDirectory)
             );
             
             DefineLibraryMethod(module, "entries", 0x61, 
-                new Func<System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyDir.GetEntries)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyDir.GetEntries)
             );
             
             DefineLibraryMethod(module, "foreach", 0x61, 
-                new Func<IronRuby.Runtime.BlockParam, System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyDir.ForEach)
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyDir.ForEach)
             );
             
             DefineLibraryMethod(module, "getwd", 0x61, 
-                new Func<System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyDir.GetCurrentDirectory)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyDir.GetCurrentDirectory)
             );
             
             DefineLibraryMethod(module, "glob", 0x61, 
@@ -653,24 +660,24 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "mkdir", 0x61, 
-                new Func<System.Object, IronRuby.Builtins.MutableString, System.Object, System.Int32>(IronRuby.Builtins.RubyDir.MakeDirectory)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Object, System.Int32>(IronRuby.Builtins.RubyDir.MakeDirectory)
             );
             
             DefineLibraryMethod(module, "open", 0x61, 
-                new Func<IronRuby.Runtime.BlockParam, System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyDir.Open), 
-                new Func<System.Object, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyDir.Open)
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyDir.Open), 
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyDir>(IronRuby.Builtins.RubyDir.Open)
             );
             
             DefineLibraryMethod(module, "pwd", 0x61, 
-                new Func<System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyDir.GetCurrentDirectory)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyDir.GetCurrentDirectory)
             );
             
             DefineLibraryMethod(module, "rmdir", 0x61, 
-                new Func<System.Object, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyDir.RemoveDirectory)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyDir.RemoveDirectory)
             );
             
             DefineLibraryMethod(module, "unlink", 0x61, 
-                new Func<System.Object, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyDir.RemoveDirectory)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyDir.RemoveDirectory)
             );
             
         }
@@ -1107,7 +1114,7 @@ namespace IronRuby.Builtins {
             
             #if !SILVERLIGHT
             DefineLibraryMethod(module, "expand_path", 0x61, 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyFileOps.ExpandPath)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyFileOps.ExpandPath)
             );
             
             #endif
@@ -1146,7 +1153,7 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "rename", 0x61, 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyFileOps.Rename)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyFileOps.Rename)
             );
             
             DefineLibraryMethod(module, "split", 0x61, 
@@ -1406,7 +1413,7 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "file?", 0x61, 
-                new Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.FileTest.IsAFile)
+                new Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.FileTest.IsFile)
             );
             
             DefineLibraryMethod(module, "grpowned?", 0x61, 
@@ -2543,7 +2550,8 @@ namespace IronRuby.Builtins {
         
         private static void LoadIronRuby__Clr__String_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "%", 0x51, 
-                new Func<IronRuby.Builtins.StringFormatterSiteStorage, System.String, System.Object, System.String>(IronRuby.Builtins.ClrString.Format)
+                new Func<IronRuby.Builtins.StringFormatterSiteStorage, System.String, System.Collections.IList, System.String>(IronRuby.Builtins.ClrString.Format), 
+                new Func<IronRuby.Builtins.StringFormatterSiteStorage, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.String, System.Object, System.String>(IronRuby.Builtins.ClrString.Format)
             );
             
             DefineLibraryMethod(module, "*", 0x51, 
@@ -4657,7 +4665,8 @@ namespace IronRuby.Builtins {
         
         private static void LoadString_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "%", 0x51, 
-                new Func<IronRuby.Builtins.StringFormatterSiteStorage, IronRuby.Builtins.MutableString, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Format)
+                new Func<IronRuby.Builtins.StringFormatterSiteStorage, IronRuby.Builtins.MutableString, System.Collections.IList, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Format), 
+                new Func<IronRuby.Builtins.StringFormatterSiteStorage, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Builtins.MutableString, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Format)
             );
             
             DefineLibraryMethod(module, "*", 0x51, 
@@ -5230,6 +5239,10 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadSystem__Char_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
+            DefineLibraryMethod(module, "dump", 0x51, 
+                new Func<System.String, IronRuby.Builtins.MutableString>(IronRuby.Builtins.CharOps.Dump)
+            );
+            
             DefineLibraryMethod(module, "inspect", 0x51, 
                 new Func<System.Char, IronRuby.Builtins.MutableString>(IronRuby.Builtins.CharOps.Inspect)
             );
@@ -5589,8 +5602,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "join", 0x51, 
-                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join), 
-                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join)
+                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join), 
+                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join)
             );
             
             DefineLibraryMethod(module, "last", 0x51, 

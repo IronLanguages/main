@@ -1797,6 +1797,7 @@ namespace IronPython.Runtime {
 
                 program.Execute(pco, ErrorSink.Default);
             } catch (SystemExitException e) {
+                ExceptionHelpers.DynamicStackFrames = null;
                 object obj;
                 return e.GetExitCode(out obj);
             }

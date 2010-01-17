@@ -103,7 +103,7 @@ namespace IronRuby.Builtins {
 
         public int WriteBytes(MutableString/*!*/ buffer, int offset, int count, bool preserveEndOfLines) {
             // TODO: this is not safe, we are passing an internal pointer to the byte[] content of MutableString to the Stream:
-            return WriteBytes(buffer.SwitchToBytes().GetByteArray(), offset, count, preserveEndOfLines);
+            return WriteBytes(buffer.SwitchToBytes().GetByteArrayChecked(offset, count), offset, count, preserveEndOfLines);
         }
 
         public int WriteBytes(byte[]/*!*/ buffer, int offset, int count, bool preserveEndOfLines) {
@@ -210,7 +210,8 @@ namespace IronRuby.Builtins {
                     eof = bytesRead < count;
 
                     buffer.EnsureCapacity(end + 3);
-                    bytes = buffer.GetByteArray();
+                    int byteCount;
+                    bytes = buffer.GetByteArray(out byteCount);
 
                     if (bytes[end - 1] == CR && PeekByte(0) == LF) {
                         ReadByte();

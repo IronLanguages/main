@@ -161,6 +161,8 @@ namespace IronRuby.Tests {
                 File1,
                 File2,
                 File3,
+                Dir1,
+                Dir2,
                 
                 Regex1,
                 Regex2,

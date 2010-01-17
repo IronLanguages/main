@@ -967,13 +967,13 @@ public partial class Parser
       "ensure_opt", "jump_statement", "jump_statement_with_parameters", "jump_statement_parameterless", 
       "alias_statement", "conditional_statement", "primary", "expr", "expression_statement", 
       "superclass", "var_ref", "singleton", "case_expression", "arg", "args", 
-      "block_expression", "declaration_expression", "body", "method_call", "block_call", 
+      "block_expression", "definition_expression", "body", "method_call", "block_call", 
       "command_call", "block_command", "command", "else_opt", "if_tail", "undef_list", 
       "block_reference", "opt_block_reference", "cmd_brace_block", "brace_block", 
       "do_block", "array_key", "when_args", "paren_args", "open_args", "closed_args", 
       "command_args", "command_args_content", "opt_paren_args", "compound_rhs", 
       "qualified_module_name", "rescue_clauses", "rescue_clauses_opt", "rescue_clause", 
-      "when_clauses", "when_clause", "maplets", "maplet", "parameters_declaration", 
+      "when_clauses", "when_clause", "maplets", "maplet", "parameters_definition", 
       "parameters", "parameter_list", "parameter", "array_parameter", "block_parameter", 
       "block_parameter_opt", "default_parameter_list", "default_parameter", "string_embedded_variable", 
       "string_content", "string_contents", "string", "string_concatenation", 
@@ -4275,7 +4275,7 @@ public partial class Parser
 
   private void _319()
   {
-      // primary -> declaration_expression 
+      // primary -> definition_expression 
 #line 1310 "Parser.y"
 			{
             yyval.Expression = GetValue(1).Expression;
@@ -4331,13 +4331,13 @@ public partial class Parser
 
   private void _325()
   {
-      // declaration_expression -> Class qualified_module_name superclass @16 body End 
+      // definition_expression -> Class qualified_module_name superclass @16 body End 
 #line 1342 "Parser.y"
 			{
             if (InMethod) {
                 ErrorSink.Add(_sourceUnit, "class definition in method body", GetLocation(6), -1, Severity.Error);
             }
-            yyval.Expression = new ClassDeclaration(CurrentScope, GetValue(5).ConstantVariable, GetValue(4).Expression, GetValue(2).Body, yyloc);
+            yyval.Expression = new ClassDefinition(CurrentScope, GetValue(5).ConstantVariable, GetValue(4).Expression, GetValue(2).Body, yyloc);
             LeaveScope();
         }
   }
@@ -4365,12 +4365,12 @@ public partial class Parser
 
   private void _328()
   {
-      // declaration_expression -> Class Lshft expr @17 term @18 body End 
+      // definition_expression -> Class Lshft expr @17 term @18 body End 
 #line 1361 "Parser.y"
 			{
             _inInstanceMethodDefinition = GetValue(5).Integer1;
             _inSingletonMethodDefinition = GetValue(3).Integer1;
-            yyval.Expression = new SingletonDeclaration(LeaveScope(), GetValue(6).Expression, GetValue(2).Body, yyloc);
+            yyval.Expression = new SingletonDefinition(LeaveScope(), GetValue(6).Expression, GetValue(2).Body, yyloc);
         }
   }
 
@@ -4385,13 +4385,13 @@ public partial class Parser
 
   private void _330()
   {
-      // declaration_expression -> Module qualified_module_name @19 body End 
+      // definition_expression -> Module qualified_module_name @19 body End 
 #line 1371 "Parser.y"
 			{
             if (InMethod) {
                 ErrorSink.Add(_sourceUnit, "module definition in method body", GetLocation(5), -1, Severity.Error);
             }
-            yyval.Expression = new ModuleDeclaration(CurrentScope, GetValue(4).ConstantVariable, GetValue(2).Body, yyloc);
+            yyval.Expression = new ModuleDefinition(CurrentScope, GetValue(4).ConstantVariable, GetValue(2).Body, yyloc);
             LeaveScope();
         }
   }
@@ -4408,11 +4408,11 @@ public partial class Parser
 
   private void _332()
   {
-      // declaration_expression -> Def method_name @20 parameters_declaration body End 
+      // definition_expression -> Def method_name @20 parameters_definition body End 
 #line 1384 "Parser.y"
 			{
             _inInstanceMethodDefinition--;
-            yyval.Expression = new MethodDeclaration(CurrentScope, null, GetValue(5).String, GetValue(3).Parameters, GetValue(2).Body, yyloc);
+            yyval.Expression = new MethodDefinition(CurrentScope, null, GetValue(5).String, GetValue(3).Parameters, GetValue(2).Body, yyloc);
             LeaveScope();
         }
   }
@@ -4439,11 +4439,11 @@ public partial class Parser
 
   private void _335()
   {
-      // declaration_expression -> Def singleton dot_or_colon @21 method_name @22 parameters_declaration body End 
+      // definition_expression -> Def singleton dot_or_colon @21 method_name @22 parameters_definition body End 
 #line 1400 "Parser.y"
 			{
             _inSingletonMethodDefinition--;
-            yyval.Expression = new MethodDeclaration(CurrentScope, GetValue(8).Expression, GetValue(5).String, GetValue(3).Parameters, GetValue(2).Body, yyloc);
+            yyval.Expression = new MethodDefinition(CurrentScope, GetValue(8).Expression, GetValue(5).String, GetValue(3).Parameters, GetValue(2).Body, yyloc);
             LeaveScope();
         }
   }
@@ -5319,7 +5319,7 @@ public partial class Parser
 
   private void _445()
   {
-      // parameters_declaration -> '(' parameters opt_nl ')' 
+      // parameters_definition -> '(' parameters opt_nl ')' 
 #line 1910 "Parser.y"
 			{
               yyval.Parameters = GetValue(3).Parameters;
@@ -5329,7 +5329,7 @@ public partial class Parser
 
   private void _446()
   {
-      // parameters_declaration -> parameters term 
+      // parameters_definition -> parameters term 
 #line 1915 "Parser.y"
 			{
             yyval.Parameters = GetValue(2).Parameters;

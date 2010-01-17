@@ -182,7 +182,7 @@ namespace IronRuby.Builtins {
             var bfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
             var resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
 
-            metaBuilder.Result = AstFactory.Block(
+            metaBuilder.Result = Ast.Block(
                 Ast.Assign(bfcVariable, Methods.CreateBfcForProcCall.OpCall(AstUtils.Convert(procExpression, typeof(Proc)))),
                 Ast.Assign(resultVariable, AstFactory.YieldExpression(
                     args.RubyContext,

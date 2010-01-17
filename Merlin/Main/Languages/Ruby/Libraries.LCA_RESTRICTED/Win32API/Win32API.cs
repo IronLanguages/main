@@ -12,7 +12,8 @@
  *
  *
  * ***************************************************************************/
-#define USE_SNIPPETS
+// debug only:
+// #define USE_SNIPPETS
 
 #if !SILVERLIGHT
 #if !CLR2
@@ -24,6 +25,7 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Collections;
 using System.ComponentModel;
+using System.Globalization;
 using System.Threading;
 using System.Diagnostics;
 using System.Reflection.Emit;
@@ -49,7 +51,6 @@ namespace IronRuby.StandardLibrary.Win32API {
     using Ast = Expression;
     using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using System.Globalization;
 
     [RubyClass("Win32API", BuildConfig = "!SILVERLIGHT")]
     public class Win32API : RubyObject {

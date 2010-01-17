@@ -194,6 +194,8 @@
     <Compile Include="Actions\MemberRequestKind.cs" />
     <Compile Include="Actions\OperationBinder.cs" />
     <Compile Include="Actions\OperationMetaObject.cs" />
+    <Compile Include="Ast\BlockBuilder.cs" />
+    <Compile Include="Ast\ExpressionCollectionBuilder.cs" />
     <Compile Include="Ast\FinallyFlowControlExpression.cs" />
     <Compile Include="Ast\FlowControlRewriter.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />

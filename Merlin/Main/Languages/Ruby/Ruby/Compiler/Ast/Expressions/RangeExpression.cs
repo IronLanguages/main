@@ -77,8 +77,8 @@ namespace IronRuby.Compiler.Ast {
                 );
             } else {
                 return (_isExclusive ? Methods.CreateExclusiveRange : Methods.CreateInclusiveRange).OpCall(
-                    AstFactory.Box(_begin.TransformRead(gen)), 
-                    AstFactory.Box(_end.TransformRead(gen)), 
+                    AstUtils.Box(_begin.TransformRead(gen)),
+                    AstUtils.Box(_end.TransformRead(gen)), 
                     gen.CurrentScopeVariable, 
                     AstUtils.Constant(new BinaryOpStorage(gen.Context))
                 );
@@ -132,8 +132,8 @@ namespace IronRuby.Compiler.Ast {
         ///   end  
         /// </code>
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            var begin = AstFactory.Box(_range.Begin.TransformRead(gen));
-            var end = AstFactory.Box(_range.End.TransformRead(gen));
+            var begin = AstUtils.Box(_range.Begin.TransformRead(gen));
+            var end = AstUtils.Box(_range.End.TransformRead(gen));
 
             // state: 
             // false <=> null

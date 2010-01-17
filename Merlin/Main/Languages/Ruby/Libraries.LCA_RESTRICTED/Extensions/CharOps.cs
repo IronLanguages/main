@@ -17,6 +17,7 @@ using System;
 using IronRuby.Runtime;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting.Runtime;
+using System.Text;
 
 namespace IronRuby.Builtins {
     [RubyClass(Extends = typeof(char), Restrictions = ModuleRestrictions.None)]
@@ -24,6 +25,15 @@ namespace IronRuby.Builtins {
     public static class CharOps {
         private static Exception/*!*/ EmptyError(string/*!*/ argType) {
             return RubyExceptions.CreateArgumentError("cannot convert an empty {0} to System::Char", argType);
+        }
+
+        [RubyConstructor]
+        public static char Create(RubyClass/*!*/ self, int utf16) {
+            try {
+                return checked((char)utf16);
+            } catch (OverflowException) {
+                throw RubyExceptions.CreateRangeError("{0} is not a valid UTF-16 character code", utf16);
+            }
         }
 
         [RubyConstructor]
@@ -60,7 +70,18 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(char self) {
-            return MutableString.CreateMutable("'" + self + "' (Char)", RubyEncoding.UTF8);
+            return MutableString.Create(
+                MutableString.AppendUnicodeRepresentation(new StringBuilder().Append('\''), self.ToString(), false, false, '\'', -1).Append("' (Char)").ToString(),
+                RubyEncoding.UTF8
+            );
+        }
+
+        [RubyMethod("dump", RubyMethodAttributes.PublicInstance)]
+        public static MutableString/*!*/ Dump(string/*!*/ self) {
+            return MutableString.Create(
+                MutableString.AppendUnicodeRepresentation(new StringBuilder().Append('\''), self.ToString(), false, true, '\'', -1).Append("' (Char)").ToString(),
+                RubyEncoding.UTF8
+            );
         }
     }
 }

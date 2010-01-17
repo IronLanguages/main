@@ -24,6 +24,8 @@ using System.Dynamic;
 using Microsoft.Scripting;
 
 namespace IronRuby.Compiler.Ast {
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+
     public partial class GlobalVariable : Variable {
 
         public string/*!*/ FullName {
@@ -40,7 +42,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformWriteVariable(AstGenerator/*!*/ gen, MSA.Expression/*!*/ rightValue) {
-            return Methods.SetGlobalVariable.OpCall(AstFactory.Box(rightValue), gen.CurrentScopeVariable, TransformName(gen));
+            return Methods.SetGlobalVariable.OpCall(AstUtils.Box(rightValue), gen.CurrentScopeVariable, TransformName(gen));
         }
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {

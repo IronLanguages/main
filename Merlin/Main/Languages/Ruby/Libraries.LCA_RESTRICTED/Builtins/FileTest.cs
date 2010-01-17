@@ -32,7 +32,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("directory?", RubyMethodAttributes.PublicSingleton)]
         public static bool IsDirectory(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.DirectoryExists(self.Context, path.ConvertToString());
+            return RubyFileOps.DirectoryExists(self.Context, path);
         }
 
         [RubyMethod("executable?", RubyMethodAttributes.PublicSingleton)]
@@ -44,13 +44,12 @@ namespace IronRuby.Builtins {
         [RubyMethod("exist?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("exists?", RubyMethodAttributes.PublicSingleton)]
         public static bool Exists(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string strPath = path.ConvertToString();
-            return RubyFileOps.FileExists(self.Context, strPath) || RubyFileOps.DirectoryExists(self.Context, strPath);
+            return RubyFileOps.FileExists(self.Context, path) || RubyFileOps.DirectoryExists(self.Context, path);
         }
 
         [RubyMethod("file?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsAFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.FileExists(self.Context, path.ConvertToString());
+        public static bool IsFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            return RubyFileOps.FileExists(self.Context, path);
         }
 
         [RubyMethod("grpowned?", RubyMethodAttributes.PublicSingleton)]
@@ -139,14 +138,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("zero?", RubyMethodAttributes.PublicSingleton)]
         public static bool IsZeroLength(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string strPath = path.ConvertToString();
+            string strPath = self.Context.DecodePath(path);
 
             // NUL/nul is a special-cased filename on Windows
             if (strPath.ToUpperInvariant() == "NUL") {
                 return RubyFileOps.RubyStatOps.IsZeroLength(RubyFileOps.RubyStatOps.Create(self.Context, strPath));
             }
 
-            if (RubyFileOps.DirectoryExists(self.Context, strPath) || !RubyFileOps.FileExists(self.Context, strPath)) {
+            if (self.Context.Platform.DirectoryExists(strPath) || !self.Context.Platform.FileExists(strPath)) {
                 return false;
             }
 

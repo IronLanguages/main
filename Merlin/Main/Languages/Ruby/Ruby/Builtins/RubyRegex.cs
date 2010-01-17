@@ -269,14 +269,15 @@ namespace IronRuby.Builtins {
             Debug.Assert(str != null);
 
             if (kcode != null) {
-                byte[] bytes = input.GetByteArray();
+                int byteCount;
+                byte[] bytes = input.GetByteArray(out byteCount);
 
                 if (start < 0) {
-                    start += bytes.Length;
+                    start += byteCount;
                 }
 
                 // GetCharCount returns the number of whole characters:
-                start = (start >= bytes.Length) ? str.Length : kcode.Encoding.GetCharCount(bytes, 0, start + 1) - 1;
+                start = (start >= byteCount) ? str.Length : kcode.Encoding.GetCharCount(bytes, 0, start + 1) - 1;
             } else {
                 if (start < 0) {
                     start += str.Length;

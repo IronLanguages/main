@@ -105,4 +105,9 @@ describe "YAML.load" do
   it 'accepts symbols in value' do
     YAML.load('foo: [:a, :b]').should == {'foo', [:a, :b]}
   end
+
+  ### http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=2044
+  it 'accepts mappings nested into sequences' do
+    YAML.load('[{ a: b}]').should == [{"a" => "b"}]
+  end
 end

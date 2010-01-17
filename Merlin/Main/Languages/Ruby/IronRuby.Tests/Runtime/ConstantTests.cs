@@ -20,8 +20,7 @@ namespace IronRuby.Tests {
 
     public partial class Tests {
         public void Constants1A() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class Const
   def get_const
     CONST
@@ -31,13 +30,13 @@ class Const
 end
 
 puts Const.new.get_const
+", @"
+1
 ");
-            }, @"1");
         }
 
         public void Constants1B() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 OUTER_CONST = 99
 class Const
   puts CONST = OUTER_CONST + 1
@@ -50,13 +49,13 @@ puts Const::CONST
 puts ::OUTER_CONST
 puts Const::NEW_CONST = 123
 puts Const2::CONST
-");
-            }, @"
+", @"
 100
 100
 99
 123
-100");
+100
+");
         }
 
         public void ConstantNames() {

@@ -13,23 +13,20 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Dynamic;
-using System.Diagnostics;
-using Microsoft.Scripting;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
-namespace IronRuby.Compiler.Ast {
-    using Ast = Expression;
-    #if !CLR2
+#if !CLR2
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
-    
+using Microsoft.Scripting;
+
+namespace IronRuby.Compiler.Ast {
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+
+    /// <summary>
+    /// Represents a symbol literal encoded by the containing source file encoding.
+    /// </summary>
     public partial class SymbolLiteral : StringLiteral {
         internal SymbolLiteral(object/*!*/ value, SourceSpan location) 
             : base(value, location) {

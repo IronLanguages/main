@@ -63,7 +63,7 @@ namespace IronRuby.Compiler {
                     return Literal.False(location);
 
                 case File:
-                    return parser.GetCurrentFileExpression(location);
+                    return new FileLiteral(location);
 
                 case Line:
                     return Literal.Integer(parser.Tokenizer.TokenSpan.Start.Line, location);

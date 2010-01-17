@@ -82,7 +82,7 @@ namespace IronRuby.Builtins {
         private void ExpandArgument(RubyArray/*!*/ args, string/*!*/ arg, RubyEncoding/*!*/ encoding) {
             if (arg.IndexOf('*') != -1 || arg.IndexOf('?') != -1) {
                 bool added = false;
-                foreach (string path in Glob.GlobResults(_context.DomainManager.Platform, arg, 0)) {
+                foreach (string path in Glob.GetMatches(_context.DomainManager.Platform, arg, 0)) {
                     args.Add(MutableString.Create(path, encoding));
                     added = true;
                 }

@@ -247,7 +247,7 @@ SUB
         private void Inspect1() {
             const char sq = '\'';
 
-            var sjisEncoding = RubyEncoding.GetRubyEncoding("SJIS");
+            var sjisEncoding = RubyEncoding.KCodeSJIS.StrictEncoding;
             // あ
             var sjisWide = new byte[] { 0x82, 0xa0 };
             // \u{12345} in UTF-8:
@@ -266,6 +266,11 @@ SUB
             Context.KCode = RubyEncoding.KCodeUTF8;
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.KCodeUTF8), Context, false, sq).ToString();
             Assert(s == "'" + utf16 + "'");
+
+            // incomplete character:
+            Context.KCode = RubyEncoding.KCodeUTF8;
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(new byte[] { 0xF0, 0x92 }, RubyEncoding.KCodeUTF8), Context, false, sq).ToString();
+            Assert(s == @"'\360\222'");
 
             Context.KCode = RubyEncoding.KCodeUTF8;
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.KCodeSJIS), Context, false, sq).ToString();
@@ -292,7 +297,7 @@ SUB
         private void Inspect2() {
             const char sq = '\'';
 
-            var sjisEncoding = RubyEncoding.GetRubyEncoding("SJIS");
+            var sjisEncoding = RubyEncoding.KCodeSJIS.RealEncoding;
             // あ
             var sjisWide = new byte[] { 0x82, 0xa0 };
             // \u{12345} in UTF-8:
@@ -314,6 +319,10 @@ SUB
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), Context, true, sq).ToString();
             Assert(s == @"'\u{12345}'");
 
+            // incomplete character:
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.Create("\ud808\udf45\ud808", RubyEncoding.UTF8), Context, false, sq).ToString();
+            Assert(s == @"'" + utf16 + @"\u{d808}'");
+            
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), Context, false, sq).ToString();
             Assert(s == @"'あ'");
 

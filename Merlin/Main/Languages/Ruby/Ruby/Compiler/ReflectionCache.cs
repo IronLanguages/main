@@ -54,7 +54,7 @@ namespace IronRuby.Compiler {
     public static partial class Methods {
         private static ConstructorInfo _RubyCallSignatureCtor;
         private static MethodInfo _Stopwatch_GetTimestamp, _IEnumerable_Of_Object_GetEnumerator, _IEnumerator_MoveNext, _IEnumerator_get_Current,
-            _WeakReference_get_Target;
+            _WeakReference_get_Target, _IList_get_Item;
 
         public static ConstructorInfo RubyCallSignatureCtor { get { return _RubyCallSignatureCtor ?? (_RubyCallSignatureCtor = GetConstructor(typeof(RubyCallSignature), typeof(uint))); } }
         
@@ -62,6 +62,7 @@ namespace IronRuby.Compiler {
         public static MethodInfo IEnumerable_Of_Object_GetEnumerator { get { return _IEnumerable_Of_Object_GetEnumerator ?? (_IEnumerable_Of_Object_GetEnumerator = GetMethod(typeof(IEnumerable<object>), "GetEnumerator", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_get_Current { get { return _IEnumerator_get_Current ?? (_IEnumerator_get_Current = GetMethod(typeof(IEnumerator), "get_Current", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_MoveNext { get { return _IEnumerator_MoveNext ?? (_IEnumerator_MoveNext = GetMethod(typeof(IEnumerator), "MoveNext", BindingFlags.Instance, Type.EmptyTypes)); } }
+        public static MethodInfo IList_get_Item { get { return _IList_get_Item ?? (_IList_get_Item = GetMethod(typeof(IList), "get_Item")); } }
         public static MethodInfo WeakReference_get_Target { get { return _WeakReference_get_Target ?? (_WeakReference_get_Target = GetMethod(typeof(WeakReference), "get_Target", BindingFlags.Instance, Type.EmptyTypes)); } }
 
         internal static ConstructorInfo/*!*/ GetConstructor(Type/*!*/ type, params Type/*!*/[]/*!*/ signature) {
@@ -92,11 +93,11 @@ namespace IronRuby.Compiler {
 
             switch (args.Count) {
                 case 0: return Methods.MakeArray0.OpCall();
-                case 1: return Methods.MakeArray1.OpCall(AstFactory.Box(args[0]));
-                case 2: return Methods.MakeArray2.OpCall(AstFactory.Box(args[0]), AstFactory.Box(args[1]));
-                case 3: return Methods.MakeArray3.OpCall(AstFactory.Box(args[0]), AstFactory.Box(args[1]), AstFactory.Box(args[2]));
-                case 4: return Methods.MakeArray4.OpCall(AstFactory.Box(args[0]), AstFactory.Box(args[1]), AstFactory.Box(args[2]), AstFactory.Box(args[3]));
-                case 5: return Methods.MakeArray5.OpCall(AstFactory.Box(args[0]), AstFactory.Box(args[1]), AstFactory.Box(args[2]), AstFactory.Box(args[3]), AstFactory.Box(args[4]));
+                case 1: return Methods.MakeArray1.OpCall(AstUtils.Box(args[0]));
+                case 2: return Methods.MakeArray2.OpCall(AstUtils.Box(args[0]), AstUtils.Box(args[1]));
+                case 3: return Methods.MakeArray3.OpCall(AstUtils.Box(args[0]), AstUtils.Box(args[1]), AstUtils.Box(args[2]));
+                case 4: return Methods.MakeArray4.OpCall(AstUtils.Box(args[0]), AstUtils.Box(args[1]), AstUtils.Box(args[2]), AstUtils.Box(args[3]));
+                case 5: return Methods.MakeArray5.OpCall(AstUtils.Box(args[0]), AstUtils.Box(args[1]), AstUtils.Box(args[2]), AstUtils.Box(args[3]), AstUtils.Box(args[4]));
 
                 default:
                     Debug.Assert(args.Count > Runtime.RubyOps.OptimizedOpCallParamCount);

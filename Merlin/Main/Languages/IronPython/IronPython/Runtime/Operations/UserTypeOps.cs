@@ -315,6 +315,7 @@ namespace IronPython.Runtime.Operations {
                 } 
             } catch (MissingMemberException) {
                 if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                    ExceptionHelpers.DynamicStackFrames = null;
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 }
 
@@ -341,11 +342,13 @@ namespace IronPython.Runtime.Operations {
             } catch (MissingMemberException) {
                 try {
                     if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                        ExceptionHelpers.DynamicStackFrames = null;
                         return callSite.Data.Target(callSite.Data, context, value, name);
                     }
 
                     return OperationFailed.Value;
                 } catch (MissingMemberException) {
+                    ExceptionHelpers.DynamicStackFrames = null;
                     return OperationFailed.Value;
                 }
             }
@@ -355,6 +358,7 @@ namespace IronPython.Runtime.Operations {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 }
             } catch (MissingMemberException) {
+                ExceptionHelpers.DynamicStackFrames = null;
             }
 
             return OperationFailed.Value;

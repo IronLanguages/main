@@ -27,7 +27,8 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
-
+    using AstBlock = Microsoft.Scripting.Ast.BlockBuilder;
+    
     /// <summary>
     /// yield(args)
     /// </summary>
@@ -55,7 +56,7 @@ namespace IronRuby.Compiler.Ast {
                 postYield = Methods.MethodYield.OpCall(gen.CurrentScopeVariable, bfcVariable, resultVariable);
             }
 
-            return AstFactory.Block(
+            return new AstBlock {
                 gen.DebugMarker("#RB: yield begin"),
 
                 Ast.Assign(bfcVariable, Methods.CreateBfcForYield.OpCall(gen.MakeMethodBlockParameterRead())),
@@ -70,7 +71,7 @@ namespace IronRuby.Compiler.Ast {
                 gen.DebugMarker("#RB: yield end"),
 
                 resultVariable
-            );
+            };
         }
 
         internal override string/*!*/ GetNodeName(AstGenerator/*!*/ gen) {

@@ -133,6 +133,7 @@ namespace IronPython.Runtime {
                             }
                         }
                     } catch (Exception) {
+                        ExceptionHelpers.DynamicStackFrames = null;
                     }
 
                     callbacks[i].LongRef.Free();

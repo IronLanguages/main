@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Security;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
 
@@ -151,9 +152,16 @@ namespace Microsoft.Scripting {
 
         #region Virtual File System
 
+        private static bool IsSingleRootFileSystem {
+            get {
+                return Environment.OSVersion.Platform == PlatformID.Unix
+                    || Environment.OSVersion.Platform == PlatformID.MacOSX;
+            }
+        }
+
         public virtual StringComparer PathComparer {
             get {
-                return StringComparer.Ordinal;
+                return Environment.OSVersion.Platform == PlatformID.Unix ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
             }
         }
 
@@ -173,6 +181,7 @@ namespace Microsoft.Scripting {
 #endif
         }
 
+        // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share) {
 #if !SILVERLIGHT
             return new FileStream(path, mode, access, share);
@@ -181,6 +190,7 @@ namespace Microsoft.Scripting {
 #endif
         }
 
+        // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
 #if !SILVERLIGHT
             return new FileStream(path, mode, access, share, bufferSize);
@@ -189,6 +199,7 @@ namespace Microsoft.Scripting {
 #endif
         }
 
+        // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path) {
 #if !SILVERLIGHT
             return new FileStream(path, FileMode.Open, FileAccess.Read);
@@ -197,6 +208,7 @@ namespace Microsoft.Scripting {
 #endif
         }
 
+        // TODO: better APIs
         public virtual Stream OpenOutputFileStream(string path) {
 #if !SILVERLIGHT
             return new FileStream(path, FileMode.Create, FileAccess.Write);
@@ -205,17 +217,58 @@ namespace Microsoft.Scripting {
 #endif
         }
 
-        public virtual string[] GetFiles(string path, string searchPattern) {
+        public virtual void DeleteFile(string path, bool deleteReadOnly) {
 #if !SILVERLIGHT
-            return Directory.GetFiles(path, searchPattern);            
+            FileInfo info = new FileInfo(path);
+            if (deleteReadOnly && info.IsReadOnly) {
+                info.IsReadOnly = false;
+            }
+            info.Delete();
 #else
             throw new NotImplementedException();
 #endif
         }
 
+        [Obsolete("Use GetFileSystemEntries instead")]
+        public virtual string[] GetFiles(string path, string searchPattern) {
+            return Directory.GetFiles(path, searchPattern);
+            // TODO: return GetFileSystemEntries(path, searchPattern, true, false);
+        }
+
+        [Obsolete("Use GetFileSystemEntries instead")]
         public virtual string[] GetDirectories(string path, string searchPattern) {
-#if !SILVERLIGHT
             return Directory.GetDirectories(path, searchPattern);
+            // TODO: return GetFileSystemEntries(path, searchPattern, false, true);
+        }
+
+        public string[] GetFileSystemEntries(string path, string searchPattern) {
+            return GetFileSystemEntries(path, searchPattern, true, true);
+        }
+
+        public virtual string[] GetFileSystemEntries(string path, string searchPattern, bool includeFiles, bool includeDirectories) {
+#if !SILVERLIGHT
+#pragma warning disable 618
+            if (includeFiles && includeDirectories) {
+                return ArrayUtils.AppendRange(GetDirectories(path, searchPattern), GetFiles(path, searchPattern));
+            }
+            if (includeFiles) {
+                return GetFiles(path, searchPattern);
+            }
+            if (includeDirectories) {
+                return GetDirectories(path, searchPattern);
+            }
+#pragma warning restore 618
+            // TODO: remove virtual GetFiles/GetDirectories and use this code:
+            //if (includeFiles && includeDirectories) {
+            //    return Directory.GetFileSystemEntries(path, searchPattern);
+            //}
+            //if (includeFiles) {
+            //    return Directory.GetFiles(path, searchPattern);
+            //}
+            //if (includeDirectories) {
+            //    return Directory.GetDirectories(path, searchPattern);
+            //}
+            return ArrayUtils.EmptyStrings;
 #else
             throw new NotImplementedException();
 #endif
@@ -234,8 +287,24 @@ namespace Microsoft.Scripting {
 #endif
         }
 
-        public virtual string GetFileName(string file) {
-            return Path.GetFileName(file);
+        public virtual string CombinePaths(string path1, string path2) {
+            return Path.Combine(path1, path2);
+        }
+
+        public virtual string GetFileName(string path) {
+            return Path.GetFileName(path);
+        }
+
+        public virtual string GetDirectoryName(string path) {
+            return Path.GetDirectoryName(path);
+        }
+
+        public virtual string GetExtension(string path) {
+            return Path.GetExtension(path);
+        }
+
+        public virtual string GetFileNameWithoutExtension(string path) {
+            return Path.GetFileNameWithoutExtension(path);
         }
 
         /// <exception cref="ArgumentException">Invalid path.</exception>
@@ -246,9 +315,11 @@ namespace Microsoft.Scripting {
             // "\" -> relative to the drive of the current dir
             // "X:" -> relative to the current dir, possibly on a different drive
             // "X:\" -> absolute
-            return
-                Environment.OSVersion.Platform != PlatformID.Unix && Path.GetPathRoot(path).EndsWith(@":\") ||
-                Environment.OSVersion.Platform == PlatformID.Unix && Path.IsPathRooted(path);
+            if (IsSingleRootFileSystem) {
+                return Path.IsPathRooted(path);
+            }
+            var root = Path.GetPathRoot(path);
+            return root.EndsWith(@":\") || root.EndsWith(@":/");
 #else
             throw new NotImplementedException();
 #endif
@@ -257,11 +328,42 @@ namespace Microsoft.Scripting {
         public virtual string CurrentDirectory {
             get {
 #if !SILVERLIGHT
-                return Environment.CurrentDirectory;
+                return Directory.GetCurrentDirectory();
 #else
                 throw new NotImplementedException();
 #endif
             }
+            set {
+#if !SILVERLIGHT
+                Directory.SetCurrentDirectory(value);
+#else
+                throw new NotImplementedException();
+#endif
+            }
+        }
+
+        public virtual void CreateDirectory(string path) {
+#if !SILVERLIGHT
+            Directory.CreateDirectory(path);
+#else
+            throw new NotImplementedException();
+#endif
+        }
+
+        public virtual void DeleteDirectory(string path, bool recursive) {
+#if !SILVERLIGHT
+            Directory.Delete(path, recursive);
+#else
+            throw new NotImplementedException();
+#endif
+        }
+
+        public virtual void MoveFileSystemEntry(string sourcePath, string destinationPath) {
+#if !SILVERLIGHT
+            Directory.Move(sourcePath, destinationPath);
+#else
+            throw new NotImplementedException();
+#endif
         }
 
         #endregion

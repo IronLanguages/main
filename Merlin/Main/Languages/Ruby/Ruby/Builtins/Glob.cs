@@ -20,6 +20,7 @@ using System.Text.RegularExpressions;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using System.IO;
 
 namespace IronRuby.Builtins {
     public static class Glob {
@@ -73,10 +74,6 @@ namespace IronRuby.Builtins {
             CharClass charClass = null;
 
             foreach (char c in pattern) {
-                if (c == '\\' && !inEscape && !noEscape) {
-                    inEscape = true;
-                    continue;
-                }
                 if (inEscape) {
                     if (charClass != null) {
                         charClass.Add(c);
@@ -85,7 +82,11 @@ namespace IronRuby.Builtins {
                     }
                     inEscape = false;
                     continue;
+                } else if (c == '\\' && !noEscape) {
+                    inEscape = true;
+                    continue;
                 }
+
                 if (charClass != null) {
                     if (c == ']') {
                         string set = charClass.MakeString();
@@ -318,30 +319,22 @@ namespace IronRuby.Builtins {
         }
 
         private static string[] UngroupGlobs(string/*!*/ pattern, bool noEscape) {
-            if (pattern.IndexOf('{') < 0) {
-                if (pattern.IndexOf('}') < 0) {
-                    return new string[1] { pattern };
-                } else {
-                    return ArrayUtils.EmptyStrings;
-                }
-            }
-
             GlobUngrouper ungrouper = new GlobUngrouper(pattern.Length);
 
             bool inEscape = false;
             foreach (char c in pattern) {
-                if (c == '\\' && !inEscape && !noEscape) {
-                    inEscape = true;
-                    continue;
-                }
                 if (inEscape) {
-                    if (c != ',' && c != '{' && c != '{') {
+                    if (c != ',' && c != '{' && c != '}') {
                         ungrouper.AddChar('\\');
                     }
                     ungrouper.AddChar(c);
                     inEscape = false;
                     continue;
+                } else if (c == '\\' && !noEscape) {
+                    inEscape = true;
+                    continue;
                 }
+
                 switch (c) {
                     case '{':
                         ungrouper.StartLevel();
@@ -372,12 +365,16 @@ namespace IronRuby.Builtins {
         }
 
         private sealed class GlobMatcher {
-            readonly PlatformAdaptationLayer/*!*/ _pal;
-            readonly string/*!*/ _pattern;
-            readonly int _flags;
-            readonly bool _dirOnly;
-            readonly List<string>/*!*/ _result;
-            bool _stripTwo;
+            private readonly PlatformAdaptationLayer/*!*/ _pal;
+            private readonly string/*!*/ _pattern;
+            private readonly int _flags;
+            private readonly bool _dirOnly;
+            private readonly List<string>/*!*/ _result;
+            private bool _stripTwo;
+
+            private bool NoEscapes {
+                get { return ((_flags & Constants.FNM_NOESCAPE) != 0); }
+            }
 
             internal GlobMatcher(PlatformAdaptationLayer/*!*/ pal, string/*!*/ pattern, int flags) {
                 _pal = pal;
@@ -423,15 +420,39 @@ namespace IronRuby.Builtins {
                     DoGlob(path, patternEnd, false);
                     return;
                 }
-                string pathName = path.Replace('\\', '/');
-                if (_stripTwo) {
-                    pathName = pathName.Substring(2);
+
+                if (!NoEscapes) {
+                    path = Unescape(path, _stripTwo ? 2 : 0);
+                } else if (_stripTwo) {
+                    path = path.Substring(2);
                 }
-                if (_pal.DirectoryExists(pathName)) {
-                    _result.Add(pathName);
-                } else if (!_dirOnly && _pal.FileExists(pathName)) {
-                    _result.Add(pathName);
+
+                if (_pal.DirectoryExists(path)) {
+                    _result.Add(path);
+                } else if (!_dirOnly && _pal.FileExists(path)) {
+                    _result.Add(path);
                 }
+            }
+
+            private static string/*!*/ Unescape(string/*!*/ path, int start) {
+                StringBuilder unescaped = new StringBuilder();
+                bool inEscape = false;
+                for (int i = start; i < path.Length; i++) {
+                    char c = path[i];
+                    if (inEscape) {
+                        inEscape = false;
+                    } else if (c == '\\') {
+                        inEscape = true;
+                        continue;
+                    }
+                    unescaped.Append(c);
+                }
+
+                if (inEscape) {
+                    unescaped.Append('\\');
+                }
+
+                return unescaped.ToString();
             }
 
             internal IList<string>/*!*/ DoGlob() {
@@ -484,12 +505,13 @@ namespace IronRuby.Builtins {
                     DoGlob(baseDirectory, patternEnd, true);
                 }
 
-                foreach (string file in _pal.GetDirectories(baseDirectory, "*").Concat(_pal.GetFiles(baseDirectory, "*"))) {
-                    string objectName = _pal.GetFileName(file);
+                foreach (string file in _pal.GetFileSystemEntries(baseDirectory, "*")) {
+                    string objectName = Path.GetFileName(file);
                     if (FnMatch(dirSegment, objectName, _flags)) {
-                        TestPath(file, patternEnd, isLastPathSegment);
+                        var canon = RubyUtils.CanonicalizePath(file);
+                        TestPath(canon, patternEnd, isLastPathSegment);
                         if (doubleStar) {
-                            DoGlob(file, position, true);
+                            DoGlob(canon, position, true);
                         }
                     }
                 }
@@ -512,7 +534,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        public static IEnumerable<string>/*!*/ GlobResults(PlatformAdaptationLayer/*!*/ pal, string/*!*/ pattern, int flags) {
+        public static IEnumerable<string>/*!*/ GetMatches(PlatformAdaptationLayer/*!*/ pal, string/*!*/ pattern, int flags) {
             if (pattern.Length == 0) {
                 yield break;
             }
@@ -527,6 +549,13 @@ namespace IronRuby.Builtins {
                 foreach (string filename in matcher.DoGlob()) {                 
                     yield return filename;
                 }
+            }
+        }
+
+        public static IEnumerable<MutableString>/*!*/ GetMatches(RubyContext/*!*/ context, MutableString/*!*/ pattern, int flags) {
+            string strPattern = context.DecodePath(pattern);
+            foreach (string strFileName in GetMatches(context.Platform, strPattern, flags)) {
+                yield return context.EncodePath(strFileName).TaintBy(pattern);
             }
         }
     }

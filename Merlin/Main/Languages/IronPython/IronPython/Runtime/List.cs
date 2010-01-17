@@ -98,6 +98,7 @@ namespace IronPython.Runtime {
                     extend(sequence);
                 }
             } catch (MissingMemberException) {
+                ExceptionHelpers.DynamicStackFrames = null;
                 _data = new object[20];
                 _size = 0;
                 extend(sequence);

@@ -53,7 +53,7 @@ namespace IronRuby.Runtime {
         // MRI compliance:
         public static readonly string/*!*/ MriVersion = "1.8.6";
         public static readonly string/*!*/ MriReleaseDate = "2009-03-31";
-        public static readonly int MriPatchLevel = 0; // TODO: core/string/modulo are failing if we claim compat with 368
+        public static readonly int MriPatchLevel = 368;
 
         // IronRuby:
         public const string/*!*/ IronRubyVersionString = "0.9.3.0";
@@ -69,7 +69,6 @@ namespace IronRuby.Runtime {
         private readonly RubyScope/*!*/ _emptyScope;
 
         private RubyOptions/*!*/ _options;
-        private MutableString _commandLineProgramPath;
         private readonly TopNamespaceTracker _namespaces;
         private readonly Loader/*!*/ _loader;
         private readonly Scope/*!*/ _globalScope;
@@ -79,6 +78,11 @@ namespace IronRuby.Runtime {
         private DynamicDelegateCreator _delegateCreator;
 
         #region Global Variables (thread-safe access)
+
+        /// <summary>
+        /// $0
+        /// </summary>
+        public MutableString CommandLineProgramPath { get; set; }
 
         /// <summary>
         /// $? of type Process::Status
@@ -280,17 +284,16 @@ namespace IronRuby.Runtime {
 
         #region Properties
 
+        public PlatformAdaptationLayer/*!*/ Platform {
+            get { return DomainManager.Platform; }
+        }
+
         public override LanguageOptions Options {
             get { return _options; }
         }
 
         public RubyOptions RubyOptions {
             get { return _options; }
-        }
-
-        public MutableString CommandLineProgramPath {
-            get { return _commandLineProgramPath; }
-            set { _commandLineProgramPath = value; }
         }
 
         internal RubyScope/*!*/ EmptyScope {
@@ -418,10 +421,7 @@ namespace IronRuby.Runtime {
             _inputProvider = new RubyInputProvider(this, _options.Arguments, _options.ArgumentEncoding);
             _globalScope = DomainManager.Globals;
             _loader = new Loader(this);
-            _emptyScope = new RubyTopLevelScope(this);
-            if (_options.MainFile != null) {
-                _commandLineProgramPath = MutableString.Create(_options.MainFile, RubyEncoding.Path);
-            }
+            _emptyScope = new RubyTopLevelScope(this);            
             _currentException = null;
             _currentSafeLevel = 0;
             _childProcessExitStatus = null;
@@ -436,6 +436,11 @@ namespace IronRuby.Runtime {
                 KCode = _options.KCode;
             }
             
+            // uses k-coding:
+            if (_options.MainFile != null) {
+                CommandLineProgramPath = EncodePath(_options.MainFile);
+            }
+
             if (_options.Verbosity <= 0) {
                 Verbose = null;
             } else if (_options.Verbosity == 1) {
@@ -539,7 +544,8 @@ namespace IronRuby.Runtime {
             Debug.Assert(_objectClass != null);
 
             MutableString version = MutableString.CreateAscii(RubyContext.MriVersion);
-            MutableString platform = MutableString.CreateAscii("i386-mswin32");   // TODO: make this the correct string for MAC OS X in Silverlight
+            MutableString platform = MakePlatformString();
+
             MutableString releaseDate = MutableString.CreateAscii(RubyContext.MriReleaseDate);
             MutableString rubyEngine = MutableString.CreateAscii("ironruby");
 
@@ -571,6 +577,24 @@ namespace IronRuby.Runtime {
 
                 // Hash
                 // SCRIPT_LINES__
+            }
+        }
+
+        private static MutableString/*!*/ MakePlatformString() {
+            switch (Environment.OSVersion.Platform) {
+                case PlatformID.MacOSX:
+                    return MutableString.CreateAscii("i386-darwin");
+                
+                case PlatformID.Unix:
+                    return MutableString.CreateAscii("i386-linux"); 
+
+                case PlatformID.Win32NT:
+                case PlatformID.Win32S:
+                case PlatformID.Win32Windows:
+                    return MutableString.CreateAscii("i386-mswin32");
+
+                default:
+                    return MutableString.CreateAscii("unknown");
             }
         }
 
@@ -1924,6 +1948,61 @@ namespace IronRuby.Runtime {
             _runtimeErrorSink.Add(null, message, SourceSpan.None, isVerbose ? Errors.RuntimeVerboseWarning : Errors.RuntimeWarning, Severity.Warning);
         }
 
+        public RubyEncoding/*!*/ GetPathEncoding() {
+            return KCode ?? 
+                // we need to force UTF8 encoding since the path can contain non-ascii characters:
+                (_options.Compatibility == RubyCompatibility.Ruby18 ? RubyEncoding.KCodeUTF8 : RubyEncoding.UTF8);
+        }
+
+        /// <summary>
+        /// Creates a mutable string encoded using the current KCODE or (K-)UTF8 if KCODE is not set.
+        /// </summary>
+        /// <exception cref="EncoderFallbackException">Invalid characters present.</exception>
+        public MutableString/*!*/ EncodePath(string/*!*/ path) {
+            return EncodePath(path, GetPathEncoding());
+        }
+
+        public MutableString TryEncodePath(string/*!*/ path) {
+            try {
+                return MutableString.Create(path, GetPathEncoding()).CheckEncoding();
+            } catch (EncoderFallbackException) {
+                return null;
+            }
+        }
+
+        internal static MutableString/*!*/ EncodePath(string/*!*/ path, RubyEncoding/*!*/ encoding) {
+            try {
+                return MutableString.Create(path, encoding).CheckEncoding();
+            } catch (EncoderFallbackException e) {
+                throw RubyExceptions.CreateEINVAL(
+                    e,
+                    "Path \"{0}\" contains characters that cannot be represented in encoding {1}: {2}",
+                    path.ToAsciiString(),
+                    encoding.RealEncoding.Name,
+                    e.Message
+                );
+            }
+        }
+
+        /// <summary>
+        /// Transcodes given mutable string to Unicode path that can be passed to the .NET IO system (or host).
+        /// </summary>
+        /// <exception cref="InvalidError">Invalid characters present.</exception>
+        public string/*!*/ DecodePath(MutableString/*!*/ path) {
+            try {
+                if (KCode != null) {
+                    return path.ToString(KCode.StrictEncoding);
+                } else if (path.Encoding.IsKCoding || path.IsBinaryEncoded) {
+                    // force UTF8 encoding to make round-trip work:
+                    return path.ToString(Encoding.UTF8);
+                } else {
+                    return path.ConvertToString();
+                }
+            } catch (DecoderFallbackException) {
+                throw RubyExceptions.CreateEINVAL("Invalid multi-byte sequence in path `{0}'", path.ToAsciiString());
+            }
+        }
+
         #endregion
 
         #region Library Data (thread-safe)
@@ -2581,7 +2660,7 @@ namespace IronRuby.Runtime {
 
                     _traceListener.Call(new[] {
                         MutableString.CreateAscii(operation),                                         // event
-                        fileName != null ? MutableString.Create(fileName, RubyEncoding.Path) : null,  // file
+                        fileName != null ? scope.RubyContext.EncodePath(fileName) : null,             // file
                         ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                            // line
                         SymbolTable.StringToId(name),                                                 // TODO: alias
                         new Binding(scope),                                                           // binding

@@ -1145,7 +1145,6 @@ namespace IronRuby.Runtime {
 
         #region expand_path
 
-#if !SILVERLIGHT
         // Algorithm to find HOME equivalents under Windows. This is equivalent to Ruby 1.9 behavior:
         // 
         // 1. Try get HOME
@@ -1153,36 +1152,32 @@ namespace IronRuby.Runtime {
         // 3. Try to generate HOME equivalent from USERPROFILE
         // 4. Try to generate HOME equivalent from Personal special folder 
 
-        public static string/*!*/ GetHomeDirectory(PlatformAdaptationLayer/*!*/ platform) {
-            PlatformAdaptationLayer pal = platform;
+        public static string/*!*/ GetHomeDirectory(PlatformAdaptationLayer/*!*/ pal) {
             string result = pal.GetEnvironmentVariable("HOME");
-
-            if (result != null) {
-                return result;
-            }
-
-            string homeDrive = pal.GetEnvironmentVariable("HOMEDRIVE");
-            string homePath = pal.GetEnvironmentVariable("HOMEPATH");
-            if (homeDrive == null && homePath == null) {
-                string userEnvironment = pal.GetEnvironmentVariable("USERPROFILE");
-                if (userEnvironment == null) {
-                    // This will always succeed with a non-null string, but it can fail
-                    // if the Personal folder was renamed or deleted. In this case it returns
-                    // an empty string.
-                    result = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+            if (result == null) {
+                string homeDrive = pal.GetEnvironmentVariable("HOMEDRIVE");
+                string homePath = pal.GetEnvironmentVariable("HOMEPATH");
+                if (homeDrive == null && homePath == null) {
+                    string userEnvironment = pal.GetEnvironmentVariable("USERPROFILE");
+                    if (userEnvironment == null) {
+                        // This will always succeed with a non-null string, but it can fail
+                        // if the Personal folder was renamed or deleted. In this case it returns
+                        // an empty string.
+                        result = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                    } else {
+                        result = userEnvironment;
+                    }
+                } else if (homeDrive == null) {
+                    result = homePath;
+                } else if (homePath == null) {
+                    result = homeDrive + Path.DirectorySeparatorChar;
                 } else {
-                    result = userEnvironment;
+                    result = homeDrive + homePath;
                 }
-            } else if (homeDrive == null) {
-                result = homePath;
-            } else if (homePath == null) {
-                result = homeDrive + Path.DirectorySeparatorChar;
-            } else {
-                result = homeDrive + homePath;
-            }
 
-            if (result != null) {
-                result = ExpandPath(platform, result);
+                if (result != null) {
+                    result = ExpandPath(pal, result);
+                }
             }
 
             return result;
@@ -1291,11 +1286,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static string/*!*/ ExpandPath(
-            PlatformAdaptationLayer/*!*/ platform,
-            string/*!*/ path,
-            string basePath) {
-
+        public static string/*!*/ ExpandPath(PlatformAdaptationLayer/*!*/ platform, string/*!*/ path, string basePath) {
             // We ignore basePath parameter if first string starts with a ~
             if (basePath == null || (path.Length > 0 && path[0] == '~')) {
                 return ExpandPath(platform, path);
@@ -1314,13 +1305,10 @@ namespace IronRuby.Runtime {
                 string currentDirectory = partialDriveLetter.ToString() + ":/";
                 if (platform.DirectoryExists(currentDirectory)) {
                     // File.expand_path("c:foo") returns "c:/current_folder_for_c_drive/foo"
-                    currentDirectory = Path.GetFullPath(partialDriveLetter.ToString() + ":");
+                    currentDirectory = platform.GetFullPath(partialDriveLetter.ToString() + ":");
                 }
 
-                return ExpandPath(
-                    platform,
-                    relativePath,
-                    currentDirectory);
+                return ExpandPath(platform, relativePath, currentDirectory);
             } else if (RubyUtils.IsAbsolutePath(basePath)) {
                 PathExpander pathExpander = new PathExpander(platform, basePath);
                 pathExpander.AddRelativePath(path);
@@ -1328,7 +1316,6 @@ namespace IronRuby.Runtime {
             } else if (RubyUtils.HasPartialDriveLetter(basePath, out partialDriveLetter, out relativePath)) {
                 // First expand basePath
                 string expandedBasePath = ExpandPath(platform, basePath);
-
                 return ExpandPath(platform, path, expandedBasePath);
             } else {
                 // First expand basePath
@@ -1338,7 +1325,6 @@ namespace IronRuby.Runtime {
                 return ExpandPath(platform, path, expandedBasePath);
             }
         }
-#endif
 
         #endregion
 

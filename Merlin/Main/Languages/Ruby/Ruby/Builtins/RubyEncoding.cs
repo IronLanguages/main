@@ -51,7 +51,6 @@ namespace IronRuby.Builtins {
         public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), null, CodePageUTF8);
         public static readonly RubyEncoding/*!*/ ClassName = UTF8; // TODO: remove
         public static readonly RubyEncoding/*!*/ Symbol = UTF8; // TODO: remove
-        public static readonly RubyEncoding/*!*/ Path = UTF8; // TODO: remove
         public static readonly RubyEncoding/*!*/ Obsolete = Binary;
         
         private static RubyEncoding _default;
@@ -113,10 +112,6 @@ namespace IronRuby.Builtins {
         // UTF8 for KUTF8, SJIS for KSJIS, EUC for KEUC, self for others.
         private readonly RubyEncoding/*!*/ _realEncoding; 
 
-        // TODO:
-        //private readonly Encoder/*!*/ _encoder, _strictEncoder;
-        //private readonly Decoder/*!*/ _decoder, _strictDecoder;
-        
         private RubyEncoding(Encoding/*!*/ encoding, Encoding/*!*/ strictEncoding, RubyEncoding realEncoding, int ordinal) {
             Assert.NotNull(encoding, strictEncoding);
             Debug.Assert(encoding is KCoding == strictEncoding is KCoding);
@@ -210,6 +205,8 @@ namespace IronRuby.Builtins {
                 case "UTF-8": return Encoding.UTF8;
                 default: throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name));
 #else
+                // Mono doesn't recognize 'SJIS' encoding name:
+                case "SJIS": return Encoding.GetEncoding(CodePageSJIS);
                 default: return Encoding.GetEncoding(name);
 #endif
             }

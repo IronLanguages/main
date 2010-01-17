@@ -188,7 +188,7 @@ namespace IronRuby.Compiler.Ast {
             Exit(node);
         }
 
-        internal protected virtual void Walk(ClassDeclaration/*!*/ node) {
+        internal protected virtual void Walk(ClassDefinition/*!*/ node) {
             if (Enter(node)) {
                 if (node.QualifiedName != null) {
                     node.QualifiedName.Walk(this);
@@ -203,7 +203,7 @@ namespace IronRuby.Compiler.Ast {
             Exit(node);
         }
 
-        internal protected virtual void Walk(MethodDeclaration/*!*/ node) {
+        internal protected virtual void Walk(MethodDefinition/*!*/ node) {
             if (Enter(node)) {
                 if (node.Target != null) {
                     node.Target.Walk(this);
@@ -216,7 +216,7 @@ namespace IronRuby.Compiler.Ast {
             Exit(node);
         }
 
-        internal protected virtual void Walk(ModuleDeclaration/*!*/ node) {
+        internal protected virtual void Walk(ModuleDefinition/*!*/ node) {
             if (Enter(node)) {
                 if (node.QualifiedName != null) {
                     node.QualifiedName.Walk(this);
@@ -227,7 +227,7 @@ namespace IronRuby.Compiler.Ast {
             Exit(node);
         }
 
-        internal protected virtual void Walk(SingletonDeclaration/*!*/ node) {
+        internal protected virtual void Walk(SingletonDefinition/*!*/ node) {
             if (Enter(node)) {
                 if (node.QualifiedName != null) {
                     node.QualifiedName.Walk(this);
@@ -349,6 +349,11 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal protected virtual void Walk(SymbolLiteral/*!*/ node) {
+            Enter(node);
+            Exit(node);
+        }
+
+        internal protected virtual void Walk(FileLiteral/*!*/ node) {
             Enter(node);
             Exit(node);
         }

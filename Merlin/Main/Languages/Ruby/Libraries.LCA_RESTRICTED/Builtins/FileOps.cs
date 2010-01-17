@@ -68,17 +68,17 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
-            return new RubyFile(self.Context, path.ConvertToString(), IOMode.Default);
+            return new RubyFile(self.Context, path, IOMode.Default);
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, MutableString mode) {
-            return new RubyFile(self.Context, path.ConvertToString(), IOModeEnum.Parse(mode));
+            return new RubyFile(self.Context, path, IOModeEnum.Parse(mode));
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, int mode) {
-            return new RubyFile(self.Context, path.ConvertToString(), (IOMode)mode);
+            return new RubyFile(self.Context, path, (IOMode)mode);
         }
 
         #endregion
@@ -224,7 +224,7 @@ namespace IronRuby.Builtins {
             return RubyUtils.CanonicalizePath(MutableString.Create(strResult, path.Encoding)).TaintBy(path);
         }
 
-        internal static void Chmod(string path, int permission) {
+        internal static void Chmod(string/*!*/ path, int permission) {
 #if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(path);
             if ((permission & WriteModeMask) == 0) {
@@ -243,7 +243,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
         public static int Chmod(RubyClass/*!*/ self, [DefaultProtocol]int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            Chmod(path.ConvertToString(), permission);
+            Chmod(self.Context.DecodePath(path), permission);
             return 1;
         }
 
@@ -278,36 +278,39 @@ namespace IronRuby.Builtins {
             return RubyStatOps.CreateTime(RubyStatOps.Create(self.Context, path));
         }
 
-        internal static bool FileExists(RubyContext/*!*/ context, string/*!*/ path) {
-            return context.DomainManager.Platform.FileExists(path);
+        internal static bool FileExists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            return context.Platform.FileExists(context.DecodePath(path));
         }
 
-        internal static bool DirectoryExists(RubyContext/*!*/ context, string/*!*/ path) {
-            return context.DomainManager.Platform.DirectoryExists(path);
+        internal static bool DirectoryExists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            return context.Platform.DirectoryExists(context.DecodePath(path));
+        }
+
+        internal static bool Exists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            var strPath = context.DecodePath(path);
+            return context.Platform.DirectoryExists(strPath) || context.Platform.FileExists(strPath);
         }
 
         [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
         public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string strPath = path.ConvertToString();
-            if (!FileExists(self.Context, strPath)) {
+            string strPath = self.Context.DecodePath(path);
+            if (!self.Context.Platform.FileExists(strPath)) {
                 throw RubyExceptions.CreateENOENT("No such file or directory - {0}", strPath);
             }
-#if !SILVERLIGHT
-            FileAttributes oldAttributes = File.GetAttributes(strPath);
-            if ((oldAttributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly) {
-                // File.Delete throws UnauthorizedAccessException if the file is read-only
-                File.SetAttributes(strPath, oldAttributes & ~FileAttributes.ReadOnly);
-            }
 
+            Delete(self.Context, strPath);     
+            return 1;
+        }
+
+        internal static void Delete(RubyContext/*!*/ context, string/*!*/ path) {
             try {
-                File.Delete(strPath);
+                context.Platform.DeleteFile(path, true);
+            } catch (DirectoryNotFoundException) {
+                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", path);
             } catch (IOException e) {
                 throw Errno.CreateEACCES(e.Message, e);
             }
-#endif
-            File.Delete(strPath);
-            return 1;
         }
 
         [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
@@ -326,13 +329,12 @@ namespace IronRuby.Builtins {
             string directoryName = strPath;
 
             if (IsValidPath(strPath)) {
-
                 strPath = StripPathCharacters(strPath);
 
                 // handle top-level UNC paths
                 directoryName = Path.GetDirectoryName(strPath);
                 if (directoryName == null) {
-                    return MutableString.Create(strPath, RubyEncoding.Path);
+                    return self.Context.EncodePath(strPath);
                 }
 
                 string fileName = Path.GetFileName(strPath);
@@ -346,7 +348,7 @@ namespace IronRuby.Builtins {
             }
 
             directoryName = String.IsNullOrEmpty(directoryName) ? "." : directoryName;
-            return MutableString.Create(directoryName, RubyEncoding.Path);
+            return self.Context.EncodePath(directoryName);
         }
 
         private static bool IsValidPath(string path) {
@@ -479,17 +481,19 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("expand_path", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static MutableString/*!*/ ExpandPath(
-            RubyContext/*!*/ context, 
             RubyClass/*!*/ self, 
             [DefaultProtocol, NotNull]MutableString/*!*/ path,
             [DefaultProtocol, Optional]MutableString basePath) {
 
-            string result = RubyUtils.ExpandPath(
-                context.DomainManager.Platform, 
-                path.ConvertToString(),
-                basePath == null ? null : basePath.ConvertToString());
+            var context = self.Context;
 
-            return MutableString.Create(result, RubyEncoding.Path);
+            string result = RubyUtils.ExpandPath(
+                context.Platform,
+                context.DecodePath(path),
+                basePath == null ? null : context.DecodePath(basePath)
+            );
+
+            return self.Context.EncodePath(result);
         }
 #endif
 
@@ -514,31 +518,31 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("rename", RubyMethodAttributes.PublicSingleton)]
-        public static int Rename(RubyContext/*!*/ context, RubyClass/*!*/ self,
+        public static int Rename(RubyClass/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ oldPath, [DefaultProtocol, NotNull]MutableString/*!*/ newPath) {
 
             if (oldPath.IsEmpty || newPath.IsEmpty) {
                 throw RubyExceptions.CreateENOENT();
             }
 
-            string strOldPath = oldPath.ConvertToString();
-            if (!FileExists(context, strOldPath) && !DirectoryExists(context, strOldPath)) {
+            var context = self.Context;
+
+            string strOldPath = context.DecodePath(oldPath);
+            if (!context.Platform.FileExists(strOldPath) && !context.Platform.DirectoryExists(strOldPath)) {
                 throw RubyExceptions.CreateENOENT("No such file or directory - {0}", oldPath);
             }
 
-            string strNewPath = newPath.ConvertToString();
-#if !SILVERLIGHT
-            PlatformAdaptationLayer platform = context.DomainManager.Platform;
-            if (RubyUtils.ExpandPath(platform, strOldPath) == RubyUtils.ExpandPath(platform, strNewPath)) {
+            string strNewPath = context.DecodePath(newPath);
+            if (RubyUtils.ExpandPath(context.Platform, strOldPath) == RubyUtils.ExpandPath(context.Platform, strNewPath)) {
                 return 0;
             }
-#endif
-            if (FileExists(context, strNewPath)) {
-                Delete(self, newPath);
+
+            if (context.Platform.FileExists(strNewPath)) {
+                Delete(context, strNewPath);
             }
 
             try {
-                Directory.Move(strOldPath, strNewPath);
+                context.Platform.MoveFileSystemEntry(strOldPath, strNewPath);
             } catch (IOException e) {
                 throw Errno.CreateEACCES(e.Message, e);
             }
@@ -570,7 +574,7 @@ namespace IronRuby.Builtins {
             if (size < 0) {
                 throw new InvalidError();
             }
-            using (RubyFile f = new RubyFile(self.Context, path.ConvertToString(), IOMode.ReadWrite)) {
+            using (RubyFile f = new RubyFile(self.Context, path, IOMode.ReadWrite)) {
                 f.Length = size;
             }
             return 0;
@@ -604,12 +608,12 @@ namespace IronRuby.Builtins {
         [RubyMethod("utime", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static int UpdateTimes(RubyClass/*!*/ self, [NotNull]RubyTime/*!*/ accessTime, [NotNull]RubyTime/*!*/ modifiedTime, 
             [NotNull]MutableString/*!*/ path) {
-            string strPath = path.ConvertToString();
-            if (!FileExists(self.Context, strPath)) {
+
+            string strPath = self.Context.DecodePath(path);
+            FileInfo info = new FileInfo(strPath);
+            if (!info.Exists) {
                 throw RubyExceptions.CreateENOENT("No such file or directory - {0}", strPath);
             }
-
-            FileInfo info = new FileInfo(strPath);
             info.LastAccessTimeUtc = accessTime.ToUniversalTime();
             info.LastWriteTimeUtc = modifiedTime.ToUniversalTime();
             return 1;
@@ -676,7 +680,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return MutableString.CreateMutable(RubyEncoding.Binary).
+            return MutableString.CreateMutable(context.GetPathEncoding()).
                 Append("#<File:").
                 Append(self.Path).
                 Append('>');
@@ -684,7 +688,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("path")]
         public static MutableString GetPath(RubyFile/*!*/ self) {
-            return self.Path != null ? MutableString.Create(self.Path, RubyEncoding.Path) : null;
+            return self.Path != null ? self.Context.EncodePath(self.Path) : null;
         }
 
         //truncate
@@ -700,7 +704,7 @@ namespace IronRuby.Builtins {
         public class RubyStatOps {
 
             internal static FileSystemInfo/*!*/ Create(RubyContext/*!*/ context, MutableString/*!*/ path) {
-                return Create(context, path.ConvertToString());
+                return Create(context, context.DecodePath(path));
             }
 
             internal static FileSystemInfo/*!*/ Create(RubyContext/*!*/ context, string/*!*/ path) {
@@ -713,7 +717,7 @@ namespace IronRuby.Builtins {
             }
 
             internal static bool TryCreate(RubyContext/*!*/ context, string/*!*/ path, out FileSystemInfo result) {
-                PlatformAdaptationLayer pal = context.DomainManager.Platform;
+                PlatformAdaptationLayer pal = context.Platform;
                 result = null;
                 if (pal.FileExists(path)) {
                     result = new FileInfo(path);                    

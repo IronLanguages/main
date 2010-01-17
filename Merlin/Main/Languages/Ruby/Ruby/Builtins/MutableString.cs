@@ -570,8 +570,9 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <exception cref="DecoderFallbackException">Invalid characters present.</exception>
         public string/*!*/ ToString(Encoding/*!*/ encoding) {
-            byte[] bytes = _content.GetByteArray();
-            return encoding.GetString(bytes, 0, bytes.Length);
+            int count;
+            byte[] bytes = _content.GetByteArray(out count);
+            return encoding.GetString(bytes, 0, count);
         }
 
         /// <summary>
@@ -579,7 +580,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <exception cref="DecoderFallbackException">Invalid characters present.</exception>
         public string/*!*/ ToString(Encoding/*!*/ encoding, int start, int count) {
-            return encoding.GetString(_content.GetByteArray(), start, count);
+            byte[] bytes = GetByteArrayChecked(start, count);
+            return encoding.GetString(bytes, start, count);
         }
 
         /// <summary>
@@ -1367,7 +1369,8 @@ namespace IronRuby.Builtins {
 
         // TODO: characters
         public MutableString/*!*/ WriteBytes(int offset, MutableString/*!*/ value, int start, int count) {
-            return Write(offset, value.GetByteArray(), start, count);
+            byte[] bytes = value.GetByteArrayChecked(start, count);
+            return Write(offset, bytes, start, count);
         }
 
         public MutableString/*!*/ Write(int offset, byte[]/*!*/ value, int start, int count) {
@@ -1673,6 +1676,15 @@ namespace IronRuby.Builtins {
                 result.Append("\\u{");
                 result.Append(Convert.ToString(currentChar, 16));
                 result.Append('}');
+            } else if (nextChar != -1 && Char.IsSurrogatePair((char)currentChar, (char)nextChar)) {
+                result.Append((char)currentChar);
+                result.Append((char)nextChar);
+                inc = 2;
+            } else if (Char.IsSurrogate((char)currentChar)) {
+                // we have to escape - the character is incomplete:
+                result.Append("\\u{");
+                result.Append(Convert.ToString(currentChar, 16));
+                result.Append('}');
             } else {
                 result.Append((char)currentChar);
             }
@@ -1803,8 +1815,17 @@ namespace IronRuby.Builtins {
 
         #region Internal Helpers
 
-        internal byte[]/*!*/ GetByteArray() {
-            return _content.GetByteArray();
+        internal byte[]/*!*/ GetByteArray(out int count) {
+            return _content.GetByteArray(out count);
+        }
+
+        internal byte[]/*!*/ GetByteArrayChecked(int start, int count) {
+            int byteCount;
+            var result = _content.GetByteArray(out byteCount);
+            if (count < 0 || start > byteCount - count) {
+                throw new ArgumentOutOfRangeException("count");
+            }
+            return result;
         }
 
         #endregion

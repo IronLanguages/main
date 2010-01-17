@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -32,7 +33,7 @@ namespace IronRuby.Compiler.Ast {
     /// <summary>
     /// Simple helper for building up method call actions.
     /// </summary>
-    internal sealed class CallSiteBuilder : CollectionBuilder<MSA.Expression> {
+    internal sealed class CallSiteBuilder : ExpressionCollectionBuilder<MSA.Expression> {
         private readonly AstGenerator/*!*/ _gen;
         private readonly bool _hasBlock;
 
@@ -105,10 +106,10 @@ namespace IronRuby.Compiler.Ast {
             switch (Count) {
                 case 0:
                 case 1: throw Assert.Unreachable;
-                case 2: return Ast.Dynamic(binder, typeof(object), Item000, Item001);
-                case 3: return Ast.Dynamic(binder, typeof(object), Item000, Item001, Item002);
-                case 4: return Ast.Dynamic(binder, typeof(object), Item000, Item001, Item002, Item003);
-                default: return Ast.Dynamic(binder, typeof(object), Items);
+                case 2: return Ast.Dynamic(binder, typeof(object), Expression0, Expression1);
+                case 3: return Ast.Dynamic(binder, typeof(object), Expression0, Expression1, Expression2);
+                case 4: return Ast.Dynamic(binder, typeof(object), Expression0, Expression1, Expression2, Expression3);
+                default: return Ast.Dynamic(binder, typeof(object), Expressions);
             }
         }
 

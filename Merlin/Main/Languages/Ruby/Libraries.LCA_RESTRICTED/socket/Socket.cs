@@ -64,9 +64,8 @@ namespace IronRuby.StandardLibrary.Sockets {
 
             int iPort = ConvertToPortNum(stringCast, fixnumCast, port);
 
-            // Sadly the family, socktype, protocol and flags get passed through at best and ignored at worst, 
-            // since System.Net does not provide for them
-            AddressFamily addrFamily = ConvertToAddressFamily(stringCast, fixnumCast, family);
+            // TODO: ignore family, the only supported families are InterNetwork and InterNetworkV6
+            ConvertToAddressFamily(stringCast, fixnumCast, family);
             int socketType = Protocols.CastToFixnum(fixnumCast, socktype);
             int protocolType = Protocols.CastToFixnum(fixnumCast, protocol);
 
@@ -100,7 +99,8 @@ namespace IronRuby.StandardLibrary.Sockets {
         public static RubyArray GetHostByAddress(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
             RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ address, [DefaultParameterValue(null)]object type) {
 
-            AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, type);
+            // TODO: ignore family, the only supported families are InterNetwork and InterNetworkV6
+            ConvertToAddressFamily(stringCast, fixnumCast, type);
             IPHostEntry entry = GetHostEntry(new IPAddress(address.ConvertToBytes()));
 
             return CreateHostEntryArray(entry, true);

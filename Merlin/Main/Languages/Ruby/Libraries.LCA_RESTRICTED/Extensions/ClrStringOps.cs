@@ -13,19 +13,17 @@
  *
  * ***************************************************************************/
 
-using System.Text;
-using IronRuby.Runtime;
-using Microsoft.Scripting.Runtime;
-using System.Collections;
 using System;
-using IronRuby.Compiler;
-using System.Runtime.InteropServices;
-using Microsoft.Scripting;
+using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using IronRuby.Compiler;
+using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
 
 namespace IronRuby.Builtins {
 
@@ -66,10 +64,15 @@ namespace IronRuby.Builtins {
         #region %, *, +
 
         [RubyMethod("%")]
-        public static string/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, string/*!*/ self, object arg) {
-            IList args = arg as IList ?? new object[] { arg };
+        public static string/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, string/*!*/ self, [NotNull]IList/*!*/ args) {
             StringFormatter formatter = new StringFormatter(storage, self, RubyEncoding.UTF8, args);
             return formatter.Format().ToString();
+        }
+
+        [RubyMethod("%")]
+        public static string/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, ConversionStorage<IList>/*!*/ arrayTryCast,
+            string/*!*/ self, object args) {
+            return Format(storage, self, Protocols.TryCastToArray(arrayTryCast, args) ?? new[] { args });
         }
 
         [RubyMethod("*")]

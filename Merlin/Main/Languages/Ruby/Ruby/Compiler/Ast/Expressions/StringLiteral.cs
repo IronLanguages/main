@@ -12,30 +12,22 @@
  *
  *
  * ***************************************************************************/
-
-using System;
-using System.Dynamic;
-using System.Diagnostics;
-using System.Text;
-
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Math;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-
-using IronRuby.Builtins;
-using IronRuby.Runtime;
-
-namespace IronRuby.Compiler.Ast {
-    #if !CLR2
+#if !CLR2
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
-    using Ast = Expression;
+using System.Diagnostics;
+using Microsoft.Scripting;
+using IronRuby.Builtins;
+
+namespace IronRuby.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
+    /// <summary>
+    /// Represents a string literal encoded by the containing source file encoding.
+    /// </summary>
     public partial class StringLiteral : Expression {
         // string or byte[]
         private readonly object/*!*/ _value;

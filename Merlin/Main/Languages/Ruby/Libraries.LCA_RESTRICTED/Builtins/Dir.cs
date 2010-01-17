@@ -14,97 +14,105 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Text;
-using Microsoft.Scripting.Actions;
-using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
-
     [RubyClass("Dir", Inherits = typeof(object)), Includes(typeof(Enumerable))]
-    public class RubyDir {
-        #region Private fields
-
-        private readonly MutableString/*!*/ _dirName;
-        private readonly string[]/*!*/ _rawEntries;
-        private bool _closed;
+    public class RubyDir : RubyObject {
+        // null if closed
+        private MutableString _dirName;
+        private string[] _rawEntries;
 
         // _pos starts from -2 as ".", -1 as "..", 
         // 0 will be the first item from Directory.GetFileSystemEntries.
         private int _pos;
 
-        #endregion
+        #region Construction
 
-        public RubyDir([NotNull]MutableString/*!*/ dirname) {
-            string strName = dirname.ConvertToString();
+        public RubyDir(RubyClass/*!*/ cls) 
+            : base(cls) {
+        }
+
+        public RubyDir(RubyClass/*!*/ cls, MutableString/*!*/ dirname) 
+            : base(cls) {
+            Reinitialize(this, dirname);
+        }
+
+        [RubyConstructor]
+        public static RubyDir/*!*/ Create(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
+            return new RubyDir(self, dirname);
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyDir/*!*/ Reinitialize(RubyDir/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
+            self.Close();
+
+            string strName = self.ImmediateClass.Context.DecodePath(dirname);
             try {
-                _rawEntries = Directory.GetFileSystemEntries(strName);
+                self._rawEntries = self.Platform.GetFileSystemEntries(strName, "*");
             } catch (Exception ex) {
                 throw ToRubyException(ex, strName, DirectoryOperation.Open);
             }
-            _dirName = MutableString.Create(RubyUtils.CanonicalizePath(strName), RubyEncoding.Path);
-            _closed = false;
-            _pos = -2;
+            self._dirName = dirname.Clone();
+            self._pos = -2;
+            return self;
         }
 
+        #endregion
+
         #region Singleton Methods
+
+        private static void SetCurrentDirectory(PlatformAdaptationLayer/*!*/ pal, string/*!*/ dir) {
+            try {
+                // TODO: MRI calls Win32 API SetCurrentDirctory directly, while BCL normalizes the path first.
+                pal.CurrentDirectory = dir;
+            } catch (Exception e) {
+                throw ToRubyException(e, dir, DirectoryOperation.ChangeDir);
+            }
+        }
 
         /// <summary>
         /// raise a SystemCallError if the target directory does not exist
         /// </summary>
         /// <returns>0 if no block is given; otherwise, the value of the block</returns>
         [RubyMethod("chdir", RubyMethodAttributes.PublicSingleton)]
-        public static object ChangeDirectory(BlockParam block, object/*!*/ self, MutableString dir) {
-            string strDir = dir.ConvertToString();
+        public static object ChangeDirectory(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ dir) {
+            var pal = self.Context.Platform;
+            string strDir = self.Context.DecodePath(dir);
 
             if (block == null) {
-                SetCurrentDirectory(strDir);
+                SetCurrentDirectory(pal, strDir);
                 return 0;
-            } else {
-                string current = Directory.GetCurrentDirectory();
-                try {
-                    SetCurrentDirectory(strDir);
-                    object result;
-                    block.Yield(dir, out result);
-                    return result;
-                } finally {
-                    SetCurrentDirectory(current);
-                }
             }
-        }
 
-        private static void SetCurrentDirectory(string/*!*/ dir) {
+            string current = pal.CurrentDirectory;
             try {
-                Directory.SetCurrentDirectory(dir);
-            } catch (Exception e) {
-                throw ToRubyException(e, dir, DirectoryOperation.ChangeDir);
+                SetCurrentDirectory(pal, strDir);
+                object result;
+                block.Yield(dir, out result);
+                return result;
+            } finally {
+                SetCurrentDirectory(pal, current);
             }
-        }
-
-        [RubyMethod("chdir", RubyMethodAttributes.PublicSingleton)]
-        public static object ChangeDirectory(object self, MutableString/*!*/ dir) {
-            return ChangeDirectory(null, self, dir);
         }
 
         /// <summary>
         /// change the directory to the value of the environment variable HOME or LOGDIR
         /// </summary>
-        /// <param name="self"></param>
-        /// <returns></returns>
         [RubyMethod("chdir", RubyMethodAttributes.PublicSingleton)]
-        public static object ChangeDirectory(RubyContext/*!*/ context, object self) {
+        public static object ChangeDirectory(BlockParam block, RubyClass/*!*/ self) {
 #if !SILVERLIGHT
-            string defaultDirectory = RubyUtils.GetHomeDirectory(context.DomainManager.Platform);
-            if (defaultDirectory == null)
+            string defaultDirectory = RubyUtils.GetHomeDirectory(self.Context.Platform);
+            if (defaultDirectory == null) {
                 throw RubyExceptions.CreateArgumentError("HOME / USERPROFILE not set");
+            }
 
-            return ChangeDirectory(self, MutableString.Create(defaultDirectory, RubyEncoding.Path));
+            return ChangeDirectory(block, self, self.Context.EncodePath(defaultDirectory));
 #else
             throw new InvalidOperationException();
 #endif
@@ -118,10 +126,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("rmdir", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
-        public static int RemoveDirectory(object self, [NotNull]MutableString/*!*/ dirname) {
-            string strDir = dirname.ConvertToString();
+        public static int RemoveDirectory(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
+            string strDir = self.Context.DecodePath(dirname);
             try {
-                Directory.Delete(strDir);
+                self.Context.Platform.DeleteDirectory(strDir, false);
             } catch (Exception ex) {
                 throw ToRubyException(ex, strDir, DirectoryOperation.Delete);
             }
@@ -129,47 +137,19 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("entries", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray/*!*/ GetEntries(object self, [NotNull]MutableString/*!*/ dirname) {
-            string strDir = dirname.ConvertToString();
-            string[] rawEntries = null;
-
-            try {
-                rawEntries = Directory.GetFileSystemEntries(strDir);
-            } catch (Exception ex) {
-                throw ToRubyException(ex, strDir, DirectoryOperation.Open);
-            }
-
-            RubyArray ret = new RubyArray(rawEntries.Length + 2);
-            ret.Add(MutableString.CreateAscii("."));
-            ret.Add(MutableString.CreateAscii(".."));
-            foreach (string entry in rawEntries) {
-                ret.Add(MutableString.Create(Path.GetFileName(entry), RubyEncoding.Path));
-            }
-            return ret;
+        public static RubyArray/*!*/ GetEntries(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
+            return new RubyDir(self, dirname).GetEntries(self.Context);
         }
 
         [RubyMethod("foreach", RubyMethodAttributes.PublicSingleton)]
-        public static object ForEach(BlockParam block, object self, [NotNull]MutableString/*!*/ dirname) {
-            // TODO: ??? block == nil
-            foreach (object entry in GetEntries(self, dirname)) {
-                if (block == null) {
-                    throw RubyExceptions.NoBlockGiven();
-                }
-
-                // TODO: ??? as
-                object result;
-                if (block.Yield(entry as MutableString, out result)) {
-                    return result;
-                }
-            }
-
-            return null;
+        public static object ForEach(BlockParam block, RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
+            return new RubyDir(self, dirname).EnumerateEntries(self.Context, block, null);
         }
 
         [RubyMethod("getwd", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("pwd", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ GetCurrentDirectory(object self) {
-            return MutableString.Create(RubyUtils.CanonicalizePath(Directory.GetCurrentDirectory()), RubyEncoding.Path);
+        public static MutableString/*!*/ GetCurrentDirectory(RubyClass/*!*/ self) {
+            return self.Context.EncodePath(RubyUtils.CanonicalizePath(self.Context.Platform.CurrentDirectory));
         }
 
         #region glob
@@ -178,9 +158,9 @@ namespace IronRuby.Builtins {
         public static object Glob([NotNull]BlockParam/*!*/ block, RubyClass/*!*/ self, 
             [DefaultProtocol, NotNull]MutableString/*!*/ pattern, [DefaultProtocol, Optional]int flags) {
 
-            foreach (string fileName in IronRuby.Builtins.Glob.GlobResults(self.Context.DomainManager.Platform, pattern.ConvertToString(), flags)) {
+            foreach (var fileName in IronRuby.Builtins.Glob.GetMatches(self.Context, pattern, flags)) {
                 object result;
-                if (block.Yield(MutableString.Create(fileName, pattern.Encoding).TaintBy(pattern), out result)) {
+                if (block.Yield(fileName, out result)) {
                     return result;
                 }
             }
@@ -193,8 +173,8 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ pattern, [DefaultProtocol, Optional]int flags) {
             
             RubyArray result = new RubyArray();
-            foreach (string fileName in IronRuby.Builtins.Glob.GlobResults(self.Context.DomainManager.Platform, pattern.ConvertToString(), flags)) {
-                result.Add(MutableString.Create(fileName, pattern.Encoding).TaintBy(pattern));
+            foreach (var fileName in IronRuby.Builtins.Glob.GetMatches(self.Context, pattern, flags)) {
+                result.Add(fileName);
             }
 
             return result;
@@ -203,10 +183,21 @@ namespace IronRuby.Builtins {
         #endregion
 
         [RubyMethod("mkdir", RubyMethodAttributes.PublicSingleton)]
-        public static int MakeDirectory(object self, [NotNull]MutableString/*!*/ dirname, [Optional]object permissions) {
-            string strDir = dirname.ConvertToString();
+        public static int MakeDirectory(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname, [Optional]object permissions) {
+            var platform = self.Context.Platform;
+
+            string strDir = self.Context.DecodePath(dirname);
+            if (platform.FileExists(strDir) || platform.DirectoryExists(strDir)) {
+                throw RubyExceptions.CreateEEXIST(strDir);
+            }
+
+            string containingDir = platform.GetDirectoryName(strDir);
+            if (!String.IsNullOrEmpty(containingDir) && !platform.DirectoryExists(containingDir)) {
+                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", containingDir);
+            }
+                
             try {
-                Directory.CreateDirectory(strDir);
+                platform.CreateDirectory(strDir);
             } catch (Exception ex) {
                 throw ToRubyException(ex, strDir, DirectoryOperation.Create);
             }
@@ -214,8 +205,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam block, object self, [NotNull]MutableString/*!*/ dirname) {
-            RubyDir rd = new RubyDir(dirname);
+        public static object Open(BlockParam block, RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
+            RubyDir rd = new RubyDir(self, dirname);
 
             try {
                 object result;
@@ -227,8 +218,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(object self, [NotNull]MutableString/*!*/ dirname) {
-            return new RubyDir(dirname);
+        public static RubyDir/*!*/ Open(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
+            return new RubyDir(self, dirname);
         }
 
         #endregion
@@ -238,23 +229,23 @@ namespace IronRuby.Builtins {
         [RubyMethod("close")]
         public static void Close(RubyDir/*!*/ self) {
             self.ThrowIfClosed();
-
-            self._closed = true;
+            self.Close();
         }
 
         [RubyMethod("each")]
-        public static RubyDir/*!*/ Each(BlockParam block, RubyDir/*!*/ self) {
-            self.ThrowIfClosed();
-
-            RubyDir.ForEach(block, self, self._dirName);
-            return self;
+        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyDir/*!*/ self) {
+            return self.EnumerateEntries(context, block, self);
         }
 
         [RubyMethod("path")]
-        public static MutableString/*!*/ GetPath(RubyDir/*!*/ self) {
-            self.ThrowIfClosed();
+        public static MutableString GetPath(RubyContext/*!*/ context, RubyDir/*!*/ self) {
+            if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                self.ThrowIfClosed();
+            } else if (self.Closed) {
+                return null;
+            }
 
-            return self._dirName;
+            return self._dirName.Clone();
         }
 
         [RubyMethod("pos")]
@@ -277,7 +268,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("read")]
-        public static MutableString/*!*/ Read(RubyDir/*!*/ self) {
+        public static MutableString Read(RubyContext/*!*/ context, RubyDir/*!*/ self) {
             self.ThrowIfClosed();
 
             if (self._pos + 1 > self._rawEntries.Length) {
@@ -286,11 +277,11 @@ namespace IronRuby.Builtins {
 
             MutableString ret;
             if (self._pos == -2) {
-                ret = MutableString.CreateAscii(".");
+                ret = context.EncodePath(".");
             } else if (self._pos == -1) {
-                ret = MutableString.CreateAscii("..");
+                ret = context.EncodePath("..");
             } else {
-                ret = MutableString.Create(Path.GetFileName(self._rawEntries[self._pos]), RubyEncoding.Path);
+                ret = context.EncodePath(context.Platform.GetFileName(self._rawEntries[self._pos]));
             }
             self._pos++;
             return ret;
@@ -322,8 +313,21 @@ namespace IronRuby.Builtins {
 
         #region Helpers
 
+        internal PlatformAdaptationLayer/*!*/ Platform {
+            get { return ImmediateClass.Context.Platform; }
+        }
+
+        private bool Closed {
+            get { return _dirName == null; } 
+        }
+
+        private void Close() {
+            _dirName = null;
+            _rawEntries = null;
+        }
+
         private void ThrowIfClosed() {
-            if (_closed) {
+            if (Closed) {
                 throw RubyExceptions.CreateIOError("closed directory");
             }
         }
@@ -333,6 +337,41 @@ namespace IronRuby.Builtins {
             Create,
             Open,
             ChangeDir,
+        }
+
+        private RubyArray/*!*/ GetEntries(RubyContext/*!*/ context) {
+            ThrowIfClosed();
+
+            RubyArray ret = new RubyArray(_rawEntries.Length + 2);
+            ret.Add(context.EncodePath("."));
+            ret.Add(context.EncodePath(".."));
+            foreach (string entry in _rawEntries) {
+                var encoded = context.TryEncodePath(context.Platform.GetFileName(entry));
+                if (encoded != null) {
+                    ret.Add(encoded);
+                }
+            }
+            return ret;
+        }
+
+        private object EnumerateEntries(RubyContext/*!*/ context, BlockParam block, object defaultResult) {
+            ThrowIfClosed();
+            _pos = -2;
+
+            foreach (object entry in GetEntries(context)) {
+                if (block == null) {
+                    throw RubyExceptions.NoBlockGiven();
+                }
+
+                _pos++;
+
+                object blockResult;
+                if (block.Yield(entry, out blockResult)) {
+                    return blockResult;
+                }
+            }
+
+            return defaultResult;
         }
 
         // TODO: to match the C-Ruby exception
@@ -346,7 +385,7 @@ namespace IronRuby.Builtins {
                     return RubyExceptions.CreateEINVAL(path);
 
                 case DirectoryOperation.Open:
-                    return RubyExceptions.CreateENOENT(path);
+                    return RubyExceptions.CreateENOENT("No such file or directory - {0}", path);
 
                 case DirectoryOperation.Delete:
                     if (ex is ArgumentException) {

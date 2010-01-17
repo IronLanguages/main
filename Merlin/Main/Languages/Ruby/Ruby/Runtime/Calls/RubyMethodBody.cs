@@ -27,30 +27,29 @@ using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MethodDeclaration = IronRuby.Compiler.Ast.MethodDeclaration;
+using MethodDeclaration = IronRuby.Compiler.Ast.MethodDefinition;
 
 namespace IronRuby.Runtime.Calls {
     /// <summary>
     /// Represents a Ruby method body AST. Multiple RubyMethodInfos can share the same instance.
     /// </summary>
     public sealed class RubyMethodBody {
-        private readonly RubyContext/*!*/ _context;
         private readonly MethodDeclaration/*!*/ _ast;
         private readonly MSA.SymbolDocumentInfo _document;
         private readonly RubyEncoding/*!*/ _encoding;
 
         private Delegate _delegate;
 
-        internal RubyMethodBody(RubyContext/*!*/ context, MethodDeclaration/*!*/ ast, MSA.SymbolDocumentInfo document, RubyEncoding/*!*/ encoding) {
+        internal RubyMethodBody(MethodDeclaration/*!*/ ast, MSA.SymbolDocumentInfo document, RubyEncoding/*!*/ encoding) {
             Assert.NotNull(ast, encoding);
 
-            _context = context;
             _ast = ast;
             _document = document;
             _encoding = encoding;
         }
 
         public MethodDeclaration Ast { get { return _ast; } }
+        public MSA.SymbolDocumentInfo Document { get { return _document; } }
         public bool HasTarget { get { return _ast.Target != null; } }
         public string/*!*/ Name { get { return _ast.Name; } }
         public int MandatoryParameterCount { get { return _ast.Parameters.MandatoryCount; } }
@@ -62,9 +61,9 @@ namespace IronRuby.Runtime.Calls {
                 lock (this) {
                     if (_delegate == null) {
                         // TODO: remove options
-                        AstGenerator gen = new AstGenerator(_context, new RubyCompilerOptions(), _document, _encoding, false);
+                        AstGenerator gen = new AstGenerator(declaringScope.RubyContext, new RubyCompilerOptions(), _document, _encoding, false);
                         MSA.LambdaExpression lambda = _ast.TransformBody(gen, declaringScope, declaringModule);
-                        _delegate = RubyScriptCode.CompileLambda(lambda, _context);
+                        _delegate = RubyScriptCode.CompileLambda(lambda, declaringScope.RubyContext);
                     }
                 }
             }

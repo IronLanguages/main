@@ -274,7 +274,7 @@ puts(/foo/ =~ 'xxxfoo')
 
         [Options(NoRuntime = true)]
         public void RegexEncoding2() {
-            var SJIS = Encoding.GetEncoding("SJIS");
+            var SJIS = RubyEncoding.KCodeSJIS.StrictEncoding;
 
             // 1.9 encodings:
             var invalidUtf8 = MutableString.CreateBinary(new byte[] { 0x80 }, RubyEncoding.UTF8);

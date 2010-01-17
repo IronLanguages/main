@@ -180,7 +180,7 @@ namespace IronRuby.Builtins {
         private static RuleGenerator/*!*/ CreateGetter(int index) {
             return delegate(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
 
-                var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+                RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
                 if (!metaBuilder.Error) {
                     metaBuilder.Result = Ast.Call(
                         Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
@@ -200,7 +200,7 @@ namespace IronRuby.Builtins {
                         Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
                         Methods.RubyStruct_SetValue,
                         AstUtils.Constant(index),
-                        AstFactory.Box(actualArgs[0].Expression)
+                        AstUtils.Box(actualArgs[0].Expression)
                     );
                 }
             };

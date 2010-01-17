@@ -1,3 +1,0 @@
-fails:Dir.[] matches regexp special [
-fails:Dir.[] matches regexp special }
-fails:Dir.[] matches special characters by escaping with a backslash with '\<character>'

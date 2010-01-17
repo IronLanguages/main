@@ -29,17 +29,15 @@ class Test::Unit::UI::Console::TestRunner
     end
     
     faults_by_testcase_class.each_key do |testcase_class|
-      puts "class #{testcase_class}"
       testcase_faults = faults_by_testcase_class[testcase_class]
       testcase_faults.each do |fault|
         method_name = test_method_name(fault)[0]
         commented_message = fault.message[0..400]
         commented_message = commented_message.gsub(/^(.+)$/, '  # \1')
         puts commented_message
-        puts "  def #{method_name}() end"
+        puts "  disable #{testcase_class}, :#{method_name}"
         nl if testcase_faults.size > 1
       end
-      puts "end"
       nl
     end
   end

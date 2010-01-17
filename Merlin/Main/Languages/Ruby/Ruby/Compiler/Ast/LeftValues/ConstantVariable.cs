@@ -148,7 +148,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             var result = op.OpCall(
-                AstFactory.Box(_qualifier.TransformRead(gen)), 
+                AstUtils.Box(_qualifier.TransformRead(gen)), 
                 gen.CurrentScopeVariable, 
                 Ast.Constant(siteCache), 
                 Ast.Constant(names)
@@ -240,13 +240,13 @@ namespace IronRuby.Compiler.Ast {
 
             switch (TransformQualifier(gen, out transformedQualifier)) {
                 case StaticScopeKind.Global:
-                    return Methods.SetGlobalConstant.OpCall(AstFactory.Box(rightValue), gen.CurrentScopeVariable, transformedName);
+                    return Methods.SetGlobalConstant.OpCall(AstUtils.Box(rightValue), gen.CurrentScopeVariable, transformedName);
 
                 case StaticScopeKind.EnclosingModule:
-                    return Methods.SetUnqualifiedConstant.OpCall(AstFactory.Box(rightValue), gen.CurrentScopeVariable, transformedName);
+                    return Methods.SetUnqualifiedConstant.OpCall(AstUtils.Box(rightValue), gen.CurrentScopeVariable, transformedName);
 
                 case StaticScopeKind.Explicit:
-                    return Methods.SetQualifiedConstant.OpCall(AstFactory.Box(rightValue), transformedQualifier, gen.CurrentScopeVariable, transformedName);
+                    return Methods.SetQualifiedConstant.OpCall(AstUtils.Box(rightValue), transformedQualifier, gen.CurrentScopeVariable, transformedName);
             }
 
             throw Assert.Unreachable;

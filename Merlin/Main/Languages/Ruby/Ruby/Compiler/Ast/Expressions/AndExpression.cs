@@ -61,8 +61,8 @@ namespace IronRuby.Compiler.Ast {
         internal static MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, MSA.Expression/*!*/ left, MSA.Expression/*!*/ right) {
             MSA.ParameterExpression temp;
             MSA.Expression result = AstUtils.CoalesceTrue(
-                AstFactory.Box(left),
-                AstFactory.Box(right),
+                AstUtils.Box(left),
+                AstUtils.Box(right),
                 Methods.IsTrue,
                 out temp
             );

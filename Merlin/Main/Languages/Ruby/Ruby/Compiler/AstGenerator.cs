@@ -31,10 +31,11 @@ using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
     
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using AstBlock = Microsoft.Scripting.Ast.BlockBuilder;
     using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
     
     internal sealed class AstGenerator {
@@ -96,7 +97,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         public string SourcePath {
-            get { return _document != null ? _document.FileName : null; }
+            get { return _document != null ? _document.FileName : "(eval)"; }
         }
 
         public MSA.SymbolDocumentInfo Document {
@@ -258,7 +259,7 @@ namespace IronRuby.Compiler.Ast {
 
             internal MSA.Expression/*!*/ AddReturnTarget(MSA.Expression/*!*/ expression) {
                 if (expression.Type != typeof(object)) {
-                    expression = AstFactory.Box(expression);
+                    expression = AstUtils.Convert(expression, typeof(object));
                 }
                 if (_returnLabel != null) {
                     expression = Ast.Label(_returnLabel, expression);
@@ -682,7 +683,7 @@ namespace IronRuby.Compiler.Ast {
                 }
 
             } else {
-                var result = new AstExpressions(count + 1);
+                var result = new AstBlock();
 
                 if (prologue != null) {
                     result.Add(prologue);
@@ -706,7 +707,7 @@ namespace IronRuby.Compiler.Ast {
                 }
 
                 result.Add(AstUtils.Empty());
-                return Ast.Block(result);
+                return result;
             }
         }
 
@@ -729,13 +730,13 @@ namespace IronRuby.Compiler.Ast {
                 return last;
             }
 
-            var result = new AstExpressions(statements.Count);
+            var result = new AstBlock();
             foreach (var statement in statements.AllButLast) {
                 result.Add(statement.Transform(this));
             }
             result.Add(last);
 
-            return Ast.Block(result);
+            return result;
         }
 
         internal AstExpressions/*!*/ TransformMapletsToExpressions(IList<Maplet>/*!*/ maplets) {
@@ -803,12 +804,12 @@ namespace IronRuby.Compiler.Ast {
             }
         }
 
-        internal MSA.Expression/*!*/ DebugMarker(string/*!*/ marker) {
-            return _debugCompiler ? Methods.X.OpCall(AstUtils.Constant(marker)) : (MSA.Expression)AstUtils.Empty();
+        internal MSA.Expression DebugMarker(string/*!*/ marker) {
+            return _debugCompiler ? Methods.X.OpCall(AstUtils.Constant(marker)) : null;
         }
 
         internal MSA.Expression/*!*/ DebugMark(MSA.Expression/*!*/ expression, string/*!*/ marker) {
-            return _debugCompiler ? AstFactory.Block(Methods.X.OpCall(AstUtils.Constant(marker)), expression) : expression;
+            return _debugCompiler ? Ast.Block(Methods.X.OpCall(AstUtils.Constant(marker)), expression) : expression;
         }
 
         internal MSA.Expression/*!*/ TryCatchAny(MSA.Expression/*!*/ tryBody, MSA.Expression/*!*/ catchBody) {

@@ -147,9 +147,11 @@
       <!--                       -->
       <Compile Include="Ast\BinaryExpression.cs" />
       <Compile Include="Ast\Block.cs" />
+      <Compile Include="Ast\BlockBuilder.cs" />
       <Compile Include="Ast\ConstantExpression.cs" />
       <Compile Include="Ast\DebugStatement.cs" />
       <Compile Include="Ast\EmptyStatements.cs" />
+      <Compile Include="Ast\ExpressionCollectionBuilder.cs" />
       <Compile Include="Ast\FinallyFlowControlExpression.cs" />
       <Compile Include="Ast\FlowControlRewriter.cs" />
       <Compile Include="Ast\GeneratorExpression.cs" />

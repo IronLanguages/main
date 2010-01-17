@@ -142,14 +142,14 @@ namespace IronRuby.Builtins {
                         if (cls.BuildAllocatorCall(metaBuilder, args, () =>
                             Ast.Call(null, new Func<RubyClass, object, string>(GetClrMessage).Method,
                                 classExpression,
-                                Ast.Assign(messageVariable = metaBuilder.GetTemporary(typeof(object), "#message"), AstFactory.Box(argsBuilder[0]))
+                                Ast.Assign(messageVariable = metaBuilder.GetTemporary(typeof(object), "#message"), AstUtils.Box(argsBuilder[0]))
                             )
                         )) {
                             // ReinitializeException(<result>, #message)
                             metaBuilder.Result = Ast.Call(null, new Func<RubyContext, Exception, object, Exception>(ReinitializeException).Method,
                                 AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
                                 metaBuilder.Result,
-                                messageVariable ?? AstFactory.Box(argsBuilder[0])
+                                messageVariable ?? AstUtils.Box(argsBuilder[0])
                             );
                         } else {
                             metaBuilder.SetError(Methods.MakeAllocatorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));

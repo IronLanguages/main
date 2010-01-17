@@ -149,7 +149,7 @@ namespace IronRuby.Runtime.Calls {
             return new BlockDispatcherUnsplatN(parameterCount, attributesAndArity, sourcePath, sourceLine);
         }
 
-        internal static LambdaExpression/*!*/ CreateLambda(Expression body, string name, ReadOnlyCollection<ParameterExpression> parameters,
+        internal static LambdaExpression/*!*/ CreateLambda(Expression body, string name, ICollection<ParameterExpression> parameters,
             int parameterCount, BlockSignatureAttributes attributes) {
             if ((attributes & BlockSignatureAttributes.HasUnsplatParameter) == 0) {
                 switch (parameterCount) {

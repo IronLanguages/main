@@ -21,11 +21,11 @@ using MSA = Microsoft.Scripting.Ast;
 
 using System.Dynamic;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = Expression;
-    using Microsoft.Scripting.Utils;
+    using Ast = MSA.Expression;
 
     public partial class AliasStatement : Expression {
         private readonly string/*!*/ _newName;
@@ -62,7 +62,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return AstFactory.Block(Transform(gen), AstUtils.Constant(null));
+            return Ast.Block(Transform(gen), AstUtils.Constant(null));
         }
     }
 }

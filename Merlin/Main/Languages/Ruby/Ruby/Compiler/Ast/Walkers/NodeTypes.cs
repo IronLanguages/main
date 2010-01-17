@@ -30,11 +30,11 @@ namespace IronRuby.Compiler.Ast {
         Parameters,
         Arguments,
 
-        // declarations:
-        ClassDeclaration,
-        MethodDeclaration,
-        ModuleDeclaration,
-        SingletonDeclaration,
+        // definitions:
+        ClassDefinition,
+        MethodDefinition,
+        ModuleDefinition,
+        SingletonDefinition,
 
         // expressions:
         AndExpression,
@@ -52,6 +52,7 @@ namespace IronRuby.Compiler.Ast {
         Literal,
         StringLiteral,
         SymbolLiteral,
+        FileLiteral,
         EncodingExpression,
         MethodCall,
         MatchExpression,
@@ -116,10 +117,10 @@ namespace IronRuby.Compiler.Ast {
     public partial class Parameters { public override NodeTypes NodeType { get { return NodeTypes.Parameters; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class Arguments { public override NodeTypes NodeType { get { return NodeTypes.Arguments; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
 
-    public partial class ClassDeclaration { public override NodeTypes NodeType { get { return NodeTypes.ClassDeclaration; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
-    public partial class MethodDeclaration { public override NodeTypes NodeType { get { return NodeTypes.MethodDeclaration; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
-    public partial class ModuleDeclaration { public override NodeTypes NodeType { get { return NodeTypes.ModuleDeclaration; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
-    public partial class SingletonDeclaration { public override NodeTypes NodeType { get { return NodeTypes.SingletonDeclaration; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class ClassDefinition { public override NodeTypes NodeType { get { return NodeTypes.ClassDefinition; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class MethodDefinition { public override NodeTypes NodeType { get { return NodeTypes.MethodDefinition; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class ModuleDefinition { public override NodeTypes NodeType { get { return NodeTypes.ModuleDefinition; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class SingletonDefinition { public override NodeTypes NodeType { get { return NodeTypes.SingletonDefinition; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
 
     public partial class AndExpression { public override NodeTypes NodeType { get { return NodeTypes.AndExpression; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class ArrayConstructor { public override NodeTypes NodeType { get { return NodeTypes.ArrayConstructor; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
@@ -135,6 +136,7 @@ namespace IronRuby.Compiler.Ast {
     public partial class Literal { public override NodeTypes NodeType { get { return NodeTypes.Literal; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class StringLiteral { public override NodeTypes NodeType { get { return NodeTypes.StringLiteral; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class SymbolLiteral { public override NodeTypes NodeType { get { return NodeTypes.SymbolLiteral; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class FileLiteral { public override NodeTypes NodeType { get { return NodeTypes.FileLiteral; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class EncodingExpression { public override NodeTypes NodeType { get { return NodeTypes.EncodingExpression; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class MethodCall { public override NodeTypes NodeType { get { return NodeTypes.MethodCall; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class MatchExpression { public override NodeTypes NodeType { get { return NodeTypes.MatchExpression; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }

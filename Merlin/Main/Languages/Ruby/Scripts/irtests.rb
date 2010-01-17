@@ -14,9 +14,16 @@ class IRTest
     @root = ENV["MERLIN_ROOT"] 
     @bin = "#{@root}\\bin\\#{@config}"
     ENV["ROWAN_BIN"] = @bin
+    
        
     mspec_base = "#{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\mspec\\bin\\mspec.bat ci -fd"
     ir = "\"#{@bin}\\ir.exe\" -v"
+    
+    if options[:mono] || ENV['ROWAN_RUNTIME'] 
+      ENV['ROWAN_RUNTIME'] ||= 'mono'
+      ir = "#{ENV['ROWAN_RUNTIME']} #{ir}"
+    end
+    
     if options[:parallel]
       ir = "cmd /K #{ir}"
     end
@@ -26,13 +33,19 @@ class IRTest
       :RubySpec_A => "#{mspec_base} :lang :cli :netinterop :cominterop :thread, :netcli",
       :RubySpec_B => "#{mspec_base} :core1 :lib1",
       :RubySpec_C => "#{mspec_base} :core2 :lib2",
-      :RubyGems => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RubyGemsTests.rb",
-      :Rake => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RakeTests.rb",
+      :RubyGems => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat gem",
+      :TZInfo => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat tzinfo",
+      :Rake => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat rake",
       :Yaml => "#{ir} #{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\YamlTest\\yaml_test_suite.rb",
-      :Tutorial => "#{ir} -I#{@root}\\Languages\\Ruby\\Samples\\Tutorial #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb",
-      :ActionPack => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\ActionPackTests.rb",
-      :ActiveSupport => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\ActiveSupportTests.rb"
+      :Tutorial => "#{ir} -I#{@root}\\Languages\\Ruby\\Samples\\Tutorial #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb"
     }
+    if options[:all]
+      @suites.merge!({
+        :ActionPack => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat action_pack",
+        :ActiveSupport => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_support",
+        :ActiveRecord => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_record"
+      })
+    end
     @start = Time.now
   end
 
@@ -181,11 +194,14 @@ end
 if $0 == __FILE__
   iroptions = {}
 
-  OptionParser.new do |opts|
+  parser = OptionParser.new do |opts|
     opts.banner = "Usage: irtests.rb [options]"
 
     opts.separator ""
 
+    opts.on("-a", "--all", "Run all tests") do |a|
+      iroptions[:all] = a
+    end
     opts.on("-p", "--[no-]parallel", "Run in parallel") do |p|
       iroptions[:parallel] = p
     end
@@ -198,6 +214,10 @@ if $0 == __FILE__
       iroptions[:clr4] = n
     end
     
+    opts.on("-m", "--mono", "Run tests on Mono") do |n|
+      iroptions[:mono] = n
+    end
+    
     opts.on("-r", "--release", "Use Release configurations") do |n|
       iroptions[:release] = n
     end
@@ -206,7 +226,10 @@ if $0 == __FILE__
       puts opts
       exit
     end
-  end.parse!
+  end
+  
+  args = parser.parse!
+  abort "Extra arguments: #{args}" if not args.empty?
 
   IRTest.new(iroptions).run
 end

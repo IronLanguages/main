@@ -955,7 +955,6 @@ namespace IronRuby.Builtins {
             if (!inherited && !immediateClass.IsSingletonClass) {
                 var result = new RubyArray();
                 if (foreignMembers.Count > 0) {
-                    var symbolicNames = context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
                     foreach (var name in foreignMembers) {
                         result.Add(new ClrName(name));
                     }
@@ -1131,11 +1130,11 @@ namespace IronRuby.Builtins {
                 case 'c': throw new NotImplementedException();
 
                 case 'd':
-                    return RubyFileOps.DirectoryExists(context, file1.ConvertToString());
+                    return RubyFileOps.DirectoryExists(context, file1);
 
                 case 'e':
                 case 'f':
-                    return RubyFileOps.FileExists(context, file1.ConvertToString());
+                    return RubyFileOps.FileExists(context, file1);
 
                 case 'g': throw new NotImplementedException();
                 case 'G': throw new NotImplementedException();

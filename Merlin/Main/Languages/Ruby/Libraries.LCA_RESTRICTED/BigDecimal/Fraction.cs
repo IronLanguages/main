@@ -633,13 +633,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             }
         }
 
-        private static Fraction/*!*/ ScrollLeft(Fraction/*!*/ fraction, int offset) {
-            // Scrolling left is just the same as scrolling right by (BASE_FIG-offset)
-            // E.g. Assuming BASE_FIG is 9:
-            //  ScrollRight(123456789, 6) => 000000123 456789000
-            //  ScrollLeft (123456789, 6) => 000123456 789000000
-            return ScrollRight(fraction, BASE_FIG - offset);
-        }
+        // Note: Scrolling left is just the same as scrolling right by (BASE_FIG-offset)
         private static Fraction/*!*/ ScrollRight(Fraction/*!*/ fraction, int offset) {
             Debug.Assert(offset <= BASE_FIG);
             Debug.Assert(offset >= 0);

@@ -39,14 +39,14 @@ namespace IronRuby.Compiler.Ast {
         public virtual void Exit(Arguments/*!*/ node) { }
 
         // declarations:
-        public virtual bool Enter(ClassDeclaration/*!*/ node) { return true; }
-        public virtual void Exit(ClassDeclaration/*!*/ node) { }
-        public virtual bool Enter(MethodDeclaration/*!*/ node) { return true; }
-        public virtual void Exit(MethodDeclaration/*!*/ node) { }
-        public virtual bool Enter(ModuleDeclaration/*!*/ node) { return true; }
-        public virtual void Exit(ModuleDeclaration/*!*/ node) { }
-        public virtual bool Enter(SingletonDeclaration/*!*/ node) { return true; }
-        public virtual void Exit(SingletonDeclaration/*!*/ node) { }
+        public virtual bool Enter(ClassDefinition/*!*/ node) { return true; }
+        public virtual void Exit(ClassDefinition/*!*/ node) { }
+        public virtual bool Enter(MethodDefinition/*!*/ node) { return true; }
+        public virtual void Exit(MethodDefinition/*!*/ node) { }
+        public virtual bool Enter(ModuleDefinition/*!*/ node) { return true; }
+        public virtual void Exit(ModuleDefinition/*!*/ node) { }
+        public virtual bool Enter(SingletonDefinition/*!*/ node) { return true; }
+        public virtual void Exit(SingletonDefinition/*!*/ node) { }
 
         // expressions:
         public virtual bool Enter(AndExpression/*!*/ node) { return true; }
@@ -79,6 +79,8 @@ namespace IronRuby.Compiler.Ast {
         public virtual void Exit(StringLiteral/*!*/ node) { }
         public virtual bool Enter(SymbolLiteral/*!*/ node) { return true; }
         public virtual void Exit(SymbolLiteral/*!*/ node) { }
+        public virtual bool Enter(FileLiteral/*!*/ node) { return true; }
+        public virtual void Exit(FileLiteral/*!*/ node) { }
         public virtual bool Enter(EncodingExpression/*!*/ node) { return true; }
         public virtual void Exit(EncodingExpression/*!*/ node) { }
         public virtual bool Enter(MethodCall/*!*/ node) { return true; }

@@ -969,6 +969,7 @@ namespace IronPython.Runtime.Operations {
                 // automatically re-throw on it's own.
                 throw;
             } catch {
+                ExceptionHelpers.DynamicStackFrames = null;
                 return false;
             }
         }
@@ -1602,6 +1603,8 @@ namespace IronPython.Runtime.Operations {
 
                     PrintWithDest(context, pc.SystemStandardError, "Original exception was:");
                     PrintWithDest(context, pc.SystemStandardError, pc.FormatException(exception));
+
+                    ExceptionHelpers.DynamicStackFrames = null;
                 }
             }
         }
@@ -3526,6 +3529,8 @@ namespace IronPython.Runtime.Operations {
             try {
                 Importer.Import(modCtx.GlobalContext, main, PythonTuple.EMPTY, 0);
             } catch (SystemExitException ex) {
+                ExceptionHelpers.DynamicStackFrames = null;
+
                 object dummy;
                 return ex.GetExitCode(out dummy);
             }

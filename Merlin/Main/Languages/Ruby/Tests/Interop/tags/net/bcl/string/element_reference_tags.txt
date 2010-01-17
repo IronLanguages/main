@@ -1,32 +1,10 @@
-fails:System::String#[] returns the character at the given index
-fails:System::String#[] returns nil if index is outside of self
 fails:System::String#[] returns a System::String
 fails:System::String#[] with index, length returns the substring starting at the given index with the given length
-fails:System::String#[] with index, length returns nil if the offset falls outside of self
-fails:System::String#[] with index, length returns nil if the length is negative
-fails:System::String#[] with index, length calls to_int on the given index and the given length
-fails:System::String#[] with index, length raises a TypeError when idx or length can't be converted to an integer
-fails:System::String#[] with index, length raises a TypeError when the given index or the given length is nil
-fails:System::String#[] with index, length returns a System::String
 fails:System::String#[] with Range returns the substring given by the offsets of the range
-fails:System::String#[] with Range returns nil if the beginning of the range falls outside of self
 fails:System::String#[] with Range returns an empty string if range.begin is inside self and > real end
 fails:System::String#[] with Range always taints resulting strings when self is tainted
-fails:System::String#[] with Range calls to_int on range arguments
-fails:System::String#[] with Range works with Range subclasses
-fails:System::String#[] with Range returns a System::String
-fails:System::String#[] with Regexp returns the matching portion of self
-fails:System::String#[] with Regexp returns nil if there is no match
 fails:System::String#[] with Regexp always taints resulting strings when self or regexp is tainted
-fails:System::String#[] with Regexp sets $~ to MatchData when there is a match and nil when there's none
-fails:System::String#[] with Regexp returns a System::String
-fails:System::String#[] with Regexp, index returns the capture for the given index
 fails:System::String#[] with Regexp, index always taints resulting strings when self or regexp is tainted
-fails:System::String#[] with Regexp, index returns nil if there is no match
-fails:System::String#[] with Regexp, index returns nil if there is no capture for the given index
-fails:System::String#[] with Regexp, index raises a TypeError when the given index can't be converted to Integer
-fails:System::String#[] with Regexp, index raises a TypeError when the given index is nil
-fails:System::String#[] with Regexp, index sets $~ to MatchData when there is a match and nil when there's none
 fails:System::String#[] with Regexp, index returns a System::String
 fails:System::String#[] with String returns other_str if it occurs in self
 fails:System::String#[] with String taints resulting strings when other is tainted
@@ -34,8 +12,5 @@ fails:System::String#[] with String doesn't set $~
 fails:System::String#[] with String returns nil if there is no match
 fails:System::String#[] with String returns a subclass instance when given a subclass instance
 fails:System::String#[] with String returns a System::String
-fails:System::String#[] with System::String returns other_str if it occurs in self
 fails:System::String#[] with System::String taints resulting strings when other is tainted
-fails:System::String#[] with System::String doesn't set $~
-fails:System::String#[] with System::String returns nil if there is no match
 fails:System::String#[] with System::String returns a subclass instance when given a subclass instance
