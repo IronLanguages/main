@@ -21,9 +21,9 @@ using MSA = Microsoft.Scripting.Ast;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
     using Ast = MSA.Expression;
 
     /// <summary>

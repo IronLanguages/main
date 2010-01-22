@@ -158,9 +158,11 @@ namespace Microsoft.Scripting.Debugging.CompilerServices {
                 scopedVariables,
                 variables,
                 customPayload);
-
+            
             foreach (DebugSourceSpan sourceSpan in (DebugSourceSpan[])locationSpanMap) {
-                sourceSpan.SourceFile.FunctionInfoMap[sourceSpan] = funcInfo;
+                lock (sourceSpan.SourceFile.FunctionInfoMap) {
+                    sourceSpan.SourceFile.FunctionInfoMap[sourceSpan] = funcInfo;
+                }
             }
 
             return funcInfo;

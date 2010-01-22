@@ -38,6 +38,10 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public DynamicMetaObject ConvertTo(Type toType, ConversionResultKind kind, DynamicMetaObject arg, OverloadResolverFactory resolverFactory) {
+            return ConvertTo(toType, kind, arg, resolverFactory, null);
+        }
+
+        public DynamicMetaObject ConvertTo(Type toType, ConversionResultKind kind, DynamicMetaObject arg, OverloadResolverFactory resolverFactory, DynamicMetaObject errorSuggestion) {
             ContractUtils.RequiresNotNull(toType, "toType");
             ContractUtils.RequiresNotNull(arg, "arg");
 
@@ -52,6 +56,7 @@ namespace Microsoft.Scripting.Actions {
                 TryConvertToObject(toType, arg.Expression.Type, arg, typeRestrictions) ??
                 TryAllConversions(resolverFactory, toType, kind, arg.Expression.Type, typeRestrictions, arg) ??
                 TryAllConversions(resolverFactory, toType, kind, arg.GetLimitType(), typeRestrictions, arg) ??
+                errorSuggestion ??
                 MakeErrorTarget(toType, kind, typeRestrictions, arg);
 
             if ((kind == ConversionResultKind.ExplicitTry || kind == ConversionResultKind.ImplicitTry) && toType.IsValueType) {

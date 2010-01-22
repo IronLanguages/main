@@ -29,11 +29,12 @@ using System.Reflection;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Interpreter;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
 
-    public abstract class RubyMetaBinder : DynamicMetaObjectBinder, IExpressionSerializable {
+    public abstract class RubyMetaBinder : DynamicMetaObjectBinder, ILightCallSiteBinder, IExpressionSerializable {
         /// <summary>
         /// Cross-runtime checks are emitted if the action is not bound to the context.
         /// </summary>
@@ -50,41 +51,55 @@ namespace IronRuby.Runtime.Calls {
                 _context = value; 
             }
         }
-        
+
+        bool ILightCallSiteBinder.AcceptsArgumentArray {
+            get { return true; }
+        }
+
         public abstract RubyCallSignature Signature { get; }
 
         protected abstract bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback);
         public abstract Expression CreateExpression();
 
-        public override T BindDelegate<T>(System.Runtime.CompilerServices.CallSite<T> site, object[] args) {
-            RubyContext context = _context ?? ((Signature.HasScope) ? ((RubyScope)args[0]).RubyContext : (RubyContext)args[0]);
+        public sealed override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            object firstArg = args[0];
+            ArgumentArray argArray = firstArg as ArgumentArray;
+            Type delegateType = typeof(T);
+            T result;
+
+            if (argArray != null) {
+                firstArg = argArray.GetArgument(0);
+            } else {
+                object precompiled = BindPrecompiled(delegateType, args);
+                if (precompiled != null) {
+                    result = (T)precompiled;
+                    CacheTarget(result);
+                    return result;
+                }
+            }
+
+            RubyContext context = _context ?? ((Signature.HasScope) ? ((RubyScope)firstArg).RubyContext : (RubyContext)firstArg);
 
             if (context.Options.NoAdaptiveCompilation) {
-                return base.BindDelegate<T>(site, args);
+                return null;
             }
 
-            InterpretedDispatcher dispatcher = MethodDispatcher.CreateInterpreted(typeof(T), args.Length);
-            if (dispatcher == null) {
-                // call site has too many arguments:
-                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Ruby: ! No dispatcher for " + Signature.ToString());
-                return base.BindDelegate<T>(site, args);
-            } else {
-                Expression binding = Bind(args, dispatcher.Parameters, dispatcher.ReturnLabel);
-
-                if (binding == null) {
-                    throw new InvalidImplementationException("DynamicMetaObjectBinder.Bind must return non-null meta-object");
-                }
-
-                T result = dispatcher.CreateDelegate<T>(binding, context.Options.CompilationThreshold);
-                CacheTarget(result);
-                return result;
-            }
+            result = this.LightBind(site, args, context.Options.CompilationThreshold);
+            CacheTarget(result);
+            return result;
         }
 
-        public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ scopeOrContextOrTarget, DynamicMetaObject/*!*/[]/*!*/ args) {
+        /// <summary>
+        /// Returns a precompiled rule delegate or null, if not available for the given delegate type and arguments.
+        /// </summary>
+        protected virtual object BindPrecompiled(Type/*!*/ delegateType, object[]/*!*/ args) {
+            return null;
+        } 
+
+        public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ scopeOrContextOrTargetOrArgArray, DynamicMetaObject/*!*/[]/*!*/ args) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Ruby: " + GetType().Name + Signature.ToString() + ": Bind");
 
-            var callArgs = new CallArguments(_context, scopeOrContextOrTarget, args, Signature);
+            var callArgs = new CallArguments(_context, scopeOrContextOrTargetOrArgArray, args, Signature);
             var metaBuilder = new MetaObjectBuilder(this, args);
 
             if (IsForeignMetaObject(callArgs.MetaTarget)) {
@@ -137,7 +152,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal static bool IsForeignMetaObject(DynamicMetaObject/*!*/ metaObject) {
-            return metaObject.Value is IDynamicMetaObjectProvider && !(metaObject is RubyMetaObject) || Utils.IsComObjectType(metaObject.LimitType);
+            return metaObject.Value is IDynamicMetaObjectProvider && !(metaObject is RubyMetaObject) || TypeUtils.IsComObjectType(metaObject.LimitType);
         }
     }
 }

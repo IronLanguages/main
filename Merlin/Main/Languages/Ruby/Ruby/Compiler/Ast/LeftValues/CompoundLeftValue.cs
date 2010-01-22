@@ -132,8 +132,8 @@ namespace IronRuby.Compiler.Ast {
                 if (rightOneSplat) {
                     // R(1,*)
                     resultExpression = Methods.SplatPair.OpCall(
-                        AstUtils.Box(rightValues[0]), 
-                        Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue)
+                        AstUtils.Box(rightValues[0]),
+                        AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue)
                     );
                 } else {
                     // case 1: R(1,-)
@@ -150,7 +150,7 @@ namespace IronRuby.Compiler.Ast {
             if (rightOneNone && !leftNoneSplat) {
                 // R(1,-) && !L(0,*)
                 resultExpression = Methods.Unsplat.OpCall(
-                    Ast.Dynamic(ConvertToArraySplatAction.Make(gen.Context), typeof(object), rightValues[0])
+                    AstUtils.LightDynamic(ConvertToArraySplatAction.Make(gen.Context), rightValues[0])
                 );
                 optimizeReads = false;
             } else {

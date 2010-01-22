@@ -8,27 +8,35 @@ describe "Float#to_s" do
     1000000000000.to_f.to_s.should == "1000000000000.0"
     10000000000000.to_f.to_s.should == "10000000000000.0"
     -10000000000000.to_f.to_s.should == "-10000000000000.0"
-    1.87687113714737e-40.to_s.should == "1.87687113714737e-40"
     (0.0 / 0.0).to_s.should == "NaN"
     (1.0 / 0.0).to_s.should == "Infinity"
     (-1.0 / 0.0).to_s.should == "-Infinity"
-    1.50505000e-20.to_s.should == "1.50505e-20"
   end
-  platform_is_not :windows do
-    it "returns a string representation of self (scientific notation)" do
-      100000000000000.to_f.to_s.should == "1.0e+14"
-      -100000000000000.to_f.to_s.should == "-1.0e+14"
-      1.87687113714737e-40.to_s.should == "1.87687113714737e-40"
-      1.50505000e-20.to_s.should == "1.50505e-20"
+
+  ruby_version_is "" ... "1.9" do
+    platform_is_not :windows do
+      it "returns a string representation of self (scientific notation)" do
+        100000000000000.to_f.to_s.should == "1.0e+14"
+        -100000000000000.to_f.to_s.should == "-1.0e+14"
+        1.87687113714737e-40.to_s.should == "1.87687113714737e-40"
+        1.50505000e-20.to_s.should == "1.50505e-20"
+      end
+    end
+
+    platform_is :windows do 
+      it "returns a string representation of self (scientific notation)" do
+        100000000000000.to_f.to_s.should == "1.0e+014"
+        -100000000000000.to_f.to_s.should == "-1.0e+014"
+        1.87687113714737e-40.to_s.should == "1.87687113714737e-040"
+        1.50505000e-20.to_s.should == "1.50505e-020"
+      end
     end
   end
 
-  platform_is :windows do 
-    it "returns a string representation of self (scientific notation)" do
-      100000000000000.to_f.to_s.should == "1.0e+014"
-      -100000000000000.to_f.to_s.should == "-1.0e+014"
-      1.87687113714737e-40.to_s.should == "1.87687113714737e-040"
-      1.50505000e-20.to_s.should == "1.50505e-020"
+  ruby_version_is "1.9" do
+    it "returns a string representation of self" do
+      100000000000000.to_f.to_s.should == "100000000000000.0"
+      -100000000000000.to_f.to_s.should == "-100000000000000.0"
     end
   end
 

@@ -1,7 +1,4 @@
-fails:Thread#raise on a sleeping thread re-raises active exception
-fails:Thread#raise on a running thread raises the given exception with the given message
-unstable:Thread#raise on a running thread re-raises active exception
-fails:Thread#raise on same thread calls Exception#exception when raising an existing Exception object
-fails:Thread#raise on same thread calls Exception#set_backtrace when raising an existing Exception object
-fails:Thread#raise on same thread accepts any object responding to #exception
+unstable:Thread#raise on a running thread raises the given exception with the given message
+unstable:Thread#raise on a sleeping thread can go unhandled
+unstable:Thread#raise on a running thread can go unhandled
 unstable:Thread#raise on a running thread raises a RuntimeError if no exception class is given

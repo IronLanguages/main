@@ -28,7 +28,7 @@ describe "Regexps with anchors" do
     /(foo\n^)(^bar)/.match("foo\nbar").to_a.should == ["foo\nbar", "foo\n", "bar"]   
   end
   
-  it 'does not match ^ after trailing newlines' do
+  it 'does not match ^ after trailing \n' do
     /^(?!\A)/.match("foo\n").should be_nil # There is no (empty) line after a trailing \n
   end
 
@@ -76,7 +76,7 @@ describe "Regexps with anchors" do
     /(\A)/.match("foo").to_a.should == ["", ""]
   end
   
-  it 'supports \Z (string end anchor, including before trailing newline)' do
+  it 'supports \Z (string end anchor, including before trailing \n)' do
     # Basic matching
     /foo\Z/.match("foo").to_a.should == ["foo"]
     /foo\Z/.match("foo\n").to_a.should == ["foo"]

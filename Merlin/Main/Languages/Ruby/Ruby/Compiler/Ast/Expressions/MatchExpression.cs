@@ -57,7 +57,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return Methods.MatchString.OpCall(
-                Ast.Dynamic(ConvertToStrAction.Make(gen.Context), typeof(MutableString), _expression.Transform(gen)),
+                AstUtils.LightDynamic(ConvertToStrAction.Make(gen.Context), typeof(MutableString), _expression.Transform(gen)),
                 _regex.Transform(gen),
                 gen.CurrentScopeVariable
             );

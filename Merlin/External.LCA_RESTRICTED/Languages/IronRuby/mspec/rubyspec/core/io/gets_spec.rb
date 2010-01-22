@@ -167,16 +167,20 @@ describe "IO#gets" do
     lambda { IOSpecs.closed_file.gets }.should raise_error(IOError)
   end
 
-  it "fails on cloned write-only cloned streams" do
-    f = File.open(tmp("gets_specs"), "w")
+  it "fails on cloned opened streams" do
     begin
+      f = File.open(tmp("gets_specs"), "w")
       f.puts("heh")
       g = IO.new(f.fileno)
-      lambda { g.gets }.should raise_error(Errno::EBADF)
+      f.fileno.should == g.fileno
+      lambda { g.gets }.should raise_error(IOError)
+      g.close
+      lambda { f.close }.should raise_error(Errno::EBADF)
     ensure
-      f.close
+      f.close unless f.closed?
+      g.close unless g.closed?
       File.unlink(tmp("gets_specs"))
-    end  
+    end
   end
 
   it "accepts a separator" do
@@ -190,5 +194,53 @@ describe "IO#gets" do
     f.close
     b.should == "\nB\n"
     File.unlink(tmp("gets_specs"))
+  end
+end
+
+ruby_version_is "1.9" do
+  describe "IO#gets" do
+    before :each do
+      @name = tmp("gets_specs")
+    end
+
+    after :each do
+      @file.close
+      rm_r @name
+    end
+
+    it "accepts an integer as first parameter to limit the output's size" do
+      touch(@name) { |f| f.print("waduswadus") }
+
+      @file = File.open(@name)
+      @file.gets(5).should == "wadus"
+    end
+
+    it "accepts an integer as second parameter to limit the output's size" do
+      touch(@file) { |f| f.print("wa\n\ndus\n\nwadus") }
+
+      @file = File.open(@name)
+      @file.gets('\n\n', 5).should == "wa\n\nd"
+    end
+
+    it "accepts an integer as limit parameter which is smaller than IO size" do
+      touch(@file) { |f| f.print("ABCD\n") }
+
+      @file = File.open(@name)
+      @file.gets("", 2).should == "AB"
+    end
+
+    it "accepts an integer as limit parameter which is same as IO size" do
+      touch(@file) { |f| f.print("ABC\n") }
+
+      @file = File.open(@name)
+      @file.gets("", 4).should == "ABC\n"
+    end
+
+    it "accepts an integer as limit parameter which is greater than IO size" do
+      touch(@file) { |f| f.print("A\n") }
+
+      @file = File.open(@name)
+      @file.gets("", 10).should == "A\n"
+    end
   end
 end

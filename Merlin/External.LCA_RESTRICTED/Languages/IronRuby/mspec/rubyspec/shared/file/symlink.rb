@@ -1,15 +1,14 @@
 describe :file_symlink, :shared => true do
   before :each do
-    @file = "test.txt"
-    @link = "test.lnk"
-    File.delete(@link) if File.exist?(@link)
-    File.delete(@file) if File.exist?(@file)
-    File.open(@file,"w+")
+    @file = tmp("test.txt")
+    @link = tmp("test.lnk")
+
+    rm_r @link
+    touch @file
   end
 
   after :each do
-    File.delete(@link) if File.exist?(@link)
-    File.delete(@file) if File.exist?(@file)
+    rm_r @link, @file
   end
 
   platform_is_not :windows do
@@ -17,21 +16,28 @@ describe :file_symlink, :shared => true do
       File.symlink(@file, @link)
       @object.send(@method, @link).should == true
     end
+
+    ruby_version_is "1.9" do
+      it "accepts an object that has a #to_path method" do
+        File.symlink(@file, @link)
+        @object.send(@method, mock_to_path(@link)).should == true
+      end
+    end
   end
 end
 
 describe :file_symlink_nonexistent, :shared => true do
   before :each do
-    @file = "test.txt"
-    @link = "test.lnk"
-    File.delete(@link) if File.exist?(@link)
-    File.delete(@file) if File.exist?(@file)
-    File.open(@file,"w+")
+    @file = tmp("test.txt")
+    @link = tmp("test.lnk")
+
+    rm_r @link
+    touch @file
   end
 
   after :each do
-    File.delete(@link) if File.exist?(@link)
-    File.delete(@file) if File.exist?(@file)
+    rm_r @link
+    rm_r @file
   end
 
   platform_is_not :windows do

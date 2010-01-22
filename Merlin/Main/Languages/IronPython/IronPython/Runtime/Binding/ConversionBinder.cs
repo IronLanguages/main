@@ -44,6 +44,7 @@ namespace IronPython.Runtime.Binding {
         private readonly ConversionResultKind/*!*/ _kind;
         private readonly Type _type;
         private readonly bool _retObject;
+        private CompatConversionBinder _compatConvert;
 
         public PythonConversionBinder(PythonContext/*!*/ context, Type/*!*/ type, ConversionResultKind resultKind) {
             Assert.NotNull(context, type);
@@ -87,7 +88,7 @@ namespace IronPython.Runtime.Binding {
             if (convertible != null) {
                 res = convertible.BindConvert(this);
             } else if (res == null) {
-                res = FallbackConvert(self);
+                res = BindConvert(self);
             }
 
             if (_retObject) {
@@ -125,17 +126,45 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        internal DynamicMetaObject FallbackConvert(DynamicMetaObject self) {
+        private DynamicMetaObject BindConvert(DynamicMetaObject self) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Convert " + Type.FullName + " " + self.LimitType);
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Conversion");
 
+            DynamicMetaObject res;
 #if !SILVERLIGHT
             DynamicMetaObject comConvert;
-            if (Microsoft.Scripting.ComInterop.ComBinder.TryConvert(new CompatConversionBinder(_context, Type, _kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ExplicitTry), self, out comConvert)) {
-                return comConvert;
-            }
+            if (Microsoft.Scripting.ComInterop.ComBinder.TryConvert(CompatBinder, self, out comConvert)) {
+                res = comConvert;
+            } else
 #endif
-            
+            {
+                res = self.BindConvert(CompatBinder);
+            }
+
+            // if we return object and the interop binder had to put on an extra conversion
+            // to the strong type go ahead and remove it now.
+            if (ReturnType == typeof(object) &&
+                res.Expression.Type != typeof(object) &&
+                res.Expression.NodeType == ExpressionType.Convert) {
+                res = new DynamicMetaObject(
+                    ((UnaryExpression)res.Expression).Operand,
+                    res.Restrictions
+                );
+            }                
+
+            return res;
+        }
+
+        internal CompatConversionBinder CompatBinder {
+            get {
+                if (_compatConvert == null) {
+                    _compatConvert = new CompatConversionBinder(this, Type, _kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ExplicitTry);
+                }
+                return _compatConvert;
+            }
+        }
+
+        internal DynamicMetaObject FallbackConvert(Type returnType, DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
             Type type = Type;
             DynamicMetaObject res = null;
             switch (Type.GetTypeCode(type)) {
@@ -219,15 +248,15 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return res ?? EnsureReturnType(Context.Binder.ConvertTo(Type, ResultKind, self, _context.SharedOverloadResolverFactory));
+            return res ?? EnsureReturnType(returnType, Context.Binder.ConvertTo(Type, ResultKind, self, _context.SharedOverloadResolverFactory, errorSuggestion));
         }
 
-        private DynamicMetaObject EnsureReturnType(DynamicMetaObject dynamicMetaObject) {
-            if (dynamicMetaObject.Expression.Type != ReturnType) {
+        private static DynamicMetaObject EnsureReturnType(Type returnType, DynamicMetaObject dynamicMetaObject) {
+            if (dynamicMetaObject.Expression.Type != returnType) {
                 dynamicMetaObject = new DynamicMetaObject(
                     AstUtils.Convert(
                         dynamicMetaObject.Expression,
-                        ReturnType
+                        returnType
                     ),
                     dynamicMetaObject.Restrictions
                 );
@@ -809,15 +838,15 @@ namespace IronPython.Runtime.Binding {
     }
 
     class CompatConversionBinder : ConvertBinder {
-        private readonly PythonContext _context;
+        private readonly PythonConversionBinder _binder;
 
-        public CompatConversionBinder(PythonContext/*!*/ context, Type toType, bool isExplicit)
+        public CompatConversionBinder(PythonConversionBinder binder, Type toType, bool isExplicit)
             : base(toType, isExplicit) {
-            _context = context;
+            _binder = binder;
         }
 
         public override DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
-            return new PythonConversionBinder(_context, Type, Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast).FallbackConvert(target);
+            return _binder.FallbackConvert(ReturnType, target, errorSuggestion);
         }
     }
 }

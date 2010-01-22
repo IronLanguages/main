@@ -53,6 +53,7 @@ namespace IronRuby.Compiler.Ast {
         private readonly bool _traceEnabled;
         private readonly bool _savingToDisk;
 
+        private IList<MSA.Expression> _fileInitializers; // lazy
         private MSA.Expression _sourcePathConstant; // lazy
 
         internal AstGenerator(RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, MSA.SymbolDocumentInfo document, RubyEncoding/*!*/ encoding,
@@ -123,6 +124,19 @@ namespace IronRuby.Compiler.Ast {
 
         internal RubyContext/*!*/ Context {
             get { return _context; }
+        }
+
+        internal void AddFileInitializer(MSA.Expression/*!*/ expression) {
+            if (_fileInitializers == null) {
+                _fileInitializers = new List<MSA.Expression>();
+            }
+            _fileInitializers.Add(expression);
+        }
+
+        internal IList<MSA.Expression>/*!*/ FileInitializers {
+            get {
+                return (IList<MSA.Expression>)_fileInitializers ?? AstFactory.EmptyExpressions;
+            }
         }
 
         #region Lexical Scopes
@@ -219,7 +233,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             public VariableScope(ScopeBuilder/*!*/ locals, MSA.Expression/*!*/ selfVariable, MSA.ParameterExpression/*!*/ runtimeScopeVariable) {
-                Assert.NotNull(selfVariable, runtimeScopeVariable);
+                Assert.NotNull(locals, selfVariable, runtimeScopeVariable);
                 _builder = locals;
                 _runtimeScopeVariable = runtimeScopeVariable;
                 _selfVariable = selfVariable;
@@ -364,6 +378,7 @@ namespace IronRuby.Compiler.Ast {
         private LoopScope _currentLoop;
         private RescueScope _currentRescue;
         private VariableScope _currentVariableScope;
+        private MethodScope _topLevelScope;
 
         // inner-most module (available only if we enter a module declaration in the current AST, not available in eval'd code or in a method):
         private ModuleScope _currentModule;
@@ -409,6 +424,11 @@ namespace IronRuby.Compiler.Ast {
         // inner-most scope builder:
         public ScopeBuilder/*!*/ CurrentScope {
             get { return _currentVariableScope.Builder; }
+        }
+
+        // top-level (source unit tree) method scope:
+        public MethodScope TopLevelScope {
+            get { return _topLevelScope; }
         }
 
         #endregion
@@ -555,6 +575,28 @@ namespace IronRuby.Compiler.Ast {
             _currentModule = oldModule.ParentModule;
         }
 
+        public void EnterFileInitializer(
+            ScopeBuilder/*!*/ locals,
+            MSA.Expression/*!*/ selfVariable,
+            MSA.ParameterExpression/*!*/ runtimeScopeVariable) {
+
+            VariableScope scope = new VariableScope(locals, selfVariable, runtimeScopeVariable);
+
+            scope.Parent = _currentElement;
+            scope.ParentVariableScope = _currentVariableScope;
+
+            _currentElement = scope;
+            _currentVariableScope = scope;
+        }
+
+        public void LeaveFileInitializer() {
+            Debug.Assert(_currentElement == _currentVariableScope);
+            VariableScope oldScope = _currentVariableScope;
+
+            _currentElement = oldScope.Parent;
+            _currentVariableScope = oldScope.ParentVariableScope;
+        }
+
         public void EnterSourceUnit(
             ScopeBuilder/*!*/ locals,
             MSA.Expression/*!*/ selfParameter,
@@ -574,6 +616,8 @@ namespace IronRuby.Compiler.Ast {
                 blockParameter,
                 methodName,
                 parameters);
+
+            _topLevelScope = _currentMethod;
         }
 
         public void LeaveSourceUnit() {
@@ -584,6 +628,7 @@ namespace IronRuby.Compiler.Ast {
             _currentElement = null;
             _currentMethod = null;
             _currentVariableScope = null;
+            _topLevelScope = null;
         }
 
         #endregion

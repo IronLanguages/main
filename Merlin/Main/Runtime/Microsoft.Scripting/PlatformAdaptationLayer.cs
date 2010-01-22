@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security;
 using Microsoft.Scripting.Utils;
 
@@ -378,9 +379,20 @@ namespace Microsoft.Scripting {
 #endif
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public virtual void SetEnvironmentVariable(string key, string value) {
 #if !SILVERLIGHT
-            Environment.SetEnvironmentVariable(key, value);
+            if (value != null && value.Length == 0) {
+                // System.Environment.SetEnvironmentVariable interprets an empty value string as 
+                // deleting the environment variable. So we use the native SetEnvironmentVariable 
+                // function here which allows setting of the value to an empty string.
+                // This will require high trust and will fail in sandboxed environments
+                if (!Utils.NativeMethods.SetEnvironmentVariable(key, value)) {
+                    throw new ExternalException("SetEnvironmentVariable failed", Marshal.GetLastWin32Error());
+                }
+            } else {
+                Environment.SetEnvironmentVariable(key, value);
+            }
 #else
             throw new NotImplementedException();
 #endif

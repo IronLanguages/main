@@ -49,7 +49,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject/*!*/ FallbackInvoke(DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject errorSuggestion) {
-            if (target.Value is IDynamicMetaObjectProvider) {
+            if (target.Value is IDynamicMetaObjectProvider && errorSuggestion == null) {
                 // try creating an instance...
                 return target.BindCreateInstance(
                     _context.Create(this, CallInfo),
@@ -64,14 +64,14 @@ namespace IronPython.Runtime.Binding {
             }
 #endif
 
-            return InvokeFallback(target, args, BindingHelpers.CallInfoToSignature(CallInfo));
+            return InvokeFallback(target, args, BindingHelpers.CallInfoToSignature(CallInfo), errorSuggestion);
         }
 
-        internal DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallSignature sig) {
+        internal DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallSignature sig, DynamicMetaObject errorSuggestion) {
             return
                 PythonProtocol.Call(this, target, args) ??
                 Context.Binder.Create(sig, target, args, AstUtils.Constant(_context.SharedContext)) ??
-                Context.Binder.Call(sig, new PythonOverloadResolverFactory(Context.Binder, AstUtils.Constant(_context.SharedContext)), target, args);
+                Context.Binder.Call(sig, errorSuggestion, new PythonOverloadResolverFactory(Context.Binder, AstUtils.Constant(_context.SharedContext)), target, args);
         }
 
         public override int GetHashCode() {

@@ -174,4 +174,21 @@ describe "File.expand_path(file_name, dir_string)" do
   it "ignores dir_string if file_name is an absolute path" do
     File.expand_path('/foo', '/bar').should == @rootdir + "foo"
   end
+
+  ruby_version_is "1.9" do
+    it "accepts objects that have a #to_path method" do
+      File.expand_path(mock_to_path("a"), mock_to_path("#{@tmpdir}"))
+    end
+  end
+
+
+  ruby_version_is "1.9" do
+    it "produces a String in the default external encoding" do
+      old_external = Encoding.default_external
+      Encoding.default_external = Encoding::SHIFT_JIS
+      File.expand_path("./a").encoding.should == Encoding::SHIFT_JIS
+      File.expand_path("./\u{9876}").encoding.should == Encoding::SHIFT_JIS
+      Encoding.default_external = old_external
+    end
+  end
 end

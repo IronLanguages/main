@@ -4,45 +4,42 @@ describe "File::Stat#<=>" do
   before :each do
     @name1 = tmp("i_exist")
     @name2 = tmp("i_exist_too")
-    File.open(@name1, "w") {}
-    File.open(@name2, "w") {}
-    @stat1 = File.stat(@name1)
-    @stat2 = File.stat(@name2)
+    @file1 = File.new @name1, "w"
+    @file2 = File.new @name2, "w"
   end
 
   after :each do
-    File.delete @name1
-    File.delete @name2
+    @file1.close unless @file1.closed?
+    @file2.close unless @file2.closed?
+    rm_r @name1, @name2
   end
 
   it "is able to compare files by the same modification times" do
-    res = false
-    10.times do
-      File.open(@name1, "w") {}
-      File.open(@name2, "w") {}
-      res ||= ((File.stat(@name1) <=> File.stat(@name2)) == 0)
-      break if res
-    end
-    res.should be_true
+    now = Time.now
+    File.utime(now, now, @name1)
+    File.utime(now, now, @name2)
+    (@file1.stat <=> @file2.stat).should == 0
   end
 
   it "is able to compare files by different modification times" do
-    File.utime(Time.now, Time.now + 100, @name2)
-    (File.stat(@name1) <=> File.stat(@name2)).should == -1
+    now = Time.now
+    File.utime(now, now + 100, @name2)
+    (@file1.stat <=> @file2.stat).should == -1
 
-    File.utime(Time.now, Time.now - 100, @name2)
-    (File.stat(@name1) <=> File.stat(@name2)).should == 1
+    File.utime(now, now - 100, @name2)
+    (@file1.stat <=> @file2.stat).should == 1
   end
 
   it "should also include Comparable and thus == shows mtime equality between two File::Stat objects" do
-    (@stat1 == @stat2).should == true
-    (@stat1 == @stat1).should == true
-    (@stat2 == @stat2).should == true
+    (@file1.stat == @file2.stat).should == true
+    (@file1.stat == @file1.stat).should == true
+    (@file2.stat == @file2.stat).should == true
 
-    File.utime(Time.now, Time.now + 100, @name2)
+    now = Time.now
+    File.utime(now, now + 100, @name2)
 
-    (File.stat(@name1) == File.stat(@name2)).should == false
-    (File.stat(@name1) == File.stat(@name1)).should == true
-    (File.stat(@name2) == File.stat(@name2)).should == true
+    (@file1.stat == @file2.stat).should == false
+    (@file1.stat == @file1.stat).should == true
+    (@file2.stat == @file2.stat).should == true
   end
 end

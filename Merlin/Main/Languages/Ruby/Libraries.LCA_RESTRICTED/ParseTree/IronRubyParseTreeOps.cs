@@ -943,12 +943,12 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     return false;
                 }
 
-                public override bool Enter(Finalizer/*!*/ node) {
+                public override bool Enter(FileInitializerStatement/*!*/ node) {
                     // TODO:
                     throw new NotImplementedException();
                 }
 
-                public override bool Enter(Initializer/*!*/ node) {
+                public override bool Enter(ShutdownHandlerStatement/*!*/ node) {
                     // TODO:
                     throw new NotImplementedException();
                 }

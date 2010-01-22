@@ -73,7 +73,6 @@ namespace IronRuby.Runtime {
         private readonly Loader/*!*/ _loader;
         private readonly Scope/*!*/ _globalScope;
         private readonly RubyMetaBinderFactory/*!*/ _metaBinderFactory;
-        private DynamicOperations _operations;
         private readonly RubyBinder _binder;
         private DynamicDelegateCreator _delegateCreator;
 
@@ -262,7 +261,7 @@ namespace IronRuby.Runtime {
             get {
 #if !SILVERLIGHT
                 if (_comObjectClass == null) {
-                    GetOrCreateClass(Utils.ComObjectType);
+                    GetOrCreateClass(TypeUtils.ComObjectType);
                 }
 #endif
                 return _comObjectClass;
@@ -827,7 +826,7 @@ namespace IronRuby.Runtime {
                 baseClass, expandedMixins, tracker, null, false, false, ModuleRestrictions.None
             );
 
-            if (Utils.IsComObjectType(type)) {
+            if (TypeUtils.IsComObjectType(type)) {
                 _comObjectClass = result;
             }
 
@@ -1484,16 +1483,6 @@ namespace IronRuby.Runtime {
             }
             
             return result;
-        }
-
-        internal DynamicOperations Operations {
-            get {
-                if (_operations == null) {
-                    Interlocked.CompareExchange(ref _operations, new DynamicOperations(this), null);
-                }
-
-                return _operations;
-            }
         }
 
         #endregion
@@ -2240,10 +2229,10 @@ namespace IronRuby.Runtime {
 
         #region Shutdown (thread-safe)
 
-        private readonly List<BlockParam> _shutdownHandlers = new List<BlockParam>();
+        private readonly List<Proc> _shutdownHandlers = new List<Proc>();
         private object ShutdownHandlersLock { get { return _shutdownHandlers; }}
 
-        public void RegisterShutdownHandler(BlockParam/*!*/ proc) {
+        public void RegisterShutdownHandler(Proc/*!*/ proc) {
             ContractUtils.RequiresNotNull(proc, "proc");
 
             lock (ShutdownHandlersLock) {
@@ -2252,43 +2241,40 @@ namespace IronRuby.Runtime {
         }
 
         private void ExecuteShutdownHandlers() {
-            var handlers = new List<BlockParam>();
-
             SystemExit lastSystemExit = null;
-            Exception lastUncaughtException = null;
+            Exception lastException = null;
 
             while (true) {
+                Proc[] handlers;
                 lock (ShutdownHandlersLock) {
                     if (_shutdownHandlers.Count == 0) {
                         break;
                     }
-                    handlers.AddRange(_shutdownHandlers);
+                    handlers = _shutdownHandlers.ToReverseArray();
                     _shutdownHandlers.Clear();
                 }
 
-                for (int i = handlers.Count - 1; i >= 0; --i) {
+                foreach (var handler in handlers) {
                     try {
-                        object result;
-                        handlers[i].Yield(out result);
+                        handler.Call();
                     } catch (SystemExit e) {
                         // Kernel#at_exit can call exit and set the exitcode. Furthermore, exit can be called 
                         // from multiple blocks registered with Kernel#at_exit.
                         lastSystemExit = e;
                     } catch (Exception e) {
 			            CurrentException = e;
-                        lastUncaughtException = e;
+                        lastException = e;
+                        // TODO: GetIdentifierEncoding
+                        _runtimeErrorSink.WriteMessage(MutableString.CreateMutable(FormatException(e), RubyEncoding.UTF8));
                     }
                 }
-
-                handlers.Clear();
             }
 
             if (lastSystemExit != null) {
                 throw lastSystemExit;
-            }
-
-            if (lastUncaughtException != null) {
-                throw lastUncaughtException;
+            } else if (lastException != null) {
+                // at least one unhandled exception:
+                throw new SystemExit(1);
             }
         }
 
@@ -2398,11 +2384,17 @@ namespace IronRuby.Runtime {
 
         #region Exceptions (thread-safe)
 
-        // Formats exceptions like Ruby does, for example:
-        //
-        //repro.rb:2:in `fetch': wrong number of arguments (0 for 1) (ArgumentError)
-        //        from repro.rb:2:in `test'
-        //        from repro.rb:5
+        /// <summary>
+        /// Formats exceptions like Ruby does.
+        /// </summary>
+        /// <remarks>
+        /// For example,
+        /// <code>
+        /// repro.rb:2:in `fetch': wrong number of arguments (0 for 1) (ArgumentError)
+        ///     from repro.rb:2:in `test'
+        ///     from repro.rb:5
+        /// </code>
+        /// </remarks>
         public override string/*!*/ FormatException(Exception/*!*/ exception) {
             var syntaxError = exception as SyntaxError;
             if (syntaxError != null && syntaxError.HasLineInfo) {
@@ -2411,17 +2403,17 @@ namespace IronRuby.Runtime {
 
             var exceptionClass = GetClassOf(exception);
             RubyExceptionData data = RubyExceptionData.GetInstance(exception);
-            var message = RubyExceptionData.GetClrMessage(data.Message, exceptionClass.Name);
+            string message = RubyExceptionData.GetClrMessage(this, data.Message);
 
             RubyArray backtrace = data.Backtrace;
 
             StringBuilder sb = new StringBuilder();
             if (backtrace != null && backtrace.Count > 0) {
-                sb.AppendFormat("{0}: {1} ({2})", backtrace[0], message, exceptionClass.Name);
+                sb.AppendFormat("{0}: {1} ({2})", Protocols.ToClrStringNoThrow(this, backtrace[0]), message, exceptionClass.Name);
                 sb.AppendLine();
 
                 for (int i = 1; i < backtrace.Count; i++) {
-                    sb.Append("\tfrom ").Append(backtrace[i]).AppendLine();
+                    sb.Append("\tfrom ").Append(Protocols.ToClrStringNoThrow(this, backtrace[i])).AppendLine();
                 }
             } else {
                 sb.AppendFormat("unknown: {0} ({1})", message, exceptionClass.Name).AppendLine();
@@ -2581,7 +2573,7 @@ namespace IronRuby.Runtime {
                 return ArrayUtils.EmptyStrings;
             }
 #if !SILVERLIGHT
-            if (Utils.IsComObject(obj)) {
+            if (TypeUtils.IsComObject(obj)) {
                 return new List<string>(Microsoft.Scripting.ComInterop.ComBinder.GetDynamicMemberNames(obj));
             }
 #endif

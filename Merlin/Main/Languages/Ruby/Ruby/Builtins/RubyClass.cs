@@ -1342,14 +1342,13 @@ namespace IronRuby.Builtins {
                 initializer.BuildCallNoFlow(metaBuilder, args, Symbols.Initialize);
             } else {
                 // TODO: we need more refactoring of RubyMethodGroupInfo.BuildCall to be able to inline this:
-                metaBuilder.Result = Ast.Dynamic(
+                metaBuilder.Result = AstUtils.LightDynamic(
                     RubyCallAction.Make(args.RubyContext, "initialize",
                         new RubyCallSignature(
                             args.Signature.ArgumentCount, 
                             (args.Signature.Flags & ~RubyCallFlags.IsInteropCall) | RubyCallFlags.HasImplicitSelf
                         )
                     ),
-                    typeof(object),
                     args.GetCallSiteArguments(instanceVariable)
                 );
             }

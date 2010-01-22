@@ -97,11 +97,11 @@ namespace IronRuby.Runtime.Calls {
 
         #region Precompiled Rules
 
-        public override T BindDelegate<T>(CallSite<T>/*!*/ site, object[]/*!*/ args) {
+        protected override object BindPrecompiled(Type/*!*/ delegateType, object[]/*!*/ args) {
             if (Context == null || 
                 Signature.ResolveOnly ||
                 (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope | RubyCallFlags.HasBlock)) != 0) {
-                return base.BindDelegate<T>(site, args);
+                return null;
             }
 
             RubyScope scope;
@@ -123,18 +123,17 @@ namespace IronRuby.Runtime.Calls {
             }
 
             if (!method.Found || method.Info.IsProtected && !Signature.HasImplicitSelf) {
-                return base.BindDelegate<T>(site, args);
+                return null;
             }
 
-            var dispatcher = method.Info.GetDispatcher<T>(Signature, target, version);
+            var dispatcher = method.Info.GetDispatcher(delegateType, Signature, target, version);
             if (dispatcher != null) {
-                T result = (T)dispatcher.CreateDelegate();
-                CacheTarget(result);
+                object result = dispatcher.CreateDelegate(MethodDispatcher.UntypedFuncs.Contains(delegateType));
                 RubyBinder.DumpPrecompiledRule(this, dispatcher);
                 return result;
             }
 
-            return base.BindDelegate<T>(site, args);
+            return null;
         }
 
         #endregion

@@ -16,6 +16,7 @@
 #if !CLR2
 using System.Linq.Expressions;
 #else
+using dynamic = System.Object;
 using Microsoft.Scripting.Ast;
 #endif
 
@@ -23,9 +24,9 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 using Microsoft.Scripting.Utils;
 
@@ -36,6 +37,7 @@ namespace Microsoft.Scripting.Runtime {
     public abstract class LanguageContext {
         private readonly ScriptDomainManager _domainManager;
         private readonly ContextId _id;
+        private DynamicOperations _operations;
 
         protected LanguageContext(ScriptDomainManager domainManager) {
             ContractUtils.RequiresNotNull(domainManager, "domainManager");
@@ -92,6 +94,58 @@ namespace Microsoft.Scripting.Runtime {
         // TODO: remove
         public virtual ScopeExtension CreateScopeExtension(Scope scope) {
             return new ScopeExtension(scope);
+        }
+
+        /// <summary>
+        /// Provides access to setting variables in scopes.  
+        /// 
+        /// By default this goes through ObjectOperations which can be rather slow.  
+        /// Languages can override this to provide fast customized access which avoids 
+        /// ObjectOperations.  Languages can provide fast access to commonly used scope 
+        /// types for that language.  Typically this includes ScopeStorage and any other 
+        /// classes which the language themselves uses for backing of a Scope.
+        /// </summary>
+        public virtual void ScopeSetVariable(Scope scope, string name, object value) {
+            Operations.SetMember(scope, name, value);
+        }
+
+        /// <summary>
+        /// Provides access to try getting variables in scopes.  
+        /// 
+        /// By default this goes through ObjectOperations which can be rather slow.  
+        /// Languages can override this to provide fast customized access which avoids 
+        /// ObjectOperations.  Languages can provide fast access to commonly used scope 
+        /// types for that language.  Typically this includes ScopeStorage and any other 
+        /// classes which the language themselves uses for backing of a Scope.
+        /// </summary>
+        public virtual bool ScopeTryGetVariable(Scope scope, string name, out dynamic value) {
+            return Operations.TryGetMember(scope, name, out value);
+        }
+
+        /// <summary>
+        /// Provides access to getting variables in scopes and converting the result.
+        /// 
+        /// By default this goes through ObjectOperations which can be rather slow.  
+        /// Languages can override this to provide fast customized access which avoids 
+        /// ObjectOperations.  Languages can provide fast access to commonly used scope 
+        /// types for that language.  Typically this includes ScopeStorage and any other 
+        /// classes which the language themselves uses for backing of a Scope.
+        /// </summary>
+        public virtual T ScopeGetVariable<T>(Scope scope, string name) {
+            return Operations.GetMember<T>(scope, name);
+        }
+
+        /// <summary>
+        /// Provides access to getting variables in scopes.
+        /// 
+        /// By default this goes through ObjectOperations which can be rather slow.  
+        /// Languages can override this to provide fast customized access which avoids 
+        /// ObjectOperations.  Languages can provide fast access to commonly used scope 
+        /// types for that language.  Typically this includes ScopeStorage and any other 
+        /// classes which the language themselves uses for backing of a Scope.
+        /// </summary>
+        public virtual dynamic ScopeGetVariable(Scope scope, string name) {
+            return Operations.GetMember(scope, name);
         }
 
         #endregion
@@ -474,8 +528,17 @@ namespace Microsoft.Scripting.Runtime {
 
         public virtual CreateInstanceBinder CreateCreateBinder(CallInfo callInfo) {
             return new DefaultCreateAction(callInfo);
-        }      
+        }
 
+        public DynamicOperations Operations {
+            get {
+                if (_operations == null) {
+                    Interlocked.CompareExchange(ref _operations, new DynamicOperations(this), null);
+                }
+
+                return _operations;
+            }
+        }
         #endregion
 
         #region Object Introspection Support

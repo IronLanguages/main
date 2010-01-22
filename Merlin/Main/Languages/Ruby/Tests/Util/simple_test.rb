@@ -8,8 +8,8 @@ class PositiveExpectation
 
   def ==(other)
     if @obj != other
-	  msg = "Equality expected for '#{@obj.inspect}' and '#{other.inspect}'"
-	  $error_count += 1
+      msg = "Equality expected for '#{@obj.inspect}' and '#{other.inspect}'"
+      $error_count += 1
       $error_list << [msg, caller]
       print 'F'
       raise Exception.new(msg)
@@ -21,7 +21,7 @@ class PositiveExpectation
   def equal?(other)
     if not @obj.equal?(other)
       msg = "Reference equality expected for '#{@obj.inspect}' and '#{other.inspect}'"
-	  $error_count += 1
+      $error_count += 1
       $error_list << [msg, caller]
       print 'F'
       raise Exception.new(msg)
@@ -124,9 +124,8 @@ def finished
     $error_list.each { |msg, trace| puts "#{i})", msg, trace, ''; i += 1 }
     puts "\n\nTests failed == #{$error_count}"
     Kernel.exit(1)
-  end
+  end  
   puts "\n\nTests passed"
-  
 end
 
 def specify(name)

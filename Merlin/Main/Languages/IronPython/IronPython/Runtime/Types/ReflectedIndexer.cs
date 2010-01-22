@@ -65,6 +65,13 @@ namespace IronPython.Runtime.Types {
             get { return _info.DeclaringType; }
         }
 
+        public override PythonType PropertyType {
+            [PythonHidden]
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(_info.PropertyType);
+            }
+        }
+
         public override string __name__ {
             get { return _info.Name; }
         }

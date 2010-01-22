@@ -254,8 +254,10 @@ namespace IronRuby.Builtins {
                 if (end < _format.Length && _format[end] == '$') {
                     int argIndex = int.Parse(_format.Substring(_index - 1, end - _index + 1), CultureInfo.InvariantCulture);
                     _index = end + 1; // Point past the '$'
-                    _curCh = _format[_index++];
-                    return argIndex;
+                    if (_index < _format.Length) {
+                        _curCh = _format[_index++];
+                        return argIndex;
+                    }
                 }
             }
             return null;
@@ -268,6 +270,10 @@ namespace IronRuby.Builtins {
                 int? argindex = TryReadArgumentIndex();
 
                 res = _siteStorage.CastToFixnum(GetData(argindex));
+                if (res < 0) {
+                    _opts.LeftAdj = true;
+                    res = -res;
+                }
             } else {
                 if (Char.IsDigit(_curCh)) {
                     res = 0;
@@ -380,10 +386,10 @@ namespace IronRuby.Builtins {
             object val;
             bool isPositive;
             if (integer.IsFixnum) {
-                isPositive = integer.Fixnum > 0;
+                isPositive = integer.Fixnum >= 0;
                 val = integer.Fixnum;
             } else {
-                isPositive = integer.Bignum.IsPositive();
+                isPositive = integer.Bignum.IsZero() || integer.Bignum.IsPositive();
                 val = integer.Bignum;
             }
 
@@ -698,6 +704,11 @@ namespace IronRuby.Builtins {
             uint mask = _Mask[bitsToShift];
             char[] digits = lowerCase ? _LowerDigits : _UpperDigits;
 
+            if (IsZero(value)) {
+                result.Append(digits[0]);
+                return result;
+            }
+
             while (val != limit) {
                 result.Append(digits[val & mask]);
                 val = val >> bitsToShift;
@@ -814,6 +825,13 @@ namespace IronRuby.Builtins {
                 return ((BigInteger)value).OnesComplement();
             else
                 return -((int)value);
+        }
+
+        private bool IsZero(object/*!*/ value) {
+            if (value is BigInteger)
+                return ((BigInteger)value).IsZero();
+            else
+                return (int)value == 0;
         }
 
         private bool IsNegative(object/*!*/ value) {

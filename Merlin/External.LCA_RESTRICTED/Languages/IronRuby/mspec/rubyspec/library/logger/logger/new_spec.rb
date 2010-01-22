@@ -10,8 +10,8 @@ describe "Logger#new" do
   end
 
   after :each do
-    @log_file.close unless @log_file.closed?
     @l.close if @l
+    @log_file.close unless @log_file.closed?
     begin
       File.unlink(@file_path) if File.exists?(@file_path)
     rescue Errno::EACCES
@@ -20,8 +20,10 @@ describe "Logger#new" do
   end
 
    it "creates a new logger object" do
-     @l = Logger.new(STDERR)
-     lambda { @l.add(Logger::WARN, "Foo") }.should output_to_fd(/Foo/, STDERR)
+     @l = Logger.new(@log_file)
+     @l.add(Logger::WARN, "Foo")
+     @log_file.rewind
+     @log_file.readlines.last.should =~ /WARN -- : Foo\n/
    end
 
    it "receives a logging device as first argument" do
@@ -60,9 +62,9 @@ describe "Logger#new" do
     LoggerSpecs::strip_date(f0.readlines.last).should == "WARN -- : foo\n"
     LoggerSpecs::strip_date(f.readlines.last).should == "WARN -- : bar\n"
 
+    l.close
     f.close
     f0.close
-    l.close
 
     File.unlink(path)
     File.unlink(path0)

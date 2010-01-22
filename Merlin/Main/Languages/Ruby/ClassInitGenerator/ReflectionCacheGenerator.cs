@@ -14,17 +14,16 @@
  * ***************************************************************************/
 
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using IronRuby.Runtime;
-using System.CodeDom.Compiler;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using IronRuby.Compiler.Generation;
-using Microsoft.Scripting.Utils;
-using IronRuby.Compiler;
+using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Utils;
 
 internal sealed class ReflectionCacheGenerator : Generator {
     private static readonly Type MethodCacheType = typeof(IronRuby.Compiler.Methods);
@@ -91,21 +90,36 @@ internal sealed class ReflectionCacheGenerator : Generator {
 
             WriteLicenseStatement(writer);
 
+            _output.WriteLine("#if !CLR2");
+            _output.WriteLine("using System.Linq.Expressions;");
+            _output.WriteLine("#else");
+            _output.WriteLine("using Microsoft.Scripting.Ast;");
+            _output.WriteLine("#endif");
+            _output.WriteLine();
+
             _output.WriteLine("using System.Reflection;");
             _output.WriteLine("using System.Diagnostics;");
             _output.WriteLine("using IronRuby.Builtins;");
             _output.WriteLine("using IronRuby.Runtime;");
             _output.WriteLine("using IronRuby.Runtime.Calls;");
             _output.WriteLine("using Microsoft.Scripting.Utils;");
+            _output.WriteLine("using Microsoft.Scripting.Interpreter;");
+
+            _output.WriteLine();
+            _output.WriteLine("#pragma warning disable 618 // obsolete attribute");
 
             _output.WriteLine();
             _output.WriteLine("namespace {0} {{", MethodCacheType.Namespace);
             _output.Indent++;
 
+            _output.WriteLine("using System;");
+            _output.WriteLine("using Microsoft.Scripting.Utils;");
+            _output.WriteLine();
+
             _output.WriteLine("public static partial class {0} {{", MethodCacheType.Name);
             _output.Indent++;
 
-            GenerateMembers(methods, "MethodInfo", "GetMethod");
+            GenerateMethods(methods);
             
             _output.WriteLine();
 
@@ -186,14 +200,54 @@ internal sealed class ReflectionCacheGenerator : Generator {
         }
     }
 
+    private void GenerateMethods(IList<KeyValuePair<string, MethodInfo>>/*!*/ methods) {
+        foreach (var entry in methods) {
+            var name = entry.Key;
+            var method = entry.Value;
+            var ps = method.GetParameters();
+
+            if (!method.IsGenericMethod && method.IsStatic && CollectionUtils.TrueForAll(ps, (p) => !p.ParameterType.IsByRef) &&
+                !((EmittedAttribute)method.GetCustomAttributes(typeof(EmittedAttribute), false)[0]).UseReflection) {
+
+                Type[] types = ReflectionUtils.GetParameterTypes(ps);
+                string delegateType;
+                if (method.ReturnType == typeof(void)) {
+                    delegateType = "Action";
+                } else {
+                    delegateType = "Func";
+                    types = ArrayUtils.Append(types, method.ReturnType);
+                }
+
+                _output.WriteLine("public static MethodInfo/*!*/ {0} {{ get {{ return _{0} ?? (_{0} = CallInstruction.Cache{3}{4}({1}.{2})); }} }}",
+                    name,
+                    method.DeclaringType.Name,
+                    method.Name,
+                    delegateType,
+                    ReflectionUtils.FormatTypeArgs(new StringBuilder(), types, Generator.TypeNameDispenser)
+                 );
+
+                _output.WriteLine("private static MethodInfo _{0};", name);
+            } else {
+                GenerateMember(name, method, "MethodInfo", "GetMethod");
+            }
+        }
+    }
+
     private void GenerateMembers<TMemberInfo>(IList<KeyValuePair<string, TMemberInfo>>/*!*/ members, string/*!*/ info, string/*!*/ getter)
         where TMemberInfo : MemberInfo {
 
         foreach (var member in members) {
-            _output.WriteLine("public static {3}/*!*/ {0} {{ get {{ return _{0} ?? (_{0} = {4}(typeof({1}), \"{2}\")); }} }}",
-                member.Key, member.Value.DeclaringType.Name, member.Value.Name, info, getter);
-            _output.WriteLine("private static {1} _{0};", member.Key, info);
+            GenerateMember(member.Key, member.Value, info, getter);
         }
+    }
+
+    private void GenerateMember<TMemberInfo>(string/*!*/ name, TMemberInfo/*!*/ member, string/*!*/ info, string/*!*/ getter) 
+        where TMemberInfo : MemberInfo {
+
+        _output.WriteLine("public static {3}/*!*/ {0} {{ get {{ return _{0} ?? (_{0} = {4}(typeof({1}), \"{2}\")); }} }}",
+            name, member.DeclaringType.Name, member.Name, info, getter
+        );
+        _output.WriteLine("private static {1} _{0};", name, info);
     }
 
     private void GenerateStringFactoryOps(string/*!*/ baseName) {

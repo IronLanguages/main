@@ -61,6 +61,21 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="resolverFactory">Overload resolver factory.</param>
         /// <returns>A MetaObject representing the call or the error.</returns>
         public DynamicMetaObject Call(CallSignature signature, OverloadResolverFactory resolverFactory, DynamicMetaObject target, params DynamicMetaObject[] args) {
+            return Call(signature, null, resolverFactory, target, args);
+        }
+
+        /// <summary>
+        /// Provides default binding for performing a call on the specified meta objects.
+        /// </summary>
+        /// <param name="signature">The signature describing the call</param>
+        /// <param name="target">The meta object to be called.</param>
+        /// <param name="args">
+        /// Additional meta objects are the parameters for the call as specified by the CallSignature in the CallAction.
+        /// </param>
+        /// <param name="resolverFactory">Overload resolver factory.</param>
+        /// <param name="errorSuggestion">The result should the object be uncallable.</param>
+        /// <returns>A MetaObject representing the call or the error.</returns>
+        public DynamicMetaObject Call(CallSignature signature, DynamicMetaObject errorSuggestion, OverloadResolverFactory resolverFactory, DynamicMetaObject target, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNullItems(args, "args");
             ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
 
@@ -68,7 +83,7 @@ namespace Microsoft.Scripting.Actions {
 
             if (targetInfo != null) {
                 // we're calling a well-known MethodBase
-                DynamicMetaObject res =  MakeMetaMethodCall(signature, resolverFactory, targetInfo);
+                DynamicMetaObject res = MakeMetaMethodCall(signature, resolverFactory, targetInfo);
                 if (res.Expression.Type.IsValueType) {
                     res = new DynamicMetaObject(
                         AstUtils.Convert(res.Expression, typeof(object)),
@@ -79,7 +94,7 @@ namespace Microsoft.Scripting.Actions {
                 return res;
             } else {
                 // we can't call this object
-                return MakeCannotCallRule(target, target.GetLimitType());
+                return errorSuggestion ?? MakeCannotCallRule(target, target.GetLimitType());
             }
         }
 

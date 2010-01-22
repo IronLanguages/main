@@ -123,9 +123,6 @@ namespace IronRuby.Hosting {
             } catch (SystemExit e) {
                 // Kernel#at_exit runs during shutdown, and it can set the exitcode by calling exit
                 ExitCode = e.Status;
-            } catch (Exception e) {
-                UnhandledException(e);
-                ExitCode = 1;
             }
         }
     }

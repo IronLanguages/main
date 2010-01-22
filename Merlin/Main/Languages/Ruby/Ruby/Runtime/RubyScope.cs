@@ -42,7 +42,12 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Block scope used by module_eval.
         /// </summary>
-        BlockModule
+        BlockModule,
+
+        /// <summary>
+        /// BEGIN block scope.
+        /// </summary>
+        FileInitializer
     }
 
     public class RuntimeFlowControl {
@@ -438,11 +443,11 @@ namespace IronRuby.Runtime {
             RubyScope scope = this;
             while (true) {
                 switch (scope.Kind) {
-                    case ScopeKind.Block:
-                    case ScopeKind.BlockMethod:
-                        break;
-
-                    default:
+                    case ScopeKind.Module:
+                    case ScopeKind.BlockModule:
+                    case ScopeKind.Method:
+                    case ScopeKind.TopLevel:
+                    case ScopeKind.FileInitializer:
                         return scope;
                 }
 
@@ -850,14 +855,37 @@ var closureScope = scope as RubyClosureScope;
             _parent = parent;
             _top = parent.Top;
             _selfObject = selfObject;
-            _methodAttributes = RubyMethodAttributes.PrivateInstance;
+            _methodAttributes = RubyMethodAttributes.PublicInstance;
 
             // RubyModuleScope:
             _module = module;
             InLoop = parent.InLoop;
             InRescue = parent.InRescue;
-            MethodAttributes = RubyMethodAttributes.PublicInstance;
             SetEmptyLocals();
+        }
+
+        internal override void DefineDynamicVariable(SymbolId name, object value) {
+            _parent.DefineDynamicVariable(name, value);
+        }
+    }
+
+    public sealed class RubyFileInitializerScope : RubyClosureScope {
+        public override ScopeKind Kind { get { return ScopeKind.FileInitializer; } }
+        public override bool InheritsLocalVariables { get { return false; } }
+
+        internal RubyFileInitializerScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, RubyScope/*!*/ parent) {
+            // RuntimeFlowControl:
+            _activeFlowControlScope = parent.FlowControlScope;
+
+            // RubyScope:
+            _parent = parent;
+            _top = parent.Top;
+            _selfObject = parent.SelfObject;
+            _methodAttributes = RubyMethodAttributes.PublicInstance;
+            _locals = locals;
+            _variableNames = variableNames;
+            InLoop = parent.InLoop;
+            InRescue = parent.InRescue;
         }
 
         internal override void DefineDynamicVariable(SymbolId name, object value) {

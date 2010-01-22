@@ -146,6 +146,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static RubyScope/*!*/ CreateFileInitializerScope(MutableTuple locals, SymbolId[] variableNames, RubyScope/*!*/ parent) {
+            return new RubyFileInitializerScope(locals, variableNames, parent);
+        }
+
+        [Emitted]
         public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, SymbolId[] variableNames, 
             BlockParam/*!*/ blockParam, object selfObject, InterpretedFrame interpretedFrame) {
 
@@ -272,6 +277,14 @@ namespace IronRuby.Runtime {
         public static void InitializeBlock(Proc/*!*/ proc) {
             Assert.NotNull(proc);
             proc.Kind = ProcKind.Block;
+        }
+
+        /// <summary>
+        /// Implements END block - like if it was a call to at_exit { ... } library method.
+        /// </summary>
+        [Emitted]
+        public static void RegisterShutdownHandler(Proc/*!*/ proc) {
+            proc.LocalScope.RubyContext.RegisterShutdownHandler(proc);
         }
 
         #endregion
@@ -873,6 +886,7 @@ namespace IronRuby.Runtime {
                     owner = ResolveQualifiedConstant(scope, qualifiedName, topModule, false, out storage, out anyMissing) as RubyModule;
                 } catch {
                     // autoload can raise an exception
+                    scope.RubyContext.SetCurrentException(null);
                     return false;
                 }
                 
@@ -2346,7 +2360,7 @@ namespace IronRuby.Runtime {
         }
 
 #if !SILVERLIGHT
-        [Emitted] //RubyTypeBuilder
+        [Emitted(UseReflection = true)] //RubyTypeBuilder
         public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
             immediateClass = (RubyClass)info.GetValue(RubyUtils.SerializationInfoClassKey, typeof(RubyClass));
             RubyInstanceData newInstanceData = null;
@@ -2361,7 +2375,7 @@ namespace IronRuby.Runtime {
             instanceData = newInstanceData;
         }
 
-        [Emitted] //RubyTypeBuilder
+        [Emitted(UseReflection = true)] //RubyTypeBuilder
         public static void SerializeObject(RubyInstanceData instanceData, RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
             info.AddValue(RubyUtils.SerializationInfoClassKey, immediateClass, typeof(RubyClass));
             if (instanceData != null) {

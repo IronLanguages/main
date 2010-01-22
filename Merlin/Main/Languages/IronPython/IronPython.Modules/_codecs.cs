@@ -259,11 +259,11 @@ namespace IronPython.Modules {
             return PythonOps.LookupEncoding(context, encoding);
         }
 
-#if !SILVERLIGHT
         public static object lookup_error(CodeContext/*!*/ context, string name) {
             return PythonOps.LookupEncodingError(context, name);
         }
 
+#if !SILVERLIGHT
         #region MBCS Functions
 
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, [DefaultParameterValue("strict")]string errors, [DefaultParameterValue(false)]bool ignored) {
@@ -307,11 +307,9 @@ namespace IronPython.Modules {
             PythonOps.RegisterEncoding(context, search_function);
         }
 
-#if !SILVERLIGHT
         public static void register_error(CodeContext/*!*/ context, string name, object handler) {
             PythonOps.RegisterEncodingError(context, name, handler);
         }
-#endif
 
         #region Unicode Escape Encoding
 

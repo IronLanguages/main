@@ -168,7 +168,7 @@ namespace Microsoft.Scripting.Actions {
 
         private HandlerList GetHandlerList(object instance) {
 #if !SILVERLIGHT
-            if (instance != null && IsComObject(instance)) {
+            if (TypeUtils.IsComObject(instance)) {
                 return GetComHandlerList(instance);
             }
 #endif
@@ -196,13 +196,6 @@ namespace Microsoft.Scripting.Actions {
         }
 
 #if !SILVERLIGHT
-        private static readonly Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");
-
-        internal static bool IsComObject(object obj) {
-            // we can't use System.Runtime.InteropServices.Marshal.IsComObject(obj) since it doesn't work in partial trust
-            return obj != null && ComObjectType.IsAssignableFrom(obj.GetType());
-        }
-
         /// <summary>
         /// Gets the stub list for a COM Object.  For COM objects we store the stub list
         /// directly on the object using the Marshal APIs.  This allows us to not have

@@ -102,7 +102,7 @@ namespace IronRuby.Compiler.Ast {
                 Ast.Constant(CallSite<Func<CallSite, object, object, object>>.Create(
                     RubyCallAction.Make(gen.Context, "===", RubyCallSignature.WithImplicitSelf(2))
                 )),
-                Ast.Dynamic(ConvertToArraySplatAction.Make(gen.Context), typeof(object), array), 
+                AstUtils.LightDynamic(ConvertToArraySplatAction.Make(gen.Context), array), 
                 AstUtils.Box(value)
             );
         }

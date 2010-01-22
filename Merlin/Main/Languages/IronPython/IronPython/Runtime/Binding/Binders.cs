@@ -78,7 +78,8 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.Positive: return ExpressionType.UnaryPlus;
                 case PythonOperationKind.Negate: return ExpressionType.Negate;
                 case PythonOperationKind.OnesComplement: return ExpressionType.OnesComplement;
-                case PythonOperationKind.Not: return ExpressionType.IsFalse;
+                case PythonOperationKind.Not: return ExpressionType.Not;
+                case PythonOperationKind.IsFalse: return ExpressionType.IsFalse;
             }
             return null;
         }

@@ -200,6 +200,7 @@
     <Compile Include="Ast\FlowControlRewriter.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />
     <Compile Include="Ast\SkipInterpretExpression.cs" />
+    <Compile Include="Ast\LightDynamicExpression.cs" />
     <Compile Include="Ast\Utils.cs" />
     <Compile Include="Ast\VariableDictionaryExpression.cs" />
     <Compile Include="Ast\NewArrayExpression.cs" />
@@ -277,6 +278,7 @@
     <Compile Include="Interpreter\Instructions\CallInstruction.Generated.cs" />
     <Compile Include="Interpreter\Instructions\ControlFlowInstructions.cs" />
     <Compile Include="Interpreter\Instructions\DivInstruction.cs" />
+    <Compile Include="Interpreter\Instructions\DynamicSplatInstruction.cs" />
     <Compile Include="Interpreter\Instructions\EqualInstruction.cs" />
     <Compile Include="Interpreter\Instructions\FieldOperations.cs" />
     <Compile Include="Interpreter\Instructions\GreaterThanInstruction.cs" />
@@ -288,6 +290,7 @@
     <Compile Include="Interpreter\Instructions\NumericConvertInstruction.cs" />
     <Compile Include="Interpreter\Instructions\StackOperations.cs" />
     <Compile Include="Interpreter\Instructions\TypeOperations.cs" />
+    <Compile Include="Interpreter\ILightCallSiteBinder.cs" />
     <Compile Include="Interpreter\LightDelegateCreator.cs" />
     <Compile Include="Interpreter\LightLambda.Generated.cs" />
     <Compile Include="Interpreter\Interpreter.cs" />
@@ -304,6 +307,7 @@
     <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
     <Compile Include="Math\BigIntegerV2.cs" />
     <Compile Include="Math\BigIntegerV4.cs" />
+    <Compile Include="Runtime\ArgumentArray.cs" />
     <Compile Include="Runtime\BindingRestrictionsHelpers.cs" />
     <Compile Include="Runtime\DynamicDelegateCreator.cs" />
     <Compile Include="Runtime\DynamicNull.cs" />

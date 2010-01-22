@@ -76,7 +76,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public dynamic GetVariable(string name) {
-            return _engine.Operations.GetMember(Scope, name);
+            return _engine.LanguageContext.ScopeGetVariable(Scope, name);
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public T GetVariable<T>(string name) {
-            return _engine.Operations.GetMember<T>(Scope, name);
+            return _engine.LanguageContext.ScopeGetVariable<T>(Scope, name);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool TryGetVariable(string name, out dynamic value) {
-            return _engine.Operations.TryGetMember(Scope, name, out value);
+            return _engine.LanguageContext.ScopeTryGetVariable(Scope, name, out value);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool TryGetVariable<T>(string name, out T value) {
             object result;
-            if (_engine.Operations.TryGetMember(Scope, name, out result)) {
+            if(_engine.LanguageContext.ScopeTryGetVariable(Scope, name, out result)) {
                 value = _engine.Operations.ConvertTo<T>(result);
                 return true;
             }
@@ -119,7 +119,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public void SetVariable(string name, object value) {
-            _engine.Operations.SetMember(Scope, name, value);
+            _engine.LanguageContext.ScopeSetVariable(Scope, name, value);
         }
 
 #if !SILVERLIGHT

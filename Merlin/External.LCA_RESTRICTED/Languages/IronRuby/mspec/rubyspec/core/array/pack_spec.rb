@@ -160,6 +160,15 @@ describe "Array#pack with ASCII-string format", :shared => true do
     ['abcde'].pack(format(0)).should == ''
   end
 
+  it "returns the whole argument string with star parameter" do
+    ['abcdef'].pack(format('*')).should == 'abcdef'
+  end
+
+  it "comsumres only one array item per a format" do
+    ["abc", "def"].pack(format('*')).should == "abc"
+    ["abc", "def"].pack(format('*')+format('*')).should == "abcdef"
+  end
+
   it "tries to convert the pack argument to a String using #to_str" do
     obj = mock('to_str')
     obj.should_receive(:to_str).and_return("abc")
@@ -760,7 +769,7 @@ describe "Array#pack with integer format (16bit, little endian)", :shared => tru
       it "does not raise a RangeError even when a pack argument is >= 2**64" do
         [2**64-1].pack(format).should == binary("\xFF\xFF")
         [2**64  ].pack(format).should == binary("\x00\x00")
-        [2**64+1].pack(format).should == binary("\x00\x01")
+        [2**64+1].pack(format).should == binary("\x01\x00")
       end
 
       it "does not raise a RangeError even when a pack argument is <= -2**64" do
@@ -1516,9 +1525,15 @@ describe "Array#pack with format 'l!'" do
   end
   platform_is :wordsize => 64 do
     # TODO: Is there anything other LLP64 platform which ruby can run on?
-    platform_is :os => :mswin do 
-      big_endian    { it_behaves_like "Array#pack with integer format (32bit, big endian)", 'l!'    }
-      little_endian { it_behaves_like "Array#pack with integer format (32bit, little endian)", 'l!' }
+    platform_is :os => :mswin do
+      not_compliant_on :jruby do
+        big_endian    { it_behaves_like "Array#pack with integer format (32bit, big endian)", 'l!'    }
+        little_endian { it_behaves_like "Array#pack with integer format (32bit, little endian)", 'l!' }
+      end
+      deviates_on :jruby do
+        big_endian    { it_behaves_like "Array#pack with integer format (64bit, big endian)", 'l!'    }
+        little_endian { it_behaves_like "Array#pack with integer format (64bit, little endian)", 'l!' }
+      end
     end
     platform_is_not :os => :mswin do
       big_endian    { it_behaves_like "Array#pack with integer format (64bit, big endian)", 'l!'    }
@@ -1533,9 +1548,15 @@ describe "Array#pack with format 'l_'" do
   end
   platform_is :wordsize => 64 do
     # TODO: Is there anything other LLP64 platform which ruby can run on?
-    platform_is :os => :mswin do 
-      big_endian    { it_behaves_like "Array#pack with integer format (32bit, big endian)", 'l_'    }
-      little_endian { it_behaves_like "Array#pack with integer format (32bit, little endian)", 'l_' }
+    platform_is :os => :mswin do
+      not_compliant_on :jruby do
+        big_endian    { it_behaves_like "Array#pack with integer format (32bit, big endian)", 'l_'    }
+        little_endian { it_behaves_like "Array#pack with integer format (32bit, little endian)", 'l_' }
+      end
+      deviates_on :jruby do
+        big_endian    { it_behaves_like "Array#pack with integer format (64bit, big endian)", 'l_'    }
+        little_endian { it_behaves_like "Array#pack with integer format (64bit, little endian)", 'l_' }
+      end
     end
     platform_is_not :os => :mswin do
       big_endian    { it_behaves_like "Array#pack with integer format (64bit, big endian)", 'l_'    }
@@ -1552,9 +1573,17 @@ describe "Array#pack with format 'L!'" do
   end
   platform_is :wordsize => 64 do
     # TODO: Is there anything other LLP64 platform which ruby can run on?
-    platform_is :os => :mswin do 
-      big_endian    { it_behaves_like "Array#pack with integer format (32bit, big endian)", 'L!'    }
-      little_endian { it_behaves_like "Array#pack with integer format (32bit, little endian)", 'L!' }
+    platform_is :os => :mswin do
+      not_compliant_on :jruby do
+        # I'm not sure that this is sensible behavior for MRI,
+        # being 64bit but treating long as 32 bit, and only on Windows.
+        big_endian    { it_behaves_like "Array#pack with integer format (32bit, big endian)", 'L!'    }
+        little_endian { it_behaves_like "Array#pack with integer format (32bit, little endian)", 'L!' }
+      end
+      deviates_on :jruby do
+        big_endian    { it_behaves_like "Array#pack with integer format (64bit, big endian)", 'L!'    }
+        little_endian { it_behaves_like "Array#pack with integer format (64bit, little endian)", 'L!' }
+      end
     end
     platform_is_not :os => :mswin do
       big_endian    { it_behaves_like "Array#pack with integer format (64bit, big endian)", 'L!'    }
@@ -1569,9 +1598,15 @@ describe "Array#pack with format 'L_'" do
   end
   platform_is :wordsize => 64 do
     # TODO: Is there anything other LLP64 platform which ruby can run on?
-    platform_is :os => :mswin do 
-      big_endian    { it_behaves_like "Array#pack with integer format (32bit, big endian)", 'L_'    }
-      little_endian { it_behaves_like "Array#pack with integer format (32bit, little endian)", 'L_' }
+    platform_is :os => :mswin do
+      not_compliant_on :jruby do
+        big_endian    { it_behaves_like "Array#pack with integer format (32bit, big endian)", 'L_'    }
+        little_endian { it_behaves_like "Array#pack with integer format (32bit, little endian)", 'L_' }
+      end
+      deviates_on :jruby do
+        big_endian    { it_behaves_like "Array#pack with integer format (64bit, big endian)", 'L_'    }
+        little_endian { it_behaves_like "Array#pack with integer format (64bit, little endian)", 'L_' }
+      end
     end
     platform_is_not :os => :mswin do
       big_endian    { it_behaves_like "Array#pack with integer format (64bit, big endian)", 'L_'    }
@@ -2328,18 +2363,17 @@ describe "Array#pack with format 'X'" do
   end
 
   ruby_version_is '1.9' do
-    it "doesn't change encoding of the result string" do
-      [0x41, 0x42, 0x43].pack('U3X').encoding.should == Encoding::UTF_8
+    it "returns an ASCII 8-bit String" do
+      [0x41, 0x42, 0x43].pack('U3X').encoding.should == Encoding::ASCII_8BIT
       [1, 2, 3].pack('w3X').encoding.should == Encoding::ASCII_8BIT
-      ["\x01\x02"].pack("mX").encoding.should == Encoding::US_ASCII
+      ["\x01\x02"].pack("mX").encoding.should == Encoding::ASCII_8BIT
     end
 
-    it "doesn't care even if breaks a character" do
+    it "doesn't care if it breaks a character" do
       str = nil
       lambda { str = [0x3042].pack("UX") }.should_not raise_error
-      str.encoding.should == Encoding::UTF_8
+      str.encoding.should == Encoding::ASCII_8BIT
       str.bytesize.should == 2
-      str.valid_encoding?.should be_false
     end
   end
 end
@@ -2363,18 +2397,17 @@ describe "Array#pack with '@'" do
   end
 
   ruby_version_is '1.9' do
-    it "doesn't change encoding of the result string" do
-      [0x41, 0x42, 0x43].pack('U3@6').encoding.should == Encoding::UTF_8
+    it "returns a String in ASCII 8-bit" do
+      [0x41, 0x42, 0x43].pack('U3@6').encoding.should == Encoding::ASCII_8BIT
       [1, 2, 3].pack('w3@3').encoding.should == Encoding::ASCII_8BIT
-      ["\x01\x02"].pack("m@4").encoding.should == Encoding::US_ASCII
+      ["\x01\x02"].pack("m@4").encoding.should == Encoding::ASCII_8BIT
     end
 
     it "doesn't care even if breaks a character" do
       str = nil
       lambda { str = [0x3042].pack("U@2") }.should_not raise_error
-      str.encoding.should == Encoding::UTF_8
+      str.encoding.should == Encoding::ASCII_8BIT
       str.bytesize.should == 2
-      str.valid_encoding?.should be_false
     end
   end
 end

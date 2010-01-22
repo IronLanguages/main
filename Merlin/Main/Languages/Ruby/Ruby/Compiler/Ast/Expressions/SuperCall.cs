@@ -106,7 +106,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformDefinedCondition(AstGenerator/*!*/ gen) {
             // MRI doesn't evaluate the arguments 
-            return Ast.Dynamic(
+            return AstUtils.LightDynamic(
                 SuperCallAction.Make(gen.Context, RubyCallSignature.IsDefined(true), gen.CurrentFrame.UniqueId),
                 typeof(bool),
                 gen.CurrentScopeVariable,

@@ -152,6 +152,10 @@ describe "Basic assignment" do
     a,b,*c = *[*[1,2]]; [a,b,c].should == [1, 2, []]
   end
 
+  it "calls to_a on the given argument when using a splat" do
+    a,b = *VariablesSpecs::ArrayLike.new([1,2]); [a,b].should == [1,2]
+  end
+
   it "supports the {|r,| } form of block assignment" do
     f = lambda {|r,| r.should == []}
     f.call([], *[])
@@ -272,60 +276,80 @@ describe "Assigning multiple values" do
     a.should == [[1]]
   end
 
-  it "calls #to_ary on rhs arg if rhs has only a single arg" do
-    x = VariablesSpecs::ParAsgn.new
-    a,b,c = x
-    a.should == 1
-    b.should == 2
-    c.should == 3
 
-    a,b,c = x,5
-    a.should == x
-    b.should == 5
-    c.should == nil
+  ruby_version_is ""..."1.9" do
+    it "calls #to_ary on rhs arg if rhs has only a single arg" do
+      x = VariablesSpecs::ParAsgn.new
+      a,b,c = x
+      a.should == 1
+      b.should == 2
+      c.should == 3
 
-    a,b,c = 5,x
-    a.should == 5
-    b.should == x
-    c.should == nil
+      a,b,c = x,5
+      a.should == x
+      b.should == 5
+      c.should == nil
 
-    a,b,*c = x,5
-    a.should == x
-    b.should == 5
-    c.should == []
+      a,b,c = 5,x
+      a.should == 5
+      b.should == x
+      c.should == nil
 
-    a,(*b),c = 5,x
-    a.should == 5
-    b.should == [x]
-    c.should == nil
+      a,b,*c = x,5
+      a.should == x
+      b.should == 5
+      c.should == []
 
-    a,(b,c) = 5,x
-    a.should == 5
-    b.should == 1
-    c.should == 2
+      a,(b,c) = 5,x
+      a.should == 5
+      b.should == 1
+      c.should == 2
 
-    a,(b,*c) = 5,x
-    a.should == 5
-    b.should == 1
-    c.should == [2,3,4]
+      a,(b,*c) = 5,x
+      a.should == 5
+      b.should == 1
+      c.should == [2,3,4]
 
-    a,(b,(*c)) = 5,x
-    a.should == 5
-    b.should == 1
-    c.should == [2]
+      a,(b,(*c)) = 5,x
+      a.should == 5
+      b.should == 1
+      c.should == [2]
 
-    a,(b,(*c),(*d)) = 5,x
-    a.should == 5
-    b.should == 1
-    c.should == [2]
-    d.should == [3]
+      a,(b,(*c),(*d)) = 5,x
+      a.should == 5
+      b.should == 1
+      c.should == [2]
+      d.should == [3]
 
-    a,(b,(*c),(d,*e)) = 5,x
-    a.should == 5
-    b.should == 1
-    c.should == [2]
-    d.should == 3
-    e.should == []
+      a,(b,(*c),(d,*e)) = 5,x
+      a.should == 5
+      b.should == 1
+      c.should == [2]
+      d.should == 3
+      e.should == []
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "calls #to_ary on RHS arg if the corresponding LHS var is a splat" do
+      x = VariablesSpecs::ParAsgn.new
+
+      a,(*b),c = 5,x
+      a.should == 5
+      b.should == x.to_ary
+      c.should == nil
+    end
+  end
+
+  ruby_version_is ""..."1.9" do
+    it "doen't call #to_ary on RHS arg when the corresponding LHS var is a splat" do
+      x = VariablesSpecs::ParAsgn.new
+
+      a,(*b),c = 5,x
+      a.should == 5
+      b.should == [x]
+      c.should == nil
+    end
   end
 
   it "allows complex parallel assignment" do
@@ -771,7 +795,8 @@ describe "Operator assignment 'obj[idx] op= expr'" do
     (h['key2'] += 'ue').should == 'value'
     h.should == {'key1' => 3, 'key2' => 'value'}
   end
-
+  
+  # This example fails on 1.9 because of bug #2050
   it "returns result of rhs not result of []=" do
     a = VariablesSpecs::Hashalike.new
 
@@ -856,8 +881,10 @@ describe "Multiple assignment without grouping or splatting" do
 end
 
 describe "Multiple assignments with splats" do
-  it "* on the lhs has to be applied to the last parameter" do
-    lambda { eval 'a, *b, c = 1, 2, 3' }.should raise_error(SyntaxError)
+  ruby_version_is ""..."1.9" do
+    it "* on the lhs has to be applied to the last parameter" do
+      lambda { eval 'a, *b, c = 1, 2, 3' }.should raise_error(SyntaxError)
+    end
   end
 
   it "* on the lhs collects all parameters from its position onwards as an Array or an empty Array" do
@@ -866,7 +893,6 @@ describe "Multiple assignments with splats" do
     e, *f = 1, 2, 3
     g, *h = 1, [2, 3]
     *i = 1, [2,3]
-    *j = [1,2,3]
     *k = 1,2,3
 
     a.should == 1
@@ -878,8 +904,21 @@ describe "Multiple assignments with splats" do
     g.should == 1
     h.should == [[2, 3]]
     i.should == [1, [2, 3]]
-    j.should == [[1,2,3]]
     k.should == [1,2,3]
+  end
+
+  ruby_version_is ""..."1.9" do
+    it "* on the LHS returns the Array on the RHS enclosed in an Array" do
+      *j = [1,2,3]
+      j.should == [[1,2,3]]
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "* on the LHS returns the Array on the RHS without enclosing it in an Array" do
+      *j = [1,2,3]
+      j.should == [1,2,3]
+    end
   end
 end
 
@@ -1034,3 +1073,4 @@ describe "Scope of variables" do
     instance.check_each_block
   end
 end
+language_version __FILE__, "variables"

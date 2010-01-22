@@ -160,6 +160,7 @@
       <Compile Include="Ast\IfStatementTest.cs" />
       <Compile Include="Ast\LambdaBuilder.cs" />
       <Compile Include="Ast\LambdaParameterRewriter.cs" />
+      <Compile Include="Ast\LightDynamicExpression.cs" />
       <Compile Include="Ast\LoopStatement.cs" />
       <Compile Include="Ast\MethodCallExpression.cs" />
       <Compile Include="Ast\NewArrayExpression.cs" />
@@ -287,6 +288,7 @@
       <!--          Interpreter          -->
       <!--                               -->
       <Compile Include="Interpreter\BranchLabel.cs" />
+      <Compile Include="Interpreter\ILightCallSiteBinder.cs" />
       <Compile Include="Interpreter\InterpretedFrame.cs" />
       <Compile Include="Interpreter\Interpreter.cs" />
       <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
@@ -311,6 +313,7 @@
       <Compile Include="Interpreter\Instructions\DivInstruction.cs" />
       <Compile Include="Interpreter\Instructions\DynamicInstructionN.cs" />
       <Compile Include="Interpreter\Instructions\DynamicInstructions.Generated.cs" />
+      <Compile Include="Interpreter\Instructions\DynamicSplatInstruction.cs" />
       <Compile Include="Interpreter\Instructions\EqualInstruction.cs" />
       <Compile Include="Interpreter\Instructions\FieldOperations.cs" />
       <Compile Include="Interpreter\Instructions\GreaterThanInstruction.cs" />
@@ -343,6 +346,7 @@
       <!--          Runtime          -->
       <!--                           -->
       <Compile Include="Runtime\AmbiguousFileNameException.cs" />
+      <Compile Include="Runtime\ArgumentArray.cs" />
       <Compile Include="Runtime\AssemblyTypeNames.cs" />
       <Compile Include="Runtime\BaseSymbolDictionary.cs" />
       <Compile Include="Runtime\BinderOps.cs" />

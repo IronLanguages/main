@@ -1,1 +1,0 @@
-fails:Kernel#require raises a LoadError if the file exists but can't be read

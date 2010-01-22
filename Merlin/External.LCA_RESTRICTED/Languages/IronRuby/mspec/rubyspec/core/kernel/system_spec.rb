@@ -3,12 +3,6 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe "Kernel#system" do
 
-  before :each do
-    ENV['TEST_SH_EXPANSION'] = 'foo'
-    @shell_var = SpecGuard.windows? ? '%TEST_SH_EXPANSION%' : '$TEST_SH_EXPANSION'
-    @helper_script = KernelSpecs.helper_script
-  end
-  
   it "can run basic things that exist" do
     begin
       result = false
@@ -37,7 +31,7 @@ describe "Kernel#system" do
   end
 
   it "returns false when the command has a non-zero exit status" do
-    result = system("#{RUBY_EXE} -e 'puts exit(1)'")
+    result = system("#{RUBY_EXE} -e 'exit(1)'")
     result.should be_false
   end
 
@@ -62,11 +56,21 @@ describe "Kernel#system" do
     Kernel.should have_private_instance_method(:system)
   end
 
-  ruby_version_is "1.9" do
-    it "expands shell variables when given a single string argument" do
-      result = system("ruby #{@helper_script} #{@shell_var} foo")
-      result.should be_true
+  before :each do
+    ENV['TEST_SH_EXPANSION'] = 'foo'
+    platform_is(:windows) do
+      @shell_var =  '%TEST_SH_EXPANSION%'
     end
+    
+    platform_is_not(:windows) do
+      @shell_var =  '$TEST_SH_EXPANSION'
+    end
+    @helper_script = KernelSpecs.helper_script
+  end
+
+  it "expands shell variables when given a single string argument" do
+    result = system("ruby #{@helper_script} #{@shell_var} foo")
+    result.should be_true
   end
   
   it "does not expand shell variables when given multiples arguments" do

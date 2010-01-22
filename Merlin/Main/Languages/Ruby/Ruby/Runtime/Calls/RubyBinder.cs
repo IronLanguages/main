@@ -28,6 +28,7 @@ using System.Threading;
 using System.Diagnostics;
 using IronRuby.Runtime.Conversions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyBinder : DefaultBinder {
@@ -101,12 +102,12 @@ namespace IronRuby.Runtime.Calls {
 #endif
 
         [Conditional("DEBUG")]
-        internal static void DumpPrecompiledRule(DynamicMetaObjectBinder/*!*/ action, MethodDispatcher/*!*/ dispatcher) {
+        internal static void DumpPrecompiledRule(CallSiteBinder/*!*/ binder, MethodDispatcher/*!*/ dispatcher) {
 #if DEBUG && !SILVERLIGHT
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("Precompiled Rule #{0}: {1}", Interlocked.Increment(ref _precompiledRuleCounter), action);
+                Console.WriteLine("Precompiled Rule #{0}: {1}", Interlocked.Increment(ref _precompiledRuleCounter), binder);
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine(dispatcher);
                 Console.ForegroundColor = oldColor;
@@ -115,13 +116,13 @@ namespace IronRuby.Runtime.Calls {
         }
 
         [Conditional("DEBUG")]
-        internal static void DumpRule(DynamicMetaObjectBinder/*!*/ action, BindingRestrictions/*!*/ restrictions, Expression/*!*/ expr) {
+        internal static void DumpRule(CallSiteBinder/*!*/ binder, BindingRestrictions/*!*/ restrictions, Expression/*!*/ expr) {
 #if DEBUG && !SILVERLIGHT
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
                 try {
                     Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine("Rule #{0}: {1}", Interlocked.Increment(ref _ruleCounter), action);
+                    Console.WriteLine("Rule #{0}: {1}", Interlocked.Increment(ref _ruleCounter), binder);
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     if (!_DumpingExpression) {
                         var d = (restrictions != BindingRestrictions.Empty) ? Expression.IfThen(restrictions.ToExpression(), expr) : expr;

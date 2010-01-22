@@ -215,10 +215,11 @@ stmt:     alias_statement
         | UPPERCASE_END
             {
                 if (InMethod) {
-                    _tokenizer.ReportError(Errors.FileFinalizerInMethod);
+                    _tokenizer.ReportWarning(Errors.FileFinalizerInMethod);
                 }
                 
-                EnterTopScope();
+                // END block behaves like a block definition (allows variable closures, super, etc):
+                EnterNestedScope();
             } 
           '{' compstmt '}'
             {                    

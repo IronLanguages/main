@@ -20,21 +20,18 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
-using System.Threading;
+using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Collections;
-using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public sealed class MetaObjectBuilder {
         // RubyContext the site binder is bound to or null if it is unbound.
@@ -95,13 +92,13 @@ namespace IronRuby.Runtime.Calls {
             return CreateMetaObject(action, action.ReturnType);
         }
 
-        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ returnType) {
+        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ returnType) {
             Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
 
             var expr = _error ? Ast.Throw(_result, returnType) : AstUtils.Convert(_result, returnType);
 
             if (_condition != null) {
-                var deferral = action.GetUpdateExpression(returnType);
+                var deferral = binder.GetUpdateExpression(returnType);
                 expr = Ast.Condition(_condition, expr, deferral);
             }
 
@@ -109,7 +106,7 @@ namespace IronRuby.Runtime.Calls {
                 expr = Ast.Block(_temps, expr);
             }
 
-            RubyBinder.DumpRule(action, _restrictions, expr);
+            RubyBinder.DumpRule(binder, _restrictions, expr);
             return new DynamicMetaObject(expr, _restrictions);
         }
 

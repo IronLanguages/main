@@ -3,13 +3,11 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 describe "File.basename" do
   before :each do
     @name = tmp("test.txt")
-    File.delete(@name) if File.exist? @name
-    @file = File.open(@name, "w+")
+    touch @name
   end
 
   after :each do
-    @file.close
-    File.delete(@name) if File.exist?(@name)
+    rm_r @name
   end
 
   it "return the basename of a path (basic cases)" do
@@ -24,7 +22,6 @@ describe "File.basename" do
     File.basename("/tmp.cpp", ".*").should == "tmp"
     File.basename("/tmp.cpp", ".???").should == "tmp.cpp"
     File.basename("/tmp.o", ".c").should == "tmp.o"
-    #Version.greater_or_equal("1.8.0") do
     File.basename(File.join("/tmp/")).should == "tmp"
     File.basename("/").should == "/"
     File.basename("//").should == "/"
@@ -38,7 +35,6 @@ describe "File.basename" do
     File.basename("dir//base/", ".c").should == "base"
     File.basename("dir//base.c/", ".c").should == "base"
     File.basename("dir//base.c/", ".*").should == "base"
-    #end
   end
 
   it "return the last component of the filename" do
@@ -138,6 +134,12 @@ describe "File.basename" do
     lambda { File.basename(1)            }.should raise_error(TypeError)
     lambda { File.basename("bar.txt", 1) }.should raise_error(TypeError)
     lambda { File.basename(true)         }.should raise_error(TypeError)
+  end
+
+  ruby_version_is "1.9" do
+    it "accepts an object that has a #to_path method" do
+      File.basename(mock_to_path("foo.txt"))
+    end
   end
 
   it "raises an ArgumentError if passed more than two arguments" do

@@ -78,7 +78,7 @@ namespace IronRuby.Builtins {
 
         [Emitted]
         public static string/*!*/ GetClrMessage(RubyClass/*!*/ exceptionClass, object message) {
-            return RubyExceptionData.GetClrMessage(message, exceptionClass.Name);
+            return RubyExceptionData.GetClrMessage(exceptionClass.Context, message);
         }
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]

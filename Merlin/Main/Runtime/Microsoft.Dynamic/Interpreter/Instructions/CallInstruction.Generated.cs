@@ -235,12 +235,176 @@ namespace Microsoft.Scripting.Interpreter {
             }
             return t;
         }
+        public static MethodInfo CacheFunc<TRet>(Func<TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, TRet>(Func<T0, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, T1, TRet>(Func<T0, T1, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, T1, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, T1, T2, TRet>(Func<T0, T1, T2, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, T1, T2, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, T1, T2, T3, TRet>(Func<T0, T1, T2, T3, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, TRet>(Func<T0, T1, T2, T3, T4, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, TRet>(Func<T0, T1, T2, T3, T4, T5, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction(Action method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0>(Action<T0> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0, T1>(Action<T0, T1> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0, T1>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0, T1, T2>(Action<T0, T1, T2> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0, T1, T2>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0, T1, T2, T3>(Action<T0, T1, T2, T3> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0, T1, T2, T3>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0, T1, T2, T3, T4>(Action<T0, T1, T2, T3, T4> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5>(Action<T0, T1, T2, T3, T4, T5> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6>(Action<T0, T1, T2, T3, T4, T5, T6> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6, T7>(Action<T0, T1, T2, T3, T4, T5, T6, T7> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7>(method);
+            }
+            return info;
+        }
+
+        public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6, T7, T8>(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> method) {
+            var info = method.Method;
+            lock (_cache) {
+                _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8>(method);
+            }
+            return info;
+        }
+
     }
 
     internal sealed class ActionCallInstruction : CallInstruction {
         private readonly Action _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 0; } }
+
+        public ActionCallInstruction(Action target) {
+            _target = target;
+        }
 
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action)Delegate.CreateDelegate(typeof(Action), target);
@@ -263,6 +427,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 1; } }
 
+        public ActionCallInstruction(Action<T0> target) {
+            _target = target;
+        }
+
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0>)Delegate.CreateDelegate(typeof(Action<T0>), target);
         }
@@ -283,6 +451,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Action<T0, T1> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 2; } }
+
+        public ActionCallInstruction(Action<T0, T1> target) {
+            _target = target;
+        }
 
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0, T1>)Delegate.CreateDelegate(typeof(Action<T0, T1>), target);
@@ -305,6 +477,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 3; } }
 
+        public ActionCallInstruction(Action<T0, T1, T2> target) {
+            _target = target;
+        }
+
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0, T1, T2>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2>), target);
         }
@@ -325,6 +501,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Action<T0, T1, T2, T3> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 4; } }
+
+        public ActionCallInstruction(Action<T0, T1, T2, T3> target) {
+            _target = target;
+        }
 
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0, T1, T2, T3>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3>), target);
@@ -347,6 +527,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 5; } }
 
+        public ActionCallInstruction(Action<T0, T1, T2, T3, T4> target) {
+            _target = target;
+        }
+
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0, T1, T2, T3, T4>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4>), target);
         }
@@ -367,6 +551,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Action<T0, T1, T2, T3, T4, T5> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 6; } }
+
+        public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5> target) {
+            _target = target;
+        }
 
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0, T1, T2, T3, T4, T5>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5>), target);
@@ -389,6 +577,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 7; } }
 
+        public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6> target) {
+            _target = target;
+        }
+
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0, T1, T2, T3, T4, T5, T6>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6>), target);
         }
@@ -409,6 +601,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Action<T0, T1, T2, T3, T4, T5, T6, T7> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 8; } }
+
+        public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6, T7> target) {
+            _target = target;
+        }
 
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0, T1, T2, T3, T4, T5, T6, T7>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6, T7>), target);
@@ -431,6 +627,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 9; } }
 
+        public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> target) {
+            _target = target;
+        }
+
         public ActionCallInstruction(MethodInfo target) {
             _target = (Action<T0, T1, T2, T3, T4, T5, T6, T7, T8>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8>), target);
         }
@@ -452,6 +652,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 0; } }
 
+        public FuncCallInstruction(Func<TRet> target) {
+            _target = target;
+        }
+
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<TRet>)Delegate.CreateDelegate(typeof(Func<TRet>), target);
         }
@@ -471,6 +675,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Func<T0, TRet> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 1; } }
+
+        public FuncCallInstruction(Func<T0, TRet> target) {
+            _target = target;
+        }
 
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, TRet>)Delegate.CreateDelegate(typeof(Func<T0, TRet>), target);
@@ -492,6 +700,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 2; } }
 
+        public FuncCallInstruction(Func<T0, T1, TRet> target) {
+            _target = target;
+        }
+
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, T1, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, TRet>), target);
         }
@@ -511,6 +723,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Func<T0, T1, T2, TRet> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 3; } }
+
+        public FuncCallInstruction(Func<T0, T1, T2, TRet> target) {
+            _target = target;
+        }
 
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, T1, T2, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, TRet>), target);
@@ -532,6 +748,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 4; } }
 
+        public FuncCallInstruction(Func<T0, T1, T2, T3, TRet> target) {
+            _target = target;
+        }
+
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, T1, T2, T3, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, TRet>), target);
         }
@@ -551,6 +771,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Func<T0, T1, T2, T3, T4, TRet> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 5; } }
+
+        public FuncCallInstruction(Func<T0, T1, T2, T3, T4, TRet> target) {
+            _target = target;
+        }
 
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, T1, T2, T3, T4, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, TRet>), target);
@@ -572,6 +796,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 6; } }
 
+        public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, TRet> target) {
+            _target = target;
+        }
+
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, T1, T2, T3, T4, T5, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, TRet>), target);
         }
@@ -591,6 +819,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Func<T0, T1, T2, T3, T4, T5, T6, TRet> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 7; } }
+
+        public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, TRet> target) {
+            _target = target;
+        }
 
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, T1, T2, T3, T4, T5, T6, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, TRet>), target);
@@ -612,6 +844,10 @@ namespace Microsoft.Scripting.Interpreter {
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 8; } }
 
+        public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet> target) {
+            _target = target;
+        }
+
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet>), target);
         }
@@ -631,6 +867,10 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> _target;
         public override MethodInfo Info { get { return _target.Method; } }
         public override int ArgumentCount { get { return 9; } }
+
+        public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> target) {
+            _target = target;
+        }
 
         public FuncCallInstruction(MethodInfo target) {
             _target = (Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>), target);

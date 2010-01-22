@@ -15,21 +15,17 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
-
+using IronRuby.Builtins;
+using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronRuby.Builtins;
-using IronRuby.Compiler;
-using IronRuby.Runtime.Calls;
-using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -137,6 +133,24 @@ namespace IronRuby.Runtime {
         public static MutableString/*!*/ ConvertToString(ConversionStorage<MutableString>/*!*/ tosConversion, object obj) {
             var site = tosConversion.GetSite(ConvertToSAction.Make(tosConversion.Context));
             return site.Target(site, obj);
+        }
+
+        /// <summary>
+        /// Converts an object to a string via to_s and catches all exceptions this conversion might throw.
+        /// If the string returned by to_s is a binary string, converts it to a UTF16 string using UTF8 encoding and escapes 
+        /// all invalid byte sequences.
+        /// </summary>
+        internal static string/*!*/ ToClrStringNoThrow(RubyContext/*!*/ context, object obj) {
+            try {
+                MutableString mstr = obj as MutableString;
+                if (mstr == null) {
+                    var site = context.StringConversionSite;
+                    mstr = site.Target(site, obj);
+                }
+                return mstr.ToStringWithEscapedInvalidCharacters(RubyEncoding.UTF8);
+            } catch (Exception e) {
+                return String.Format(CultureInfo.CurrentCulture, "<{0}.to_s raised an exception: '{1}'>", obj, e.Message);
+            }
         }
 
         #endregion

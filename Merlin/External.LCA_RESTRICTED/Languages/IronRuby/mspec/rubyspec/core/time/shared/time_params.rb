@@ -1,6 +1,8 @@
-describe :time_params, :shared => true do 
+describe :time_params, :shared => true do
   it "handles string-like second argument" do
-    (obj = mock('12')).should_receive(:to_str).and_return("12").should_not_receive(:to_int)
+    Time.send(@method, 2008, "12").should  == Time.send(@method, 2008, 12)
+    Time.send(@method, 2008, "dec").should == Time.send(@method, 2008, 12)
+    (obj = mock('12')).should_receive(:to_str).and_return("12")
     Time.send(@method, 2008, obj).should == Time.send(@method, 2008, 12)
   end
 
@@ -45,6 +47,11 @@ describe :time_params, :shared => true do
     Time.send(@method, "1", "15", "20", "1", "1", "1999", :ignored, :ignored, :ignored, :ignored).should == Time.send(@method, 1, 15, 20, 1, 1, 1999, :ignored, :ignored, :ignored, :ignored)
   end
 
+  it "handles float arguments" do
+    Time.send(@method, 2000.0, 1.0, 1.0, 20.0, 15.0, 1.0).should == Time.send(@method, 2000, 1, 1, 20, 15, 1)
+    Time.send(@method, 1.0, 15.0, 20.0, 1.0, 1.0, 2000.0, :ignored, :ignored, :ignored, :ignored).should == Time.send(@method, 1, 15, 20, 1, 1, 2000, :ignored, :ignored, :ignored, :ignored)
+  end
+
   it "defaults to year 2000" do
     Time.send(@method, 0).should == Time.send(@method, 2000)
   end
@@ -63,10 +70,21 @@ describe :time_params, :shared => true do
       end
 
       platform_is :wordsize => 64 do
-        Time.send(@method, 1900, 12, 31, 23, 59, 59, 0).wday.should == 1
+        darwin = false
+        platform_is :darwin do
+          not_compliant_on :jruby do # JRuby exhibits platform-independent behavior
+            darwin = true
+            lambda { Time.send(@method, 1900, 12, 31, 23, 59, 59, 0) }.should raise_error(ArgumentError) # mon
+          end
+        end
+
+        unless darwin
+          Time.send(@method, 1900, 12, 31, 23, 59, 59, 0).wday.should == 1
+        end
+
         Time.send(@method, 2038, 12, 31, 23, 59, 59, 0).wday.should == 5
       end
-    end   
+    end
 
     it "raises an ArgumentError for out of range values" do
       # year-based Time.local(year (, month, day, hour, min, sec, usec))

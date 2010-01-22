@@ -1,1 +1,1 @@
-unstable:ARGF.gets
+critical:ARGF.gets

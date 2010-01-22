@@ -1,1 +1,0 @@
-fails:Dir.chdir defaults to the home directory when given a block but no argument

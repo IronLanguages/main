@@ -504,7 +504,7 @@ namespace IronRuby.Runtime.Calls {
                 var action = RubyConversionAction.TryGetDefaultConversionAction(Context, toType);
                 if (action != null) {
                     // TODO: inline implicit conversions:
-                    return Ast.Dynamic(action, toType, expr);
+                    return AstUtils.LightDynamic(action, toType, expr);
                 }
 
                 // Do not throw an exception here to allow generic type parameters to be used with D.P. attribute.

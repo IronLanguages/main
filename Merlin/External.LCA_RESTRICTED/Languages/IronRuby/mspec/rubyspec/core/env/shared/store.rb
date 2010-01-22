@@ -10,4 +10,9 @@ describe :env_store, :shared => true do
     env.value?("bar").should == true
     ENV.delete "foo"
   end
+  
+  it "can set the environment variable to an empty string" do
+    ENV.send(@method, "foo", "")
+    ENV["foo"].should == ""
+  end
 end

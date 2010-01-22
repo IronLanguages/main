@@ -6,7 +6,7 @@ describe "IO#write_nonblock on a file" do
   before :each do
     @filename = tmp("IO_syswrite_file") + $$.to_s
     File.open(@filename, "w") do |file|
-      file.write("012345678901234567890123456789")
+      file.write_nonblock("012345678901234567890123456789")
     end
     @file = File.open(@filename, "r+")
     @readonly_file = File.open(@filename)
@@ -15,7 +15,7 @@ describe "IO#write_nonblock on a file" do
   after :each do
     @file.close
     @readonly_file.close
-    File.delete(@filename)
+    rm_r @filename
   end
 
   platform_is_not :windows do

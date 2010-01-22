@@ -1,5 +1,3 @@
-
-
 describe :kernel_send, :shared => true do
   it "invokes the named method" do
     class KernelSpecs::Foo
@@ -102,12 +100,16 @@ describe :kernel_send, :shared => true do
     lambda { KernelSpecs::Foo.send(@method, :baz) }.should raise_error(NameError)
   end
 
+  it "raises an ArgumentError if no arguments are given" do
+    lambda { KernelSpecs::Foo.new.send }.should raise_error(ArgumentError)
+  end
+
   it "raises an ArgumentError if called with more arguments than available parameters" do
     class KernelSpecs::Foo
       def bar; end
     end
 
-    lambda { KernelSpecs::Foo.new.send(@method, :bar, :arg) }.should raise_error(ArgumentError)
+    lambda { KernelSpecs::Foo.new.send(:bar, :arg) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if called with fewer arguments than required parameters" do
@@ -169,8 +171,17 @@ describe :kernel_send, :shared => true do
 
     KernelSpecs::Foo.new.send(@method, :iter) { |b| b << 1}.should == [1]
   end
-  # Confirm commit r24306 
-  it "has an arity of -1" do
-    method(:__send__).arity.should == -1
+
+  not_compliant_on :rubinius do
+    # Confirm commit r24306
+    it "has an arity of -1" do
+      method(:__send__).arity.should == -1
+    end
+  end
+
+  deviates_on :rubinius do
+    it "has an arity of -2" do
+      method(:__send__).arity.should == -2
+    end
   end
 end

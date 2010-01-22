@@ -12,7 +12,12 @@
  *
  *
  * ***************************************************************************/
-
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+    
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,14 +29,6 @@ using IronRuby.Compiler.Ast;
 using IronRuby.Runtime;
 
 namespace IronRuby.Compiler {
-    #if !CLR2
-using MSA = System.Linq.Expressions;
-#else
-using MSA = Microsoft.Scripting.Ast;
-#endif
-
-    using Ast = Expression;
-
     public abstract class LexicalScope : HybridStringDictionary<LocalVariable> {
         // Null if there is no parent lexical scopes whose local variables are visible eto this scope.
         // Scopes:
@@ -146,7 +143,7 @@ using MSA = Microsoft.Scripting.Ast;
     }
 
     /// <summary>
-    /// Method, module and source unit scopes.
+    /// Method, module, BEGIN block and source unit scopes.
     /// </summary>
     internal sealed class TopLexicalScope : LexicalScope {
         public TopLexicalScope(LexicalScope outerScope)

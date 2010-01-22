@@ -12,6 +12,10 @@ describe 'Zlib::GzipFile#orig_name' do
     GC.disable
   end
 
+  after :each do
+    @gzip_writer.close unless @gzip_writer.closed?
+  end
+
   it 'is nil by default' do
     @gzip_writer.orig_name.should be_nil
   end
@@ -28,6 +32,10 @@ describe 'Zlib::GzipFile#orig_name=' do
 	@gzip_writer = Zlib::GzipWriter.new @io
   end
 
+  after :each do
+    @gzip_writer.close unless @gzip_writer.closed?
+  end
+  
   it 'returns the argument' do
     n = 'name'
     (@gzip_writer.orig_name = n).should equal(n)

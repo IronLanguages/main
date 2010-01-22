@@ -37,6 +37,18 @@ namespace IronRuby.Runtime {
 
         private CallSite<Func<CallSite, object, object, object>> _WriteSite;
 
+        internal void WriteMessage(MutableString/*!*/ message) {
+            if (_WriteSite == null) {
+                Interlocked.CompareExchange(
+                    ref _WriteSite,
+                    CallSite<Func<CallSite, object, object, object>>.Create(RubyCallAction.Make(_context, "write", 1)),
+                    null
+                );
+            }
+
+            _WriteSite.Target(_WriteSite, _context.StandardErrorOutput, message);
+        }
+
         public override void Add(SourceUnit sourceUnit, string message, SourceSpan span, int errorCode, Severity severity) {
             if (severity == Severity.Warning && !ReportWarning(_context.Verbose, errorCode)) {
                 return;
@@ -68,18 +80,9 @@ namespace IronRuby.Runtime {
             if (severity == Severity.Error || severity == Severity.FatalError) {
                 throw new SyntaxError(message, path, line, span.Start.Column, codeLine);
             } else {
-
-                if (_WriteSite == null) {
-                    Interlocked.CompareExchange(
-                        ref _WriteSite,
-                        CallSite<Func<CallSite, object, object, object>>.Create(RubyCallAction.Make(_context, "write", 1)),
-                        null
-                    );
-                }
-
-                message = RubyContext.FormatErrorMessage(message, "warning", path, line, span.Start.Column, null);
-
-                _WriteSite.Target(_WriteSite, _context.StandardErrorOutput, MutableString.Create(message, encoding));
+                WriteMessage(
+                    MutableString.Create(RubyContext.FormatErrorMessage(message, "warning", path, line, span.Start.Column, null), encoding)
+                );
             }
         }
 

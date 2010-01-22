@@ -40,6 +40,13 @@ class UnitTestSetup
     Dir.chdir(@rake_tests_dir)
   end
 
+  def disable_unstable_tests
+    disable TestMultiTask,
+      # monitor.rb uses Thread.critical= in a way that is not friendly with native threads
+      # This can result in a deadlock
+      :test_all_multitasks_wait_on_slow_prerequisites
+  end
+  
   def disable_tests
     # http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1082
     # TypeError: can't convert Rake::EarlyTime into Time

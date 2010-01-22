@@ -15,7 +15,6 @@ class Object
   def fixture(dir, *args)
     path = File.dirname(dir)
     path = path[0..-7] if path[-7..-1] == "/shared"
-    args = args.flatten
-    File.expand_path(File.join(path, "fixtures", *args))
+    File.expand_path(File.join(path, "fixtures", args))
   end
 end

@@ -1,2 +1,1 @@
-fails:Thread#alive? reports aborting on a killed thread
-unstable:Thread#alive? describes a dying sleeping thread
+unstable:Thread#alive? reports aborting on a killed thread

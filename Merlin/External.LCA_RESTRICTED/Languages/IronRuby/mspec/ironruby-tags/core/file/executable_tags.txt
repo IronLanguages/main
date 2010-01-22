@@ -1,1 +1,0 @@
-fails:File.executable? returns false if the file does not exist

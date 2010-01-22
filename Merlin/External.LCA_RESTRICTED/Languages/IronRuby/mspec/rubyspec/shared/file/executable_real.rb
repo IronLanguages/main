@@ -3,18 +3,14 @@ describe :file_executable_real, :shared => true do
     @file1 = tmp('temp1.txt')
     @file2 = tmp('temp2.txt')
 
-    File.open(@file1, "w") {} # touch
-    File.open(@file2, "w") {}
+    touch @file1
+    touch @file2
 
     File.chmod(0755, @file1)
   end
 
   after :each do
-    File.delete(@file1) if File.exist?(@file1)
-    File.delete(@file2) if File.exist?(@file2)
-
-    @file1 = nil
-    @file2 = nil
+    rm_r @file1, @file2
   end
 
   platform_is_not :windows do
@@ -23,9 +19,15 @@ describe :file_executable_real, :shared => true do
       @object.send(@method, @file2).should == false
     end
 
-    it "returns true if named file is readable by the real user id of the process, otherwise false" do
-      @object.send(@method, @file1).should == true
+    ruby_version_is "1.9" do
+      it "accepts an object that has a #to_path method" do
+        @object.send(@method, mock_to_path(@file1)).should == true
+      end
     end
+  end
+
+  it "returns true if named file is readable by the real user id of the process, otherwise false" do
+    @object.send(@method, @file1).should == true
   end
 
   it "raises an ArgumentError if not passed one argument" do

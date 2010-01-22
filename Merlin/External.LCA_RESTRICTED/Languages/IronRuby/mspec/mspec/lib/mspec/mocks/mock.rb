@@ -163,37 +163,20 @@ module Mock
                             "called with unexpected arguments (#{Array(compare).join(' ')})")
     end
   end
-  
-  def self.uninstall_method(obj, sym, replaced)
-    meta = obj.metaclass
-    if mock_respond_to? obj, replaced
-      meta.__send__ :alias_method, sym, replaced
-      meta.__send__ :remove_method, replaced
-    else
-      meta.__send__ :remove_method, sym
-    end
-  end
 
   def self.cleanup
-    replaced_respond_tos = []
-    
     objects.each do |key, obj|
       replaced = key.first
       sym = key.last
-      
-      if sym != :respond_to?
-        uninstall_method obj, sym, replaced
+      meta = obj.metaclass
+
+      if mock_respond_to? obj, replaced
+        meta.__send__ :alias_method, sym, replaced
+        meta.__send__ :remove_method, replaced
       else
-        replaced_respond_tos << [obj, sym, replaced]
+        meta.__send__ :remove_method, sym
       end
     end
-      
-    
-    # remove respond_to? last so that we don't remove it while we still use it in mock_respond_to?
-    replaced_respond_tos.each do |obj, sym, replaced|
-      uninstall_method obj, sym, replaced
-    end
-    
     reset
   end
 end

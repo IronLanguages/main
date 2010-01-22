@@ -7,16 +7,16 @@ describe "Kernel#open" do
   end
   
   before :each do
-    @file = "test.txt"
-    @newfile = "test.new"
+    @file = tmp("kernel_test.txt")
+    @newfile = tmp("kernel_test.new")
     @fh = nil
-    File.open(@file, "w"){ |f| f.puts "This is a test" }
+    touch(@file) { |f| f.write "This is a test" }
   end
   
   after :each do
     @fh.close if @fh and not @fh.closed?
-    File.delete(@file)
-    File.delete(@newfile) if File.exist? @newfile
+    rm_r @file
+    rm_r @newfile
   end
   
   it "opens a file when given a valid filename" do
@@ -29,6 +29,7 @@ describe "Kernel#open" do
   end
   
   it "sets a default permission of writable" do
+    @fh = open(@file)
     File.writable?(@file).should be_true  
   end
   
@@ -71,6 +72,10 @@ describe "Kernel#open" do
     it "opens an io when called with a block" do
       @output = open("|date /t") { |f| f.gets }
       @output.should_not == ''
+    end
+    
+    it "NotImplementedError when called with |-" do
+      lambda { open("|-") }.should raise_error(NotImplementedError)
     end
   
   end

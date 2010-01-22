@@ -108,9 +108,8 @@ namespace Microsoft.Scripting.Debugging {
             ITraceCallback traceCallback = _traceCallback;
 
             if (traceCallback != null) {
-                Debug.Assert(_traceFrame.Value == null);
-
                 // $TODO: what if the callback throws an exception? should we swallow it?
+                var curThread = _traceFrame.Value;
                 try {
                     if (kind == TraceEventKind.FrameExit || kind == TraceEventKind.ThreadExit) {
                         traceCallback.OnTraceEvent(
@@ -138,7 +137,7 @@ namespace Microsoft.Scripting.Debugging {
                         );
                     }
                 } finally {
-                    _traceFrame.Value = null;
+                    _traceFrame.Value = curThread;
                 }
             }
         }

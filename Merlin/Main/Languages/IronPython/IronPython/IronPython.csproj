@@ -146,7 +146,6 @@
     <Compile Include="Compiler\Ast\DynamicGetMemberExpression.cs" />
     <Compile Include="Compiler\Ast\GetGlobalContextExpression.cs" />
     <Compile Include="Compiler\Ast\GetParentContextFromFunctionExpression.cs" />
-    <Compile Include="Compiler\Ast\LazyDynamicExpression.cs" />
     <Compile Include="Compiler\Ast\PythonConstantExpression.cs" />
     <Compile Include="Compiler\Ast\SerializedScopeStatement.cs" />
     <Compile Include="Compiler\CollectableCompilationMode.cs" />
@@ -155,6 +154,7 @@
     <Compile Include="Compiler\Ast\AstMethods.cs" />
     <Compile Include="Compiler\Ast\BinaryExpression.Generated.cs" />
     <Compile Include="Compiler\Ast\ILoopStatement.cs" />
+    <Compile Include="Compiler\PythonDynamicExpression.cs" />
     <Compile Include="Compiler\UncollectableCompilationMode.Generated.cs" />
     <Compile Include="Compiler\RunnableScriptCode.cs" />
     <Compile Include="Runtime\DictionaryTypeInfoAttribute.cs" />

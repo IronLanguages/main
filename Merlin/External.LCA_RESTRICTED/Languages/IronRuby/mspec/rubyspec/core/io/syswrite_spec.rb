@@ -15,7 +15,7 @@ describe "IO#syswrite on a file" do
   after :each do
     @file.close
     @readonly_file.close
-    File.delete(@filename)
+    rm_r @filename
   end
 
   it "writes all of the string's bytes but does not buffer them" do
@@ -37,7 +37,7 @@ describe "IO#syswrite on a file" do
   end
 
   it "does not warn if called after IO#write with intervening IO#sysread" do
-    @file.write("abcde")
+    @file.syswrite("abcde")
     @file.sysread(5)
     lambda { @file.syswrite("fghij") }.should_not complain
   end

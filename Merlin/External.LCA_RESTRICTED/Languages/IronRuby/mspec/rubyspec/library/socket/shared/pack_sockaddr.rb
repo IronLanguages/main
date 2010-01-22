@@ -14,10 +14,12 @@ describe :socket_pack_sockaddr_in, :shared => true do
 end
 
 describe :socket_pack_sockaddr_un, :shared => true do
-  not_supported_on :jruby, :windows do
-    it "packs and unpacks" do
-      sockaddr_un = Socket.pack_sockaddr_un '/tmp/s'
-      Socket.unpack_sockaddr_un(sockaddr_un).should == '/tmp/s'
+  not_supported_on :jruby, :ironruby do
+    platform_is_not :windows do
+      it "packs and unpacks" do
+        sockaddr_un = Socket.pack_sockaddr_un '/tmp/s'
+        Socket.unpack_sockaddr_un(sockaddr_un).should == '/tmp/s'
+      end
     end
   end
 end

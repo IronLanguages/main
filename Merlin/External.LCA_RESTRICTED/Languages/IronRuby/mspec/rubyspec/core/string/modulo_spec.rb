@@ -177,6 +177,7 @@ describe "String#%" do
     ("%*1$2$d" % [10, 5]).should == ("%2$*1$d" % [10, 5])
     ("%*1$.*2$3$d" % [10, 5, 1]).should == ("%3$*1$.*2$d" % [10, 5, 1])
   end
+
   it "calls to_int on width star and precision star tokens" do
     w = mock('10')
     w.should_receive(:to_int).and_return(10)
@@ -239,6 +240,7 @@ describe "String#%" do
     ("% b" % 10).should == " 1010"
     ("%1$b" % [10, 20]).should == "1010"
     ("%#b" % 10).should == "0b1010"
+    ("%+b" % 0).should == "+0"
     ("%+b" % 10).should == "+1010"
     ("%-9b" % 10).should == "1010     "
     ("%05b" % 10).should == "01010"
@@ -349,34 +351,76 @@ describe "String#%" do
       ("%#{f}" % 10).should == "10"
       ("% #{f}" % 10).should == " 10"
       ("%1$#{f}" % [10, 20]).should == "10"
+      ("%+#{f}" % 0).should == "+0"
       ("%+#{f}" % 10).should == "+10"
       ("%-7#{f}" % 10).should == "10     "
       ("%04#{f}" % 10).should == "0010"
       ("%*#{f}" % [10, 4]).should == "         4"
     end
+
+    it "supports negative integers using #{format}" do
+      ("%#{f}" % -5).should == "-5"
+      ("%3#{f}" % -5).should == " -5"
+      ("%03#{f}" % -5).should == "-05"
+      ("%+03#{f}" % -5).should == "-05"
+      ("%-3#{f}" % -5).should == "-5 "
+    end
+
+    # The following version inconsistency in negative-integers is explained in
+    # http://ujihisa.blogspot.com/2009/12/string-differs-between-ruby-18-and-19.html
+    ruby_version_is ""..."1.9" do
+      it "supports negative integers using #{format}, giving priority to `0`" do
+        ("%-03#{f}" % -5).should == "-05"
+        ("%+-03#{f}" % -5).should == "-05"
+      end
+    end
+
+    ruby_version_is "1.9" do
+      it "supports negative integers using #{format}, giving priority to `-`" do
+        ("%-03#{f}" % -5).should == "-5 "
+        ("%+-03#{f}" % -5).should == "-5 "
+      end
+    end
   end
 
-  it "supports float formats using %e" do
-    ("%e" % 10).should == "1.000000e+01"
-    ("% e" % 10).should == " 1.000000e+01"
-    ("%1$e" % 10).should == "1.000000e+01"
-    ("%#e" % 10).should == "1.000000e+01"
-    ("%+e" % 10).should == "+1.000000e+01"
-    ("%-7e" % 10).should == "1.000000e+01"
-    ("%05e" % 10).should == "1.000000e+01"
-    ("%*e" % [10, 9]).should == "9.000000e+00"
+  platform_is_not :windows do
+    it "supports float formats using %e" do
+      ("%e" % 10).should == "1.000000e+01"
+      ("% e" % 10).should == " 1.000000e+01"
+      ("%1$e" % 10).should == "1.000000e+01"
+      ("%#e" % 10).should == "1.000000e+01"
+      ("%+e" % 0).should == "+0.000000e+01"
+      ("%+e" % 10).should == "+1.000000e+01"
+      ("%-7e" % 10).should == "1.000000e+01"
+      ("%05e" % 10).should == "1.000000e+01"
+      ("%*e" % [10, 9]).should == "9.000000e+00"
+    end
   end
 
+  platform_is :windows do
+    it "supports float formats using %e" do
+      ("%e" % 10).should ==       "1.000000e+001"
+      ("% e" % 10).should ==      " 1.000000e+001"
+      ("%1$e" % 10).should ==     "1.000000e+001"
+      ("%#e" % 10).should ==      "1.000000e+001"
+      ("%+e" % 10).should ==      "+1.000000e+001"
+      ("%-7e" % 10).should ==     "1.000000e+001"
+      ("%05e" % 10).should ==     "1.000000e+001"
+      ("%*e" % [10, 9]).should == "9.000000e+000"
+    end
+  end
   # TODO: If http://redmine.ruby-lang.org/issues/show/1566 is confirmed, we
   # can guard the behaviour of capitalising Inf and NaN as a bug, and
   # removed the compliance guards.
   ruby_version_is ""..."1.9" do
-    not_compliant_on :rubinius, :jruby do
-      it "supports float formats using %e, and downcases -Inf, Inf, and NaN" do
-        ("%e" % 1e1020).should == "inf"
-        ("%e" % -1e1020).should == "-inf"
-        ("%e" % (0.0/0)).should == "nan"
-        ("%e" % (-0e0/0)).should == "nan"
+    platform_is_not :windows do
+      not_compliant_on :rubinius, :jruby do
+        it "supports float formats using %e, and downcases -Inf, Inf, and NaN" do
+          ("%e" % 1e1020).should == "inf"
+          ("%e" % -1e1020).should == "-inf"
+          ("%e" % (0.0/0)).should == "nan"
+          ("%e" % (-0e0/0)).should == "nan"
+        end
       end
     end
   end
@@ -409,15 +453,51 @@ describe "String#%" do
     end
   end
 
-  it "supports float formats using %E" do
-    ("%E" % 10).should == "1.000000E+01"
-    ("% E" % 10).should == " 1.000000E+01"
-    ("%1$E" % 10).should == "1.000000E+01"
-    ("%#E" % 10).should == "1.000000E+01"
-    ("%+E" % 10).should == "+1.000000E+01"
-    ("%-7E" % 10).should == "1.000000E+01"
-    ("%05E" % 10).should == "1.000000E+01"
-    ("%*E" % [10, 9]).should == "9.000000E+00"
+  platform_is :windows do
+    it "supports float formats using %e, but Inf, -Inf, and NaN are not floats" do
+      ("%e" % 1e1020).should == "Inf"
+      ("%e" % -1e1020).should == "-Inf"
+      ("%e" % (-0e0/0)).should == "NaN"
+      ("%e" % (0.0/0)).should == "NaN"
+    end
+
+    it "supports float formats using %E, but Inf, -Inf, and NaN are not floats" do
+      ("%E" % 1e1020).should == "Inf"
+      ("%E" % -1e1020).should == "-Inf"
+      ("%-10E" % 1e1020).should == "Inf       "
+      ("%10E" % 1e1020).should == "       Inf"
+      ("%+E" % 1e1020).should == "+Inf"
+      ("% E" % 1e1020).should == " Inf"
+      ("%E" % (0.0/0)).should == "NaN"
+      ("%E" % (-0e0/0)).should == "NaN"
+    end
+  end
+  
+  platform_is_not :windows do
+    it "supports float formats using %E" do
+      ("%E" % 10).should == "1.000000E+01"
+      ("% E" % 10).should == " 1.000000E+01"
+      ("%1$E" % 10).should == "1.000000E+01"
+      ("%#E" % 10).should == "1.000000E+01"
+      ("%+E" % 10).should == "+1.000000E+01"
+      ("%+E" % 0).should == "+0.000000E+01"
+      ("%-7E" % 10).should == "1.000000E+01"
+      ("%05E" % 10).should == "1.000000E+01"
+      ("%*E" % [10, 9]).should == "9.000000E+00"
+    end
+  end
+  
+  platform_is :windows do
+    it "supports float formats using %E" do
+      ("%E" % 10).should == "1.000000E+001"
+      ("% E" % 10).should == " 1.000000E+001"
+      ("%1$E" % 10).should == "1.000000E+001"
+      ("%#E" % 10).should == "1.000000E+001"
+      ("%+E" % 10).should == "+1.000000E+001"
+      ("%-7E" % 10).should == "1.000000E+001"
+      ("%05E" % 10).should == "1.000000E+001"
+      ("%*E" % [10, 9]).should == "9.000000E+000"
+    end
   end
 
   # TODO: If http://redmine.ruby-lang.org/issues/show/1566 is confirmed, we
@@ -425,17 +505,31 @@ describe "String#%" do
   # removed the compliance guards.
   not_compliant_on :rubinius, :jruby do
     ruby_version_is ""..."1.9" do
-      it "supports float formats using %E, and upcases Inf, -Inf, and NaN" do
-        ("%E" % 1e1020).should == "INF"
-        ("%E" % -1e1020).should == "-INF"
-        ("%-10E" % 1e1020).should == "INF       "
-        ("%+E" % 1e1020).should == "+INF"
-        ("% E" % 1e1020).should == " INF"
-        ("%E" % (0.0/0)).should == "NAN"
-        ("%E" % (-0e0/0)).should == "NAN"
+      platform_is_not :windows do
+        it "supports float formats using %E, and upcases Inf, -Inf, and NaN" do
+          ("%E" % 1e1020).should == "INF"
+          ("%E" % -1e1020).should == "-INF"
+          ("%-10E" % 1e1020).should == "INF       "
+          ("%+E" % 1e1020).should == "+INF"
+          ("% E" % 1e1020).should == " INF"
+          ("%E" % (0.0/0)).should == "NAN"
+          ("%E" % (-0e0/0)).should == "NAN"
+        end
+      end
+      
+      platform_is :windows do
+        it "supports float formats using %E, and upcases Inf, -Inf, and NaN" do
+          ("%E" % 1e1020).should == "Inf"
+          ("%E" % -1e1020).should == "-Inf"
+          ("%-10E" % 1e1020).should == "Inf       "
+          ("%+E" % 1e1020).should == "+Inf"
+          ("% E" % 1e1020).should == " Inf"
+          ("%E" % (0.0/0)).should == "NaN"
+          ("%E" % (-0e0/0)).should == "NaN"
+        end
       end
     end
-    
+
     # TODO: If http://redmine.ruby-lang.org/issues/show/1566 is confirmed, we
     # can guard the behaviour of capitalising Inf and NaN as a bug, and
     # removed the compliance guards.
@@ -448,7 +542,15 @@ describe "String#%" do
         end
       end
 
-      platform_is_not :darwin do
+      platform_is :windows do
+        it "pads with zeros using %E with Inf, -Inf, and NaN" do
+          ("%010E" % -1e1020).should == "-000000Inf"
+          ("%010E" % 1e1020).should == "0000000Inf"
+          ("%010E" % (0.0/0)).should == "0000000NaN"
+        end
+      end
+      
+      platform_is_not :darwin, :windows do
         it "pads with spaces for %E with Inf, -Inf, and NaN" do
           ("%010E" % -1e1020).should == "      -INF"
           ("%010E" % 1e1020).should == "       INF"
@@ -456,7 +558,7 @@ describe "String#%" do
         end
       end
     end
-    
+
     ruby_version_is "1.9" do
       platform_is :darwin do
         it "pads with zeros using %E with Inf, -Inf, and NaN" do
@@ -481,6 +583,7 @@ describe "String#%" do
     ("% f" % 10).should == " 10.000000"
     ("%1$f" % 10).should == "10.000000"
     ("%#f" % 10).should == "10.000000"
+    ("%+f" % 0).should == "+0.000000"
     ("%+f" % 10).should == "+10.000000"
     ("%-7f" % 10).should == "10.000000"
     ("%05f" % 10).should == "10.000000"
@@ -492,6 +595,7 @@ describe "String#%" do
     ("% g" % 10).should == " 10"
     ("%1$g" % 10).should == "10"
     ("%#g" % 10).should == "10.0000"
+    ("%+g" % 0).should == "+0"
     ("%+g" % 10).should == "+10"
     ("%-7g" % 10).should == "10     "
     ("%05g" % 10).should == "00010"
@@ -503,6 +607,7 @@ describe "String#%" do
     ("% G" % 10).should == " 10"
     ("%1$G" % 10).should == "10"
     ("%#G" % 10).should == "10.0000"
+    ("%+G" % 0).should == "+0"
     ("%+G" % 10).should == "+10"
     ("%-7G" % 10).should == "10     "
     ("%05G" % 10).should == "00010"
@@ -514,6 +619,7 @@ describe "String#%" do
     ("% o" % 10).should == " 12"
     ("%1$o" % [10, 20]).should == "12"
     ("%#o" % 10).should == "012"
+    ("%+o" % 0).should == "+0"
     ("%+o" % 10).should == "+12"
     ("%-9o" % 10).should == "12       "
     ("%05o" % 10).should == "00012"
@@ -584,13 +690,15 @@ describe "String#%" do
   end
 
   it "supports string formats using %s" do
+    ("%s" % "hello").should == "hello"
+    ("%s" % "").should == ""
     ("%s" % 10).should == "10"
     ("%1$s" % [10, 8]).should == "10"
     ("%-5s" % 10).should == "10   "
     ("%*s" % [10, 9]).should == "         9"
   end
 
-  it "calls to_s on arguments for %s format" do
+  it "calls to_s on non-String arguments for %s format" do
     obj = mock('obj')
     def obj.to_s() "obj" end
 
@@ -624,6 +732,7 @@ describe "String#%" do
     ("%u" % 10).should == "10"
     ("% u" % 10).should == " 10"
     ("%1$u" % [10, 20]).should == "10"
+    ("%+u" % 0).should == "+0"
     ("%+u" % 10).should == "+10"
     ("%-7u" % 10).should == "10     "
     ("%04u" % 10).should == "0010"
@@ -681,12 +790,13 @@ describe "String#%" do
       ("%d" % -(2 ** 64 + 5)).should == "-18446744073709551621"
     end
   end
-  
+
   it "supports hex formats using %x for positive numbers" do
     ("%x" % 10).should == "a"
     ("% x" % 10).should == " a"
     ("%1$x" % [10, 20]).should == "a"
     ("%#x" % 10).should == "0xa"
+    ("%+x" % 0).should == "+0"
     ("%+x" % 10).should == "+a"
     ("%-9x" % 10).should == "a        "
     ("%05x" % 10).should == "0000a"
@@ -728,6 +838,7 @@ describe "String#%" do
     ("% X" % 10).should == " A"
     ("%1$X" % [10, 20]).should == "A"
     ("%#X" % 10).should == "0XA"
+    ("%+X" % 0).should == "+0"
     ("%+X" % 10).should == "+A"
     ("%-9X" % 10).should == "A        "
     ("%05X" % 10).should == "0000A"
@@ -815,7 +926,7 @@ describe "String#%" do
       obj.should_receive(:to_int).and_return(6)
       (format % obj).should == (format % 6)
     end
-    
+
     # 1.9 raises a TypeError for Kernel.Integer(nil), so we version guard this
     # case
     ruby_version_is ""..."1.9" do
@@ -824,7 +935,7 @@ describe "String#%" do
           format = "%" + f
           (format % nil).should == (format % Kernel.Integer(nil))
         end
-      end   
+      end
     end
 
     it "doesn't taint the result for #{format} when argument is tainted" do

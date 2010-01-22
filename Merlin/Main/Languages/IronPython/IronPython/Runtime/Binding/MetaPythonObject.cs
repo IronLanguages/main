@@ -42,7 +42,7 @@ namespace IronPython.Runtime.Binding {
         public DynamicMetaObject/*!*/ FallbackConvert(DynamicMetaObjectBinder/*!*/ binder) {
             PythonConversionBinder pyBinder = binder as PythonConversionBinder;
             if (pyBinder != null) {
-                return pyBinder.FallbackConvert(this);
+                return pyBinder.FallbackConvert(binder.ReturnType, this, null);
             }
 
             return ((ConvertBinder)binder).FallbackConvert(this);

@@ -171,8 +171,8 @@ namespace IronRuby.Compiler.Ast {
 
     public partial class AliasStatement { public override NodeTypes NodeType { get { return NodeTypes.AliasStatement; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class ConditionalStatement { public override NodeTypes NodeType { get { return NodeTypes.ConditionalStatement; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
-    public partial class Finalizer { public override NodeTypes NodeType { get { return NodeTypes.Finalizer; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
-    public partial class Initializer { public override NodeTypes NodeType { get { return NodeTypes.Initializer; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class ShutdownHandlerStatement { public override NodeTypes NodeType { get { return NodeTypes.Finalizer; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class FileInitializerStatement { public override NodeTypes NodeType { get { return NodeTypes.Initializer; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class UndefineStatement { public override NodeTypes NodeType { get { return NodeTypes.UndefineStatement; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     
     public partial class BreakStatement { public override NodeTypes NodeType { get { return NodeTypes.BreakStatement; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }

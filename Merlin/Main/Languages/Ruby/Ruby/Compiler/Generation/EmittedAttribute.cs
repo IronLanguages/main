@@ -24,6 +24,7 @@ namespace IronRuby.Compiler.Generation {
     [Conditional("DEBUG")]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
     public sealed class EmittedAttribute : Attribute {
+        public bool UseReflection { get; set; }
     }
 
     /// <summary>

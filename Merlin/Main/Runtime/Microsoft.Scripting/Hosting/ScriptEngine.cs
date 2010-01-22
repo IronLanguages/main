@@ -98,7 +98,7 @@ namespace Microsoft.Scripting.Hosting {
         public ObjectOperations CreateOperations(ScriptScope scope) {
             ContractUtils.RequiresNotNull(scope, "scope");
 
-            return new ObjectOperations(new DynamicOperations(_language), this);
+            return new ObjectOperations(_language.Operations, this);
         }
 
         #endregion

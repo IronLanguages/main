@@ -79,9 +79,8 @@ namespace IronPython.Modules {
                     case 'z': _type = SimpleTypeKind.CharPointer; break;
                     case 'Z': _type = SimpleTypeKind.WCharPointer; break;
                     case 'u': _type = SimpleTypeKind.WChar; break;
-                    case 'p': // what are these?
+                    case 'v': _type = SimpleTypeKind.VariantBool; break;
                     case 'X':
-                    case 'v':
                         throw new NotImplementedException("simple type " + sVal);
                 }
             }
@@ -170,6 +169,7 @@ namespace IronPython.Modules {
                         case SimpleTypeKind.SignedShort:
                         case SimpleTypeKind.UnsignedShort:
                         case SimpleTypeKind.WChar:
+                        case SimpleTypeKind.VariantBool:
                             return 2;
                         case SimpleTypeKind.SignedInt:
                         case SimpleTypeKind.UnsignedInt:
@@ -207,6 +207,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.SignedShort: res = GetIntReturn((int)owner.ReadInt16(offset)); break;
                     case SimpleTypeKind.WChar: res = new string((char)owner.ReadInt16(offset), 1); break;
                     case SimpleTypeKind.UnsignedShort: res = GetIntReturn((int)(ushort)owner.ReadInt16(offset)); break;
+                    case SimpleTypeKind.VariantBool: res = owner.ReadInt16(offset) != 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False; break;
                     case SimpleTypeKind.SignedInt: res = GetIntReturn((int)owner.ReadInt32(offset)); break;
                     case SimpleTypeKind.UnsignedInt: res = GetIntReturn((uint)owner.ReadInt32(offset)); break;
                     case SimpleTypeKind.UnsignedLong: res = GetIntReturn((uint)owner.ReadInt32(offset)); break;
@@ -257,6 +258,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.WChar: owner.WriteInt16(offset, (short)ModuleOps.GetWChar(value, this)); break;
                     case SimpleTypeKind.SignedShort: owner.WriteInt16(offset, ModuleOps.GetSignedShort(value, this)); break;
                     case SimpleTypeKind.UnsignedShort: owner.WriteInt16(offset, ModuleOps.GetUnsignedShort(value, this)); break;
+                    case SimpleTypeKind.VariantBool: owner.WriteInt16(offset, (short)ModuleOps.GetVariantBool(value, this)); break;
                     case SimpleTypeKind.SignedInt: owner.WriteInt32(offset, ModuleOps.GetSignedInt(value, this)); break;
                     case SimpleTypeKind.UnsignedInt: owner.WriteInt32(offset, ModuleOps.GetUnsignedInt(value, this)); break;
                     case SimpleTypeKind.UnsignedLong: owner.WriteInt32(offset, ModuleOps.GetUnsignedLong(value, this)); break;
@@ -290,6 +292,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.UnsignedByte:
                         return typeof(byte);
                     case SimpleTypeKind.SignedShort:
+                    case SimpleTypeKind.VariantBool:
                         return typeof(short);
                     case SimpleTypeKind.UnsignedShort:
                         return typeof(ushort);
@@ -368,6 +371,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.Double:
                     case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.SignedLongLong:
+                    case SimpleTypeKind.VariantBool:
                         constantPool.Add(this);
                         method.Emit(OpCodes.Ldarg, constantPoolArgument);
                         method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
@@ -558,6 +562,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.WChar:
                     case SimpleTypeKind.Char:
                         return typeof(string);
+                    case SimpleTypeKind.VariantBool:
                     case SimpleTypeKind.SignedByte:
                     case SimpleTypeKind.UnsignedByte:
                     case SimpleTypeKind.SignedShort:
@@ -587,6 +592,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.UnsignedByte:
                     case SimpleTypeKind.SignedShort:
                     case SimpleTypeKind.UnsignedShort:
+                    case SimpleTypeKind.VariantBool:
                         method.Emit(OpCodes.Conv_I4);
                         break;
                     case SimpleTypeKind.SignedInt:

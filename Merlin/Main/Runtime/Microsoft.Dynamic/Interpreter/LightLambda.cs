@@ -122,6 +122,8 @@ namespace Microsoft.Scripting.Interpreter {
 
         //TODO enable sharing of these custom delegates
         private Delegate CreateCustomDelegate(Type delegateType) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Synchronously compiling a custom delegate");
+
             var method = delegateType.GetMethod("Invoke");
             var paramInfos = method.GetParameters();
             var parameters = new ParameterExpression[paramInfos.Length];
@@ -139,7 +141,6 @@ namespace Microsoft.Scripting.Interpreter {
             var lambda = Expression.Lambda(delegateType, body, parameters);
             return lambda.Compile();
         }
-
 
         internal Delegate MakeDelegate(Type delegateType) {            
             Func<LightLambda, Delegate> fastCtor;

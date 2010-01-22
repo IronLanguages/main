@@ -6,16 +6,16 @@ require File.dirname(__FILE__) + '/fixtures/methods'
 # currently, expected to fail on 1.9. Once this bug is fixed and backported,
 # these guards can be removed, along with the duplicate describe block.
 
-describe "Time#-" do
-  it "returns 0 when comparing UTC time with local time that represents the same point in time" do
-    with_timezone("CET", +1) do
-      u = Time.utc(1994, 11, 6, 8, 49, 37)
-      l = Time.local(1994, 11, 6, 9, 49, 37)
-      (u - l).should == 0
+ruby_version_is ""..."1.9" do
+  describe "Time#-" do
+    it "returns 0 when comparing UTC time with local time that represents the same point in time" do
+      with_timezone("CET", +1) do
+        u = Time.utc(1994, 11, 6, 8, 49, 37)
+        l = Time.local(1994, 11, 6, 9, 49, 37)
+        (u - l).should == 0
+      end
     end
-  end
 
-  ruby_version_is ""..."1.9" do
     it "decrements the time by the specified amount" do
       (Time.at(100) - 100).should == Time.at(0)
       (Time.at(100) - Time.at(99)).should == 1.0
@@ -44,9 +44,11 @@ describe "Time#-" do
       time.usec.should == 0
     end
   end
+end
 
-  ruby_version_is "1.9" do
-    ruby_bug "[ruby-dev:38446]", "1.9.2" do
+ruby_version_is "1.9" do
+  ruby_bug "[ruby-dev:38446]", "1.9.2" do
+    describe "Time#-" do
       it "decrements the time by the specified amount" do
         (Time.at(100) - 100).should == Time.at(0)
         (Time.at(100) - Time.at(99)).should == 1.0

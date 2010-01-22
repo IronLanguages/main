@@ -4,11 +4,11 @@ as_superuser do
   describe "File.chown" do
     before :each do
       @fname = tmp('file_chown_test')
-      File.open(@fname, 'w') { }
+      touch @fname
     end
 
     after :each do
-      File.delete @fname if File.exist? @fname
+      rm_r @fname
     end
 
     platform_is :windows do
@@ -61,6 +61,12 @@ as_superuser do
       it "returns the number of files processed" do
         File.chown(nil, nil, @fname, @fname).should == 2
       end
+
+      ruby_version_is "1.9" do
+        it "accepts an object that has a #to_path method" do
+          File.chown(nil, nil, mock_to_path(@fname)).should == 1
+        end
+      end
     end
   end
 
@@ -72,7 +78,7 @@ as_superuser do
 
     after :each do
       @file.close unless @file.closed?
-      File.delete @fname if File.exist? @fname
+      rm_r @fname
     end
 
     platform_is :windows do

@@ -611,16 +611,16 @@ namespace IronRuby.Compiler.Ast {
             Exit(node);
         }
 
-        internal protected virtual void Walk(Initializer/*!*/ node) {
+        internal protected virtual void Walk(FileInitializerStatement/*!*/ node) {
             if (Enter(node)) {
                 VisitOptionalList(node.Statements);
             }
             Exit(node);
         }
 
-        internal protected virtual void Walk(Finalizer/*!*/ node) {
+        internal protected virtual void Walk(ShutdownHandlerStatement/*!*/ node) {
             if (Enter(node)) {
-                VisitOptionalList(node.Statements);
+                node.Block.Walk(this);
             }
             Exit(node);
         }

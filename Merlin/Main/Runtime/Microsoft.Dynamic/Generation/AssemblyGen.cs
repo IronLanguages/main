@@ -356,7 +356,7 @@ namespace Microsoft.Scripting.Generation {
         private const TypeAttributes DelegateAttributes = TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass;
         private static readonly Type[] _DelegateCtorSignature = new Type[] { typeof(object), typeof(IntPtr) };
 
-        internal Type MakeDelegateType(string name, Type[] parameters, Type returnType) {
+        public Type MakeDelegateType(string name, Type[] parameters, Type returnType) {
             TypeBuilder builder = DefineType(name, typeof(MulticastDelegate), DelegateAttributes, false);
             builder.DefineConstructor(CtorAttributes, CallingConventions.Standard, _DelegateCtorSignature).SetImplementationFlags(ImplAttributes);
             builder.DefineMethod("Invoke", InvokeAttributes, returnType, parameters).SetImplementationFlags(ImplAttributes);

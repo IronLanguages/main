@@ -13,5 +13,20 @@
 #
 # ****************************************************************************
 
+class Etc
+  class << self
+    def getlogin
+      ENV['USERNAME']
+    end
+    
+    def endgrent(*args)
+      nil
+    end
 
-# No-op file since we won't support this under Windows
+    [:endpwent, :getgrent, :getgrgid, :getgrnam, :getpwent, 
+     :getpwnam, :getpwuid, :group, :passwd, :setgrent,
+     :setpwent].each do |method|
+      alias_method method, :endgrent
+    end
+  end
+end

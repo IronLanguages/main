@@ -238,7 +238,7 @@ namespace IronRuby.Runtime.Calls {
 
         #region Dynamic Operations
 
-        internal virtual MethodDispatcher GetDispatcher<T>(RubyCallSignature signature, object target, int version) {
+        internal virtual MethodDispatcher GetDispatcher(Type/*!*/ delegateType, RubyCallSignature signature, object target, int version) {
             return null;
         }
 

@@ -1,2 +1,1 @@
-fails:Vector#eql? returns true when the each corresponding elements are equal in the sense of Object#eql?
 fails:Vector#eql? returns false when there are a pair corresponding elements which are not equal in the sense of Object#eql?

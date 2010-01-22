@@ -71,6 +71,7 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo UnterminatedQuotedString = new ErrorInfo(Tokenizer + 40, "Unterminated quoted string meets end of file");
         public static readonly ErrorInfo UnterminatedHereDocIdentifier = new ErrorInfo(Tokenizer + 41, "Unterminated here document identifier");
         public static readonly ErrorInfo UnterminatedHereDoc = new ErrorInfo(Tokenizer + 42, "can't find string \"{0}\" anywhere before end-of-file");
+        public static readonly ErrorInfo FileInitializerInMethod = new ErrorInfo(Tokenizer + 43, "BEGIN in method");
         
         public static readonly ErrorInfo UnknownQuotedStringType = new ErrorInfo(Tokenizer + 50, "Unknown type of quoted string");
         public static readonly ErrorInfo UnknownRegexOption = new ErrorInfo(Tokenizer + 51, "Unknown RegEx option '{0}'");
@@ -80,8 +81,6 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo EmptySymbolLiteral = new ErrorInfo(Tokenizer + 55, "empty symbol literal");
         public static readonly ErrorInfo EncodingsMixed = new ErrorInfo(Tokenizer + 56, "{0} mixed within {1} source");
 
-        public static readonly ErrorInfo FileInitializerInMethod = new ErrorInfo(Tokenizer + 60, "BEGIN in method");
-        public static readonly ErrorInfo FileFinalizerInMethod = new ErrorInfo(Tokenizer + 61, "END in method; use at_exit");    
         public static readonly ErrorInfo ModuleNameNotConstant = new ErrorInfo(Tokenizer + 66, "Class/module name must be a constant");
         public static readonly ErrorInfo ConstantReassigned = new ErrorInfo(Tokenizer + 67, "Constant re-assignment");
         public static readonly ErrorInfo BothBlockDefAndBlockRefGiven = new ErrorInfo(Tokenizer + 68, "both block arg and actual block given");
@@ -92,6 +91,7 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo ParenthesizeArguments = new ErrorInfo(WarningLevel1 + 1, "parenthesize argument(s) for future version");
         public static readonly ErrorInfo WhitespaceBeforeArgumentParentheses = new ErrorInfo(WarningLevel1 + 2, "don't put space before argument parentheses");
         public static readonly ErrorInfo InvalidCharacterSyntax = new ErrorInfo(WarningLevel1 + 3, "invalid character syntax; use ?\\{0}");
+        public static readonly ErrorInfo FileFinalizerInMethod = new ErrorInfo(WarningLevel1 + 4, "END in method; use at_exit");    
         
         // level 2 warnings:
         private const int WarningLevel2 = 0x3000;

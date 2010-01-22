@@ -217,8 +217,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("popen", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static RubyIO/*!*/ OpenPipe(RubyContext/*!*/ context, RubyClass/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ command, [DefaultProtocol, Optional, NotNull]MutableString modeString) {
+            return OpenPipe(context, command, IOModeEnum.Parse(modeString));
+        }
 
-            IOMode mode = IOModeEnum.Parse(modeString);
+        public static RubyIO/*!*/ OpenPipe(
+            RubyContext/*!*/ context, 
+            MutableString/*!*/ command, 
+            IOMode mode) {
 
             bool redirectStandardInput = mode.CanWrite();
             bool redirectStandardOutput = mode.CanRead();

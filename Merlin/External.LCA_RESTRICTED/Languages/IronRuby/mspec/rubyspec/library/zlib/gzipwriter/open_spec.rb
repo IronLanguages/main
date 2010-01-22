@@ -11,10 +11,11 @@ describe "Zlib::GzipWriter.open" do
   after :each do
     @gz.close if @gz
     begin
-      File.delete(@filename) if File.exist?(@filename)
+      rm_r @filename
     rescue Errno::EACCES
       # Errno::EACCES is thrown occasionally for some reason
     end
+    FileUtils.rm_rf(@filename) if File.exists?(@filename)
   end
   
   it "writes to the file" do
@@ -35,6 +36,7 @@ describe "Zlib::GzipWriter.open" do
     File.open(@filename, "w").close
     File.chmod(0555, @filename)
     lambda { Zlib::GzipWriter.open(@filename) }.should raise_error(Errno::EACCES)
+    File.chmod(0666, @filename)
   end
 
   it "accepts nil for level and strategy" do
@@ -61,7 +63,7 @@ describe "Zlib::GzipWriter.open" do
     level = mock("level")
     level.should_not_receive(:to_int)
     lambda { Zlib::GzipWriter.open(@filename, level) }.should raise_error(TypeError)
-
+    
     strategy = mock("strategy")
     strategy.should_not_receive(:to_int)
     lambda { Zlib::GzipWriter.open(@filename, 0, strategy) }.should raise_error(TypeError)

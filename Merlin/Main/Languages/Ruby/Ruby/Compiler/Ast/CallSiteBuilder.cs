@@ -76,7 +76,7 @@ namespace IronRuby.Compiler.Ast {
             return flags;
         }
 
-        public MSA.DynamicExpression/*!*/ MakeSuperCallAction(int lexicalScopeId, bool hasImplicitArguments) {
+        public MSA.Expression/*!*/ MakeSuperCallAction(int lexicalScopeId, bool hasImplicitArguments) {
             RubyCallFlags flags = GetSignatureFlags() | RubyCallFlags.HasImplicitSelf;
             if (hasImplicitArguments) {
                 flags |= RubyCallFlags.HasImplicitArguments;
@@ -85,7 +85,7 @@ namespace IronRuby.Compiler.Ast {
             return MakeCallSite(SuperCallAction.Make(_gen.Context, new RubyCallSignature(Count - HiddenArgumentCount, flags), lexicalScopeId));
         }
 
-        public MSA.DynamicExpression/*!*/ MakeCallAction(string/*!*/ name, bool hasImplicitSelf) {
+        public MSA.Expression/*!*/ MakeCallAction(string/*!*/ name, bool hasImplicitSelf) {
             RubyCallFlags flags = GetSignatureFlags();
             if (hasImplicitSelf) {
                 flags |= RubyCallFlags.HasImplicitSelf;
@@ -94,7 +94,7 @@ namespace IronRuby.Compiler.Ast {
             return MakeCallSite(RubyCallAction.Make(_gen.Context, name, new RubyCallSignature(Count - HiddenArgumentCount, flags)));
         }
 
-        internal MSA.DynamicExpression/*!*/ MakeCallSite(CallSiteBinder/*!*/ binder) {
+        internal MSA.Expression/*!*/ MakeCallSite(CallSiteBinder/*!*/ binder) {
             if (SplattedArgument != null) {
                 Add(SplattedArgument);
             }
@@ -103,35 +103,28 @@ namespace IronRuby.Compiler.Ast {
                 Add(RhsArgument);
             }
 
-            switch (Count) {
-                case 0:
-                case 1: throw Assert.Unreachable;
-                case 2: return Ast.Dynamic(binder, typeof(object), Expression0, Expression1);
-                case 3: return Ast.Dynamic(binder, typeof(object), Expression0, Expression1, Expression2);
-                case 4: return Ast.Dynamic(binder, typeof(object), Expression0, Expression1, Expression2, Expression3);
-                default: return Ast.Dynamic(binder, typeof(object), Expressions);
-            }
+            return AstUtils.LightDynamic(binder, this);
         }
 
-        internal static MSA.DynamicExpression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
+        internal static MSA.Expression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
             MSA.Expression/*!*/ scope, MSA.Expression/*!*/ target) {
             Debug.Assert(signature.HasScope);
 
-            return Ast.Dynamic(RubyCallAction.Make(context, name, signature), typeof(object), AstUtils.Convert(scope, typeof(RubyScope)), target);
+            return AstUtils.LightDynamic(RubyCallAction.Make(context, name, signature), AstUtils.Convert(scope, typeof(RubyScope)), target);
         }
 
-        internal static MSA.DynamicExpression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
+        internal static MSA.Expression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
             MSA.Expression/*!*/ scope, MSA.Expression/*!*/ target, MSA.Expression/*!*/ arg0) {
             Debug.Assert(signature.HasScope);
 
-            return Ast.Dynamic(RubyCallAction.Make(context, name, signature), typeof(object), AstUtils.Convert(scope, typeof(RubyScope)), target, arg0);
+            return AstUtils.LightDynamic(RubyCallAction.Make(context, name, signature), AstUtils.Convert(scope, typeof(RubyScope)), target, arg0);
         }
 
-        internal static MSA.DynamicExpression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
+        internal static MSA.Expression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
             MSA.Expression/*!*/ scope, MSA.Expression/*!*/ target, MSA.Expression/*!*/ arg0, MSA.Expression/*!*/ arg1) {
             Debug.Assert(signature.HasScope);
 
-            return Ast.Dynamic(RubyCallAction.Make(context, name, signature), typeof(object), AstUtils.Convert(scope, typeof(RubyScope)), target, arg0, arg1);
+            return AstUtils.LightDynamic(RubyCallAction.Make(context, name, signature), AstUtils.Convert(scope, typeof(RubyScope)), target, arg0, arg1);
         }
     }
 }

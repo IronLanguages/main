@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Binding {
                 return Defer(self);
             }
 
-            return Context.Binder.DeleteMember(Name, self, new PythonOverloadResolverFactory(_context.Binder, AstUtils.Constant(Context.SharedContext)));
+            return Context.Binder.DeleteMember(Name, self, new PythonOverloadResolverFactory(_context.Binder, AstUtils.Constant(Context.SharedContext)), errorSuggestion);
         }
 
         public PythonContext/*!*/ Context {

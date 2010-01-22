@@ -118,17 +118,17 @@ applicable_drivers.uniq!
 test_files = TestListFile::load 
 
 applicable_drivers.each do |driver|
-	time = Benchmark.measure(driver.to_s) do
-		puts "#{driver}"
-		puts "    log @ #{driver.logger} \n"
-	    
-		if ARGV.include? "-neg" # The user wants to run all the unsupported test cases
-			test_files.each { |tf| tf.run_skipped_by(driver) }
-		else
-			test_files.each { |tf| tf.run_by(driver) }
-		end
-		puts "\n"
-   end		
+    time = Benchmark.measure(driver.to_s) do
+        puts "#{driver}"
+        puts "    log @ #{driver.logger} \n"
+        
+        if ARGV.include? "-neg" # The user wants to run all the unsupported test cases
+            test_files.each { |tf| tf.run_skipped_by(driver) }
+        else
+            test_files.each { |tf| tf.run_by(driver) }
+        end
+        puts "\n"
+   end        
    puts time.format("Time: %10.6r\n\n")
 end
 
