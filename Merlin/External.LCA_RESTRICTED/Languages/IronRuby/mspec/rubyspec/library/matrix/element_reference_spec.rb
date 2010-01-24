@@ -36,14 +36,11 @@ describe "Matrix#[]" do
     end
   end
 
-  # FIXME: Update this guard when the bug is fixed.
-  ruby_bug "#1518", "1.9.1.129" do
-    # A NoMethodError is raised when the _first_ index is out of bounds,
-    # (http://redmine.ruby-lang.org/issues/show/1518); otherwise nil is
-    # returned.
+  ruby_bug "#1518", "1.8.7" do
     it "returns nil for an invalid index pair" do
       @m[8,1].should be_nil
       @m[1,8].should be_nil
     end
   end
+
 end

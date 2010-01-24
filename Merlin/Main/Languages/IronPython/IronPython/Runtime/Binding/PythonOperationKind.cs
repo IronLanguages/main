@@ -88,13 +88,13 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// Boolean negation
         /// </summary>
-        Not,
+        IsFalse,
         /// <summary>
         /// Unary operator.
         /// 
-        /// Boolean negation
+        /// Negation, returns object
         /// </summary>
-        NotRetObject,
+        Not,
 
         /// <summary>
         /// Get enumerator for iteration binder.  Returns a KeyValuePair&lt;IEnumerator, IDisposable&gt;

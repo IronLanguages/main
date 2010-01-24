@@ -952,6 +952,7 @@ $ﾎ
         }
 
         private void AstLocations1() {
+#if FEATURE_CALL_SITE_TRACER
             // DumpExpression uses private reflection:
             if (_driver.PartialTrust) return;
 
@@ -995,6 +996,7 @@ add 'foo', 'bar'
             // TODO: doesn't include method body since its is lazily compiled:
             Debug.Assert(locations.Count == 2 && locations[0] == 31 && locations[1] == 41);
             // Debug.Assert(locations.Count == 4 && locations[0] == 31 && locations[1] == 19 && locations[2] == 41 && locations[3] == 19);
+#endif
         }
 
         #region Helpers

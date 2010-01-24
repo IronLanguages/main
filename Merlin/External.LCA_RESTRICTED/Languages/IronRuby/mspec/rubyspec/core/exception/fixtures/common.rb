@@ -35,6 +35,13 @@ module ExceptionSpecs
     end
   end
 
+  class ConstructorException < Exception
+
+    def initialize
+    end
+
+  end
+  
   class InitializedException < Exception
     def initialize
       ScratchPad.record :initialized_exception

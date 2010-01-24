@@ -40,6 +40,50 @@ describe "The defined? keyword" do
     end
   end
 
+  class LanguageDefinedSubclassDM < LanguageDefinedSpecs
+    define_method(:no_args) {
+      defined?(super)
+    }
+
+    define_method(:args) {
+      defined?(super())
+    }
+  end
+
+  class LanguageDefinedSubclassBlock < LanguageDefinedSpecs
+    def no_args
+      ret = nil
+      1.times { ret = defined?(super) }
+      ret
+    end
+
+    def args
+      ret = nil
+      1.times { ret = defined?( super() ) }
+      ret
+    end
+  end
+
+  class LanguageDefinedSubclassDMBlock < LanguageDefinedSpecs
+    define_method(:no_args) {
+      ret = nil
+      1.times { ret = defined?(super) }
+      ret
+    }
+
+    define_method(:args) {
+      ret = nil
+      1.times { ret = defined?(super()) }
+      ret
+    }
+  end
+
+  module LanguageDefinedConstMissing
+    def self.on_const_missing(&b) @@on_const_missing = b end
+    def self.const_missing(name) @@on_const_missing.call() end
+    def self.is_defined?() defined? X::Y end
+  end
+  
   module AAA
     self::FOO = 'x' unless defined? self::FOO rescue nil
   end
@@ -184,19 +228,47 @@ describe "The defined? keyword" do
     end
   end
 
+  it "returns 'super' when Subclass#no_args uses defined?" do
+    ret = (LanguageDefinedSubclass.new.no_args)
+    ret.should == "super"
+  end
+
+  it "returns 'super' when Subclass#args uses defined?" do
+    ret = (LanguageDefinedSubclass.new.args)
+    ret.should == "super"
+  end
+
+  it "returns 'super' when Subclass#no_args and created with define_method" do
+    ret = (LanguageDefinedSubclassDM.new.no_args)
+    ret.should == "super"
+  end
+
+  it "returns 'super' when Subclass#args and created with define_method" do
+    ret = (LanguageDefinedSubclassDM.new.args)
+    ret.should == "super"
+  end
+
+  it "returns 'super' when Subclass#no_args uses a block" do
+    ret = (LanguageDefinedSubclassBlock.new.no_args)
+    ret.should == "super"
+  end
+
+  it "returns 'super' when Subclass#args uses a block" do
+    ret = (LanguageDefinedSubclassBlock.new.args)
+    ret.should == "super"
+  end
+
+  it "returns 'super' when Subclass#no_args uses a block in define_method" do
+    ret = (LanguageDefinedSubclassDMBlock.new.no_args)
+    ret.should == "super"
+  end
+
+  it "returns 'super' when Subclass#args uses a block in define_method" do
+    ret = (LanguageDefinedSubclassDMBlock.new.args)
+    ret.should == "super"
+  end
+
   not_compliant_on :rubinius do
-    # I (Evan) am not certain we'll support defined?(super) ever.
-    # for now, i'm marking these as compliant.
-    it "returns 'super' when Subclass#no_args uses defined?" do
-      ret = (LanguageDefinedSpecs::LanguageDefinedSubclass.new.no_args)
-      ret.should == "super"
-    end
-
-    it "returns 'super' when Subclass#args uses defined?" do
-      ret = (LanguageDefinedSpecs::LanguageDefinedSubclass.new.args)
-      ret.should == "super"
-    end
-
     ruby_version_is "" ... "1.9" do
       it "returns 'local-variable(in-block)' when defined? is called on a block var" do
         block = Proc.new { |xxx| defined?(xxx) }
@@ -204,13 +276,13 @@ describe "The defined? keyword" do
         ret.should == 'local-variable(in-block)'
       end
     end
+  end
 
-    ruby_version_is "1.9" do
-      it "returns 'local-variable' when defined? is called on a block var" do
-        block = Proc.new { |xxx| defined?(xxx) }
-        ret = block.call(1)
-        ret.should == 'local-variable'
-      end
+  ruby_version_is "1.9" do
+    it "returns 'local-variable' when defined? is called on a block var" do
+      block = Proc.new { |xxx| defined?(xxx) }
+      ret = block.call(1)
+      ret.should == 'local-variable'
     end
   end
 
@@ -252,6 +324,40 @@ describe "The defined? keyword" do
     o.baz.bar_defined.should == "constant";
   end
 
+  it "rescues all exceptions raised by const_missing" do
+    LanguageDefinedConstMissing.on_const_missing { exit }
+    LanguageDefinedConstMissing.is_defined?.should be_nil
+  end
+ 
+  it "clears $! if const_missing raises an error" do
+    $! = RuntimeError.new
+    LanguageDefinedConstMissing.on_const_missing { exit() }
+    LanguageDefinedConstMissing.is_defined?
+    $!.should be_nil
+  end
+  
+  it "preserves $! if const_missing does not raise" do
+    $! = e = RuntimeError.new
+    LanguageDefinedConstMissing.on_const_missing { nil }
+    LanguageDefinedConstMissing.is_defined?
+    $!.should equal(e)
+  end
+  
+  it "preserves $! if const_missing raises and catches an error" do
+    $! = e = RuntimeError.new
+    LanguageDefinedConstMissing.on_const_missing { begin 1/0; rescue ; end }
+    LanguageDefinedConstMissing.is_defined?
+    $!.should equal(e)
+  end
+  
+  it "preserves $! while executing const_missing" do
+    $! = e = RuntimeError.new
+    e_in_block = nil
+    LanguageDefinedConstMissing.on_const_missing { e_in_block = $! }
+    LanguageDefinedConstMissing.is_defined?
+    e_in_block.should equal(e)
+  end
+  
   it "respects method visibility" do
     defined?(LanguageDefinedSpecs.new.protected_method).should be_nil
     defined?(LanguageDefinedSpecs.new.private_method).should be_nil

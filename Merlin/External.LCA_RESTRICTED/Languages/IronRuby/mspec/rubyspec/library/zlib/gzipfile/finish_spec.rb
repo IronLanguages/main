@@ -7,6 +7,10 @@ describe 'Zlib::GzipFile#finish' do
 	@io = StringIO.new
 	@gzip_writer = Zlib::GzipWriter.new @io
   end
+
+  after :each do
+    @gzip_writer.close unless @gzip_writer.closed?
+  end
   
   it 'closes the GzipFile' do
     @gzip_writer.finish

@@ -56,7 +56,7 @@ namespace IronRuby.Compiler {
         private int _inInstanceMethodDefinition = 0;
 
         private SourceUnitTree _ast;
-        private List<Initializer> _initializers; // lazy
+        private List<FileInitializerStatement> _initializers; // lazy
 
         private Stack<LexicalScope>/*!*/ _lexicalScopes = new Stack<LexicalScope>();
         private SourceUnit _sourceUnit;
@@ -207,9 +207,9 @@ namespace IronRuby.Compiler {
             return CurrentScope.AddVariable(name, location);
         }
 
-        private Initializer/*!*/ AddInitializer(Initializer/*!*/ initializer) {
+        private FileInitializerStatement/*!*/ AddInitializer(FileInitializerStatement/*!*/ initializer) {
             if (_initializers == null) {
-                _initializers = new List<Initializer>();
+                _initializers = new List<FileInitializerStatement>();
             }
 
             _initializers.Add(initializer);

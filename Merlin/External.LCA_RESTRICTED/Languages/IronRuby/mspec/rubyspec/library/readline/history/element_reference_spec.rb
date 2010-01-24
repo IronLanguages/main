@@ -13,9 +13,9 @@ process_is_foreground do
       Readline::HISTORY.pop
     end
 
-    it "doesn't taint objects" do
-      Readline::HISTORY[0].tainted?.should be_false
-      Readline::HISTORY[1].tainted?.should be_false
+    it "returns tainted objects" do
+      Readline::HISTORY[0].tainted?.should be_true
+      Readline::HISTORY[1].tainted?.should be_true
     end
 
     it "returns the history item at the passed index" do

@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -32,12 +33,12 @@ namespace IronPython.Compiler {
     /// 
     /// This lets us recognize both normal Dynamic and our own Dynamic expressions and apply the combo binder on them.
     /// </summary>
-    class ReducableDynamicExpression  : Expression {
+    internal class ReducableDynamicExpression  : Expression {
         private readonly Expression/*!*/ _reduction;
         private readonly DynamicMetaObjectBinder/*!*/ _binder;
-        private readonly Expression/*!*/[] _args;
+        private readonly IList<Expression/*!*/> _args;
 
-        public ReducableDynamicExpression(Expression/*!*/ reduction, DynamicMetaObjectBinder/*!*/ binder, Expression/*!*/[]/*!*/ args) {
+        public ReducableDynamicExpression(Expression/*!*/ reduction, DynamicMetaObjectBinder/*!*/ binder, IList<Expression/*!*/>/*!*/ args) {
             _reduction = reduction;
             _binder = binder;
             _args = args;
@@ -49,7 +50,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        public Expression/*!*/[]/*!*/ Args {
+        public IList<Expression/*!*/>/*!*/ Args {
             get {
                 return _args;
             }

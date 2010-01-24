@@ -92,30 +92,7 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        internal static InterpretedDispatcher CreateInterpreted(Type/*!*/ delegateType, int parameterCount) {
-            if (parameterCount > MaxInterpretedArity) {
-                return null;
-            }
-
-            // Func<CallSite, T1, ... TN, TReturn>
-            // Action<CallSite, T1, ... TN>
-            var types = delegateType.GetGenericArguments();
-            types = types.GetSlice(1, types.Length - 1);
-
-            Type dispatcherType;
-            if (parameterCount != types.Length) {
-                // Func
-                Debug.Assert(parameterCount + 1 == types.Length);
-                dispatcherType = InterpretedFuncDispatchers[parameterCount];
-            } else {
-                // Action
-                dispatcherType = InterpretedActionDispatchers[parameterCount];
-            }
-
-            return (InterpretedDispatcher)Activator.CreateInstance(dispatcherType.MakeGenericType(types));
-        }
-
-        public abstract object/*!*/ CreateDelegate();
+        public abstract object/*!*/ CreateDelegate(bool isUntyped);
         internal abstract void Initialize(Delegate/*!*/ method, int version);
     }
 

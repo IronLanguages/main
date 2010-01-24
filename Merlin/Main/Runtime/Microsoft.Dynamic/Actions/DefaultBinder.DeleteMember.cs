@@ -31,6 +31,10 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target, OverloadResolverFactory resolutionFactory) {
+            return DeleteMember(name, target, resolutionFactory, null);
+        }
+
+        public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target, OverloadResolverFactory resolutionFactory, DynamicMetaObject errorSuggestion) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
 
@@ -39,11 +43,12 @@ namespace Microsoft.Scripting.Actions {
                     name,
                     resolutionFactory
                 ),
-                target.Restrict(target.GetLimitType())
+                target.Restrict(target.GetLimitType()),
+                errorSuggestion
             );
         }
 
-        private DynamicMetaObject MakeDeleteMemberTarget(SetOrDeleteMemberInfo delInfo, DynamicMetaObject target) {
+        private DynamicMetaObject MakeDeleteMemberTarget(SetOrDeleteMemberInfo delInfo, DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
             Type type = target.GetLimitType();
             BindingRestrictions restrictions = target.Restrictions;
             DynamicMetaObject self = target;
@@ -70,9 +75,9 @@ namespace Microsoft.Scripting.Actions {
                         }
                     }
 
-                    delInfo.Body.FinishCondition(MakeError(MakeUndeletableMemberError(GetDeclaringMemberType(group), delInfo.Name), typeof(void)));
+                    delInfo.Body.FinishCondition(errorSuggestion ?? MakeError(MakeUndeletableMemberError(GetDeclaringMemberType(group), delInfo.Name), typeof(void)));
                 } else {
-                    delInfo.Body.FinishCondition(MakeError(MakeMissingMemberErrorForDelete(type, self, delInfo.Name), typeof(void)));
+                    delInfo.Body.FinishCondition(errorSuggestion ?? MakeError(MakeMissingMemberErrorForDelete(type, self, delInfo.Name), typeof(void)));
                 }
             }
 

@@ -261,7 +261,6 @@ namespace IronRuby.Builtins {
         }
 
         public RubyContext/*!*/ Context {
-            [Emitted]
             get { return _context; }
         }
 

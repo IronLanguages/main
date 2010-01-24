@@ -242,6 +242,7 @@
     <Compile Include="Utils\ExceptionFactory.Generated.cs" />
     <Compile Include="Utils\ExceptionUtils.cs" />
     <Compile Include="Utils\ExpressionUtils.cs" />
+    <Compile Include="Utils\NativeMethods.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReflectionUtils.cs" />
     <Compile Include="Utils\StringUtils.cs" />

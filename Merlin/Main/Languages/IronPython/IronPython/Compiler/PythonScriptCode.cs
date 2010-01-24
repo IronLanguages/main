@@ -161,7 +161,8 @@ namespace IronPython.Compiler {
                     debugProperties // custom payload
                 );
 
-                _tracingTarget = CompileBody((Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>)pc.DebugContext.TransformLambda(Ast.GetLambda(), debugInfo));
+                var lambda = pc.DebugContext.TransformLambda(Ast.GetLambda(), debugInfo);
+                _tracingTarget = CompileBody((Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>)lambda);
                 debugProperties.Code = EnsureFunctionCode(_tracingTarget);
             }
         }

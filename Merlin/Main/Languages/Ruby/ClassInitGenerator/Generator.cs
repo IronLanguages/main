@@ -13,20 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
-using System.CodeDom.Compiler;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using System.Dynamic;
-using System.Dynamic.Utils;
-using System.Text;
-using IronRuby;
-using IronRuby.Builtins;
-using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Utils;
 
 internal class Generator {
     static void Main(string[]/*!*/ args) {
@@ -75,5 +71,14 @@ internal class Generator {
         } else {
             return new KeyValuePair<string, string>(String.Empty, arg);
         }
+    }
+
+    internal static string/*!*/ TypeNameDispenser(Type/*!*/ type) {
+        return
+            type == typeof(MSA.Expression) ||
+            type.FullName.StartsWith(typeof(Action).Namespace + ".Action") ||
+            type.FullName.StartsWith(typeof(Action<>).Namespace + ".Action`") ||
+            type.FullName.StartsWith(typeof(Func<>).Namespace + ".Func`") ?
+            type.Name : type.FullName;
     }
 }

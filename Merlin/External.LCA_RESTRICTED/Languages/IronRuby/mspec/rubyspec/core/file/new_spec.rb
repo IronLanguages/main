@@ -1,25 +1,17 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
+require File.dirname(__FILE__) + '/shared/open'
 
 describe "File.new" do
-  before :all do
+  before :each do
     @file = tmp('test.txt')
+    @fh = nil
     @flags = File::CREAT | File::TRUNC | File::WRONLY
-    File.delete(@file) if File.exist?(@file)
+    touch(@file) 
   end
 
-  before :each do
-    @fh = nil
-    File.open(@file, "w") {} # touch
-  end
-  
   after :each do
-    @fh.close if @fh and not @fh.closed?
-    @fh = nil
-    begin
-      File.delete(@file) if File.exists?(@file)
-    rescue Errno::EACCES
-      File.delete(@file) if File.exists?(@file)
-    end
+    @fh.close if @fh
+    rm_r @file
   end
 
   it "return a new File with mode string" do
@@ -76,8 +68,8 @@ describe "File.new" do
       File.read(@file).should == "test\n"
     end
   end
-  
-  it "return a new File with modus fd " do
+
+  it "returns a new File with modus fd " do
     begin
       @fh_orig = File.new(@file)
       @fh = File.new(@fh_orig.fileno)
@@ -91,7 +83,7 @@ describe "File.new" do
     end
   end
 
-  it "create a new file when use File::EXCL mode " do
+  it "creates a new file when use File::EXCL mode " do
     @fh = File.new(@file, File::EXCL)
     @fh.class.should == File
     File.exists?(@file).should be_true
@@ -103,7 +95,7 @@ describe "File.new" do
     }.should raise_error(Errno::EEXIST)
   end
 
-  it "create a new file when use File::WRONLY|File::APPEND mode" do
+  it "creates a new file when use File::WRONLY|File::APPEND mode" do
     @fh = File.new(@file, File::WRONLY|File::APPEND)
     @fh.class.should == File
     File.exists?(@file).should be_true
@@ -131,8 +123,8 @@ describe "File.new" do
     File.exists?(@file).should be_true
   end
 
-  it "create a new file when use File::WRONLY|File::TRUNC mode" do
-    @fh = File.new(@file, File::WRONLY|File::TRUNC)
+  it "creates a new file when use File::WRONLY|File::TRUNC mode" do
+    @fh = File.new(@file, File::WRONLY|File::TRUNC) 
     @fh.class.should == File
     File.exists?(@file).should be_true
   end
@@ -152,13 +144,18 @@ describe "File.new" do
       File.exists?(@file).should == true
     end
   end
-
-  it  "raises errors with bad inputs" do
-    lambda { File.new(true)  }.should raise_error(TypeError)
+  
+  it "raises a TypeError if the first parameter can't be coerced to a string" do
+    lambda { File.new(true) }.should raise_error(TypeError)
     lambda { File.new(false) }.should raise_error(TypeError)
-    lambda { File.new(nil)   }.should raise_error(TypeError)
+  end
+  
+  it "raises a TypeError if the first parameter is nil" do
+    lambda { File.new(nil) }.should raise_error(TypeError)
+  end
+  
+  it "raises an Errno::EBADF if the first parameter is an invalid file descriptor" do
     lambda { File.new(-1) }.should raise_error(Errno::EBADF)
-    lambda { File.new(@file, File::CREAT, 0755, 'test') }.should raise_error(ArgumentError)
   end
 
   ruby_bug "#1582", "1.9.2" do
@@ -169,4 +166,6 @@ describe "File.new" do
       lambda { File.new(@fh.fileno, @flags) }.should raise_error(Errno::EINVAL)
     end
   end
+  
+  it_behaves_like :open_directory, :new
 end

@@ -1009,6 +1009,119 @@ xrange = xrange
 #endif
         }
 
+        class MyDynamicObject : DynamicObject {
+            public object Last;
+
+            public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result) {
+                result = binder.Operation;
+                return true;
+            }
+
+            public override bool TryUnaryOperation(UnaryOperationBinder binder, out object result) {
+                result = binder.Operation;
+                return true;
+            }
+
+            public override bool TryGetMember(GetMemberBinder binder, out object result) {
+                result = binder.Name;
+                return true;
+            }
+
+            public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result) {
+                result = indexes[0];
+                return true;
+            }
+
+            public override bool TryDeleteMember(DeleteMemberBinder binder) {
+                Last = binder.Name;
+                return true;
+            }
+
+            public override bool TryDeleteIndex(DeleteIndexBinder binder, object[] indexes) {
+                Last = indexes[0];
+                return true;
+            }
+
+            public override bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value) {
+                Last = indexes[0];
+                return true;
+            }
+
+            public override bool TrySetMember(SetMemberBinder binder, object value) {
+                Last = value;
+                return true;
+            }
+
+            public override bool TryInvoke(InvokeBinder binder, object[] args, out object result) {
+                result = binder.CallInfo;
+                return true;
+            }
+
+            public override bool TryConvert(ConvertBinder binder, out object result) {
+                result = 1000;
+                return true;
+            }
+        }
+
+        public void ScenarioDlrInterop_ConsumeDynamicObject() {
+            var scope = _pe.CreateScope();
+            var dynObj = new MyDynamicObject();
+            scope.SetVariable("x", dynObj);
+            _pe.Execute("import clr", scope);
+            var tests = new[] { 
+                new {TestCase = "clr.Convert(x, int)", Result=(object)1000},
+
+                new {TestCase = "x(2,3,4)", Result=(object)new CallInfo(3)},
+                new {TestCase = "x(2,3,4, z = 4)", Result=(object)new CallInfo(4, "z")},
+
+                new {TestCase = "not x", Result=(object)ExpressionType.Not},
+                new {TestCase = "+x", Result=(object)ExpressionType.UnaryPlus},
+                new {TestCase = "-x", Result=(object)ExpressionType.Negate},
+                new {TestCase = "~x", Result=(object)ExpressionType.OnesComplement},
+
+                new {TestCase = "x + 42", Result=(object)ExpressionType.Add},
+                new {TestCase = "x - 42", Result=(object)ExpressionType.Subtract},
+                new {TestCase = "x / 42", Result=(object)ExpressionType.Divide},
+                new {TestCase = "x * 42", Result=(object)ExpressionType.Multiply},
+                new {TestCase = "x % 42", Result=(object)ExpressionType.Modulo},
+                new {TestCase = "x ^ 42", Result=(object)ExpressionType.ExclusiveOr},
+                new {TestCase = "x << 42", Result=(object)ExpressionType.LeftShift},
+                new {TestCase = "x >> 42", Result=(object)ExpressionType.RightShift},
+                new {TestCase = "x | 42", Result=(object)ExpressionType.Or},
+                new {TestCase = "x & 42", Result=(object)ExpressionType.And},
+                new {TestCase = "x ** 42", Result=(object)ExpressionType.Power},
+
+                new {TestCase = "x > 42", Result=(object)ExpressionType.GreaterThan},
+                new {TestCase = "x < 42", Result=(object)ExpressionType.LessThan},
+                new {TestCase = "x >= 42", Result=(object)ExpressionType.GreaterThanOrEqual},
+                new {TestCase = "x <= 42", Result=(object)ExpressionType.LessThanOrEqual},
+                new {TestCase = "x == 42", Result=(object)ExpressionType.Equal},
+                new {TestCase = "x != 42", Result=(object)ExpressionType.NotEqual},
+
+                new {TestCase = "x.abc", Result=(object)"abc"},
+                new {TestCase = "x.foo", Result=(object)"foo"},
+
+                new {TestCase = "x[0]", Result=(object)0},
+                new {TestCase = "x[1]", Result=(object)1},
+
+            };
+            foreach(var test in tests) {
+                AreEqual(test.Result, (object)_pe.Execute(test.TestCase, scope));
+            }
+
+            var tests2 = new[] {
+                new {TestCase = "x.foo = 42", Last=(object)42},
+                new {TestCase = "x[23] = 5", Last=(object)23},
+                new {TestCase = "del x[5]", Last=(object)5},
+                new {TestCase = "del x.abc", Last=(object)"abc"},
+            };
+
+            foreach (var test in tests2) {
+                _pe.Execute(test.TestCase, scope);
+                AreEqual(test.Last, dynObj.Last);
+            }
+        }
+
         private void VerifyFunction(object[] results, string[] names, object value) {
             IList<object> res = (IList<object>)value;
             AreEqual(res.Count, 2);
@@ -1644,12 +1757,20 @@ instOC = TestOC()
 #if !SILVERLIGHT
         public void ScenarioPartialTrust() {
             // basic check of running a host in partial trust
+            
             AppDomainSetup info = new AppDomainSetup();
             info.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
             info.ApplicationName = "Test";
+            
             Evidence evidence = new Evidence();
             evidence.AddHost(new Zone(SecurityZone.Internet));
+
+#if !CLR2
+            System.Security.PermissionSet permSet = SecurityManager.GetStandardSandbox(evidence);
+            AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info, permSet, null);
+#else
             AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info);
+#endif
             
             // create runtime in partial trust...
             ScriptRuntime runtime = Python.CreateRuntime(newDomain);

@@ -88,7 +88,7 @@ namespace IronRuby.Runtime.Calls {
 
         #region Dynamic Sites
 
-        internal override MethodDispatcher GetDispatcher<T>(RubyCallSignature signature, object target, int version) {
+        internal override MethodDispatcher GetDispatcher(Type/*!*/ delegateType, RubyCallSignature signature, object target, int version) {
             if (HasUnsplatParameter || OptionalParamCount > 0) {
                 return null;
             }
@@ -98,7 +98,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             return MethodDispatcher.CreateRubyObjectDispatcher(
-                typeof(T), GetDelegate(), MandatoryParamCount, signature.HasScope, signature.HasBlock, version
+                delegateType, GetDelegate(), MandatoryParamCount, signature.HasScope, signature.HasBlock, version
             );
         }
 

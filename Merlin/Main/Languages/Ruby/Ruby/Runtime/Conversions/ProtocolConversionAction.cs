@@ -258,9 +258,8 @@ namespace IronRuby.Runtime.Conversions {
                 string toMethodName = conversions[i].ToMethodName;
                 MethodInfo validator = conversions[i].ConversionResultValidator;
                 
-                var conversionCallSite = Ast.Dynamic(
+                var conversionCallSite = AstUtils.LightDynamic(
                     RubyCallAction.Make(args.RubyContext, toMethodName, RubyCallSignature.WithImplicitSelf(0)),
-                    typeof(object),
                     args.TargetExpression
                 );
 
@@ -269,9 +268,8 @@ namespace IronRuby.Runtime.Conversions {
 
                     // respond_to?()
                     Methods.IsTrue.OpCall(
-                        Ast.Dynamic(
+                    AstUtils.LightDynamic(
                             RubyCallAction.Make(args.RubyContext, Symbols.RespondTo, RubyCallSignature.WithImplicitSelf(1)),
-                            typeof(object),
                             args.TargetExpression, 
                             AstUtils.Constant(SymbolTable.StringToId(toMethodName))
                         )
@@ -548,9 +546,8 @@ namespace IronRuby.Runtime.Conversions {
                 // that don't implement to_ary - probably a rare case.
                 Methods.ToArrayValidator.OpCall(
                     targetClassNameConstant,
-                    Ast.Dynamic(
+                    AstUtils.LightDynamic(
                         RubyCallAction.Make(args.RubyContext, "to_a", RubyCallSignature.WithImplicitSelf(0)),
-                        typeof(object),
                         args.TargetExpression
                     )
                 );

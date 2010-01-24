@@ -101,13 +101,6 @@ describe "self in an eigenclass body (class << obj)" do
     end
   end
 
-  deviates_on(:rubinius) do 
-    it "is a MetaClass instance" do
-      cls = class << mock('x'); self; end
-      cls.is_a?(MetaClass).should == true
-    end
-
-  end
 end
 
 describe "A constant on an eigenclass" do
@@ -304,5 +297,23 @@ describe "Class methods of an eigenclass" do
     it "includes class methods of the metaclass of Class, for a metaclass" do
       (class << @a_class_eigenclass; self end).should have_method(:example_class_method_of_metaclass)
     end
+  end
+end
+
+describe "Instantiating an eigenclass" do
+  it "raises a TypeError when new is called" do
+    x = Object.new
+    x_eigenclass = class << x; self; end
+    lambda do
+      x_eigenclass.new
+    end.should raise_error(TypeError)
+  end
+
+  it "raises a TypeError when allocate is called" do
+    x = Object.new
+    x_eigenclass = class << x; self; end
+    lambda do
+      x_eigenclass.allocate
+    end.should raise_error(TypeError)
   end
 end

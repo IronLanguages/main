@@ -28,7 +28,7 @@ describe "String#crypt" do
     "hello world".crypt("aabc").should == "aayPz4hyPS1wI"
   end
 
-  platform_is_not :darwin do
+  platform_is_not :darwin,:windows do
     not_compliant_on :jruby do
       it "returns an empty string when the salt starts NULL bytes" do
         "hello".crypt("\x00\x00").should == ""
@@ -50,7 +50,7 @@ describe "String#crypt" do
     end
   end
 
-  platform_is :darwin do
+  platform_is :darwin,:windows do
     not_compliant_on :jruby do
       it "returns '.' prepended to the string for each NULL byte the salt contains" do
         "hello".crypt("\x00\x00").should == "..dR0/E99ehpU"

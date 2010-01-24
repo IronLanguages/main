@@ -14,15 +14,13 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Scripting.Hosting;
-using IronPython.Runtime;
+using System.Security.Permissions;
 using System.Threading;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Hosting.Providers;
+using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Hosting.Providers;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Hosting {
     /// <summary>
@@ -31,7 +29,7 @@ namespace IronPython.Hosting {
     /// This is exposed as a service through PythonEngine and the helper class
     /// uses this service to get the correct remoting semantics.
     /// </summary>
-    internal sealed class PythonService 
+    public sealed class PythonService 
 #if !SILVERLIGHT
         : MarshalByRefObject 
 #endif
@@ -82,6 +80,15 @@ namespace IronPython.Hosting {
             return _clr;
         }
 
+        public ScriptScope/*!*/ CreateModule(string name, string filename, string docString) {
+            var module = new PythonModule();
+            _context.PublishModule(name, module);
+            module.__init__(name, docString);
+            module.__dict__["__file__"] = filename;
+            
+            return HostingHelpers.CreateScriptScope(_engine, module.Scope);
+        }
+
         public ScriptScope/*!*/ ImportModule(ScriptEngine/*!*/ engine, string/*!*/ name) {
             PythonModule module = Importer.ImportModule(_context.SharedClsContext, _context.SharedClsContext.GlobalDict, name, false, -1) as PythonModule;
             if (module != null) {
@@ -92,6 +99,7 @@ namespace IronPython.Hosting {
         }
 
 #if !SILVERLIGHT
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService() {
             // track the engines lifetime
             return _engine.InitializeLifetimeService();

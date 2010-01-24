@@ -22,7 +22,7 @@ describe "UDPSocket.bind" do
     
     port, host = Socket.unpack_sockaddr_in(@socket.getsockname)
     
-    host.should == "127.0.0.1"
+    Socket.getaddrinfo(host, nil)[0][2].should == SocketSpecs.hostname
     port.should == SocketSpecs.port
   end
 

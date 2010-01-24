@@ -1,2 +1,1 @@
-fails:Zlib::GzipWriter#flush raises BufError if called multiple times without writing data
 fails:Zlib::GzipWriter#flush Zlib::FINISH closes the writer

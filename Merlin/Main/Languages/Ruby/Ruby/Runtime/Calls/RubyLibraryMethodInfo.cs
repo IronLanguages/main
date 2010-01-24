@@ -102,7 +102,7 @@ namespace IronRuby.Runtime.Calls {
             return new RubyLibraryMethodInfo(this, methods);
         }
 
-        internal override MethodDispatcher GetDispatcher<T>(RubyCallSignature signature, object target, int version) {
+        internal override MethodDispatcher GetDispatcher(Type/*!*/ delegateType, RubyCallSignature signature, object target, int version) {
             if (!(target is IRubyObject)) {
                 return null;
             }
@@ -113,7 +113,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             return MethodDispatcher.CreateRubyObjectDispatcher(
-                typeof(T), new Func<object, Proc, object, object>(EmptyRubyMethodStub1), arity, signature.HasScope, signature.HasBlock, version
+                delegateType, new Func<object, Proc, object, object>(EmptyRubyMethodStub1), arity, signature.HasScope, signature.HasBlock, version
             );
         }
 

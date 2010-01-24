@@ -56,7 +56,7 @@ namespace IronPython.Runtime.Binding {
             }
             finalArgs[finalArgs.Length - 1] = value;
 
-            return PythonProtocol.Index(this, PythonIndexType.SetItem, finalArgs);
+            return PythonProtocol.Index(this, PythonIndexType.SetItem, finalArgs, errorSuggestion);
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {

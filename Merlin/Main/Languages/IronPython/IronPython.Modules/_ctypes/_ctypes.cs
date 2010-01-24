@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -24,7 +25,6 @@ using System.Security;
 using System.Security.Permissions;
 using System.Threading;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
@@ -167,7 +167,7 @@ namespace IronPython.Modules {
         }
 
         public static string FormatError(int errorCode) {
-            throw new NotImplementedException("FormatError");
+            return new Win32Exception(errorCode).Message;
         }
 
         public static void FreeLibrary(int handle) {

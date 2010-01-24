@@ -1,1 +1,0 @@
-fails:Array#to_s returns '[...]' for an empty array embedded in itself

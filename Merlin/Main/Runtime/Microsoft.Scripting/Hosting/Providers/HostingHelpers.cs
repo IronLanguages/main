@@ -84,7 +84,8 @@ namespace Microsoft.Scripting.Hosting.Providers {
         /// <summary>
         /// Performs a callback in the ScriptEngine's app domain and returns the result.
         /// </summary>
-        public static TRet CallEngine<T, TRet>(ScriptEngine engine, Func<LanguageContext, T, TRet> f, T arg) {
+        [Obsolete("You should implement a service via LanguageContext and call ScriptEngine.GetService")]
+        public static TRet CallEngine<T, TRet>(ScriptEngine engine, Func<LanguageContext, T, TRet> f, T arg) {            
             return engine.Call(f, arg);
         }
     }

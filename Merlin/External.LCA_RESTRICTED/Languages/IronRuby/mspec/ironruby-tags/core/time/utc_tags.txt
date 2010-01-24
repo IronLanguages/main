@@ -1,2 +1,2 @@
-fails:Time.utc raises an ArgumentError for out of range values
 fails:Time.utc should accept various year ranges
+fails:Time.utc raises an ArgumentError for out of range values

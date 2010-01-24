@@ -3,9 +3,6 @@ require File.dirname(__FILE__) + '/../../fixtures/enumerator/classes'
 require 'enumerator'
 
 describe "Enumerator#each_slice" do
-  before(:each) do
-    ScratchPad.record []
-  end
   it "iterates the block for each slice of n elements" do
     a = []
     EnumSpecs::Numerous.new.each_slice(3) { |e| a << e }

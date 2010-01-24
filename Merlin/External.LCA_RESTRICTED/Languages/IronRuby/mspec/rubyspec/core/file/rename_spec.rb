@@ -2,28 +2,20 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "File.rename" do
   before :each do
-    @old = "test.txt"
-    @new = "test.new"
-    @dir = "test.dir"
-    @new_dir = "test.new_dir"
-    
-    File.delete(@old) if File.exist?(@old)
-    File.delete(@new) if File.exist?(@new)
-    FileUtils.rm_rf(@dir) if File.exist?(@dir)
-    FileUtils.rm_rf(@new_dir) if File.exist?(@new_dir)
+    @old = tmp("file_rename.txt")
+    @new = tmp("file_rename.new")
 
-    File.open(@old,"w+") {|f| f.puts "hello" }
-    FileUtils.mkdir(@dir)
+    rm_r @new
+    touch(@old) { |f| f.puts "hello" }
   end
 
   after :each do
-    File.delete(@old) if File.exist?(@old)
-    File.delete(@new) if File.exist?(@new)
-    FileUtils.rm_rf(@dir) if File.exist?(@dir)
-    FileUtils.rm_rf(@new_dir) if File.exist?(@new_dir)
+    rm_r @old, @new
   end
 
   it "renames a file " do
+    File.exists?(@old).should == true
+    File.exists?(@new).should == false
     File.rename(@old, @new)
     File.exists?(@old).should == false
     File.exists?(@new).should == true
@@ -36,7 +28,7 @@ describe "File.rename" do
   end
   
   it "raises an Errno::ENOENT if the source does not exist" do
-    File.delete(@old)
+    rm_r @old
     lambda { File.rename(@old, @new) }.should raise_error(Errno::ENOENT)
   end
 

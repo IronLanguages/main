@@ -57,9 +57,9 @@ describe "The private keyword" do
   end
 
   it "changes visibility of previously called method" do
-    f = Private::F.new
+    f = ::Private::F.new
     f.foo
-    module Private
+    module ::Private
       class F
         private :foo
       end
@@ -68,11 +68,11 @@ describe "The private keyword" do
   end
 
   it "changes visiblity of previously called methods with same send/call site" do
-    g = Private::G.new
+    g = ::Private::G.new
     lambda {
       2.times do
         g.foo
-        module Private
+        module ::Private
           class G
             private :foo
           end
@@ -82,9 +82,9 @@ describe "The private keyword" do
   end
   
   it "changes the visibility of the existing method in the subclass" do
-    Private::A.new.foo.should == 'foo'
-    lambda {Private::H.new.foo}.should raise_error(NoMethodError) 
-    Private::H.new.send(:foo).should == 'foo'
+    ::Private::A.new.foo.should == 'foo'
+    lambda {::Private::H.new.foo}.should raise_error(NoMethodError) 
+    ::Private::H.new.send(:foo).should == 'foo'
   end
 
   it "is overwritten by subclasses" do

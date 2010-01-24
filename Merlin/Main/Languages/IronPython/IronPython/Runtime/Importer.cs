@@ -660,13 +660,7 @@ namespace IronPython.Runtime {
                 return pc.ClrModule;
             }
 
-            PythonModule mod = pc.CreateBuiltinModule(name);
-            if (mod != null) {
-                pc.PublishModule(name, mod);
-                return mod;
-            }
-
-            return null;
+            return pc.GetBuiltinModule(name);
         }
 
         private static object ImportReflected(CodeContext/*!*/ context, string/*!*/ name) {
@@ -902,7 +896,7 @@ namespace IronPython.Runtime {
 
             try {
                 string file = Path.GetFileName(path);
-                string[] files = isDir ? pal.GetDirectories(dir, file) : pal.GetFiles(dir, file);
+                string[] files = pal.GetFileSystemEntries(dir, file, !isDir, isDir);
 
                 if (files.Length != 1 || Path.GetFileName(files[0]) != file) {
                     return null;

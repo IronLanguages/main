@@ -182,9 +182,8 @@ namespace IronRuby.Builtins {
 
                 RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
                 if (!metaBuilder.Error) {
-                    metaBuilder.Result = Ast.Call(
+                    metaBuilder.Result = Methods.RubyStruct_GetValue.OpCall(
                         Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
-                        Methods.RubyStruct_GetValue,
                         AstUtils.Constant(index)
                     );
                 }
@@ -196,9 +195,8 @@ namespace IronRuby.Builtins {
 
                 var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 1, 1);
                 if (!metaBuilder.Error) {
-                    metaBuilder.Result = Ast.Call(
+                    metaBuilder.Result = Methods.RubyStruct_SetValue.OpCall(
                         Ast.Convert(args.TargetExpression, typeof(RubyStruct)),
-                        Methods.RubyStruct_SetValue,
                         AstUtils.Constant(index),
                         AstUtils.Box(actualArgs[0].Expression)
                     );
@@ -243,13 +241,13 @@ namespace IronRuby.Builtins {
         #region Emitted Helpers
 
         [Emitted] 
-        public object GetValue(int index) {
-            return _data[index];
+        public static object GetValue(RubyStruct/*!*/ self, int index) {
+            return self._data[index];
         }
 
-        [Emitted] 
-        public object SetValue(int index, object value) {
-            return _data[index] = value;
+        [Emitted]
+        public static object SetValue(RubyStruct/*!*/ self, int index, object value) {
+            return self._data[index] = value;
         }
 
         #endregion

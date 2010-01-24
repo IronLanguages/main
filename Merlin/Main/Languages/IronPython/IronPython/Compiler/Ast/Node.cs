@@ -216,7 +216,7 @@ namespace IronPython.Compiler.Ast {
                     (rde != null && rde.Binder is PythonBinaryOperationBinder)) {
                     // create a combo site which does the conversion
                     PythonBinaryOperationBinder binder;
-                    MSAst.Expression[] args;
+                    IList<MSAst.Expression> args;
                     if (ae != null) {
                         binder = (PythonBinaryOperationBinder)ae.Binder;
                         args = ArrayUtils.ToArray(ae.Arguments);
@@ -225,7 +225,7 @@ namespace IronPython.Compiler.Ast {
                         args = rde.Args;
                     }
 
-                    ParameterMappingInfo[] infos = new ParameterMappingInfo[args.Length];
+                    ParameterMappingInfo[] infos = new ParameterMappingInfo[args.Count];
                     for (int i = 0; i < infos.Length; i++) {
                         infos[i] = ParameterMappingInfo.Parameter(i);
                     }

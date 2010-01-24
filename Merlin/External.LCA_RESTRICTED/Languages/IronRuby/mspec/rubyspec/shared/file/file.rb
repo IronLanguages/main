@@ -11,19 +11,24 @@ describe :file_file, :shared => true do
     end
 
     @file = tmp("test.txt")
-    File.open(@file, "w"){} # touch
+    touch @file
   end
 
   after :each do
-    File.delete(@file) rescue nil
-    @null = nil
-    @file = nil
+    rm_r @file
   end
 
   it "returns true if the named file exists and is a regular file." do
     @object.send(@method, @file).should == true
     @object.send(@method, @dir).should == false
   end
+
+  ruby_version_is "1.9" do
+    it "accepts an object that has a #to_path method" do
+    @object.send(@method, mock_to_path(@file)).should == true
+    end
+  end
+
 
   platform_is_not :windows do
     it "return true if the null device exists and is a regular file." do

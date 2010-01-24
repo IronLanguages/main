@@ -20,6 +20,12 @@ describe :file_directory, :shared => true do
     @object.send(@method, @file).should == false
   end
 
+  ruby_version_is "1.9" do
+    it "accepts an object that has a #to_path method" do
+      @object.send(@method, mock_to_path(@dir)).should == true
+    end
+  end
+
   it "raises an ArgumentError if not passed one argument" do
     lambda { @object.send(@method)              }.should raise_error(ArgumentError)
     lambda { @object.send(@method, @dir, @file) }.should raise_error(ArgumentError)

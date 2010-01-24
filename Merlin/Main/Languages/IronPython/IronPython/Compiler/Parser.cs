@@ -1122,14 +1122,17 @@ namespace IronPython.Compiler {
             int grouping = _tokenizer.GroupingLevel;
 
             Parameter[] parameters = ParseVarArgsList(TokenKind.RightParenthesis);
+            FunctionDefinition ret;
             if (parameters == null) {
                 // error in parameters
-                return new FunctionDefinition(name, new Parameter[0]);
+                ret = new FunctionDefinition(name, new Parameter[0]);
+                ret.SetLoc(start, lEnd);
+                return ret;
             }
-
+            
             SourceLocation rStart = GetStart(), rEnd = GetEnd();
 
-            FunctionDefinition ret = new FunctionDefinition(name, parameters);
+            ret = new FunctionDefinition(name, parameters);
             PushFunction(ret);
 
 

@@ -51,7 +51,7 @@ namespace IronPython.Runtime.Binding {
             _signature = signature;
         }
 
-        #region MetaAction overrides
+        #region DynamicMetaObjectBinder overrides
 
         /// <summary>
         /// Python's Invoke is a non-standard action.  Here we first try to bind through a Python
@@ -274,7 +274,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
             
-            callInfo = new CallInfo(metaArgs.Count, namedArgNames.ToArray());
+            callInfo = new CallInfo(metaArgs.Count - 1, namedArgNames.ToArray());
 
             test = splatArgTest;
             if (splatKwArgTest != null) {

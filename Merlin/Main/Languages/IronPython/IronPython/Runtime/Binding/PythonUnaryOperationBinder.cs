@@ -42,7 +42,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
-            return PythonProtocol.Operation(this, target);
+            return PythonProtocol.Operation(this, target, errorSuggestion);
         }
 
         public override int GetHashCode() {
@@ -92,7 +92,34 @@ namespace IronPython.Runtime.Binding {
                         if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, bool>(IntIsFalse);
                         }
-                    } 
+                    }
+                    break;
+                case ExpressionType.Not:
+                    if (args[0] == null) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(NoneNot);
+                        }
+                    } else if (args[0].GetType() == typeof(string)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(StringNot);
+                        }
+                    } else if (args[0].GetType() == typeof(bool)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(BoolNot);
+                        }
+                    } else if (args[0].GetType() == typeof(List)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(ListNot);
+                        }
+                    } else if (args[0].GetType() == typeof(PythonTuple)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(TupleNot);
+                        }
+                    } else if (args[0].GetType() == typeof(int)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(IntNot);
+                        }
+                    }
                     break;
             }
 
@@ -170,7 +197,71 @@ namespace IronPython.Runtime.Binding {
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
         }
-        
+
+        private object StringNot(CallSite site, object value) {
+            string strVal = value as string;
+            if (strVal != null) {
+                return strVal.Length == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on str & None
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object ListNot(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(List)) {
+                return ((List)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on list & None
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object NoneNot(CallSite site, object value) {
+            if (value == null) {
+                return ScriptingRuntimeHelpers.True;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object TupleNot(CallSite site, object value) {
+            if (value != null && value.GetType() == typeof(PythonTuple)) {
+                return ((PythonTuple)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on tuple & None
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object BoolNot(CallSite site, object value) {
+            if (value is bool) {
+                return !(bool)value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on bool & None
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
+        private object IntNot(CallSite site, object value) {
+            if (value is int) {
+                return (int)value == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on int & None
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
+
         public PythonContext/*!*/ Context {
             get {
                 return _context;

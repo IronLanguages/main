@@ -48,19 +48,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            MSAst.Expression res;
-            if (Op == PythonOperator.Not) {
-                res = GlobalParent.Operation(typeof(object), PythonOperationKind.NotRetObject, _expression);
-            } else {
-                res = GlobalParent.Operation(
-                    typeof(object),
-                    PythonOperatorToOperatorString(_op),
-                    _expression
-                );
-
-            }
-
-            return res;
+            return GlobalParent.Operation(
+                typeof(object),
+                PythonOperatorToOperatorString(_op),
+                _expression
+            );
         }
 
         public override void Walk(PythonWalker walker) {

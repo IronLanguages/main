@@ -561,6 +561,7 @@ namespace IronRuby.Builtins {
         /// Returns a copy of the content in a form of an read-only string.
         /// The internal representation of the MutableString is preserved.
         /// </summary>
+        /// <exception cref="DecoderFallbackException">Invalid characters present.</exception>
         public override string/*!*/ ToString() {
             return _content.ToString();
         }
@@ -1735,9 +1736,16 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        /// <summary>
+        /// Returns a copy of the content in a form of a read-only UTF16 string with escaped invalid characters.
+        /// </summary>
+        public string/*!*/ ToStringWithEscapedInvalidCharacters(RubyEncoding/*!*/ encoding) {
+            ContractUtils.RequiresNotNull(encoding, "encoding");
+            return AppendRepresentation(new StringBuilder(), encoding, false, false, -1).ToString();
+        }
+
         public StringBuilder/*!*/ AppendRepresentation(StringBuilder/*!*/ result, RubyEncoding forceEncoding, bool octalEscapes, bool forceEscapes, int quote) {
             ContractUtils.RequiresNotNull(result, "result");
-            ContractUtils.Requires(forceEncoding == null || forceEncoding.IsKCoding || forceEncoding == RubyEncoding.Binary);
 
             RubyEncoding encoding = forceEncoding ?? _encoding;
 

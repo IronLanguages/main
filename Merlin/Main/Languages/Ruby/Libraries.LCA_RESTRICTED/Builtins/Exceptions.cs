@@ -89,7 +89,7 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static SystemExit/*!*/ Factory(RubyClass/*!*/ self, [Optional]int status, [DefaultParameterValue(null)]object message) {
-            SystemExit result = new SystemExit(status, RubyExceptionData.GetClrMessage(message, "SystemExit"));
+            SystemExit result = new SystemExit(status, RubyExceptionData.GetClrMessage(self, message ?? "SystemExit"));
             RubyExceptionData.InitializeException(result, message);
             return result;
         }

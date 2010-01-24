@@ -33,7 +33,7 @@ class MSpecScript
     "command_line"
     ]
   set :lib1, filtered("library", "[a-o]").reject {|el| el =~ /basicobject/ }
-  set :lib2, filtered("library", "[p-z]")
+  set :lib2, filtered("library", "[p-z]").reject {|el| el =~ /prime/}
   #.NET interop
   set :netinterop, [
     "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\net"

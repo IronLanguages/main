@@ -10,6 +10,15 @@ describe :dir_open, :shared => true do
       Dir.send @method, DirSpecs.nonexistent
     end.should raise_error(SystemCallError)
   end
+
+  ruby_version_is "1.9" do
+    it "calls #to_path on non-String arguments" do
+      p = mock('path')
+      p.should_receive(:to_path).and_return(DirSpecs.mock_dir)
+      Dir.send(@method, p) { true }
+    end
+  end
+
 end
 
 describe :dir_open_with_block, :shared => true do

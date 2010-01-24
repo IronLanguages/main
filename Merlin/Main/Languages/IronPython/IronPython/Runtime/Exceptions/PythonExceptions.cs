@@ -21,6 +21,7 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
@@ -1027,6 +1028,17 @@ for k, v in toError.iteritems():
             if (clrException is InvalidCastException || clrException is ArgumentNullException) {
                 // explicit extra conversions outside the generated hierarchy
                 pyExcep = new BaseException(TypeError);
+#if !SILVERLIGHT
+            } else if (clrException is Win32Exception) {
+                Win32Exception win32 = (Win32Exception)clrException;
+                pyExcep = new _WindowsError();
+                if ((win32.ErrorCode & 0x80070000) == 0x80070000) {
+                    pyExcep.__init__(win32.ErrorCode & 0xffff, win32.Message);
+                } else {
+                    pyExcep.__init__(win32.ErrorCode, win32.Message);
+                }
+                return pyExcep;
+#endif
             } else {
                 // conversions from generated code (in the generated hierarchy)...
                 pyExcep = ToPythonHelper(clrException);

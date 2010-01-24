@@ -1072,6 +1072,10 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.RubyFile, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyFileOps.GetPath)
             );
             
+            DefineLibraryMethod(module, "stat", 0x51, 
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyFile, System.IO.FileSystemInfo>(IronRuby.Builtins.RubyFileOps.Stat)
+            );
+            
             #if !SILVERLIGHT
             DefineLibraryMethod(module, "truncate", 0x51, 
                 new Func<IronRuby.Builtins.RubyFile, System.Int32, System.Int32>(IronRuby.Builtins.RubyFileOps.Truncate)
@@ -3028,10 +3032,10 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "puts", 0x52, 
+                new Action<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PutString), 
                 new Action<IronRuby.Runtime.BinaryOpStorage, System.Object>(IronRuby.Builtins.KernelOps.PutsEmptyLine), 
                 new Action<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.Object, System.Object>(IronRuby.Builtins.KernelOps.PutString), 
-                new Action<IronRuby.Runtime.BinaryOpStorage, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.PutString), 
-                new Action<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PutString)
+                new Action<IronRuby.Runtime.BinaryOpStorage, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.PutString)
             );
             
             DefineLibraryMethod(module, "raise", 0x52, 
@@ -3331,10 +3335,10 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "puts", 0x61, 
+                new Action<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PutString), 
                 new Action<IronRuby.Runtime.BinaryOpStorage, System.Object>(IronRuby.Builtins.KernelOps.PutsEmptyLine), 
                 new Action<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.Object, System.Object>(IronRuby.Builtins.KernelOps.PutString), 
-                new Action<IronRuby.Runtime.BinaryOpStorage, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.PutString), 
-                new Action<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.Object, System.Object[]>(IronRuby.Builtins.KernelOps.PutString)
+                new Action<IronRuby.Runtime.BinaryOpStorage, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.PutString)
             );
             
             DefineLibraryMethod(module, "raise", 0x61, 
@@ -5602,8 +5606,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "join", 0x51, 
-                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join), 
-                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join)
+                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join), 
+                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join)
             );
             
             DefineLibraryMethod(module, "last", 0x51, 
@@ -8803,11 +8807,35 @@ namespace IronRuby.StandardLibrary.Iconv {
     public sealed class IconvLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
         protected override void LoadModules() {
             IronRuby.Builtins.RubyClass classRef0 = GetClass(typeof(System.Object));
+            IronRuby.Builtins.RubyClass classRef1 = GetClass(typeof(IronRuby.Builtins.RuntimeError));
+            IronRuby.Builtins.RubyClass classRef2 = GetClass(typeof(System.ArgumentException));
             
             
-            DefineGlobalClass("Iconv", typeof(IronRuby.StandardLibrary.Iconv.Iconv), 0x00000008, classRef0, LoadIconv_Instance, LoadIconv_Class, null, IronRuby.Builtins.RubyModule.EmptyArray, 
+            IronRuby.Builtins.RubyClass def1 = DefineGlobalClass("Iconv", typeof(IronRuby.StandardLibrary.Iconv.Iconv), 0x00000008, classRef0, LoadIconv_Instance, LoadIconv_Class, null, IronRuby.Builtins.RubyModule.EmptyArray, 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.StandardLibrary.Iconv.Iconv>(IronRuby.StandardLibrary.Iconv.Iconv.Create)
             );
+            IronRuby.Builtins.RubyModule def3 = DefineModule("Iconv::Failure", typeof(IronRuby.StandardLibrary.Iconv.Iconv.Failure), 0x00000008, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyClass def2 = DefineClass("Iconv::BrokenLibrary", typeof(IronRuby.StandardLibrary.Iconv.Iconv.BrokenLibrary), 0x00000008, classRef1, null, null, null, new IronRuby.Builtins.RubyModule[] {def3}, 
+                new Func<IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Object, IronRuby.StandardLibrary.Iconv.Iconv.BrokenLibrary>(IronRuby.StandardLibrary.Iconv.Iconv.BrokenLibrary.Factory)
+            );
+            IronRuby.Builtins.RubyClass def4 = DefineClass("Iconv::IllegalSequence", typeof(IronRuby.StandardLibrary.Iconv.Iconv.IllegalSequence), 0x00000008, classRef2, null, null, null, new IronRuby.Builtins.RubyModule[] {def3}, 
+                new Func<IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Object, IronRuby.StandardLibrary.Iconv.Iconv.IllegalSequence>(IronRuby.StandardLibrary.Iconv.Iconv.IllegalSequence.Factory)
+            );
+            IronRuby.Builtins.RubyClass def5 = DefineClass("Iconv::InvalidCharacter", typeof(IronRuby.StandardLibrary.Iconv.Iconv.InvalidCharacter), 0x00000008, classRef2, null, null, null, new IronRuby.Builtins.RubyModule[] {def3}, 
+                new Func<IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Object, IronRuby.StandardLibrary.Iconv.Iconv.InvalidCharacter>(IronRuby.StandardLibrary.Iconv.Iconv.InvalidCharacter.Factory)
+            );
+            IronRuby.Builtins.RubyClass def6 = DefineClass("Iconv::InvalidEncoding", typeof(IronRuby.StandardLibrary.Iconv.Iconv.InvalidEncoding), 0x00000008, classRef2, null, null, null, new IronRuby.Builtins.RubyModule[] {def3}, 
+                new Func<IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Object, IronRuby.StandardLibrary.Iconv.Iconv.InvalidEncoding>(IronRuby.StandardLibrary.Iconv.Iconv.InvalidEncoding.Factory)
+            );
+            IronRuby.Builtins.RubyClass def7 = DefineClass("Iconv::OutOfRange", typeof(IronRuby.StandardLibrary.Iconv.Iconv.OutOfRange), 0x00000008, classRef1, null, null, null, new IronRuby.Builtins.RubyModule[] {def3}, 
+                new Func<IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Object, IronRuby.StandardLibrary.Iconv.Iconv.OutOfRange>(IronRuby.StandardLibrary.Iconv.Iconv.OutOfRange.Factory)
+            );
+            SetConstant(def1, "Failure", def3);
+            SetConstant(def1, "BrokenLibrary", def2);
+            SetConstant(def1, "IllegalSequence", def4);
+            SetConstant(def1, "InvalidCharacter", def5);
+            SetConstant(def1, "InvalidEncoding", def6);
+            SetConstant(def1, "OutOfRange", def7);
         }
         
         private static void LoadIconv_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
@@ -8843,6 +8871,26 @@ namespace IronRuby.StandardLibrary.Iconv {
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Iconv.Iconv.Open)
             );
             
+        }
+        
+        public static System.Exception/*!*/ ExceptionFactory__Iconv__BrokenLibrary(IronRuby.Builtins.RubyClass/*!*/ self, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)]object message) {
+            return IronRuby.Runtime.RubyExceptionData.InitializeException(new IronRuby.StandardLibrary.Iconv.Iconv.BrokenLibrary(IronRuby.Runtime.RubyExceptionData.GetClrMessage(self, message), (System.Exception)null), message);
+        }
+        
+        public static System.Exception/*!*/ ExceptionFactory__Iconv__IllegalSequence(IronRuby.Builtins.RubyClass/*!*/ self, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)]object message) {
+            return IronRuby.Runtime.RubyExceptionData.InitializeException(new IronRuby.StandardLibrary.Iconv.Iconv.IllegalSequence(IronRuby.Runtime.RubyExceptionData.GetClrMessage(self, message), (System.Exception)null), message);
+        }
+        
+        public static System.Exception/*!*/ ExceptionFactory__Iconv__InvalidCharacter(IronRuby.Builtins.RubyClass/*!*/ self, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)]object message) {
+            return IronRuby.Runtime.RubyExceptionData.InitializeException(new IronRuby.StandardLibrary.Iconv.Iconv.InvalidCharacter(IronRuby.Runtime.RubyExceptionData.GetClrMessage(self, message), (System.Exception)null), message);
+        }
+        
+        public static System.Exception/*!*/ ExceptionFactory__Iconv__InvalidEncoding(IronRuby.Builtins.RubyClass/*!*/ self, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)]object message) {
+            return IronRuby.Runtime.RubyExceptionData.InitializeException(new IronRuby.StandardLibrary.Iconv.Iconv.InvalidEncoding(IronRuby.Runtime.RubyExceptionData.GetClrMessage(self, message), (System.Exception)null), message);
+        }
+        
+        public static System.Exception/*!*/ ExceptionFactory__Iconv__OutOfRange(IronRuby.Builtins.RubyClass/*!*/ self, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)]object message) {
+            return IronRuby.Runtime.RubyExceptionData.InitializeException(new IronRuby.StandardLibrary.Iconv.Iconv.OutOfRange(IronRuby.Runtime.RubyExceptionData.GetClrMessage(self, message), (System.Exception)null), message);
         }
         
     }

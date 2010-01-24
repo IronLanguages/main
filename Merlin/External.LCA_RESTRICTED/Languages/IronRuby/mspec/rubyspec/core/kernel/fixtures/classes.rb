@@ -52,6 +52,9 @@ module KernelSpecs
 
     private
     def private_method; :private_method; end
+
+    public
+    define_method(:defined_method) { :defined }
   end
 
   class Binding
@@ -225,6 +228,18 @@ module KernelSpecs
     include InstEval
   end
 
+  class InstEvalConst
+    INST_EVAL_CONST_X = 2
+  end
+
+  module InstEvalOuter
+    module Inner
+      obj = InstEvalConst.new
+      X_BY_STR = obj.instance_eval("INST_EVAL_CONST_X") rescue nil
+      X_BY_BLOCK = obj.instance_eval { INST_EVAL_CONST_X } rescue nil
+    end
+  end
+
   class EvalTest
     def self.eval_yield_with_binding
       eval("yield", binding)
@@ -265,6 +280,7 @@ module KernelSpecs
     include ParentMixin
     def parent_method; end
     def another_parent_method; end
+    def self.parent_class_method; :foo; end
   end
 
   class Child < Parent
@@ -278,6 +294,58 @@ module KernelSpecs
 
   class Grandchild < Child
     undef_method :parent_mixin_method
+  end
+
+  # for testing lambda
+  class Lambda
+    def outer(meth)
+      inner(meth)
+    end
+
+    def mp(&b); b; end
+
+    def inner(meth)
+      b = mp { return :good }
+
+      pr = send(meth) { |x| x.call }
+
+      pr.call(b)
+
+      # We shouldn't be here, b should have unwinded through
+      return :bad
+    end
+  end
+
+  class RespondViaMissing
+    def respond_to_missing?(method, priv=false)
+      case method
+        when :handled_publicly
+          true
+        when :handled_privately
+          priv
+        when :not_handled
+          false
+        else
+          raise "Typo in method name"
+      end
+    end
+
+    def method_missing(method, *args)
+      "Done #{method}(#{args})"
+    end
+  end
+end
+
+class EvalSpecs
+  class A
+    eval "class B; end"
+    def c
+      eval "class C; end"
+    end
+  end
+
+  def f
+    yield
   end
 end
 

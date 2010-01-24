@@ -2009,7 +2009,7 @@ public partial class Parser
       // stmt -> UppercaseBegin @1 '{' compstmt '}' 
 #line 211 "Parser.y"
 			{
-                yyval.Expression = AddInitializer(new Initializer(CurrentScope, GetValue(2).Statements, yyloc));
+                yyval.Expression = AddInitializer(new FileInitializerStatement(CurrentScope, GetValue(2).Statements, yyloc));
                 LeaveScope();
             }
   }
@@ -2020,19 +2020,20 @@ public partial class Parser
 #line 216 "Parser.y"
 			{
                 if (InMethod) {
-                    _tokenizer.ReportError(Errors.FileFinalizerInMethod);
+                    _tokenizer.ReportWarning(Errors.FileFinalizerInMethod);
                 }
                 
-                EnterTopScope();
+                // END block behaves like a block definition (allows variable closures, super, etc):
+                EnterNestedScope();
             }
   }
 
   private void _13()
   {
       // stmt -> UppercaseEnd @2 '{' compstmt '}' 
-#line 224 "Parser.y"
+#line 225 "Parser.y"
 			{                    
-                yyval.Expression = new Finalizer(CurrentScope, GetValue(2).Statements, yyloc);
+                yyval.Expression = new ShutdownHandlerStatement(CurrentScope, GetValue(2).Statements, yyloc);
                 LeaveScope();
             }
   }
@@ -2040,7 +2041,7 @@ public partial class Parser
   private void _14()
   {
       // stmt -> match_reference Assignment command_call 
-#line 229 "Parser.y"
+#line 230 "Parser.y"
 			{
                 MatchReferenceReadOnlyError(GetValue(3).RegexMatchReference);
                 yyval.Expression = new ErrorExpression(yyloc);
@@ -2050,7 +2051,7 @@ public partial class Parser
   private void _15()
   {
       // stmt -> jump_statement 
-#line 234 "Parser.y"
+#line 235 "Parser.y"
 			{
                 yyval.Expression = GetValue(1).JumpStatement;
             }
@@ -2059,7 +2060,7 @@ public partial class Parser
   private void _16()
   {
       // stmt -> conditional_statement 
-#line 238 "Parser.y"
+#line 239 "Parser.y"
 			{
                 yyval.Expression = GetValue(1).Expression;
             }
@@ -2068,7 +2069,7 @@ public partial class Parser
   private void _17()
   {
       // stmt -> expression_statement 
-#line 242 "Parser.y"
+#line 243 "Parser.y"
 			{
                 yyval.Expression = GetValue(1).Expression;
             }
@@ -2077,7 +2078,7 @@ public partial class Parser
   private void _18()
   {
       // @3 -> 
-#line 249 "Parser.y"
+#line 250 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_FNAME);
         }
@@ -2086,7 +2087,7 @@ public partial class Parser
   private void _19()
   {
       // alias_statement -> Alias method_name_or_symbol @3 method_name_or_symbol 
-#line 253 "Parser.y"
+#line 254 "Parser.y"
 			{
             yyval.Expression = new AliasStatement(true, GetValue(3).String, GetValue(1).String, yyloc);
         }
@@ -2095,7 +2096,7 @@ public partial class Parser
   private void _20()
   {
       // alias_statement -> Alias GlobalVariable GlobalVariable 
-#line 257 "Parser.y"
+#line 258 "Parser.y"
 			{
             yyval.Expression = MakeGlobalAlias(GetValue(2).String, GetValue(1).String, yyloc);
         }
@@ -2104,7 +2105,7 @@ public partial class Parser
   private void _21()
   {
       // alias_statement -> Alias GlobalVariable match_reference 
-#line 261 "Parser.y"
+#line 262 "Parser.y"
 			{
             yyval.Expression = MakeGlobalAlias(GetValue(2).String, GetValue(1).RegexMatchReference, yyloc);
         }
@@ -2113,7 +2114,7 @@ public partial class Parser
   private void _22()
   {
       // jump_statement -> jump_statement_with_parameters 
-#line 268 "Parser.y"
+#line 269 "Parser.y"
 			{
             yyval.JumpStatement = GetValue(1).JumpStatement;
         }
@@ -2122,7 +2123,7 @@ public partial class Parser
   private void _23()
   {
       // jump_statement -> jump_statement_parameterless 
-#line 272 "Parser.y"
+#line 273 "Parser.y"
 			{
             yyval.JumpStatement = GetValue(1).JumpStatement;
         }
@@ -2131,7 +2132,7 @@ public partial class Parser
   private void _24()
   {
       // jump_statement_with_parameters -> Return open_args 
-#line 279 "Parser.y"
+#line 280 "Parser.y"
 			{
             yyval.JumpStatement = new ReturnStatement(RequireNoBlockArg(GetValue(1)), yyloc);
         }
@@ -2140,7 +2141,7 @@ public partial class Parser
   private void _25()
   {
       // jump_statement_with_parameters -> Break open_args 
-#line 283 "Parser.y"
+#line 284 "Parser.y"
 			{
             yyval.JumpStatement = new BreakStatement(RequireNoBlockArg(GetValue(1)), yyloc);
         }
@@ -2149,7 +2150,7 @@ public partial class Parser
   private void _26()
   {
       // jump_statement_with_parameters -> Next open_args 
-#line 287 "Parser.y"
+#line 288 "Parser.y"
 			{
             yyval.JumpStatement = new NextStatement(RequireNoBlockArg(GetValue(1)), yyloc);
         }
@@ -2158,7 +2159,7 @@ public partial class Parser
   private void _27()
   {
       // jump_statement_parameterless -> Return 
-#line 294 "Parser.y"
+#line 295 "Parser.y"
 			{
             yyval.JumpStatement = new ReturnStatement(null, yyloc);
         }
@@ -2167,7 +2168,7 @@ public partial class Parser
   private void _28()
   {
       // jump_statement_parameterless -> Break 
-#line 298 "Parser.y"
+#line 299 "Parser.y"
 			{
             yyval.JumpStatement = new BreakStatement(null, yyloc);
         }
@@ -2176,7 +2177,7 @@ public partial class Parser
   private void _29()
   {
       // jump_statement_parameterless -> Next 
-#line 302 "Parser.y"
+#line 303 "Parser.y"
 			{
             yyval.JumpStatement = new NextStatement(null, yyloc);
         }
@@ -2185,7 +2186,7 @@ public partial class Parser
   private void _30()
   {
       // jump_statement_parameterless -> Redo 
-#line 306 "Parser.y"
+#line 307 "Parser.y"
 			{
             yyval.JumpStatement = new RedoStatement(yyloc);
         }
@@ -2194,7 +2195,7 @@ public partial class Parser
   private void _31()
   {
       // jump_statement_parameterless -> Retry 
-#line 310 "Parser.y"
+#line 311 "Parser.y"
 			{
             yyval.JumpStatement = new RetryStatement(yyloc);
         }
@@ -2203,7 +2204,7 @@ public partial class Parser
   private void _32()
   {
       // expression_statement -> expr 
-#line 317 "Parser.y"
+#line 318 "Parser.y"
 			{
             yyval.Expression = GetValue(1).Expression;
         }
@@ -2212,7 +2213,7 @@ public partial class Parser
   private void _33()
   {
       // expression_statement -> lhs '=' command_call 
-#line 321 "Parser.y"
+#line 322 "Parser.y"
 			{
             yyval.Expression = new SimpleAssignmentExpression(GetValue(3).LeftValue, GetValue(1).CallExpression, null, yyloc);
         }
@@ -2221,7 +2222,7 @@ public partial class Parser
   private void _34()
   {
       // expression_statement -> compound_lhs '=' command_call 
-#line 325 "Parser.y"
+#line 326 "Parser.y"
 			{
             yyval.Expression = new ParallelAssignmentExpression(GetValue(3).CompoundLeftValue, new CompoundRightValue(new Expression[] { GetValue(1).CallExpression }, null), yyloc);
         }
@@ -2230,7 +2231,7 @@ public partial class Parser
   private void _35()
   {
       // expression_statement -> var_lhs Assignment command_call 
-#line 329 "Parser.y"
+#line 330 "Parser.y"
 			{
             yyval.Expression = new SimpleAssignmentExpression(GetValue(3).LeftValue, GetValue(1).CallExpression, GetValue(2).String, yyloc);
         }
@@ -2239,7 +2240,7 @@ public partial class Parser
   private void _36()
   {
       // expression_statement -> primary '[' array_key ']' Assignment command_call 
-#line 333 "Parser.y"
+#line 334 "Parser.y"
 			{                
             yyval.Expression = new SimpleAssignmentExpression(new ArrayItemAccess(GetValue(6).Expression, GetValue(4).Arguments, GetLocation(5)), GetValue(1).CallExpression, GetValue(2).String, yyloc);
         }
@@ -2248,7 +2249,7 @@ public partial class Parser
   private void _37()
   {
       // expression_statement -> primary '.' Identifier Assignment command_call 
-#line 337 "Parser.y"
+#line 338 "Parser.y"
 			{
             yyval.Expression = new MemberAssignmentExpression(GetValue(5).Expression, GetValue(3).String, GetValue(2).String, GetValue(1).CallExpression, yyloc);
         }
@@ -2257,7 +2258,7 @@ public partial class Parser
   private void _38()
   {
       // expression_statement -> primary '.' ConstantIdentifier Assignment command_call 
-#line 341 "Parser.y"
+#line 342 "Parser.y"
 			{
             yyval.Expression = new MemberAssignmentExpression(GetValue(5).Expression, GetValue(3).String, GetValue(2).String, GetValue(1).CallExpression, yyloc);
         }
@@ -2266,7 +2267,7 @@ public partial class Parser
   private void _39()
   {
       // expression_statement -> primary SeparatingDoubleColon Identifier Assignment command_call 
-#line 345 "Parser.y"
+#line 346 "Parser.y"
 			{
             yyval.Expression = new MemberAssignmentExpression(GetValue(5).Expression, GetValue(3).String, GetValue(2).String, GetValue(1).CallExpression, yyloc);
         }
@@ -2275,7 +2276,7 @@ public partial class Parser
   private void _40()
   {
       // expression_statement -> lhs '=' compound_rhs 
-#line 349 "Parser.y"
+#line 350 "Parser.y"
 			{
             yyval.Expression = new ParallelAssignmentExpression(new CompoundLeftValue(CollectionUtils.MakeList<LeftValue>(GetValue(3).LeftValue), null, GetLocation(3)), GetValue(1).CompoundRightValue, yyloc);
         }
@@ -2284,7 +2285,7 @@ public partial class Parser
   private void _41()
   {
       // expression_statement -> compound_lhs '=' arg 
-#line 353 "Parser.y"
+#line 354 "Parser.y"
 			{
             yyval.Expression = new ParallelAssignmentExpression(GetValue(3).CompoundLeftValue, new CompoundRightValue(new Expression[] { GetValue(1).Expression }, null), yyloc);
         }
@@ -2293,7 +2294,7 @@ public partial class Parser
   private void _42()
   {
       // expression_statement -> compound_lhs '=' compound_rhs 
-#line 357 "Parser.y"
+#line 358 "Parser.y"
 			{
             yyval.Expression = new ParallelAssignmentExpression(GetValue(3).CompoundLeftValue, GetValue(1).CompoundRightValue, yyloc);
         }
@@ -2302,7 +2303,7 @@ public partial class Parser
   private void _43()
   {
       // expression_statement -> arg '?' jump_statement_parameterless ':' arg 
-#line 361 "Parser.y"
+#line 362 "Parser.y"
 			{
             yyval.Expression = new ConditionalJumpExpression(ToCondition(GetValue(5).Expression), GetValue(3).JumpStatement, false, GetValue(1).Expression, yyloc);
         }
@@ -2311,7 +2312,7 @@ public partial class Parser
   private void _44()
   {
       // expression_statement -> arg '?' arg ':' jump_statement_parameterless 
-#line 365 "Parser.y"
+#line 366 "Parser.y"
 			{
             yyval.Expression = new ConditionalJumpExpression(ToCondition(GetValue(5).Expression), GetValue(1).JumpStatement, true, GetValue(3).Expression, yyloc);
         }
@@ -2320,7 +2321,7 @@ public partial class Parser
   private void _45()
   {
       // conditional_statement -> stmt IfMod expr 
-#line 372 "Parser.y"
+#line 373 "Parser.y"
 			{
             yyval.Expression = new ConditionalStatement(ToCondition(GetValue(1).Expression), false, GetValue(3).Expression, null, yyloc);
         }
@@ -2329,7 +2330,7 @@ public partial class Parser
   private void _46()
   {
       // conditional_statement -> stmt UnlessMod expr 
-#line 376 "Parser.y"
+#line 377 "Parser.y"
 			{
             yyval.Expression = new ConditionalStatement(ToCondition(GetValue(1).Expression), true, GetValue(3).Expression, null, yyloc);
         }
@@ -2338,7 +2339,7 @@ public partial class Parser
   private void _47()
   {
       // conditional_statement -> stmt WhileMod expr 
-#line 380 "Parser.y"
+#line 381 "Parser.y"
 			{
             yyval.Expression = MakeLoopStatement(GetValue(3).Expression, ToCondition(GetValue(1).Expression), true, yyloc);
         }
@@ -2347,7 +2348,7 @@ public partial class Parser
   private void _48()
   {
       // conditional_statement -> stmt UntilMod expr 
-#line 384 "Parser.y"
+#line 385 "Parser.y"
 			{
             yyval.Expression = MakeLoopStatement(GetValue(3).Expression, ToCondition(GetValue(1).Expression), false, yyloc);
         }
@@ -2356,7 +2357,7 @@ public partial class Parser
   private void _49()
   {
       // conditional_statement -> stmt RescueMod stmt 
-#line 388 "Parser.y"
+#line 389 "Parser.y"
 			{
             yyval.Expression = new RescueExpression(GetValue(3).Expression, GetValue(1).Expression, MergeLocations(GetLocation(2), GetLocation(1)), yyloc);
         }
@@ -2365,7 +2366,7 @@ public partial class Parser
   private void _50()
   {
       // conditional_statement -> arg '?' jump_statement_parameterless ':' jump_statement_parameterless 
-#line 392 "Parser.y"
+#line 393 "Parser.y"
 			{
             yyval.Expression = new ConditionalStatement(ToCondition(GetValue(5).Expression), false, GetValue(3).JumpStatement, GetValue(1).JumpStatement, yyloc);
         }
@@ -2374,7 +2375,7 @@ public partial class Parser
   private void _51()
   {
       // compound_rhs -> args ',' arg 
-#line 399 "Parser.y"
+#line 400 "Parser.y"
 			{
             yyval.CompoundRightValue = new CompoundRightValue(PopArguments(GetValue(3).ArgumentCount, GetValue(1).Expression), null);
         }
@@ -2383,7 +2384,7 @@ public partial class Parser
   private void _52()
   {
       // compound_rhs -> args ',' Star arg 
-#line 403 "Parser.y"
+#line 404 "Parser.y"
 			{
             yyval.CompoundRightValue = new CompoundRightValue(PopArguments(GetValue(4).ArgumentCount), GetValue(1).Expression);
         }
@@ -2392,7 +2393,7 @@ public partial class Parser
   private void _53()
   {
       // compound_rhs -> Star arg 
-#line 407 "Parser.y"
+#line 408 "Parser.y"
 			{
             yyval.CompoundRightValue = new CompoundRightValue(Expression.EmptyArray, GetValue(1).Expression);
         }
@@ -2401,7 +2402,7 @@ public partial class Parser
   private void _55()
   {
       // expr -> expr And expr 
-#line 415 "Parser.y"
+#line 416 "Parser.y"
 			{
             yyval.Expression = new AndExpression(GetValue(3).Expression, GetValue(1).Expression, yyloc);
         }
@@ -2410,7 +2411,7 @@ public partial class Parser
   private void _56()
   {
       // expr -> expr Or expr 
-#line 419 "Parser.y"
+#line 420 "Parser.y"
 			{
             yyval.Expression = new OrExpression(GetValue(3).Expression, GetValue(1).Expression, yyloc);
         }
@@ -2419,7 +2420,7 @@ public partial class Parser
   private void _57()
   {
       // expr -> expr And jump_statement 
-#line 423 "Parser.y"
+#line 424 "Parser.y"
 			{
             yyval.Expression = new ConditionalJumpExpression(GetValue(3).Expression, GetValue(1).JumpStatement, false, null, yyloc);
         }
@@ -2428,7 +2429,7 @@ public partial class Parser
   private void _58()
   {
       // expr -> expr Or jump_statement 
-#line 427 "Parser.y"
+#line 428 "Parser.y"
 			{
             yyval.Expression = new ConditionalJumpExpression(GetValue(3).Expression, GetValue(1).JumpStatement, true, null, yyloc);
         }
@@ -2437,7 +2438,7 @@ public partial class Parser
   private void _59()
   {
       // expr -> Not expr 
-#line 431 "Parser.y"
+#line 432 "Parser.y"
 			{
             // TODO: warning: string literal in condition
             yyval.Expression = new NotExpression(GetValue(1).Expression, yyloc);
@@ -2447,7 +2448,7 @@ public partial class Parser
   private void _60()
   {
       // expr -> '!' command_call 
-#line 436 "Parser.y"
+#line 437 "Parser.y"
 			{
             // TODO: warning: string literal in condition
             yyval.Expression = new NotExpression(GetValue(1).CallExpression, yyloc);
@@ -2457,7 +2458,7 @@ public partial class Parser
   private void _62()
   {
       // command_call -> command 
-#line 445 "Parser.y"
+#line 446 "Parser.y"
 			{
             yyval.CallExpression = GetValue(1).CallExpression;
         }
@@ -2466,7 +2467,7 @@ public partial class Parser
   private void _63()
   {
       // command_call -> block_command 
-#line 449 "Parser.y"
+#line 450 "Parser.y"
 			{
             yyval.CallExpression = GetValue(1).CallExpression;
         }
@@ -2475,7 +2476,7 @@ public partial class Parser
   private void _64()
   {
       // block_command -> block_call 
-#line 456 "Parser.y"
+#line 457 "Parser.y"
 			{
             yyval.CallExpression = GetValue(1).CallExpression;
         }
@@ -2484,7 +2485,7 @@ public partial class Parser
   private void _65()
   {
       // block_command -> block_call '.' operation2 command_args 
-#line 460 "Parser.y"
+#line 461 "Parser.y"
 			{
             yyval.CallExpression = MakeMethodCall(GetValue(4).CallExpression, GetValue(2).String, GetValue(1), yyloc);
         }
@@ -2493,7 +2494,7 @@ public partial class Parser
   private void _66()
   {
       // block_command -> block_call SeparatingDoubleColon operation2 command_args 
-#line 464 "Parser.y"
+#line 465 "Parser.y"
 			{
             yyval.CallExpression = MakeMethodCall(GetValue(4).CallExpression, GetValue(2).String, GetValue(1), yyloc);
         }
@@ -2502,7 +2503,7 @@ public partial class Parser
   private void _67()
   {
       // @4 -> 
-#line 471 "Parser.y"
+#line 472 "Parser.y"
 			{
             EnterNestedScope();
         }
@@ -2511,7 +2512,7 @@ public partial class Parser
   private void _68()
   {
       // cmd_brace_block -> LbraceArg @4 block_parameters_opt compstmt '}' 
-#line 475 "Parser.y"
+#line 476 "Parser.y"
 			{
             yyval.BlockDefinition = new BlockDefinition(CurrentScope, GetValue(3).CompoundLeftValue, GetValue(2).Statements, yyloc);
             LeaveScope();
@@ -2521,7 +2522,7 @@ public partial class Parser
   private void _69()
   {
       // command -> operation command_args 
-#line 482 "Parser.y"
+#line 483 "Parser.y"
 			{
                 yyval.CallExpression = MakeMethodCall(null, GetValue(2).String, GetValue(1), yyloc);
             }
@@ -2530,7 +2531,7 @@ public partial class Parser
   private void _70()
   {
       // command -> operation command_args cmd_brace_block 
-#line 486 "Parser.y"
+#line 487 "Parser.y"
 			{
                 yyval.CallExpression = MakeMethodCall(null, GetValue(3).String, GetValue(2), GetValue(1).BlockDefinition, yyloc);
             }
@@ -2539,7 +2540,7 @@ public partial class Parser
   private void _71()
   {
       // command -> primary '.' operation2 command_args 
-#line 490 "Parser.y"
+#line 491 "Parser.y"
 			{
                 yyval.CallExpression = MakeMethodCall(GetValue(4).Expression, GetValue(2).String, GetValue(1), yyloc);
             }
@@ -2548,7 +2549,7 @@ public partial class Parser
   private void _72()
   {
       // command -> primary '.' operation2 command_args cmd_brace_block 
-#line 494 "Parser.y"
+#line 495 "Parser.y"
 			{
                 yyval.CallExpression = MakeMethodCall(GetValue(5).Expression, GetValue(3).String, GetValue(2), GetValue(1).BlockDefinition, yyloc);
             }
@@ -2557,7 +2558,7 @@ public partial class Parser
   private void _73()
   {
       // command -> primary SeparatingDoubleColon operation2 command_args 
-#line 498 "Parser.y"
+#line 499 "Parser.y"
 			{
                 yyval.CallExpression = MakeMethodCall(GetValue(4).Expression, GetValue(2).String, GetValue(1), yyloc);
             }
@@ -2566,7 +2567,7 @@ public partial class Parser
   private void _74()
   {
       // command -> primary SeparatingDoubleColon operation2 command_args cmd_brace_block 
-#line 502 "Parser.y"
+#line 503 "Parser.y"
 			{
                 yyval.CallExpression = MakeMethodCall(GetValue(5).Expression, GetValue(3).String, GetValue(2), GetValue(1).BlockDefinition, yyloc);
             }
@@ -2575,7 +2576,7 @@ public partial class Parser
   private void _75()
   {
       // command -> Super command_args 
-#line 506 "Parser.y"
+#line 507 "Parser.y"
 			{
                 yyval.CallExpression = MakeSuperCall(GetValue(1), yyloc);
             }
@@ -2584,7 +2585,7 @@ public partial class Parser
   private void _76()
   {
       // command -> Yield command_args 
-#line 510 "Parser.y"
+#line 511 "Parser.y"
 			{
                 yyval.CallExpression = new YieldCall(RequireNoBlockArg(GetValue(1)), yyloc);
             }
@@ -2593,7 +2594,7 @@ public partial class Parser
   private void _77()
   {
       // compound_lhs -> compound_lhs_head compound_lhs_item 
-#line 517 "Parser.y"
+#line 518 "Parser.y"
 			{
             GetValue(2).LeftValues.Add(GetValue(1).LeftValue);
             yyval.CompoundLeftValue = new CompoundLeftValue(GetValue(2).LeftValues, null, yyloc);
@@ -2603,7 +2604,7 @@ public partial class Parser
   private void _78()
   {
       // compound_lhs -> compound_lhs_head 
-#line 522 "Parser.y"
+#line 523 "Parser.y"
 			{
               GetValue(1).LeftValues.Add(Placeholder.Singleton);
               yyval.CompoundLeftValue = new CompoundLeftValue(GetValue(1).LeftValues, null, yyloc);
@@ -2613,7 +2614,7 @@ public partial class Parser
   private void _79()
   {
       // compound_lhs -> LeftParen compound_lhs ')' 
-#line 527 "Parser.y"
+#line 528 "Parser.y"
 			{
             yyval.CompoundLeftValue = new CompoundLeftValue(CollectionUtils.MakeList<LeftValue>(GetValue(2).CompoundLeftValue), null, yyloc);
         }
@@ -2622,7 +2623,7 @@ public partial class Parser
   private void _80()
   {
       // compound_lhs -> compound_lhs_head compound_lhs_tail 
-#line 531 "Parser.y"
+#line 532 "Parser.y"
 			{
             yyval.CompoundLeftValue = new CompoundLeftValue(GetValue(2).LeftValues, GetValue(1).LeftValue, yyloc);
         }
@@ -2631,7 +2632,7 @@ public partial class Parser
   private void _81()
   {
       // compound_lhs -> compound_lhs_tail 
-#line 535 "Parser.y"
+#line 536 "Parser.y"
 			{
             yyval.CompoundLeftValue = new CompoundLeftValue(LeftValue.EmptyList, GetValue(1).LeftValue, yyloc);
         }
@@ -2640,7 +2641,7 @@ public partial class Parser
   private void _82()
   {
       // compound_lhs_tail -> Star compound_lhs_node 
-#line 542 "Parser.y"
+#line 543 "Parser.y"
 			{
             yyval.LeftValue = GetValue(1).LeftValue;
         }
@@ -2649,7 +2650,7 @@ public partial class Parser
   private void _83()
   {
       // compound_lhs_tail -> Star 
-#line 546 "Parser.y"
+#line 547 "Parser.y"
 			{
             yyval.LeftValue = Placeholder.Singleton;
         }
@@ -2658,7 +2659,7 @@ public partial class Parser
   private void _84()
   {
       // compound_lhs_head -> compound_lhs_head compound_lhs_item ',' 
-#line 553 "Parser.y"
+#line 554 "Parser.y"
 			{
             (yyval.LeftValues = GetValue(3).LeftValues).Add(GetValue(2).LeftValue);
         }
@@ -2667,7 +2668,7 @@ public partial class Parser
   private void _85()
   {
       // compound_lhs_head -> compound_lhs_item ',' 
-#line 557 "Parser.y"
+#line 558 "Parser.y"
 			{
             yyval.LeftValues = CollectionUtils.MakeList(GetValue(2).LeftValue);
         }
@@ -2676,7 +2677,7 @@ public partial class Parser
   private void _86()
   {
       // compound_lhs_item -> compound_lhs_node 
-#line 564 "Parser.y"
+#line 565 "Parser.y"
 			{
             yyval.LeftValue = GetValue(1).LeftValue;
         }
@@ -2685,7 +2686,7 @@ public partial class Parser
   private void _87()
   {
       // compound_lhs_item -> LeftParen compound_lhs ')' 
-#line 568 "Parser.y"
+#line 569 "Parser.y"
 			{
             yyval.LeftValue = GetValue(2).CompoundLeftValue;
         }
@@ -2694,7 +2695,7 @@ public partial class Parser
   private void _88()
   {
       // compound_lhs_node -> variable 
-#line 575 "Parser.y"
+#line 576 "Parser.y"
 			{
             yyval.LeftValue = VariableFactory.MakeLeftValue(GetValue(1).VariableFactory, this, GetValue(1).String, yyloc);
         }
@@ -2703,7 +2704,7 @@ public partial class Parser
   private void _89()
   {
       // compound_lhs_node -> primary '[' array_key ']' 
-#line 579 "Parser.y"
+#line 580 "Parser.y"
 			{
             yyval.LeftValue = new ArrayItemAccess(GetValue(4).Expression, GetValue(2).Arguments, yyloc);
         }
@@ -2712,7 +2713,7 @@ public partial class Parser
   private void _90()
   {
       // compound_lhs_node -> primary '.' Identifier 
-#line 583 "Parser.y"
+#line 584 "Parser.y"
 			{
             yyval.LeftValue = new AttributeAccess(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -2721,7 +2722,7 @@ public partial class Parser
   private void _91()
   {
       // compound_lhs_node -> primary SeparatingDoubleColon Identifier 
-#line 587 "Parser.y"
+#line 588 "Parser.y"
 			{
             yyval.LeftValue = new AttributeAccess(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -2730,7 +2731,7 @@ public partial class Parser
   private void _92()
   {
       // compound_lhs_node -> primary '.' ConstantIdentifier 
-#line 591 "Parser.y"
+#line 592 "Parser.y"
 			{
             yyval.LeftValue = new AttributeAccess(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -2739,7 +2740,7 @@ public partial class Parser
   private void _93()
   {
       // compound_lhs_node -> primary SeparatingDoubleColon ConstantIdentifier 
-#line 595 "Parser.y"
+#line 596 "Parser.y"
 			{
             yyval.LeftValue = new ConstantVariable(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -2748,7 +2749,7 @@ public partial class Parser
   private void _94()
   {
       // compound_lhs_node -> LeadingDoubleColon ConstantIdentifier 
-#line 599 "Parser.y"
+#line 600 "Parser.y"
 			{
             yyval.LeftValue = new ConstantVariable(null, GetValue(1).String, yyloc);
         }
@@ -2757,7 +2758,7 @@ public partial class Parser
   private void _95()
   {
       // compound_lhs_node -> match_reference 
-#line 603 "Parser.y"
+#line 604 "Parser.y"
 			{
             MatchReferenceReadOnlyError(GetValue(1).RegexMatchReference);
             yyval.LeftValue = new GlobalVariable(Symbols.Error, yyloc);
@@ -2767,7 +2768,7 @@ public partial class Parser
   private void _96()
   {
       // lhs -> variable 
-#line 611 "Parser.y"
+#line 612 "Parser.y"
 			{
             yyval.LeftValue = VariableFactory.MakeLeftValue(GetValue(1).VariableFactory, this, GetValue(1).String, yyloc);
         }
@@ -2776,7 +2777,7 @@ public partial class Parser
   private void _97()
   {
       // lhs -> primary '[' array_key ']' 
-#line 615 "Parser.y"
+#line 616 "Parser.y"
 			{
             yyval.LeftValue = new ArrayItemAccess(GetValue(4).Expression, GetValue(2).Arguments, yyloc);
         }
@@ -2785,7 +2786,7 @@ public partial class Parser
   private void _98()
   {
       // lhs -> primary '.' Identifier 
-#line 619 "Parser.y"
+#line 620 "Parser.y"
 			{
             yyval.LeftValue = new AttributeAccess(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -2794,7 +2795,7 @@ public partial class Parser
   private void _99()
   {
       // lhs -> primary SeparatingDoubleColon Identifier 
-#line 623 "Parser.y"
+#line 624 "Parser.y"
 			{
             yyval.LeftValue = new AttributeAccess(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -2803,7 +2804,7 @@ public partial class Parser
   private void _100()
   {
       // lhs -> primary '.' ConstantIdentifier 
-#line 627 "Parser.y"
+#line 628 "Parser.y"
 			{
             yyval.LeftValue = new AttributeAccess(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -2812,7 +2813,7 @@ public partial class Parser
   private void _101()
   {
       // lhs -> primary SeparatingDoubleColon ConstantIdentifier 
-#line 631 "Parser.y"
+#line 632 "Parser.y"
 			{
             yyval.LeftValue = new ConstantVariable(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -2821,7 +2822,7 @@ public partial class Parser
   private void _102()
   {
       // lhs -> LeadingDoubleColon ConstantIdentifier 
-#line 635 "Parser.y"
+#line 636 "Parser.y"
 			{
             yyval.LeftValue = new ConstantVariable(null, GetValue(1).String, yyloc);
         }
@@ -2830,7 +2831,7 @@ public partial class Parser
   private void _103()
   {
       // lhs -> match_reference 
-#line 639 "Parser.y"
+#line 640 "Parser.y"
 			{
             MatchReferenceReadOnlyError(GetValue(1).RegexMatchReference);
             yyval.LeftValue = new GlobalVariable(Symbols.Error, yyloc);
@@ -2840,7 +2841,7 @@ public partial class Parser
   private void _104()
   {
       // module_name -> ConstantIdentifier 
-#line 647 "Parser.y"
+#line 648 "Parser.y"
 			{
           yyval.String = GetValue(1).String;
       }
@@ -2849,7 +2850,7 @@ public partial class Parser
   private void _105()
   {
       // module_name -> Identifier 
-#line 651 "Parser.y"
+#line 652 "Parser.y"
 			{
           _tokenizer.ReportError(Errors.ModuleNameNotConstant);
           yyval.String = GetValue(1).String;
@@ -2859,7 +2860,7 @@ public partial class Parser
   private void _106()
   {
       // qualified_module_name -> LeadingDoubleColon module_name 
-#line 659 "Parser.y"
+#line 660 "Parser.y"
 			{
           yyval.ConstantVariable = new ConstantVariable(null, GetValue(1).String, yyloc);
       }
@@ -2868,7 +2869,7 @@ public partial class Parser
   private void _107()
   {
       // qualified_module_name -> module_name 
-#line 663 "Parser.y"
+#line 664 "Parser.y"
 			{
           yyval.ConstantVariable = new ConstantVariable(GetValue(1).String, yyloc);
       }
@@ -2877,7 +2878,7 @@ public partial class Parser
   private void _108()
   {
       // qualified_module_name -> primary SeparatingDoubleColon module_name 
-#line 667 "Parser.y"
+#line 668 "Parser.y"
 			{
           yyval.ConstantVariable = new ConstantVariable(GetValue(3).Expression, GetValue(1).String, yyloc);
       }
@@ -2886,7 +2887,7 @@ public partial class Parser
   private void _109()
   {
       // method_name -> Identifier 
-#line 674 "Parser.y"
+#line 675 "Parser.y"
 			{
             yyval.String = GetValue(1).String;    
         }
@@ -2895,7 +2896,7 @@ public partial class Parser
   private void _110()
   {
       // method_name -> ConstantIdentifier 
-#line 678 "Parser.y"
+#line 679 "Parser.y"
 			{
             yyval.String = GetValue(1).String;    
         }
@@ -2904,7 +2905,7 @@ public partial class Parser
   private void _111()
   {
       // method_name -> FunctionIdentifier 
-#line 682 "Parser.y"
+#line 683 "Parser.y"
 			{
             yyval.String = GetValue(1).String;    
         }
@@ -2913,7 +2914,7 @@ public partial class Parser
   private void _112()
   {
       // method_name -> op 
-#line 686 "Parser.y"
+#line 687 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_END);
             yyval.String = GetValue(1).String;
@@ -2923,7 +2924,7 @@ public partial class Parser
   private void _113()
   {
       // method_name -> reswords 
-#line 691 "Parser.y"
+#line 692 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_END);
             yyval.String = GetValue(1).String;
@@ -2933,7 +2934,7 @@ public partial class Parser
   private void _114()
   {
       // method_name_or_symbol -> method_name 
-#line 699 "Parser.y"
+#line 700 "Parser.y"
 			{
             yyval.String = GetValue(1).String;
         }
@@ -2942,7 +2943,7 @@ public partial class Parser
   private void _115()
   {
       // method_name_or_symbol -> symbol 
-#line 703 "Parser.y"
+#line 704 "Parser.y"
 			{
             yyval.String = GetValue(1).String;
         }
@@ -2951,7 +2952,7 @@ public partial class Parser
   private void _116()
   {
       // undef_list -> method_name_or_symbol 
-#line 710 "Parser.y"
+#line 711 "Parser.y"
 			{
             yyval.Identifiers = CollectionUtils.MakeList<Identifier>(new Identifier(GetValue(1).String, GetLocation(1)));
         }
@@ -2960,7 +2961,7 @@ public partial class Parser
   private void _117()
   {
       // @5 -> 
-#line 714 "Parser.y"
+#line 715 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_FNAME);
         }
@@ -2969,7 +2970,7 @@ public partial class Parser
   private void _118()
   {
       // undef_list -> undef_list ',' @5 method_name_or_symbol 
-#line 718 "Parser.y"
+#line 719 "Parser.y"
 			{
             (yyval.Identifiers = GetValue(4).Identifiers).Add(new Identifier(GetValue(1).String, GetLocation(1)));
         }
@@ -2978,189 +2979,189 @@ public partial class Parser
   private void _119()
   {
       // op -> '|' 
-#line 724 "Parser.y"
+#line 725 "Parser.y"
 			{ yyval.String = Symbols.BitwiseOr; }
   }
 
   private void _120()
   {
       // op -> '^' 
-#line 725 "Parser.y"
+#line 726 "Parser.y"
 			{ yyval.String = Symbols.Xor; }
   }
 
   private void _121()
   {
       // op -> '&' 
-#line 726 "Parser.y"
+#line 727 "Parser.y"
 			{ yyval.String = Symbols.BitwiseAnd; }
   }
 
   private void _122()
   {
       // op -> Cmp 
-#line 727 "Parser.y"
+#line 728 "Parser.y"
 			{ yyval.String = Symbols.Comparison; }
   }
 
   private void _123()
   {
       // op -> Eq 
-#line 728 "Parser.y"
+#line 729 "Parser.y"
 			{ yyval.String = Symbols.Equal; }
   }
 
   private void _124()
   {
       // op -> Eqq 
-#line 729 "Parser.y"
+#line 730 "Parser.y"
 			{ yyval.String = Symbols.StrictEqual; }
   }
 
   private void _125()
   {
       // op -> Match 
-#line 730 "Parser.y"
+#line 731 "Parser.y"
 			{ yyval.String = Symbols.Match; }
   }
 
   private void _126()
   {
       // op -> '>' 
-#line 731 "Parser.y"
+#line 732 "Parser.y"
 			{ yyval.String = Symbols.GreaterThan; }
   }
 
   private void _127()
   {
       // op -> Geq 
-#line 732 "Parser.y"
+#line 733 "Parser.y"
 			{ yyval.String = Symbols.GreaterEqual; }
   }
 
   private void _128()
   {
       // op -> '<' 
-#line 733 "Parser.y"
+#line 734 "Parser.y"
 			{ yyval.String = Symbols.LessThan; }
   }
 
   private void _129()
   {
       // op -> Leq 
-#line 734 "Parser.y"
+#line 735 "Parser.y"
 			{ yyval.String = Symbols.LessEqual; }
   }
 
   private void _130()
   {
       // op -> Lshft 
-#line 735 "Parser.y"
+#line 736 "Parser.y"
 			{ yyval.String = Symbols.LeftShift; }
   }
 
   private void _131()
   {
       // op -> Rshft 
-#line 736 "Parser.y"
+#line 737 "Parser.y"
 			{ yyval.String = Symbols.RightShift; }
   }
 
   private void _132()
   {
       // op -> '+' 
-#line 737 "Parser.y"
+#line 738 "Parser.y"
 			{ yyval.String = Symbols.Plus; }
   }
 
   private void _133()
   {
       // op -> '-' 
-#line 738 "Parser.y"
+#line 739 "Parser.y"
 			{ yyval.String = Symbols.Minus; }
   }
 
   private void _134()
   {
       // op -> '*' 
-#line 739 "Parser.y"
+#line 740 "Parser.y"
 			{ yyval.String = Symbols.Multiply; }
   }
 
   private void _135()
   {
       // op -> Star 
-#line 740 "Parser.y"
+#line 741 "Parser.y"
 			{ yyval.String = Symbols.Multiply; }
   }
 
   private void _136()
   {
       // op -> '/' 
-#line 741 "Parser.y"
+#line 742 "Parser.y"
 			{ yyval.String = Symbols.Divide; }
   }
 
   private void _137()
   {
       // op -> '%' 
-#line 742 "Parser.y"
+#line 743 "Parser.y"
 			{ yyval.String = Symbols.Mod; }
   }
 
   private void _138()
   {
       // op -> Pow 
-#line 743 "Parser.y"
+#line 744 "Parser.y"
 			{ yyval.String = Symbols.Power; }
   }
 
   private void _139()
   {
       // op -> '~' 
-#line 744 "Parser.y"
+#line 745 "Parser.y"
 			{ yyval.String = Symbols.BitwiseNot; }
   }
 
   private void _140()
   {
       // op -> Uplus 
-#line 745 "Parser.y"
+#line 746 "Parser.y"
 			{ yyval.String = Symbols.UnaryPlus; }
   }
 
   private void _141()
   {
       // op -> Uminus 
-#line 746 "Parser.y"
+#line 747 "Parser.y"
 			{ yyval.String = Symbols.UnaryMinus; }
   }
 
   private void _142()
   {
       // op -> Aref 
-#line 747 "Parser.y"
+#line 748 "Parser.y"
 			{ yyval.String = Symbols.ArrayItemRead; }
   }
 
   private void _143()
   {
       // op -> Aset 
-#line 748 "Parser.y"
+#line 749 "Parser.y"
 			{ yyval.String = Symbols.ArrayItemWrite; }
   }
 
   private void _144()
   {
       // op -> '`' 
-#line 749 "Parser.y"
+#line 750 "Parser.y"
 			{ yyval.String = Symbols.Backtick; }
   }
 
   private void _188()
   {
       // arg -> lhs '=' arg 
-#line 763 "Parser.y"
+#line 764 "Parser.y"
 			{
             yyval.Expression = new SimpleAssignmentExpression(GetValue(3).LeftValue, GetValue(1).Expression, null, yyloc);
         }
@@ -3169,7 +3170,7 @@ public partial class Parser
   private void _189()
   {
       // arg -> lhs '=' arg RescueMod arg 
-#line 767 "Parser.y"
+#line 768 "Parser.y"
 			{
             yyval.Expression = new SimpleAssignmentExpression(GetValue(5).LeftValue, new RescueExpression(GetValue(3).Expression, GetValue(1).Expression, MergeLocations(GetLocation(2), GetLocation(1)), MergeLocations(GetLocation(3), GetLocation(1))), null, yyloc);
         }
@@ -3178,7 +3179,7 @@ public partial class Parser
   private void _190()
   {
       // arg -> lhs '=' arg RescueMod jump_statement_parameterless 
-#line 771 "Parser.y"
+#line 772 "Parser.y"
 			{
             yyval.Expression = new SimpleAssignmentExpression(GetValue(5).LeftValue, new RescueExpression(GetValue(3).Expression, GetValue(1).JumpStatement, MergeLocations(GetLocation(2), GetLocation(1)), MergeLocations(GetLocation(3), GetLocation(1))), null, yyloc);
         }
@@ -3187,7 +3188,7 @@ public partial class Parser
   private void _191()
   {
       // arg -> var_lhs Assignment arg 
-#line 775 "Parser.y"
+#line 776 "Parser.y"
 			{
             yyval.Expression = new SimpleAssignmentExpression(GetValue(3).LeftValue, GetValue(1).Expression, GetValue(2).String, yyloc);
         }
@@ -3196,7 +3197,7 @@ public partial class Parser
   private void _192()
   {
       // arg -> primary '[' array_key ']' Assignment arg 
-#line 779 "Parser.y"
+#line 780 "Parser.y"
 			{
             yyval.Expression = new SimpleAssignmentExpression(new ArrayItemAccess(GetValue(6).Expression, GetValue(4).Arguments, GetLocation(5)), GetValue(1).Expression, GetValue(2).String, yyloc);
         }
@@ -3205,7 +3206,7 @@ public partial class Parser
   private void _193()
   {
       // arg -> primary '.' Identifier Assignment arg 
-#line 783 "Parser.y"
+#line 784 "Parser.y"
 			{
             yyval.Expression = new MemberAssignmentExpression(GetValue(5).Expression, GetValue(3).String, GetValue(2).String, GetValue(1).Expression, yyloc);
         }
@@ -3214,7 +3215,7 @@ public partial class Parser
   private void _194()
   {
       // arg -> primary '.' ConstantIdentifier Assignment arg 
-#line 787 "Parser.y"
+#line 788 "Parser.y"
 			{
             yyval.Expression = new MemberAssignmentExpression(GetValue(5).Expression, GetValue(3).String, GetValue(2).String, GetValue(1).Expression, yyloc);
         }
@@ -3223,7 +3224,7 @@ public partial class Parser
   private void _195()
   {
       // arg -> primary SeparatingDoubleColon Identifier Assignment arg 
-#line 791 "Parser.y"
+#line 792 "Parser.y"
 			{
             yyval.Expression = new MemberAssignmentExpression(GetValue(5).Expression, GetValue(3).String, GetValue(2).String, GetValue(1).Expression, yyloc);
         }
@@ -3232,7 +3233,7 @@ public partial class Parser
   private void _196()
   {
       // arg -> primary SeparatingDoubleColon ConstantIdentifier Assignment arg 
-#line 795 "Parser.y"
+#line 796 "Parser.y"
 			{
             _tokenizer.ReportError(Errors.ConstantReassigned);
             yyval.Expression = new ErrorExpression(yyloc);
@@ -3242,7 +3243,7 @@ public partial class Parser
   private void _197()
   {
       // arg -> LeadingDoubleColon ConstantIdentifier Assignment arg 
-#line 800 "Parser.y"
+#line 801 "Parser.y"
 			{
             _tokenizer.ReportError(Errors.ConstantReassigned);
             yyval.Expression = new ErrorExpression(yyloc);
@@ -3252,7 +3253,7 @@ public partial class Parser
   private void _198()
   {
       // arg -> match_reference Assignment arg 
-#line 805 "Parser.y"
+#line 806 "Parser.y"
 			{
             MatchReferenceReadOnlyError(GetValue(3).RegexMatchReference);
             yyval.Expression = new ErrorExpression(yyloc);
@@ -3262,7 +3263,7 @@ public partial class Parser
   private void _199()
   {
       // arg -> arg '+' arg 
-#line 810 "Parser.y"
+#line 811 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Plus, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3271,7 +3272,7 @@ public partial class Parser
   private void _200()
   {
       // arg -> arg '-' arg 
-#line 814 "Parser.y"
+#line 815 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Minus, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3280,7 +3281,7 @@ public partial class Parser
   private void _201()
   {
       // arg -> arg '*' arg 
-#line 818 "Parser.y"
+#line 819 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Multiply, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3289,7 +3290,7 @@ public partial class Parser
   private void _202()
   {
       // arg -> arg '/' arg 
-#line 822 "Parser.y"
+#line 823 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Divide, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3298,7 +3299,7 @@ public partial class Parser
   private void _203()
   {
       // arg -> arg '%' arg 
-#line 826 "Parser.y"
+#line 827 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Mod, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3307,7 +3308,7 @@ public partial class Parser
   private void _204()
   {
       // arg -> arg Pow arg 
-#line 830 "Parser.y"
+#line 831 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Power, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3316,7 +3317,7 @@ public partial class Parser
   private void _205()
   {
       // arg -> UminusNum Integer Pow arg 
-#line 834 "Parser.y"
+#line 835 "Parser.y"
 			{
             // ** has precedence over unary minus, hence -number**arg is equivalent to -(number**arg)
             yyval.Expression = new MethodCall(new MethodCall(Literal.Integer(GetValue(3).Integer1, GetLocation(3)), Symbols.Power, new Arguments(GetValue(1).Expression), GetLocation(2)), Symbols.UnaryMinus, Arguments.Empty, yyloc);
@@ -3326,7 +3327,7 @@ public partial class Parser
   private void _206()
   {
       // arg -> UminusNum BigInteger Pow arg 
-#line 839 "Parser.y"
+#line 840 "Parser.y"
 			{
             yyval.Expression = new MethodCall(new MethodCall(Literal.BigInteger(GetValue(3).BigInteger, GetLocation(3)), Symbols.Power, new Arguments(GetValue(1).Expression), GetLocation(2)), Symbols.UnaryMinus, Arguments.Empty, yyloc);
         }
@@ -3335,7 +3336,7 @@ public partial class Parser
   private void _207()
   {
       // arg -> UminusNum Float Pow arg 
-#line 843 "Parser.y"
+#line 844 "Parser.y"
 			{
             yyval.Expression = new MethodCall(new MethodCall(Literal.Double(GetValue(3).Double, GetLocation(3)), Symbols.Power, new Arguments(GetValue(1).Expression), GetLocation(2)), Symbols.UnaryMinus, Arguments.Empty, yyloc);
         }
@@ -3344,7 +3345,7 @@ public partial class Parser
   private void _208()
   {
       // arg -> Uplus arg 
-#line 847 "Parser.y"
+#line 848 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(1).Expression, Symbols.UnaryPlus, null, yyloc);
         }
@@ -3353,7 +3354,7 @@ public partial class Parser
   private void _209()
   {
       // arg -> Uminus arg 
-#line 851 "Parser.y"
+#line 852 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(1).Expression, Symbols.UnaryMinus, null, yyloc);
         }
@@ -3362,7 +3363,7 @@ public partial class Parser
   private void _210()
   {
       // arg -> arg '|' arg 
-#line 855 "Parser.y"
+#line 856 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.BitwiseOr, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3371,7 +3372,7 @@ public partial class Parser
   private void _211()
   {
       // arg -> arg '^' arg 
-#line 859 "Parser.y"
+#line 860 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Xor, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3380,7 +3381,7 @@ public partial class Parser
   private void _212()
   {
       // arg -> arg '&' arg 
-#line 863 "Parser.y"
+#line 864 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.BitwiseAnd, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3389,7 +3390,7 @@ public partial class Parser
   private void _213()
   {
       // arg -> arg Cmp arg 
-#line 867 "Parser.y"
+#line 868 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Comparison, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3398,7 +3399,7 @@ public partial class Parser
   private void _214()
   {
       // arg -> arg '>' arg 
-#line 871 "Parser.y"
+#line 872 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.GreaterThan, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3407,7 +3408,7 @@ public partial class Parser
   private void _215()
   {
       // arg -> arg Geq arg 
-#line 875 "Parser.y"
+#line 876 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.GreaterEqual, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3416,7 +3417,7 @@ public partial class Parser
   private void _216()
   {
       // arg -> arg '<' arg 
-#line 879 "Parser.y"
+#line 880 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.LessThan, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3425,7 +3426,7 @@ public partial class Parser
   private void _217()
   {
       // arg -> arg Leq arg 
-#line 883 "Parser.y"
+#line 884 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.LessEqual, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3434,7 +3435,7 @@ public partial class Parser
   private void _218()
   {
       // arg -> arg Eq arg 
-#line 887 "Parser.y"
+#line 888 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.Equal, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3443,7 +3444,7 @@ public partial class Parser
   private void _219()
   {
       // arg -> arg Eqq arg 
-#line 891 "Parser.y"
+#line 892 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.StrictEqual, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3452,7 +3453,7 @@ public partial class Parser
   private void _220()
   {
       // arg -> arg Neq arg 
-#line 895 "Parser.y"
+#line 896 "Parser.y"
 			{
             yyval.Expression = new NotExpression(new MethodCall(GetValue(3).Expression, Symbols.Equal, new Arguments(GetValue(1).Expression), yyloc), yyloc);
         }
@@ -3461,7 +3462,7 @@ public partial class Parser
   private void _221()
   {
       // arg -> arg Match arg 
-#line 899 "Parser.y"
+#line 900 "Parser.y"
 			{
             yyval.Expression = MakeMatch(GetValue(3).Expression, GetValue(1).Expression, yyloc);
         }
@@ -3470,7 +3471,7 @@ public partial class Parser
   private void _222()
   {
       // arg -> arg Nmatch arg 
-#line 903 "Parser.y"
+#line 904 "Parser.y"
 			{
             yyval.Expression = new NotExpression(MakeMatch(GetValue(3).Expression, GetValue(1).Expression, GetLocation(2)), yyloc);
         }
@@ -3479,7 +3480,7 @@ public partial class Parser
   private void _223()
   {
       // arg -> '!' arg 
-#line 907 "Parser.y"
+#line 908 "Parser.y"
 			{
             // TODO: warning: string literal in condition
             yyval.Expression = new NotExpression(GetValue(1).Expression, yyloc);
@@ -3489,7 +3490,7 @@ public partial class Parser
   private void _224()
   {
       // arg -> '~' arg 
-#line 912 "Parser.y"
+#line 913 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(1).Expression, Symbols.BitwiseNot, Arguments.Empty, yyloc);
         }
@@ -3498,7 +3499,7 @@ public partial class Parser
   private void _225()
   {
       // arg -> arg Lshft arg 
-#line 916 "Parser.y"
+#line 917 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.LeftShift, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3507,7 +3508,7 @@ public partial class Parser
   private void _226()
   {
       // arg -> arg Rshft arg 
-#line 920 "Parser.y"
+#line 921 "Parser.y"
 			{
             yyval.Expression = new MethodCall(GetValue(3).Expression, Symbols.RightShift, new Arguments(GetValue(1).Expression), yyloc);
         }
@@ -3516,7 +3517,7 @@ public partial class Parser
   private void _227()
   {
       // arg -> arg LogicalAnd arg 
-#line 924 "Parser.y"
+#line 925 "Parser.y"
 			{
             yyval.Expression = new AndExpression(GetValue(3).Expression, GetValue(1).Expression, yyloc);
         }
@@ -3525,7 +3526,7 @@ public partial class Parser
   private void _228()
   {
       // arg -> arg LogicalOr arg 
-#line 928 "Parser.y"
+#line 929 "Parser.y"
 			{
             yyval.Expression = new OrExpression(GetValue(3).Expression, GetValue(1).Expression, yyloc);
         }
@@ -3534,7 +3535,7 @@ public partial class Parser
   private void _229()
   {
       // arg -> arg LogicalAnd jump_statement_parameterless 
-#line 932 "Parser.y"
+#line 933 "Parser.y"
 			{
             yyval.Expression = new ConditionalJumpExpression(GetValue(3).Expression, GetValue(1).JumpStatement, false, null, yyloc);
         }
@@ -3543,7 +3544,7 @@ public partial class Parser
   private void _230()
   {
       // arg -> arg LogicalOr jump_statement_parameterless 
-#line 936 "Parser.y"
+#line 937 "Parser.y"
 			{
             yyval.Expression = new ConditionalJumpExpression(GetValue(3).Expression, GetValue(1).JumpStatement, true, null, yyloc);
         }
@@ -3552,7 +3553,7 @@ public partial class Parser
   private void _231()
   {
       // arg -> arg Dot2 arg 
-#line 940 "Parser.y"
+#line 941 "Parser.y"
 			{
             yyval.Expression = new RangeExpression(GetValue(3).Expression, GetValue(1).Expression, false, yyloc);
         }
@@ -3561,7 +3562,7 @@ public partial class Parser
   private void _232()
   {
       // arg -> arg Dot3 arg 
-#line 944 "Parser.y"
+#line 945 "Parser.y"
 			{
             yyval.Expression = new RangeExpression(GetValue(3).Expression, GetValue(1).Expression, true, yyloc);
         }
@@ -3570,7 +3571,7 @@ public partial class Parser
   private void _233()
   {
       // arg -> Defined opt_nl arg 
-#line 948 "Parser.y"
+#line 949 "Parser.y"
 			{
             yyval.Expression = new IsDefinedExpression(GetValue(1).Expression, yyloc);
         }
@@ -3579,7 +3580,7 @@ public partial class Parser
   private void _234()
   {
       // arg -> arg '?' arg ':' arg 
-#line 952 "Parser.y"
+#line 953 "Parser.y"
 			{
             yyval.Expression = new ConditionalExpression(ToCondition(GetValue(5).Expression), GetValue(3).Expression, GetValue(1).Expression, yyloc);
         }
@@ -3588,7 +3589,7 @@ public partial class Parser
   private void _235()
   {
       // arg -> primary 
-#line 956 "Parser.y"
+#line 957 "Parser.y"
 			{
             yyval.Expression = GetValue(1).Expression;
         }
@@ -3597,7 +3598,7 @@ public partial class Parser
   private void _236()
   {
       // array_key -> 
-#line 963 "Parser.y"
+#line 964 "Parser.y"
 			{
             SetArguments();
         }
@@ -3606,7 +3607,7 @@ public partial class Parser
   private void _237()
   {
       // array_key -> command opt_nl 
-#line 967 "Parser.y"
+#line 968 "Parser.y"
 			{
             _tokenizer.ReportWarning(Errors.ParenthesizeArguments);
             SetArguments(GetValue(2).CallExpression);
@@ -3616,7 +3617,7 @@ public partial class Parser
   private void _238()
   {
       // array_key -> args trailer 
-#line 972 "Parser.y"
+#line 973 "Parser.y"
 			{
             PopAndSetArguments(GetValue(2).ArgumentCount, null, null, null, GetLocation(2));
         }
@@ -3625,7 +3626,7 @@ public partial class Parser
   private void _239()
   {
       // array_key -> args ',' Star arg opt_nl 
-#line 976 "Parser.y"
+#line 977 "Parser.y"
 			{
             PopAndSetArguments(GetValue(5).ArgumentCount, null, GetValue(2).Expression, null, MergeLocations(GetLocation(5), GetLocation(2)));
         }
@@ -3634,7 +3635,7 @@ public partial class Parser
   private void _240()
   {
       // array_key -> maplets trailer 
-#line 980 "Parser.y"
+#line 981 "Parser.y"
 			{
             SetArguments(null, GetValue(2).Maplets, null, null, GetLocation(2));
         }
@@ -3643,7 +3644,7 @@ public partial class Parser
   private void _241()
   {
       // array_key -> Star arg opt_nl 
-#line 984 "Parser.y"
+#line 985 "Parser.y"
 			{
             SetArguments(null, null, GetValue(2).Expression, null, MergeLocations(GetLocation(3), GetLocation(2)));
         }
@@ -3652,7 +3653,7 @@ public partial class Parser
   private void _242()
   {
       // paren_args -> '(' ')' 
-#line 991 "Parser.y"
+#line 992 "Parser.y"
 			{
             SetArguments();
         }
@@ -3661,7 +3662,7 @@ public partial class Parser
   private void _243()
   {
       // paren_args -> '(' open_args opt_nl ')' 
-#line 995 "Parser.y"
+#line 996 "Parser.y"
 			{
             Debug.Assert(GetValue(3).Arguments != null);
             yyval = GetValue(3);
@@ -3671,7 +3672,7 @@ public partial class Parser
   private void _244()
   {
       // paren_args -> '(' block_call opt_nl ')' 
-#line 1000 "Parser.y"
+#line 1001 "Parser.y"
 			{
             _tokenizer.ReportWarning(Errors.ParenthesizeArguments);
             SetArguments(GetValue(3).CallExpression);
@@ -3681,7 +3682,7 @@ public partial class Parser
   private void _245()
   {
       // paren_args -> '(' args ',' block_call opt_nl ')' 
-#line 1005 "Parser.y"
+#line 1006 "Parser.y"
 			{
             _tokenizer.ReportWarning(Errors.ParenthesizeArguments);    
             SetArguments(PopArguments(GetValue(5).ArgumentCount, GetValue(3).CallExpression), null, null, null, yyloc);
@@ -3691,7 +3692,7 @@ public partial class Parser
   private void _246()
   {
       // opt_paren_args -> 
-#line 1013 "Parser.y"
+#line 1014 "Parser.y"
 			{
             SetNoArguments(null);
         }
@@ -3700,7 +3701,7 @@ public partial class Parser
   private void _247()
   {
       // opt_paren_args -> paren_args 
-#line 1017 "Parser.y"
+#line 1018 "Parser.y"
 			{
             yyval = GetValue(1);
         }
@@ -3709,7 +3710,7 @@ public partial class Parser
   private void _248()
   {
       // open_args -> args opt_block_reference 
-#line 1024 "Parser.y"
+#line 1025 "Parser.y"
 			{
             PopAndSetArguments(GetValue(2).ArgumentCount, null, null, GetValue(1).BlockReference, yyloc);
         }
@@ -3718,7 +3719,7 @@ public partial class Parser
   private void _249()
   {
       // open_args -> args ',' Star arg opt_block_reference 
-#line 1028 "Parser.y"
+#line 1029 "Parser.y"
 			{
             PopAndSetArguments(GetValue(5).ArgumentCount, null, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3727,7 +3728,7 @@ public partial class Parser
   private void _250()
   {
       // open_args -> maplets opt_block_reference 
-#line 1032 "Parser.y"
+#line 1033 "Parser.y"
 			{
             SetArguments(null, GetValue(2).Maplets, null, GetValue(1).BlockReference, yyloc);
         }
@@ -3736,7 +3737,7 @@ public partial class Parser
   private void _251()
   {
       // open_args -> maplets ',' Star arg opt_block_reference 
-#line 1036 "Parser.y"
+#line 1037 "Parser.y"
 			{
             SetArguments(null, GetValue(5).Maplets, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3745,7 +3746,7 @@ public partial class Parser
   private void _252()
   {
       // open_args -> args ',' maplets opt_block_reference 
-#line 1040 "Parser.y"
+#line 1041 "Parser.y"
 			{
             PopAndSetArguments(GetValue(4).ArgumentCount, GetValue(2).Maplets, null, GetValue(1).BlockReference, yyloc);
         }
@@ -3754,7 +3755,7 @@ public partial class Parser
   private void _253()
   {
       // open_args -> args ',' maplets ',' Star arg opt_block_reference 
-#line 1044 "Parser.y"
+#line 1045 "Parser.y"
 			{
             PopAndSetArguments(GetValue(7).ArgumentCount, GetValue(5).Maplets, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3763,7 +3764,7 @@ public partial class Parser
   private void _254()
   {
       // open_args -> Star arg opt_block_reference 
-#line 1048 "Parser.y"
+#line 1049 "Parser.y"
 			{
             SetArguments(null, null, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3772,7 +3773,7 @@ public partial class Parser
   private void _255()
   {
       // open_args -> block_reference 
-#line 1052 "Parser.y"
+#line 1053 "Parser.y"
 			{
             SetArguments(GetValue(1).BlockReference);
         }
@@ -3781,7 +3782,7 @@ public partial class Parser
   private void _256()
   {
       // open_args -> command 
-#line 1056 "Parser.y"
+#line 1057 "Parser.y"
 			{
             _tokenizer.ReportWarning(Errors.ParenthesizeArguments);                
             SetArguments(GetValue(1).CallExpression);
@@ -3791,7 +3792,7 @@ public partial class Parser
   private void _257()
   {
       // closed_args -> arg ',' args opt_block_reference 
-#line 1064 "Parser.y"
+#line 1065 "Parser.y"
 			{
             SetArguments(PopArguments(GetValue(4).Expression, GetValue(2).ArgumentCount), null, null, GetValue(1).BlockReference, yyloc);
         }
@@ -3800,7 +3801,7 @@ public partial class Parser
   private void _258()
   {
       // closed_args -> arg ',' block_reference 
-#line 1068 "Parser.y"
+#line 1069 "Parser.y"
 			{
             SetArguments(GetValue(3).Expression, GetValue(1).BlockReference);
         }
@@ -3809,7 +3810,7 @@ public partial class Parser
   private void _259()
   {
       // closed_args -> arg ',' Star arg opt_block_reference 
-#line 1072 "Parser.y"
+#line 1073 "Parser.y"
 			{
             SetArguments(new Expression[] { GetValue(5).Expression }, null, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3818,7 +3819,7 @@ public partial class Parser
   private void _260()
   {
       // closed_args -> arg ',' args ',' Star arg opt_block_reference 
-#line 1076 "Parser.y"
+#line 1077 "Parser.y"
 			{
             SetArguments(PopArguments(GetValue(7).Expression, GetValue(5).ArgumentCount), null, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3827,7 +3828,7 @@ public partial class Parser
   private void _261()
   {
       // closed_args -> maplets opt_block_reference 
-#line 1080 "Parser.y"
+#line 1081 "Parser.y"
 			{
             SetArguments(null, GetValue(2).Maplets, null, GetValue(1).BlockReference, yyloc);
         }
@@ -3836,7 +3837,7 @@ public partial class Parser
   private void _262()
   {
       // closed_args -> maplets ',' Star arg opt_block_reference 
-#line 1084 "Parser.y"
+#line 1085 "Parser.y"
 			{
             SetArguments(null, GetValue(5).Maplets, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3845,7 +3846,7 @@ public partial class Parser
   private void _263()
   {
       // closed_args -> arg ',' maplets opt_block_reference 
-#line 1088 "Parser.y"
+#line 1089 "Parser.y"
 			{
             SetArguments(new Expression[] { GetValue(4).Expression }, GetValue(2).Maplets, null, GetValue(1).BlockReference, yyloc);
         }
@@ -3854,7 +3855,7 @@ public partial class Parser
   private void _264()
   {
       // closed_args -> arg ',' args ',' maplets opt_block_reference 
-#line 1092 "Parser.y"
+#line 1093 "Parser.y"
 			{
             SetArguments(PopArguments(GetValue(6).Expression, GetValue(4).ArgumentCount), GetValue(2).Maplets, null, GetValue(1).BlockReference, yyloc);
         }
@@ -3863,7 +3864,7 @@ public partial class Parser
   private void _265()
   {
       // closed_args -> arg ',' maplets ',' Star arg opt_block_reference 
-#line 1096 "Parser.y"
+#line 1097 "Parser.y"
 			{
             SetArguments(new Expression[] { GetValue(7).Expression }, GetValue(5).Maplets, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3872,7 +3873,7 @@ public partial class Parser
   private void _266()
   {
       // closed_args -> arg ',' args ',' maplets ',' Star arg opt_block_reference 
-#line 1100 "Parser.y"
+#line 1101 "Parser.y"
 			{
             SetArguments(PopArguments(GetValue(9).Expression, GetValue(7).ArgumentCount), GetValue(5).Maplets, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3881,7 +3882,7 @@ public partial class Parser
   private void _267()
   {
       // closed_args -> Star arg opt_block_reference 
-#line 1104 "Parser.y"
+#line 1105 "Parser.y"
 			{
             SetArguments(Expression.EmptyArray, null, GetValue(2).Expression, GetValue(1).BlockReference, yyloc);
         }
@@ -3890,7 +3891,7 @@ public partial class Parser
   private void _268()
   {
       // closed_args -> block_reference 
-#line 1108 "Parser.y"
+#line 1109 "Parser.y"
 			{
             SetArguments(GetValue(1).BlockReference);
         }
@@ -3899,7 +3900,7 @@ public partial class Parser
   private void _269()
   {
       // @6 -> 
-#line 1114 "Parser.y"
+#line 1115 "Parser.y"
 			{
             yyval.Integer1 = _tokenizer.CMDARG;
             _tokenizer.CMDARG_PUSH(1);
@@ -3909,7 +3910,7 @@ public partial class Parser
   private void _270()
   {
       // command_args -> @6 command_args_content 
-#line 1119 "Parser.y"
+#line 1120 "Parser.y"
 			{
             _tokenizer.CMDARG = GetValue(2).Integer1;
             yyval = GetValue(1);
@@ -3919,7 +3920,7 @@ public partial class Parser
   private void _271()
   {
       // command_args_content -> open_args 
-#line 1127 "Parser.y"
+#line 1128 "Parser.y"
 			{
             Debug.Assert(GetValue(1).Arguments != null);
             yyval = GetValue(1);
@@ -3929,7 +3930,7 @@ public partial class Parser
   private void _272()
   {
       // @7 -> 
-#line 1132 "Parser.y"
+#line 1133 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_ENDARG);
         }
@@ -3938,7 +3939,7 @@ public partial class Parser
   private void _273()
   {
       // command_args_content -> LparenArg @7 ')' 
-#line 1136 "Parser.y"
+#line 1137 "Parser.y"
 			{
             _tokenizer.ReportWarning(Errors.WhitespaceBeforeArgumentParentheses);    
             SetArguments();
@@ -3948,7 +3949,7 @@ public partial class Parser
   private void _274()
   {
       // @8 -> 
-#line 1141 "Parser.y"
+#line 1142 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_ENDARG);
         }
@@ -3957,7 +3958,7 @@ public partial class Parser
   private void _275()
   {
       // command_args_content -> LparenArg closed_args @8 ')' 
-#line 1145 "Parser.y"
+#line 1146 "Parser.y"
 			{
             _tokenizer.ReportWarning(Errors.WhitespaceBeforeArgumentParentheses);    
             yyval = GetValue(3);
@@ -3967,7 +3968,7 @@ public partial class Parser
   private void _276()
   {
       // block_reference -> Ampersand arg 
-#line 1153 "Parser.y"
+#line 1154 "Parser.y"
 			{
             yyval.BlockReference = new BlockReference(GetValue(1).Expression, yyloc);
         }
@@ -3976,7 +3977,7 @@ public partial class Parser
   private void _277()
   {
       // opt_block_reference -> ',' block_reference 
-#line 1160 "Parser.y"
+#line 1161 "Parser.y"
 			{
             yyval.BlockReference = GetValue(1).BlockReference;
         }
@@ -3985,7 +3986,7 @@ public partial class Parser
   private void _278()
   {
       // opt_block_reference -> 
-#line 1164 "Parser.y"
+#line 1165 "Parser.y"
 			{
             yyval.BlockReference = null;
         }
@@ -3994,7 +3995,7 @@ public partial class Parser
   private void _279()
   {
       // args -> arg 
-#line 1171 "Parser.y"
+#line 1172 "Parser.y"
 			{
             PushArgument(0, GetValue(1).Expression);
         }
@@ -4003,7 +4004,7 @@ public partial class Parser
   private void _280()
   {
       // args -> args ',' arg 
-#line 1175 "Parser.y"
+#line 1176 "Parser.y"
 			{
             PushArgument(GetValue(3).ArgumentCount, GetValue(1).Expression);
         }
@@ -4012,7 +4013,7 @@ public partial class Parser
   private void _282()
   {
       // primary -> symbol 
-#line 1183 "Parser.y"
+#line 1184 "Parser.y"
 			{
             yyval.Expression = new SymbolLiteral(GetValue(1).String, yyloc);
         }
@@ -4021,7 +4022,7 @@ public partial class Parser
   private void _284()
   {
       // primary -> string_concatenation 
-#line 1188 "Parser.y"
+#line 1189 "Parser.y"
 			{
             yyval.Expression = new StringConstructor(GetValue(1).Expressions, StringKind.Mutable, GetLocation(1));
         }
@@ -4030,7 +4031,7 @@ public partial class Parser
   private void _290()
   {
       // primary -> match_reference 
-#line 1197 "Parser.y"
+#line 1198 "Parser.y"
 			{
             yyval.Expression = GetValue(1).RegexMatchReference;
         }
@@ -4039,7 +4040,7 @@ public partial class Parser
   private void _291()
   {
       // primary -> FunctionIdentifier 
-#line 1201 "Parser.y"
+#line 1202 "Parser.y"
 			{
             yyval.Expression = new MethodCall(null, GetValue(1).String, null, GetLocation(1));
         }
@@ -4048,7 +4049,7 @@ public partial class Parser
   private void _292()
   {
       // primary -> primary SeparatingDoubleColon ConstantIdentifier 
-#line 1205 "Parser.y"
+#line 1206 "Parser.y"
 			{
             yyval.Expression = new ConstantVariable(GetValue(3).Expression, GetValue(1).String, yyloc);
         }
@@ -4057,7 +4058,7 @@ public partial class Parser
   private void _293()
   {
       // primary -> LeadingDoubleColon ConstantIdentifier 
-#line 1209 "Parser.y"
+#line 1210 "Parser.y"
 			{
             yyval.Expression = new ConstantVariable(null, GetValue(1).String, yyloc);
         }
@@ -4066,7 +4067,7 @@ public partial class Parser
   private void _294()
   {
       // primary -> primary '[' array_key ']' 
-#line 1213 "Parser.y"
+#line 1214 "Parser.y"
 			{
             yyval.Expression = new ArrayItemAccess(GetValue(4).Expression, GetValue(2).Arguments, yyloc);
         }
@@ -4075,7 +4076,7 @@ public partial class Parser
   private void _295()
   {
       // primary -> Lbrack array_key ']' 
-#line 1217 "Parser.y"
+#line 1218 "Parser.y"
 			{
             yyval.Expression = new ArrayConstructor(GetValue(2).Arguments, yyloc);
         }
@@ -4084,7 +4085,7 @@ public partial class Parser
   private void _296()
   {
       // primary -> Lbrace '}' 
-#line 1221 "Parser.y"
+#line 1222 "Parser.y"
 			{
             yyval.Expression = new HashConstructor(null, null, yyloc);
         }
@@ -4093,7 +4094,7 @@ public partial class Parser
   private void _297()
   {
       // primary -> Lbrace maplets trailer '}' 
-#line 1225 "Parser.y"
+#line 1226 "Parser.y"
 			{
             yyval.Expression = new HashConstructor(GetValue(3).Maplets, null, yyloc);
         }
@@ -4102,7 +4103,7 @@ public partial class Parser
   private void _298()
   {
       // primary -> Lbrace args trailer '}' 
-#line 1229 "Parser.y"
+#line 1230 "Parser.y"
 			{
             yyval.Expression = new HashConstructor(null, PopHashArguments(GetValue(3).ArgumentCount, GetLocation(2)), yyloc);
         }
@@ -4111,7 +4112,7 @@ public partial class Parser
   private void _299()
   {
       // primary -> Yield '(' open_args ')' 
-#line 1233 "Parser.y"
+#line 1234 "Parser.y"
 			{
             yyval.Expression = new YieldCall(RequireNoBlockArg(GetValue(2)), yyloc);
         }
@@ -4120,7 +4121,7 @@ public partial class Parser
   private void _300()
   {
       // primary -> Yield '(' ')' 
-#line 1237 "Parser.y"
+#line 1238 "Parser.y"
 			{
             yyval.Expression = new YieldCall(Arguments.Empty, yyloc);
         }
@@ -4129,7 +4130,7 @@ public partial class Parser
   private void _301()
   {
       // primary -> Yield 
-#line 1241 "Parser.y"
+#line 1242 "Parser.y"
 			{
             yyval.Expression = new YieldCall(null, GetLocation(1));
         }
@@ -4138,7 +4139,7 @@ public partial class Parser
   private void _302()
   {
       // primary -> Defined opt_nl '(' expr ')' 
-#line 1245 "Parser.y"
+#line 1246 "Parser.y"
 			{
             yyval.Expression = new IsDefinedExpression(GetValue(2).Expression, yyloc);
         }
@@ -4147,7 +4148,7 @@ public partial class Parser
   private void _303()
   {
       // primary -> operation brace_block 
-#line 1249 "Parser.y"
+#line 1250 "Parser.y"
 			{
             yyval.Expression = new MethodCall(null, GetValue(2).String, null, GetValue(1).BlockDefinition, GetLocation(2));
         }
@@ -4156,7 +4157,7 @@ public partial class Parser
   private void _305()
   {
       // primary -> method_call brace_block 
-#line 1254 "Parser.y"
+#line 1255 "Parser.y"
 			{    
             SetBlock(GetValue(2).CallExpression, GetValue(1).BlockDefinition);
             yyval.Expression = GetValue(2).CallExpression;
@@ -4166,7 +4167,7 @@ public partial class Parser
   private void _306()
   {
       // primary -> If expr then compstmt if_tail End 
-#line 1259 "Parser.y"
+#line 1260 "Parser.y"
 			{
             yyval.Expression = MakeIfExpression(ToCondition(GetValue(5).Expression), GetValue(3).Statements, GetValue(2).ElseIfClauses, yyloc);
         }
@@ -4175,7 +4176,7 @@ public partial class Parser
   private void _307()
   {
       // primary -> Unless expr then compstmt else_opt End 
-#line 1263 "Parser.y"
+#line 1264 "Parser.y"
 			{
             yyval.Expression = new UnlessExpression(ToCondition(GetValue(5).Expression), GetValue(3).Statements, GetValue(2).ElseIfClause, yyloc);
         }
@@ -4184,7 +4185,7 @@ public partial class Parser
   private void _308()
   {
       // @9 -> 
-#line 1267 "Parser.y"
+#line 1268 "Parser.y"
 			{
             _tokenizer.COND_PUSH(1);
         }
@@ -4193,7 +4194,7 @@ public partial class Parser
   private void _309()
   {
       // @10 -> 
-#line 1271 "Parser.y"
+#line 1272 "Parser.y"
 			{
             _tokenizer.COND_POP();
         }
@@ -4202,7 +4203,7 @@ public partial class Parser
   private void _310()
   {
       // primary -> While @9 expr do @10 compstmt End 
-#line 1275 "Parser.y"
+#line 1276 "Parser.y"
 			{
             yyval.Expression = new WhileLoopExpression(ToCondition(GetValue(5).Expression), true, false, GetValue(2).Statements, yyloc);
         }
@@ -4211,7 +4212,7 @@ public partial class Parser
   private void _311()
   {
       // @11 -> 
-#line 1279 "Parser.y"
+#line 1280 "Parser.y"
 			{
             _tokenizer.COND_PUSH(1);
         }
@@ -4220,7 +4221,7 @@ public partial class Parser
   private void _312()
   {
       // @12 -> 
-#line 1283 "Parser.y"
+#line 1284 "Parser.y"
 			{
             _tokenizer.COND_POP();
         }
@@ -4229,7 +4230,7 @@ public partial class Parser
   private void _313()
   {
       // primary -> Until @11 expr do @12 compstmt End 
-#line 1287 "Parser.y"
+#line 1288 "Parser.y"
 			{
             yyval.Expression = new WhileLoopExpression(ToCondition(GetValue(5).Expression), false, false, GetValue(2).Statements, yyloc);
         }
@@ -4238,7 +4239,7 @@ public partial class Parser
   private void _315()
   {
       // @13 -> 
-#line 1292 "Parser.y"
+#line 1293 "Parser.y"
 			{
             _tokenizer.COND_PUSH(1);
         }
@@ -4247,7 +4248,7 @@ public partial class Parser
   private void _316()
   {
       // @14 -> 
-#line 1296 "Parser.y"
+#line 1297 "Parser.y"
 			{
             _tokenizer.COND_POP();
             EnterPaddingScope();
@@ -4257,7 +4258,7 @@ public partial class Parser
   private void _317()
   {
       // primary -> For block_parameters In @13 expr do @14 compstmt End 
-#line 1301 "Parser.y"
+#line 1302 "Parser.y"
 			{
             yyval.Expression = new ForLoopExpression(CurrentScope, GetValue(8).CompoundLeftValue, GetValue(5).Expression, GetValue(2).Statements, yyloc);
             LeaveScope();
@@ -4267,7 +4268,7 @@ public partial class Parser
   private void _318()
   {
       // primary -> block_expression 
-#line 1306 "Parser.y"
+#line 1307 "Parser.y"
 			{
             yyval.Expression = GetValue(1).Expression;
         }
@@ -4276,7 +4277,7 @@ public partial class Parser
   private void _319()
   {
       // primary -> definition_expression 
-#line 1310 "Parser.y"
+#line 1311 "Parser.y"
 			{
             yyval.Expression = GetValue(1).Expression;
         }
@@ -4285,7 +4286,7 @@ public partial class Parser
   private void _320()
   {
       // @15 -> 
-#line 1317 "Parser.y"
+#line 1318 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_ENDARG);
         }
@@ -4294,7 +4295,7 @@ public partial class Parser
   private void _321()
   {
       // block_expression -> LparenArg expr @15 opt_nl ')' 
-#line 1321 "Parser.y"
+#line 1322 "Parser.y"
 			{
             _tokenizer.ReportWarning(Errors.InterpretedAsGroupedExpression);            
             // BlockExpression behaves like an expression, so we don't need to create one here:
@@ -4305,7 +4306,7 @@ public partial class Parser
   private void _322()
   {
       // block_expression -> LeftParen compstmt ')' 
-#line 1327 "Parser.y"
+#line 1328 "Parser.y"
 			{
             yyval.Expression = MakeBlockExpression(GetValue(2).Statements, yyloc);
         }
@@ -4314,7 +4315,7 @@ public partial class Parser
   private void _323()
   {
       // block_expression -> Begin body End 
-#line 1331 "Parser.y"
+#line 1332 "Parser.y"
 			{
             yyval.Expression = GetValue(2).Body;
         }
@@ -4323,7 +4324,7 @@ public partial class Parser
   private void _324()
   {
       // @16 -> 
-#line 1338 "Parser.y"
+#line 1339 "Parser.y"
 			{                
             EnterTopScope();
         }
@@ -4332,7 +4333,7 @@ public partial class Parser
   private void _325()
   {
       // definition_expression -> Class qualified_module_name superclass @16 body End 
-#line 1342 "Parser.y"
+#line 1343 "Parser.y"
 			{
             if (InMethod) {
                 ErrorSink.Add(_sourceUnit, "class definition in method body", GetLocation(6), -1, Severity.Error);
@@ -4345,7 +4346,7 @@ public partial class Parser
   private void _326()
   {
       // @17 -> 
-#line 1350 "Parser.y"
+#line 1351 "Parser.y"
 			{
             yyval.Integer1 = _inInstanceMethodDefinition;
             _inInstanceMethodDefinition = 0;
@@ -4355,7 +4356,7 @@ public partial class Parser
   private void _327()
   {
       // @18 -> 
-#line 1355 "Parser.y"
+#line 1356 "Parser.y"
 			{
             yyval.Integer1 = _inSingletonMethodDefinition;
             _inSingletonMethodDefinition = 0;
@@ -4366,7 +4367,7 @@ public partial class Parser
   private void _328()
   {
       // definition_expression -> Class Lshft expr @17 term @18 body End 
-#line 1361 "Parser.y"
+#line 1362 "Parser.y"
 			{
             _inInstanceMethodDefinition = GetValue(5).Integer1;
             _inSingletonMethodDefinition = GetValue(3).Integer1;
@@ -4377,7 +4378,7 @@ public partial class Parser
   private void _329()
   {
       // @19 -> 
-#line 1367 "Parser.y"
+#line 1368 "Parser.y"
 			{
             EnterTopScope();
         }
@@ -4386,7 +4387,7 @@ public partial class Parser
   private void _330()
   {
       // definition_expression -> Module qualified_module_name @19 body End 
-#line 1371 "Parser.y"
+#line 1372 "Parser.y"
 			{
             if (InMethod) {
                 ErrorSink.Add(_sourceUnit, "module definition in method body", GetLocation(5), -1, Severity.Error);
@@ -4399,7 +4400,7 @@ public partial class Parser
   private void _331()
   {
       // @20 -> 
-#line 1379 "Parser.y"
+#line 1380 "Parser.y"
 			{
             _inInstanceMethodDefinition++;
             EnterTopScope();
@@ -4409,7 +4410,7 @@ public partial class Parser
   private void _332()
   {
       // definition_expression -> Def method_name @20 parameters_definition body End 
-#line 1384 "Parser.y"
+#line 1385 "Parser.y"
 			{
             _inInstanceMethodDefinition--;
             yyval.Expression = new MethodDefinition(CurrentScope, null, GetValue(5).String, GetValue(3).Parameters, GetValue(2).Body, yyloc);
@@ -4420,7 +4421,7 @@ public partial class Parser
   private void _333()
   {
       // @21 -> 
-#line 1390 "Parser.y"
+#line 1391 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_FNAME);
         }
@@ -4429,7 +4430,7 @@ public partial class Parser
   private void _334()
   {
       // @22 -> 
-#line 1394 "Parser.y"
+#line 1395 "Parser.y"
 			{
             _inSingletonMethodDefinition++;
             _tokenizer.SetState(LexicalState.EXPR_END);
@@ -4440,7 +4441,7 @@ public partial class Parser
   private void _335()
   {
       // definition_expression -> Def singleton dot_or_colon @21 method_name @22 parameters_definition body End 
-#line 1400 "Parser.y"
+#line 1401 "Parser.y"
 			{
             _inSingletonMethodDefinition--;
             yyval.Expression = new MethodDefinition(CurrentScope, GetValue(8).Expression, GetValue(5).String, GetValue(3).Parameters, GetValue(2).Body, yyloc);
@@ -4451,7 +4452,7 @@ public partial class Parser
   private void _336()
   {
       // body -> compstmt rescue_clauses_opt else_opt ensure_opt 
-#line 1409 "Parser.y"
+#line 1410 "Parser.y"
 			{
             yyval.Body = MakeBody(GetValue(4).Statements, GetValue(3).RescueClauses, GetValue(2).ElseIfClause, GetLocation(2), GetValue(1).Statements, yyloc);
         }
@@ -4460,7 +4461,7 @@ public partial class Parser
   private void _337()
   {
       // case_expression -> Case expr opt_terms when_clauses else_opt End 
-#line 1416 "Parser.y"
+#line 1417 "Parser.y"
 			{
             yyval.Expression = new CaseExpression(GetValue(5).Expression, GetValue(3).WhenClauses, GetValue(2).ElseIfClause, yyloc);
         }
@@ -4469,7 +4470,7 @@ public partial class Parser
   private void _338()
   {
       // case_expression -> Case opt_terms when_clauses else_opt End 
-#line 1420 "Parser.y"
+#line 1421 "Parser.y"
 			{
             yyval.Expression = new CaseExpression(null, GetValue(3).WhenClauses, GetValue(2).ElseIfClause, yyloc);
         }
@@ -4478,7 +4479,7 @@ public partial class Parser
   private void _339()
   {
       // case_expression -> Case opt_terms Else compstmt End 
-#line 1424 "Parser.y"
+#line 1425 "Parser.y"
 			{
             yyval.Expression = new CaseExpression(null, null, new ElseIfClause(null, GetValue(2).Statements, yyloc), yyloc);
         }
@@ -4487,7 +4488,7 @@ public partial class Parser
   private void _347()
   {
       // if_tail -> else_opt 
-#line 1444 "Parser.y"
+#line 1445 "Parser.y"
 			{
             yyval.ElseIfClauses = MakeListAddOpt(GetValue(1).ElseIfClause);
         }
@@ -4496,7 +4497,7 @@ public partial class Parser
   private void _348()
   {
       // if_tail -> Elsif expr then compstmt if_tail 
-#line 1448 "Parser.y"
+#line 1449 "Parser.y"
 			{
             GetValue(1).ElseIfClauses.Add(new ElseIfClause(GetValue(4).Expression, GetValue(2).Statements, yyloc));
             yyval.ElseIfClauses = GetValue(1).ElseIfClauses;
@@ -4506,7 +4507,7 @@ public partial class Parser
   private void _349()
   {
       // else_opt -> 
-#line 1455 "Parser.y"
+#line 1456 "Parser.y"
 			{
                 yyval.ElseIfClause = null;
             }
@@ -4515,7 +4516,7 @@ public partial class Parser
   private void _350()
   {
       // else_opt -> Else compstmt 
-#line 1459 "Parser.y"
+#line 1460 "Parser.y"
 			{
                 yyval.ElseIfClause = new ElseIfClause(null, GetValue(1).Statements, yyloc);
             }
@@ -4524,7 +4525,7 @@ public partial class Parser
   private void _351()
   {
       // block_parameters -> lhs 
-#line 1466 "Parser.y"
+#line 1467 "Parser.y"
 			{ 
             yyval.CompoundLeftValue = new CompoundLeftValue(CollectionUtils.MakeList<LeftValue>(GetValue(1).LeftValue), null, GetLocation(1)); 
         }
@@ -4533,7 +4534,7 @@ public partial class Parser
   private void _352()
   {
       // block_parameters -> compound_lhs 
-#line 1470 "Parser.y"
+#line 1471 "Parser.y"
 			{ 
             yyval.CompoundLeftValue = GetValue(1).CompoundLeftValue; 
         }
@@ -4542,7 +4543,7 @@ public partial class Parser
   private void _353()
   {
       // block_parameters_opt -> 
-#line 1477 "Parser.y"
+#line 1478 "Parser.y"
 			{
             yyval.CompoundLeftValue = CompoundLeftValue.UnspecifiedBlockSignature;
         }
@@ -4551,7 +4552,7 @@ public partial class Parser
   private void _354()
   {
       // block_parameters_opt -> '|' '|' 
-#line 1481 "Parser.y"
+#line 1482 "Parser.y"
 			{
             yyval.CompoundLeftValue = CompoundLeftValue.EmptyBlockSignature;
         }
@@ -4560,7 +4561,7 @@ public partial class Parser
   private void _355()
   {
       // block_parameters_opt -> LogicalOr 
-#line 1485 "Parser.y"
+#line 1486 "Parser.y"
 			{
             yyval.CompoundLeftValue = CompoundLeftValue.EmptyBlockSignature;
         }
@@ -4569,7 +4570,7 @@ public partial class Parser
   private void _356()
   {
       // block_parameters_opt -> '|' block_parameters '|' 
-#line 1489 "Parser.y"
+#line 1490 "Parser.y"
 			{
             yyval.CompoundLeftValue = GetValue(2).CompoundLeftValue;
         }
@@ -4578,7 +4579,7 @@ public partial class Parser
   private void _357()
   {
       // @23 -> 
-#line 1496 "Parser.y"
+#line 1497 "Parser.y"
 			{
             EnterNestedScope();
         }
@@ -4587,7 +4588,7 @@ public partial class Parser
   private void _358()
   {
       // do_block -> BlockDo @23 block_parameters_opt compstmt End 
-#line 1500 "Parser.y"
+#line 1501 "Parser.y"
 			{
             yyval.BlockDefinition = new BlockDefinition(CurrentScope, GetValue(3).CompoundLeftValue, GetValue(2).Statements, yyloc);
             LeaveScope();
@@ -4597,7 +4598,7 @@ public partial class Parser
   private void _359()
   {
       // block_call -> command do_block 
-#line 1508 "Parser.y"
+#line 1509 "Parser.y"
 			{                            
             SetBlock(yyval.CallExpression = GetValue(2).CallExpression, GetValue(1).BlockDefinition);
         }
@@ -4606,7 +4607,7 @@ public partial class Parser
   private void _360()
   {
       // block_call -> block_call '.' operation2 opt_paren_args 
-#line 1512 "Parser.y"
+#line 1513 "Parser.y"
 			{
             yyval.CallExpression = MakeMethodCall(GetValue(4).CallExpression, GetValue(2).String, GetValue(1), yyloc);
         }
@@ -4615,7 +4616,7 @@ public partial class Parser
   private void _361()
   {
       // block_call -> block_call SeparatingDoubleColon operation2 opt_paren_args 
-#line 1516 "Parser.y"
+#line 1517 "Parser.y"
 			{
             yyval.CallExpression = MakeMethodCall(GetValue(4).CallExpression, GetValue(2).String, GetValue(1), yyloc);
         }
@@ -4624,7 +4625,7 @@ public partial class Parser
   private void _362()
   {
       // method_call -> operation paren_args 
-#line 1523 "Parser.y"
+#line 1524 "Parser.y"
 			{
             yyval.CallExpression = MakeMethodCall(null, GetValue(2).String, GetValue(1), yyloc);
         }
@@ -4633,7 +4634,7 @@ public partial class Parser
   private void _363()
   {
       // method_call -> primary '.' operation2 opt_paren_args 
-#line 1527 "Parser.y"
+#line 1528 "Parser.y"
 			{
             yyval.CallExpression = MakeMethodCall(GetValue(4).Expression, GetValue(2).String, GetValue(1), yyloc);
         }
@@ -4642,7 +4643,7 @@ public partial class Parser
   private void _364()
   {
       // method_call -> primary SeparatingDoubleColon operation2 paren_args 
-#line 1531 "Parser.y"
+#line 1532 "Parser.y"
 			{
             yyval.CallExpression = MakeMethodCall(GetValue(4).Expression, GetValue(2).String, GetValue(1), yyloc);
         }
@@ -4651,7 +4652,7 @@ public partial class Parser
   private void _365()
   {
       // method_call -> primary SeparatingDoubleColon operation3 
-#line 1535 "Parser.y"
+#line 1536 "Parser.y"
 			{
             yyval.CallExpression = new MethodCall(GetValue(3).Expression, GetValue(1).String, null, GetLocation(1));
         }
@@ -4660,7 +4661,7 @@ public partial class Parser
   private void _366()
   {
       // method_call -> Super paren_args 
-#line 1539 "Parser.y"
+#line 1540 "Parser.y"
 			{
             yyval.CallExpression = MakeSuperCall(GetValue(1), GetLocation(2));
         }
@@ -4669,7 +4670,7 @@ public partial class Parser
   private void _367()
   {
       // method_call -> Super 
-#line 1543 "Parser.y"
+#line 1544 "Parser.y"
 			{
             yyval.CallExpression = new SuperCall(null, null, GetLocation(1));
         }
@@ -4678,7 +4679,7 @@ public partial class Parser
   private void _368()
   {
       // @24 -> 
-#line 1550 "Parser.y"
+#line 1551 "Parser.y"
 			{
             EnterNestedScope();
         }
@@ -4687,7 +4688,7 @@ public partial class Parser
   private void _369()
   {
       // brace_block -> '{' @24 block_parameters_opt compstmt '}' 
-#line 1554 "Parser.y"
+#line 1555 "Parser.y"
 			{
             yyval.BlockDefinition = new BlockDefinition(CurrentScope, GetValue(3).CompoundLeftValue, GetValue(2).Statements, yyloc);
             LeaveScope();
@@ -4697,7 +4698,7 @@ public partial class Parser
   private void _370()
   {
       // @25 -> 
-#line 1559 "Parser.y"
+#line 1560 "Parser.y"
 			{
             EnterNestedScope();    
         }
@@ -4706,7 +4707,7 @@ public partial class Parser
   private void _371()
   {
       // brace_block -> Do @25 block_parameters_opt compstmt End 
-#line 1563 "Parser.y"
+#line 1564 "Parser.y"
 			{
             yyval.BlockDefinition = new BlockDefinition(CurrentScope, GetValue(3).CompoundLeftValue, GetValue(2).Statements, yyloc);
             LeaveScope();
@@ -4716,7 +4717,7 @@ public partial class Parser
   private void _372()
   {
       // when_clauses -> when_clause 
-#line 1571 "Parser.y"
+#line 1572 "Parser.y"
 			{
             yyval.WhenClauses = CollectionUtils.MakeList<WhenClause>(GetValue(1).WhenClause); 
         }
@@ -4725,7 +4726,7 @@ public partial class Parser
   private void _373()
   {
       // when_clauses -> when_clauses when_clause 
-#line 1575 "Parser.y"
+#line 1576 "Parser.y"
 			{
             (yyval.WhenClauses = GetValue(2).WhenClauses).Add(GetValue(1).WhenClause);
         }
@@ -4734,7 +4735,7 @@ public partial class Parser
   private void _374()
   {
       // when_clause -> When when_args then compstmt 
-#line 1582 "Parser.y"
+#line 1583 "Parser.y"
 			{
              yyval.WhenClause = MakeWhenClause(GetValue(3), GetValue(1).Statements, GetLocation(1));
          }
@@ -4743,7 +4744,7 @@ public partial class Parser
   private void _375()
   {
       // when_args -> args 
-#line 1589 "Parser.y"
+#line 1590 "Parser.y"
 			{
             SetWhenClauseArguments(GetValue(1).ArgumentCount, null);
         }
@@ -4752,7 +4753,7 @@ public partial class Parser
   private void _376()
   {
       // when_args -> args ',' Star arg 
-#line 1593 "Parser.y"
+#line 1594 "Parser.y"
 			{
             SetWhenClauseArguments(GetValue(4).ArgumentCount, GetValue(1).Expression);
         }
@@ -4761,7 +4762,7 @@ public partial class Parser
   private void _377()
   {
       // when_args -> Star arg 
-#line 1597 "Parser.y"
+#line 1598 "Parser.y"
 			{
             SetWhenClauseArguments(0, GetValue(1).Expression);
         }
@@ -4770,7 +4771,7 @@ public partial class Parser
   private void _378()
   {
       // rescue_clauses_opt -> 
-#line 1604 "Parser.y"
+#line 1605 "Parser.y"
 			{
             yyval.RescueClauses = null;
         }
@@ -4779,7 +4780,7 @@ public partial class Parser
   private void _380()
   {
       // rescue_clauses -> rescue_clause 
-#line 1612 "Parser.y"
+#line 1613 "Parser.y"
 			{
             yyval.RescueClauses = CollectionUtils.MakeList<RescueClause>(GetValue(1).RescueClause);
         }
@@ -4788,7 +4789,7 @@ public partial class Parser
   private void _381()
   {
       // rescue_clauses -> rescue_clauses rescue_clause 
-#line 1616 "Parser.y"
+#line 1617 "Parser.y"
 			{
             (yyval.RescueClauses = GetValue(2).RescueClauses).Add(GetValue(1).RescueClause);
         }
@@ -4797,7 +4798,7 @@ public partial class Parser
   private void _382()
   {
       // rescue_clause -> Rescue exc_var then compstmt 
-#line 1623 "Parser.y"
+#line 1624 "Parser.y"
 			{
             yyval.RescueClause = new RescueClause(GetValue(3).LeftValue, GetValue(1).Statements, yyloc);        
         }
@@ -4806,7 +4807,7 @@ public partial class Parser
   private void _383()
   {
       // rescue_clause -> Rescue arg exc_var then compstmt 
-#line 1627 "Parser.y"
+#line 1628 "Parser.y"
 			{
             yyval.RescueClause = new RescueClause(GetValue(4).Expression, GetValue(3).LeftValue, GetValue(1).Statements, yyloc);        
         }
@@ -4815,7 +4816,7 @@ public partial class Parser
   private void _384()
   {
       // rescue_clause -> Rescue compound_rhs exc_var then compstmt 
-#line 1631 "Parser.y"
+#line 1632 "Parser.y"
 			{
             yyval.RescueClause = new RescueClause(GetValue(4).CompoundRightValue, GetValue(3).LeftValue, GetValue(1).Statements, yyloc);        
         }
@@ -4824,7 +4825,7 @@ public partial class Parser
   private void _385()
   {
       // exc_var -> 
-#line 1638 "Parser.y"
+#line 1639 "Parser.y"
 			{
             yyval.LeftValue = null;
         }
@@ -4833,7 +4834,7 @@ public partial class Parser
   private void _386()
   {
       // exc_var -> Assoc lhs 
-#line 1642 "Parser.y"
+#line 1643 "Parser.y"
 			{
             yyval.LeftValue = GetValue(1).LeftValue;
         }
@@ -4842,7 +4843,7 @@ public partial class Parser
   private void _387()
   {
       // ensure_opt -> 
-#line 1649 "Parser.y"
+#line 1650 "Parser.y"
 			{
             yyval.Statements = null;
         }
@@ -4851,7 +4852,7 @@ public partial class Parser
   private void _388()
   {
       // ensure_opt -> Ensure compstmt 
-#line 1653 "Parser.y"
+#line 1654 "Parser.y"
 			{
             yyval.Statements = GetValue(1).Statements;
         }
@@ -4860,7 +4861,7 @@ public partial class Parser
   private void _389()
   {
       // string_concatenation -> string 
-#line 1660 "Parser.y"
+#line 1661 "Parser.y"
 			{
             yyval.Expressions = GetValue(1).Expressions;
         }
@@ -4869,7 +4870,7 @@ public partial class Parser
   private void _390()
   {
       // string_concatenation -> string_concatenation string 
-#line 1664 "Parser.y"
+#line 1665 "Parser.y"
 			{
             (yyval.Expressions = GetValue(2).Expressions).AddRange(GetValue(1).Expressions);
         }
@@ -4878,7 +4879,7 @@ public partial class Parser
   private void _391()
   {
       // string -> StringBegin string_contents StringEnd 
-#line 1671 "Parser.y"
+#line 1672 "Parser.y"
 			{
             yyval.Expressions = GetValue(2).Expressions;
         }
@@ -4887,7 +4888,7 @@ public partial class Parser
   private void _392()
   {
       // shell_string -> ShellStringBegin string_contents StringEnd 
-#line 1678 "Parser.y"
+#line 1679 "Parser.y"
 			{
             yyval.Expression = new StringConstructor(GetValue(2).Expressions, StringKind.Command, yyloc);
         }
@@ -4896,7 +4897,7 @@ public partial class Parser
   private void _393()
   {
       // immutable_string -> SymbolBegin string_contents StringEnd 
-#line 1685 "Parser.y"
+#line 1686 "Parser.y"
 			{
             yyval.Expression = MakeSymbolConstructor(GetValue(2).Expressions, yyloc);
         }
@@ -4905,7 +4906,7 @@ public partial class Parser
   private void _394()
   {
       // regexp -> RegexpBegin string_contents RegexpEnd 
-#line 1692 "Parser.y"
+#line 1693 "Parser.y"
 			{
             yyval.Expression = new RegularExpression(GetValue(2).Expressions, GetValue(1).RegExOptions, yyloc);
         }
@@ -4914,7 +4915,7 @@ public partial class Parser
   private void _395()
   {
       // words -> WordsBegin WordSeparator StringEnd 
-#line 1699 "Parser.y"
+#line 1700 "Parser.y"
 			{
             yyval.Expression = new ArrayConstructor(null, yyloc);
         }
@@ -4923,7 +4924,7 @@ public partial class Parser
   private void _396()
   {
       // words -> WordsBegin word_list StringEnd 
-#line 1703 "Parser.y"
+#line 1704 "Parser.y"
 			{
             yyval.Expression = new ArrayConstructor(new Arguments(GetValue(2).Expressions.ToArray(), null, null, GetLocation(2)), yyloc);
         }
@@ -4932,7 +4933,7 @@ public partial class Parser
   private void _397()
   {
       // word_list -> 
-#line 1710 "Parser.y"
+#line 1711 "Parser.y"
 			{
             yyval.Expressions = new List<Expression>();
         }
@@ -4941,7 +4942,7 @@ public partial class Parser
   private void _398()
   {
       // word_list -> word_list word WordSeparator 
-#line 1714 "Parser.y"
+#line 1715 "Parser.y"
 			{
             (yyval.Expressions = GetValue(3).Expressions).Add(new StringConstructor(GetValue(2).Expressions, StringKind.Mutable, GetLocation(2)));
         }
@@ -4950,7 +4951,7 @@ public partial class Parser
   private void _399()
   {
       // word -> string_content 
-#line 1721 "Parser.y"
+#line 1722 "Parser.y"
 			{
             yyval.Expressions = CollectionUtils.MakeList<Expression>(GetValue(1).Expression);
         }
@@ -4959,7 +4960,7 @@ public partial class Parser
   private void _400()
   {
       // word -> word string_content 
-#line 1725 "Parser.y"
+#line 1726 "Parser.y"
 			{
             (yyval.Expressions = GetValue(2).Expressions).Add(GetValue(1).Expression);
         }
@@ -4968,7 +4969,7 @@ public partial class Parser
   private void _401()
   {
       // verbatim_words -> VerbatimWordsBegin WordSeparator StringEnd 
-#line 1732 "Parser.y"
+#line 1733 "Parser.y"
 			{
             yyval.Expression = new ArrayConstructor(null, yyloc);
         }
@@ -4977,7 +4978,7 @@ public partial class Parser
   private void _402()
   {
       // verbatim_words -> VerbatimWordsBegin verbatim_word_list StringEnd 
-#line 1736 "Parser.y"
+#line 1737 "Parser.y"
 			{
             yyval.Expression = MakeVerbatimWords(GetValue(2).Expressions, GetLocation(2), yyloc);
         }
@@ -4986,7 +4987,7 @@ public partial class Parser
   private void _403()
   {
       // verbatim_word_list -> 
-#line 1743 "Parser.y"
+#line 1744 "Parser.y"
 			{
             yyval.Expressions = new List<Expression>();
         }
@@ -4995,7 +4996,7 @@ public partial class Parser
   private void _404()
   {
       // verbatim_word_list -> verbatim_word_list StringContent WordSeparator 
-#line 1747 "Parser.y"
+#line 1748 "Parser.y"
 			{
             (yyval.Expressions = GetValue(3).Expressions).Add(MakeStringLiteral(GetValue(2), GetLocation(2)));
         }
@@ -5004,7 +5005,7 @@ public partial class Parser
   private void _405()
   {
       // string_contents -> 
-#line 1754 "Parser.y"
+#line 1755 "Parser.y"
 			{
             yyval.Expressions = new List<Expression>();
         }
@@ -5013,7 +5014,7 @@ public partial class Parser
   private void _406()
   {
       // string_contents -> string_contents string_content 
-#line 1758 "Parser.y"
+#line 1759 "Parser.y"
 			{
             (yyval.Expressions = GetValue(2).Expressions).Add(GetValue(1).Expression);
         }
@@ -5022,7 +5023,7 @@ public partial class Parser
   private void _407()
   {
       // string_content -> StringContent 
-#line 1766 "Parser.y"
+#line 1767 "Parser.y"
 			{
             yyval.Expression = MakeStringLiteral(GetValue(1), yyloc);
         }
@@ -5031,7 +5032,7 @@ public partial class Parser
   private void _408()
   {
       // string_content -> StringEmbeddedVariableBegin string_embedded_variable 
-#line 1770 "Parser.y"
+#line 1771 "Parser.y"
 			{
             _tokenizer.StringEmbeddedVariableEnd(GetValue(2).StringTokenizer);
             yyval.Expression = GetValue(1).Expression;
@@ -5041,7 +5042,7 @@ public partial class Parser
   private void _409()
   {
       // string_content -> StringEmbeddedCodeBegin compstmt '}' 
-#line 1775 "Parser.y"
+#line 1776 "Parser.y"
 			{
             _tokenizer.StringEmbeddedCodeEnd(GetValue(3).StringTokenizer);
             yyval.Expression = MakeBlockExpression(GetValue(2).Statements, GetLocation(2));
@@ -5051,7 +5052,7 @@ public partial class Parser
   private void _410()
   {
       // string_embedded_variable -> GlobalVariable 
-#line 1783 "Parser.y"
+#line 1784 "Parser.y"
 			{ 
           yyval.Expression = new GlobalVariable(GetValue(1).String, yyloc); 
       }
@@ -5060,7 +5061,7 @@ public partial class Parser
   private void _411()
   {
       // string_embedded_variable -> match_reference 
-#line 1787 "Parser.y"
+#line 1788 "Parser.y"
 			{ 
           yyval.Expression = GetValue(1).RegexMatchReference; 
       }
@@ -5069,7 +5070,7 @@ public partial class Parser
   private void _412()
   {
       // string_embedded_variable -> InstanceVariable 
-#line 1791 "Parser.y"
+#line 1792 "Parser.y"
 			{ 
           yyval.Expression = new InstanceVariable(GetValue(1).String, yyloc); 
       }
@@ -5078,7 +5079,7 @@ public partial class Parser
   private void _413()
   {
       // string_embedded_variable -> ClassVariable 
-#line 1795 "Parser.y"
+#line 1796 "Parser.y"
 			{ 
           yyval.Expression = new ClassVariable(GetValue(1).String, yyloc); 
       }
@@ -5087,7 +5088,7 @@ public partial class Parser
   private void _414()
   {
       // symbol -> SymbolBegin sym 
-#line 1802 "Parser.y"
+#line 1803 "Parser.y"
 			{
           _tokenizer.SetState(LexicalState.EXPR_END);
           yyval.String = GetValue(1).String;
@@ -5097,7 +5098,7 @@ public partial class Parser
   private void _417()
   {
       // sym -> GlobalVariable 
-#line 1812 "Parser.y"
+#line 1813 "Parser.y"
 			{
           yyval.String = "$" + GetValue(1).String;
       }
@@ -5106,7 +5107,7 @@ public partial class Parser
   private void _419()
   {
       // sym -> match_reference 
-#line 1817 "Parser.y"
+#line 1818 "Parser.y"
 			{
           yyval.String = GetValue(1).RegexMatchReference.FullName;
       }
@@ -5115,7 +5116,7 @@ public partial class Parser
   private void _420()
   {
       // numeric_literal -> Integer 
-#line 1824 "Parser.y"
+#line 1825 "Parser.y"
 			{
             // unsigned integer:
             yyval.Expression = Literal.Integer(GetValue(1).Integer1, yyloc);
@@ -5125,7 +5126,7 @@ public partial class Parser
   private void _421()
   {
       // numeric_literal -> BigInteger 
-#line 1829 "Parser.y"
+#line 1830 "Parser.y"
 			{
             yyval.Expression = Literal.BigInteger(GetValue(1).BigInteger, yyloc);
         }
@@ -5134,7 +5135,7 @@ public partial class Parser
   private void _422()
   {
       // numeric_literal -> Float 
-#line 1833 "Parser.y"
+#line 1834 "Parser.y"
 			{
             yyval.Expression = Literal.Double(GetValue(1).Double, yyloc);
         }
@@ -5143,7 +5144,7 @@ public partial class Parser
   private void _423()
   {
       // numeric_literal -> UminusNum Integer 
-#line 1837 "Parser.y"
+#line 1838 "Parser.y"
 			{
             // cannot overflow INTEGER is unsigned and Int32.MaxValue < |Int32.MinValue|
             yyval.Expression = Literal.Integer(-GetValue(1).Integer1, yyloc);
@@ -5153,7 +5154,7 @@ public partial class Parser
   private void _424()
   {
       // numeric_literal -> UminusNum BigInteger 
-#line 1842 "Parser.y"
+#line 1843 "Parser.y"
 			{
             // TODO: -|Int32.MinValue| actually ends up here (converted to bigint) instead of being Int32. We should fix that.
             yyval.Expression = Literal.BigInteger(-GetValue(1).BigInteger, yyloc);
@@ -5163,7 +5164,7 @@ public partial class Parser
   private void _425()
   {
       // numeric_literal -> UminusNum Float 
-#line 1847 "Parser.y"
+#line 1848 "Parser.y"
 			{
             yyval.Expression = Literal.Double(-GetValue(1).Double, yyloc);
         }
@@ -5172,91 +5173,91 @@ public partial class Parser
   private void _426()
   {
       // variable -> Identifier 
-#line 1853 "Parser.y"
+#line 1854 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Identifier; yyval.String = GetValue(1).String; }
   }
 
   private void _427()
   {
       // variable -> InstanceVariable 
-#line 1854 "Parser.y"
+#line 1855 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Instance; yyval.String = GetValue(1).String; }
   }
 
   private void _428()
   {
       // variable -> GlobalVariable 
-#line 1855 "Parser.y"
+#line 1856 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Global; yyval.String = GetValue(1).String; }
   }
 
   private void _429()
   {
       // variable -> ConstantIdentifier 
-#line 1856 "Parser.y"
+#line 1857 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Constant; yyval.String = GetValue(1).String; }
   }
 
   private void _430()
   {
       // variable -> ClassVariable 
-#line 1857 "Parser.y"
+#line 1858 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Class; yyval.String = GetValue(1).String; }
   }
 
   private void _431()
   {
       // variable -> Nil 
-#line 1858 "Parser.y"
+#line 1859 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Nil; yyval.String = null; }
   }
 
   private void _432()
   {
       // variable -> Self 
-#line 1859 "Parser.y"
+#line 1860 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Self; yyval.String = null; }
   }
 
   private void _433()
   {
       // variable -> True 
-#line 1860 "Parser.y"
+#line 1861 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.True; yyval.String = null; }
   }
 
   private void _434()
   {
       // variable -> False 
-#line 1861 "Parser.y"
+#line 1862 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.False; yyval.String = null; }
   }
 
   private void _435()
   {
       // variable -> File 
-#line 1862 "Parser.y"
+#line 1863 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.File; yyval.String = null; }
   }
 
   private void _436()
   {
       // variable -> Line 
-#line 1863 "Parser.y"
+#line 1864 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Line; yyval.String = null; }
   }
 
   private void _437()
   {
       // variable -> Encoding 
-#line 1864 "Parser.y"
+#line 1865 "Parser.y"
 			{ yyval.VariableFactory = VariableFactory.Encoding; yyval.String = null; }
   }
 
   private void _438()
   {
       // var_ref -> variable 
-#line 1869 "Parser.y"
+#line 1870 "Parser.y"
 			{
             yyval.Expression = VariableFactory.MakeRead(GetValue(1).VariableFactory, this, GetValue(1).String, yyloc);
         }
@@ -5265,7 +5266,7 @@ public partial class Parser
   private void _439()
   {
       // var_lhs -> variable 
-#line 1876 "Parser.y"
+#line 1877 "Parser.y"
 			{
             yyval.LeftValue = VariableFactory.MakeLeftValue(GetValue(1).VariableFactory, this, GetValue(1).String, yyloc);
         }
@@ -5274,7 +5275,7 @@ public partial class Parser
   private void _440()
   {
       // match_reference -> MatchReference 
-#line 1883 "Parser.y"
+#line 1884 "Parser.y"
 			{ 
             yyval.RegexMatchReference = new RegexMatchReference(GetValue(1).Integer1, GetLocation(1)); 
         }
@@ -5283,7 +5284,7 @@ public partial class Parser
   private void _441()
   {
       // superclass -> term 
-#line 1890 "Parser.y"
+#line 1891 "Parser.y"
 			{
             yyval.Expression = null;
         }
@@ -5292,7 +5293,7 @@ public partial class Parser
   private void _442()
   {
       // @26 -> 
-#line 1894 "Parser.y"
+#line 1895 "Parser.y"
 			{
             _tokenizer.SetState(LexicalState.EXPR_BEG);
         }
@@ -5301,7 +5302,7 @@ public partial class Parser
   private void _443()
   {
       // superclass -> '<' @26 expr term 
-#line 1898 "Parser.y"
+#line 1899 "Parser.y"
 			{
             yyval.Expression = GetValue(2).Expression;
         }
@@ -5310,7 +5311,7 @@ public partial class Parser
   private void _444()
   {
       // superclass -> Error term 
-#line 1902 "Parser.y"
+#line 1903 "Parser.y"
 			{
             StopErrorRecovery();
             yyval.Expression = null;
@@ -5320,7 +5321,7 @@ public partial class Parser
   private void _445()
   {
       // parameters_definition -> '(' parameters opt_nl ')' 
-#line 1910 "Parser.y"
+#line 1911 "Parser.y"
 			{
               yyval.Parameters = GetValue(3).Parameters;
               _tokenizer.SetState(LexicalState.EXPR_BEG);
@@ -5330,7 +5331,7 @@ public partial class Parser
   private void _446()
   {
       // parameters_definition -> parameters term 
-#line 1915 "Parser.y"
+#line 1916 "Parser.y"
 			{
             yyval.Parameters = GetValue(2).Parameters;
         }
@@ -5339,7 +5340,7 @@ public partial class Parser
   private void _447()
   {
       // parameters -> parameter_list ',' default_parameter_list ',' array_parameter block_parameter_opt 
-#line 1922 "Parser.y"
+#line 1923 "Parser.y"
 			{
             yyval.Parameters = new Parameters(GetValue(6).LocalVariables, GetValue(4).SimpleAssignmentExpressions, GetValue(2).LocalVariable, GetValue(1).LocalVariable, yyloc);
         }
@@ -5348,7 +5349,7 @@ public partial class Parser
   private void _448()
   {
       // parameters -> parameter_list ',' default_parameter_list block_parameter_opt 
-#line 1926 "Parser.y"
+#line 1927 "Parser.y"
 			{
             yyval.Parameters = new Parameters(GetValue(4).LocalVariables, GetValue(2).SimpleAssignmentExpressions, null, GetValue(1).LocalVariable, yyloc);
         }
@@ -5357,7 +5358,7 @@ public partial class Parser
   private void _449()
   {
       // parameters -> parameter_list ',' array_parameter block_parameter_opt 
-#line 1930 "Parser.y"
+#line 1931 "Parser.y"
 			{
             yyval.Parameters = new Parameters(GetValue(4).LocalVariables, null, GetValue(2).LocalVariable, GetValue(1).LocalVariable, yyloc);
         }
@@ -5366,7 +5367,7 @@ public partial class Parser
   private void _450()
   {
       // parameters -> parameter_list block_parameter_opt 
-#line 1934 "Parser.y"
+#line 1935 "Parser.y"
 			{
             yyval.Parameters = new Parameters(GetValue(2).LocalVariables, null, null, GetValue(1).LocalVariable, yyloc);
         }
@@ -5375,7 +5376,7 @@ public partial class Parser
   private void _451()
   {
       // parameters -> default_parameter_list ',' array_parameter block_parameter_opt 
-#line 1938 "Parser.y"
+#line 1939 "Parser.y"
 			{
             yyval.Parameters = new Parameters(null, GetValue(4).SimpleAssignmentExpressions, GetValue(2).LocalVariable, GetValue(1).LocalVariable, yyloc);
         }
@@ -5384,7 +5385,7 @@ public partial class Parser
   private void _452()
   {
       // parameters -> default_parameter_list block_parameter_opt 
-#line 1942 "Parser.y"
+#line 1943 "Parser.y"
 			{
             yyval.Parameters = new Parameters(null, GetValue(2).SimpleAssignmentExpressions, null, GetValue(1).LocalVariable, yyloc);
         }
@@ -5393,7 +5394,7 @@ public partial class Parser
   private void _453()
   {
       // parameters -> array_parameter block_parameter_opt 
-#line 1946 "Parser.y"
+#line 1947 "Parser.y"
 			{
             yyval.Parameters = new Parameters(null, null, GetValue(2).LocalVariable, GetValue(1).LocalVariable, yyloc);
         }
@@ -5402,7 +5403,7 @@ public partial class Parser
   private void _454()
   {
       // parameters -> block_parameter 
-#line 1950 "Parser.y"
+#line 1951 "Parser.y"
 			{
             yyval.Parameters = new Parameters(null, null, null, GetValue(1).LocalVariable, yyloc);
         }
@@ -5411,7 +5412,7 @@ public partial class Parser
   private void _455()
   {
       // parameters -> 
-#line 1954 "Parser.y"
+#line 1955 "Parser.y"
 			{
             yyval.Parameters = new Parameters(null, null, null, null, yyloc);
         }
@@ -5420,7 +5421,7 @@ public partial class Parser
   private void _456()
   {
       // parameter -> ConstantIdentifier 
-#line 1961 "Parser.y"
+#line 1962 "Parser.y"
 			{    
             _tokenizer.ReportError(Errors.FormalArgumentIsConstantVariable);
             yyval.LocalVariable = DefineParameter(GenerateErrorConstantName(), yyloc);
@@ -5430,7 +5431,7 @@ public partial class Parser
   private void _457()
   {
       // parameter -> InstanceVariable 
-#line 1966 "Parser.y"
+#line 1967 "Parser.y"
 			{
             _tokenizer.ReportError(Errors.FormalArgumentIsInstanceVariable);
             yyval.LocalVariable = DefineParameter(GenerateErrorConstantName(), yyloc);
@@ -5440,7 +5441,7 @@ public partial class Parser
   private void _458()
   {
       // parameter -> GlobalVariable 
-#line 1971 "Parser.y"
+#line 1972 "Parser.y"
 			{
             _tokenizer.ReportError(Errors.FormalArgumentIsGlobalVariable);
             yyval.LocalVariable = DefineParameter(GenerateErrorConstantName(), yyloc);
@@ -5450,7 +5451,7 @@ public partial class Parser
   private void _459()
   {
       // parameter -> ClassVariable 
-#line 1976 "Parser.y"
+#line 1977 "Parser.y"
 			{
             _tokenizer.ReportError(Errors.FormalArgumentIsClassVariable);
             yyval.LocalVariable = DefineParameter(GenerateErrorConstantName(), yyloc);
@@ -5460,7 +5461,7 @@ public partial class Parser
   private void _460()
   {
       // parameter -> Identifier 
-#line 1981 "Parser.y"
+#line 1982 "Parser.y"
 			{           
             yyval.LocalVariable = DefineParameter(GetValue(1).String, yyloc);
         }
@@ -5469,7 +5470,7 @@ public partial class Parser
   private void _461()
   {
       // parameter_list -> parameter 
-#line 1988 "Parser.y"
+#line 1989 "Parser.y"
 			{
             yyval.LocalVariables = CollectionUtils.MakeList<LocalVariable>(GetValue(1).LocalVariable);
         }
@@ -5478,7 +5479,7 @@ public partial class Parser
   private void _462()
   {
       // parameter_list -> parameter_list ',' parameter 
-#line 1992 "Parser.y"
+#line 1993 "Parser.y"
 			{
             (yyval.LocalVariables = GetValue(3).LocalVariables).Add(GetValue(1).LocalVariable);
         }
@@ -5487,7 +5488,7 @@ public partial class Parser
   private void _463()
   {
       // default_parameter -> parameter '=' arg 
-#line 1999 "Parser.y"
+#line 2000 "Parser.y"
 			{        
             yyval.SimpleAssignmentExpression = new SimpleAssignmentExpression(GetValue(3).LocalVariable, GetValue(1).Expression, null, yyloc);
         }
@@ -5496,7 +5497,7 @@ public partial class Parser
   private void _464()
   {
       // default_parameter_list -> default_parameter 
-#line 2006 "Parser.y"
+#line 2007 "Parser.y"
 			{
             yyval.SimpleAssignmentExpressions = CollectionUtils.MakeList<SimpleAssignmentExpression>(GetValue(1).SimpleAssignmentExpression);
         }
@@ -5505,7 +5506,7 @@ public partial class Parser
   private void _465()
   {
       // default_parameter_list -> default_parameter_list ',' default_parameter 
-#line 2010 "Parser.y"
+#line 2011 "Parser.y"
 			{
             (yyval.SimpleAssignmentExpressions = GetValue(3).SimpleAssignmentExpressions).Add(GetValue(1).SimpleAssignmentExpression);
         }
@@ -5514,7 +5515,7 @@ public partial class Parser
   private void _468()
   {
       // array_parameter -> array_parameter_mark parameter 
-#line 2022 "Parser.y"
+#line 2023 "Parser.y"
 			{    
             yyval.LocalVariable = GetValue(1).LocalVariable;
         }
@@ -5523,7 +5524,7 @@ public partial class Parser
   private void _469()
   {
       // array_parameter -> array_parameter_mark 
-#line 2026 "Parser.y"
+#line 2027 "Parser.y"
 			{
             yyval.LocalVariable = DefineParameter(Symbols.RestArgsLocal, GetLocation(1));
         }
@@ -5532,7 +5533,7 @@ public partial class Parser
   private void _472()
   {
       // block_parameter -> block_parameter_mark parameter 
-#line 2038 "Parser.y"
+#line 2039 "Parser.y"
 			{
             yyval.LocalVariable = GetValue(1).LocalVariable;
         }
@@ -5541,7 +5542,7 @@ public partial class Parser
   private void _473()
   {
       // block_parameter_opt -> 
-#line 2045 "Parser.y"
+#line 2046 "Parser.y"
 			{
            yyval.LocalVariable = null;
        }
@@ -5550,7 +5551,7 @@ public partial class Parser
   private void _474()
   {
       // block_parameter_opt -> ',' block_parameter 
-#line 2049 "Parser.y"
+#line 2050 "Parser.y"
 			{
            yyval.LocalVariable = GetValue(1).LocalVariable;
        }
@@ -5559,7 +5560,7 @@ public partial class Parser
   private void _476()
   {
       // @27 -> 
-#line 2057 "Parser.y"
+#line 2058 "Parser.y"
 			{
            _tokenizer.SetState(LexicalState.EXPR_BEG);
        }
@@ -5568,7 +5569,7 @@ public partial class Parser
   private void _477()
   {
       // singleton -> '(' @27 expr opt_nl ')' 
-#line 2061 "Parser.y"
+#line 2062 "Parser.y"
 			{                        
            yyval.Expression = GetValue(3).Expression;
        }
@@ -5577,7 +5578,7 @@ public partial class Parser
   private void _478()
   {
       // maplets -> maplet 
-#line 2068 "Parser.y"
+#line 2069 "Parser.y"
 			{
            yyval.Maplets = CollectionUtils.MakeList<Maplet>(GetValue(1).Maplet);
        }
@@ -5586,7 +5587,7 @@ public partial class Parser
   private void _479()
   {
       // maplets -> maplets ',' maplet 
-#line 2072 "Parser.y"
+#line 2073 "Parser.y"
 			{
            (yyval.Maplets = GetValue(3).Maplets).Add(GetValue(1).Maplet);
        }
@@ -5595,7 +5596,7 @@ public partial class Parser
   private void _480()
   {
       // maplet -> arg Assoc arg 
-#line 2079 "Parser.y"
+#line 2080 "Parser.y"
 			{
            yyval.Maplet = new Maplet(GetValue(3).Expression, GetValue(1).Expression, yyloc);
        }
@@ -5619,18 +5620,18 @@ public partial class Parser
   private void _500()
   {
       // term -> ';' 
-#line 2125 "Parser.y"
+#line 2126 "Parser.y"
 			{ StopErrorRecovery(); }
   }
 
   private void _503()
   {
       // terms -> terms ';' 
-#line 2131 "Parser.y"
+#line 2132 "Parser.y"
 			{ StopErrorRecovery(); }
   }
 
-#line 2134 "Parser.y"
+#line 2135 "Parser.y"
 
 }
 }

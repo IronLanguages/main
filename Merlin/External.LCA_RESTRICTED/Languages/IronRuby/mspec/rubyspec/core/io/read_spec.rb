@@ -4,17 +4,25 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe "IO.read" do
   before :each do
-    @fname = "test.txt"
+    @fname = tmp("io_read.txt")
     @contents = "1234567890"
     File.open(@fname, "w") { |f| f.write @contents }
   end
 
   after :each do
-    File.delete @fname if File.exists? @fname
+    rm_r @fname
   end
 
   it "reads the contents of a file" do
     IO.read(@fname).should == @contents
+  end
+
+  ruby_version_is "1.9" do
+    it "calls #to_path on non-String arguments" do
+      p = mock('path')
+      p.should_receive(:to_path).and_return(@fname)
+      IO.read(p)
+    end
   end
 
   it "treats second nil argument as no length limit" do
@@ -40,7 +48,7 @@ describe "IO.read" do
   end
 
   it "raises an Errno::ENOENT when the requested file does not exist" do
-    File.delete(@fname) if File.exists?(@fname)
+    rm_r @fname
     lambda { IO.read @fname }.should raise_error(Errno::ENOENT)
   end
 
@@ -60,12 +68,12 @@ end
 
 describe "IO.read on an empty file" do
   before :each do
-    @fname = 'empty_test.txt'
+    @fname = tmp("io_read_empty.txt")
     File.open(@fname, 'w') {|f| 1 }
   end
 
   after :each do
-    File.delete @fname  if File.exists? @fname
+    rm_r @fname
   end
 
   it "returns nil when length is passed" do
@@ -80,9 +88,9 @@ end
 describe "IO#read" do
 
   before :each do
-    @fname = "test.txt"
+    @fname = tmp("io_read.txt")
     @contents = "1234567890"
-    open @fname, "w" do |io| io.write @contents end
+    touch(@fname) { |f| f.write @contents }
 
     @io = open @fname, "r+"
   end
@@ -92,7 +100,7 @@ describe "IO#read" do
       #Windows will hold a hanlde to this file unless you close it.
       @io.close unless @io.closed?
     end
-    File.delete(@fname) if File.exists?(@fname)
+    rm_r @fname
   end
 
   after :all do
@@ -248,7 +256,7 @@ describe "IO#read" do
         path = tmp('%s-bom.txt' % name)
         content = text.encode(name)
         File.open(path,'w') { |f| f.print content }
-        result = File.read(path, :mode => 'rb:utf-7-bom')
+        result = File.read(path, :mode => "rb:BOM|#{name}")
         content[1].force_encoding("ascii-8bit").should == result.force_encoding("ascii-8bit")
         File.unlink(path)
       end

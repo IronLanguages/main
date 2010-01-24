@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -32,22 +33,24 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
-
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using AstBlock = Microsoft.Scripting.Ast.BlockBuilder;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
+    
     public partial class SourceUnitTree : Node {
 
         private readonly LexicalScope/*!*/ _definedScope;
-        private readonly List<Initializer> _initializers;
+        private readonly List<FileInitializerStatement> _initializers;
         private readonly Statements/*!*/ _statements;
         private readonly RubyEncoding/*!*/ _encoding;
 
         // An offset of the first byte after __END__ that can be read via DATA constant or -1 if __END__ is not present.
         private readonly int _dataOffset;
 
-        public List<Initializer> Initializers {
+        public List<FileInitializerStatement> Initializers {
             get { return _initializers; }
         }
 
@@ -59,7 +62,7 @@ namespace IronRuby.Compiler.Ast {
             get { return _encoding; }
         }
 
-        public SourceUnitTree(LexicalScope/*!*/ definedScope, Statements/*!*/ statements, List<Initializer> initializers, 
+        public SourceUnitTree(LexicalScope/*!*/ definedScope, Statements/*!*/ statements, List<FileInitializerStatement> initializers, 
             RubyEncoding/*!*/ encoding, int dataOffset)
             : base(SourceSpan.None) {
             Assert.NotNull(definedScope, statements, encoding);
@@ -113,13 +116,12 @@ namespace IronRuby.Compiler.Ast {
 
             MSA.Expression body;
 
-
             if (_statements.Count > 0) {
                 if (gen.PrintInteractiveResult) {
                     var resultVariable = scope.DefineHiddenVariable("#result", typeof(object));
 
                     var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
-                        Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
+                        AstUtils.LightDynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
                             CallSiteBuilder.InvokeMethod(gen.Context, "inspect", RubyCallSignature.WithScope(0),
                                 gen.CurrentScopeVariable, resultVariable
                             )
@@ -180,7 +182,16 @@ namespace IronRuby.Compiler.Ast {
                     throw Assert.Unreachable;
             }
 
-            body = gen.AddReturnTarget(scope.CreateScope(Ast.Block(prologue, body)));
+            // BEGIN blocks:
+            if (gen.FileInitializers != null) {
+                var b = new AstBlock();
+                b.Add(prologue);
+                b.Add(gen.FileInitializers);
+                b.Add(body);
+                body = b;
+            }
+
+            body = gen.AddReturnTarget(scope.CreateScope(body));
 
             gen.LeaveSourceUnit();
 

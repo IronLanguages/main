@@ -304,6 +304,11 @@ namespace IronPython.Modules {
                 return arr.UnsafeAddress;
             }
 
+            CTypes.Pointer pointer = value as CTypes.Pointer;
+            if (pointer != null) {
+                return pointer.UnsafeAddress;
+            }
+
             throw PythonOps.TypeErrorForTypeMismatch("pointer", value);
         }
 
@@ -514,16 +519,22 @@ namespace IronPython.Modules {
             int? res = Converter.ImplicitConvertToInt32(value);
             if (res != null) {
                 int iVal = res.Value;
-                if (iVal >= short.MinValue && iVal <= short.MaxValue) {
-                    return (short)iVal;
-                }
+                return (short)iVal;
+            } else if (value is BigInteger) {
+                BigInteger bigInt = (BigInteger)value;
+                return (short)((bigInt & 0xffff).ToInt32());
             }
+
             object asParam;
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetSignedShort(asParam, type);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("signed short", value);
+        }
+
+        public static int GetVariantBool(object value, object type) {
+            return Converter.ConvertToBoolean(value) ? 1 : 0;
         }
 
         public static byte GetUnsignedByte(object value, object type) {

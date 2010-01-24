@@ -17,6 +17,12 @@ using System.IO;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 
+#if CLR2
+using Microsoft.Scripting.Utils;
+#else
+using System;
+#endif
+
 namespace IronRuby.Builtins {
     [RubyModule("FileTest")]
     public static class FileTest {
@@ -38,7 +44,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("executable?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("executable_real?", RubyMethodAttributes.PublicSingleton)]
         public static bool IsExecutable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.RubyStatOps.IsExecutable(RubyFileOps.RubyStatOps.Create(self.Context, path));
+            return RunIfFileExists(self.Context, path, (FileSystemInfo fsi) => { 
+                return RubyFileOps.RubyStatOps.IsExecutable(fsi); });
         }
 
         [RubyMethod("exist?", RubyMethodAttributes.PublicSingleton)]
@@ -72,16 +79,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("readable?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("readable_real?", RubyMethodAttributes.PublicSingleton)]
         public static bool IsReadable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return IsReadableImpl(self.Context, path.ConvertToString());
-        }
-
-        private static bool IsReadableImpl(RubyContext/*!*/ context, string/*!*/ path) {
-            FileSystemInfo fsi;
-            if (RubyFileOps.RubyStatOps.TryCreate(context, path, out fsi)) {
-                return RubyFileOps.RubyStatOps.IsReadable(fsi);
-            } else {
-                return false;
-            }
+            return RunIfFileExists(self.Context, path, (FileSystemInfo fsi) => { 
+                return RubyFileOps.RubyStatOps.IsReadable(fsi); });
         }
 
         [RubyMethod("setgid?", RubyMethodAttributes.PublicSingleton)]
@@ -101,7 +100,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("size?", RubyMethodAttributes.PublicSingleton)]
         public static object NullableSize(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.RubyStatOps.NullableSize(RubyFileOps.RubyStatOps.Create(self.Context, path));
+            FileSystemInfo fsi;
+            if (RubyFileOps.RubyStatOps.TryCreate(self.Context, path.ConvertToString(), out fsi)) {
+                return RubyFileOps.RubyStatOps.NullableSize(fsi);
+            } else {
+                return null;
+            }
         }
 
         [RubyMethod("socket?", RubyMethodAttributes.PublicSingleton)]
@@ -124,16 +128,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("writable?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("writable_real?", RubyMethodAttributes.PublicSingleton)]
         public static bool IsWritable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return IsWritableImpl(self.Context, path.ConvertToString());
-        }
-
-        private static bool IsWritableImpl(RubyContext/*!*/ context, string/*!*/ path) {
-            FileSystemInfo fsi;
-            if (RubyFileOps.RubyStatOps.TryCreate(context, path, out fsi)) {
-                return RubyFileOps.RubyStatOps.IsWritable(fsi);
-            } else {
-                return false;
-            }
+            return RunIfFileExists(self.Context, path, (FileSystemInfo fsi) => { 
+                return RubyFileOps.RubyStatOps.IsWritable(fsi); });
         }
 
         [RubyMethod("zero?", RubyMethodAttributes.PublicSingleton)]
@@ -150,6 +146,19 @@ namespace IronRuby.Builtins {
             }
 
             return RubyFileOps.RubyStatOps.IsZeroLength(RubyFileOps.RubyStatOps.Create(self.Context, strPath));
+        }
+
+        private static bool RunIfFileExists(RubyContext/*!*/ context, MutableString/*!*/ path, Func<FileSystemInfo, bool> del) {
+            return RunIfFileExists(context, path.ConvertToString(), del);
+        }
+
+        private static bool RunIfFileExists(RubyContext/*!*/ context, string/*!*/ path, Func<FileSystemInfo, bool> del) {
+            FileSystemInfo fsi;
+            if (RubyFileOps.RubyStatOps.TryCreate(context, path, out fsi)) {
+                return del(fsi);
+            } else {
+                return false;
+            }
         }
     }
 }

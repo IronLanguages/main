@@ -5,7 +5,11 @@ require 'zlib'
 describe 'Zlib::GzipFile#comment' do
   before :each do
     @io = StringIO.new
-	@gzip_writer = Zlib::GzipWriter.new @io
+    @gzip_writer = Zlib::GzipWriter.new @io
+  end
+
+  after :each do
+    @gzip_writer.close
   end
 
   it 'is nil by default' do
@@ -21,9 +25,13 @@ end
 describe 'Zlib::GzipFile#comment=' do
   before :each do
     @io = StringIO.new
-	@gzip_writer = Zlib::GzipWriter.new @io
+    @gzip_writer = Zlib::GzipWriter.new @io
   end
 
+  after :each do
+    @gzip_writer.close rescue nil
+  end
+  
   it 'returns the argument' do
     c = 'comment'
     (@gzip_writer.comment = c).should equal(c)

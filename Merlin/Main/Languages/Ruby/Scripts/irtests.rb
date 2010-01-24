@@ -39,11 +39,13 @@ class IRTest
       :Yaml => "#{ir} #{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\YamlTest\\yaml_test_suite.rb",
       :Tutorial => "#{ir} -I#{@root}\\Languages\\Ruby\\Samples\\Tutorial #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb"
     }
-    if options[:all]
+    if not options[:minimum]
       @suites.merge!({
+        :ActionMailer => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat action_mailer",
         :ActionPack => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat action_pack",
         :ActiveSupport => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_support",
-        :ActiveRecord => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_record"
+        # :ActiveRecord => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_record"
+        :ActiveResource => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_resource"
       })
     end
     @start = Time.now
@@ -110,6 +112,7 @@ class IRTest
     
     msbuild "Languages\\Ruby\\Ruby" + sln
     msbuild "Languages\\IronPython\\IronPython" + sln
+    msbuild "Languages\\Ruby\\Ruby" + sln, "FxCop"
 
     if File.exists?(file = "#{@root}\\Scripts\\Python\\GenerateSystemCoreCsproj.py")
       cmd = "#{@root}\\Bin\\#{@config}\\ipy.exe #{file}"
@@ -199,8 +202,8 @@ if $0 == __FILE__
 
     opts.separator ""
 
-    opts.on("-a", "--all", "Run all tests") do |a|
-      iroptions[:all] = a
+    opts.on("-m", "--minimum", "Run the minimum set of tests required for a checkin") do |m|
+      iroptions[:minimum] = m
     end
     opts.on("-p", "--[no-]parallel", "Run in parallel") do |p|
       iroptions[:parallel] = p

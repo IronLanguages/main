@@ -26,7 +26,7 @@ module SocketSpecs
   end
 
   def self.socket_path
-    "/tmp/unix_server_spec.socket"
+    tmp("unix_server_spec.socket")
   end
   
   def self.start_tcp_server(remote_host = nil)

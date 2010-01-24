@@ -150,7 +150,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             if (splattedArgument != null) {
-                args.Add(Ast.Dynamic(SplatAction.Make(context), typeof(IList), splattedArgument));
+                args.Add(AstUtils.LightDynamic(SplatAction.Make(context), typeof(IList), splattedArgument));
             }
 
             if (rhsArgument != null) {

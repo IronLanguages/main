@@ -3,13 +3,12 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 describe "File.umask" do
   before :each do
     @orig_umask = File.umask
-    @file = 'test.txt'
-    File.open(@file, 'w') {}
+    @file = tmp('test.txt')
+    touch @file
   end
 
   after :each do
-    File.delete(@file) if File.exists?(@file)
-    @file = nil
+    rm_r @file
     File.umask(@orig_umask)
   end
 

@@ -177,7 +177,7 @@ namespace IronPython.Compiler.Ast {
 
         #region Cached Site Support
 
-        public override MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, params MSAst.Expression/*!*/[]/*!*/ args) {
+        public override MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, IList<MSAst.Expression/*!*/>/*!*/ args) {
             Assert.NotNull(binder, retType, args);
             Assert.NotNullItems(args);
 
@@ -189,8 +189,8 @@ namespace IronPython.Compiler.Ast {
             return MakeDynamicExpression(binder, si.Expression, siteType.GetField("Target"), delegateType.GetMethod("Invoke"), args);
         }
 
-        private static MSAst.Expression/*!*/ MakeDynamicExpression(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ targetField, MethodInfo/*!*/ invokeMethod, params MSAst.Expression/*!*/[]/*!*/ args) {
-            var builder = new ReadOnlyCollectionBuilder<MSAst.Expression>(args.Length + 1);
+        private static MSAst.Expression/*!*/ MakeDynamicExpression(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ targetField, MethodInfo/*!*/ invokeMethod, IList<MSAst.Expression/*!*/>/*!*/ args) {
+            var builder = new ReadOnlyCollectionBuilder<MSAst.Expression>(args.Count + 1);
             builder.Add(expr);
             foreach (MSAst.Expression arg in args) {
                 builder.Add(arg);
@@ -207,26 +207,26 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        private static Type/*!*/ GetDelegateType(Type/*!*/ retType, MSAst.Expression/*!*/[]/*!*/ args) {
+        private static Type/*!*/ GetDelegateType(Type/*!*/ retType, IList<MSAst.Expression/*!*/>/*!*/ args) {
             Assert.NotNull(retType);
             Assert.NotNull(args);
 
             Type delegateType;
             if (retType != typeof(void)) {
-                Type[] types = new Type[args.Length + 2];
+                Type[] types = new Type[args.Count + 2];
                 types[0] = typeof(CallSite);
 
-                for (int i = 0; i < args.Length; i++) {
+                for (int i = 0; i < args.Count; i++) {
                     types[i + 1] = args[i].Type;
                 }
 
                 types[types.Length - 1] = retType;
                 delegateType = GetFuncType(types) ?? PythonOps.MakeNewCustomDelegate(types);
             } else {
-                Type[] types = new Type[args.Length + 1];
+                Type[] types = new Type[args.Count + 1];
                 types[0] = typeof(CallSite);
 
-                for (int i = 0; i < args.Length; i++) {
+                for (int i = 0; i < args.Count; i++) {
                     types[i + 1] = args[i].Type;
                 }
                 delegateType = GetActionType(types) ?? PythonOps.MakeNewCustomDelegate(ArrayUtils.Append(types, typeof(void)));

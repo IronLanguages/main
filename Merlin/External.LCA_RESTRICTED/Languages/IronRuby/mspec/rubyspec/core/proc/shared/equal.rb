@@ -81,7 +81,7 @@ describe :proc_equal, :shared => true do
     p.send(@method, p2).should be_false
   end
 
-  it "returns false if self and other are different kinds of procs and have different bodies" do
+  it "returns false if self and other are different kinds of procs" do
     p = lambda { :foo }
     p2 = proc { :bar }
     p.send(@method, p2).should be_false
@@ -89,5 +89,15 @@ describe :proc_equal, :shared => true do
     p = proc { :foo }
     p2 = lambda { :bar }
     p.send(@method, p2).should be_false
+
+    p = Proc.new { :foo }
+    p2 = lambda &p
+    p.send(@method, p2).should be_false
+  end
+
+  it "returns false if self and other are have the same body but different bindings" do
+    p = []
+    2.times { p << proc { :bar } }
+    p[0].send(@method, p[1]).should be_false
   end
 end

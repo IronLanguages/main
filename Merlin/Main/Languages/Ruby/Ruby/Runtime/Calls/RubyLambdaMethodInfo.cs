@@ -48,6 +48,10 @@ namespace IronRuby.Runtime.Calls {
             _id = Interlocked.Increment(ref _Id);
         }
 
+        public override int GetArity() {
+            return _lambda.Dispatcher.Arity;
+        }
+
         public Proc/*!*/ Lambda {
             get { return _lambda; }
         }

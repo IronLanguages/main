@@ -9,8 +9,8 @@ describe "Logger#info?" do
   end
 
   after :each do
-    @log_file.close unless @log_file.closed?
     @logger.close
+    @log_file.close unless @log_file.closed?
     File.unlink(@path) if File.exists?(@path)
   end
 
@@ -33,8 +33,8 @@ describe "Logger#info" do
   end
 
   after :each do
-    @log_file.close unless @log_file.closed?
     @logger.close
+    @log_file.close unless @log_file.closed?
     File.unlink(@path) if File.exists?(@path)
   end
 

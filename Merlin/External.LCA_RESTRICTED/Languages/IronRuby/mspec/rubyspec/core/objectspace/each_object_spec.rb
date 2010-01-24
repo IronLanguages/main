@@ -1,24 +1,28 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "ObjectSpace.each_object" do
-  it "calls the block once for each living, non-immediate object in the Ruby process" do
-    class ObjectSpaceSpecEachObject; end
-    new_obj = ObjectSpaceSpecEachObject.new
+  not_supported_on :ironruby do
+    it "calls the block once for each living, non-immediate object in the Ruby process" do
+      class ObjectSpaceSpecEachObject; end
+      new_obj = ObjectSpaceSpecEachObject.new
 
-    yields = 0
-    count = ObjectSpace.each_object(ObjectSpaceSpecEachObject) do |obj|
-      obj.should == new_obj
-      yields += 1
+      yields = 0
+      count = ObjectSpace.each_object(ObjectSpaceSpecEachObject) do |obj|
+        obj.should == new_obj
+        yields += 1
+      end
+      count.should == 1
+      yields.should == 1
+
+      # this is needed to prevent the new_obj from being GC'd too early
+      new_obj.should_not == nil
     end
-    count.should == 1
-    yields.should == 1
-
-    # this is needed to prevent the new_obj from being GC'd too early
-    new_obj.should_not == nil
   end
 
-  it "raises NotSupportedException for non-Class classes" do
-    lambda { ObjectSpace.each_object(String) {} }.should raise_error(RuntimeError)
+  deviates_on :ironruby do
+    it "raises NotSupportedException for non-Class classes" do
+      lambda { ObjectSpace.each_object(String) {} }.should raise_error(RuntimeError)
+    end
   end
 
   it "works for Module" do

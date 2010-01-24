@@ -18,59 +18,66 @@ using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
     public partial class Tests {
-        public void Scenario_RubySimpleCall1() {
-            AssertOutput(delegate {
-                CompilerTest(@"
+        public void SimpleCall1() {
+            TestOutput(@"
 puts nil
-");
-            }, "nil");
-
+", 
+            @"nil");
         }
 
-        public void Scenario_RubySimpleCall2() {
+        public void SimpleCall2() {
             AssertExceptionThrown<ArgumentException>(delegate {
                 CompilerTest(@"
 def foo a,c=1,*e
 end
 
 foo
-
 ");
             });
 
         }
 
-        public void Scenario_RubySimpleCall3() {
-            AssertOutput(delegate {
-                CompilerTest(@"
+        public void SimpleCall3() {
+            TestOutput(@"
 y = nil
 puts y
 
 x = 123
 puts x
-");
-            }, @"
+", @"
 nil
-123");
+123
+");
 
         }
 
         /// <summary>
         /// LambdaExpression gets converted to a wrapper.
         /// </summary>
-        public void Scenario_RubySimpleCall4() {
-            AssertOutput(delegate {
-                CompilerTest(@"
+        public void SimpleCall4() {
+            TestOutput(@"
 def foo a,b,c,d,e,f,g,h,i,j
   puts 123
 end
 foo 1,2,3,4,5,6,7,8,9,10
-");
-            }, @"123");
-
+",
+            @"123");
         }
 
-        public void Scenario_RubySimpleCall5() {
+        /// <summary>
+        /// CallSite optimization for more arguments than there is Func generic overloads.
+        /// </summary>
+        public void SimpleCall5() {
+            TestOutput(@"
+def foo *args
+  p args
+end
+foo 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,*[28,29,30]
+",
+@"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]");
+        }
+
+        public void SimpleCall6() {
             AssertOutput(delegate {
                 Engine.CreateScriptSourceFromString(@"
 class A

@@ -11,7 +11,7 @@ describe "Matrix.row_vector" do
     Matrix.row_vector([1,2]).should == Matrix[ [1,2] ]
   end  
  
-  it "returns an empty Matrix when called with an empty Array" do
+  it "returns a 1x0 matrix when called with an empty Array" do
     Matrix.row_vector([]).should == Matrix[ [] ]
   end
 

@@ -318,16 +318,41 @@ namespace IronPython.Hosting {
             return setup;
         }
 
+        /// <summary>
+        /// Creates a new PythonModule with the specified name and published it in sys.modules.  
+        /// 
+        /// Returns the ScriptScope associated with the module.
+        /// </summary>
+        public static ScriptScope CreateModule(this ScriptEngine engine, string name) {
+            return GetPythonService(engine).CreateModule(name, String.Empty, String.Empty);
+        }
+
+        /// <summary>
+        /// Creates a new PythonModule with the specified name and filename published it 
+        /// in sys.modules.  
+        /// 
+        /// Returns the ScriptScope associated with the module.
+        /// </summary>
+        public static ScriptScope CreateModule(this ScriptEngine engine, string name, string filename) {
+            return GetPythonService(engine).CreateModule(name, filename, String.Empty);
+        }
+
+        /// <summary>
+        /// Creates a new PythonModule with the specified name, filename, and doc string and 
+        /// published it in sys.modules.  
+        /// 
+        /// Returns the ScriptScope associated with the module.
+        /// </summary>
+        public static ScriptScope CreateModule(this ScriptEngine engine, string name, string filename, string docString) {
+            return GetPythonService(engine).CreateModule(name, filename, docString);
+        }
+
         #endregion
 
         #region Private helpers
 
         private static PythonService/*!*/ GetPythonService(ScriptEngine/*!*/ engine) {
-            return (PythonService)HostingHelpers.CallEngine<ScriptEngine, object>(
-                engine,
-                (context, arg) => ((PythonContext)context).GetPythonService(arg),
-                engine
-            );
+            return engine.GetService<PythonService>(engine);
         }
 
         private static PythonContext/*!*/ GetPythonContext(ScriptEngine/*!*/ engine) {

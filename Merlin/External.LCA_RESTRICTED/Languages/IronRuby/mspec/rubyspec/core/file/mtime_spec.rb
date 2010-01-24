@@ -3,11 +3,11 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 describe "File.mtime" do
   before :each do
     @filename = tmp('i_exist')
-    File.open(@filename, 'w') { @mtime = Time.now }
+    touch(@filename) { @mtime = Time.now }
   end
 
   after :each do
-    File.delete(@filename) if File.exist?(@filename)
+    rm_r @filename
   end
 
   it "returns the modification Time of the file" do
@@ -27,7 +27,8 @@ describe "File#mtime" do
   end
 
   after :each do
-    File.delete(@filename) if File.exist?(@filename)
+    @f.close
+    rm_r @filename
   end
 
   it "returns the modification Time of the file" do

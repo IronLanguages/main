@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if FEATURE_CALL_SITE_TRACER
 #if !CLR2
 using MSA = System.Linq.Expressions;
 #else
@@ -148,3 +148,4 @@ namespace IronRuby.Runtime.Calls {
         }
     }
 }
+#endif

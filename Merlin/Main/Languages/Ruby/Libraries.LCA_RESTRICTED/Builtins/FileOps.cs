@@ -669,6 +669,7 @@ namespace IronRuby.Builtins {
         //flock
 
         [RubyMethod("lstat")]
+        [RubyMethod("stat")]
         public static FileSystemInfo Stat(RubyContext/*!*/ context, RubyFile/*!*/ self) {
             return RubyStatOps.Create(context, self.Path);
         }
@@ -683,6 +684,7 @@ namespace IronRuby.Builtins {
             return MutableString.CreateMutable(context.GetPathEncoding()).
                 Append("#<File:").
                 Append(self.Path).
+                Append(self.Closed ? " (closed)" : "").
                 Append('>');
         }
 

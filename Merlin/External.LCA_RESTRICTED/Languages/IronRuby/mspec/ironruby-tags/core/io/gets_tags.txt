@@ -1,0 +1,1 @@
+fails:IO#gets fails on cloned opened streams

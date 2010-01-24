@@ -2,13 +2,12 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "File.truncate" do
   before :each do
-    @name = "test.txt"
-    File.open(@name,"w") { |f| f.write("1234567890") }
+    @name = tmp("test.txt")
+    touch(@name) { |f| f.write("1234567890") }
   end
 
   after :each do
-    File.delete(@name) if File.exist?(@name)
-    @name = nil
+    rm_r @name
   end
 
   it "truncates a file" do
@@ -22,6 +21,7 @@ describe "File.truncate" do
     end
     File.truncate(@name, 5)
     File.size(@name).should == 5
+
     File.open(@name, "r") do |f|
       f.read(99).should == "12345"
       f.eof?.should == true
@@ -53,6 +53,7 @@ describe "File.truncate" do
   end
 
   it "raises an Errno::ENOENT if the file does not exist" do
+    # TODO: missing_file
     not_existing_file = "file-does-not-exist-for-sure.txt"
 
     # make sure it doesn't exist for real
@@ -93,20 +94,26 @@ describe "File.truncate" do
       File.delete(absolute_pathname_file) if File.exist?(absolute_pathname_file)
     end
   end
+
+  ruby_version_is "1.9" do
+    it "accepts an object that has a #to_path method" do
+      File.truncate(mock_to_path(@name), 0).should == 0
+    end
+  end
 end
 
 
 describe "File#truncate" do
   before :each do
-    @name = "test.txt"
-    @file  = File.open(@name, 'w')
-    File.open(@name,"w") { |f| f.write("1234567890") }
+    @name = tmp("test.txt")
+    @file = File.open @name, 'w'
+    @file.write "1234567890"
+    @file.flush
   end
 
   after :each do
     @file.close unless @file.closed?
-    File.delete(@name) if File.exist?(@name)
-    @name = nil
+    rm_r @name
   end
 
   it "truncates a file" do

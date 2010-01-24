@@ -22,7 +22,7 @@ describe "The __FILE__ constant" do
     end
   end
   
-  ruby_version_is ""..."1.8.7" do
+  ruby_version_is "".."1.8.7" do
     it "equals a relative path when required using a relative path" do
       base_path = File.dirname(File.dirname(fixture(__FILE__, "file.rb")))
       path = "fixtures/file.rb"
@@ -33,7 +33,7 @@ describe "The __FILE__ constant" do
     end
   end
 
-  ruby_version_is "1.8.7" do
+  ruby_version_is "1.8.8".."1.9" do
     it "equals an absolute path when required using a relative path" do
       base_path = File.dirname(File.dirname(fixture(__FILE__, "file.rb")))
       path = "./fixtures/file.rb"
@@ -66,4 +66,5 @@ describe "The __FILE__ constant" do
     require 'file.rb'
     ScratchPad.recorded.should == fixture(__FILE__, 'file.rb')
   end
+  
 end

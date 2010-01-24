@@ -6,12 +6,18 @@ describe :file_grpowned, :shared => true do
   end
 
   after :each do
-    File.delete(@file) if File.exist?(@file)
+    rm_r @file
   end
 
   platform_is_not :windows do
     it "return true if the file exist" do
       @object.send(@method, @file).should == true
+    end
+
+    ruby_version_is "1.9" do
+      it "accepts an object that has a #to_path method" do
+        @object.send(@method, mock_to_path(@file)).should == true
+      end
     end
   end
 

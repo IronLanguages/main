@@ -1,3 +1,0 @@
-fails:Kernel#raise calls Exception#exception when raising an existing Exception object
-fails:Kernel#raise calls Exception#set_backtrace when raising an existing Exception object
-fails:Kernel#raise accepts any object responding to #exception

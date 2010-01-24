@@ -37,7 +37,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("==")]
         public static bool Equal(Proc/*!*/ self, [NotNull]Proc/*!*/ other) {
-            return self.Dispatcher == other.Dispatcher;
+            return self.Dispatcher == other.Dispatcher && self.LocalScope == other.LocalScope && self.Kind == other.Kind;
         }
 
         [RubyMethod("==")]

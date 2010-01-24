@@ -65,7 +65,7 @@ namespace IronRuby.Runtime.Calls {
 
                 // invoke "new" method:
                 return new DynamicMetaObject(
-                    Ast.Dynamic(new InvokeMember(_context, "new", CallInfo), typeof(object), target.Expression),
+                    AstUtils.LightDynamic(new InvokeMember(_context, "new", CallInfo), target.Expression),
                     target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
@@ -154,7 +154,7 @@ namespace IronRuby.Runtime.Calls {
 
                 // invoke the fallback method:
                 return new DynamicMetaObject(
-                    Ast.Dynamic(new InvokeMember(_context, _fallbackMethod, CallInfo), typeof(object), target.Expression),
+                    AstUtils.LightDynamic(new InvokeMember(_context, _fallbackMethod, CallInfo), target.Expression),
                     target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }

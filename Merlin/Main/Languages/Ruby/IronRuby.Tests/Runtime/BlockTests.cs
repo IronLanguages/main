@@ -1712,6 +1712,97 @@ foo
 "
             );
         }
+
+        public void BEGIN1() {
+            TestOutput(@"
+x = 1
+BEGIN {
+  p x rescue p $!
+  y = 1
+  z = 2
+  1.times { p y + z }  
+  $binding = binding
+}
+
+p eval('x', $binding) rescue p $!
+p eval('y+z', $binding)
+", @"
+#<NoMethodError: undefined method `x' for main:Object>
+3
+#<NoMethodError: undefined method `x' for main:Object>
+3
+");
+        }
+
+        public void BEGIN2() {
+            TestOutput(@"
+puts '5'
+BEGIN {
+  puts '2'
+  BEGIN {
+    puts '1'
+  }   
+  puts '3'
+}
+puts '6'
+BEGIN {
+  puts '4'
+}
+puts '7'
+", @"
+1
+2
+3
+4
+5
+6
+7
+");
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        public void BEGIN3() {
+            TestOutput(@"
+def f1
+end
+
+BEGIN {
+  def f2
+  end
+}
+
+class C
+  private
+  while true
+    eval <<-END
+      BEGIN {
+        def f3
+        end
+      
+        private
+      
+        break
+        puts 'unreachable'
+      } 
+    END
+  end
+  
+  def f4
+  end
+end
+
+p self.private_methods(false).include?('f1')
+p self.public_methods(false).include?('f2')
+
+p C.public_instance_methods(false).include?('f3')
+p C.private_instance_methods(false).include?('f4')
+", @"
+true
+true
+true
+true
+");
+        }
     }
 }
 

@@ -149,10 +149,10 @@ namespace IronRuby.Compiler.Ast {
         public virtual void Exit(AliasStatement/*!*/ node) { }
         public virtual bool Enter(ConditionalStatement/*!*/ node) { return true; }
         public virtual void Exit(ConditionalStatement/*!*/ node) { }
-        public virtual bool Enter(Finalizer/*!*/ node) { return true; }
-        public virtual void Exit(Finalizer/*!*/ node) { }
-        public virtual bool Enter(Initializer/*!*/ node) { return true; }
-        public virtual void Exit(Initializer/*!*/ node) { }
+        public virtual bool Enter(ShutdownHandlerStatement/*!*/ node) { return true; }
+        public virtual void Exit(ShutdownHandlerStatement/*!*/ node) { }
+        public virtual bool Enter(FileInitializerStatement/*!*/ node) { return true; }
+        public virtual void Exit(FileInitializerStatement/*!*/ node) { }
         public virtual bool Enter(UndefineStatement/*!*/ node) { return true; }
         public virtual void Exit(UndefineStatement/*!*/ node) { }
         

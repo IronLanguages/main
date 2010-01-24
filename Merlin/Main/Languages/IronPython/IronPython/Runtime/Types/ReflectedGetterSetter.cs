@@ -98,6 +98,16 @@ namespace IronPython.Runtime.Types {
             }
         }
 
+        public virtual PythonType PropertyType {
+            [PythonHidden]
+            get {
+                if (Getter != null && Getter.Length > 0) {
+                    return DynamicHelpers.GetPythonTypeFromType(Getter[0].ReturnType);
+                }
+                return DynamicHelpers.GetPythonTypeFromType(typeof(object));
+            }
+        }
+
         internal NameType NameType {
             get {
                 return _nameType;

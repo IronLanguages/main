@@ -1,2 +1,1 @@
-fails:File.split deals with multiple forward slashes
-fails:File.split deals with Windows edge cases
+fails:File.split collapses multiple '/' characters and strips trailing ones

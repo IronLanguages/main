@@ -25,9 +25,15 @@ describe "Mutex#unlock" do
     th.join
   end
 
-  it "returns nil if successful" do
+  it "raises ThreadError if previously locking thread is gone" do
     mutex = Mutex.new
-    mutex.lock
-    mutex.unlock.should.be_nil
+    th = Thread.new do
+      mutex.lock
+    end
+
+    th.join
+
+    lambda { mutex.unlock }.should raise_error(ThreadError)
   end
+
 end

@@ -3,6 +3,8 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 process_is_foreground do
   require 'readline'
   describe "Readline.vi_editing_mode" do
-    it "needs to be reviewed for spec completeness"
+    it "returns nil" do
+      Readline.vi_editing_mode.should be_nil
+    end
   end
 end

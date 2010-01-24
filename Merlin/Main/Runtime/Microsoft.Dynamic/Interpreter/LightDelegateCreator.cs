@@ -81,7 +81,7 @@ namespace Microsoft.Scripting.Interpreter {
                 // the compiled delegate on its first run.
                 //
                 // Ideally, we would just rebind the compiled delegate using
-                // Delgate.CreateDelegate. Unfortunately, it doesn't work on
+                // Delegate.CreateDelegate. Unfortunately, it doesn't work on
                 // dynamic methods.
                 if (SameDelegateType) {
                     return CreateCompiledDelegate(closure);

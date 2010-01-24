@@ -62,7 +62,9 @@ namespace IronPython.Modules {
             /// <summary> 'u' </summary>
             WChar,
             /// <summary> '?' </summary>
-            Boolean
+            Boolean,
+            /// <summary> 'v' </summary>
+            VariantBool
         }
     }
 }

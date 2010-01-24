@@ -216,7 +216,7 @@ namespace IronPython.Compiler.Ast {
                                             ConversionResultKind.ExplicitCast,
                                             GlobalParent.Operation(
                                                 typeof(bool),
-                                                PythonOperationKind.Not,
+                                                PythonOperationKind.IsFalse,
                                                 MakeExitCall(exit, exception)
                                             )
                                         ),

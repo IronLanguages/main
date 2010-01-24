@@ -107,11 +107,9 @@ namespace IronPython.Compiler {
             return MSAst.Expression.Dynamic(binder, retType, arg0, arg1, arg2, arg3);
         }
 
-        public virtual MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, params MSAst.Expression/*!*/[]/*!*/ args) {
+        public virtual MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, IList<MSAst.Expression/*!*/>/*!*/ args) {
             Assert.NotNull(binder, retType, args);
             Assert.NotNullItems(args);
-
-
             return MSAst.Expression.Dynamic(binder, retType, args);
         }
 

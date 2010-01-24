@@ -120,7 +120,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             var map = new Dictionary<MutableString, object>(fieldNames.Count);
             for (int i = 0; i < fieldNames.Count; i++) {
                 // TODO: symbol encodings
-                map[MutableString.Create(fieldNames[i], RubyEncoding.UTF8)] = self.GetValue(i);
+                map[MutableString.Create(fieldNames[i], RubyEncoding.UTF8)] = self[i];
             }
             rep.AddYamlProperties(self, map);
             return rep.Map(self, map);

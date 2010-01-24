@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -133,15 +134,17 @@ namespace IronPython.Modules {
 
         public static string EnumKey(object key, int index) {
             HKEYType rootKey = GetRootKey(key);
-            if (index >= rootKey.key.SubKeyCount)
-                throw new Win32Exception("[Error 22] No more data is available");
+            if (index >= rootKey.key.SubKeyCount) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_BAD_COMMAND, "No more data is available");
+            }
             return rootKey.key.GetSubKeyNames()[index];
         }
 
         public static PythonTuple EnumValue(object key, int index) {
             HKEYType rootKey = GetRootKey(key);
-            if (index >= rootKey.key.ValueCount)
-                throw new Win32Exception("[Error 22] No more data is available");
+            if (index >= rootKey.key.ValueCount) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_BAD_COMMAND, "No more data is available");
+            }
 
             string valueName = rootKey.key.GetValueNames()[index];
             int valueKind = MapRegistryValueKind(rootKey.key.GetValueKind(valueName));
@@ -196,12 +199,12 @@ namespace IronPython.Modules {
                     throw new Win32Exception("Unexpected mode");
                 }
             } catch (SecurityException) {
-                throw new Win32Exception("[Error 13] Access is denied");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_ACCESS_DENIED, "Access is denied");
             }
 
 
             if (newKey == null) {
-                throw new Win32Exception("The key does not exist");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified");
             }
 
             return new HKEYType(newKey);
@@ -285,6 +288,8 @@ namespace IronPython.Modules {
             RegistryKey newKey;
             try {
                 newKey = RegistryKey.OpenRemoteBaseKey(MapSystemKey(key), computerName);
+            }catch(IOException ioe) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_BAD_NETPATH, ioe.Message);
             } catch (Exception e) {
                 throw new ExternalException(e.Message);
             }

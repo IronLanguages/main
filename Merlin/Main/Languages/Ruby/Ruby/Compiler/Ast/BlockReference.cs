@@ -27,6 +27,7 @@ using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
     
     public partial class BlockReference : Block {
         private readonly Expression/*!*/ _expression;
@@ -46,7 +47,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
             Assert.NotNull(gen);
-            return Ast.Dynamic(ConvertToProcAction.Make(gen.Context), typeof(Proc), _expression.TransformRead(gen));
+            return AstUtils.LightDynamic(ConvertToProcAction.Make(gen.Context), typeof(Proc), _expression.TransformRead(gen));
         }
     }
 }

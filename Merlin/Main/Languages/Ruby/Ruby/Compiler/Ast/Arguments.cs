@@ -108,7 +108,7 @@ namespace IronRuby.Compiler.Ast {
 
             if (_array != null) {
                 siteBuilder.SplattedArgument = 
-                    Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), _array.TransformRead(gen));
+                    AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), _array.TransformRead(gen));
             }
         }
 
@@ -163,7 +163,7 @@ namespace IronRuby.Compiler.Ast {
             bool rightOneNone = rightValues.Count == 1 && splattedValue == null;
 
             if (rightNoneSplat) {
-                result = Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue);
+                result = AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue);
                 if (doSplat) {
                     result = Methods.Splat.OpCall(result);
                 }
@@ -173,7 +173,7 @@ namespace IronRuby.Compiler.Ast {
                 result = Methods.MakeArrayOpCall(rightValues);
 
                 if (splattedValue != null) {
-                    result = Methods.SplatAppend.OpCall(result, Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue));
+                    result = Methods.SplatAppend.OpCall(result, AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue));
                 }
             }
             return result;

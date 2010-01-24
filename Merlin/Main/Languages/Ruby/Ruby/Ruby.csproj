@@ -390,8 +390,8 @@
     <Compile Include="Compiler\Ast\SourceUnitTree.cs" />
     <Compile Include="Compiler\Ast\Statements\AliasStatement.cs" />
     <Compile Include="Compiler\Ast\Expressions\ConditionalExpression.cs" />
-    <Compile Include="Compiler\Ast\Statements\Finalizer.cs" />
-    <Compile Include="Compiler\Ast\Statements\Initializer.cs" />
+    <Compile Include="Compiler\Ast\Statements\ShutdownHandlerStatement.cs" />
+    <Compile Include="Compiler\Ast\Statements\FileInitializerStatement.cs" />
     <Compile Include="Compiler\Ast\Statements\UndefineStatement.cs" />
     <Compile Include="Compiler\Ast\LeftValues\AttributeAccess.cs" />
     <Compile Include="Compiler\Ast\LeftValues\ConstantVariable.cs" />

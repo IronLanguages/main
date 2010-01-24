@@ -8,7 +8,7 @@ describe "File#chmod" do
 
   after :each do
     @file.close
-    File.delete(@filename) if File.exist?(@filename)
+    rm_r @filename
   end
 
   it "returns 0 if successful" do
@@ -104,12 +104,12 @@ end
 describe "File.chmod" do
   before :each do
     @file = tmp('i_exist')
-    File.open(@file, 'w') {}
+    touch @file
     @count = File.chmod(0755, @file)
   end
 
   after :each do
-    File.delete(@file) if File.exist?(@file)
+    rm_r @file
   end
 
   it "returns the number of files modified" do
@@ -137,8 +137,14 @@ describe "File.chmod" do
     end
   end
 
+  ruby_version_is "1.9" do
+    it "accepts an object that has a #to_path method" do
+      File.chmod(0, mock_to_path(@file))
+    end
+  end
+
   it "throws a TypeError if the given path is not coercable into a string" do
-    lambda { File.chmod(0, @file.to_sym) }.should raise_error(TypeError)
+    lambda { File.chmod(0, []) }.should raise_error(TypeError)
   end
 
   it "invokes to_int on non-integer argument" do
@@ -168,7 +174,7 @@ describe "File.chmod" do
       File.writable?(@file).should == false
       File.executable?(@file).should == true
     end
-    
+
     it "with '0644' makes file readable and writable and also executable" do
       File.chmod(0644, @file)
       File.readable?(@file).should == true

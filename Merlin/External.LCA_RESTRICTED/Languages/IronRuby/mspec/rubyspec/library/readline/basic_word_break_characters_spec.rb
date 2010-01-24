@@ -3,10 +3,15 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 process_is_foreground do
   require 'readline'
   describe "Readline.basic_word_break_characters" do
-    it "needs to be reviewed for spec completeness"
+    it "returns not nil" do
+      Readline.basic_word_break_characters.should_not be_nil
+    end
   end
 
   describe "Readline.basic_word_break_characters=" do
-    it "needs to be reviewed for spec completeness"
+    it "returns the passed string" do
+      Readline.basic_word_break_characters = "test"
+      Readline.basic_word_break_characters.should == "test"
+    end
   end
 end

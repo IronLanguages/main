@@ -15,13 +15,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Debugging = Microsoft.Scripting.Debugging;
@@ -92,10 +91,10 @@ namespace IronPython.Runtime {
 
         #region ITraceCallback Members
 
-        public void OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IAttributesCollection> scopeCallback, object payload, object customPayload) {
+        public void OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IAttributesCollection> scopeCallback, object payload, object customPayload) {        
             if (kind == Debugging.TraceEventKind.ThreadExit ||                  // We don't care about thread-exit events
 #if PROFILER_SUPPORT
-                (_profile && kind == Debugging.TraceEventKind.TracePoint) ||    // Ignore code execute tracebacks when in profile mode
+            (_profile && kind == Debugging.TraceEventKind.TracePoint) ||    // Ignore code execute tracebacks when in profile mode
 #endif
                 kind == Debugging.TraceEventKind.ExceptionUnwind) {  // and we always have a try/catch so we don't care about methods unwinding.
                 return;
@@ -105,6 +104,10 @@ namespace IronPython.Runtime {
             object traceDispatchObject = null;
             TraceThread thread = GetOrCreateThread();
             TraceBackFrame pyFrame;
+
+            if (thread.InTraceback) {
+                return;
+            }
 
             try {
                 if (kind == Debugging.TraceEventKind.FrameEnter) {
@@ -151,7 +154,7 @@ namespace IronPython.Runtime {
                 if (kind == Debugging.TraceEventKind.FrameExit && thread.Frames.Count > 0) {
                     thread.Frames.RemoveAt(thread.Frames.Count - 1);
                 }
-            }
+            }            
         }
 
         #endregion
@@ -178,17 +181,13 @@ namespace IronPython.Runtime {
             }
 
             bool traceDispatchThrew = true;
-            PythonContext.TracePipeline.TraceCallback = null;
             thread.InTraceback = true;
             try {
                 TracebackDelegate dlg = traceDispatch(pyFrame, traceEvent, args);
                 traceDispatchThrew = false;
-
                 pyFrame.Setf_trace(dlg);
             } finally {
                 thread.InTraceback = false;
-                PythonContext.TracePipeline.TraceCallback = this;
-
                 if (traceDispatchThrew) {
                     // We're matching CPython's behavior here.  If the trace dispatch throws any exceptions
                     // we don't re-enable tracebacks.  We need to leave the trace callback in place though

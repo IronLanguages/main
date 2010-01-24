@@ -29,7 +29,5 @@ describe "Hash#each_pair" do
   ruby_version_is "1.9" do
     it_behaves_like(:hash_each, :each_pair)
   end
-  it_behaves_like(:hash_iteration_method, :each_pair)
-  it_behaves_like(:hash_iteration_modifying, :each_pair)
   it_behaves_like(:hash_iteration_no_block, :each_pair)
 end

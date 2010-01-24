@@ -27,6 +27,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Utils;
+using System.Globalization;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -376,14 +377,12 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static string/*!*/ GetClrMessage(object message, string/*!*/ className) {
-            // TODO: we can use to_s protocol conversion that doesn't throw an exception:
-            var str = message as MutableString;
-            return (str != null) ? str.ToString() : className;
+        public static string/*!*/ GetClrMessage(RubyContext/*!*/ context, object message) {
+            return Protocols.ToClrStringNoThrow(context, message);
         }
 
         public static string/*!*/ GetClrMessage(RubyClass/*!*/ exceptionClass, object message) {
-            return GetClrMessage(message, exceptionClass.Name);
+            return GetClrMessage(exceptionClass.Context, message ?? exceptionClass.Name);
         }
 
         public static Exception/*!*/ InitializeException(Exception/*!*/ exception, object message) {

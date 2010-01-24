@@ -18,19 +18,14 @@ using System.CodeDom.Compiler;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
+using System.Runtime.InteropServices;
 using System.Text;
 using IronRuby;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using Microsoft.Scripting.Runtime;
-using System.Runtime.InteropServices;
-using Microsoft.Scripting.Generation;
-using IronRuby.Compiler;
+using Microsoft.Scripting.Utils;
 
 internal class LibraryDef {
 
@@ -1350,20 +1345,12 @@ internal class LibraryDef {
 
     #region Helpers
 
-    private static string/*!*/ TypeNameDispenser(Type/*!*/ type) {
-        return
-            type.FullName.StartsWith(typeof(Action).Namespace + ".Action") ||
-            type.FullName.StartsWith(typeof(Action<>).Namespace + ".Action`") ||
-            type.FullName.StartsWith(typeof(Func<>).Namespace + ".Func`") ?
-            type.Name : type.FullName;
-    }
-
     private static string/*!*/ TypeName(Type/*!*/ type) {
-        return ReflectionUtils.FormatTypeName(new StringBuilder(), type, TypeNameDispenser).ToString();
+        return ReflectionUtils.FormatTypeName(new StringBuilder(), type, Generator.TypeNameDispenser).ToString();
     }
 
     private static string/*!*/ TypeArgs(params Type/*!*/[]/*!*/ types) {
-        return ReflectionUtils.FormatTypeArgs(new StringBuilder(), types, TypeNameDispenser).ToString();
+        return ReflectionUtils.FormatTypeArgs(new StringBuilder(), types, Generator.TypeNameDispenser).ToString();
     }
 
     private static string/*!*/ GenericTypeName(Type/*!*/ type) {

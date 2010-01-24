@@ -89,7 +89,7 @@ namespace IronRuby.Compiler.Ast {
         }
         
         internal static MSA.Expression/*!*/ MakeConversion(AstGenerator/*!*/ gen, Expression/*!*/ expression) {
-            return Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString), expression.TransformRead(gen));
+            return AstUtils.LightDynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString), expression.TransformRead(gen));
         }
 
         #region Literal Concatenation

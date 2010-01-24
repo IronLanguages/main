@@ -1,1 +1,0 @@
-fails:FileTest.grpowned? return false if the file exist

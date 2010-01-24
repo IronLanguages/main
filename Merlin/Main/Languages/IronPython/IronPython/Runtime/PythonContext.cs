@@ -16,6 +16,7 @@
 #if !CLR2
 using System.Linq.Expressions;
 #else
+using dynamic = System.Object;
 using Microsoft.Scripting.Ast;
 #endif
 
@@ -39,6 +40,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
+using IronPython.Hosting;
 using IronPython.Modules;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
@@ -164,8 +166,6 @@ namespace IronPython.Runtime {
         private Dictionary<OperationRetTypeKey<ExpressionType>, BinaryRetTypeBinder/*!*/> _binaryRetTypeBinders;
         private Dictionary<OperationRetTypeKey<PythonOperationKind>, BinaryRetTypeBinder/*!*/> _operationRetTypeBinders;
         private Dictionary<Type/*!*/, PythonConversionBinder/*!*/>[] _conversionBinders;
-        private Dictionary<Type/*!*/, ConvertBinder/*!*/> _explicitCompatConvertBinders;
-        private Dictionary<Type/*!*/, ConvertBinder/*!*/> _implicitCompatConvertBinders;
         private Dictionary<Type/*!*/, DynamicMetaObjectBinder/*!*/>[] _convertRetObjectBinders;
         private Dictionary<CallSignature, CreateFallback/*!*/> _createBinders;
         private Dictionary<CallSignature, CompatibilityInvokeBinder/*!*/> _compatInvokeBinders;
@@ -345,9 +345,11 @@ namespace IronPython.Runtime {
 
                     bool flip = false;
                     if (value && !oldEnableTracing) {
-                        flip = _tracingThreads++ == 0;
-                    }else if(!value && oldEnableTracing) {
-                        flip = _tracingThreads++ != 0;
+                        flip = _tracingThreads == 0;
+                        _tracingThreads++;
+                    } else if (!value && oldEnableTracing) {
+                        _tracingThreads--;
+                        flip = _tracingThreads == 0;
                         if (flip) {
                             _tracePipeline.TraceCallback = null;
                         }
@@ -361,7 +363,7 @@ namespace IronPython.Runtime {
                 }
             }
         }
-        
+
         internal TopNamespaceTracker TopNamespace {
             get {
                 return _topNamespace;
@@ -1016,6 +1018,18 @@ namespace IronPython.Runtime {
             return CompilePythonCode(sourceCode, compilerOptions, ThrowingErrorSink.Default);
         }
 
+        internal object GetBuiltinModule(string name) {
+            lock (this) {
+                PythonModule mod = CreateBuiltinModule(name);
+                if (mod != null) {
+                    PublishModule(name, mod);
+                    return mod;
+                }
+
+                return null;
+            }
+        }
+
         internal PythonModule CreateBuiltinModule(string name) {
             Type type;
             if (BuiltinModules.TryGetValue(name, out type)) {
@@ -1469,6 +1483,8 @@ namespace IronPython.Runtime {
         public override TService GetService<TService>(params object[] args) {
             if (typeof(TService) == typeof(TokenizerService)) {
                 return (TService)(object)new Tokenizer(ErrorSink.Null, GetPythonCompilerOptions(), true);
+            } else if (typeof(TService) == typeof(PythonService)) {
+                return (TService)(object)GetPythonService((Microsoft.Scripting.Hosting.ScriptEngine)args[0]);
             }
 
             return base.GetService<TService>(args);
@@ -1861,7 +1877,11 @@ namespace IronPython.Runtime {
         #region Object Operations
 
         public override ConvertBinder/*!*/ CreateConvertBinder(Type/*!*/ toType, bool? explicitCast) {
-            return CompatConvert(toType, explicitCast ?? false);
+            if (explicitCast != null) {
+                return Convert(toType, (bool)explicitCast ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast).CompatBinder;
+            } else {
+                return Convert(toType, ConversionResultKind.ImplicitCast).CompatBinder;
+            }
         }
 
         public override DeleteMemberBinder/*!*/ CreateDeleteMemberBinder(string/*!*/ name, bool ignoreCase) {
@@ -3167,40 +3187,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal ConvertBinder/*!*/ CompatConvert(Type/*!*/ toType, bool isExplicit) {
-            Dictionary<Type, ConvertBinder> binders;
-            if (isExplicit) {
-                if (_explicitCompatConvertBinders == null) {
-                    Interlocked.CompareExchange(
-                        ref _explicitCompatConvertBinders,
-                        new Dictionary<Type, ConvertBinder>(),
-                        null
-                    );
-                }
-
-                binders = _explicitCompatConvertBinders;
-            } else {
-                if (_implicitCompatConvertBinders == null) {
-                    Interlocked.CompareExchange(
-                        ref _implicitCompatConvertBinders,
-                        new Dictionary<Type, ConvertBinder>(),
-                        null
-                    );
-                }
-
-                binders = _implicitCompatConvertBinders;
-            }
-
-            ConvertBinder res;
-            lock (binders) {
-                if (!binders.TryGetValue(toType, out res)) {
-                    binders[toType] = res = new CompatConversionBinder(this, toType, isExplicit);
-                }
-            }
-
-            return res;
-        }
-
         internal DynamicMetaObjectBinder/*!*/ ConvertRetObject(Type/*!*/ type, ConversionResultKind resultKind) {
             if (_convertRetObjectBinders == null) {
                 Interlocked.CompareExchange(
@@ -3665,6 +3651,49 @@ namespace IronPython.Runtime {
                 BindingRestrictions.Empty,
                 PythonContext.GetPythonContext(action).SharedClsContext
             );
+        }
+
+        #endregion
+
+        #region Scope Access
+
+        public override T ScopeGetVariable<T>(Scope scope, string name) {
+            var storage = scope.Storage as ScopeStorage;
+            object res;
+            if (storage != null && storage.TryGetValue(name, false, out res)) {
+                return Operations.ConvertTo<T>(res);
+            }
+
+            return base.ScopeGetVariable<T>(scope, name);
+        }
+
+        public override dynamic ScopeGetVariable(Scope scope, string name) {
+            var storage = scope.Storage as ScopeStorage;
+            object res;
+            if (storage != null && storage.TryGetValue(name, false, out res)) {
+                return res;
+            }
+
+            return base.ScopeGetVariable(scope, name);
+        }
+
+        public override void ScopeSetVariable(Scope scope, string name, object value) {
+            var storage = scope.Storage as ScopeStorage;
+            if (storage != null) {
+                storage.SetValue(name, false, value);
+                return;
+            }
+
+            base.ScopeSetVariable(scope, name, value);
+        }
+
+        public override bool ScopeTryGetVariable(Scope scope, string name, out dynamic value) {
+            var storage = scope.Storage as ScopeStorage;
+            if (storage != null && storage.TryGetValue(name, false, out value)) {
+                return true;
+            }
+
+            return base.ScopeTryGetVariable(scope, name, out value);
         }
 
         #endregion

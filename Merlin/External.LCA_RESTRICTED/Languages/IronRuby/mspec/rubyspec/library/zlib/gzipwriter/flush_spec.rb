@@ -10,6 +10,14 @@ describe "Zlib::GzipWriter#flush" do
     @valid_arguments = [nil, Zlib::NO_FLUSH, Zlib::SYNC_FLUSH, Zlib::FULL_FLUSH, Zlib::FINISH]
   end
   
+  after :each do 
+    begin
+      @gzip_writer.close
+    rescue Zlib::BufError
+      #noop, this will happen on a closed stream that has data waiting
+    end
+  end
+  
   it "calls flush on underlying io object" do
     @io.should_receive(:flush).exactly(@valid_arguments.size)
     @valid_arguments.each do |f|
@@ -22,9 +30,11 @@ describe "Zlib::GzipWriter#flush" do
     @gzip_writer.flush.should equal(@gzip_writer)
   end
     
-  it "raises BufError if called multiple times without writing data" do
-    @gzip_writer.flush
-    lambda { @gzip_writer.flush }.should raise_error(Zlib::BufError)
+  platform_is_not :windows do
+    it "raises BufError if called multiple times without writing data" do
+      @gzip_writer.flush
+      lambda { @gzip_writer.flush }.should raise_error(Zlib::BufError)
+    end
   end
     
   it "can be called multiple times if data is written" do
@@ -38,6 +48,7 @@ describe "Zlib::GzipWriter#flush" do
     io = ClassSpecs::StubWriterWithClose.new
     gzip_writer = Zlib::GzipWriter.new io
     gzip_writer.flush.should equal(gzip_writer)
+    gzip_writer.close
   end
     
   it "Zlib::FINISH closes the writer" do

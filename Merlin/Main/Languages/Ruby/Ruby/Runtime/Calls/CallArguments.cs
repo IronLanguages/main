@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
@@ -171,32 +172,29 @@ namespace IronRuby.Runtime.Calls {
         public AstExpressions/*!*/ GetSimpleArgumentExpressions() {
             int count = SimpleArgumentCount;
             var result = new AstExpressions(count);
-            for (int i = 0, j = GetSimpleArgumentsIndex(0); i < count; j++, i++) {
+            for (int i = 0, j = GetSimpleArgumentIndex(0); i < count; j++, i++) {
                 result.Add(_args[j].Expression);
             }
             return result;
         }
 
-        internal Expression[]/*!*/ GetCallSiteArguments(Expression/*!*/ targetExpression) {
+        internal AstExpressions/*!*/ GetCallSiteArguments(Expression/*!*/ targetExpression) {
             // context, target, arguments:
-            var result = new Expression[CallSiteArgumentCount];
+            var result = new AstExpressions(CallSiteArgumentCount);
 
-            int i = 0;
             if (_hasScopeOrContextArg) {
-                result[i++] = _signature.HasScope ? MetaScope.Expression : MetaContext.Expression;
+                result.Add(_signature.HasScope ? MetaScope.Expression : MetaContext.Expression);
             }
-            result[i++] = targetExpression;
+            result.Add(targetExpression);
 
             for (int j = FirstArgumentIndex; j < _args.Length; j++) {
-                result[i++] = _args[j].Expression;
+                result.Add(_args[j].Expression);
             }
-
-            Debug.Assert(i == result.Length);
 
             return result;
         }
 
-        private int GetSimpleArgumentsIndex(int i) {
+        private int GetSimpleArgumentIndex(int i) {
             return FirstArgumentIndex + (_signature.HasBlock ? 1 : 0) + i;
         }
 
@@ -209,7 +207,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal DynamicMetaObject/*!*/ GetSimpleMetaArgument(int i) {
-            return _args[GetSimpleArgumentsIndex(i)];
+            return _args[GetSimpleArgumentIndex(i)];
         }
         
         internal int GetBlockIndex() {
@@ -228,34 +226,46 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // Ruby binders: 
-        internal CallArguments(RubyContext context, DynamicMetaObject/*!*/ scopeOrContextOrTarget, DynamicMetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
-            Assert.NotNull(scopeOrContextOrTarget);
+        internal CallArguments(RubyContext context, DynamicMetaObject/*!*/ scopeOrContextOrTargetOrArgArray, DynamicMetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
+            Assert.NotNull(scopeOrContextOrTargetOrArgArray);
             Assert.NotNullItems(args);
 
-            Debug.Assert(signature.HasScope == scopeOrContextOrTarget.Value is RubyScope);
-            Debug.Assert((context == null && !signature.HasScope) == scopeOrContextOrTarget.Value is RubyContext);
+            ArgumentArray argArray = scopeOrContextOrTargetOrArgArray.Value as ArgumentArray;
+            if (argArray != null) {
+                Debug.Assert(args.Length == 0 && argArray.Count >= 1);
+
+                // build meta-objects for arguments wrapped in the array:
+                args = new DynamicMetaObject[argArray.Count - 1];
+                for (int i = 0; i < args.Length; i++) {
+                    args[i] = argArray.GetMetaObject(scopeOrContextOrTargetOrArgArray.Expression, 1 + i);
+                }
+                scopeOrContextOrTargetOrArgArray = argArray.GetMetaObject(scopeOrContextOrTargetOrArgArray.Expression, 0);
+            }
+
+            Debug.Assert(signature.HasScope == scopeOrContextOrTargetOrArgArray.Value is RubyScope);
+            Debug.Assert((context == null && !signature.HasScope) == scopeOrContextOrTargetOrArgArray.Value is RubyContext);
 
             if (context != null) {
                 // bound site:
                 _context = new DynamicMetaObject(AstUtils.Constant(context), BindingRestrictions.Empty, context);
                 if (signature.HasScope) {
-                    _scope = scopeOrContextOrTarget;
+                    _scope = scopeOrContextOrTargetOrArgArray;
                     _hasScopeOrContextArg = true;
                 } else {
-                    _target = scopeOrContextOrTarget;
+                    _target = scopeOrContextOrTargetOrArgArray;
                 }
             } else if (signature.HasScope) {
                 // unbound site with scope:
                 _context = new DynamicMetaObject(
-                    Methods.GetContextFromScope.OpCall(scopeOrContextOrTarget.Expression), BindingRestrictions.Empty, 
-                    ((RubyScope)scopeOrContextOrTarget.Value).RubyContext
+                    Methods.GetContextFromScope.OpCall(scopeOrContextOrTargetOrArgArray.Expression), BindingRestrictions.Empty, 
+                    ((RubyScope)scopeOrContextOrTargetOrArgArray.Value).RubyContext
                 );
-                _scope = scopeOrContextOrTarget;
+                _scope = scopeOrContextOrTargetOrArgArray;
                 _hasScopeOrContextArg = true;
                 _target = null;
             } else {
                 // unbound site with context:
-                _context = scopeOrContextOrTarget;
+                _context = scopeOrContextOrTargetOrArgArray;
                 _hasScopeOrContextArg = true;
                 _target = null;
             }
@@ -294,7 +304,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public void InsertSimple(int index, DynamicMetaObject/*!*/ arg) {
-            index = GetSimpleArgumentsIndex(index);
+            index = GetSimpleArgumentIndex(index);
 
             _args = ArrayUtils.InsertAt(_args, index, arg);
             _signature = new RubyCallSignature(_signature.ArgumentCount + 1, _signature.Flags);
@@ -307,7 +317,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public void SetSimpleArgument(int index, DynamicMetaObject/*!*/ arg) {
-            SetArgument(GetSimpleArgumentsIndex(index), arg);
+            SetArgument(GetSimpleArgumentIndex(index), arg);
         }
 
         private void SetArgument(int index, DynamicMetaObject/*!*/ arg) {

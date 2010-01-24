@@ -85,6 +85,7 @@ module ClassSpecs
   class L; end
 
   class M < L; end
+
 #TODO: Can this be replaced with thie IO helper?  
 
   class StubWriter
@@ -116,12 +117,6 @@ module ClassSpecs
   class Undef_to_s
     if self.methods.include?(:to_s) then
       undef to_s
-    end
-  end
-  
-  class InitializeMethod
-    def initialize
-      ScratchPad.record :initialize_method
     end
   end
 end

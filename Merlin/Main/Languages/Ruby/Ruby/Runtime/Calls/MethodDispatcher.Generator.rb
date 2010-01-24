@@ -18,6 +18,14 @@ class Generator
   def GenericParams
     Array.new(@n) { |i| ", T#{i}" }.join(" ")
   end
+  
+  def GenericParamsComma
+    Array.new(@n) { |i| "T#{i}, " }.join(" ")
+  end
+  
+  def GenericParamsBrackets
+    "<" + (Array.new(@n) { |i| "T#{i}" }.join(", ")) + ">"
+  end
 
   def Objects *args
     ", object" * @n

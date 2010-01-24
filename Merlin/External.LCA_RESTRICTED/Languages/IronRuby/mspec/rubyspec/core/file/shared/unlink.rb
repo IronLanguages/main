@@ -2,11 +2,9 @@ describe :file_unlink, :shared => true do
   before :each do
     @file1 = 'test.txt'
     @file2 = 'test2.txt'
-    File.send(@method, @file1) if File.exists?(@file1)
-    File.send(@method, @file2) if File.exists?(@file2)
 
-    File.open(@file1, "w") {} # Touch
-    File.open(@file2, "w") {} # Touch
+    touch @file1
+    touch @file2
   end
 
   after :each do
@@ -58,5 +56,11 @@ describe :file_unlink, :shared => true do
     end
 
     File.send(@method, Coercable.new).should == 1
+  end
+
+  ruby_version_is "1.9" do
+    it "accepts an object that has a #to_path method" do
+      File.send(@method, mock_to_path(@file1)).should == 1
+    end
   end
 end

@@ -84,6 +84,7 @@
     <Compile Include="DefaultParams.cs" />
     <Compile Include="DelegateTest.cs" />
     <Compile Include="DeTest.cs" />
+    <Compile Include="DynamicRegressions.cs" />
     <Compile Include="MemberMappingTests.cs" />
     <Compile Include="Stress\Engine.cs" />
     <Compile Include="EngineTest.cs" />
@@ -108,6 +109,7 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" Condition=" '$(Configuration)' == 'V4 Debug' Or '$(Configuration)' == 'V4 Release'"/>
     <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="System.Data" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />

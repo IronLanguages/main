@@ -49,7 +49,7 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return PythonProtocol.Index(this, PythonIndexType.GetItem, ArrayUtils.Insert(target, indexes));
+            return PythonProtocol.Index(this, PythonIndexType.GetItem, ArrayUtils.Insert(target, indexes), errorSuggestion);
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {

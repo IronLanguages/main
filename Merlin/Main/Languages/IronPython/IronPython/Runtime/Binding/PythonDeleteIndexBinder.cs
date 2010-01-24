@@ -40,7 +40,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion) {
-            return PythonProtocol.Index(this, PythonIndexType.DeleteItem, ArrayUtils.Insert(target, indexes));
+            return PythonProtocol.Index(this, PythonIndexType.DeleteItem, ArrayUtils.Insert(target, indexes),errorSuggestion);
         }
 
         public override int GetHashCode() {

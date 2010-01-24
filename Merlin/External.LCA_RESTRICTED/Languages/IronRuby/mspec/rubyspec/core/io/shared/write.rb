@@ -13,7 +13,7 @@ describe :io_write, :shared => true do
   after :each do
     @file.close
     @readonly_file.close
-    File.delete(@filename)
+    rm_r @filename
   end
 
   it "coerces the argument to a string using to_s" do
@@ -35,7 +35,7 @@ describe :io_write, :shared => true do
     (obj = mock(data)).should_receive(:to_s).and_return(data)
     @file.send(@method, obj)
     @file.seek(0)
-    @file.read(data.length).should == data
+    @file.read(data.size).should == data
   end
 
   it "writes all of the string's bytes without buffering if mode is sync" do

@@ -116,9 +116,11 @@ namespace IronRuby.Compiler.Ast {
             }
 
             var dynamicSite = siteBuilder.MakeCallAction(methodName, hasImplicitSelf);
+#if FEATURE_CALL_SITE_TRACER
             if (gen.Context.CallSiteCreated != null) {
                 gen.Context.CallSiteCreated(node, dynamicSite);
             }
+#endif
 
             MSA.Expression result = gen.DebugMark(dynamicSite, methodName);
 
@@ -179,7 +181,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
             // MRI doesn't evaluate the arguments 
-            MSA.Expression result = Ast.Dynamic(
+            MSA.Expression result = AstUtils.LightDynamic(
                 RubyCallAction.Make(gen.Context, _methodName, RubyCallSignature.IsDefined(_target == null)), 
                 typeof(bool),
                 gen.CurrentScopeVariable,

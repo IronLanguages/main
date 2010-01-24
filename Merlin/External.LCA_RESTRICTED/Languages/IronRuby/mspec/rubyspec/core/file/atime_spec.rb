@@ -3,11 +3,11 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 describe "File.atime" do
   before :each do
     @file = tmp('test.txt')
-    File.open(@file, "w") {} # touch
+    touch @file
   end
 
   after :each do
-    File.delete(@file) if File.exist?(@file)
+    rm_r @file
   end
 
   it "returns the last access time for the named file as a Time object" do
@@ -17,6 +17,12 @@ describe "File.atime" do
 
   it "raises an Errno::ENOENT exception if the file is not found" do
     lambda { File.atime('a_fake_file') }.should raise_error(Errno::ENOENT)
+  end
+
+  ruby_version_is "1.9" do
+    it "accepts an object that has a #to_path method" do
+      File.atime(mock_to_path(@file))
+    end
   end
 end
 

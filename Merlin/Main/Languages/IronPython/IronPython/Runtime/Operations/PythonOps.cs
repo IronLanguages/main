@@ -126,8 +126,6 @@ namespace IronPython.Runtime.Operations {
             return InfiniteRepr;
         }
 
-#if !SILVERLIGHT
-
         internal static object LookupEncodingError(CodeContext/*!*/ context, string name) {
             Dictionary<string, object> errorHandlers = PythonContext.GetContext(context).ErrorHandlers;
             lock (errorHandlers) {
@@ -148,8 +146,6 @@ namespace IronPython.Runtime.Operations {
                 errorHandlers[name] = handler;
             }
         }
-
-#endif
 
         internal static PythonTuple LookupEncoding(CodeContext/*!*/ context, string encoding) {
             PythonContext.GetContext(context).EnsureEncodings();
@@ -3402,7 +3398,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static DynamicMetaObjectBinder MakeCompatConvertAction(CodeContext/*!*/ context, Type toType, bool isExplicit) {
-            return PythonContext.GetContext(context).CompatConvert(toType, isExplicit);
+            return PythonContext.GetContext(context).Convert(toType, isExplicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast).CompatBinder;
         }
 
         public static DynamicMetaObjectBinder MakeSetAction(CodeContext/*!*/ context, string name) {

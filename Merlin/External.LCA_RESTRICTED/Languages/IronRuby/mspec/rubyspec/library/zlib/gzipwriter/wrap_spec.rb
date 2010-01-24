@@ -7,15 +7,38 @@ describe "Zlib::GzipWriter.wrap" do
     @io = ClassSpecs::StubWriterWithClose.new
   end
   
+  after :each do 
+    @gz.close if @gz rescue nil
+  end
+  
   it "can be called without a block" do
-    @io.should_not_receive :write
-    @io.should_not_receive :close
-    Zlib::GzipWriter.wrap(@io).should be_kind_of(Zlib::GzipWriter)
+    #This metaprogramming hack is to ensure that the write
+    #and closed methods don't get called, but on windows, 
+    #running @gz.close calls write and close on the wrapped IO
+    #and if you use mocks, they fail due to that.
+    class << @io
+      alias_method :owrite, :write
+      def write
+        raise "Error"
+      end
+
+      def close
+        raise "Error"
+      end
+    end
+    lambda {
+      @gz = Zlib::GzipWriter.wrap(@io)
+      @gz.should be_kind_of(Zlib::GzipWriter)}.should_not raise_error
+    class << @io
+      alias_method :write, :owrite
+      undef :close
+    end
   end
   
   ruby_bug "Causes segmentation fault", "1.8" do
     it "can be called without a block with a non-writable object" do
-      Zlib::GzipWriter.wrap(nil).should be_kind_of(Zlib::GzipWriter)
+      @gz = Zlib::GzipWriter.wrap(nil)
+      @gz.should be_kind_of(Zlib::GzipWriter)
     end
   end
 
@@ -59,6 +82,6 @@ describe "Zlib::GzipWriter.wrap" do
 
   it "propagates Exceptions thrown from the block after calling close" do
     @io.should_receive :close
-    lambda { Zlib::GzipWriter.wrap(@io) { raise "error from block" } }.should raise_error(RuntimeError)
+    lambda { Zlib::GzipWriter.wrap(@io) {|gz| @gz = gz; raise "error from block" } }.should raise_error(RuntimeError)
   end
 end

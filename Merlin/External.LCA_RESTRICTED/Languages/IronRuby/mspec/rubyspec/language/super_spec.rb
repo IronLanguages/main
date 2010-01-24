@@ -57,7 +57,7 @@ describe "The super keyword" do
     Super::S4::B.new.foo([],"test").should == ["B#foo(a,test)", "A#foo"]
   end
 
-  ruby_bug "#1151 [ruby-core:22040]", "1.8.6" do
+  ruby_bug "#1151 [ruby-core:22040]", "1.8.7.174" do
     it "raises an error error when super method does not exist" do
       sup = Class.new
       sub_normal = Class.new(sup) do
@@ -74,6 +74,14 @@ describe "The super keyword" do
       lambda {sub_normal.new.foo}.should raise_error(NoMethodError, /super/)
       lambda {sub_zsuper.new.foo}.should raise_error(NoMethodError, /super/)
     end
+  end
+
+  it "calls the superclass method when in a block" do
+    Super::S6.new.here.should == :good
+  end
+
+  it "calls the superclass method when initial method is defined_method'd" do
+    Super::S7.new.here.should == :good
   end
 
   it "supers up appropriate name even if used for multiple method names" do
@@ -107,9 +115,9 @@ describe "The super keyword" do
             super
           end
         end
-
-        sub.new.a.should == "a"
       end
+
+      sub.new.a.should == "a"
     end
   end
 

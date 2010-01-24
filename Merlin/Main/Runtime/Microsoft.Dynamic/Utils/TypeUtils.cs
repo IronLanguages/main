@@ -354,5 +354,27 @@ namespace Microsoft.Scripting.Utils {
                     return false;
             }
         }
+
+
+#if !SILVERLIGHT
+        public static readonly Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");
+#endif
+
+        public static bool IsComObjectType(Type/*!*/ type) {
+#if SILVERLIGHT
+            return false;
+#else
+            return ComObjectType.IsAssignableFrom(type);
+#endif
+        }
+
+        public static bool IsComObject(object obj) {
+#if SILVERLIGHT
+            return false;
+#else
+            // we can't use System.Runtime.InteropServices.Marshal.IsComObject(obj) since it doesn't work in partial trust
+            return obj != null && IsComObjectType(obj.GetType());
+#endif
+        }
     }
 }

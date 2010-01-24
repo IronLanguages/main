@@ -160,7 +160,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private MSA.Expression/*!*/ TransformSplatType(AstGenerator/*!*/ gen) {
-            return Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), _splatType.TransformRead(gen));
+            return AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), _splatType.TransformRead(gen));
         }
 
         private MSA.Expression/*!*/ MakeCompareException(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {

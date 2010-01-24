@@ -367,6 +367,9 @@ namespace IronPython.Runtime.Operations {
 
         #region Public Python methods
 
+        /// <summary>
+        /// Returns a copy of this string converted to uppercase
+        /// </summary>
         public static string capitalize(this string self) {
             if (self.Length == 0) return self;
             return Char.ToUpper(self[0], CultureInfo.InvariantCulture) + self.Substring(1).ToLower(CultureInfo.InvariantCulture);
@@ -638,10 +641,12 @@ namespace IronPython.Runtime.Operations {
             return hasUpper;
         }
 
-        //  return true if self is a titlecased string and there is at least one
-        //  character in self; also, uppercase characters may only follow uncased
-        //  characters (e.g. whitespace) and lowercase characters only cased ones. 
-        //  return false otherwise.
+        /// <summary>
+        /// return true if self is a titlecased string and there is at least one
+        /// character in self; also, uppercase characters may only follow uncased
+        /// characters (e.g. whitespace) and lowercase characters only cased ones.
+        /// return false otherwise.
+        /// </summary>
         public static bool istitle(this string self) {
             if (self == null || self.Length == 0) return false;
 
@@ -677,9 +682,11 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        //  Return a string which is the concatenation of the strings 
-        //  in the sequence seq. The separator between elements is the 
-        //  string providing this method
+        /// <summary>
+        /// Return a string which is the concatenation of the strings 
+        /// in the sequence seq. The separator between elements is the 
+        /// string providing this method
+        /// </summary>
         public static string join(this string self, object sequence) {
             IEnumerator seq = PythonOps.GetEnumerator(sequence);
             if (!seq.MoveNext()) return "";
@@ -1132,6 +1139,16 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
+        /// <summary>
+        /// Replaces each replacement field in the string with the provided arguments.
+        /// 
+        /// replacement_field =  "{" field_name ["!" conversion] [":" format_spec] "}"
+        /// field_name        =  (identifier | integer) ("." identifier | "[" element_index "]")*
+        /// 
+        /// format_spec: [[fill]align][sign][#][0][width][.precision][type]
+        /// 
+        /// Conversion can be 'r' for repr or 's' for string.
+        /// </summary>
         public static string/*!*/ format(CodeContext/*!*/ context, string format_string, [NotNull]params object[] args) {
             return NewStringFormatter.FormatString(
                 PythonContext.GetContext(context),
@@ -1141,6 +1158,16 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
+        /// <summary>
+        /// Replaces each replacement field in the string with the provided arguments.
+        /// 
+        /// replacement_field =  "{" field_name ["!" conversion] [":" format_spec] "}"
+        /// field_name        =  (identifier | integer) ("." identifier | "[" element_index "]")*
+        /// 
+        /// format_spec: [[fill]align][sign][#][0][width][.precision][type]
+        /// 
+        /// Conversion can be 'r' for repr or 's' for string.
+        /// </summary>
         public static string/*!*/ format(CodeContext/*!*/ context, string format_string, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
             return NewStringFormatter.FormatString(
                 PythonContext.GetContext(context),

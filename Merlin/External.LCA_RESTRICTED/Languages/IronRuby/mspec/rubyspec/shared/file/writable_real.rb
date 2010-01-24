@@ -4,11 +4,17 @@ describe :file_writable_real, :shared => true do
   end
 
   after :each do
-    File.delete(@file) if File.exist?(@file)
+    rm_r @file
   end
 
   it "returns true if named file is writable by the real user id of the process, otherwise false" do
     File.open(@file,'w') { @object.send(@method, @file).should == true }
+  end
+
+  ruby_version_is "1.9" do
+    it "accepts an object that has a #to_path method" do
+      File.open(@file,'w') { @object.send(@method, mock_to_path(@file)).should == true }
+    end
   end
 
   it "raises an ArgumentError if not passed one argument" do
