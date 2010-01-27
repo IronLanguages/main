@@ -21,6 +21,10 @@ class UnitTestRunner
       opts.on("-g", "--generate-tags", "Generate tags to disable failing tests") do |g|
         @generate_tags = true
       end
+      opts.on("-i", "--generate-incremental", "Generate tags to disable *additional* failing tests") do |g|
+        @generate_tags = true
+        @generate_incremental = true
+      end
   
       opts.on_tail("-h", "--help", "Show this message") do |n|
         puts opts
@@ -57,10 +61,13 @@ class UnitTestRunner
       @setup.disable_unstable_tests      
 
       if @generate_tags
+        @setup.disable_tests if @generate_incremental
         require "generate_test-unit_tags"
       else
         @setup.disable_tests unless @all
       end
+      
+      at_exit { puts "Disabled #{@setup.disabled} tests" }
     end    
   end    
      
@@ -97,7 +104,9 @@ class UnitTestSetup
   def disable_unstable_tests; end
   def disable_tests;end
   def sanity; end
-            
+  
+  attr :disabled
+  
   def require_tests
     # Note that the tests are registered using Kernel#at_exit, and will run during shutdown
     # The "require" statement just registers the tests for being run later...
@@ -106,11 +115,17 @@ class UnitTestSetup
             
   private   
   def disable(klass, *methods)
+    @disabled ||= 0
+    @disabled += 1
     klass.class_eval do
-      def noop;end
       methods.each do |method| 
-        alias_method method, :noop
-      end   
+        undef_method method.to_sym rescue puts "Could not undef #{klass}##{method}"
+      end
+      # If all the test methods have been removed, keep a single dummy method to keep test-unit happy.
+      # Otherwise, it complains saying "No tests were specified."
+      if instance_methods(false).select { |m| m =~ /^test/ }.empty?
+        define_method(:test_dummy_utr) {}
+      end
     end     
   end       
             
@@ -120,7 +135,7 @@ class UnitTestSetup
             
   def sanity_version(expected, actual)
     abort("Loaded the wrong version #{actual} of #{@name} instead of the expected #{expected}...") unless actual == expected
-  end       
+  end
 
   # Helpers for Rails tests
   

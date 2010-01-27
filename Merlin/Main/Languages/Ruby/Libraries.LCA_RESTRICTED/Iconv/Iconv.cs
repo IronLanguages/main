@@ -31,13 +31,23 @@ namespace IronRuby.StandardLibrary.Iconv {
     public class Iconv {
         private Decoder _fromEncoding;
         private Encoder _toEncoding;
+        private string _toEncodingString;
+        private bool _emitBom;
+        private bool _isClosed;
 
         [RubyConstructor]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
         public static Iconv/*!*/ Create(RubyClass/*!*/ self,
             [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding) {
 
-            return Initialize(new Iconv(), toEncoding, fromEncoding);
+            Iconv converter = new Iconv();
+            return Initialize(converter, toEncoding, fromEncoding);
+        }
+
+        private void ResetByteOrderMark() {
+            if (_toEncodingString == "UTF-16") {
+                _emitBom = true;
+            }
         }
 
         // Reinitialization. Not called when a factory/non-default ctor is called.
@@ -45,44 +55,150 @@ namespace IronRuby.StandardLibrary.Iconv {
         public static Iconv/*!*/ Initialize(Iconv/*!*/ self,
             [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding) {
 
-            self._toEncoding = RubyEncoding.GetEncodingByRubyName(toEncoding.ConvertToString()).GetEncoder();
-            self._fromEncoding = RubyEncoding.GetEncodingByRubyName(fromEncoding.ConvertToString()).GetDecoder();
+            self._toEncodingString = toEncoding.ConvertToString().ToUpperInvariant();
+
+            try {
+                self._toEncoding = RubyEncoding.GetEncodingByRubyName(self._toEncodingString).GetEncoder();
+            } catch (ArgumentException e) {
+                throw new InvalidEncoding(self._toEncodingString, e);
+            }
+
+            try {
+                self._fromEncoding = RubyEncoding.GetEncodingByRubyName(fromEncoding.ConvertToString()).GetDecoder();
+            } catch (ArgumentException e) {
+                throw new InvalidEncoding(fromEncoding.ConvertToString(), e);
+            }
+
+            self.ResetByteOrderMark();
 
             return self;
         }
 
         [RubyMethod("iconv")]
-        public static MutableString/*!*/ iconv(Iconv/*!*/ self, [DefaultProtocol]MutableString/*!*/ str,
-            [DefaultProtocol, DefaultParameterValue(0)]int startIndex, [DefaultProtocol, DefaultParameterValue(-1)]int endIndex) {
+        public static MutableString/*!*/ iconv(Iconv/*!*/ self,
+            [DefaultProtocol]MutableString/*!*/ str,
+            [DefaultProtocol, DefaultParameterValue(0)]int startIndex,
+            object length) {
+
+            if (length == null) {
+                return iconv(self, str, startIndex, -1);
+            }
+            throw new ArgumentException();
+        }
+
+        [RubyMethod("iconv")]
+        public static MutableString/*!*/ iconv(Iconv/*!*/ self, 
+            [DefaultProtocol]MutableString/*!*/ str,
+            [DefaultProtocol, DefaultParameterValue(0)]int startIndex, 
+            [DefaultProtocol, NotNull, DefaultParameterValue(-1)]int length) {
+
+            if (self._isClosed) {
+                throw RubyExceptions.CreateArgumentError("closed stream");
+            }
+
+            if (str == null) {
+                return self.Close(true);
+            }
 
             // TODO:
             int bytesUsed, charsUsed;
             bool completed;
 
             byte[] source = str.ConvertToBytes();
-            char[] buffer = new char[self._fromEncoding.GetCharCount(source, 0, source.Length)];
-            self._fromEncoding.Convert(source, 0, source.Length, buffer, 0, buffer.Length, false, out bytesUsed, out charsUsed, out completed);
-            Debug.Assert(charsUsed == buffer.Length && bytesUsed == source.Length);
+            if (startIndex < 0) {
+                startIndex = source.Length + startIndex;
+                if (startIndex < 0) {
+                    //throw new IllegalSequence("start index is too large of a negative number");
+                    startIndex = 0;
+                    length = 0;
+                }
+            } else if (startIndex > source.Length) {
+                startIndex = 0;
+                length = 0;
+            }
+
+            if ((length < 0) || (startIndex + length > source.Length)) {
+                length = source.Length - startIndex;
+            }
+
+            char[] buffer = new char[self._fromEncoding.GetCharCount(source, startIndex, length)];
+            self._fromEncoding.Convert(source, startIndex, length, buffer, 0, buffer.Length, false, out bytesUsed, out charsUsed, out completed);
+            Debug.Assert(charsUsed == buffer.Length && bytesUsed == length);
             
             byte[] result = new byte[self._toEncoding.GetByteCount(buffer, 0, buffer.Length, false)];
             int bytesEncoded = self._toEncoding.GetBytes(buffer, 0, buffer.Length, result, 0, false);
             Debug.Assert(bytesEncoded == result.Length);
 
+            if (self._emitBom && result.Length > 0) {
+                byte[] resultWithBom = new byte[2 + result.Length];
+                resultWithBom[0] = 0xff;
+                resultWithBom[1] = 0xfe;
+                Array.Copy(result, 0, resultWithBom, 2, result.Length);
+                result = resultWithBom;
+                self._emitBom = false;
+            }
+
+            return MutableString.CreateBinary(result);
+        }
+
+        private MutableString/*!*/ Close(bool resetEncoder) {
+            char[] buffer = new char[0];
+            byte[] result = new byte[_toEncoding.GetByteCount(buffer, 0, 0, true)];
+            int bytesEncoded = _toEncoding.GetBytes(buffer, 0, 0, result, 0, true);
+            Debug.Assert(bytesEncoded == result.Length);
+            if (resetEncoder) {
+#if SILVERLIGHT
+                // TODO - Create a new encoder
+                throw new NotImplementedException();
+#else
+                _toEncoding.Reset();
+#endif
+                ResetByteOrderMark();
+            } else {
+                _isClosed = true;
+            }
             return MutableString.CreateBinary(result);
         }
 
         [RubyMethod("close")]
         public static MutableString/*!*/ Close(Iconv/*!*/ self) {
-            return null;
+            if (!self._isClosed) {
+                return self.Close(false);
+            } else {
+                return null;
+            }
+        }
+
+        private static MutableString[] /*!*/ Convert(
+            MutableString/*!*/ toEncoding, 
+            MutableString/*!*/ fromEncoding, 
+            params MutableString [] strings) {
+
+            Iconv conveter = Create(null, toEncoding, fromEncoding);
+            MutableString[] convertedStrings = new MutableString[strings.Length];
+            for (int i = 0; i < strings.Length; i++) {
+                convertedStrings[i] = iconv(conveter, strings[i], 0, -1);
+            }
+            MutableString closingString = conveter.Close(false);
+            if (closingString.IsEmpty) {
+                return convertedStrings;
+            } else {
+                Array.Resize(ref convertedStrings, strings.Length + 1);
+                convertedStrings[strings.Length] = closingString;
+            }
+            return convertedStrings;
         }
 
         [RubyMethod("conv", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ Convert(RubyClass/*!*/ self, 
             [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding, 
             [DefaultProtocol]MutableString/*!*/ str) {
-
-            //return iconv(to, from, str).join;
-            return null;
+            MutableString[] /*!*/ convertedStrings = Convert(toEncoding, fromEncoding, str, null);
+            MutableString /*!*/ result = MutableString.CreateEmpty();
+            foreach (MutableString s in convertedStrings) {
+                result.Append(s);
+            }
+            return result;
         }
 
         [RubyMethod("charset_map", RubyMethodAttributes.PublicSingleton)]
@@ -92,25 +208,30 @@ namespace IronRuby.StandardLibrary.Iconv {
         }
 
         [RubyMethod("iconv", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ iconv(RubyClass/*!*/ self,
+        public static RubyArray/*!*/ iconv(RubyClass/*!*/ self,
             [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding,
             [NotNull]params MutableString[]/*!*/ strings) {
 
-            //Iconv.open(to, from) { |cd|
-            //    (strs + [nil]).collect { |s| cd.iconv(s) }
-            //  }
-
-            return null;
+            MutableString[] /*!*/ convertedStrings = Convert(toEncoding, fromEncoding, strings);
+            return new RubyArray(convertedStrings);
         }
         
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Open([NotNull]BlockParam/*!*/ block, RubyClass/*!*/ self,
+        public static object Open([NotNull]BlockParam/*!*/ block, RubyClass/*!*/ self,
             [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding) {
-            // Equivalent to Iconv.new except that when it is called with a block, 
-            // it yields with the new instance and closes it, and returns the result which returned from the block.
 
-            // using Iconv.new(to, from) { yield block; } ensure close
-            return null;
+            Iconv converter = Create(self, toEncoding, fromEncoding);
+            if (block == null) {
+                return converter;
+            } else {
+                try {
+                    object blockResult;
+                    block.Yield(converter, out blockResult);
+                    return blockResult;
+                } finally {
+                    Close(converter);
+                }
+            }
         }
 
         [RubyModule("Failure")]

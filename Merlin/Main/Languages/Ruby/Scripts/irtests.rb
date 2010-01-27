@@ -44,7 +44,7 @@ class IRTest
         :ActionMailer => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat action_mailer",
         :ActionPack => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat action_pack",
         :ActiveSupport => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_support",
-        # :ActiveRecord => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_record"
+        # :ActiveRecord => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_record",
         :ActiveResource => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_resource"
       })
     end

@@ -15,12 +15,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
-using System.Configuration;
-using System.Xml;
+using System.Windows.Forms;
 
 namespace Chiron {
     static class Chiron {
@@ -34,6 +34,7 @@ namespace Chiron {
         static bool _help;
         static bool _zipdlr;
         static bool _saveManifest;
+        static bool _notifyIcon;
         static string _error;
         static string _startPage;
         static string[] _localPath;
@@ -116,6 +117,9 @@ Options:
     functionality.
     Does not start the web server, cannot be combined with /w or /b
 
+  /notification
+    Display notification icon
+  
   /n[ologo]
     Suppresses display of the logo banner
 
@@ -182,6 +186,21 @@ Options:
                         p.Start();
                     }
 
+                    if (_notifyIcon) {
+                        Thread notify = new Thread(
+                            () => {
+                                Application.EnableVisualStyles();
+                                Application.SetCompatibleTextRenderingDefault(false);
+
+                                var notification = new Notification(_dir, _port);
+                                Application.Run();
+                            }
+                        );
+                        notify.SetApartmentState(ApartmentState.STA);
+                        notify.IsBackground = true;
+                        notify.Start();
+                    }
+
                     while (server.IsRunning) Thread.Sleep(500);
                 } catch (Exception ex) {
                     return Error(2001, "server", ex.Message);
@@ -190,6 +209,8 @@ Options:
 
             return 0;
         }
+
+        
 
         // Print out an error in a format suitable for msbuild. For example:
         // chiron.exe: XAP error CH1001: Access to the path 'app.xap' is denied.
@@ -307,6 +328,9 @@ Options:
                 case "n": case "nologo":
                     _nologo = true;
                     break;
+                case "notification":
+                    _notifyIcon = true;
+                    break;
                 case "s": case "silent":
                     _silent = true;
                     _nologo = true;
@@ -423,7 +447,8 @@ Options:
                 if (_ExternalUrlPrefix != null) {
                     if (!_ExternalUrlPrefix.EndsWith("/")) _ExternalUrlPrefix += '/';
                     // validate
-                    Uri uri = new Uri(_ExternalUrlPrefix, UriKind.RelativeOrAbsolute);
+                    Uri uri = new Uri(_ExternalUrlPrefix, UriKind.RelativeOrAbsolute);
+
                     if (!uri.IsAbsoluteUri && !_ExternalUrlPrefix.StartsWith("/")) {
                         _ExternalUrlPrefix = null;
                         throw new ConfigurationErrorsException("externalUrlPrefix must be an absolute URI or start with a /");

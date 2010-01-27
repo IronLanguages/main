@@ -72,6 +72,9 @@ namespace IronPython.Runtime {
         private readonly PythonBinder _binder;
 #if !SILVERLIGHT
         private readonly AssemblyResolveHolder _resolveHolder;
+#if !CLR2
+        private readonly HashSet<Assembly> _loadedAssemblies = new HashSet<Assembly>();
+#endif
 #endif
         private Encoding _defaultEncoding = PythonAsciiEncoding.Instance;
 
@@ -1151,18 +1154,33 @@ namespace IronPython.Runtime {
 
 #if !SILVERLIGHT // AssemblyResolve, files, path
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
+#if CLR2
         private static bool TryLoadAssemblyFromFileWithPath(string path, out Assembly res) {
+#else
+        internal bool TryLoadAssemblyFromFileWithPath(string path, out Assembly res) {
+#endif
             if (File.Exists(path) && Path.IsPathRooted(path)) {
                 try {
                     res = Assembly.LoadFile(path);
-                    if (res != null) return true;
+                    if (res != null) {
+#if !CLR2
+                        _loadedAssemblies.Add(res);
+#endif
+                        return true;
+                    }
                 } catch { }
             }
+
             res = null;
             return false;
         }
 
         internal Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
+#if !CLR2
+            if (args.RequestingAssembly != null && !_loadedAssemblies.Contains(args.RequestingAssembly)) {
+                return null;
+            }
+#endif
             AssemblyName an = new AssemblyName(args.Name);
             return LoadAssemblyFromFile(an.Name);
         }

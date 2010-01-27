@@ -16,7 +16,6 @@ describe "ARGF.closed?" do
       stream.close
       
       ARGF.closed?.should be_true
-      stream.reopen(ARGF.filename, 'r')
     end
   end
 end

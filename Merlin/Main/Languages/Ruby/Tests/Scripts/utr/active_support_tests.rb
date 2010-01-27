@@ -190,23 +190,14 @@ class UnitTestSetup
 
   end
 
-  def exclude_critical_files
-    # Causes - uninitialized constant MultibyteUtilsTest::Encoding (NameError)
-    @all_test_files.reject! { |e| e =~ /multibyte_utils_test/ }
-  end
-
   def disable_critical_failures
+    # Bug 3466 - IronRuby causes an exception while printing the failure information of some tests with
+    # non-ASCII names. So we disable them programatically
     TestJSONDecoding.class_eval do
-      tests_with_bad_names = TestJSONDecoding.instance_methods(false).select { |m| 
-        m.to_s =~ /
-          matzue | # Bug 3466
-          test_json_decodes_\[ | # ArgumentError: wrong number of arguments (2 for 1)
-          test_json_decodes_\{
-        /x
-      }
+      tests_with_bad_names = TestJSONDecoding.instance_methods(false).select { |m| m.to_s =~ /matzue/x }
       tests_with_bad_names.each { |e| undef_method(e.to_s) }
     end
-    
+
     # ArgumentError: wrong number of arguments (1 for 0)
     # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/activesupport/test/message_encryptor_test.rb:5:in `setup'
     disable MessageEncryptorTest, :setup
@@ -218,7 +209,7 @@ class UnitTestSetup
       :test_should_create_the_log_directory_if_it_doesnt_exist
 
     disable ClassExtTest, 
-      # <[#<Class:0x0005cf4>]> expected but was
+      # <[#<Class:0x0005776>]> expected but was
       # <[]>.
       :test_subclasses_of_doesnt_find_anonymous_classes
 
@@ -237,17 +228,17 @@ class UnitTestSetup
       # NoMethodError: undefined method `encrypt' for nil:NilClass
       :test_simple_round_tripping
 
-    disable MessageVerifierTest,
-      # <{:some=>"data", :now=>Thu Jan 21 00:54:43 -0800 2010}> expected but was
-      # <{:some=>"data", :now=>Thu Jan 21 00:38:43 -0800 2010}>.
-      #
+    disable MessageVerifierTest, 
+      # <{:some=>"data", :now=>Fri Jan 22 10:43:59 -0800 2010}> expected but was
+      # <{:some=>"data", :now=>Fri Jan 22 10:43:43 -0800 2010}>.
+      # 
       # diff:
-      # - {:some=>"data", :now=>Thu Jan 21 00:54:43 -0800 2010}
-      # ?                                     ^^
-      # + {:some=>"data", :now=>Thu Jan 21 00:38:43 -0800 2010}
-      # ?                                     ^^
+      # - {:some=>"data", :now=>Fri Jan 22 10:43:59 -0800 2010}
+      # ?                                        ^^
+      # + {:some=>"data", :now=>Fri Jan 22 10:43:43 -0800 2010}
+      # ?                                        ^^
       :test_simple_round_tripping
-      
+
     disable MultibyteCharsExtrasTest, 
       # ArgumentError: invalid utf-8 character
       :test_tidy_bytes_should_tidy_bytes
@@ -262,7 +253,7 @@ class UnitTestSetup
       # Message: <"can't convert Regexp into Fixnum">
       # ---Backtrace---
       # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-2.3.5/lib/active_support/multibyte/chars.rb:235:in `[]='
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/activesupport/test/m
+      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/ActiveSupport/test/m
       :test_indexed_insert_should_raise_on_index_overflow,
       # IndexError: Index was outside the bounds of the array.
       :test_indexed_insert_should_take_character_offsets,
@@ -277,21 +268,41 @@ class UnitTestSetup
       # <false> is not true.
       :test_split_should_return_an_array_of_chars_instances
 
+    disable MultibyteUtilsTest, 
+      # ArgumentError: invalid shift_jis character
+      "test_clean_cleans_invalid_characters_from_Shift-JIS_encoded_strings",
+      # ArgumentError: invalid utf-8 character
+      "test_clean_cleans_invalid_characters_from_UTF-8_encoded_strings",
+      # Exception raised:
+      # Class: <ArgumentError>
+      # Message: <"invalid utf-8 character">
+      # ---Backtrace---
+      # D:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
+      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-2.3.5/lib/active_support/multibyte/utils.rb:30:in `verify'
+      # d:/vs_langs01_s/Merlin/Ext
+      "test_verify!_doesn't_raise_an_exception_when_the_encoding_is_valid",
+      # <ActiveSupport::Multibyte::EncodingError> exception expected but was
+      # Class: <ArgumentError>
+      # Message: <"invalid utf-8 character">
+      # ---Backtrace---
+      # D:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
+      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-2.3.5/lib/active_support/multibyte
+      "test_verify!_raises_an_exception_when_it_finds_an_invalid_character",
+      # ArgumentError: invalid shift_jis character
+      "test_verify_verifies_Shift-JIS_strings_are_properly_encoded",
+      # ArgumentError: invalid utf-8 character
+      "test_verify_verifies_UTF-8_strings_are_properly_encoded"
+
     disable OrderedHashTest, 
       # <false> is not true.
       :test_inspect
 
-    disable TestJSONDecoding, 
+    disable TestJSONDecoding,
       # <StandardError> exception expected but was
       # Class: <IronRuby::StandardLibrary::Yaml::ParserException>
       # Message: <"while scanning a flow node: expected the node content, but found: #<ValueToken>">
-      # ---Backtrace---
-      # d:\vs_langs01_s\Merlin\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\Engine\Parser.cs:251:in `Produce'
-      # d:\vs_langs01_s\Merlin\External.LCA_RESTRICTED\Languages\IronR
-      :test_failed_json_decoding,
-      # ArgumentError: wrong number of arguments (2 for 1)
-      :test_json_decodes_time_json_with_time_parsing_disabled
-
+      :test_failed_json_decoding
+      
     disable TestJSONEncoding, 
       # <"\"\\u20ac2.99\""> expected but was
       # <"\"€2.99\"">.
@@ -307,7 +318,7 @@ class UnitTestSetup
 
     disable TimeZoneTest, 
       # <Fri Dec 31 19:00:00 UTC 1999> expected but was
-      # <Thu Jan 21 19:00:00 UTC 2010>.
+      # <Fri Jan 22 19:00:00 UTC 2010>.
       :test_parse_with_incomplete_date
 
   end

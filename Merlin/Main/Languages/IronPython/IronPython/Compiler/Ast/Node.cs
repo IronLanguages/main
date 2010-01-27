@@ -147,17 +147,6 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal bool ShouldInterpret {
-            get {
-                if (GlobalParent.CompilationMode == CompilationMode.Lookup) {
-                    return false; // ??? should be true?
-                }
-                CompilerContext context = GlobalParent.CompilerContext;
-
-                return ((PythonContext)context.SourceUnit.LanguageContext).ShouldInterpret((PythonCompilerOptions)context.Options, context.SourceUnit);
-            }
-        }
-
         internal bool StripDocStrings {
             get {
                 return GlobalParent.PyContext.PythonOptions.StripDocStrings;
@@ -208,6 +197,10 @@ namespace IronPython.Compiler.Ast {
                 // ensure we're reduced before we check for dynamic expressions.
 
                 var reduced = expression.Reduce();
+                if (reduced is LightDynamicExpression) {
+                    reduced = reduced.Reduce();
+                }
+                
                 // Add conversion step to the AST
                 MSAst.DynamicExpression ae = reduced as MSAst.DynamicExpression;
                 ReducableDynamicExpression rde = reduced as ReducableDynamicExpression;
@@ -229,7 +222,7 @@ namespace IronPython.Compiler.Ast {
                     for (int i = 0; i < infos.Length; i++) {
                         infos[i] = ParameterMappingInfo.Parameter(i);
                     }
-
+                    
                     res = Expression.Dynamic(
                         GlobalParent.PyContext.BinaryOperationRetType(
                             binder,

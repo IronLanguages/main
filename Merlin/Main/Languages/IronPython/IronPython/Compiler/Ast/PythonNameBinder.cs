@@ -452,6 +452,9 @@ namespace IronPython.Compiler.Ast {
         // ForEachStatement
         public override bool Walk(ForStatement node) {
             node.Parent = _currentScope;
+            if (_currentScope is FunctionDefinition) {
+                _currentScope.ShouldInterpret = false;
+            }
 
             // we only push the loop for the body of the loop
             // so we need to walk the for statement ourselves

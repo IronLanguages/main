@@ -8,13 +8,31 @@ require 'test/unit/ui/console/testrunner'
 
 def test_method_name(fault)
   match = 
-    / (test_[^()]+) # method name
+    / (test.*) # method name
       \(
       (\w+) # testcase class name
       \)
     /x.match(fault.test_name)
-  raise "could not parse : #{fault.test_name}" if not match or match.size != 3
-  [match[1], match[2]]
+  if match and match.size == 3
+    [match[1], match[2]]
+  else
+    warn "Could not parse test name : #{fault.test_name}"
+    [fault.test_name, "Could not parse test name"] 
+  end
+end
+
+# Some tests have both a failure and an error
+def ensure_single_fault_per_method_name(faults)
+  method_names = []
+  faults.reject! do |f|
+    method_name = test_method_name(f)[0]
+    if method_names.include? method_name
+      true
+    else
+      method_names << method_name
+      false
+    end
+  end
 end
 
 class Test::Unit::UI::Console::TestRunner
@@ -30,10 +48,14 @@ class Test::Unit::UI::Console::TestRunner
     
     faults_by_testcase_class.each_key do |testcase_class|
       testcase_faults = faults_by_testcase_class[testcase_class]
+      ensure_single_fault_per_method_name testcase_faults
       puts "    disable #{testcase_class}, "
       testcase_faults.each do |fault|
         method_name = test_method_name(fault)[0]
         commented_message = fault.message[0..400]
+        if fault.respond_to? :exception
+          commented_message += "\n" + fault.exception.backtrace[0..2].join("\n")
+        end
         commented_message = commented_message.gsub(/^(.*)$/, '      # \1')
         puts commented_message
         if fault == testcase_faults.last
@@ -41,7 +63,12 @@ class Test::Unit::UI::Console::TestRunner
         else
           comma_separator = ","
         end
-        puts "      :#{method_name}#{comma_separator}"
+        if method_name =~ /^[[:alnum:]_]+[?!]?$/
+          method_name = ":" + method_name.to_s
+        else
+          method_name = "#{method_name.dump}"
+        end
+        puts "      #{method_name}#{comma_separator}"
       end
       nl
     end
@@ -52,8 +79,17 @@ if $0 == __FILE__
   # Dummy example for testing
   require 'test/unit'  
   class ExampleTest < Test::Unit::TestCase
+    def teardown() 
+      if @teardown_error
+        @teardown_error = false
+        raise "error during teardown"
+      end
+    end
+    def raise_exception() raise "hi\nthere\n\nyou" end
     def test_1!() assert(false) end   
-    def test_2?() raise "hi\nthere\nyou" end
+    def test_2?() raise_exception end
     def test_3() assert(true) end
+    def test_4() @teardown_error = true; assert(false) end
+    define_method("test_\"'?:-@2") { assert(false) }
   end  
 end

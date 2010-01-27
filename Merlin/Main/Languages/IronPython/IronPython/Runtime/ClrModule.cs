@@ -169,12 +169,30 @@ import Namespace.")]
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a full path to an. 
 assembly on disk. After the load the assemblies namespaces and top-level types 
 will be available via import Namespace.")]
+#if CLR2
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         public static Assembly/*!*/ LoadAssemblyFromFileWithPath(string/*!*/ file) {
             if (file == null) throw new ArgumentTypeException("LoadAssemblyFromFileWithPath: arg 1 must be a string.");
             // We use Assembly.LoadFile instead of Assembly.LoadFrom as the latter first tries to use Assembly.Load
             return Assembly.LoadFile(file);
         }
+#else
+        public static Assembly/*!*/ LoadAssemblyFromFileWithPath(CodeContext/*!*/ context, string/*!*/ file) {
+            if (file == null) throw new ArgumentTypeException("LoadAssemblyFromFileWithPath: arg 1 must be a string.");
+            
+            Assembly res;
+            if (!context.LanguageContext.TryLoadAssemblyFromFileWithPath(file, out res)) {
+                if (!Path.IsPathRooted(file)) {
+                    throw new ArgumentException("LoadAssemblyFromFileWithPath: path must be rooted");
+                } else if (!File.Exists(file)) {
+                    throw new ArgumentException("LoadAssemblyFromFileWithPath: file not found");
+                } else {
+                    throw new ArgumentException("LoadAssemblyFromFileWithPath: error loading assembly");
+                }
+            }
+            return res;
+        }
+#endif
 
         [Documentation(@"Loads an assembly from the specified filename and returns the assembly
 object.  Namespaces or types in the assembly can be accessed directly from 

@@ -1218,7 +1218,7 @@ namespace IronRuby.Builtins {
         }
 
         // encoding aware
-        [RubyMethod("encoding")]
+        [RubyMethod("encoding", Compatibility=RubyCompatibility.Ruby19)]
         public static RubyEncoding/*!*/ GetEncoding(MutableString/*!*/ self) {
             return self.Encoding;
         }

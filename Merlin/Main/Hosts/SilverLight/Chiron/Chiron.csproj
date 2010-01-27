@@ -66,18 +66,27 @@
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppManifestTemplate.cs" />
     <Compile Include="Chiron.cs" />
     <Compile Include="Crc32.cs" />
+    <Compile Include="DetailsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DetailsForm.Designer.cs">
+      <DependentUpon>DetailsForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="HtmlFormatter.cs" />
     <Compile Include="HttpRequestData.cs" />
     <Compile Include="HttpSocket.cs" />
     <Compile Include="LanguageInfo.cs" />
+    <Compile Include="Notification.cs" />
     <Compile Include="XapHttpHandler.cs" />
     <Compile Include="LCA_RESTRICTED\Zip.cs" />
     <Compile Include="MimeTypeSection.cs" />
@@ -86,13 +95,15 @@
     <Compile Include="XapBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="DetailsForm.resx">
+      <DependentUpon>DetailsForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="sl.png" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="slx.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="LCA_RESTRICTED\LCA_README.txt" />
+    <EmbeddedResource Include="NotifyIcon.ico" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

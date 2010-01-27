@@ -19,7 +19,9 @@ describe "Iconv.conv" do
     Iconv.conv("us-ascii", "iso-8859-1", nil).should == ""
 
     Iconv.conv("utf-16", "utf-8", "").should == ""
-
+  end
+  
+  it "acts exactly as if opening a converter for error cases" do
     lambda { Iconv.conv("us-ascii", "us-ascii", "test\xa9") }.should raise_error(Iconv::IllegalSequence)
 
     lambda { Iconv.conv("utf-8", "utf-8", "euro \xe2") }.should raise_error(Iconv::InvalidCharacter)

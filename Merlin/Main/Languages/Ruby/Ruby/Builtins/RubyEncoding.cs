@@ -94,7 +94,7 @@ namespace IronRuby.Builtins {
 
         private static RubyEncoding/*!*/ CreateKCoding(int codepage, RubyEncoding/*!*/ realEncoding) {
 #if SILVERLIGHT
-            return new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), realEncoding, CodePageBinary);
+            return new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), realEncoding, CodePageUTF8);
 #else
             return new RubyEncoding(KCoding.Create(codepage, false), KCoding.Create(codepage, true), realEncoding, CodePageBinary);
 #endif

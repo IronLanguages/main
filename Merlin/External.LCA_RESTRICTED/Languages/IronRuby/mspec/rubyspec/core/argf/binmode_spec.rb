@@ -20,7 +20,6 @@ describe "ARGF.binmode" do
   platform_is :windows do
     it "puts reading into binmode" do
       argv [@bin_file, @bin_file] do
-        ARGF.gets.should == "test\n"
         ARGF.binmode
         ARGF.gets.should == "test\r\n"
       end
@@ -28,7 +27,6 @@ describe "ARGF.binmode" do
     
     it "puts alls subsequent stream reading through ARGF into binmode" do
       argv [@bin_file, @bin_file, @bin_file, @bin_file] do
-        ARGF.gets.should == "test\n"
         ARGF.binmode
         ARGF.gets.should == "test\r\n"
         ARGF.gets.should == "test\r\n"

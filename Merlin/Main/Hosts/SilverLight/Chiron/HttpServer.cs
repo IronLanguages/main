@@ -466,7 +466,7 @@ string.Format(@"<html><head><title>Object moved</title></head><body>
             return true;
         }
 
-        static byte[] GetResourceBytes(string name) {
+        internal static byte[] GetResourceBytes(string name) {
             Stream s = typeof(Chiron).Assembly.GetManifestResourceStream("Chiron." + name);
             byte[] b = new byte[(int)s.Length];
             s.Read(b, 0, b.Length);

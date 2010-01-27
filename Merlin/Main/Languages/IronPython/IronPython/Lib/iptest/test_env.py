@@ -54,6 +54,13 @@ is_net40 = False
 if is_cli:
     is_net40 = System.Environment.Version.Major==4
 
+is_dlr_in_ndp = False
+if is_net40:
+    try:
+        clr.AddReference("Microsoft.Scripting.Core")
+    except:
+        is_dlr_in_ndp = True    
+
 #--Newlines
 if is_ironpython:
     newline = System.Environment.NewLine

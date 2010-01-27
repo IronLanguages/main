@@ -23,6 +23,9 @@ describe "Iconv.open" do
     Iconv.open("us-ascii", "us-ascii") { "block return value" }.should == "block return value"
   end
 
-  # not testable with the current API:
-  # it "with a block always closes the converter when exiting the block"
+  it "with a block does not close the converter when exiting the block" do
+    Iconv.open "us-ascii", "us-ascii" do |conv|
+      conv.should_not_receive :close
+    end
+  end
 end

@@ -48,6 +48,7 @@ namespace IronPython.Compiler.Ast {
                                                     // due to "exec" or call to dir, locals, eval, vars...
         private bool _hasLateboundVarSets;          // calls code which can assign to variables
         private bool _containsExceptionHandling;    // true if this block contains a try/with statement
+        private bool _forceCompile;                 // true if this scope should always be compiled
 
         private FunctionCode _funcCode;             // the function code object created for this scope
 
@@ -236,6 +237,22 @@ namespace IronPython.Compiler.Ast {
 
             if(!_freeVars.Contains(variable)) {
                 _freeVars.Add(variable);
+            }
+        }
+
+        internal bool ShouldInterpret {
+            get {
+                if (_forceCompile) {
+                    return false;
+                } else if (GlobalParent.CompilationMode == CompilationMode.Lookup) {
+                    return false; // ??? should be true?
+                }
+                CompilerContext context = GlobalParent.CompilerContext;
+
+                return ((PythonContext)context.SourceUnit.LanguageContext).ShouldInterpret((PythonCompilerOptions)context.Options, context.SourceUnit);
+            }
+            set {
+                _forceCompile = !value;
             }
         }
 

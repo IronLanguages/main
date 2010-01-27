@@ -97,11 +97,6 @@ class UnitTestSetup
       # <nil>.
       :test_action_cache_with_layout
       
-    disable AssertSelectTest, 
-      # NoMethodError: undefined method `first' for nil:NilClass
-      # Iconv#iconv is implemented just as returning nil
-      :test_assert_select_email
-
     disable AssetTagHelperTest, 
       # <"<script src=\"/javascripts/prototype.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/effects.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/dragdrop.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/controls.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/slider.js\" type=\"text/javascript\"></script>\n<script src=\"/j
       :test_register_javascript_include_default_mixed_defaults,

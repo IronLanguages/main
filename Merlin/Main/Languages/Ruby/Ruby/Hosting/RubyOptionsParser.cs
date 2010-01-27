@@ -90,6 +90,8 @@ namespace IronRuby.Hosting {
         protected override void ParseArgument(string arg) {
             ContractUtils.RequiresNotNull(arg, "arg");
 
+            string mainFileFromPath = null;
+
             if (arg.StartsWith("-e", StringComparison.Ordinal)) {
                 string command;
                 if (arg == "-e") {
@@ -106,6 +108,10 @@ namespace IronRuby.Hosting {
                 }
                 CommonConsoleOptions.Command += command;
                 return;
+            }
+
+            if (arg.StartsWith("-S", StringComparison.Ordinal)) {
+                mainFileFromPath = arg == "-S" ? PopNextArg() : arg.Substring(2);
             }
 
             if (arg.StartsWith("-I", StringComparison.Ordinal)) {
@@ -165,7 +171,6 @@ namespace IronRuby.Hosting {
                 case "-n":
                 case "-p":
                 case "-s":
-                case "-S":
                     throw new InvalidOptionException(String.Format("Option `{0}' not supported", optionName));
 
                 case "-d":
@@ -263,6 +268,9 @@ namespace IronRuby.Hosting {
                     base.ParseArgument(arg);
 
                     if (ConsoleOptions.FileName != null) {
+                        if (mainFileFromPath != null) {
+                            ConsoleOptions.FileName = FindMainFileFromPath(mainFileFromPath);
+                        }
                         LanguageSetup.Options["MainFile"] = RubyUtils.CanonicalizePath(ConsoleOptions.FileName);
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                         LanguageSetup.Options["ArgumentEncoding"] = 
@@ -274,6 +282,17 @@ namespace IronRuby.Hosting {
                     } 
                     break;
             }
+        }
+
+        private string FindMainFileFromPath(string mainFileFromPath) {
+            string path = Platform.GetEnvironmentVariable("PATH");
+            foreach (string p in path.Split(';')) {
+                string fullPath = RubyUtils.CombinePaths(p, mainFileFromPath);
+                if (Platform.FileExists(fullPath)) {
+                    return fullPath;
+                }
+            }
+            return mainFileFromPath;
         }
 
         protected override void AfterParse() {
@@ -332,7 +351,7 @@ namespace IronRuby.Hosting {
              // { "-p",                          "assume loop like -n but print line also like sed" },
                 { "-rlibrary",                   "require the library, before executing your script" },
              // { "-s",                          "enable some switch parsing for switches after script name" },
-             // { "-S",                          "look for the script using PATH environment variable" },
+                { "-S",                          "look for the script using PATH environment variable" },
              // { "-T[level]",                   "turn on tainting checks" },
                 { "-v",                          "print version number, then turn on verbose mode" },
                 { "-w",                          "turn warnings on for your script" },

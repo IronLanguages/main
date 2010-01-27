@@ -26,7 +26,19 @@ describe "ARGF.close" do
 
   # This passes on 1.9 and 1.8 HEAD, but fails on 1.8.7 and 1.8.6
   ruby_bug "#1633", "1.8.7.174" do
-    it "raises an IOError if called on a closed stream" do
+    platform_is_not :ironruby do
+      it "raises an IOError if called on a closed stream" do
+        argv [@file1_name] do
+          lambda { ARGF.close }.should_not raise_error
+          lambda { ARGF.close }.should raise_error(IOError)
+        end
+      end
+    end
+  end
+
+  
+  deviates_on :ironruby do
+    it "does not raise an IOError if called on a closed stream" do
       argv [@file1_name] do
         lambda { ARGF.close }.should_not raise_error
         lambda { ARGF.close }.should raise_error(IOError)

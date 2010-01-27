@@ -522,7 +522,7 @@ namespace IronPython.Runtime.Binding {
         private object IntAnd(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(int) &&
                 other != null && other.GetType() == typeof(int)) {
-                return Int32Ops.BitwiseAnd((int)self, (int)other);
+                return ScriptingRuntimeHelpers.Int32ToObject(Int32Ops.BitwiseAnd((int)self, (int)other));
             }
 
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
@@ -530,7 +530,7 @@ namespace IronPython.Runtime.Binding {
 
         private object IntAnd(CallSite site, object self, int other) {
             if (self != null && self.GetType() == typeof(int)) {
-                return Int32Ops.BitwiseAnd((int)self, other);
+                return ScriptingRuntimeHelpers.Int32ToObject(Int32Ops.BitwiseAnd((int)self, other));
             }
 
             return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
@@ -538,7 +538,7 @@ namespace IronPython.Runtime.Binding {
 
         private object IntAnd(CallSite site, int self, object other) {
             if (other != null && other.GetType() == typeof(int)) {
-                return Int32Ops.BitwiseAnd(self, (int)other);
+                return ScriptingRuntimeHelpers.Int32ToObject(Int32Ops.BitwiseAnd(self, (int)other));
             }
 
             return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
@@ -547,7 +547,7 @@ namespace IronPython.Runtime.Binding {
         private object IntOr(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(int) &&
                 other != null && other.GetType() == typeof(int)) {
-                return Int32Ops.BitwiseOr((int)self, (int)other);
+                return ScriptingRuntimeHelpers.Int32ToObject(Int32Ops.BitwiseOr((int)self, (int)other));
             }
 
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
@@ -555,7 +555,7 @@ namespace IronPython.Runtime.Binding {
 
         private object IntOr(CallSite site, object self, int other) {
             if (self != null && self.GetType() == typeof(int)) {
-                return Int32Ops.BitwiseOr((int)self, other);
+                return ScriptingRuntimeHelpers.Int32ToObject(Int32Ops.BitwiseOr((int)self, other));
             }
 
             return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
@@ -563,7 +563,7 @@ namespace IronPython.Runtime.Binding {
 
         private object IntOr(CallSite site, int self, object other) {
             if (other != null && other.GetType() == typeof(int)) {
-                return Int32Ops.BitwiseOr(self, (int)other);
+                return ScriptingRuntimeHelpers.Int32ToObject(Int32Ops.BitwiseOr(self, (int)other));
             }
 
             return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);
