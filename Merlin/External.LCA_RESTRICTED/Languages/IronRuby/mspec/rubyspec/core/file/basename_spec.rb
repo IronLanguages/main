@@ -71,6 +71,7 @@ describe "File.basename" do
     File.basename('baz.rb', '*').should == 'baz.rb'
     File.basename('baz.rb', '.rb*').should == 'baz.rb'
     File.basename('baz.rb', '.*rb').should == 'baz.rb'
+    File.basename('baz.rb', '*rb').should == 'baz.rb'
 
     File.basename('baz.txt.rb', '.*').should == 'baz.txt'
     File.basename('baz.txt.rb', '*').should == 'baz.txt.rb'
@@ -94,6 +95,11 @@ describe "File.basename" do
     File.basename(".").should == "."
     File.basename("..").should == ".."
     File.basename("foo/").should == "foo"
+  end
+  
+  it "return the basename for edge cases (quotes)" do
+    File.basename('"foo"').should == '"foo"'
+    File.basename('"foo/bar"').should == 'bar"'
   end
 
   platform_is :windows do

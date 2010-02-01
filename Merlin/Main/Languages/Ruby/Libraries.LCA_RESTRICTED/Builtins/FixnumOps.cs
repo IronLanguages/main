@@ -34,9 +34,8 @@ namespace IronRuby.Builtins {
         /// fred.to_sym    #=> :fred
         /// </example>
         [RubyMethod("to_sym")]
-        public static object ToSymbol(int self) {
-            SymbolId result;
-            return RubyOps.TryConvertFixnumToSymbol(self, out result) ? (object)result : null;
+        public static object ToSymbol(RubyContext/*!*/ context, int self) {
+            return context.FindSymbol(self);
         }
 
         #endregion
@@ -53,9 +52,9 @@ namespace IronRuby.Builtins {
         /// id.id2name             #=> "@inst_var"
         /// </example>
         [RubyMethod("id2name")]
-        public static object Id2Name(int self) {
-            SymbolId id = new SymbolId(self);
-            return SymbolTable.ContainsId(id) ? (object)SymbolOps.ToString(id) : null;
+        public static object Id2Name(RubyContext/*!*/ context, int self) {
+            var symbol = context.FindSymbol(self);
+            return symbol != null ? symbol.ToMutableString() : null;
         }
 
         #endregion

@@ -131,7 +131,9 @@ namespace IronRuby.Tests {
 
             a = MutableString.Create("α", RubyEncoding.KCodeUTF8);
             b = MutableString.Create("α", RubyEncoding.KCodeSJIS);
-            Assert(a.GetHashCode() != b.GetHashCode());
+            c = MutableString.CreateBinary(Encoding.UTF8.GetBytes("α"), RubyEncoding.Binary);
+            Assert(a.GetHashCode() != b.GetHashCode()); // the binary content is different
+            Assert(a.GetHashCode() == c.GetHashCode()); // the binary contant is the same
         }
 
         [Options(NoRuntime = true)]
@@ -505,10 +507,10 @@ namespace IronRuby.Tests {
             Assert(surrogate.GetCharCount() == 3);
             Assert(surrogate.ToString() == Encoding.UTF8.GetString(u12345) + "x");
 
-            var result = MutableString.AppendUnicodeRepresentation(new StringBuilder(), Encoding.UTF8.GetString(u12345), false, true, -1, -1);
+            var result = MutableString.AppendUnicodeRepresentation(new StringBuilder(), Encoding.UTF8.GetString(u12345), MutableString.Escape.NonAscii, -1, -1);
             Assert(result.ToString() == "\\u{12345}");
 
-            result = MutableString.AppendUnicodeRepresentation(new StringBuilder(), Encoding.UTF8.GetString(u215c), false, true, -1, -1);
+            result = MutableString.AppendUnicodeRepresentation(new StringBuilder(), Encoding.UTF8.GetString(u215c), MutableString.Escape.NonAscii, -1, -1);
             Assert(result.ToString() == "\\u{215c}");
 
             //var incompleteChar = MS(new byte[] { 0xF0, 0x92 }, RubyEncoding.UTF8);

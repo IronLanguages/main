@@ -21,23 +21,48 @@ using IronRuby.Builtins;
 
 namespace IronRuby.Runtime {
     internal sealed class KCoding : Encoding {
-#if SILVERLIGHT
-        private readonly Encoding _encoding = null;
-        private KCoding() { }
-#else
         private readonly Encoding/*!*/ _encoding;
 
         private KCoding(Encoding/*!*/ encoding)
-            : base(encoding.CodePage) {
+#if !SILVERLIGHT
+            : base(encoding.CodePage)
+#endif  
+        {
             _encoding = encoding;
         }
 
+        public static KCoding/*!*/ Create(int codepage, bool throwOnError) {
+#if SILVERLIGHT
+            Debug.Assert(codepage == RubyEncoding.CodePageUTF8);
+            return new KCoding(new UTF8Encoding(false, throwOnError));
+#else
+            if (throwOnError) {
+                return Create(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+            } else {
+                return Create(codepage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback);
+            }
+#endif
+        }
+
+#if !SILVERLIGHT
+        private static Encoding CreateEncoding(int codepage, EncoderFallback/*!*/ encoderFallback, DecoderFallback/*!*/ decoderFallback) {
+            return new KCoding(Encoding.GetEncoding(codepage, encoderFallback, decoderFallback));
+        }
+
+        public static KCoding Create(int codepage, EncoderFallback/*!*/ encoderFallback, DecoderFallback/*!*/ decoderFallback) {
+            var encoding = CreateEncoding(codepage, encoderFallback, decoderFallback);
+            return encoding != null ? new KCoding(encoding) : null;
+        }
+#endif
+
         internal static int GetCodePage(int firstChar) {
             switch (firstChar) {
+#if !SILVERLIGHT
                 case 'E':
                 case 'e': return RubyEncoding.CodePageEUC;
                 case 'S':
                 case 's': return RubyEncoding.CodePageSJIS;
+#endif
                 case 'U':
                 case 'u': return RubyEncoding.CodePageUTF8;
                 default: 
@@ -45,31 +70,18 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private static Encoding CreateEncoding(int codepage, EncoderFallback/*!*/ encoderFallback, DecoderFallback/*!*/ decoderFallback) {
-            return new KCoding(Encoding.GetEncoding(codepage, encoderFallback, decoderFallback));
-        }
-
-        public static KCoding Create(int codepage, bool throwOnError) {
-            if (throwOnError) {
-                return Create(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
-            } else {
-                return Create(codepage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback);
-            }
-        }
-
-        public static KCoding Create(int codepage, EncoderFallback/*!*/ encoderFallback, DecoderFallback/*!*/ decoderFallback) {
-            var encoding = CreateEncoding(codepage, encoderFallback, decoderFallback);
-            return encoding != null ? new KCoding(encoding) : null;
-        }
-
         public string/*!*/ KCodeName {
             get {
+#if SILVERLIGHT
+                return "UTF8";
+#else
                 switch (_encoding.CodePage) {
                     case RubyEncoding.CodePageEUC: return "EUC";
                     case RubyEncoding.CodePageSJIS: return "SJIS";
                     case RubyEncoding.CodePageUTF8: return "UTF8";
                     default: throw Assert.Unreachable;
                 }
+#endif
             }
         }
 
@@ -81,12 +93,13 @@ namespace IronRuby.Runtime {
             return "KCODE (" + KCodeName + ")";
         }
 
+        #region Encoding delegation
+
+#if !SILVERLIGHT
         public override bool IsAlwaysNormalized(NormalizationForm form) {
             return _encoding.IsAlwaysNormalized(form);
         }
 #endif
-
-        #region Encoding delegation
 
         public override int GetByteCount(char[]/*!*/ chars, int index, int count) {
             return _encoding.GetByteCount(chars, index, count);

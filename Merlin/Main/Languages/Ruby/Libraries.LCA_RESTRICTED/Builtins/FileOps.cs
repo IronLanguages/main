@@ -171,57 +171,64 @@ namespace IronRuby.Builtins {
             return RubyStatOps.AccessTime(RubyStatOps.Create(self.Context, path));
         }
 
-        private static bool WildcardExtensionMatch(string/*!*/ extension, string/*!*/ pattern) {
-            for (int i = 0; i < pattern.Length; i++) {
-                if (i >= extension.Length) {
-                    return false;
-                }
-
-                if (pattern[i] == '*') {
-                    return true;
-                }
-
-                if (extension[i] != pattern[i]) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
         [RubyMethod("basename", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ Basename(RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, NotNull, Optional]MutableString extensionFilter) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, NotNull, Optional]MutableString suffix) {
 
             if (path.IsEmpty) {
                 return path;
             }
 
-            string trimmedPath = path.ConvertToString().TrimEnd('\\', '/');
+            string strPath = path.ConvertToString();
+            string[] parts = strPath.Split(new[] { DirectorySeparatorChar, AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
 
-            if (trimmedPath.Length == 0) {
-                return path.GetSlice(0, 1);
-            } else if (trimmedPath.Length == 2 && Tokenizer.IsLetter(trimmedPath[0]) && trimmedPath[1] == ':') {
-                // drive letter
-                var result = MutableString.CreateMutable(path.Encoding);
-                if (path.GetCharCount() > 2) {
-                    result.Append(path.GetChar(2));
+            if (parts.Length == 0) {
+                return MutableString.CreateMutable(path.Encoding).Append((char)path.GetLastChar()).TaintBy(path);
+            }
+
+            if (Environment.OSVersion.Platform != PlatformID.Unix && Environment.OSVersion.Platform != PlatformID.MacOSX) {
+                string first = parts[0];
+                if (strPath.Length >= 2 && IsDirectorySeparator(strPath[0]) && IsDirectorySeparator(strPath[1])) {
+                    // UNC: skip 2 parts 
+                    if (parts.Length <= 2) {
+                        return MutableString.CreateMutable(path.Encoding).Append(DirectorySeparatorChar).TaintBy(path);
+                    }
+                } else if (first.Length == 2 && Tokenizer.IsLetter(first[0]) && first[1] == ':') {
+                    // skip drive letter "X:"
+                    if (parts.Length <= 1) {
+                        var result = MutableString.CreateMutable(path.Encoding).TaintBy(path);
+                        if (strPath.Length > 2) {
+                            result.Append(strPath[2]);
+                        }
+                        return result;
+                    }
                 }
-                return result.TaintBy(path);
+            }
+            
+            string last = parts[parts.Length - 1];
+            if (MutableString.IsNullOrEmpty(suffix)) {
+                return MutableString.CreateMutable(last, path.Encoding);
             }
 
-            string filename = Path.GetFileName(trimmedPath);
+            StringComparison comparison = Environment.OSVersion.Platform == PlatformID.Unix ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            int matchLength = last.Length;
 
-            // Handle UNC host names correctly
-            string root = Path.GetPathRoot(trimmedPath);
-            if (MutableString.IsNullOrEmpty(extensionFilter)) {
-                return MutableString.Create(trimmedPath == root ? root : filename, path.Encoding);
+            if (suffix != null) {
+                string strSuffix = suffix.ToString();
+                if (strSuffix.LastCharacter() == '*' && strSuffix.Length > 1) {
+                    int suffixIdx = last.LastIndexOf(
+                        strSuffix.Substring(0, strSuffix.Length - 1),
+                        comparison
+                    );
+                    if (suffixIdx >= 0 && suffixIdx + strSuffix.Length <= last.Length) {
+                        matchLength = suffixIdx;
+                    }
+                } else if (last.EndsWith(strSuffix, comparison)) {
+                    matchLength = last.Length - strSuffix.Length;
+                }
             }
 
-            string fileExtension = Path.GetExtension(filename);
-            string basename = Path.GetFileNameWithoutExtension(filename);
-
-            string strResult = WildcardExtensionMatch(fileExtension, extensionFilter.ConvertToString()) ? basename : filename;
-            return RubyUtils.CanonicalizePath(MutableString.Create(strResult, path.Encoding)).TaintBy(path);
+            return MutableString.CreateMutable(path.Encoding).Append(last, 0, matchLength).TaintBy(path);
         }
 
         internal static void Chmod(string/*!*/ path, int permission) {

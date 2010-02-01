@@ -124,7 +124,7 @@ describe "Modifying and reloading custom assembly" do
     str = <<-EOL
       class Klass
         def foo
-          :foo
+          "foo"
         end
       end
     EOL
@@ -137,24 +137,24 @@ describe "Modifying and reloading custom assembly" do
   end
   
   it "is allowed" do
-    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("ec.foo", @scope).should == "foo"
   end
   
   it "doesn't reload with require" do
-    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("ec.foo", @scope).should == "foo"
     @engine.execute("require 'fixtures.generated'", @scope).should == false
-    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("ec.foo", @scope).should == "foo"
   end
 
   it "reloads with load, without rewriting the class or module" do
-    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("ec.foo", @scope).should == "foo"
     @engine.execute("load 'fixtures.generated.dll'", @scope).should == true
-    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("ec.foo", @scope).should == "foo"
   end
 
   it "reloads with load_assembly, without rewriting the class or module" do
-    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("ec.foo", @scope).should == "foo"
     @engine.execute("load_assembly 'fixtures.generated'", @scope).should == true
-    @engine.execute("ec.foo", @scope).should == :foo
+    @engine.execute("ec.foo", @scope).should == "foo"    
   end
 end

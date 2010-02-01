@@ -20,28 +20,24 @@ using MSA = Microsoft.Scripting.Ast;
 #endif
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
+using IronRuby.Builtins;
 
 namespace IronRuby.Compiler.Ast {
+    using Ast = MSA.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     /// <summary>
     /// Represents a symbol literal encoded by the containing source file encoding.
     /// </summary>
     public partial class SymbolLiteral : StringLiteral {
-        internal SymbolLiteral(object/*!*/ value, SourceSpan location) 
-            : base(value, location) {
-        }
-
         public SymbolLiteral(string/*!*/ value, SourceSpan location)
             : base(value, location) {
-        }
-
-        public SymbolLiteral(byte[]/*!*/ value, SourceSpan location)
-            : base(value, location) {
+            Assert.NotEmpty(value);
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return Methods.CreateSymbolL.OpCall(StringConstructor.MakeConstant(Value), AstUtils.Constant(gen.Encoding));
+            return Ast.Constant(gen.Context.CreateSymbol((string)Value, gen.Encoding));
         }
     }
 }

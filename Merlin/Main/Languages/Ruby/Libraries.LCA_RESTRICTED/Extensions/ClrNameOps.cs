@@ -41,20 +41,21 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("clr_name")]
-        public static MutableString/*!*/ GetClrName(ClrName/*!*/ self) {
-            return MutableString.Create(self.ActualName, RubyEncoding.UTF8);
+        public static MutableString/*!*/ GetClrName(RubyContext/*!*/ context, ClrName/*!*/ self) {
+            return MutableString.Create(self.ActualName, context.GetIdentifierEncoding());
         }
 
         [RubyMethod("to_s")]
         [RubyMethod("to_str")]
         [RubyMethod("ruby_name")]
-        public static MutableString/*!*/ GetRubyName(ClrName/*!*/ self) {
-            return MutableString.Create(self.MangledName, RubyEncoding.UTF8);
+        public static MutableString/*!*/ GetRubyName(RubyContext/*!*/ context, ClrName/*!*/ self) {
+            return MutableString.Create(self.MangledName, context.GetIdentifierEncoding());
         }
 
         [RubyMethod("to_sym")]
-        public static SymbolId ToSymbol(ClrName/*!*/ self) {
-            return SymbolTable.StringToId(self.MangledName);
+        [RubyMethod("intern", Compatibility = RubyCompatibility.Ruby19)]
+        public static RubySymbol/*!*/ ToSymbol(RubyContext/*!*/ context, ClrName/*!*/ self) {
+            return context.EncodeIdentifier(self.MangledName);
         }
 
         [RubyMethod("==")]
@@ -87,9 +88,9 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("<=>")]
-        public static int Compare(ClrName/*!*/ self, [NotNull]MutableString/*!*/ other) {
+        public static int Compare(RubyContext/*!*/ context, ClrName/*!*/ self, [NotNull]MutableString/*!*/ other) {
             // TODO: do not create MS
-            return -Math.Sign(other.CompareTo(GetRubyName(self)));
+            return -Math.Sign(other.CompareTo(GetRubyName(context, self)));
         }
 
         [RubyMethod("<=>")]
@@ -99,11 +100,16 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        // => 
+        // <=>
+        // ==
+        // casecmp
+
         #region =~, match
 
         [RubyMethod("=~")]
         public static object Match(RubyScope/*!*/ scope, ClrName/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
-            return MutableStringOps.Match(scope, GetRubyName(self), regex);
+            return MutableStringOps.Match(scope, GetRubyName(scope.RubyContext, self), regex);
         }
 
         [RubyMethod("=~")]
@@ -113,33 +119,45 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("=~")]
         public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, ClrName/*!*/ self, object obj) {
-            return MutableStringOps.Match(storage, scope, GetRubyName(self), obj);
+            return MutableStringOps.Match(storage, scope, GetRubyName(scope.RubyContext, self), obj);
         }
 
         [RubyMethod("match")]
         public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, ClrName/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
-            return MutableStringOps.Match(storage, scope, GetRubyName(self), regex);
+            return MutableStringOps.Match(storage, scope, GetRubyName(scope.RubyContext, self), regex);
         }
 
         [RubyMethod("match")]
         public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, ClrName/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
-            return MutableStringOps.Match(storage, scope, GetRubyName(self), pattern);
+            return MutableStringOps.Match(storage, scope, GetRubyName(scope.RubyContext, self), pattern);
         }
 
         #endregion
 
-        // => 
         // []
+
+        // encoding aware
+        [RubyMethod("empty?", Compatibility = RubyCompatibility.Ruby19)]
+        public static bool IsEmpty(ClrName/*!*/ self) {
+            return self.MangledName.Length == 0;
+        }
+
+        // encoding aware
+        [RubyMethod("encoding", Compatibility = RubyCompatibility.Ruby19)]
+        public static RubyEncoding/*!*/ GetEncoding(ClrName/*!*/ self) {
+            return RubyEncoding.UTF8;
+        }
+
+        // encoding aware
+        [RubyMethod("size", Compatibility = RubyCompatibility.Ruby19)]
+        [RubyMethod("length", Compatibility = RubyCompatibility.Ruby19)]
+        public static int GetLength(ClrName/*!*/ self) {
+            return self.MangledName.Length;
+        }
+
         // capitalize
-        // casecmp
         // downcase
-        // empty?
-        // encoding
-        // intern
-        // length
-        // match
         // next
-        // size
         // slice
         // succ
         // swapcase
@@ -157,7 +175,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("unmangle", RubyMethodAttributes.PublicSingleton)]
         public static MutableString Unmangle(RubyClass/*!*/ self, [DefaultProtocol]string/*!*/ rubyName) {
             var clr = RubyUtils.TryUnmangleName(rubyName);
-            return clr != null ? MutableString.Create(clr, RubyEncoding.UTF8) : null;
+            return clr != null ? MutableString.Create(clr, self.Context.GetIdentifierEncoding()) : null;
         }
 
         /// <summary>
@@ -169,7 +187,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("mangle", RubyMethodAttributes.PublicSingleton)]
         public static MutableString Mangle(RubyClass/*!*/ self, [DefaultProtocol]string/*!*/ clrName) {
             var ruby = RubyUtils.TryMangleName(clrName);
-            return ruby != null ? MutableString.Create(ruby, RubyEncoding.UTF8) : null;
+            return ruby != null ? MutableString.Create(ruby, self.Context.GetIdentifierEncoding()) : null;
         }
     }
 }

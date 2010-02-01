@@ -190,7 +190,7 @@ namespace IronRuby.Compiler.Ast {
             body = gen.AddReturnTarget(
                 scope.CreateScope(
                     scopeVariable,
-                    Methods.CreateMethodScope.OpCall(
+                    Methods.CreateMethodScope.OpCall(new AstExpressions {
                         scope.MakeLocalsStorage(),
                         scope.GetVariableNamesExpression(),
                         Ast.Constant(visiblePrameterCountAndSignatureFlags),
@@ -199,7 +199,7 @@ namespace IronRuby.Compiler.Ast {
                         Ast.Constant(_name),
                         selfParameter, blockParameter,
                         EnterInterpretedFrameExpression.Instance
-                    ),
+                    }),
                     body
                 )
             );
@@ -239,7 +239,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return Methods.DefineMethod.OpCall(
-                (_target != null) ? _target.TransformRead(gen) : AstUtils.Constant(null),
+                (_target != null) ? AstUtils.Box(_target.TransformRead(gen)) : AstUtils.Constant(null),
                 gen.CurrentScopeVariable,
                 Ast.Constant(new RubyMethodBody(this, gen.Document, gen.Encoding))
             );

@@ -390,9 +390,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
                 string code = b.ToString();
 
-                ScriptSource command = _engine.CreateScriptSourceFromString(code, SourceCodeKind.InteractiveCode);
-                ScriptCodeParseResult props = command.GetCodeProperties(_engine.GetCompilerOptions(_scope));
-
+                var props = GetCommandProperties(code);
                 if (SourceCodePropertiesUtils.IsCompleteOrInvalid(props, allowIncompleteStatement)) {
                     return props != ScriptCodeParseResult.Empty ? code : null;
                 }
@@ -404,6 +402,11 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 // Keep on reading input
                 _console.Write(PromptContinuation, Style.Prompt);
             }
+        }
+
+        protected virtual ScriptCodeParseResult GetCommandProperties(string code) {
+            ScriptSource command = _engine.CreateScriptSourceFromString(code, SourceCodeKind.InteractiveCode);
+            return command.GetCodeProperties(_engine.GetCompilerOptions(_scope));
         }
 
         /// <summary>

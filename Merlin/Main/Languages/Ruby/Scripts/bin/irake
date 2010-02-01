@@ -6,10 +6,6 @@
 # this file is here to facilitate running it.
 #
 
-# work-around Method#to_proc
-# http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=727
-require 'hacks'
-
 require 'rubygems'
 
 version = ">= 0"

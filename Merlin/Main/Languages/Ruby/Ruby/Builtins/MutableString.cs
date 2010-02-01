@@ -145,6 +145,7 @@ namespace IronRuby.Builtins {
         }
 
         public static MutableString/*!*/ CreateMutable(string/*!*/ str, RubyEncoding/*!*/ encoding) {
+            ContractUtils.RequiresNotNull(str, "str");
             ContractUtils.RequiresNotNull(encoding, "encoding");
             return new MutableString(str, encoding);
         }
@@ -416,7 +417,7 @@ namespace IronRuby.Builtins {
                 hash = _content.GetHashCode(out binarySum);
 
                 // xor with the encoding if there are any non-ASCII characters in the string:
-                if (binarySum >= 0x0080) {
+                if (binarySum >= 0x0080 && !IsBinaryEncoded) {
                     hash ^= _encoding.GetHashCode();
                 }
             }
@@ -1618,8 +1619,28 @@ namespace IronRuby.Builtins {
         }
 #endif
 
-        private static void AppendBinaryCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, bool octalEscape, 
-            bool escapeNonAscii, int quote) {
+        // TODO: make struct and include quote character
+        [Flags]
+        public enum Escape {
+            Default = 0,
+
+            /// <summary>
+            /// Escape all non-ASCII characters.
+            /// </summary>
+            NonAscii = 1,
+
+            /// <summary>
+            /// Escape #{, #$, #@ and \.
+            /// </summary>
+            Special = 2,
+
+            /// <summary>
+            /// Use octal escapes. Hexadecimal are used if not specified.
+            /// </summary>
+            Octal = 4
+        }
+
+        private static void AppendBinaryCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, Escape escape, int quote) {
 
             Debug.Assert(currentChar >= 0 && currentChar <= 0x00ff);
             switch (currentChar) {
@@ -1631,15 +1652,23 @@ namespace IronRuby.Builtins {
                 case '\f': result.Append("\\f"); break;
                 case '\r': result.Append("\\r"); break;
                 case 27: result.Append("\\e"); break;
-                case '\\': result.Append("\\\\"); break;
+                case '\\':
+                    if ((escape & Escape.Special) != 0) {
+                        result.Append("\\\\");
+                    } else {
+                        result.Append('\\');
+                    }
+                    return;
 
                 case '#':
-                    switch (nextChar) {
-                        case '{':
-                        case '$':
-                        case '@':
-                            result.Append('\\');
-                            break;
+                    if ((escape & Escape.Special) != 0) {
+                        switch (nextChar) {
+                            case '{':
+                            case '$':
+                            case '@':
+                                result.Append('\\');
+                                break;
+                        }
                     }
                     result.Append('#');
                     break;
@@ -1648,8 +1677,8 @@ namespace IronRuby.Builtins {
                     if (currentChar == quote) {
                         result.Append('\\');
                         result.Append((char)quote);
-                    } else if (currentChar < 0x0020 || currentChar >= 0x080 && escapeNonAscii) {
-                        if (octalEscape) {
+                    } else if (currentChar < 0x0020 || currentChar >= 0x080 && (escape & Escape.NonAscii) != 0) {
+                        if ((escape & Escape.Octal) != 0) {
                             AppendOctalEscape(result, currentChar);
                         } else {
                             AppendHexEscape(result, currentChar);
@@ -1661,15 +1690,15 @@ namespace IronRuby.Builtins {
             }
         }
 
-        public static int AppendUnicodeCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, bool forceEscapes, 
+        public static int AppendUnicodeCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, Escape escape, 
             int quote, int escapePlaceholder) {
 
             int inc = 1;
             if (currentChar == escapePlaceholder) {
                 result.Append('\\');
             } else if (currentChar < 0x0080) {
-                AppendBinaryCharRepresentation(result, currentChar, nextChar, false, false, quote);
-            } else if (forceEscapes) {
+                AppendBinaryCharRepresentation(result, currentChar, nextChar, escape, quote);
+            } else if ((escape & Escape.NonAscii) != 0) {
                 if (nextChar != -1 && Char.IsSurrogatePair((char)currentChar, (char)nextChar)) {
                     currentChar = Tokenizer.ToCodePoint(currentChar, nextChar);
                     inc = 2;
@@ -1692,13 +1721,13 @@ namespace IronRuby.Builtins {
             return inc;
         }
 
-        public static void AppendCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, bool octalEscape, bool forceEscapes, 
+        public static void AppendCharRepresentation(StringBuilder/*!*/ result, int currentChar, int nextChar, Escape escape, 
             int quote, int escapePlaceholder) {
 
             if (currentChar == escapePlaceholder) {
                 result.Append('\\');
             } else if (currentChar < 0x0100) {
-                AppendBinaryCharRepresentation(result, currentChar, nextChar, octalEscape, forceEscapes, quote);
+                AppendBinaryCharRepresentation(result, currentChar, nextChar, escape, quote);
             } else {
                 result.Append((char)currentChar);
             }
@@ -1730,8 +1759,9 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Returns a string with all non-ASCII characters replaced by escaped Unicode or hexadecimal numeric sequences.
         /// </summary>
-        public string/*!*/ ToAsciiString() {
-            var result = AppendRepresentation(new StringBuilder(), null, false, true, -1).ToString();
+        public string/*!*/ ToAsciiString(bool octalEscapes) {
+            Escape escape = Escape.NonAscii | (octalEscapes ? Escape.Octal : 0);
+            var result = AppendRepresentation(new StringBuilder(), null, escape, -1).ToString();
             Debug.Assert(result.IsAscii());
             return result;
         }
@@ -1741,61 +1771,63 @@ namespace IronRuby.Builtins {
         /// </summary>
         public string/*!*/ ToStringWithEscapedInvalidCharacters(RubyEncoding/*!*/ encoding) {
             ContractUtils.RequiresNotNull(encoding, "encoding");
-            return AppendRepresentation(new StringBuilder(), encoding, false, false, -1).ToString();
+            return AppendRepresentation(new StringBuilder(), encoding, Escape.Default, -1).ToString();
         }
 
-        public StringBuilder/*!*/ AppendRepresentation(StringBuilder/*!*/ result, RubyEncoding forceEncoding, bool octalEscapes, bool forceEscapes, int quote) {
+        public StringBuilder/*!*/ AppendRepresentation(StringBuilder/*!*/ result, RubyEncoding forceEncoding, Escape escape, int quote) {
             ContractUtils.RequiresNotNull(result, "result");
 
             RubyEncoding encoding = forceEncoding ?? _encoding;
 
-            if (encoding == RubyEncoding.Binary || (forceEscapes && encoding != RubyEncoding.UTF8)) {
+            if (encoding == RubyEncoding.Binary || ((escape & Escape.NonAscii) != 0 && encoding != RubyEncoding.UTF8)) {
+                escape |= Escape.NonAscii;
                 if (IsBinary) {
-                    AppendBinaryRepresentation(result, ToByteArray(), octalEscapes, true, quote);
+                    AppendBinaryRepresentation(result, ToByteArray(), escape, quote);
                 } else {
-                    AppendStringRepresentation(result, ToString(), octalEscapes, true, quote, -1);
+                    AppendStringRepresentation(result, ToString(), escape, quote, -1);
                 }
             } else {
                 int escapePlaceholder;
-                var str = ToStringWithEscapedInvalidCharacters(encoding, octalEscapes, out escapePlaceholder);
+                var str = ToStringWithEscapedInvalidCharacters(encoding, (escape & Escape.Octal) != 0, out escapePlaceholder);
+
                 if (encoding == RubyEncoding.UTF8) {
-                    AppendUnicodeRepresentation(result, str, octalEscapes, forceEscapes, quote, escapePlaceholder);
+                    AppendUnicodeRepresentation(result, str, escape, quote, escapePlaceholder);
                 } else {
-                    AppendStringRepresentation(result, str, octalEscapes, forceEscapes, quote, escapePlaceholder);
+                    AppendStringRepresentation(result, str, escape, quote, escapePlaceholder);
                 }
             }
             
             return result;
         }
 
-        public static StringBuilder/*!*/ AppendUnicodeRepresentation(StringBuilder/*!*/ result, string/*!*/ str, bool octalEscapes, bool forceEscapes,
+        public static StringBuilder/*!*/ AppendUnicodeRepresentation(StringBuilder/*!*/ result, string/*!*/ str, Escape escape,
             int quote, int escapePlaceholder) {
 
             int i = 0;
             while (i < str.Length) {
-                i += AppendUnicodeCharRepresentation(result, (int)str[i], (i < str.Length - 1) ? (int)str[i + 1] : -1, forceEscapes, quote, escapePlaceholder);
+                i += AppendUnicodeCharRepresentation(result, (int)str[i], (i < str.Length - 1) ? (int)str[i + 1] : -1, escape, quote, escapePlaceholder);
             }
 
             return result;
         }
 
-        public static StringBuilder/*!*/ AppendStringRepresentation(StringBuilder/*!*/ result, string/*!*/ str, bool octalEscapes, bool forceEscapes,
+        public static StringBuilder/*!*/ AppendStringRepresentation(StringBuilder/*!*/ result, string/*!*/ str, Escape escape,
             int quote, int escapePlaceholder) {
             for (int i = 0; i < str.Length; i++) {
-                AppendCharRepresentation(result, (int)str[i], (i < str.Length - 1) ? (int)str[i + 1] : -1, octalEscapes, forceEscapes, quote, escapePlaceholder);
+                AppendCharRepresentation(result, (int)str[i], (i < str.Length - 1) ? (int)str[i + 1] : -1, escape, quote, escapePlaceholder);
             }
             return result;
         }
 
-        public static StringBuilder/*!*/ AppendBinaryRepresentation(StringBuilder/*!*/ result, byte[]/*!*/ bytes, bool octalEscapes, bool forceEscapes, int quote) {
+        public static StringBuilder/*!*/ AppendBinaryRepresentation(StringBuilder/*!*/ result, byte[]/*!*/ bytes, Escape escape, int quote) {
             for (int i = 0; i < bytes.Length; i++) {
-                AppendCharRepresentation(result, (int)bytes[i], (i < bytes.Length - 1) ? (int)bytes[i + 1] : -1, octalEscapes, forceEscapes, quote, -1);
+                AppendCharRepresentation(result, (int)bytes[i], (i < bytes.Length - 1) ? (int)bytes[i + 1] : -1, escape, quote, -1);
             }
             return result;
         }
 
         internal string/*!*/ GetDebugValue() {
-            return AppendRepresentation(new StringBuilder(), null, false, false, '"').ToString();
+            return AppendRepresentation(new StringBuilder(), null, MutableString.Escape.Default, '"').ToString();
         }
 
         internal string/*!*/ GetDebugType() {

@@ -91,7 +91,7 @@ namespace IronRuby.Builtins {
         internal static MutableString/*!*/ ToS(RubyContext/*!*/ context, string/*!*/ methodName, RubyModule/*!*/ declaringModule, RubyModule/*!*/ targetModule, 
             string/*!*/ classDisplayName) {
 
-            MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
+            MutableString result = MutableString.CreateMutable(context.GetIdentifierEncoding());
 
             result.Append("#<");
             result.Append(classDisplayName);

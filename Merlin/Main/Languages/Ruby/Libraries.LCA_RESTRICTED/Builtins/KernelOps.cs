@@ -143,7 +143,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("binding", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("binding", RubyMethodAttributes.PublicSingleton)]
         public static Binding/*!*/ GetLocalScope(RubyScope/*!*/ scope, object self) {
-            return new Binding(scope);
+            if (scope.RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                return new Binding(scope, self);
+            } else {
+                return new Binding(scope);
+            }
         }
 
         [RubyMethod("block_given?", RubyMethodAttributes.PrivateInstance)]
@@ -158,14 +162,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("local_variables", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("local_variables", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetLocalVariableNames(RubyScope/*!*/ scope, object self) {
-            List<string> names = scope.GetVisibleLocalNames();
-
-            RubyArray result = new RubyArray(names.Count);
-            for (int i = 0; i < names.Count; i++) {
-                // TODO (encoding):
-                result.Add(MutableString.Create(names[i], RubyEncoding.UTF8));
-            }
-            return result;
+            var names = scope.GetVisibleLocalNames();
+            return new RubyArray(names.Count).AddRange(scope.RubyContext.StringifyIdentifiers(names));
         }
 
         [RubyMethod("caller", RubyMethodAttributes.PrivateInstance)]
@@ -395,7 +393,6 @@ namespace IronRuby.Builtins {
         public static bool IsEqual(object self, object other) {
             // Comparing object IDs is (potentially) expensive because it forces us
             // to generate InstanceData and a new object ID
-            //return GetObjectId(self) == GetObjectId(other);
             if (self == other) {
                 return true;
             }
@@ -566,7 +563,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("frozen?")]
         public static bool Frozen(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return false; // can't freeze value types
             }
             return context.IsObjectFrozen(self);
@@ -574,7 +571,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("freeze")]
         public static object Freeze(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return self; // can't freeze value types
             }
             context.FreezeObject(self);
@@ -583,7 +580,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("tainted?")]
         public static bool Tainted(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return false; // can't taint value types
             }
             return context.IsObjectTainted(self);
@@ -591,7 +588,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("taint")]
         public static object Taint(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return self;
             }
             context.SetObjectTaint(self, true);
@@ -600,7 +597,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("untaint")]
         public static object Untaint(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return self;
             }
             context.SetObjectTaint(self, false);
@@ -619,8 +616,16 @@ namespace IronRuby.Builtins {
         public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
             [Optional]Binding binding, [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
 
-            RubyScope targetScope = (binding != null) ? binding.LocalScope : scope;
-            return RubyUtils.Evaluate(code, targetScope, targetScope.SelfObject, null, file, line);
+            RubyScope targetScope;
+            object targetSelf;
+            if (binding != null) {
+                targetScope = binding.LocalScope;
+                targetSelf = binding.SelfObject;
+            } else {
+                targetScope = scope;
+                targetSelf = self;
+            }
+            return RubyUtils.Evaluate(code, targetScope, targetSelf, null, file, line);
         }
 
         [RubyMethod("eval", RubyMethodAttributes.PrivateInstance)]
@@ -655,15 +660,8 @@ namespace IronRuby.Builtins {
         #region instance_variables, instance_variable_defined?, instance_variable_get, instance_variable_set, remove_instance_variable
 
         [RubyMethod("instance_variables")]
-        public static RubyArray/*!*/ InstanceVariables(RubyContext/*!*/ context, object self) {
-            string[] names = context.GetInstanceVariableNames(self);
-
-            RubyArray result = new RubyArray(names.Length);
-            foreach (string name in names) {
-                // TODO (encoding):
-                result.Add(MutableString.Create(name, RubyEncoding.UTF8));
-            }
-            return result;
+        public static RubyArray/*!*/ GetInstanceVariableNames(RubyContext/*!*/ context, object self) {
+            return context.StringifyIdentifiers(context.GetInstanceVariableNames(self));
         }
 
         [RubyMethod("instance_variable_get")]
@@ -720,9 +718,7 @@ namespace IronRuby.Builtins {
             lock (context.GlobalVariablesLock) {
                 foreach (KeyValuePair<string, GlobalVariable> global in context.GlobalVariables) {
                     if (global.Value.IsEnumerated) {
-                        // TODO: Ruby 1.9 returns symbols:
-                        // TODO (encoding):
-                        result.Add(MutableString.Create(global.Key, RubyEncoding.UTF8));
+                        result.Add(context.StringifyIdentifier(global.Key));
                     }
                 }
             }
@@ -760,9 +756,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("method_missing", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("method_missing", RubyMethodAttributes.PublicSingleton)]
         [RubyStackTraceHidden]
-        public static object MethodMissing(RubyContext/*!*/ context, object/*!*/ self, SymbolId symbol, [NotNull]params object[]/*!*/ args) {
-            string name = SymbolTable.IdToString(symbol);
-            throw RubyExceptions.CreateMethodMissing(context, self, name);
+        public static object MethodMissing(RubyContext/*!*/ context, object/*!*/ self, [NotNull]RubySymbol/*!*/ name, [NotNull]params object[]/*!*/ args) {
+            throw RubyExceptions.CreateMethodMissing(context, self, name.ToString());
         }
 
         #endregion

@@ -928,19 +928,22 @@ class UnitTestSetup
       :test_has_one_proxy_should_not_respond_to_private_methods
 
     disable HasOneThroughAssociationsTest, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [memberships] ([joined_on], [club_id], [member_id], [favourite], [type]) VALUES(NULL, 1054009214000000000, 102717546000000000, 0, 'CurrentMembership')
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_assigning_association_correctly_assigns_target,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [memberships] ([joined_on], [club_id], [member_id], [favourite], [type]) VALUES(NULL, 1054009213, 1027175461000000000, 0, 'CurrentMembership')
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_creating_association_builds_through_record_for_new,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [memberships] ([joined_on], [club_id], [member_id], [favourite], [type]) VALUES(NULL, 1054009215000000000, 1027175462000000000, 0, 'CurrentMembership')
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -953,13 +956,15 @@ class UnitTestSetup
       # attribute_methods.rb:232:in `method_missing'
       # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/activerecord/test/cases/associations/has_one_through_associations_test.rb:135:in `test_has_one_through_proxy_should_not_respond_to_priva
       :test_has_one_through_proxy_should_not_respond_to_private_methods,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: UPDATE [memberships] SET [club_id] = 1054009216000000000 WHERE [id] = 224856423
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_replace_target_record,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: UPDATE [memberships] SET [club_id] = 1054009217000000000 WHERE [id] = 224856423
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -1060,7 +1065,8 @@ class UnitTestSetup
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_add_remove_single_field_using_symbol_arguments,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Cannot insert the value NULL into column 'first_name', table 'activerecord_unittest.dbo.people'; column does not allow nulls. INSERT fails.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Cannot insert the value NULL into column 'first_name', table 'activerecord_unittest.dbo.people'; column does not allow nulls. INSERT fails.
+
       # The statement has been terminated.: INSERT INTO [people] ([first_name], [primary_contact_id], [gender], [lock_version], [wealth], [last_name], [key], [administrator], [girlfriend]) VALUES(NULL, NULL, NULL, 0,
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -1577,67 +1583,78 @@ class UnitTestSetup
       :test_should_still_work_without_an_associated_model
 
     disable TestAutosaveAssociationOnAHasAndBelongsToManyAssociation, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906345600000000, 52147199600000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_allow_to_bypass_validations_on_the_associated_models_on_create,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906345700000000, 52147199700000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_allow_to_bypass_validations_on_the_associated_models_on_update,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906345800000000, 52147199800000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_save_bang_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906345900000000, 52147199900000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_save_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (4390634600000000, 52147200000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_validate_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346100000000, 52147200100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_merge_errors_on_the_associated_models_onto_the_parent_even_if_it_is_not_valid,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346200000000, 52147200200000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_load_the_associated_models_if_they_were_not_loaded_yet,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346300000000, 52147200300000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_use_default_invalid_error_on_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346400000000, 52147200400000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_rollback_any_changes_if_an_exception_occurred_while_saving,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346500000000, 52147200500000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_still_raise_an_ActiveRecordRecord_Invalid_exception_if_we_want_that,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346600000000, 52147200600000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -1645,67 +1662,78 @@ class UnitTestSetup
       :test_should_validation_the_associated_models_on_create
 
     disable TestAutosaveAssociationOnAHasManyAssociation, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147200700000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_allow_to_bypass_validations_on_the_associated_models_on_create,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147200800000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_allow_to_bypass_validations_on_the_associated_models_on_update,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147200900000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_save_bang_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 5214720100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_save_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147201100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_validate_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147201200000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_merge_errors_on_the_associated_models_onto_the_parent_even_if_it_is_not_valid,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147201300000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_load_the_associated_models_if_they_were_not_loaded_yet,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147201400000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_use_default_invalid_error_on_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147201500000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_rollback_any_changes_if_an_exception_occurred_while_saving,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147201600000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_still_raise_an_ActiveRecordRecord_Invalid_exception_if_we_want_that,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147201700000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -1713,61 +1741,71 @@ class UnitTestSetup
       :test_should_validation_the_associated_models_on_create
 
     disable TestAutosaveAssociationOnAHasOneAssociation, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147201800000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_allow_to_bypass_validations_on_associated_models_at_any_depth,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147201900000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_save_bang_the_associated_model,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 5214720200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_save_the_associated_model,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147202100000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_validate_the_associated_model,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147202200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_merge_errors_on_the_associated_models_onto_the_parent_even_if_it_is_not_valid,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147202300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_load_the_associated_model,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147202400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_rollback_any_changes_if_an_exception_occurred_while_saving,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147202500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_still_allow_to_bypass_validations_on_the_associated_model,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147202600000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_still_raise_an_ActiveRecordRecord_Invalid_exception_if_we_want_that,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147202700000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -1775,13 +1813,15 @@ class UnitTestSetup
       :test_should_still_work_without_an_associated_model
 
     disable TestAutosaveAssociationValidationsOnAHABTMAssocication, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346700000000, 5214720300000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       "test_should_automatically_validate_associations_with_:validate_=>_true",
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346800000000, 52147203100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -1789,7 +1829,8 @@ class UnitTestSetup
       "test_should_not_automatically_validate_associations_without_:validate_=>_true"
 
     disable TestAutosaveAssociationValidationsOnAHasManyAssocication, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('cookoo', 52147203200000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -1797,13 +1838,15 @@ class UnitTestSetup
       :test_should_automatically_validate_associations
 
     disable TestAutosaveAssociationValidationsOnAHasOneAssocication, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('titanic', 52147203300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       "test_should_automatically_validate_associations_with_:validate_=>_true",
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('titanic', 52147203400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -1966,163 +2009,190 @@ class UnitTestSetup
       :test_autosave_new_record_on_has_one_can_be_disabled_per_relationship
 
     disable TestDestroyAsPartOfAutosaveAssociation, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147203500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_a_child_marked_for_destruction_should_not_be_destroyed_twice,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147203600000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_a_child_marked_for_destruction_should_not_be_destroyed_twice_while_saving_birds,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147203700000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_a_child_marked_for_destruction_should_not_be_destroyed_twice_while_saving_parrots,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147203800000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_a_marked_for_destruction_record_should_not_be_be_marked_after_reload,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147203900000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_a_parent_marked_for_destruction_should_not_be_destroyed_twice,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 5214720400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_destroy_a_child_association_as_part_of_the_save_transaction_if_it_was_marked_for_destroyal,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204100000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_destroy_a_parent_association_as_part_of_the_save_transaction_if_it_was_marked_for_destroyal,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_destroy_birds_as_part_of_the_save_transaction_if_they_were_marked_for_destroyal,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_destroy_parrots_as_part_of_the_save_transaction_if_they_were_marked_for_destroyal,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_rollback_destructions_if_an_exception_occurred_while_saving_a_child,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_rollback_destructions_if_an_exception_occurred_while_saving_a_parent,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204600000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_rollback_destructions_if_an_exception_occurred_while_saving_birds,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204700000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_rollback_destructions_if_an_exception_occurred_while_saving_parrots,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204800000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_run_add_callback_methods_for_birds,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147204900000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_run_add_callback_methods_for_parrots,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 5214720500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_run_add_callback_procs_for_birds,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205100000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_run_add_callback_procs_for_parrots,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_run_remove_callback_methods_for_birds,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_run_remove_callback_methods_for_parrots,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_run_remove_callback_procs_for_birds,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_run_remove_callback_procs_for_parrots,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205600000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_skip_validation_on_a_child_association_if_marked_for_destruction,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205700000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_skip_validation_on_a_parent_association_if_marked_for_destruction,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205800000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_skip_validation_on_the_birds_association_if_destroyed,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147205900000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_skip_validation_on_the_birds_association_if_marked_for_destruction,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 5214720600000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_skip_validation_on_the_parrots_association_if_destroyed,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147206100000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -2130,19 +2200,22 @@ class UnitTestSetup
       :test_should_skip_validation_on_the_parrots_association_if_marked_for_destruction
 
     disable TestNestedAttributesInGeneral, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Red Pearl', 52147206200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_reject_if_method_with_arguments,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Hello Pearl', 52147206400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_reject_if_with_indifferent_keys,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147206500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -2150,13 +2223,15 @@ class UnitTestSetup
       :test_should_disable_allow_destroy_by_default
 
     disable TestNestedAttributesLimit, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906346900000000, 52147206700000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_limit_with_less_records,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (4390634700000000, 52147206800000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -2164,91 +2239,106 @@ class UnitTestSetup
       :test_limit_with_number_exact_records
 
     disable TestNestedAttributesOnABelongsToAssociation, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147206900000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_enable_autosave_on_the_association,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 5214720700000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_build_a_new_record_if_there_is_no_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207100000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_define_an_attribute_writer_method_for_the_association,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_destroy_an_existing_record_if_there_is_a_matching_id_and_destroy_is_truthy,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_modify_an_existing_record_if_there_is_a_matching_composite_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_modify_an_existing_record_if_there_is_a_matching_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_build_a_new_record_if_a_reject_if_proc_returns_false,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207600000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_build_a_new_record_if_there_is_no_id_and_destroy_is_truthy,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207700000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_an_existing_record_if_allow_destroy_is_false,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207800000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_an_existing_record_if_destroy_is_not_truthy,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147207900000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_the_associated_model_until_the_parent_is_saved,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 5214720800000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_replace_an_existing_record_if_there_is_no_id_and_destroy_is_truthy,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147208100000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_replace_an_existing_record_if_there_is_no_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147208200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_a_hash_with_string_keys_and_update_the_associated_model,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147208300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -2256,109 +2346,127 @@ class UnitTestSetup
       :test_should_work_with_update_attributes_as_well
 
     disable TestNestedAttributesOnAHasAndBelongsToManyAssociation, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347100000000, 52147208400000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_also_work_with_a_HashWithIndifferentAccess,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347200000000, 52147208500000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_build_new_associated_models_for_each_entry_in_a_hash_where_the_id_is_missing,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347300000000, 52147208600000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_enable_autosave_on_the_association,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347400000000, 52147208700000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_be_possible_to_destroy_a_record,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347500000000, 52147208800000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_define_an_attribute_writer_method_for_the_association,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347600000000, 52147208900000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_ignore_new_associated_records_if_a_reject_if_proc_returns_false,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347700000000, 5214720900000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_ignore_new_associated_records_with_truthy_destroy_attribute,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347800000000, 52147209100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_assign_destroy_key_to_a_record,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906347900000000, 52147209200000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_the_associated_model_until_the_parent_is_saved,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (4390634800000000, 52147209300000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_the_associated_model_with_a_non_truthy_argument,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906348100000000, 52147209400000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_raise_an_argument_error_if_something_else_than_a_hash_is_passed,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906348200000000, 52147209500000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_sort_the_hash_by_the_keys_before_building_new_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906348300000000, 52147209600000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_a_hash_and_assign_the_attributes_to_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906348400000000, 52147209700000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_a_hash_with_composite_id_keys_and_assign_the_attributes_to_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906348500000000, 52147209800000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_a_hash_with_string_keys_and_assign_the_attributes_to_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906348600000000, 52147209900000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_an_array_and_assign_the_attributes_to_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906348700000000, 521472100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_update_existing_records_and_add_new_ones_that_have_no_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [parrots_pirates] ([parrot_id], [pirate_id]) VALUES (43906348800000000, 52147210100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -2366,109 +2474,127 @@ class UnitTestSetup
       :test_should_work_with_update_attributes_as_well
 
     disable TestNestedAttributesOnAHasManyAssociation, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147210200000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_also_work_with_a_HashWithIndifferentAccess,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147210300000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_build_new_associated_models_for_each_entry_in_a_hash_where_the_id_is_missing,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147210400000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_enable_autosave_on_the_association,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147210500000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_be_possible_to_destroy_a_record,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147210600000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_define_an_attribute_writer_method_for_the_association,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147210700000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_ignore_new_associated_records_if_a_reject_if_proc_returns_false,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147210800000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_ignore_new_associated_records_with_truthy_destroy_attribute,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147210900000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_assign_destroy_key_to_a_record,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 5214721100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_the_associated_model_until_the_parent_is_saved,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211100000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_the_associated_model_with_a_non_truthy_argument,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211200000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_raise_an_argument_error_if_something_else_than_a_hash_is_passed,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211300000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_sort_the_hash_by_the_keys_before_building_new_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211400000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_a_hash_and_assign_the_attributes_to_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211500000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_a_hash_with_composite_id_keys_and_assign_the_attributes_to_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211600000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_a_hash_with_string_keys_and_assign_the_attributes_to_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211700000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_an_array_and_assign_the_attributes_to_the_associated_models,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211800000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_update_existing_records_and_add_new_ones_that_have_no_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [birds] ([name], [pirate_id]) VALUES('Posideons Killer', 52147211900000000)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
@@ -2476,103 +2602,120 @@ class UnitTestSetup
       :test_should_work_with_update_attributes_as_well
 
     disable TestNestedAttributesOnAHasOneAssociation, 
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 5214721200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_also_work_with_a_HashWithIndifferentAccess,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212100000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_automatically_enable_autosave_on_the_association,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_build_a_new_record_if_there_is_no_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_define_an_attribute_writer_method_for_the_association,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_destroy_an_existing_record_if_there_is_a_matching_id_and_destroy_is_truthy,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_modify_an_existing_record_if_there_is_a_matching_composite_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212600000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_modify_an_existing_record_if_there_is_a_matching_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212700000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_build_a_new_record_if_a_reject_if_proc_returns_false,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212800000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_build_a_new_record_if_there_is_no_id_and_destroy_is_truthy,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147212900000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_an_existing_record_if_allow_destroy_is_false,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 5214721300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_an_existing_record_if_destroy_is_not_truthy,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147213100000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_destroy_the_associated_model_until_the_parent_is_saved,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147213200000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_not_replace_an_existing_record_if_there_is_no_id_and_destroy_is_truthy,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147213300000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_raise_argument_error_if_trying_to_build_polymorphic_belongs_to,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147213400000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_replace_an_existing_record_if_there_is_no_id,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147213500000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'
       # sqlserver_adapter.rb:403:in `execute'
       :test_should_take_a_hash_with_string_keys_and_update_the_associated_model,
-      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+      # ActiveRecord::StatementInvalid: DBI::DatabaseError: Arithmetic overflow error converting expression to data type int.
+
       # The statement has been terminated.: INSERT INTO [ships] ([name], [pirate_id], [created_at], [created_on], [updated_at], [updated_on]) VALUES('Nights Dirty Lightning', 52147213600000000, NULL, NULL, NULL, NULL)
       # abstract_adapter.rb:201:in `log'
       # sqlserver_adapter.rb:839:in `raw_execute'

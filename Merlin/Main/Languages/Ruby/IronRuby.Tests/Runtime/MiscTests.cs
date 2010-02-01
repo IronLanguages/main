@@ -183,7 +183,7 @@ foo
 ");
 
         }
-
+        
         public void Scenario_RubyMethodMissing2() {
             AssertExceptionThrown<MissingMethodException>(delegate {
                 CompilerTest(@"unknown_method");

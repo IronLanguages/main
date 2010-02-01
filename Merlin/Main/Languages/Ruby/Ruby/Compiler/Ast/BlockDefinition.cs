@@ -165,13 +165,13 @@ namespace IronRuby.Compiler.Ast {
             body = gen.AddReturnTarget(
                 scope.CreateScope(
                     scopeVariable,
-                    Methods.CreateBlockScope.OpCall(
+                    Methods.CreateBlockScope.OpCall(new AstExpressions {
                         scope.MakeLocalsStorage(),
                         scope.GetVariableNamesExpression(),
                         blockParameter, 
                         selfParameter,
                         EnterInterpretedFrameExpression.Instance
-                    ),
+                    }),
                     body
                 )
             );

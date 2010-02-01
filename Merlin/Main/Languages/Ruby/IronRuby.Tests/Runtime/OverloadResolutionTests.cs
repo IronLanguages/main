@@ -143,7 +143,7 @@ namespace IronRuby.Tests {
 
             // level 0: no overload applicable
             // level 1: {L1, L3} applicable, MutableString <-/-> SymbolId
-            public void L1(SymbolId a, [DefaultProtocol, NotNull]string b) { }
+            public void L1([NotNull]RubySymbol a, [DefaultProtocol, NotNull]string b) { }
             public void L2([NotNull]string a, [DefaultProtocol, NotNull]string b) { }
             public void L3([DefaultProtocol]MutableString a, [DefaultProtocol, NotNull]string b) { }
 
@@ -159,7 +159,7 @@ namespace IronRuby.Tests {
             Context.ObjectClass.SetConstant("X", Context.GetClass(typeof(Overloads1.X)));
 
             object c = Engine.Execute(@"class C < X; new; end");
-            var sym = SymbolTable.StringToId("x");
+            var sym = Context.CreateAsciiSymbol("x");
             var ms = MutableString.CreateAscii("x");
 
             var cases = new[] {

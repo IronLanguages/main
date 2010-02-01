@@ -259,7 +259,7 @@ namespace IronRuby.Runtime {
         
         internal RubyClass ComObjectClass {
             get {
-#if !SILVERLIGHT
+#if !SILVERLIGHT // COM
                 if (_comObjectClass == null) {
                     GetOrCreateClass(TypeUtils.ComObjectType);
                 }
@@ -371,7 +371,7 @@ namespace IronRuby.Runtime {
             }
         }
         private EqualityComparer _equalityComparer;
-        
+
         public object Verbose { get; set; }
 
         public override Version LanguageVersion {
@@ -409,6 +409,7 @@ namespace IronRuby.Runtime {
             
             _binder = new RubyBinder(this);
 
+            _symbols = new Dictionary<MutableString, RubySymbol>();
             _metaBinderFactory = new RubyMetaBinderFactory(this);
             _runtimeErrorSink = new RuntimeErrorSink(this);
             _equalityComparer = new EqualityComparer(this);
@@ -518,9 +519,10 @@ namespace IronRuby.Runtime {
             DefineGlobalVariableNoLock("DEBUG", debug);
             DefineGlobalVariableNoLock("-d", debug);
 
-#if !SILVERLIGHT
             DefineGlobalVariableNoLock("KCODE", Runtime.GlobalVariables.KCode);
             DefineGlobalVariableNoLock("-K", Runtime.GlobalVariables.KCode);
+
+#if !SILVERLIGHT
             DefineGlobalVariableNoLock("SAFE", Runtime.GlobalVariables.SafeLevel);
 
             try {
@@ -531,7 +533,7 @@ namespace IronRuby.Runtime {
 #endif
         }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT // process
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         private void TrySetCurrentProcessVariables() {
             Process process = Process.GetCurrentProcess();
@@ -920,7 +922,7 @@ namespace IronRuby.Runtime {
         internal RubyClass/*!*/ CreateInstanceSingleton(object obj, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, 
             Action<RubyModule> constantsInitializer, RubyModule/*!*/[] expandedMixins) {
             Debug.Assert(!(obj is RubyModule));
-            Debug.Assert(RubyUtils.CanCreateSingleton(obj));
+            Debug.Assert(RubyUtils.HasSingletonClass(obj));
 
             if (obj == null) {
                 return _nilClass;
@@ -1013,30 +1015,73 @@ namespace IronRuby.Runtime {
 
         #region Libraries (thread-safe)
 
+        //
+        // Scenarios:
+        // 1) define/reopen Ruby class/module (name != null && !builtin)
+        //    - Built-in definitions don't reopen existing Ruby classes/modules as they are all declared before any Ruby code can run.
+        //    - Only global classes/modules can be reopened (TODO: we need to pass in the containing class).
+        //    - If reopening:
+        //        - Members are merged into the existing Ruby class/module.
+        //        - Underlying system type is ignored when extending an existing Ruby class by a library definition.
+        //          We don't want to fail the library load based upon an existence of an instance of a Ruby class (whose CLR type we cannot change).
+        //
+        // 2) extend CLR type (name == null)
+        //    
+        
+        private T PrepareLibraryModuleDefinition<T>(string name, RubyClass super, RubyModule/*!*/[]/*!*/ mixins, ModuleRestrictions restrictions, bool builtin,
+            out RubyModule[] expandedMixins) where T : RubyModule {
+
+            using (ClassHierarchyLocker()) {
+                expandedMixins = RubyModule.ExpandMixinsNoLock(super, mixins);
+                if (name != null && !builtin) {
+                    // Do not run constant initializer - all modules that the name might refer to should have already been set up;
+                    // A library definition should only reopen Ruby class/module definition, not another library definition.
+                    ConstantStorage c;
+                    if (_objectClass.TryGetConstantNoAutoloadNoInit(name, out c)) {
+                        var result = c.Value as T;
+                        bool isClass = typeof(T) == typeof(RubyClass);
+                        if (result == null || result.IsClass != isClass) {
+                            throw RubyExceptions.CreateTypeError("`{0}' is not a {1}", name, isClass ? "class" : "module");
+                        }
+                        if (isClass && (restrictions & ModuleRestrictions.AllowReopening) == 0) {
+                            throw RubyExceptions.CreateTypeError("cannot redefine {1} `{0}'", name, isClass ? "class" : "module");
+                        }
+                        return result;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         internal RubyModule/*!*/ DefineLibraryModule(string name, Type/*!*/ type,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             RubyModule/*!*/[]/*!*/ mixins, ModuleRestrictions restrictions, bool builtin) {
             Assert.NotNull(type);
             Assert.NotNullItems(mixins);
+            Debug.Assert(name == null || name.Length != 0);
+            Debug.Assert(name != null || (restrictions & ModuleRestrictions.NoUnderlyingType) == 0);
 
-            var expandedMixins = RubyModule.ExpandMixinsNoLock(null, mixins);
+            RubyModule[] expandedMixins;
+            RubyModule result = PrepareLibraryModuleDefinition<RubyModule>(name, null, mixins, restrictions, builtin, out expandedMixins);
+            bool exists = result != null;
 
-            RubyModule result;
-            bool exists;
-            lock (ModuleCacheLock) {
-                if (!(exists = TryGetModuleNoLock(type, out result))) {
-                    if (name == null) {
-                        name = GetQualifiedNameNoLock(type);
+            if (!exists) {
+                lock (ModuleCacheLock) {
+                    if (!(exists = TryGetModuleNoLock(type, out result))) {
+                        if (name == null) {
+                            name = GetQualifiedNameNoLock(type);
+                        }
+
+                        // Use empty constant initializer rather than null so that we don't try to initialize nested types.
+                        result = CreateModule(
+                            name, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, expandedMixins, null,
+                            GetLibraryModuleTypeTracker(type, restrictions),
+                            restrictions
+                        );
+
+                        AddModuleToCacheNoLock(type, result);
                     }
-
-                    // Use empty constant initializer rather than null so that we don't try to initialize nested types.
-                    result = CreateModule(
-                        name, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, expandedMixins, null,
-                        GetLibraryModuleTypeTracker(type, restrictions),
-                        restrictions
-                    );
-
-                    AddModuleToCacheNoLock(type, result);
                 }
             }
 
@@ -1047,49 +1092,48 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        // isSelfContained: The traits are defined on type (public static methods marked by RubyMethod attribute).
         internal RubyClass/*!*/ DefineLibraryClass(string name, Type/*!*/ type,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             RubyClass super, RubyModule[]/*!*/ mixins, Delegate/*!*/[] factories, ModuleRestrictions restrictions, bool builtin) {
             Assert.NotNull(type);
             Assert.NotNullItems(mixins);
+            Debug.Assert(name != null || (restrictions & ModuleRestrictions.NoUnderlyingType) == 0);
+            Debug.Assert(name == null || name.Length != 0);
 
             RubyModule[] expandedMixins;
-            using (ClassHierarchyLocker()) {
-                expandedMixins = RubyModule.ExpandMixinsNoLock(super, mixins);
-            }
+            RubyClass result = PrepareLibraryModuleDefinition<RubyClass>(name, super, mixins, restrictions, builtin, out expandedMixins);
+            bool exists = result != null;
 
-            RubyClass result;
-            bool exists;
-            lock (ModuleCacheLock) {
-                if (!(exists = TryGetClassNoLock(type, out result))) {
-                    if (name == null) {
-                        name = GetQualifiedNameNoLock(type);
+            if (!exists) {
+                lock (ModuleCacheLock) {
+                    if (!(exists = TryGetClassNoLock(type, out result))) {
+                        if (name == null) {
+                            name = GetQualifiedNameNoLock(type);
+                        }
+
+                        if (super == null) {
+                            super = GetOrCreateClassNoLock(type.BaseType);
+                        }
+
+                        // Use empty constant initializer rather than null so that we don't try to initialize nested types.
+                        result = CreateClass(
+                            name, type, null, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, factories,
+                            super, expandedMixins, GetLibraryModuleTypeTracker(type, restrictions), null, false, false,
+                            restrictions
+                        );
+
+                        AddModuleToCacheNoLock(type, result);
                     }
-
-                    if (super == null) {
-                        super = GetOrCreateClassNoLock(type.BaseType);
-                    }
-
-                    // Use empty constant initializer rather than null so that we don't try to initialize nested types.
-                    result = CreateClass(
-                        name, type, null, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, factories,
-                        super, expandedMixins, GetLibraryModuleTypeTracker(type, restrictions), null, false, false,
-                        restrictions
-                    );
-
-                    AddModuleToCacheNoLock(type, result);
                 }
             }
 
             if (exists) {
                 if (super != null && super != result.SuperClass) {
-                    // TODO: better message
-                    throw new InvalidOperationException("Cannot change super class");
+                    throw RubyExceptions.CreateTypeError("superclass mismatch for class {0}", name);
                 }
 
                 if (factories != null && factories.Length != 0) {
-                    throw new InvalidOperationException("Cannot add factories to an existing class");
+                    throw RubyExceptions.CreateTypeError("Cannot add factories to an existing class");
                 }
 
                 result.IncludeLibraryModule(instanceTrait, classTrait, constantsInitializer, mixins, builtin);
@@ -1439,7 +1483,7 @@ namespace IronRuby.Runtime {
             }
 
             RubyInstanceData result;
-            if (RubyUtils.IsRubyValueType(obj)) {
+            if (!RubyUtils.HasObjectState(obj)) {
                 lock (ValueTypeInstanceDataLock) {
                     _valueTypeInstanceData.TryGetValue(obj, out result);
                 }
@@ -1467,7 +1511,7 @@ namespace IronRuby.Runtime {
             }
 
             RubyInstanceData result;
-            if (RubyUtils.IsRubyValueType(obj)) {
+            if (!RubyUtils.HasObjectState(obj)) {
                 lock (ValueTypeInstanceDataLock) {
                     if (!_valueTypeInstanceData.TryGetValue(obj, out result)) {
                         _valueTypeInstanceData.Add(obj, result = new RubyInstanceData());
@@ -1795,6 +1839,150 @@ namespace IronRuby.Runtime {
 
         #endregion
 
+        #region Symbols
+
+        private readonly Dictionary<MutableString, RubySymbol>/*!*/ _symbols;
+        private object SymbolsLock { get { return _symbols; } }
+
+        public RubySymbol/*!*/ CreateSymbol(MutableString/*!*/ str) {
+            return CreateSymbolInternal(str, true);
+        }
+
+        public RubySymbol/*!*/ CreateAsciiSymbol(string/*!*/ str) {
+            // TODO: do not allocate the MutableString if not needed?
+            return CreateSymbolInternal(MutableString.CreateAscii(str), false);
+        }
+
+        public RubySymbol/*!*/ CreateSymbol(string/*!*/ str, RubyEncoding/*!*/ encoding) {
+            // TODO: do not allocate the MutableString if not needed?
+            return CreateSymbolInternal(MutableString.CreateMutable(str, encoding), false);
+        }
+
+        public RubySymbol/*!*/ CreateSymbol(byte[]/*!*/ bytes, RubyEncoding/*!*/ encoding) {
+            var mstr = MutableString.CreateBinary(bytes, encoding);
+            // TODO: do not allocate the MutableString if not needed?
+            return CreateSymbolInternal(mstr, false);
+        }
+
+        internal RubySymbol/*!*/ CreateSymbolInternal(MutableString/*!*/ mstr) {
+            return CreateSymbolInternal(mstr, false);
+        }
+
+        private RubySymbol/*!*/ CreateSymbolInternal(MutableString/*!*/ mstr, bool clone) {
+            if (RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                if (mstr.IsEmpty) {
+                    throw RubyExceptions.CreateArgumentError("interning empty string");
+                }
+                if (mstr.IndexOf('\0') != -1) {
+                    throw RubyExceptions.CreateArgumentError("symbol string may not contain `\\0'");
+                }
+            }
+
+            RubySymbol result;
+            lock (SymbolsLock) {
+                if (!_symbols.TryGetValue(mstr, out result)) {
+                    result = new RubySymbol((clone ? mstr.Clone() : mstr).Freeze(), _symbols.Count + RubySymbol.MinId, _runtimeId);
+                    _symbols.Add(mstr, result);
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Searches symbol table for a symbol of given id - slow operation (linear search).
+        /// </summary>
+        public RubySymbol FindSymbol(int id) {
+            lock (SymbolsLock) {
+                foreach (var symbol in _symbols.Values) {
+                    if (symbol.Id == id) {
+                        return symbol;
+                    }
+                }
+            }
+            return null;
+        }
+
+        public RubyArray/*!*/ GetAllSymbols() {
+            lock (SymbolsLock) {
+                return new RubyArray(_symbols.Values);
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// Ruby 1.9 allows arbitrarily encoded identifiers. We could use a RubySymbol in internal tables, however that would also require
+        /// dynamic sites to use RubySymbols and CLR methods cached in the tables to be represented by RubySymbols. Seems like too much overhead.
+        /// 
+        /// For now we take the same approach as with file system paths. We represent the identifiers as CLR strings and whenever we convert 
+        /// them to RubySymbol or MutableString we use either the current KCODE or (K)UTF8 encoding. This doesn't guarantee a correct roundtrip 
+        /// in the case that a method is defined under K-UTF8, its name is retrieved under K-SJIS, converted to a string and the bytes are examined. 
+        /// The conversion might blow up if it contains a character that is not available in SJIS.
+        /// 
+        /// <para>
+        /// Note that the way how 1.9 works makes non-ascii identifiers encoded by non-UTF-8 encoding almost useless. 
+        /// Libraries written in such encoding are only usable from code written in the same encoding. 
+        /// Thus the common case would probably be that all scripts use UTF-8. For example,
+        /// <code>
+        /// lib1.rb:
+        /// #encoding: UTF-8
+        /// class C; def S; end; end
+        /// 
+        /// lib2.rb:
+        /// #encoding: SJIS
+        /// class D; def S; end; end
+        /// 
+        /// c.rb:
+        /// #encoding: UTF-8
+        /// require 'lib1'
+        /// require 'lib2'
+        /// C.new.S             # works
+        /// D.new.S             # error: no method S
+        /// </code>
+        /// </para>
+        /// 
+        /// <para>
+        /// Ruby 1.9 also allows incorrectly encoded method names (not identifiers in source code though):
+        /// <code>
+        /// #encoding: UTF-8
+        /// class C
+        ///   define_method(:"foo\xce") { }
+        /// end
+        /// </code>
+        /// There seems to be no reason why we should support this.
+        /// </para>
+        /// </summary>
+        public RubyEncoding/*!*/ GetIdentifierEncoding() {
+            return _options.Compatibility == RubyCompatibility.Ruby18 ? (KCode ?? RubyEncoding.KCodeUTF8) : RubyEncoding.UTF8;
+        }
+
+        public RubySymbol/*!*/ EncodeIdentifier(string/*!*/ identifier) {
+            return CreateSymbol(identifier, GetIdentifierEncoding());
+        }
+
+        /// <summary>
+        /// Returns an identifier encoded as MutableStrings (Ruby 1.8) or Symbols (Ruby 1.9).
+        /// </summary>
+        public object/*!*/ StringifyIdentifier(string/*!*/ identifier) {
+            if (_options.Compatibility >= RubyCompatibility.Ruby19) {
+                return CreateSymbol(identifier, RubyEncoding.UTF8);
+            } else {
+                return MutableString.CreateMutable(identifier, KCode ?? RubyEncoding.KCodeUTF8);
+            }
+        }
+        
+        /// <summary>
+        /// Returns an array of identifiers encoded as MutableStrings (Ruby 1.8) or Symbols (Ruby 1.9).
+        /// </summary>
+        public RubyArray/*!*/ StringifyIdentifiers(IList<string>/*!*/ identifiers) {
+            var result = new RubyArray(identifiers.Count);
+            foreach (var id in identifiers) {
+                result.Add(StringifyIdentifier(id));
+            }
+            return result;
+        }
+
+        #endregion
+
         #region IO (thread-safe)
 
         private sealed class FileDescriptor {
@@ -1938,9 +2126,8 @@ namespace IronRuby.Runtime {
         }
 
         public RubyEncoding/*!*/ GetPathEncoding() {
-            return KCode ?? 
-                // we need to force UTF8 encoding since the path can contain non-ascii characters:
-                (_options.Compatibility == RubyCompatibility.Ruby18 ? RubyEncoding.KCodeUTF8 : RubyEncoding.UTF8);
+            // we need to force UTF8 encoding since the path can contain non-ascii characters:
+            return _options.Compatibility == RubyCompatibility.Ruby18 ? (KCode ?? RubyEncoding.KCodeUTF8) : RubyEncoding.UTF8;
         }
 
         /// <summary>
@@ -1988,7 +2175,9 @@ namespace IronRuby.Runtime {
                     return path.ConvertToString();
                 }
             } catch (DecoderFallbackException) {
-                throw RubyExceptions.CreateEINVAL("Invalid multi-byte sequence in path `{0}'", path.ToAsciiString());
+                throw RubyExceptions.CreateEINVAL("Invalid multi-byte sequence in path `{0}'", path.ToAsciiString(
+                    _options.Compatibility == RubyCompatibility.Ruby18
+                ));
             }
         }
 
@@ -2202,7 +2391,7 @@ namespace IronRuby.Runtime {
                 // method_missing:
                 mainSingleton.SetMethodNoEvent(this, Symbols.MethodMissing, 
                     new RubyLibraryMethodInfo(new Delegate[] {
-                        new Func<RubyScope, BlockParam, object, SymbolId, object[], object>(RubyTopLevelScope.TopMethodMissing)
+                        new Func<RubyScope, BlockParam, object, RubySymbol, object[], object>(RubyTopLevelScope.TopMethodMissing)
                     }, RubyMemberFlags.Private, mainSingleton)
                 );
 
@@ -2572,7 +2761,7 @@ namespace IronRuby.Runtime {
             if (obj is IRubyDynamicMetaObjectProvider) {
                 return ArrayUtils.EmptyStrings;
             }
-#if !SILVERLIGHT
+#if !SILVERLIGHT // COM
             if (TypeUtils.IsComObject(obj)) {
                 return new List<string>(Microsoft.Scripting.ComInterop.ComBinder.GetDynamicMemberNames(obj));
             }
@@ -2637,7 +2826,7 @@ namespace IronRuby.Runtime {
                 );
             }
 
-            return site.Target(site, target, SymbolTable.StringToId(memberName));
+            return site.Target(site, target, EncodeIdentifier(memberName));
         }
 
         public bool RespondTo(object target, string/*!*/ methodName) {
@@ -2646,7 +2835,6 @@ namespace IronRuby.Runtime {
 
         internal void ReportTraceEvent(string/*!*/ operation, RubyScope/*!*/ scope, RubyModule/*!*/ module, string/*!*/ name, string fileName, int lineNumber) {
             if (_traceListener != null && !_traceListenerSuspended) {
-
                 try {
                     _traceListenerSuspended = true;
 
@@ -2654,7 +2842,7 @@ namespace IronRuby.Runtime {
                         MutableString.CreateAscii(operation),                                         // event
                         fileName != null ? scope.RubyContext.EncodePath(fileName) : null,             // file
                         ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                            // line
-                        SymbolTable.StringToId(name),                                                 // TODO: alias
+                        EncodeIdentifier(name),                                                       // TODO: alias
                         new Binding(scope),                                                           // binding
                         module.IsSingletonClass ? ((RubyClass)module).SingletonClassOf : module       // module
                     });

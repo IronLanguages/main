@@ -152,8 +152,8 @@ namespace IronRuby.StandardLibrary.Iconv {
                 throw new NotImplementedException();
 #else
                 _toEncoding.Reset();
-#endif
                 ResetByteOrderMark();
+#endif
             } else {
                 _isClosed = true;
             }

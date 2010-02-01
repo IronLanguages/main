@@ -17,6 +17,7 @@
  ***** END LICENSE BLOCK *****/
 
 using System;
+using System.Globalization;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
@@ -52,7 +53,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public string Value { get { return _value; } }
 
         public override string ToString() {
-            return string.Format("#<AnchorToken Value=\"{0}\">", Value);
+            return String.Format(CultureInfo.InvariantCulture, "#<AnchorToken Value=\"{0}\">", Value);
         }
     }
 
@@ -66,40 +67,24 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         public string Handle { get { return _handle; } }
         public string Suffix { get { return _suffix; } }
-
-        public override string ToString() {
-            return string.Format("#<TagToken Handle=\"{0}\" Suffix=\"{1}\">", Handle, Suffix);
-        }
     }
 
     public sealed class ScalarToken : Token {
         private readonly string _value;
-        private readonly bool _plain;
-        private readonly char _style;
+        private readonly ScalarQuotingStyle _style;
 
-        public ScalarToken(string value, bool plain) {
+        public ScalarToken(string value, ScalarQuotingStyle style) {
             _value = value;
-            _plain = plain;
-        }
-
-        public ScalarToken(string value, bool plain, char style) {
-            _value = value;
-            _plain = plain;
             _style = style;
         }
 
         public string Value { get { return _value; } }
-        public bool Plain { get { return _plain; } }
-        public char Style { get { return _style; } }
+        public ScalarQuotingStyle Style { get { return _style; } }
 
         public override string ToString() {
-            string value = Value.Replace("\r", "\\r").Replace("\n", "\\n");
-            if (value.Length > 35) {
-                value = value.Substring(0, 32) + "...";
-            }
-            return string.Format("#<ScalarToken Plain={0} Style='{1}' Value=\"{2}\">", Plain, Style, value);
+            return String.Format(CultureInfo.InvariantCulture, "#<ScalarToken Value=\"{0}\" Style=\"{1}\">", 
+                Value, Style);
         }
-
     }
 
     public sealed class DirectiveToken : Token {
@@ -116,14 +101,6 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         public string Name { get { return _name; } }
         public string[] Value { get { return _value; } }
-
-        public override string ToString() {
-            if (Value != null) {
-                return string.Format("#<DirectiveToken Name=\"{0}\" Value[0]=\"{1}\" Value[1]=\"{2}\">", Name, Value[0], Value[1]);
-            } else {
-                return string.Format("#<DirectiveToken Name=\"{0}\">", Name);
-            }
-        }
     }
 
     public sealed class BlockEndToken : Token {

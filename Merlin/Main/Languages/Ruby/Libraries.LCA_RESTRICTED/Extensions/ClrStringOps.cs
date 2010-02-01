@@ -220,7 +220,9 @@ namespace IronRuby.Builtins {
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Inspect(string/*!*/ self) {
             return MutableString.Create(
-                MutableString.AppendUnicodeRepresentation(new StringBuilder().Append('\''), self, false, false, '\'', -1).Append('\'').ToString(),
+                MutableString.AppendUnicodeRepresentation(
+                    new StringBuilder().Append('\''), self, MutableString.Escape.Special, '\'', -1
+                ).Append('\'').ToString(),
                 RubyEncoding.UTF8
             );
         }
@@ -228,7 +230,9 @@ namespace IronRuby.Builtins {
         [RubyMethod("dump", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Dump(string/*!*/ self) {
             return MutableString.Create(
-                MutableString.AppendUnicodeRepresentation(new StringBuilder().Append('\''), self, false, true, '\'', -1).Append('\'').ToString(), 
+                MutableString.AppendUnicodeRepresentation(
+                    new StringBuilder().Append('\''), self, MutableString.Escape.Special | MutableString.Escape.NonAscii, '\'', -1
+                ).Append('\'').ToString(), 
                 RubyEncoding.UTF8
             );
         }
@@ -392,17 +396,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_sym")]
         [RubyMethod("intern")]
-        public static SymbolId ToSymbol(string/*!*/ self) {
-            if (self.Length == 0) {
-                throw RubyExceptions.CreateArgumentError("interning empty string");
-            }
-
-            // Cannot convert a string that contains null to a symbol
+        public static RubySymbol/*!*/ ToSymbol(RubyContext/*!*/ context, string/*!*/ self) {
+            // Cannot convert a string that contains \0 to a symbol
             if (self.IndexOf('\0') >= 0) {
                 throw RubyExceptions.CreateArgumentError("symbol string may not contain '\0'");
             }
 
-            return SymbolTable.StringToId(self);
+            return context.CreateSymbol(self, RubyEncoding.UTF8);
         }
 
         #endregion
@@ -463,15 +463,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("method_missing", RubyMethodAttributes.PrivateInstance)]
         [RubyStackTraceHidden]
-        public static object MethodMissing(RubyScope/*!*/ scope, BlockParam block, string/*!*/ self, SymbolId symbol, [NotNull]params object[]/*!*/ args) {
-            string name = SymbolTable.IdToString(symbol);
-
-            if (name.EndsWith("=", StringComparison.Ordinal) || name.EndsWith("!", StringComparison.Ordinal)) {
+        public static object MethodMissing(RubyScope/*!*/ scope, BlockParam block, string/*!*/ self, [NotNull]RubySymbol/*!*/ name, [NotNull]params object[]/*!*/ args) {
+            if (name.EndsWith('=') || name.EndsWith('!')) {
                 throw RubyExceptions.CreateTypeError("Mutating method `{0}' called for an immutable string (System::String)", name);
             }
 
             // TODO: forward to MutableString until we implement the methods here:
-            return KernelOps.SendMessageOpt(scope, block, ToStr(self), name, args);
+            return KernelOps.SendMessageOpt(scope, block, ToStr(self), name.ToString(), args);
         }
 
         #endregion

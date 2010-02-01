@@ -207,7 +207,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        [RubyMethod("encoding")]
+        [RubyMethod("encoding", Compatibility = RubyCompatibility.Ruby19)]
         public static RubyEncoding/*!*/ GetEncoding(RubyRegex/*!*/ self) {
             return self.Encoding;
         }

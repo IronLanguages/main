@@ -259,7 +259,7 @@ internal sealed class ReflectionCacheGenerator : Generator {
         _output.WriteLine("switch (suffix) {");
         _output.Indent++;
 
-        foreach (string suffix in new[] { "N", "L", "M", "LM", "ML", "MM" }) {
+        foreach (string suffix in new[] { "N", "M", "LM", "ML", "MM" }) {
             _output.WriteLine("case \"{1}\": return {0}{1};", baseName, suffix);
         }
 

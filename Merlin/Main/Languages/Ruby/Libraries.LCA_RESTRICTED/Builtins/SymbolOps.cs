@@ -24,8 +24,9 @@ using System.Runtime.CompilerServices;
 
 namespace IronRuby.Builtins {
     using BinaryOpStorageWithScope = CallSiteStorage<Func<CallSite, RubyScope, object, object, object>>;
+    using System.Globalization;
 
-    [RubyClass("Symbol", Extends = typeof(SymbolId), Inherits = typeof(Object))]
+    [RubyClass("Symbol", Extends = typeof(RubySymbol), Inherits = typeof(Object))]
     [HideMethod("==")]
     public static class SymbolOps {
 
@@ -33,14 +34,16 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("id2name")]
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToString(SymbolId self) {
-            return MutableString.Create(SymbolTable.IdToString(self), RubyEncoding.Symbol);
+        public static MutableString/*!*/ ToString(RubySymbol/*!*/ self) {
+            return self.ToMutableString();
         }
 
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, SymbolId self) {
-            var str = SymbolTable.IdToString(self);
+        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, RubySymbol/*!*/ self) {
+            var str = self.ToString();
             bool allowMultiByteCharacters = context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19 || context.KCode != null;
+
+            var result = self.ToMutableString();
 
             // simple cases:
             if (
@@ -50,82 +53,92 @@ namespace IronRuby.Builtins {
                 Tokenizer.IsClassVariableName(str, allowMultiByteCharacters) ||
                 Tokenizer.IsGlobalVariableName(str, allowMultiByteCharacters)
             ) {
-                return MutableString.CreateMutable(1 + str.Length, RubyEncoding.Obsolete).Append(':').Append(str);
+                result.Insert(0, ':');
+            } else {
+                // TODO: this is neither efficient nor complete.
+                // Any string that parses as 'sym' should not be quoted.
+                switch (str) {
+                    case null:
+                        // Ruby doesn't allow empty symbols, we can get one from outside though:
+                        return MutableString.CreateAscii(":\"\"");
+
+                    case "|":
+                    case "^":
+                    case "&":
+                    case "<=>":
+                    case "==":
+                    case "===":
+                    case "=~":
+                    case ">":
+                    case ">=":
+                    case "<":
+                    case "<=":
+                    case "<<":
+                    case ">>":
+                    case "+":
+                    case "-":
+                    case "*":
+                    case "/":
+                    case "%":
+                    case "**":
+                    case "~":
+                    case "+@":
+                    case "-@":
+                    case "[]":
+                    case "[]=":
+                    case "`":
+
+                    case "$!":
+                    case "$@":
+                    case "$,":
+                    case "$;":
+                    case "$/":
+                    case "$\\":
+                    case "$*":
+                    case "$$":
+                    case "$?":
+                    case "$=":
+                    case "$:":
+                    case "$\"":
+                    case "$<":
+                    case "$>":
+                    case "$.":
+                    case "$~":
+                    case "$&":
+                    case "$`":
+                    case "$'":
+                    case "$+":
+                        result.Insert(0, ':');
+                        break;
+
+                    default:
+                        result.Insert(0, ":\"").Append('"');
+                        break;
+                }
             }
 
-            // TODO: this is neither efficient nor complete.
-            // Any string that parses as 'sym' should not be quoted.
-            switch (str) {
-                case null:
-                    // Ruby doesn't allow empty symbols, we can get one from outside though:
-                    return MutableString.CreateAscii(":\"\"");
-
-                case "|":
-                case "^":
-                case "&":
-                case "<=>":
-                case "==":
-                case "===":
-                case "=~":
-                case ">":
-                case ">=":
-                case "<":
-                case "<=":
-                case "<<":
-                case ">>":
-                case "+":
-                case "-":
-                case "*":
-                case "/":
-                case "%":
-                case "**":
-                case "~":
-                case "+@":
-                case "-@":
-                case "[]":
-                case "[]=":
-                case "`":
-
-                case "$!": 
-                case "$@": 
-                case "$,": 
-                case "$;": 
-                case "$/": 
-                case "$\\":
-                case "$*": 
-                case "$$": 
-                case "$?": 
-                case "$=": 
-                case "$:": 
-                case "$\"": 
-                case "$<": 
-                case "$>": 
-                case "$.": 
-                case "$~": 
-                case "$&":
-                case "$`":
-                case "$'":		
-                case "$+":
-                    return MutableString.CreateMutable(1 + str.Length, RubyEncoding.Obsolete).Append(':').Append(str);
+            if (context.RuntimeId != self.RuntimeId) {
+                result.Append(" @").Append(self.RuntimeId.ToString(CultureInfo.InvariantCulture));
             }
 
-            return MutableString.CreateMutable(3 + str.Length, RubyEncoding.Obsolete).Append(":\"").Append(str).Append('"');
+            return result;
         }
 
         [RubyMethod("to_i")]
         [RubyMethod("to_int")]
-        public static int ToInteger(SymbolId self) {
+        public static int ToInteger(RubySymbol/*!*/ self) {
             return self.Id;
         }
 
         [RubyMethod("to_sym")]
-        public static SymbolId ToSymbol(SymbolId self) {
+        [RubyMethod("intern", Compatibility = RubyCompatibility.Ruby19)]
+        public static RubySymbol/*!*/ ToSymbol(RubySymbol/*!*/ self) {
             return self;
         }
 
         [RubyMethod("to_clr_string")]
-        public static string ToClrString(SymbolId self) {
-            return SymbolTable.IdToString(self);
+        public static string/*!*/ ToClrString(RubySymbol/*!*/ self) {
+            return self.ToString();
         }
 
         #endregion
@@ -135,61 +148,76 @@ namespace IronRuby.Builtins {
         // => 
         // <=>
         // ==
-
+        // casecmp
+        
         #region =~, match
 
         [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
-        public static object Match(RubyScope/*!*/ scope, SymbolId self, [NotNull]RubyRegex/*!*/ regex) {
-            return MutableStringOps.Match(scope, ToString(self), regex);
+        public static object Match(RubyScope/*!*/ scope, RubySymbol/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+            return MutableStringOps.Match(scope, self.ToMutableString(), regex);
         }
 
         [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
-        public static object Match(ClrName/*!*/ self, SymbolId str) {
+        public static object Match(ClrName/*!*/ self, [NotNull]RubySymbol/*!*/ str) {
             throw RubyExceptions.CreateTypeError("type mismatch: Symbol given");
         }
 
         [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
-        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, SymbolId self, object obj) {
-            return MutableStringOps.Match(storage, scope, ToString(self), obj);
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, RubySymbol/*!*/ self, object obj) {
+            return MutableStringOps.Match(storage, scope, self.ToMutableString(), obj);
         }
 
         [RubyMethod("match", Compatibility = RubyCompatibility.Ruby19)]
-        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, SymbolId self, [NotNull]RubyRegex/*!*/ regex) {
-            return MutableStringOps.Match(storage, scope, ToString(self), regex);
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, RubySymbol/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+            return MutableStringOps.Match(storage, scope, self.ToMutableString(), regex);
         }
 
         [RubyMethod("match", Compatibility = RubyCompatibility.Ruby19)]
-        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, SymbolId self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
-            return MutableStringOps.Match(storage, scope, ToString(self), pattern);
+        public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, RubySymbol/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
+            return MutableStringOps.Match(storage, scope, self.ToMutableString(), pattern);
         }
 
         #endregion
 
         // []
-        // capitalize
-        // casecmp
-        // downcase
-        // empty?
-        // encoding
-        // intern
-        // length
-        // match
+        
+        // encoding aware
+        [RubyMethod("empty?", Compatibility = RubyCompatibility.Ruby19)]
+        public static bool IsEmpty(RubySymbol/*!*/ self) {
+            return self.IsEmpty;
+        }
+
+        // encoding aware
+        [RubyMethod("encoding", Compatibility = RubyCompatibility.Ruby19)]
+        public static RubyEncoding/*!*/ GetEncoding(RubySymbol/*!*/ self) {
+            return self.Encoding;
+        }
+
+        // encoding aware
+        [RubyMethod("size", Compatibility = RubyCompatibility.Ruby19)]
+        [RubyMethod("length", Compatibility = RubyCompatibility.Ruby19)]
+        public static int GetLength(RubySymbol/*!*/ self) {
+            return (self.Encoding.IsKCoding) ? self.GetByteCount() : self.GetCharCount();
+        }
+
         // next
-        // size
-        // slice
         // succ
-        // swapcase
+        // slice
+
         // to_proc
+
+        // swapcase
         // upcase
+        // capitalize
+        // downcase
 
         #endregion
 
         #region Public Singleton Methods
 
         [RubyMethod("all_symbols", RubyMethodAttributes.PublicSingleton)]
-        public static List<object>/*!*/ GetAllSymbols(object self) {
-            // TODO:
-            throw new NotImplementedError();
+        public static RubyArray/*!*/ GetAllSymbols(RubyClass/*!*/ self) {
+            return self.ImmediateClass.Context.GetAllSymbols();
         }
 
         #endregion

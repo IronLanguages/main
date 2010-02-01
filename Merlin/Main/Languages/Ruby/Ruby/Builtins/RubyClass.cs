@@ -161,7 +161,7 @@ namespace IronRuby.Builtins {
             _classInheritedCallbackSite.Target(_classInheritedCallbackSite, this, subClass);
         }
 
-        // object, SymbolId -> object
+        // object, symbol -> object
         private CallSite<Func<CallSite, object, object, object>> _singletonMethodAddedCallbackSite;
         private CallSite<Func<CallSite, object, object, object>> _singletonMethodRemovedCallbackSite;
         private CallSite<Func<CallSite, object, object, object>> _singletonMethodUndefinedCallbackSite;
@@ -249,7 +249,7 @@ namespace IronRuby.Builtins {
 
         public override Type/*!*/ GetUnderlyingSystemType() {
             if (_isSingletonClass) {
-                throw new InvalidOperationException("Singleton class doesn't have underlying system type.");
+                throw RubyExceptions.CreateTypeError("A singleton class doesn't have underlying system type.");
             }
 
             if (_underlyingSystemType == null) {

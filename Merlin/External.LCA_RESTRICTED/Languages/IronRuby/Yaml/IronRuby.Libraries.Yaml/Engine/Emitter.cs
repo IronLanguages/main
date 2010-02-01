@@ -25,10 +25,9 @@ using System.Text.RegularExpressions;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Yaml {
-
     public sealed class Emitter {
-        private readonly TextWriter _stream;
-        private readonly YamlOptions _options;
+        private readonly TextWriter/*!*/ _writer;
+        private readonly YamlOptions/*!*/ _options;
 
         private readonly Stack<EmitterState> _states = new Stack<EmitterState>();
         private EmitterState _state = EmitterState.STREAM_START;
@@ -37,38 +36,31 @@ namespace IronRuby.StandardLibrary.Yaml {
         private int _flowLevel;
         private readonly Stack<int> _indents = new Stack<int>();
         private int _indent = -1;
-        private bool _rootContext;
-        private bool _sequenceContext;
         private bool _mappingContext;
-        private bool _simpleKeyContext;
-
+        
         private int _line;
         private int _column;
         private bool _whitespace;
         private bool _indentation;
 
-        private bool canonical;
-        private int _bestIndent = 2;
-        private int _bestWidth = 80;
-
-        private char _bestLinebreak = '\n';
+        private readonly bool _canonical;
+        private readonly int _bestIndent = 2;
+        private readonly int _bestWidth = 80;
 
         private readonly Dictionary<string, string> _tagPrefixes = new Dictionary<string, string>();
 
         private string _preparedAnchor;
         private string _preparedTag;
 
-        private ScalarAnalysis _analysis;
-        private char _style = '\0';
-
         private bool _isVersion10;
 
-        public Emitter(TextWriter/*!*/ stream, YamlOptions opts) {
-            ContractUtils.RequiresNotNull(stream, "stream");
+        public Emitter(TextWriter/*!*/ writer, YamlOptions/*!*/ opts) {
+            ContractUtils.RequiresNotNull(writer, "writer");
+            ContractUtils.RequiresNotNull(opts, "opts");
 
-            _stream = stream;
+            _writer = writer;
             _options = opts;
-            canonical = _options.Canonical;
+            _canonical = _options.Canonical;
             int propIndent = _options.Indent;
             if (propIndent>=2 && propIndent<10) {
                 _bestIndent = propIndent;
@@ -79,65 +71,96 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
+        public TextWriter/*!*/ Writer {
+            get { return _writer; }
+        }
+
+        public int Level {
+            get { return _flowLevel; }
+        }
+
         public void Emit(YamlEvent/*!*/ @event) {
             _events.Enqueue(@event);
             while (!needMoreEvents()) {
                 _event = _events.Dequeue();
                 switch (_state) {
                     case EmitterState.STREAM_START:
-                        expectStreamStart(); 
+                        EmitStreamStart(); 
                         break;
                     case EmitterState.FIRST_DOCUMENT_START: 
-                        expectDocumentStart(true); 
+                        EmitDocumentStart(true); 
                         break;
                     case EmitterState.DOCUMENT_ROOT: 
-                        expectDocumentRoot(); 
+                        EmitDocumentRoot(); 
                         break;
                     case EmitterState.NOTHING: 
-                        expectNothing(); 
+                        EmitNothing(); 
                         break;
                     case EmitterState.DOCUMENT_START: 
-                        expectDocumentStart(false); 
+                        EmitDocumentStart(false); 
                         break;
                     case EmitterState.DOCUMENT_END: 
-                        expectDocumentEnd(); 
+                        EmitDocumentEnd(); 
                         break;
+
                     case EmitterState.FIRST_FLOW_SEQUENCE_ITEM: 
-                        expectFlowSequenceItem(true);
+                        EmitFlowSequenceItem(true);
                         break;
+
                     case EmitterState.FLOW_SEQUENCE_ITEM: 
-                        expectFlowSequenceItem(false);
+                        EmitFlowSequenceItem(false);
                         break;
+
                     case EmitterState.FIRST_FLOW_MAPPING_KEY: 
-                        expectFlowMappingKey(true); 
+                        EmitFlowMappingKey(true); 
                         break;
+
                     case EmitterState.FLOW_MAPPING_SIMPLE_VALUE: 
-                        expectFlowMappingSimpleValue();
+                        EmitFlowMappingSimpleValue();
                         break;
+
                     case EmitterState.FLOW_MAPPING_VALUE: 
-                        expectFlowMappingValue();
+                        EmitFlowMappingValue();
                         break;
+
                     case EmitterState.FLOW_MAPPING_KEY: 
-                        expectFlowMappingKey(false);
+                        EmitFlowMappingKey(false);
                         break;
-                    case EmitterState.BLOCK_SEQUENCE_ITEM: 
-                        expectBlockSequenceItem(false); 
+
+                    case EmitterState.BLOCK_SEQUENCE_ITEM:
+                        if (_event is SequenceEndEvent) {
+                            _indent = _indents.Pop();
+                            _state = _states.Pop();
+                        } else {
+                            EmitBlockSequenceItem(); 
+                        }
                         break;
+
+                    case EmitterState.FIRST_BLOCK_SEQUENCE_ITEM:
+                        EmitBlockSequenceItem();
+                        break;
+
+                    case EmitterState.BLOCK_MAPPING_KEY:
+                        if (_event is MappingEndEvent) {
+                            _indent = _indents.Pop();
+                            _state = _states.Pop();
+                        } else {
+                            EmitBlockMappingKey();
+                        }
+                        break;
+
                     case EmitterState.FIRST_BLOCK_MAPPING_KEY:
-                        expectBlockMappingKey(true);
+                        EmitBlockMappingKey();
                         break;
+
                     case EmitterState.BLOCK_MAPPING_SIMPLE_VALUE: 
-                        expectBlockMappingSimpleValue();
+                        EmitBlockMappingSimpleValue();
                         break;
+
                     case EmitterState.BLOCK_MAPPING_VALUE: 
-                        expectBlockMappingValue();
+                        EmitBlockMappingValue();
                         break;
-                    case EmitterState.BLOCK_MAPPING_KEY: 
-                        expectBlockMappingKey(false); 
-                        break;
-                    case EmitterState.FIRST_BLOCK_SEQUENCE_ITEM: 
-                        expectBlockSequenceItem(true); 
-                        break;
+
                     default:
                         Debug.Assert(false, "unreachable");
                         throw new InvalidOperationException("unreachable");
@@ -166,77 +189,54 @@ namespace IronRuby.StandardLibrary.Yaml {
             BLOCK_MAPPING_KEY,
             FIRST_BLOCK_SEQUENCE_ITEM,
         }
-
-        private class ScalarAnalysis {
-            internal string Scalar;
-            internal bool Empty;
-            internal bool Multiline;
-            internal bool AllowFlowPlain;
-            internal bool AllowBlockPlain;
-            internal bool AllowSingleQuoted;
-            internal bool AllowDoubleQuoted;
-            internal bool AllowBlock;
-            internal bool SpecialCharacters;
-            internal ScalarAnalysis(string scalar, bool empty, bool multiline, bool allowFlowPlain, bool allowBlockPlain, bool allowSingleQuoted, bool allowDoubleQuoted, bool allowBlock, bool specialCharacters) {
-                Scalar = scalar;
-                Empty = empty;
-                Multiline = multiline;
-                AllowFlowPlain = allowFlowPlain;
-                AllowBlockPlain = allowBlockPlain;
-                AllowSingleQuoted = allowSingleQuoted;
-                AllowDoubleQuoted = allowDoubleQuoted;
-                AllowBlock = allowBlock;
-                SpecialCharacters = specialCharacters;
-            }
-        }
         
-        void writeStreamStart() {
+        private void WriteStreamStart() {
         }
 
-        void writeStreamEnd() {
-            _stream.Flush();
+        private void WriteStreamEnd() {
+            _writer.Flush();
         }
-        
-        void writeIndicator(string indicator, bool needWhitespace, bool whitespace, bool indentation) {
+
+        private void WriteIndicator(string indicator, bool needWhitespace, bool whitespace, bool indentation) {
             if (!_whitespace && needWhitespace) {
                 indicator = " " + indicator;
             }
             _whitespace = whitespace;
             _indentation = _indentation && indentation;
             _column += indicator.Length;
-            _stream.Write(indicator);
+            _writer.Write(indicator);
         }
 
-        void writeIndent() {
+        private void WriteIndent() {
             int indent = 0;
             if (_indent != -1) {
                 indent = _indent;
             }
 
             if (!_indentation || _column > indent || (_column == indent && !_whitespace)) {
-                writeLineBreak();
+                WriteLineBreak();
             }
 
             if (_column < indent) {
                 _whitespace = true;
                 string data = new string(' ', indent - _column);
                 _column = indent;
-                _stream.Write(data);
+                _writer.Write(data);
             }
         }
 
-        void writeVersionDirective(string version_text) {
-            _stream.Write("%Yaml " + version_text);
-            writeLineBreak();
-        }
-        
-        void writeTagDirective(string handle, string prefix) {
-            _stream.Write("%TAG " + handle + " " + prefix);
-            writeLineBreak();
+        private void WriteVersionDirective(string version_text) {
+            _writer.Write("%Yaml " + version_text);
+            WriteLineBreak();
         }
 
-        void writeDoubleQuoted(string text, bool split) {
-            writeIndicator("\"",true,false,false);
+        private void WriteTagDirective(string handle, string prefix) {
+            _writer.Write("%TAG " + handle + " " + prefix);
+            WriteLineBreak();
+        }
+
+        private void WriteDoubleQuoted(string text, bool split) {
+            WriteIndicator("\"", true, false, false);
             int start = 0;
             int ending = 0;
 
@@ -246,11 +246,11 @@ namespace IronRuby.StandardLibrary.Yaml {
                 if (ending < text.Length) {
                     ch = text[ending];
                 }
-                if (ch==0 || "\"\\".IndexOf(ch) != -1 || !('\u0020' <= ch && ch <= '\u007E')) {
+                if (ch == 0 || "\"\\".IndexOf(ch) != -1 || !('\u0020' <= ch && ch <= '\u007E')) {
                     if (start < ending) {
-                        data = text.Substring(start,ending-start);
-                        _column+=data.Length;
-                        _stream.Write(data);
+                        data = text.Substring(start, ending - start);
+                        _column += data.Length;
+                        _writer.Write(data);
                         start = ending;
                     }
                     if (ch != 0) {
@@ -265,106 +265,100 @@ namespace IronRuby.StandardLibrary.Yaml {
                             data = "\\u" + str;
                         }
                         _column += data.Length;
-                        _stream.Write(data);
-                        start = ending+1;
+                        _writer.Write(data);
+                        start = ending + 1;
                     }
                 }
 
-                if ((0 < ending && ending < (text.Length-1)) && (ch == ' ' || start >= ending) && (_column+(ending-start)) > _bestWidth && split) {
+                if ((0 < ending && ending < (text.Length - 1)) && (ch == ' ' || start >= ending) && (_column + (ending - start)) > _bestWidth && split) {
                     if (start < ending) {
-                        data = text.Substring(start, ending-start) + " \\";
-                        start = ending+1;
+                        data = text.Substring(start, ending - start) + " \\";
+                        start = ending + 1;
                     } else {
                         data = "\\";
                     }
 
                     _column += data.Length;
-                    _stream.Write(data);
-                    writeIndent();
+                    _writer.Write(data);
+                    WriteIndent();
                     _whitespace = false;
                     _indentation = false;
 
-                    if (start < (text.Length+1) && text[start] == ' ') {
-                        _stream.Write('\\');
+                    if (start < (text.Length + 1) && text[start] == ' ') {
+                        _writer.Write('\\');
                     }
                 }
                 ending += 1;
             }
 
-            writeIndicator("\"",false,false,false);
+            WriteIndicator("\"", false, false, false);
         }
 
-        void writeSingleQuoted(string text, bool split) {
-            writeIndicator("'",true,false,false);
+        private void WriteSingleQuoted(string text, bool split) {
+            WriteIndicator("'", true, false, false);
             bool spaces = false;
             bool breaks = false;
-            int start=0,ending=0;
-            char ceh = '\0';
+            int start = 0, ending = 0;
+            char c = '\0';
 
             string data;
             while (ending <= text.Length) {
-                ceh = '\0';
+                c = '\0';
                 if (ending < text.Length) {
-                    ceh = text[ending];
+                    c = text[ending];
                 }
                 if (spaces) {
-                    if (ceh == 0 || ceh != 32) {
-                        if (start+1 == ending && _column > _bestWidth && split && start != 0 && ending != text.Length) {
-                            writeIndent();
+                    if (c == 0 || c != 32) {
+                        if (start + 1 == ending && _column > _bestWidth && split && start != 0 && ending != text.Length) {
+                            WriteIndent();
                         } else {
-                            data = text.Substring(start,ending-start);
+                            data = text.Substring(start, ending - start);
                             _column += data.Length;
-                            _stream.Write(data);
+                            _writer.Write(data);
                         }
                         start = ending;
                     }
                 } else if (breaks) {
-                    if (ceh == 0 || !('\n' == ceh)) {
-                        data = text.Substring(start,ending-start);
-                        for(int i=0,j=data.Length;i<j;i++) {
-                            char cha = data[i];
-                            if ('\n' == cha) {
-                                writeLineBreak();
-                            } else {
-                                writeLineBreak(cha);
-                            }
+                    if (c == 0 || c != '\n') {
+                        // q sequence of eolns followed by non-eoln:
+                        for (int i = start; i < ending; i++) {
+                            WriteLineBreak();
                         }
-                        writeIndent();
+                        WriteIndent();
                         start = ending;
                     }
                 } else {
-                    if (ceh == 0 || !('\n' == ceh)) {
+                    if (c == 0 || c != '\n') {
                         if (start < ending) {
-                            data = text.Substring(start,ending-start);
+                            data = text.Substring(start, ending - start);
                             _column += data.Length;
-                            _stream.Write(data);
+                            _writer.Write(data);
                             start = ending;
                         }
                     }
                 }
-                if (ceh == '\'') {
+                if (c == '\'') {
                     data = "''";
                     _column += 2;
-                    _stream.Write(data);
+                    _writer.Write(data);
                     start = ending + 1;
                 }
-                if (ceh != 0) {
-                    spaces = ceh == ' ';
-                    breaks = ceh == '\n';
+                if (c != 0) {
+                    spaces = c == ' ';
+                    breaks = c == '\n';
                 }
                 ending++;
             }
-            writeIndicator("'",false,false,false);
+            WriteIndicator("'", false, false, false);
         }
 
-        void writeFolded(string text) {
-            string chomp = determineChomp(text);
-            writeIndicator(">" + chomp, true, false, false);
-            writeIndent();
+        private void WriteFolded(string/*!*/ text) {
+            WriteIndicator(">" + DetermineChomp(text), true, false, false);
+            WriteIndent();
             bool leadingSpace = false;
             bool spaces = false;
             bool breaks = false;
-            int start=0,ending=0;
+            int start = 0, ending = 0;
 
             string data;
             while (ending <= text.Length) {
@@ -375,41 +369,38 @@ namespace IronRuby.StandardLibrary.Yaml {
                 if (breaks) {
                     if (ceh == 0 || !('\n' == ceh)) {
                         if (!leadingSpace && ceh != 0 && ceh != ' ' && text[start] == '\n') {
-                            writeLineBreak();
+                            WriteLineBreak();
                         }
                         leadingSpace = ceh == ' ';
-                        data = text.Substring(start,ending-start);
-                        for(int i=0,j=data.Length;i<j;i++) {
-                            char cha = data[i];
-                            if ('\n' == cha) {
-                                writeLineBreak();
-                            } else {
-                                writeLineBreak(cha);
-                            }
+
+                        // q sequence of eolns followed by non-eoln:
+                        for (int i = start; i < ending; i++) {
+                            WriteLineBreak();
                         }
+
                         if (ceh != 0) {
-                            writeIndent();
+                            WriteIndent();
                         }
                         start = ending;
                     }
                 } else if (spaces) {
                     if (ceh != ' ') {
-                        if (start+1 == ending && _column > _bestWidth) {
-                            writeIndent();
+                        if (start + 1 == ending && _column > _bestWidth) {
+                            WriteIndent();
                         } else {
-                            data = text.Substring(start,ending-start);
+                            data = text.Substring(start, ending - start);
                             _column += data.Length;
-                            _stream.Write(data);
+                            _writer.Write(data);
                         }
                         start = ending;
                     }
                 } else {
                     if (ceh == 0 || ' ' == ceh || '\n' == ceh) {
-                        data = text.Substring(start,ending-start);
-                        _stream.Write(data);
+                        data = text.Substring(start, ending - start);
+                        _writer.Write(data);
                         if (ceh == 0) {
-                            writeLineBreak();
-                        } 
+                            WriteLineBreak();
+                        }
                         start = ending;
                     }
                 }
@@ -421,127 +412,118 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        void writeLiteral(string text) {
-            string chomp = determineChomp(text);
-            writeIndicator("|" + chomp, true, false, false);
-            writeIndent();
+        private void WriteLiteral(string/*!*/ text, bool indent) {
+            string chomp = DetermineChomp(text);
+            WriteIndicator("|" + chomp, true, false, false);
+            increaseIndent(false, false);
+            WriteIndent();
             bool breaks = false;
-            int start=0,ending=0;
-            string data;
-            while(ending <= text.Length) {
-                char ceh = '\0';
+            int start = 0, ending = 0;
+            while (ending <= text.Length) {
+                char c = '\0';
                 if (ending < text.Length) {
-                    ceh = text[ending];
+                    c = text[ending];
                 }
                 if (breaks) {
-                    if (ceh == 0 || !('\n' == ceh)) {
-                        data = text.Substring(start,ending-start);
-                        for(int i=0,j=data.Length;i<j;i++) {
-                            char cha = data[i];
-                            if ('\n' == cha) {
-                                writeLineBreak();
-                            } else {
-                                writeLineBreak(cha);
-                            }
+                    if (c == 0 || c != '\n') {
+                        // q sequence of eolns followed by non-eoln:
+                        for (int i = start; i < ending; i++) {
+                            WriteLineBreak();
                         }
-                        if (ceh != 0) {
-                            writeIndent();
+                        if (c != 0) {
+                            WriteIndent();
+                        } else if (chomp.Length == 0) {
+                            WriteLineBreak();
                         }
                         start = ending;
                     }
-                } else {
-                    if (ceh == 0 || '\n' == ceh) {
-                        data = text.Substring(start,ending-start);
-                        _stream.Write(data);
-                        if (ceh == 0) {
-                            writeLineBreak();
-                        }
-                        start = ending;
+                } else if (c == 0 || c == '\n') {
+                    // non-empty line:
+                    _writer.Write(text.Substring(start, ending - start));
+                    if (c == 0) {
+                        WriteLineBreak();
                     }
+                    start = ending;
                 }
-                if (ceh != 0) {
-                    breaks = '\n' == ceh;
+
+                if (c != 0) {
+                    breaks = c == '\n';
                 }
                 ending++;
             }
+            _indent = _indents.Pop();
         }
 
-        void writePlain(string text, bool split) {
-            if (text == null || text.Length == 0) {
+        private void WritePlain(string/*!*/ text, bool split) {
+            if (String.IsNullOrEmpty(text)) {
                 return;
             }
+
             if (!_whitespace) {
                 _column += 1;
-                _stream.Write(' ');
+                _writer.Write(' ');
             }
             _whitespace = false;
             _indentation = false;
-            bool spaces=false, breaks = false;
-            int start=0,ending=0;
+            bool spaces = false, breaks = false;
+            int start = 0, ending = 0;
             string data;
             while (ending <= text.Length) {
-                char ceh = '\0';
+                char c = '\0';
                 if (ending < text.Length) {
-                    ceh = text[ending];
+                    c = text[ending];
                 }
                 if (spaces) {
-                    if (ceh != ' ') {
-                        if (start+1 == ending && _column > _bestWidth && split) {
-                            writeIndent();
+                    if (c != ' ') {
+                        if (start + 1 == ending && _column > _bestWidth && split) {
+                            WriteIndent();
                             _whitespace = false;
                             _indentation = false;
                         } else {
-                            data = text.Substring(start, ending-start);
+                            data = text.Substring(start, ending - start);
                             _column += data.Length;
-                            _stream.Write(data);
+                            _writer.Write(data);
                         }
                         start = ending;
                     }
                 } else if (breaks) {
-                    if (ceh != '\n') {
+                    if (c != '\n') {
                         if (text[start] == '\n') {
-                            writeLineBreak();
+                            WriteLineBreak();
                         }
-                        data = text.Substring(start, ending-start);
-                        for(int i=0,j=data.Length;i<j;i++) {
-                            char cha = data[i];
-                            if ('\n' == cha) {
-                                writeLineBreak();
-                            } else {
-                                writeLineBreak(cha);
-                            }
+
+                        // q sequence of eolns followed by non-eoln:
+                        for (int i = start; i < ending; i++) {
+                            WriteLineBreak();
                         }
-                        writeIndent();
+
+                        WriteIndent();
                         _whitespace = false;
                         _indentation = false;
                         start = ending;
                     }
                 } else {
-                    if (ceh == 0 || ' ' == ceh || '\n' == ceh) {
-                        data = text.Substring(start, ending-start);
+                    if (c == 0 || ' ' == c || '\n' == c) {
+                        data = text.Substring(start, ending - start);
                         _column += data.Length;
-                        _stream.Write(data);
+                        _writer.Write(data);
                         start = ending;
                     }
                 }
-                if (ceh != 0) {
-                    spaces = ceh == ' ';
-                    breaks = ceh == '\n';
+                if (c != 0) {
+                    spaces = c == ' ';
+                    breaks = c == '\n';
                 }
                 ending++;
             }
         }
 
-        void writeLineBreak() {
-            writeLineBreak(_bestLinebreak);
-        }
-
-        void writeLineBreak(char data) {
+        private void WriteLineBreak() {
             _whitespace = true;
             _indentation = true;
             _line++;
             _column = 0;
-            _stream.Write(data);
+            _writer.Write('\n');
         }
 
         static string prepareVersion(Version version) {
@@ -581,6 +563,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private static Regex ANCHOR_FORMAT = new Regex("^[-\\w]*$");
+
         static string prepareAnchor(string anchor) {
             if (string.IsNullOrEmpty(anchor)) {
                 throw new EmitterException("anchor must not be empty");
@@ -591,59 +574,48 @@ namespace IronRuby.StandardLibrary.Yaml {
             return anchor;
         }
 
-        string prepareTag(string tag) {
-            if (string.IsNullOrEmpty(tag)) {
-                throw new EmitterException("tag must not be empty");
-            }
-            if (tag == "!") {
-                return tag;
-            }
+        private string PrepareTag(string tag) {
             string handle = null;
             string suffix = tag;
             foreach (string prefix in _tagPrefixes.Keys) {
-                if ((prefix == "!" || prefix.Length < tag.Length) && Regex.IsMatch(tag, "^" + prefix + ".+$")) {
+                if (prefix.Length < tag.Length && tag.StartsWith(prefix, StringComparison.Ordinal)) {
                     handle = _tagPrefixes[prefix];
                     suffix = tag.Substring(prefix.Length);
                 }
             }
+
+            // use short form if applicable ("tag:ruby.yaml.org,2002:foobar" -> "ruby/foobar")
             if (handle == null) {
-                if (tag.StartsWith("tag:") && tag.IndexOf(':', 4) != -1) {
-                    int doti = tag.IndexOf('.',4);
-                    string first = tag.Substring(4,doti-4);
-                    string rest = tag.Substring(tag.IndexOf(':', 4)+1);
+                int colonIdx;
+                if (tag.StartsWith("tag:", StringComparison.Ordinal) && (colonIdx = tag.IndexOf(':', 4)) != -1) {
+                    string first = tag.Substring(4, tag.IndexOf('.', 4) - 4);
+                    string rest = tag.Substring(colonIdx + 1);
                     handle = "!" + first + "/";
                     suffix = rest;
                 }
             }
 
-            StringBuilder chunks = new StringBuilder();
-            int start=0,ending=0;
-            while(ending < suffix.Length) {
-                ending++;
-            }
-            if (start < ending) {
-                chunks.Append(suffix.Substring(start,ending-start));
-            }
-            string suffixText = chunks.ToString();
-            if (tag[0] == '!' && _isVersion10) {
+            // e.g. "!ruby/exception:IOError"
+            if (tag.Length == 0 || tag[0] == '!' && _isVersion10) {
                 return tag;
             }
+
             if (handle != null) {
-                return handle + suffixText;
+                return handle + suffix;
             } else {
-                return "!<" + suffixText + ">";
+                return "!<" + suffix + ">";
             }
         }
 
         private static Regex DOC_INDIC = new Regex("^(---|\\.\\.\\.)", RegexOptions.Compiled);
-        private static Regex FIRST_SPACE = new Regex("(^|\n) ", RegexOptions.Compiled);
         private static string NULL_BL_T_LINEBR = "\0 \t\r\n";
-        private static string SPECIAL_INDIC = "#,[]{}#&*!|>'\"%@`";
+        private static string SPECIAL_INDIC = "#,[]{}#&*!|>'\"%@";
         private static string FLOW_INDIC = ",?[]{}";
 
-        static ScalarAnalysis analyzeScalar(string scalar) {
+        internal static ScalarProperties AnalyzeScalar(string scalar) {
             if (scalar == null || scalar.Length == 0) {
-                return new ScalarAnalysis(scalar,true,false,false,true,true,true,false,false);
+                return ScalarProperties.Empty | ScalarProperties.AllowBlockPlain
+                    | ScalarProperties.AllowSingleQuoted | ScalarProperties.AllowDoubleQuoted;
             }
 
             bool blockIndicators = false;
@@ -710,10 +682,11 @@ namespace IronRuby.StandardLibrary.Yaml {
                 if (ceh == '\n') {
                     lineBreaks = true;
                 }
-                if (!(ceh == '\n' || ('\u0020' <= ceh && ceh <= '\u007E'))) {
-                    specialCharacters = true;
 
+                if (ceh != '\n' && (ceh < 0x20 || ceh > 0x7e)) {
+                    specialCharacters = true;
                 }
+
                 if (' ' == ceh || '\n' == ceh) {
                     if (spaces && breaks) {
                         if (ceh != ' ') {
@@ -819,19 +792,41 @@ namespace IronRuby.StandardLibrary.Yaml {
                 allowBlockPlain = false;
             }
 
-            return new ScalarAnalysis(scalar,false,lineBreaks,allowFlowPlain,allowBlockPlain,allowSingleQuoted,allowDoubleQuoted,allowBlock,specialCharacters);
+            return
+                (lineBreaks ? ScalarProperties.Multiline : 0) |
+                (allowFlowPlain ? ScalarProperties.AllowFlowPlain : 0) |
+                (allowBlockPlain ? ScalarProperties.AllowBlockPlain : 0) |
+                (allowSingleQuoted ? ScalarProperties.AllowSingleQuoted : 0) |
+                (allowDoubleQuoted ? ScalarProperties.AllowDoubleQuoted : 0) |
+                (allowBlock ? ScalarProperties.AllowBlock : 0) |
+                (specialCharacters ? ScalarProperties.SpecialCharacters : 0);
         }
 
-        static string determineChomp(string text) {
-            char ceh = ' ';
-            char ceh2 = ' ';
+        /// <summary>
+        /// Chomping controls how final line breaks and trailing empty lines are interpreted.
+        /// 1) Clip ("")
+        ///    The final line break is preserved in the scalar’s content. Any trailing empty lines are excluded from the scalar’s content. 
+        /// 2) Strip ("-")
+        ///    The final line break and any trailing empty lines are excluded from the scalar’s content. 
+        /// 3) Keep ("+")
+        ///    The final line break and any trailing empty lines are considered to be part of the scalar’s content. 
+        ///    These additional lines are not subject to folding. 
+        /// </summary>
+        private static string DetermineChomp(string/*!*/ text) {
+            char last = ' ';
+            char secondLast = ' ';
             if (text.Length > 0) {
-                ceh = text[text.Length-1];
+                last = text[text.Length - 1];
                 if (text.Length > 1) {
-                    ceh2 = text[text.Length-2];
+                    secondLast = text[text.Length - 2];
                 }
             }
-            return (ceh == '\n') ? ((ceh2 == '\n') ? "+" : "") : "-";
+            
+            // Ends with 
+            //   0 eolns => use "-" to remove any trailing eolns
+            //   1 eolns => use "" to preserve a single trailing eoln
+            // >=2 eolns => use "+" to preserve all trailing eolns
+            return (last != '\n') ? "-" : (secondLast != '\n') ? "" : "+";
         }
 
         #region helper methods
@@ -882,25 +877,25 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        private void expectStreamStart() {
+        private void EmitStreamStart() {
             if (_event is StreamStartEvent) {
-                writeStreamStart();
+                WriteStreamStart();
                 _state = EmitterState.FIRST_DOCUMENT_START;
             } else {
-                throw new EmitterException("expected StreamStartEvent, but got " + _event);
+                throw new EmitterException("Emited StreamStartEvent, but got " + _event);
             }
         }
 
-        private void expectNothing() {
-            throw new EmitterException("expecting nothing, but got " + _event);
+        private void EmitNothing() {
+            throw new EmitterException("Emiting nothing, but got " + _event);
         }
 
-        private void expectDocumentStart(bool first) {
+        private void EmitDocumentStart(bool first) {
             if (_event is DocumentStartEvent) {
                 DocumentStartEvent ev = (DocumentStartEvent)_event;
                 if (first) {
                     if (null != ev.Version) {
-                        writeVersionDirective(prepareVersion(ev.Version));
+                        WriteVersionDirective(prepareVersion(ev.Version));
                     }
 
                     if ((null != ev.Version && ev.Version.Equals(new Version(1, 0))) || _options.Version.Equals(new Version(1, 0))) {
@@ -920,221 +915,206 @@ namespace IronRuby.StandardLibrary.Yaml {
                             _tagPrefixes.Add(prefix, handle);
                             string handleText = prepareTagHandle(handle);
                             string prefixText = prepareTagPrefix(prefix);
-                            writeTagDirective(handleText, prefixText);
+                            WriteTagDirective(handleText, prefixText);
                         }
                     }
                 }
 
-                bool @implicit = first && !ev.Explicit && !canonical && ev.Version == null && ev.Tags == null && !checkEmptyDocument();
+                bool @implicit = first && !ev.Explicit && !_canonical && ev.Version == null && ev.Tags == null && !checkEmptyDocument();
                 if (!@implicit) {
                     if (!first) {
-                        writeIndent();
+                        WriteIndent();
                     }
-                    writeIndicator("--- ", !first, true, false);
-                    if (canonical) {
-                        writeIndent();
+                    WriteIndicator("--- ", !first, true, false);
+                    if (_canonical) {
+                        WriteIndent();
                     }
                 }
                 _state = EmitterState.DOCUMENT_ROOT;
             } else if (_event is StreamEndEvent) {
-                writeStreamEnd();
+                WriteStreamEnd();
                 _state = EmitterState.NOTHING;
             } else {
-                throw new EmitterException("expected DocumentStartEvent, but got " + _event);
+                throw new EmitterException("Emited DocumentStartEvent, but got " + _event);
             }
         }
 
-        private void expectDocumentRoot() {
+        private void EmitDocumentRoot() {
             _states.Push(EmitterState.DOCUMENT_END);
-            expectNode(true, false, false, false);
+            EmitNode(true, false, false, false);
         }
 
-        private void expectDocumentEnd() {
+        private void EmitDocumentEnd() {
             if (_event is DocumentEndEvent) {
-                writeIndent();
+                WriteIndent();
                 if (((DocumentEndEvent)_event).Explicit) {
-                    writeIndicator("...", true, false, false);
-                    writeIndent();
+                    WriteIndicator("...", true, false, false);
+                    WriteIndent();
                 }
-                _stream.Flush();
+                _writer.Flush();
                 _state = EmitterState.DOCUMENT_START;
             } else {
-                throw new EmitterException("expected DocumentEndEvent, but got " + _event);
+                throw new EmitterException("Emited DocumentEndEvent, but got " + _event);
             }
         }
 
-        private void expectFlowSequenceItem(bool first) {
+        private void EmitFlowSequenceItem(bool first) {
             if (_event is SequenceEndEvent) {
                 _indent = _indents.Pop();
                 _flowLevel--;
-                if (canonical && !first) {
-                    writeIndicator(",", false, false, false);
-                    writeIndent();
+                if (_canonical && !first) {
+                    WriteIndicator(",", false, false, false);
+                    WriteIndent();
                 }
-                writeIndicator("]", false, false, false);
+                WriteIndicator("]", false, false, false);
                 _state = _states.Pop();
             } else {
                 if (!first) {
-                    writeIndicator(",", false, false, false);
+                    WriteIndicator(",", false, false, false);
                 }
-                if (canonical || _column > _bestWidth) {
-                    writeIndent();
+                if (_canonical || _column > _bestWidth) {
+                    WriteIndent();
                 }
                 _states.Push(EmitterState.FLOW_SEQUENCE_ITEM);
-                expectNode(false, true, false, false);
+                EmitNode(false, true, false, false);
             }
         }
 
-        private void expectFlowMappingSimpleValue() {
-            writeIndicator(": ", false, true, false);
+        private void EmitFlowMappingSimpleValue() {
+            WriteIndicator(": ", false, true, false);
             _states.Push(EmitterState.FLOW_MAPPING_KEY);
-            expectNode(false, false, true, false);
+            EmitNode(false, false, true, false);
         }
 
-        private void expectFlowMappingValue() {
-            if (canonical || _column > _bestWidth) {
-                writeIndent();
+        private void EmitFlowMappingValue() {
+            if (_canonical || _column > _bestWidth) {
+                WriteIndent();
             }
-            writeIndicator(": ", false, true, false);
+            WriteIndicator(": ", false, true, false);
             _states.Push(EmitterState.FLOW_MAPPING_KEY);
-            expectNode(false, false, true, false);
+            EmitNode(false, false, true, false);
         }
 
-        private void expectFlowMappingKey(bool first) {
+        private void EmitFlowMappingKey(bool first) {
             if (_event is MappingEndEvent) {
                 _indent = _indents.Pop();
                 _flowLevel--;
-                if (canonical && !first) {
-                    writeIndicator(",", false, false, false);
-                    writeIndent();
+                if (_canonical && !first) {
+                    WriteIndicator(",", false, false, false);
+                    WriteIndent();
                 }
-                writeIndicator("}", false, false, false);
+                WriteIndicator("}", false, false, false);
                 _state = _states.Pop();
             } else {
                 if (!first) {
-                    writeIndicator(",", false, false, false);
+                    WriteIndicator(",", false, false, false);
                 }
-                if (canonical || _column > _bestWidth) {
-                    writeIndent();
+                if (_canonical || _column > _bestWidth) {
+                    WriteIndent();
                 }
-                if (!canonical && checkSimpleKey()) {
+                if (!_canonical && CheckSimpleKey()) {
                     _states.Push(EmitterState.FLOW_MAPPING_SIMPLE_VALUE);
-                    expectNode(false, false, true, true);
+                    EmitNode(false, false, true, true);
                 } else {
-                    writeIndicator("?", true, false, false);
+                    WriteIndicator("?", true, false, false);
                     _states.Push(EmitterState.FLOW_MAPPING_VALUE);
-                    expectNode(false, false, true, false);
+                    EmitNode(false, false, true, false);
                 }
             }
         }
 
-        private void expectBlockSequenceItem(bool first) {
-            if (!first && _event is SequenceEndEvent) {
-                _indent = _indents.Pop();
-                _state = _states.Pop();
+        private void EmitBlockSequenceItem() {
+            WriteIndent();
+            WriteIndicator("-", true, false, true);
+            _states.Push(EmitterState.BLOCK_SEQUENCE_ITEM);
+            EmitNode(false, true, false, false);            
+        }
+
+        private void EmitBlockMappingSimpleValue() {
+            WriteIndicator(": ", false, true, false);
+            _states.Push(EmitterState.BLOCK_MAPPING_KEY);
+            EmitNode(false, false, true, false);
+        }
+
+        private void EmitBlockMappingValue() {
+            WriteIndent();
+            WriteIndicator(": ", true, true, true);
+            _states.Push(EmitterState.BLOCK_MAPPING_KEY);
+            EmitNode(false, false, true, false);
+        }
+
+        private void EmitBlockMappingKey() {
+            WriteIndent();
+            if (CheckSimpleKey()) {
+                _states.Push(EmitterState.BLOCK_MAPPING_SIMPLE_VALUE);
+                EmitNode(false, false, true, true);
             } else {
-                writeIndent();
-                writeIndicator("-", true, false, true);
-                _states.Push(EmitterState.BLOCK_SEQUENCE_ITEM);
-                expectNode(false, true, false, false);
+                WriteIndicator("?", true, false, true);
+                _states.Push(EmitterState.BLOCK_MAPPING_VALUE);
+                EmitNode(false, false, true, false);
             }
         }
 
-        private void expectBlockMappingSimpleValue() {
-            writeIndicator(": ", false, true, false);
-            _states.Push(EmitterState.BLOCK_MAPPING_KEY);
-            expectNode(false, false, true, false);
-        }
-
-        private void expectBlockMappingValue() {
-            writeIndent();
-            writeIndicator(": ", true, true, true);
-            _states.Push(EmitterState.BLOCK_MAPPING_KEY);
-            expectNode(false, false, true, false);
-        }
-
-        private void expectBlockMappingKey(bool first) {
-            if (!first && _event is MappingEndEvent) {
-                _indent = _indents.Pop();
-                _state = _states.Pop();
-            } else {
-                writeIndent();
-                if (checkSimpleKey()) {
-                    _states.Push(EmitterState.BLOCK_MAPPING_SIMPLE_VALUE);
-                    expectNode(false, false, true, true);
-                } else {
-                    writeIndicator("?", true, false, true);
-                    _states.Push(EmitterState.BLOCK_MAPPING_VALUE);
-                    expectNode(false, false, true, false);
-                }
-            }
-        }
-
-        private void expectNode(bool root, bool sequence, bool mapping, bool simpleKey) {
-            _rootContext = root;
-            _sequenceContext = sequence;
+        private void EmitNode(bool root, bool sequence, bool mapping, bool simpleKey) {
             _mappingContext = mapping;
-            _simpleKeyContext = simpleKey;
             if (_event is AliasEvent) {
-                expectAlias();
+                EmitAlias();
             } else if (_event is ScalarEvent || _event is CollectionStartEvent) {
-                processAnchor("&");
-                processTag();
+                ProcessAnchor("&");
+                ProcessTag(simpleKey);
                 if (_event is ScalarEvent) {
-                    expectScalar();
+                    EmitScalar(simpleKey);
                 } else if (_event is SequenceStartEvent) {
-                    if (_flowLevel != 0 || canonical || ((SequenceStartEvent)_event).FlowStyle || checkEmptySequence()) {
-                        expectFlowSequence();
+                    if (_flowLevel != 0 || _canonical || ((SequenceStartEvent)_event).FlowStyle == FlowStyle.Inline || checkEmptySequence()) {
+                        EmitFlowSequence();
                     } else {
-                        expectBlockSequence();
+                        EmitBlockSequence();
                     }
                 } else if (_event is MappingStartEvent) {
-                    if (_flowLevel != 0 || canonical || ((MappingStartEvent)_event).FlowStyle || checkEmptyMapping()) {
-                        expectFlowMapping();
+                    if (_flowLevel != 0 || _canonical || ((MappingStartEvent)_event).FlowStyle == FlowStyle.Inline || checkEmptyMapping()) {
+                        EmitFlowMapping();
                     } else {
-                        expectBlockMapping();
+                        EmitBlockMapping();
                     }
                 }
             } else {
-                throw new EmitterException("expected NodeEvent, but got " + _event);
+                throw new EmitterException("Emited NodeEvent, but got " + _event);
             }
         }
 
-        private void expectAlias() {
+        private void EmitAlias() {
             if (((NodeEvent)_event).Anchor == null) {
                 throw new EmitterException("anchor is not specified for alias");
             }
-            processAnchor("*");
+            ProcessAnchor("*");
             _state = _states.Pop();
         }
 
-        private void expectScalar() {
-            increaseIndent(true, false);
-            processScalar();
-            _indent = _indents.Pop();
+        private void EmitScalar(bool simpleKey) {
+            ProcessScalar(simpleKey);
             _state = _states.Pop();
         }
 
-        private void expectFlowSequence() {
-            writeIndicator("[", true, true, false);
+        private void EmitFlowSequence() {
+            WriteIndicator("[", true, true, false);
             _flowLevel++;
             increaseIndent(true, false);
             _state = EmitterState.FIRST_FLOW_SEQUENCE_ITEM;
         }
 
-        private void expectBlockSequence() {
+        private void EmitBlockSequence() {
             increaseIndent(false, _mappingContext && !_indentation);
             _state = EmitterState.FIRST_BLOCK_SEQUENCE_ITEM;
         }
 
-        private void expectFlowMapping() {
-            writeIndicator("{", true, true, false);
+        private void EmitFlowMapping() {
+            WriteIndicator("{", true, true, false);
             _flowLevel++;
             increaseIndent(true, false);
             _state = EmitterState.FIRST_FLOW_MAPPING_KEY;
         }
 
-        private void expectBlockMapping() {
+        private void EmitBlockMapping() {
             increaseIndent(false, false);
             _state = EmitterState.FIRST_BLOCK_MAPPING_KEY;
         }
@@ -1152,10 +1132,10 @@ namespace IronRuby.StandardLibrary.Yaml {
                 return false;
             }
             ScalarEvent ev = _events.Peek() as ScalarEvent;
-            return ev != null && ev.Anchor == null && ev.Tag == null && ev.Implicit != null && ev.Value.Length == 0;
+            return ev != null && ev.Anchor == null && ev.Tag == null && ev.Value.Length == 0;
         }
 
-        private bool checkSimpleKey() {
+        private bool CheckSimpleKey() {
             int length = 0;
             if (_event is NodeEvent && null != ((NodeEvent)_event).Anchor) {
                 if (null == _preparedAnchor) {
@@ -1170,22 +1150,20 @@ namespace IronRuby.StandardLibrary.Yaml {
                 tag = ((CollectionStartEvent)_event).Tag;
             }
             if (tag != null) {
-                if (null == _preparedTag) {
-                    _preparedTag = prepareTag(tag);
+                if (_preparedTag == null) {
+                    _preparedTag = PrepareTag(tag);
                 }
                 length += _preparedTag.Length;
             }
+
             if (_event is ScalarEvent) {
-                if (null == _analysis) {
-                    _analysis = analyzeScalar(((ScalarEvent)_event).Value);
-                    length += _analysis.Scalar.Length;
-                }
+               length += ((ScalarEvent)_event).Value.Length;
             }
 
-            return (length < 128 && (_event is AliasEvent || (_event is ScalarEvent && !_analysis.Multiline) || checkEmptySequence() || checkEmptyMapping()));
+            return (length < 128 && (_event is AliasEvent || (_event is ScalarEvent && !((ScalarEvent)_event).IsMultiline) || checkEmptySequence() || checkEmptyMapping()));
         }
 
-        private void processAnchor(string indicator) {
+        private void ProcessAnchor(string indicator) {
             NodeEvent ev = (NodeEvent)_event;
             if (null == ev.Anchor) {
                 _preparedAnchor = null;
@@ -1199,104 +1177,110 @@ namespace IronRuby.StandardLibrary.Yaml {
                 if (ev is CollectionStartEvent) {
                     _indentation = true;
                 }
-                writeIndicator(indicator, true, false, true);
+                WriteIndicator(indicator, true, false, true);
             }
             _preparedAnchor = null;
         }
 
-        private void processTag() {
+        private void ProcessTag(bool simpleKey) {
             string tag = null;
             if (_event is ScalarEvent) {
+                // TODO: canonical?
+
                 ScalarEvent ev = (ScalarEvent)_event;
                 tag = ev.Tag;
-                if (_style == 0) {
-                    _style = chooseScalarStyle();
-                }
-                if (((!canonical || tag == null) && ((0 == _style && ev.Implicit[0]) || (0 != _style && ev.Implicit[1])))) {
+                if (tag == null) {
                     _preparedTag = null;
-                    return;
-                }
-                if (ev.Implicit[0] && null == tag) {
-                    tag = "!";
-                    _preparedTag = null;
+                    // non-string quoted scalars marked by "!" tag will be parsed:
+                    if (ChooseScalarStyle(_flowLevel, simpleKey) != ScalarQuotingStyle.None && ev.Type == ScalarValueType.Other) {
+                        tag = "!";
+                    } else {
+                        return;
+                    }
                 }
             } else {
                 CollectionStartEvent ev = (CollectionStartEvent)_event;
                 tag = ev.Tag;
-                if ((!canonical || tag == null) && ev.Implicit) {
+                if (tag == null) {
                     _preparedTag = null;
                     return;
                 }
                 _indentation = true;
             }
-            if (tag == null) {
-                throw new EmitterException("tag is not specified");
+
+            if (_preparedTag == null) {
+                _preparedTag = PrepareTag(tag);
             }
-            if (null == _preparedTag) {
-                _preparedTag = prepareTag(tag);
-            }
-            if (!string.IsNullOrEmpty(_preparedTag)) {
-                writeIndicator(_preparedTag, true, false, true);
+            if (!String.IsNullOrEmpty(_preparedTag)) {
+                WriteIndicator(_preparedTag + " ", true, true, true);
             }
             _preparedTag = null;
         }
 
-        private char chooseScalarStyle() {
+        private ScalarQuotingStyle ChooseScalarStyle(int flowLevel, bool simpleKey) {
             ScalarEvent ev = (ScalarEvent)_event;
 
-            if (null == _analysis) {
-                _analysis = analyzeScalar(ev.Value);
+            switch (ev.Style) {
+                case ScalarQuotingStyle.Double:
+                    if (_canonical || ev.IsEmpty) {
+                        return ScalarQuotingStyle.Double;
+                    }
+                    break;
+
+                case ScalarQuotingStyle.None:
+                    if (ev.IsEmpty) {
+                        return ev.Value != null ? ScalarQuotingStyle.Double : ScalarQuotingStyle.None;
+                    }
+                    
+                    if ((!simpleKey || !ev.IsEmpty && !ev.IsMultiline) &&
+                        (flowLevel != 0 && ev.AllowFlowPlain || flowLevel == 0 && ev.AllowBlockPlain)) {
+                        return ScalarQuotingStyle.None;
+                    }
+                    break;
+
+                case ScalarQuotingStyle.Literal:
+                case ScalarQuotingStyle.Folded:
+                    if (flowLevel == 0 && ev.AllowBlock) {
+                        return ScalarQuotingStyle.Single;
+                    }
+                    break;
             }
 
-            if (ev.Style == '"' || canonical || (_analysis.Empty && ev.Tag == "tag:yaml.org,2002:str")) {
-                return '"';
+            if (ev.IsMultiline && !ev.HasSpecialCharacters) {
+                return ScalarQuotingStyle.Literal;
             }
 
-            //            if (ev.Style == 0 && ev.Implicit[0]) {
-            if (ev.Style == 0) {
-                if (!(_simpleKeyContext && (_analysis.Empty || _analysis.Multiline)) && ((_flowLevel != 0 && _analysis.AllowFlowPlain) || (_flowLevel == 0 && _analysis.AllowBlockPlain))) {
-                    return '\0';
-                }
-            }
-            if (ev.Style == 0 && ev.Implicit[0] && (!(_simpleKeyContext && (_analysis.Empty || _analysis.Multiline)) && (_flowLevel != 0 && _analysis.AllowFlowPlain || (_flowLevel == 0 && _analysis.AllowBlockPlain)))) {
-                return '\0';
-            }
-            if ((ev.Style == '|' || ev.Style == '>') && _flowLevel == 0 && _analysis.AllowBlock) {
-                return '\'';
-            }
-            if ((ev.Style == 0 || ev.Style == '\'') && (_analysis.AllowSingleQuoted && !(_simpleKeyContext && _analysis.Multiline))) {
-                return '\'';
-            }
-            if (_analysis.Multiline && (FIRST_SPACE.Matches(ev.Value).Count == 0) && !_analysis.SpecialCharacters) {
-                return '|';
-            }
-
-            return '"';
+            return ScalarQuotingStyle.Double;
         }
 
-        private void processScalar() {
+        private void ProcessScalar(bool simpleKey) {
             ScalarEvent ev = (ScalarEvent)_event;
+            var style = ChooseScalarStyle(_flowLevel, simpleKey);
 
-            if (null == _analysis) {
-                _analysis = analyzeScalar(ev.Value);
+            switch (style) {
+                case ScalarQuotingStyle.Single:
+                    WriteSingleQuoted(ev.Value, !simpleKey);
+                    break;
+
+                case ScalarQuotingStyle.Double:
+                    WriteDoubleQuoted(ev.Value, !simpleKey);
+                    break;
+
+                case ScalarQuotingStyle.Folded:
+                    WriteFolded(ev.Value);
+                    break;
+
+                case ScalarQuotingStyle.Literal:
+                    WriteLiteral(ev.Value, !ev.IsBinary);
+                    break;
+
+                case ScalarQuotingStyle.None:
+                    WritePlain(ev.Value, !simpleKey);
+                    break;
+
+                default:
+                    throw Assert.Unreachable;
             }
-            if (0 == _style) {
-                _style = chooseScalarStyle();
-            }
-            bool split = !_simpleKeyContext;
-            if (_style == '"') {
-                writeDoubleQuoted(_analysis.Scalar, split);
-            } else if (_style == '\'') {
-                writeSingleQuoted(_analysis.Scalar, split);
-            } else if (_style == '>') {
-                writeFolded(_analysis.Scalar);
-            } else if (_style == '|') {
-                writeLiteral(_analysis.Scalar);
-            } else {
-                writePlain(_analysis.Scalar, split);
-            }
-            _analysis = null;
-            _style = '\0';
         }
 
         private string ESCAPE_REPLACEMENTS(char c) {

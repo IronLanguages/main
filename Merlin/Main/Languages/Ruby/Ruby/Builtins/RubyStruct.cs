@@ -74,11 +74,10 @@ namespace IronRuby.Builtins {
                 return _names[index];
             }
 
-            internal RubyArray/*!*/ GetMembers() {
+            internal RubyArray/*!*/ GetMembers(RubyContext/*!*/ context) {
                 RubyArray list = new RubyArray(_names.Length);
                 foreach (string id in _names) {
-                    // TODO: we need to add encoding to symbols and preserve it here:
-                    list.Add(MutableString.Create(id, RubyEncoding.UTF8));
+                    list.Add(context.StringifyIdentifier(id));
                 }
                 return list;
             }
@@ -169,12 +168,12 @@ namespace IronRuby.Builtins {
         // Derived struct: [RubyMethod("members", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetMembers(RubyClass/*!*/ self) {
             Debug.Assert(self.StructInfo != null);
-            return self.StructInfo.GetMembers();
+            return self.StructInfo.GetMembers(self.Context);
         }
 
         public static RubyArray/*!*/ GetMembers(RubyStruct/*!*/ self) {
             Debug.Assert(self.StructInfo != null);
-            return self.StructInfo.GetMembers();
+            return self.StructInfo.GetMembers(self.ImmediateClass.Context);
         }
 
         private static RuleGenerator/*!*/ CreateGetter(int index) {
@@ -210,11 +209,15 @@ namespace IronRuby.Builtins {
         private Info/*!*/ StructInfo {
             get { return ImmediateClass.GetNonSingletonClass().StructInfo; }
         }
-        
+
+        public bool TryGetIndex(string/*!*/ name, out int index) {
+            return StructInfo.TryGetIndex(name, out index);
+        }
+
         public int GetIndex(string/*!*/ name) {
-            int result;
-            if (StructInfo.TryGetIndex(name, out result)) {
-                return result;
+            int index;
+            if (TryGetIndex(name, out index)) {
+                return index;
             }
             throw RubyExceptions.CreateNameError(String.Format("no member `{0}' in struct", name));
         }

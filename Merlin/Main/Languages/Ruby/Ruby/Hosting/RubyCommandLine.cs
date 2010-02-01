@@ -83,7 +83,16 @@ namespace IronRuby.Hosting {
 
         // overridden to set the default encoding to KCODE/BINARY
         protected override int RunFile(string fileName) {
-            return RunFile(Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
+            return RunFile(
+                // Use non-strict encoding for KCODE (invalid characters are replaced by '?', 
+                // which is not 100% compatible with MRI but at least it doesn't blow up:
+                Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), 
+                (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding)
+            );
+        }
+
+        protected override ScriptCodeParseResult GetCommandProperties(string code) {
+            return CreateCommandSource(code, SourceCodeKind.InteractiveCode, "(ir)").GetCodeProperties(Engine.GetCompilerOptions(ScriptScope));
         }
 
         protected override void ExecuteCommand(string/*!*/ command) {

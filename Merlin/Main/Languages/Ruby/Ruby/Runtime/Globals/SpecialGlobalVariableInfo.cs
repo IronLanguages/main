@@ -114,13 +114,12 @@ namespace IronRuby.Runtime {
                     return context.Verbose;
 
                 case GlobalVariableId.KCode:
-#if !SILVERLIGHT
                     if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
                         var kcode = KCoding.GetKCodeName(context.KCode);
                         Utils.Log("KCODE set to " + kcode, "KCODE");
                         return MutableString.CreateAscii(kcode);
                     }
-#endif
+
                     context.ReportWarning("variable $KCODE is no longer effective");
                     return null;
 
@@ -234,7 +233,6 @@ namespace IronRuby.Runtime {
                     return;
                 
                 case GlobalVariableId.KCode:
-#if !SILVERLIGHT
                     if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
                         // MRI calls to_str; we don't do that, it's inconsistent with other globals.
                         // If some app depends on this behavior, it will fail gracefully:
@@ -242,7 +240,7 @@ namespace IronRuby.Runtime {
                         Utils.Log(String.Format("Set to {0}", context.KCode), "KCODE");
                         return;
                     }
-#endif
+
                     context.ReportWarning("variable $KCODE is no longer effective");
                     return;
 

@@ -1081,8 +1081,7 @@ namespace IronRuby.Builtins {
             return self.AppendRepresentation(
                 new StringBuilder().Append(quote),
                 (isDump || !is18) ? null : context.KCode ?? RubyEncoding.Binary,
-                is18, 
-                isDump,
+                MutableString.Escape.Special | (is18 ? MutableString.Escape.Octal : 0) | (isDump ? MutableString.Escape.NonAscii : 0),
                 quote
             ).Append(quote).ToString();
         }
@@ -2352,8 +2351,8 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("to_sym")]
         [RubyMethod("intern")]
-        public static SymbolId ToSymbol(MutableString/*!*/ self) {
-            return ClrString.ToSymbol(self.ConvertToString());
+        public static RubySymbol/*!*/ ToSymbol(RubyContext/*!*/ context, MutableString/*!*/ self) {
+            return context.CreateSymbol(self);
         }
 
         #endregion

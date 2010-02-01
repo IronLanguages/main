@@ -1,0 +1,20 @@
+development:
+  mode: ADONET
+  adapter: sqlserver
+  host: JIMMY-AIR-WIN7\SQLEXPRESS
+  database: irrails_development
+  integrated_security: true
+
+test:
+  mode: ADONET
+  adapter: sqlserver
+  host: JIMMY-AIR-WIN7\SQLEXPRESS
+  database: irrails_test
+  integrated_security: true
+
+production:
+  mode: ADONET
+  adapter: sqlserver
+  host: JIMMY-AIR-WIN7\SQLEXPRESS
+  database: irrails_development
+  integrated_security: true

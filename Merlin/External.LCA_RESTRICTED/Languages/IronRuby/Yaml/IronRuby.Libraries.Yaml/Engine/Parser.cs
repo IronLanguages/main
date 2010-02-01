@@ -19,6 +19,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Text;
+using System.Globalization;
 
 namespace IronRuby.StandardLibrary.Yaml {
     public class Parser : IEnumerable<YamlEvent> {
@@ -72,12 +74,12 @@ namespace IronRuby.StandardLibrary.Yaml {
             EMPTY_SCALAR = 45,
         }
 
-        private readonly Stack<Production> _parseStack = new Stack<Production>();
-        private readonly LinkedList<string> _tags = new LinkedList<string>();
-        private readonly LinkedList<string> _anchors = new LinkedList<string>();
-        private readonly Dictionary<string, string> _tagHandles = new Dictionary<string, string>();
-        private readonly Scanner _scanner;
-        private readonly Version _defaultYamlVersion;
+        private readonly Stack<Production>/*!*/ _parseStack = new Stack<Production>();
+        private readonly LinkedList<string>/*!*/ _tags = new LinkedList<string>();
+        private readonly LinkedList<string>/*!*/ _anchors = new LinkedList<string>();
+        private readonly Dictionary<string, string>/*!*/ _tagHandles = new Dictionary<string, string>();
+        private readonly Scanner/*!*/ _scanner;
+        private readonly Version/*!*/ _defaultYamlVersion;
 
         private Version _yamlVersion;
         private bool _done;
@@ -92,6 +94,17 @@ namespace IronRuby.StandardLibrary.Yaml {
             _scanner = scanner;
             _defaultYamlVersion = defaultYamlVersion;
             _parseStack.Push(Production.STREAM);
+        }
+
+        private void ReportError(string/*!*/ message, params object[]/*!*/ args) {
+            throw new ParserException(
+                String.Format(CultureInfo.InvariantCulture, message, args) +
+                String.Format(CultureInfo.InvariantCulture, " (line {0}, column {1})", _scanner.Line + 1, _scanner.Column + 1)
+            );
+        }
+
+        public Encoding/*!*/ Encoding {
+            get { return _scanner.Encoding; }
         }
 
         public YamlEvent PeekEvent() {
@@ -122,7 +135,9 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private YamlEvent Produce() {
-            switch (_parseStack.Pop()) {
+            var prod = _parseStack.Pop();
+            //Console.WriteLine(prod);
+            switch (prod) {
                 case Production.STREAM: {
                         _parseStack.Push(Production.STREAM_END);
                         _parseStack.Push(Production.EXPLICIT_DOCUMENT);
@@ -162,7 +177,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                         Dictionary<string, string> tags;
                         ProcessDirectives(out version, out tags);
                         if (!(_scanner.PeekToken() is DocumentStartToken)) {
-                            throw new ParserException("expected '<document start>', but found: " + tok);
+                            ReportError("expected '<document start>', but found: {0}", tok);
                         }
                         _scanner.GetToken();
                         return new DocumentStartEvent(true, version, tags);
@@ -211,8 +226,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                             _parseStack.Push(Production.SCALAR);
                         } else {
                             // Part of solution for JRUBY-718
-                            bool[] @implicit = new bool[] { false, false };
-                            return new ScalarEvent(_anchors.First.Value, _tags.First.Value, @implicit, "", '\'');
+                            return new ScalarEvent(_anchors.First.Value, _tags.First.Value ?? Tags.Str, ScalarValueType.String, "", ScalarQuotingStyle.Single);
                         }
                         return null;
                     }
@@ -248,7 +262,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                         } else if (tok is ScalarToken) {
                             _parseStack.Push(Production.SCALAR);
                         } else {
-                            throw new ParserException("while scanning a flow node: expected the node content, but found: " + tok);
+                            ReportError("while scanning a flow node: expected the node content, but found: {0}", tok);
                         }
                         return null;
                     }
@@ -278,15 +292,15 @@ namespace IronRuby.StandardLibrary.Yaml {
                     }
                 case Production.SCALAR: {
                         ScalarToken tok = (ScalarToken)_scanner.GetToken();
-                        bool[] @implicit = null;
-                        if ((tok.Plain && _tags.First.Value == null) || "!" == _tags.First.Value) {
-                            @implicit = new bool[] { true, false };
+                        ScalarValueType scalarType;
+                        if ((tok.Style == ScalarQuotingStyle.None && _tags.First.Value == null) || "!" == _tags.First.Value) {
+                            scalarType = ScalarValueType.Unknown;
                         } else if (_tags.First.Value == null) {
-                            @implicit = new bool[] { false, true };
+                            scalarType = ScalarValueType.String;
                         } else {
-                            @implicit = new bool[] { false, false };
+                            scalarType = ScalarValueType.Other;
                         }
-                        return new ScalarEvent(_anchors.First.Value, _tags.First.Value, @implicit, tok.Value, tok.Style);
+                        return new ScalarEvent(_anchors.First.Value, _tags.First.Value, scalarType, tok.Value, tok.Style);
                     }
                 case Production.BLOCK_SEQUENCE_ENTRY: {
                         if (_scanner.PeekToken() is BlockEntryToken) {
@@ -354,29 +368,25 @@ namespace IronRuby.StandardLibrary.Yaml {
                         return null;
                     }
                 case Production.BLOCK_SEQUENCE_START: {
-                        bool @implicit = _tags.First.Value == null || _tags.First.Value == "!";
                         _scanner.GetToken();
-                        return new SequenceStartEvent(_anchors.First.Value, _tags.First.Value, @implicit, false);
+                        return new SequenceStartEvent(_anchors.First.Value, _tags.First.Value != "!" ? _tags.First.Value : null, FlowStyle.Block);
                     }
                 case Production.BLOCK_SEQUENCE_END: {
-                        Token tok = null;
-                        if (!(_scanner.PeekToken() is BlockEndToken)) {
-                            tok = _scanner.PeekToken();
-                            throw new ParserException("while scanning a block collection: expected <block end>, but found: " + tok);
+                        Token tok = _scanner.PeekToken();
+                        if (!(tok is BlockEndToken)) {
+                            ReportError("while scanning a block collection: expected <block end>, but found: {0}", tok);
                         }
                         _scanner.GetToken();
                         return SequenceEndEvent.Instance;
                     }
                 case Production.BLOCK_MAPPING_START: {
-                        bool @implicit = _tags.First.Value == null || _tags.First.Value == "!";
                         _scanner.GetToken();
-                        return new MappingStartEvent(_anchors.First.Value, _tags.First.Value, @implicit, false);
+                        return new MappingStartEvent(_anchors.First.Value, _tags.First.Value != "!" ? _tags.First.Value : null, FlowStyle.Block);
                     }
                 case Production.BLOCK_MAPPING_END: {
-                        Token tok = null;
-                        if (!(_scanner.PeekToken() is BlockEndToken)) {
-                            tok = _scanner.PeekToken();
-                            throw new ParserException("while scanning a block mapping: expected <block end>, but found: " + tok);
+                        Token tok = _scanner.PeekToken();
+                        if (!(tok is BlockEndToken)) {
+                            ReportError("while scanning a block mapping: expected <block end>, but found: {0}", tok);
                         }
                         _scanner.GetToken();
                         return MappingEndEvent.Instance;
@@ -388,8 +398,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                         return null;
                     }
                 case Production.BLOCK_INDENTLESS_SEQUENCE_START: {
-                        bool @implicit = _tags.First.Value == null || _tags.First.Value == "!";
-                        return new SequenceStartEvent(_anchors.First.Value, _tags.First.Value, @implicit, false);
+                        return new SequenceStartEvent(_anchors.First.Value, _tags.First.Value != "!" ? _tags.First.Value : null, FlowStyle.Block);
                     }
                 case Production.INDENTLESS_BLOCK_SEQUENCE_ENTRY: {
                         if (_scanner.PeekToken() is BlockEntryToken) {
@@ -409,9 +418,8 @@ namespace IronRuby.StandardLibrary.Yaml {
                         return SequenceEndEvent.Instance;
                     }
                 case Production.FLOW_SEQUENCE_START: {
-                        bool @implicit = _tags.First.Value == null || _tags.First.Value == "!";
                         _scanner.GetToken();
-                        return new SequenceStartEvent(_anchors.First.Value, _tags.First.Value, @implicit, true);
+                        return new SequenceStartEvent(_anchors.First.Value, _tags.First.Value != "!" ? _tags.First.Value : null, FlowStyle.Inline);
                     }
                 case Production.FLOW_SEQUENCE_ENTRY: {
                         if (!(_scanner.PeekToken() is FlowSequenceEndToken)) {
@@ -435,9 +443,8 @@ namespace IronRuby.StandardLibrary.Yaml {
                         return SequenceEndEvent.Instance;
                     }
                 case Production.FLOW_MAPPING_START: {
-                        bool @implicit = _tags.First.Value == null || _tags.First.Value == "!";
                         _scanner.GetToken();
-                        return new MappingStartEvent(_anchors.First.Value, _tags.First.Value, @implicit, true);
+                        return new MappingStartEvent(_anchors.First.Value, _tags.First.Value != "!" ? _tags.First.Value : null, FlowStyle.Inline);
                     }
                 case Production.FLOW_MAPPING_ENTRY: {
                         if (!(_scanner.PeekToken() is FlowMappingEndToken)) {
@@ -460,7 +467,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     }
                 case Production.FLOW_INTERNAL_MAPPING_START: {
                         _scanner.GetToken();
-                        return new MappingStartEvent(null, null, true, true);
+                        return new MappingStartEvent(null, null, FlowStyle.Inline);
                     }
                 case Production.FLOW_INTERNAL_CONTENT: {
                         Token curr = _scanner.PeekToken();
@@ -531,7 +538,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                         return new AliasEvent(tok.Value);
                     }
                 case Production.EMPTY_SCALAR: {
-                        return new ScalarEvent(null, null, new bool[] { true, false }, "", (char)0);
+                        return new ScalarEvent(null, null, ScalarValueType.Other, null, ScalarQuotingStyle.None);
                     }
             }
 
@@ -548,7 +555,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             string handle = tagToken.Handle;
             string suffix = tagToken.Suffix;
             int ix = -1;
-            if ((ix = suffix.IndexOf("^")) != -1) {
+            if ((ix = suffix.IndexOf('^')) != -1) {
                 if (ix > 0) {
                     _familyTypePrefix = suffix.Substring(0, ix);
                 }                
@@ -556,15 +563,15 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
             if (handle != null) {
                 if (!_tagHandles.ContainsKey(handle)) {
-                    throw new ParserException("while parsing a node: found undefined tag handle :" + handle);
+                    ReportError("while parsing a node: found undefined tag handle: {0}", handle);
                 }
-                if ((ix = suffix.IndexOf("/")) != -1) {
+                if ((ix = suffix.IndexOf('/')) != -1) {
                     string before = suffix.Substring(0, ix);
                     string after = suffix.Substring(ix + 1);
                     if (ONLY_WORD.IsMatch(before)) {
                         tag = "tag:" + before + ".yaml.org,2002:" + after;
                     } else {
-                        if (before.StartsWith("tag:")) {
+                        if (before.StartsWith("tag:", StringComparison.Ordinal)) {
                             tag = before + ":" + after;
                         } else {
                             tag = "tag:" + before + ":" + after;
@@ -584,12 +591,12 @@ namespace IronRuby.StandardLibrary.Yaml {
                 DirectiveToken tok = (DirectiveToken)_scanner.GetToken();
                 if (tok.Name == "Yaml") {
                     if (_yamlVersion != null) {
-                        throw new ParserException("found duplicate Yaml directive");
+                        ReportError("found duplicate Yaml directive");
                     }
                     int major = int.Parse(tok.Value[0]);
                     int minor = int.Parse(tok.Value[1]);
                     if (major != 1) {
-                        throw new ParserException("found incompatible Yaml document (version 1.* is required)");
+                        ReportError("found incompatible Yaml document (version 1.* is required)");
                     }
                     _yamlVersion = new Version(major, minor);
 
@@ -597,7 +604,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     string handle = tok.Value[0];
                     string prefix = tok.Value[1];
                     if (_tagHandles.ContainsKey(handle)) {
-                        throw new ParserException("duplicate tag handle: " + handle);
+                        ReportError("duplicate tag handle: {0}", handle);
                     }
                     _tagHandles.Add(handle, prefix);
                 }

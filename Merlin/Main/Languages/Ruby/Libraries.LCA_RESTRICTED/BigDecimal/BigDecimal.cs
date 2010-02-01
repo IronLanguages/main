@@ -55,15 +55,18 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         private readonly int _maxPrecision;
         #endregion
 
-        #region Useful Private Constants
+        #region Private Constants
+
         private const string NaNString = "NaN";
         private const string InfinityString = "Infinity";
         private const string NegativeInfinityString = "-Infinity";
         private const string ZeroString = "0.0";
         private const string NegativeZeroString = "-0.0";
+
         #endregion
 
-        #region Useful Enumerations
+        #region Enumerations
+
         public enum RoundingModes {
             /// <summary>
             /// No rounding
@@ -128,9 +131,11 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             Multiply = 2,
             Divide = 3
         }
+
         #endregion
 
-        #region Useful Special BigDecimal Values
+        #region Special BigDecimal Values
+
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BigDecimal One = new BigDecimal(1, Fraction.One, 1);
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
@@ -148,12 +153,15 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         public const uint BASE = Fraction.BASE;
         public const int BASE_FIG = Fraction.BASE_FIG;
         public const int DOUBLE_FIG = 16;
+
         #endregion
 
         #region Private Constructors
+
         private BigDecimal(int sign, Fraction/*!*/ fraction, int exponent)
             : this(sign, fraction, exponent, fraction.Precision) {
         }
+
         private BigDecimal(int sign, Fraction/*!*/ fraction, int exponent, int maxPrecision) {
             Debug.Assert(sign == 1 || sign == -1);
             _type = NumberTypes.Finite;
@@ -163,6 +171,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             // If maxPrecision is 0 then default to the precision of the fraction
             _maxPrecision = maxPrecision == 0 ? fraction.Precision : maxPrecision;
         }
+
         private BigDecimal(int sign, BigDecimal/*!*/ copyFrom) {
             _type = copyFrom._type;
             _sign = sign;
@@ -170,6 +179,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             _exponent = copyFrom._exponent;
             _maxPrecision = copyFrom._maxPrecision;
         }
+
         private BigDecimal(int sign, BigDecimal/*!*/ copyFrom, int maxPrecision) {
             _type = copyFrom._type;
             _sign = sign;
@@ -181,6 +191,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         private BigDecimal(NumberTypes type, int sign)
             : this(type, sign, 1) {
         }
+
         private BigDecimal(NumberTypes type, int sign, int maxPrecision) {
             Debug.Assert(type != NumberTypes.Finite);
             _type = type;
@@ -189,6 +200,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             _exponent = 0;
             _maxPrecision = maxPrecision;
         }
+
         #endregion
 
         #region Public Properties
@@ -203,22 +215,25 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         #endregion
 
         #region Create Methods
+
         public static BigDecimal Create(Config/*!*/config, object value) {
             Debug.Assert(!(value is double) && !(value is float)); // Need to use CultureInfo.InvariantCulture for double
             return Create(config, value.ToString(), 0);
         }
+
         public static BigDecimal Create(Config/*!*/config, double value) {
             return Create(config, value.ToString(CultureInfo.InvariantCulture), 0);
         }
+
         public static BigDecimal Create(Config/*!*/config, string value) {
             return Create(config, value, 0);
         }
+
         public static BigDecimal Create(Config/*!*/config, string value, int maxPrecision) {
             value = value.Trim();
             BigDecimal result = CheckSpecialCases(value);
 
             if (result == null) {
-
                 Match m = Regex.Match(value, @"^(?<sign>[-+]?)(?<integer>[\d_]*)\.?(?<fraction>[\d_]*)([eEdD](?<exponent>[-+]?[\d_]+))?", RegexOptions.ExplicitCapture);
 
                 int sign = m.Groups["sign"].Value == "-" ? -1 : 1;
@@ -256,6 +271,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             }
             return CheckOverflowExceptions(config, result);
         }
+
         private static BigDecimal CheckSpecialCases(string value) {
             BigDecimal result = null;
             if (value == null) {
@@ -276,27 +292,35 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             }
             return result;
         }
+
         #endregion
 
         #region Special Value Tests
+
         public static bool IsNaN(BigDecimal x) {
             return x._type == NumberTypes.NaN;
         }
+
         public static bool IsInfinite(BigDecimal x) {
             return (x._type == NumberTypes.Infinite);
         }
+
         public static bool IsFinite(BigDecimal x) {
             return x._type == NumberTypes.Finite;
         }
+
         public static bool IsZero(BigDecimal/*!*/ x) {
             return IsFinite(x) && x._fraction.IsZero;
         }
+
         public static bool IsNonZeroFinite(BigDecimal x) {
             return IsFinite(x) && !x._fraction.IsZero;
         }
+
         public static bool IsPositive(BigDecimal x) {
             return x._sign == 1;
         }
+
         public static bool IsNegative(BigDecimal x) {
             return x._sign == -1;
         }
@@ -304,12 +328,15 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         public static bool IsPositiveInfinite(BigDecimal x) {
             return IsInfinite(x) && IsPositive(x);
         }
+
         public static bool IsNegativeInfinite(BigDecimal x) {
             return IsInfinite(x) && IsNegative(x);
         }
+
         public static bool IsPositiveZero(BigDecimal x) {
             return IsZero(x) && IsPositive(x);
         }
+
         public static bool IsNegativeZero(BigDecimal x) {
             return IsZero(x) && IsNegative(x);
         }
@@ -317,15 +344,19 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         public static bool IsOne(BigDecimal x) {
             return x._fraction.IsOne && x._exponent == 1;
         }
+
         public static bool IsPositiveOne(BigDecimal x) {
             return IsOne(x) && IsPositive(x);
         }
+
         public static bool IsNegativeOne(BigDecimal x) {
             return IsOne(x) && IsPositive(x);
         }
+
         #endregion
 
         #region Public Static Operations
+
         public static double ToFloat(Config config, BigDecimal/*!*/ x) {
             try {
                 if (BigDecimal.IsNegativeZero(x)) {
@@ -336,6 +367,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 return Double.PositiveInfinity;
             }
         }
+
         public static object ToInteger(Config/*!*/ config, BigDecimal/*!*/ x) {
             if (IsFinite(x)) {
                 BigDecimal i = IntegerPart(config, x);
@@ -353,6 +385,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 return null;
             }
         }
+
         public static BigDecimal Abs(Config config, BigDecimal x) {
             if (IsNegative(x)) {
                 return Negate(config, x);
@@ -360,6 +393,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 return x;
             }
         }
+
         public static BigDecimal Negate(Config config, BigDecimal x) {
             if (IsFinite(x)) {
                 return new BigDecimal(-x._sign, x._fraction, x._exponent);
@@ -371,6 +405,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         public static BigDecimal/*!*/ Add(Config/*!*/ config, BigDecimal/*!*/ x, BigDecimal/*!*/ y) {
             return Add(config, x, y, 0);
         }
+
         public static BigDecimal/*!*/ Add(Config/*!*/ config, BigDecimal/*!*/ x, BigDecimal/*!*/ y, int limit) {
             return InternalAdd(config, x, y, limit);
         }
@@ -378,6 +413,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         public static BigDecimal/*!*/ Subtract(Config/*!*/ config, BigDecimal/*!*/ x, BigDecimal/*!*/ y) {
             return Subtract(config, x, y, 0);
         }
+
         public static BigDecimal/*!*/ Subtract(Config config, BigDecimal x, BigDecimal y, int limit) {
             return InternalAdd(config, x, BigDecimal.Negate(config, y), limit);
         }
@@ -385,6 +421,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         public static BigDecimal Multiply(Config config, BigDecimal x, BigDecimal y) {
             return Multiply(config, x, y, 0);
         }
+
         public static BigDecimal Multiply(Config config, BigDecimal x, BigDecimal y, int limit) {
             BigDecimal result = CheckSpecialResult(config, x, y, BasicOperations.Multiply);
             if (result != null) {
@@ -651,9 +688,11 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 return ExponentOverflow(config, x._sign, x._exponent);
             }
         }
+
         #endregion
 
         #region Private Helpers
+
         private static BigDecimal InternalAdd(Config config, BigDecimal x, BigDecimal y, int limit) {
             if (limit < 0) {
                 throw new ArgumentException("limit must be positive");
@@ -733,9 +772,11 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             // It would seem more appropriate to return +/-Infinity or Zero depending on exponent and sign.
             return PositiveZero;
         }
+
         #endregion
 
         #region Special Comparisons
+
         //TODO: There is some redundancy in this table that could be removed.
         private static int? CheckSpecialComparison(BigDecimal x, BigDecimal y) {
             // Non-zero comparisons are not allowed (since these are not special cases)

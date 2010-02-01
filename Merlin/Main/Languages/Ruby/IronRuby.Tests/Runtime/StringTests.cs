@@ -242,6 +242,24 @@ NULL2
 SUB
 ");
         }
+
+        public void Symbols1() {
+            byte[] bytes = Encoding.UTF8.GetBytes("α");
+
+            RubySymbol a, b, c, d;
+            a = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.Binary));
+            b = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.KCodeSJIS));
+            c = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.KCodeUTF8));
+            d = Context.CreateSymbolInternal(MutableString.Create("α", RubyEncoding.KCodeUTF8));
+
+            Assert(a.Equals(b));
+            Assert(a.Equals(c));
+            Assert(a.Equals(d));
+
+            a = Context.CreateSymbolInternal(MutableString.CreateBinary(Encoding.ASCII.GetBytes("foo"), RubyEncoding.Binary));
+            b = Context.CreateSymbolInternal(MutableString.CreateMutable("foo", RubyEncoding.KCodeUTF8));
+            Assert(a.Equals(b));
+        }
         
         [Options(Compatibility = RubyCompatibility.Ruby18)]
         private void Inspect1() {
@@ -329,6 +347,5 @@ SUB
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), Context, true, sq).ToString();
             Assert(s == @"'\x82\xA0'");
         }
-
     }
 }

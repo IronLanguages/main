@@ -30,10 +30,10 @@ describe "YAML.quick_emit" do
   end
 
   it "requires opts parameter to be a Hash or Emitter" do
-    lambda { YAML.quick_emit(nil, nil) }.should raise_error(TypeError)
+    lambda { YAML.quick_emit(nil, nil) }.should raise_error(Exception)
   end
 
   it "requires a block" do
-    lambda { YAML.quick_emit(nil, {}) }.should raise_error(NoMethodError)
+    lambda { YAML.quick_emit(nil, {}) }.should raise_error(Exception)
   end
 end

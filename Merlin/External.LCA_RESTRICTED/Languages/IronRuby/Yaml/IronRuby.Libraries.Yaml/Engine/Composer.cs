@@ -18,6 +18,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
 
 namespace IronRuby.StandardLibrary.Yaml {
    
@@ -28,7 +30,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         public Composer(Parser parser) {
             _parser = parser;
             _anchors = new Dictionary<string, Node>();
-        }       
+        }
+
+        public override Encoding/*!*/ Encoding {
+            get { return _parser.Encoding; }
+        }
 
         private Node ComposeDocument() {
             if (_parser.PeekEvent() is StreamStartEvent) {
@@ -71,23 +77,22 @@ namespace IronRuby.StandardLibrary.Yaml {
             //_resolver.descendResolver(parent, index);
             if (@event is ScalarEvent) {
                 ScalarEvent ev = (ScalarEvent)_parser.GetEvent();
+
                 string tag = ev.Tag;
-                if (tag == null || tag == "!") {
-                    tag = Resolver.Resolve(typeof(ScalarNode), ev.Value, ev.Implicit);
+                if (ev.Type == ScalarValueType.Unknown) {
+                    Debug.Assert(tag == null || tag == "!");
+                    tag = ResolverScanner.Recognize(ev.Value) ?? Tags.Str;
                 }
+
                 result = new ScalarNode(tag, ev.Value, ev.Style);
-                if (null != anchor) {
+                if (anchor != null) {
                     AddAnchor(anchor, result);
                 }
             } else if (@event is SequenceStartEvent) {
                 SequenceStartEvent start = (SequenceStartEvent)_parser.GetEvent();
-                string tag = start.Tag;
-                if (tag == null || tag == "!") {
-                    tag = Resolver.Resolve(typeof(SequenceNode), null, start.Implicit);
-                }
-                SequenceNode seqResult = new SequenceNode(tag, new List<Node>(), start.FlowStyle);
+                SequenceNode seqResult = new SequenceNode(start.Tag != "!" ? start.Tag : null, new List<Node>(), start.FlowStyle);
                 result = seqResult;
-                if (null != anchor) {
+                if (anchor != null) {
                     AddAnchor(anchor, seqResult);
                 }
                 int ix = 0;
@@ -97,13 +102,9 @@ namespace IronRuby.StandardLibrary.Yaml {
                 _parser.GetEvent();
             } else if (@event is MappingStartEvent) {
                 MappingStartEvent start = (MappingStartEvent)_parser.GetEvent();
-                string tag = start.Tag;
-                if (tag == null || tag == "!") {
-                    tag = Resolver.Resolve(typeof(MappingNode), null, start.Implicit);
-                }
-                MappingNode mapResult = new MappingNode(tag, new Dictionary<Node, Node>(), start.FlowStyle);
+                MappingNode mapResult = new MappingNode(start.Tag != "!" ? start.Tag : null, new Dictionary<Node, Node>(), start.FlowStyle);
                 result = mapResult;
-                if (null != anchor) {
+                if (anchor != null) {
                     AddAnchor(anchor, result);
                 }
                 while (!(_parser.PeekEvent() is MappingEndEvent)) {

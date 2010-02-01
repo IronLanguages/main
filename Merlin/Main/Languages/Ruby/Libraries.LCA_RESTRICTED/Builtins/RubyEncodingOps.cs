@@ -64,7 +64,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, RubyEncoding/*!*/ self) {
             // TODO: to_s overridden
-            MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
+            MutableString result = MutableString.CreateMutable(context.GetIdentifierEncoding());
             result.Append("#<");
             result.Append(context.GetClassDisplayName(self));
             result.Append(':');

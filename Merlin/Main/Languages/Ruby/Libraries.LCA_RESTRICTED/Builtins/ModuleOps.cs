@@ -677,8 +677,7 @@ namespace IronRuby.Builtins {
             using (self.Context.ClassHierarchyLocker()) {
                 self.ForEachClassVariable(true, delegate(RubyModule/*!*/ module, string name, object value) {
                     if (name != null && !visited.ContainsKey(name)) {
-                        // TODO (encoding):
-                        result.Add(MutableString.Create(name, RubyEncoding.UTF8));
+                        result.Add(self.Context.StringifyIdentifier(name));
                         visited.Add(name, true);
                     }
                     return false;
@@ -755,9 +754,8 @@ namespace IronRuby.Builtins {
                     }
 
                     if (!visited.ContainsKey(name)) {
+                        result.Add(self.Context.StringifyIdentifier(name));
                         visited.Add(name, true);
-                        // TODO (encoding):
-                        result.Add(MutableString.Create(name, RubyEncoding.UTF8));
                     }
                     return false;
                 });
@@ -889,27 +887,16 @@ namespace IronRuby.Builtins {
             IEnumerable<string> foreignMembers) {
 
             var result = new RubyArray();
-            var symbolicNames = self.Context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
-
             using (self.Context.ClassHierarchyLocker()) {
                 self.ForEachMember(inherited, attributes, foreignMembers, (name, module, member) => {
                     if (member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMapping) == 0 && RubyUtils.HasMangledName(name)) {
                         result.Add(new ClrName(name));
                     } else {
-                        result.Add(CreateMethodName(name, symbolicNames));
+                        result.Add(self.Context.StringifyIdentifier(name));
                     }
                 });
             }
             return result;
-        }
-
-        internal static object CreateMethodName(string/*!*/ name, bool symbolicNames) {
-            if (symbolicNames) {
-                return SymbolTable.StringToId(name);
-            } else {
-                // TODO (encoding):
-                return MutableString.Create(name, RubyEncoding.UTF8);
-            }
         }
 
         #endregion

@@ -87,10 +87,10 @@ namespace IronRuby.Runtime {
         internal bool InRescue;
 
         // closure:
-        private Dictionary<SymbolId, int> _staticLocalMapping;
-        private Dictionary<SymbolId, object> _dynamicLocals;
+        private Dictionary<string, int> _staticLocalMapping;
+        private Dictionary<string, object> _dynamicLocals;
         internal /*and protected*/ MutableTuple _locals; // null if there are no variables
-        internal /*and protected*/ SymbolId[] _variableNames; // empty if there are no variables
+        internal /*and protected*/ string/*!*/[] _variableNames; // empty if there are no variables
 
         internal /*and protected readonly*/ RubyTopLevelScope/*!*/ _top;
         internal /*and protected readonly*/ RubyScope _parent;
@@ -177,7 +177,7 @@ namespace IronRuby.Runtime {
 
         #region Local Variables
 
-        internal void SetLocals(MutableTuple locals, SymbolId[]/*!*/ variableNames) {
+        internal void SetLocals(MutableTuple locals, string/*!*/[]/*!*/ variableNames) {
             Debug.Assert(_variableNames == null);
             _locals = locals;
             _variableNames = variableNames;
@@ -185,14 +185,14 @@ namespace IronRuby.Runtime {
 
         internal void SetEmptyLocals() {
             Debug.Assert(_variableNames == null);
-            _variableNames = SymbolId.EmptySymbols;
+            _variableNames = ArrayUtils.EmptyStrings;
             _locals = null;
         }
 
         private void EnsureBoxes() {
             if (_staticLocalMapping == null) {
                 int count = _variableNames.Length;
-                Dictionary<SymbolId, int> boxes = new Dictionary<SymbolId, int>(count);
+                Dictionary<string, int> boxes = new Dictionary<string, int>(count);
                 for (int i = 0; i < count; i++) {
                     boxes[_variableNames[i]] = i;
                 }
@@ -200,7 +200,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private bool TryGetLocal(SymbolId name, out object value) {
+        private bool TryGetLocal(string/*!*/ name, out object value) {
             EnsureBoxes();
 
             int index;
@@ -220,7 +220,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private bool TrySetLocal(SymbolId name, object value) {
+        private bool TrySetLocal(string/*!*/ name, object value) {
             EnsureBoxes();
 
             int index;
@@ -244,10 +244,10 @@ namespace IronRuby.Runtime {
             return true;
         }
 
-        private IEnumerable<KeyValuePair<SymbolId, object>>/*!*/ GetDeclaredLocalVariables() {
+        private IEnumerable<KeyValuePair<string, object>>/*!*/ GetDeclaredLocalVariables() {
             for (int i = 0; i < _variableNames.Length; i++) {
                 Debug.Assert(_locals != null);
-                yield return new KeyValuePair<SymbolId, object>(_variableNames[i], _locals.GetValue(i));
+                yield return new KeyValuePair<string, object>(_variableNames[i], _locals.GetValue(i));
             }
 
             if (_dynamicLocals != null) {
@@ -259,14 +259,14 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private IEnumerable<SymbolId>/*!*/ GetDeclaredLocalSymbols() {
+        private IEnumerable<string>/*!*/ GetDeclaredLocalSymbols() {
             for (int i = 0; i < _variableNames.Length; i++) {
                 yield return _variableNames[i];
             }
 
             if (_dynamicLocals != null) {
                 lock (_dynamicLocals) {
-                    foreach (SymbolId name in _dynamicLocals.Keys) {
+                    foreach (string name in _dynamicLocals.Keys) {
                         yield return name;
                     }
                 }
@@ -277,8 +277,8 @@ namespace IronRuby.Runtime {
             var result = new List<string>();
             RubyScope scope = this;
             while (true) {
-                foreach (SymbolId name in scope.GetDeclaredLocalSymbols()) {
-                    result.Add(SymbolTable.IdToString(name));
+                foreach (string name in scope.GetDeclaredLocalSymbols()) {
+                    result.Add(name);
                 }
 
                 if (!scope.InheritsLocalVariables) {
@@ -289,7 +289,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal object ResolveLocalVariable(SymbolId name) {
+        internal object ResolveLocalVariable(string/*!*/ name) {
             RubyScope scope = this;
             while (true) {
                 object value;
@@ -305,7 +305,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal object ResolveAndSetLocalVariable(SymbolId name, object value) {
+        internal object ResolveAndSetLocalVariable(string/*!*/ name, object value) {
             RubyScope scope = this;
             while (true) {
                 if (scope.TrySetLocal(name, value)) {
@@ -325,9 +325,9 @@ namespace IronRuby.Runtime {
         /// Defines dynamic variable in this scope.
         /// module-eval scopes need to override this since they should set the variable in their parent scope.
         /// </summary>
-        internal virtual void DefineDynamicVariable(SymbolId name, object value) {
+        internal virtual void DefineDynamicVariable(string/*!*/ name, object value) {
             if (_dynamicLocals == null) {
-                Interlocked.CompareExchange(ref _dynamicLocals, new Dictionary<SymbolId, object>(), null);
+                Interlocked.CompareExchange(ref _dynamicLocals, new Dictionary<string, object>(), null);
             }
 
             lock (_dynamicLocals) {
@@ -571,7 +571,7 @@ namespace IronRuby.Runtime {
                     RubyScope scope = _scope;
                     while (true) {
                         foreach (var variable in scope.GetDeclaredLocalVariables()) {
-                            string name = SymbolTable.IdToString(variable.Key);
+                            string name = variable.Key;
                             string className = _scope.RubyContext.GetClassDisplayName(variable.Value);
                             if (scope != _scope) {
                                 name += " (outer)";
@@ -606,7 +606,7 @@ namespace IronRuby.Runtime {
             [DebuggerDisplay("", Name = "Raw Variables", Type = "")]
             public object D {
                 get {
-                    var result = new Dictionary<SymbolId, object>();
+                    var result = new Dictionary<string, object>();
                     foreach (var variable in _scope.GetDeclaredLocalVariables()) {
                         result.Add(variable.Key, variable.Value);
                     }
@@ -754,7 +754,7 @@ var closureScope = scope as RubyClosureScope;
             get { return _blockParameter; }
         }
 
-        internal RubyMethodScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, int visibleParameterCountAndSignatureFlags,
+        internal RubyMethodScope(MutableTuple locals, string/*!*/[]/*!*/ variableNames, int visibleParameterCountAndSignatureFlags,
             RubyScope/*!*/ parent, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
             object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
             Assert.NotNull(parent, declaringModule, definitionName);
@@ -787,7 +787,7 @@ var closureScope = scope as RubyClosureScope;
             
             // parameters precede other variables:
             for (int i = 0; i < result.Length; i++) {
-                result[i] = SymbolTable.IdToString(_variableNames[firstVisibleParameter + i]);
+                result[i] = _variableNames[firstVisibleParameter + i];
             }
 
             return result;
@@ -864,7 +864,7 @@ var closureScope = scope as RubyClosureScope;
             SetEmptyLocals();
         }
 
-        internal override void DefineDynamicVariable(SymbolId name, object value) {
+        internal override void DefineDynamicVariable(string/*!*/ name, object value) {
             _parent.DefineDynamicVariable(name, value);
         }
     }
@@ -873,7 +873,7 @@ var closureScope = scope as RubyClosureScope;
         public override ScopeKind Kind { get { return ScopeKind.FileInitializer; } }
         public override bool InheritsLocalVariables { get { return false; } }
 
-        internal RubyFileInitializerScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, RubyScope/*!*/ parent) {
+        internal RubyFileInitializerScope(MutableTuple locals, string[]/*!*/ variableNames, RubyScope/*!*/ parent) {
             // RuntimeFlowControl:
             _activeFlowControlScope = parent.FlowControlScope;
 
@@ -888,7 +888,7 @@ var closureScope = scope as RubyClosureScope;
             InRescue = parent.InRescue;
         }
 
-        internal override void DefineDynamicVariable(SymbolId name, object value) {
+        internal override void DefineDynamicVariable(string/*!*/ name, object value) {
             _parent.DefineDynamicVariable(name, value);
         }
     }
@@ -918,7 +918,7 @@ var closureScope = scope as RubyClosureScope;
             get { return _blockFlowControl; }
         }
 
-        internal RubyBlockScope(MutableTuple locals, SymbolId[]/*!*/ variableNames,
+        internal RubyBlockScope(MutableTuple locals, string/*!*/[]/*!*/ variableNames,
             BlockParam/*!*/ blockFlowControl, object selfObject, InterpretedFrame interpretedFrame) {
             var parent = blockFlowControl.Proc.LocalScope;
 
@@ -1062,16 +1062,16 @@ var closureScope = scope as RubyClosureScope;
 
         // "method_missing" on main singleton in DLR Scope bound code.
         // Might be called via a site -> needs to be public in partial trust.
-        public static object TopMethodMissing(RubyScope/*!*/ localScope, BlockParam block, object/*!*/ self, SymbolId name, [NotNull]params object[]/*!*/ args) {
+        public static object TopMethodMissing(RubyScope/*!*/ localScope, BlockParam block, object/*!*/ self, RubySymbol name, [NotNull]params object[]/*!*/ args) {
             return ScopeMethodMissing(localScope.RubyContext, localScope.GlobalScope.Scope, block, self, name, args);
         }
 
-        public static object ScopeMethodMissing(RubyContext/*!*/ context, Scope/*!*/ globalScope, BlockParam block, object self, SymbolId name, object[]/*!*/ args) {
+        public static object ScopeMethodMissing(RubyContext/*!*/ context, Scope/*!*/ globalScope, BlockParam block, object self, RubySymbol name, object[]/*!*/ args) {
             Assert.NotNull(context, globalScope);
 
             // TODO: invoke member:
 
-            string str = SymbolTable.IdToString(name);
+            string str = name.ToString();
             if (str.LastCharacter() == '=') {
                 if (args.Length != 1) {
                     throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 1);
@@ -1112,7 +1112,7 @@ var closureScope = scope as RubyClosureScope;
             }
 
             // TODO: call super
-            throw RubyExceptions.CreateMethodMissing(context, self, SymbolTable.IdToString(name));
+            throw RubyExceptions.CreateMethodMissing(context, self, str);
         }
 
         #endregion

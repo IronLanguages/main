@@ -62,16 +62,16 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ConvertBignumToFloat;
         public static MethodInfo/*!*/ ConvertDoubleToFixnum { get { return _ConvertDoubleToFixnum ?? (_ConvertDoubleToFixnum = CallInstruction.CacheFunc<System.Double, System.Int32>(RubyOps.ConvertDoubleToFixnum)); } }
         private static MethodInfo _ConvertDoubleToFixnum;
-        public static MethodInfo/*!*/ ConvertFixnumToSymbol { get { return _ConvertFixnumToSymbol ?? (_ConvertFixnumToSymbol = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, System.Int32, System.String>(RubyOps.ConvertFixnumToSymbol)); } }
-        private static MethodInfo _ConvertFixnumToSymbol;
+        public static MethodInfo/*!*/ ConvertMutableStringToClrString { get { return _ConvertMutableStringToClrString ?? (_ConvertMutableStringToClrString = CallInstruction.CacheFunc<IronRuby.Builtins.MutableString, System.String>(RubyOps.ConvertMutableStringToClrString)); } }
+        private static MethodInfo _ConvertMutableStringToClrString;
         public static MethodInfo/*!*/ ConvertMutableStringToFloat { get { return _ConvertMutableStringToFloat ?? (_ConvertMutableStringToFloat = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, System.Double>(RubyOps.ConvertMutableStringToFloat)); } }
         private static MethodInfo _ConvertMutableStringToFloat;
-        public static MethodInfo/*!*/ ConvertMutableStringToSymbol { get { return _ConvertMutableStringToSymbol ?? (_ConvertMutableStringToSymbol = CallInstruction.CacheFunc<IronRuby.Builtins.MutableString, System.String>(RubyOps.ConvertMutableStringToSymbol)); } }
-        private static MethodInfo _ConvertMutableStringToSymbol;
         public static MethodInfo/*!*/ ConvertStringToFloat { get { return _ConvertStringToFloat ?? (_ConvertStringToFloat = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, System.String, System.Double>(RubyOps.ConvertStringToFloat)); } }
         private static MethodInfo _ConvertStringToFloat;
-        public static MethodInfo/*!*/ ConvertSymbolIdToSymbol { get { return _ConvertSymbolIdToSymbol ?? (_ConvertSymbolIdToSymbol = CallInstruction.CacheFunc<Microsoft.Scripting.SymbolId, System.String>(RubyOps.ConvertSymbolIdToSymbol)); } }
-        private static MethodInfo _ConvertSymbolIdToSymbol;
+        public static MethodInfo/*!*/ ConvertSymbolIdToClrString { get { return _ConvertSymbolIdToClrString ?? (_ConvertSymbolIdToClrString = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, System.Int32, System.String>(RubyOps.ConvertSymbolIdToClrString)); } }
+        private static MethodInfo _ConvertSymbolIdToClrString;
+        public static MethodInfo/*!*/ ConvertSymbolToClrString { get { return _ConvertSymbolToClrString ?? (_ConvertSymbolToClrString = CallInstruction.CacheFunc<IronRuby.Builtins.RubySymbol, System.String>(RubyOps.ConvertSymbolToClrString)); } }
+        private static MethodInfo _ConvertSymbolToClrString;
         public static MethodInfo/*!*/ CreateArgumentsError { get { return _CreateArgumentsError ?? (_CreateArgumentsError = CallInstruction.CacheFunc<System.String, System.ArgumentException>(RubyOps.CreateArgumentsError)); } }
         private static MethodInfo _CreateArgumentsError;
         public static MethodInfo/*!*/ CreateArgumentsErrorForMissingBlock { get { return _CreateArgumentsErrorForMissingBlock ?? (_CreateArgumentsErrorForMissingBlock = CallInstruction.CacheFunc<System.ArgumentException>(RubyOps.CreateArgumentsErrorForMissingBlock)); } }
@@ -84,7 +84,7 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateBfcForProcCall;
         public static MethodInfo/*!*/ CreateBfcForYield { get { return _CreateBfcForYield ?? (_CreateBfcForYield = CallInstruction.CacheFunc<IronRuby.Builtins.Proc, IronRuby.Runtime.BlockParam>(RubyOps.CreateBfcForYield)); } }
         private static MethodInfo _CreateBfcForYield;
-        public static MethodInfo/*!*/ CreateBlockScope { get { return _CreateBlockScope ?? (_CreateBlockScope = CallInstruction.CacheFunc<Microsoft.Scripting.MutableTuple, Microsoft.Scripting.SymbolId[], IronRuby.Runtime.BlockParam, System.Object, Microsoft.Scripting.Interpreter.InterpretedFrame, IronRuby.Runtime.RubyBlockScope>(RubyOps.CreateBlockScope)); } }
+        public static MethodInfo/*!*/ CreateBlockScope { get { return _CreateBlockScope ?? (_CreateBlockScope = CallInstruction.CacheFunc<Microsoft.Scripting.MutableTuple, System.String[], IronRuby.Runtime.BlockParam, System.Object, Microsoft.Scripting.Interpreter.InterpretedFrame, IronRuby.Runtime.RubyBlockScope>(RubyOps.CreateBlockScope)); } }
         private static MethodInfo _CreateBlockScope;
         public static MethodInfo/*!*/ CreateBoundMember { get { return _CreateBoundMember ?? (_CreateBoundMember = CallInstruction.CacheFunc<System.Object, IronRuby.Runtime.Calls.RubyMemberInfo, System.String, IronRuby.Builtins.RubyMethod>(RubyOps.CreateBoundMember)); } }
         private static MethodInfo _CreateBoundMember;
@@ -104,15 +104,15 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateExclusiveIntegerRange;
         public static MethodInfo/*!*/ CreateExclusiveRange { get { return _CreateExclusiveRange ?? (_CreateExclusiveRange = CallInstruction.CacheFunc<System.Object, System.Object, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BinaryOpStorage, IronRuby.Builtins.Range>(RubyOps.CreateExclusiveRange)); } }
         private static MethodInfo _CreateExclusiveRange;
-        public static MethodInfo/*!*/ CreateFileInitializerScope { get { return _CreateFileInitializerScope ?? (_CreateFileInitializerScope = CallInstruction.CacheFunc<Microsoft.Scripting.MutableTuple, Microsoft.Scripting.SymbolId[], IronRuby.Runtime.RubyScope, IronRuby.Runtime.RubyScope>(RubyOps.CreateFileInitializerScope)); } }
+        public static MethodInfo/*!*/ CreateFileInitializerScope { get { return _CreateFileInitializerScope ?? (_CreateFileInitializerScope = CallInstruction.CacheFunc<Microsoft.Scripting.MutableTuple, System.String[], IronRuby.Runtime.RubyScope, IronRuby.Runtime.RubyScope>(RubyOps.CreateFileInitializerScope)); } }
         private static MethodInfo _CreateFileInitializerScope;
         public static MethodInfo/*!*/ CreateInclusiveIntegerRange { get { return _CreateInclusiveIntegerRange ?? (_CreateInclusiveIntegerRange = CallInstruction.CacheFunc<System.Int32, System.Int32, IronRuby.Builtins.Range>(RubyOps.CreateInclusiveIntegerRange)); } }
         private static MethodInfo _CreateInclusiveIntegerRange;
         public static MethodInfo/*!*/ CreateInclusiveRange { get { return _CreateInclusiveRange ?? (_CreateInclusiveRange = CallInstruction.CacheFunc<System.Object, System.Object, IronRuby.Runtime.RubyScope, IronRuby.Runtime.BinaryOpStorage, IronRuby.Builtins.Range>(RubyOps.CreateInclusiveRange)); } }
         private static MethodInfo _CreateInclusiveRange;
-        public static MethodInfo/*!*/ CreateMethodScope { get { return _CreateMethodScope ?? (_CreateMethodScope = CallInstruction.CacheFunc<Microsoft.Scripting.MutableTuple, Microsoft.Scripting.SymbolId[], System.Int32, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, System.String, System.Object, IronRuby.Builtins.Proc, Microsoft.Scripting.Interpreter.InterpretedFrame, IronRuby.Runtime.RubyMethodScope>(RubyOps.CreateMethodScope)); } }
+        public static MethodInfo/*!*/ CreateMethodScope { get { return _CreateMethodScope ?? (_CreateMethodScope = CallInstruction.CacheFunc<Microsoft.Scripting.MutableTuple, System.String[], System.Int32, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, System.String, System.Object, IronRuby.Builtins.Proc, Microsoft.Scripting.Interpreter.InterpretedFrame, IronRuby.Runtime.RubyMethodScope>(RubyOps.CreateMethodScope)); } }
         private static MethodInfo _CreateMethodScope;
-        public static MethodInfo/*!*/ CreateModuleScope { get { return _CreateModuleScope ?? (_CreateModuleScope = CallInstruction.CacheFunc<Microsoft.Scripting.MutableTuple, Microsoft.Scripting.SymbolId[], IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Runtime.RubyModuleScope>(RubyOps.CreateModuleScope)); } }
+        public static MethodInfo/*!*/ CreateModuleScope { get { return _CreateModuleScope ?? (_CreateModuleScope = CallInstruction.CacheFunc<Microsoft.Scripting.MutableTuple, System.String[], IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, IronRuby.Runtime.RubyModuleScope>(RubyOps.CreateModuleScope)); } }
         private static MethodInfo _CreateModuleScope;
         public static MethodInfo/*!*/ CreateMutableStringL { get { return _CreateMutableStringL ?? (_CreateMutableStringL = CallInstruction.CacheFunc<System.String, IronRuby.Builtins.RubyEncoding, IronRuby.Builtins.MutableString>(RubyOps.CreateMutableStringL)); } }
         private static MethodInfo _CreateMutableStringL;
@@ -142,17 +142,15 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateRfcForMethod;
         public static MethodInfo/*!*/ CreateStructInstance { get { return _CreateStructInstance ?? (_CreateStructInstance = CallInstruction.CacheFunc<IronRuby.Builtins.RubyClass, System.Object[], IronRuby.Builtins.RubyStruct>(RubyOps.CreateStructInstance)); } }
         private static MethodInfo _CreateStructInstance;
-        public static MethodInfo/*!*/ CreateSymbolL { get { return _CreateSymbolL ?? (_CreateSymbolL = CallInstruction.CacheFunc<System.String, IronRuby.Builtins.RubyEncoding, Microsoft.Scripting.SymbolId>(RubyOps.CreateSymbolL)); } }
-        private static MethodInfo _CreateSymbolL;
-        public static MethodInfo/*!*/ CreateSymbolLM { get { return _CreateSymbolLM ?? (_CreateSymbolLM = CallInstruction.CacheFunc<System.String, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyEncoding, Microsoft.Scripting.SymbolId>(RubyOps.CreateSymbolLM)); } }
+        public static MethodInfo/*!*/ CreateSymbolLM { get { return _CreateSymbolLM ?? (_CreateSymbolLM = CallInstruction.CacheFunc<System.String, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyEncoding, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubySymbol>(RubyOps.CreateSymbolLM)); } }
         private static MethodInfo _CreateSymbolLM;
-        public static MethodInfo/*!*/ CreateSymbolM { get { return _CreateSymbolM ?? (_CreateSymbolM = CallInstruction.CacheFunc<IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyEncoding, Microsoft.Scripting.SymbolId>(RubyOps.CreateSymbolM)); } }
+        public static MethodInfo/*!*/ CreateSymbolM { get { return _CreateSymbolM ?? (_CreateSymbolM = CallInstruction.CacheFunc<IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyEncoding, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubySymbol>(RubyOps.CreateSymbolM)); } }
         private static MethodInfo _CreateSymbolM;
-        public static MethodInfo/*!*/ CreateSymbolML { get { return _CreateSymbolML ?? (_CreateSymbolML = CallInstruction.CacheFunc<IronRuby.Builtins.MutableString, System.String, IronRuby.Builtins.RubyEncoding, Microsoft.Scripting.SymbolId>(RubyOps.CreateSymbolML)); } }
+        public static MethodInfo/*!*/ CreateSymbolML { get { return _CreateSymbolML ?? (_CreateSymbolML = CallInstruction.CacheFunc<IronRuby.Builtins.MutableString, System.String, IronRuby.Builtins.RubyEncoding, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubySymbol>(RubyOps.CreateSymbolML)); } }
         private static MethodInfo _CreateSymbolML;
-        public static MethodInfo/*!*/ CreateSymbolMM { get { return _CreateSymbolMM ?? (_CreateSymbolMM = CallInstruction.CacheFunc<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyEncoding, Microsoft.Scripting.SymbolId>(RubyOps.CreateSymbolMM)); } }
+        public static MethodInfo/*!*/ CreateSymbolMM { get { return _CreateSymbolMM ?? (_CreateSymbolMM = CallInstruction.CacheFunc<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyEncoding, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubySymbol>(RubyOps.CreateSymbolMM)); } }
         private static MethodInfo _CreateSymbolMM;
-        public static MethodInfo/*!*/ CreateSymbolN { get { return _CreateSymbolN ?? (_CreateSymbolN = CallInstruction.CacheFunc<System.Object[], IronRuby.Builtins.RubyEncoding, Microsoft.Scripting.SymbolId>(RubyOps.CreateSymbolN)); } }
+        public static MethodInfo/*!*/ CreateSymbolN { get { return _CreateSymbolN ?? (_CreateSymbolN = CallInstruction.CacheFunc<System.Object[], IronRuby.Builtins.RubyEncoding, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubySymbol>(RubyOps.CreateSymbolN)); } }
         private static MethodInfo _CreateSymbolN;
         public static MethodInfo/*!*/ CreateTypeConversionError { get { return _CreateTypeConversionError ?? (_CreateTypeConversionError = CallInstruction.CacheFunc<System.String, System.String, System.Exception>(RubyOps.CreateTypeConversionError)); } }
         private static MethodInfo _CreateTypeConversionError;
@@ -282,7 +280,7 @@ namespace IronRuby.Compiler {
         private static MethodInfo _HookupEvent;
         public static MethodInfo/*!*/ InitializeBlock { get { return _InitializeBlock ?? (_InitializeBlock = CallInstruction.CacheAction<IronRuby.Builtins.Proc>(RubyOps.InitializeBlock)); } }
         private static MethodInfo _InitializeBlock;
-        public static MethodInfo/*!*/ InitializeScope { get { return _InitializeScope ?? (_InitializeScope = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope, Microsoft.Scripting.MutableTuple, Microsoft.Scripting.SymbolId[], Microsoft.Scripting.Interpreter.InterpretedFrame>(RubyOps.InitializeScope)); } }
+        public static MethodInfo/*!*/ InitializeScope { get { return _InitializeScope ?? (_InitializeScope = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope, Microsoft.Scripting.MutableTuple, System.String[], Microsoft.Scripting.Interpreter.InterpretedFrame>(RubyOps.InitializeScope)); } }
         private static MethodInfo _InitializeScope;
         public static MethodInfo/*!*/ InitializeScopeNoLocals { get { return _InitializeScopeNoLocals ?? (_InitializeScopeNoLocals = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope, Microsoft.Scripting.Interpreter.InterpretedFrame>(RubyOps.InitializeScopeNoLocals)); } }
         private static MethodInfo _InitializeScopeNoLocals;
@@ -559,7 +557,6 @@ namespace IronRuby.Compiler {
             Debug.Assert(suffix.Length <= RubyOps.MakeStringParamCount);
             switch (suffix) {
                 case "N": return CreateRegexN;
-                case "L": return CreateRegexL;
                 case "M": return CreateRegexM;
                 case "LM": return CreateRegexLM;
                 case "ML": return CreateRegexML;
@@ -572,7 +569,6 @@ namespace IronRuby.Compiler {
             Debug.Assert(suffix.Length <= RubyOps.MakeStringParamCount);
             switch (suffix) {
                 case "N": return CreateMutableStringN;
-                case "L": return CreateMutableStringL;
                 case "M": return CreateMutableStringM;
                 case "LM": return CreateMutableStringLM;
                 case "ML": return CreateMutableStringML;
@@ -585,7 +581,6 @@ namespace IronRuby.Compiler {
             Debug.Assert(suffix.Length <= RubyOps.MakeStringParamCount);
             switch (suffix) {
                 case "N": return CreateSymbolN;
-                case "L": return CreateSymbolL;
                 case "M": return CreateSymbolM;
                 case "LM": return CreateSymbolLM;
                 case "ML": return CreateSymbolML;

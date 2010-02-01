@@ -61,7 +61,7 @@ namespace IronRuby.Runtime {
         }
 
         public static string/*!*/ ToAsciiString(this string/*!*/ str) {
-            return MutableString.AppendUnicodeRepresentation(new StringBuilder(), str, false, true, -1, -1).ToString();
+            return MutableString.AppendUnicodeRepresentation(new StringBuilder(), str, MutableString.Escape.NonAscii, -1, -1).ToString();
         }
 
         public static int LastCharacter(this string/*!*/ str) {

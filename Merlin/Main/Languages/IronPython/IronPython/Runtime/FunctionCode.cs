@@ -200,7 +200,7 @@ namespace IronPython.Runtime {
                         curCodeList = curCodeList.Next;
                     }
                 } finally {
-                    Interlocked.Exchange(ref context._allCodes, curCodeList);
+                    Interlocked.Exchange(ref context._allCodes, initialCode);
                 }
             }
         }
@@ -219,14 +219,14 @@ namespace IronPython.Runtime {
                 // the bulk of the work is in scanning the list, this proceeeds lock free
                 int removed = 0, kept = 0, origCount = context._codeCount;
                 CodeList prev = null;
-                CodeList cur = GetRootCodeNoUpdating(context._allCodes);
+                CodeList cur = GetRootCodeNoUpdating(context);
 
                 while (cur != null) {
                     if (!cur.Code.IsAlive) {
                         if (prev == null) {
                             if (Interlocked.CompareExchange(ref context._allCodes, cur.Next, cur) != cur) {
                                 // someone else snuck in and added a new code entry, spin and try again.
-                                cur = GetRootCodeNoUpdating(context._allCodes);
+                                cur = GetRootCodeNoUpdating(context);
                                 continue;
                             }
                             cur = cur.Next;
@@ -284,15 +284,16 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static CodeList GetRootCodeNoUpdating(CodeList cur) {
-            while (cur == _CodeCreateAndUpdateDelegateLock) {
+        private static CodeList GetRootCodeNoUpdating(PythonContext context) {
+            CodeList cur = context._allCodes;
+            if (cur == _CodeCreateAndUpdateDelegateLock) {
                 lock (_CodeCreateAndUpdateDelegateLock) {
                     // wait until enumerating thread is done, but it's alright
                     // if we got cur and then an enumeration started (because we'll
                     // just clear entries out)
+                    cur = context._allCodes;
+                    Debug.Assert(cur != _CodeCreateAndUpdateDelegateLock);
                 }
-
-                cur = _CodeCreateAndUpdateDelegateLock;
             }
             return cur;
         }
@@ -648,6 +649,13 @@ namespace IronPython.Runtime {
                 finalTarget = _tracingDelegate;
             } else {
                 if (_normalDelegate == null) {
+                    if (!forceCreation) {                        
+                        // we cannot create the delegate when forceCreation is false because we hold the
+                        // _CodeCreateAndUpdateDelegateLock and compiling the delegate may create a FunctionCode
+                        // object which requires the lock.
+                        PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Target);
+                        return;
+                    }
                     _normalDelegate = CompileLambda(GetGeneratorOrNormalLambda(), new TargetUpdaterForCompilation(context, this).SetCompiledTarget);
                 }
 

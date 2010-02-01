@@ -27,6 +27,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Reflection;
+using System.Text;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
@@ -51,6 +52,10 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         public RubyGlobalScope/*!*/ GlobalScope {
             get { return _globalScope; }
+        }
+
+        public Encoding/*!*/ Encoding {
+            get { return _nodeProvider.Encoding; }
         }
 
         public virtual YamlConstructor GetYamlConstructor(string key) {
@@ -109,7 +114,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         public static Node GetNullNode() {
-            return new ScalarNode("tag:yaml.org,2002:null", null, (char)0);
+            return new ScalarNode(Tags.Null, null, ScalarQuotingStyle.None);
         }
 
         public object ConstructObject(Node node) {
@@ -120,7 +125,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 return new LinkNode(node);
             }
             _recursiveObjects.Add(node, new List<RecursiveFixer>());
-            YamlConstructor ctor = GetYamlConstructor(node.Tag);
+            YamlConstructor ctor = GetYamlConstructor(node.Tag ?? node.DefaultTag);
             if (ctor == null) {
                 bool through = true;
                 foreach (string tagPrefix in GetYamlMultiRegexps()) {
@@ -160,39 +165,37 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         public object ConstructPrimitive(Node node) {
-            if(node is ScalarNode) {
+            if (node is ScalarNode) {
                 return ConstructScalar(node);
-            } else if(node is SequenceNode) {
+            } else if (node is SequenceNode) {
                 return ConstructSequence(node);            
-            } else if(node is MappingNode) {
+            } else if (node is MappingNode) {
                 return ConstructMapping(node);
             } else {
-                Console.Error.WriteLine(node.Tag);
+                throw new ConstructorException("unexpected node type: " + node);
             }
-            return null;
-        }        
+        }
 
-        public object ConstructScalar(Node node) {
+        /// <summary>
+        /// Returns the value of the scalar.
+        /// </summary>
+        public string ConstructScalar(Node/*!*/ node) {
             ScalarNode scalar = node as ScalarNode;
             if (scalar == null) {
                 MappingNode mapNode = node as MappingNode;
                 if (mapNode != null) {
                     foreach (KeyValuePair<Node, Node> entry in mapNode.Nodes) {
-                        if ("tag:yaml.org,2002:value" == entry.Key.Tag) {
+                        if (entry.Key.Tag == "tag:yaml.org,2002:value") {
                             return ConstructScalar(entry.Value);
                         }
                     }
                 }
                 throw new ConstructorException("expected a scalar or mapping node, but found: " + node);
             }
-            string value = scalar.Value;
-            if (value.Length > 1 && value[0] == ':' && scalar.Style == '\0') {
-                return SymbolTable.StringToId(value.Substring(1));
-            }
-            return value;
+            return scalar.Value;
         }        
 
-        public object ConstructPrivateType(Node node) {
+        public object/*!*/ ConstructPrivateType(Node node) {
             object val = null;
             ScalarNode scalar = node as ScalarNode;
             if (scalar != null) {
@@ -206,8 +209,9 @@ namespace IronRuby.StandardLibrary.Yaml {
             }            
             return new PrivateType(node.Tag,val);
         }
-        
-        public RubyArray ConstructSequence(Node sequenceNode) {
+
+        //TODO: remove Ruby-specific stuff from this layer
+        public RubyArray/*!*/ ConstructSequence(Node/*!*/ sequenceNode) {
             SequenceNode seq = sequenceNode as SequenceNode;
             if(seq == null) {
                 throw new ConstructorException("expected a sequence node, but found: " + sequenceNode);
@@ -324,94 +328,77 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         #region Statics
 
-        private static readonly Dictionary<string, bool> BOOL_VALUES;
-
         static BaseConstructor() {
-            BOOL_VALUES = new Dictionary<string, bool>();
-            BOOL_VALUES.Add("yes", true);
-            BOOL_VALUES.Add("Yes", true);
-            BOOL_VALUES.Add("YES", true);
-            BOOL_VALUES.Add("no", false);
-            BOOL_VALUES.Add("No", false);
-            BOOL_VALUES.Add("NO", false);
-            BOOL_VALUES.Add("true", true);
-            BOOL_VALUES.Add("True", true);
-            BOOL_VALUES.Add("TRUE", true);
-            BOOL_VALUES.Add("false", false);
-            BOOL_VALUES.Add("False", false);
-            BOOL_VALUES.Add("FALSE", false);
-            BOOL_VALUES.Add("on", true);
-            BOOL_VALUES.Add("On", true);
-            BOOL_VALUES.Add("ON", true);
-            BOOL_VALUES.Add("off", false);
-            BOOL_VALUES.Add("Off", false);
-            BOOL_VALUES.Add("OFF", false);
-
-            AddConstructor("tag:yaml.org,2002:null", ConstructYamlNull);
-            AddConstructor("tag:yaml.org,2002:bool", ConstructYamlBool);
+            AddConstructor(Tags.Null, ConstructYamlNull);
+            AddConstructor(Tags.Bool, ConstructYamlBool);
+            AddConstructor(Tags.True, ConstructYamlBool);
+            AddConstructor(Tags.False, ConstructYamlBool);
             AddConstructor("tag:yaml.org,2002:omap", ConstructYamlOmap);
             AddConstructor("tag:yaml.org,2002:pairs", ConstructYamlPairs);
             AddConstructor("tag:yaml.org,2002:set", ConstructYamlSet);
-            AddConstructor("tag:yaml.org,2002:int", ConstructYamlInt);
-            AddConstructor("tag:yaml.org,2002:float", ConstructYamlFloat);
-            AddConstructor("tag:yaml.org,2002:timestamp", ConstructYamlTimestamp);
-            AddConstructor("tag:yaml.org,2002:timestamp#ymd", ConstructYamlTimestampYMD);
-            AddConstructor("tag:yaml.org,2002:str", ConstructYamlStr);
-            AddConstructor("tag:yaml.org,2002:binary", ConstructYamlBinary);
-            AddConstructor("tag:yaml.org,2002:seq", ConstructYamlSeq);
-            AddConstructor("tag:yaml.org,2002:map", ConstructYamlMap);
+            AddConstructor(Tags.Int, ConstructYamlInt);
+            AddConstructor(Tags.Float, ConstructYamlFloat);
+            AddConstructor(Tags.Timestamp, ConstructYamlTimestamp);
+            AddConstructor(Tags.TimestampYmd, ConstructYamlTimestampYmd);
+            AddConstructor(Tags.Str, ConstructYamlStr);
+            AddConstructor(Tags.Binary, ConstructYamlBinary);
+            AddConstructor(Tags.Seq, ConstructYamlSeq);
+            AddConstructor(Tags.Map, ConstructYamlMap);
             AddConstructor("", (self, node) => self.ConstructPrivateType(node));
-            AddMultiConstructor("tag:yaml.org,2002:seq:", ConstructSpecializedSequence);
-            AddMultiConstructor("tag:yaml.org,2002:map:", ConstructSpecializedMap);
+            AddMultiConstructor(Tags.Seq + ":", ConstructSpecializedSequence);
+            AddMultiConstructor(Tags.Map + ":", ConstructSpecializedMap);
             AddMultiConstructor("!cli/object:", ConstructCliObject);
             AddMultiConstructor("tag:cli.yaml.org,2002:object:", ConstructCliObject);
         }
 
-        public static object ConstructYamlNull(BaseConstructor ctor, Node node) {
+        public static object ConstructYamlNull(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             return null;
         }
 
-        public static object ConstructYamlBool(BaseConstructor ctor, Node node) {
+        public static object ConstructYamlBool(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             bool result;
             if (TryConstructYamlBool(ctor, node, out result)) {
-                return result;
+                return ScriptingRuntimeHelpers.BooleanToObject(result);
             }
             return null;
         }
 
-        public static bool TryConstructYamlBool(BaseConstructor ctor, Node node, out bool result) {
-            if (BOOL_VALUES.TryGetValue(ctor.ConstructScalar(node).ToString(), out result)) {
+        public static bool TryConstructYamlBool(BaseConstructor/*!*/ ctor, Node/*!*/ node, out bool result) {
+            var b = ResolverScanner.ToBool(ctor.ConstructScalar(node));
+            if (b != null) {
+                result = b.Value;
                 return true;
+            } else {
+                result = false;
+                return false;
             }
-            return false;
         }
 
-        public static object ConstructYamlOmap(BaseConstructor ctor, Node node) {
+        public static object ConstructYamlOmap(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             return ctor.ConstructPairs(node);
         }
 
-        public static object ConstructYamlPairs(BaseConstructor ctor, Node node) {
+        public static object ConstructYamlPairs(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             return ConstructYamlOmap(ctor, node);
         }
 
-        public static ICollection ConstructYamlSet(BaseConstructor ctor, Node node) {
+        public static ICollection ConstructYamlSet(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             return ctor.ConstructMapping(node).Keys;
         }
 
-        public static string ConstructYamlStr(BaseConstructor ctor, Node node) {
-            string value = ctor.ConstructScalar(node).ToString();
-            return value.Length != 0 ? value : null;
+        public static string ConstructYamlStr(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
+            return ctor.ConstructScalar(node);
         }
 
-        public static RubyArray ConstructYamlSeq(BaseConstructor ctor, Node node) {
+        public static RubyArray ConstructYamlSeq(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             return ctor.ConstructSequence(node);
         }
 
-        public static Hash ConstructYamlMap(BaseConstructor ctor, Node node) {
+        public static Hash ConstructYamlMap(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             return ctor.ConstructMapping(node);
         }
 
-        public static object constructUndefined(BaseConstructor ctor, Node node) {
+        public static object constructUndefined(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             throw new ConstructorException("could not determine a constructor for the tag: " + node.Tag);
         }
 
@@ -477,7 +464,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        public static object ConstructYamlTimestampYMD(BaseConstructor ctor, Node node) {
+        public static object ConstructYamlTimestampYmd(BaseConstructor ctor, Node node) {
             ScalarNode scalar = node as ScalarNode;
             if (scalar == null) {
                 throw new ConstructorException("can only contruct timestamp from scalar node");
@@ -561,7 +548,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         public static object ConstructYamlInt(BaseConstructor ctor, Node node) {
-            string value = ctor.ConstructScalar(node).ToString().Replace("_", "").Replace(",", "");
+            string value = ctor.ConstructScalar(node).Replace("_", "").Replace(",", "");
             int sign = +1;
             char first = value[0];
             if (first == '-') {
@@ -573,13 +560,13 @@ namespace IronRuby.StandardLibrary.Yaml {
             int @base = 10;
             if (value == "0") {
                 return 0;
-            } else if (value.StartsWith("0b")) {
+            } else if (value.StartsWith("0b", StringComparison.Ordinal)) {
                 value = value.Substring(2);
                 @base = 2;
-            } else if (value.StartsWith("0x")) {
+            } else if (value.StartsWith("0x", StringComparison.Ordinal)) {
                 value = value.Substring(2);
                 @base = 16;
-            } else if (value.StartsWith("0")) {
+            } else if (value.StartsWith("0", StringComparison.Ordinal)) {
                 value = value.Substring(1);
                 @base = 8;
             } else if (value.IndexOf(':') != -1) {
@@ -602,7 +589,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         public static object ConstructYamlFloat(BaseConstructor ctor, Node node) {
-            string value = ctor.ConstructScalar(node).ToString().Replace("_", "").Replace(",", "");
+            string value = ctor.ConstructScalar(node).Replace("_", "").Replace(",", "");
             int sign = +1;
             char first = value[0];
             if (first == '-') {
@@ -611,9 +598,9 @@ namespace IronRuby.StandardLibrary.Yaml {
             } else if (first == '+') {
                 value = value.Substring(1);
             }
-            string valLower = value.ToLower();
+            string valLower = value.ToLowerInvariant();
             if (valLower == ".inf") {
-                return sign == -1 ? double.NegativeInfinity : double.PositiveInfinity;
+                return sign == -1 ? Double.NegativeInfinity : Double.PositiveInfinity;
             } else if (valLower == ".nan") {
                 return double.NaN;
             } else if (value.IndexOf(':') != -1) {
@@ -631,7 +618,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         public static byte[] ConstructYamlBinary(BaseConstructor ctor, Node node) {
-            string val = ctor.ConstructScalar(node).ToString().Replace("\r", "").Replace("\n", "");
+            string val = ctor.ConstructScalar(node).Replace("\r", "").Replace("\n", "");
             return Convert.FromBase64String(val);
         }
 
@@ -671,7 +658,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
                 foreach (KeyValuePair<object, object> e in ctor.ConstructMapping(node)) {
                     string name = e.Key.ToString();
-                    name = "" + char.ToUpper(name[0]) + name.Substring(1);
+                    name = "" + name[0].ToUpperInvariant() + name.Substring(1);
                     PropertyInfo prop = type.GetProperty(name);
 
                     prop.SetValue(result, Convert.ChangeType(e.Value, prop.PropertyType), null);

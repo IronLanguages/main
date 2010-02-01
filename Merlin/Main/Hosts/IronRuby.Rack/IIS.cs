@@ -49,45 +49,53 @@ namespace IronRuby.Rack.Handler {
             //   required.
             // The REQUEST_METHOD must be a valid token.
 
-            env["REQUEST_METHOD"] = request.OrigionalRequest.RequestType;
+            SetEnv(env, "REQUEST_METHOD", request.OrigionalRequest.RequestType);
 
             // SCRIPT_NAME:	The initial portion of the request URL’s “path” 
             //   that corresponds to the application object, so that the 
             //   application knows its virtual “location”. This may be an empty
             //   string, if the application corresponds to the “root” of the 
             //   server.
+
             // The SCRIPT_NAME, if non-empty, must start with /
             
-            env["SCRIPT_NAME"] = request.OrigionalRequest.ApplicationPath;
-            if(env["SCRIPT_NAME"].ToString() != string.Empty && !((string)env["SCRIPT_NAME"]).StartsWith("/")) {
-                env["SCRIPT_NAME"] = "/" + env["SCRIPT_NAME"];
+            string scriptName = request.OrigionalRequest.ApplicationPath;
+            if(scriptName.Length > 0 && !scriptName.StartsWith("/")) {
+                scriptName = "/" + scriptName;
             }
-            
+
             // SCRIPT_NAME never should be /, but instead be empty.
 
-            if(env["SCRIPT_NAME"].ToString() == "/") 
-                env["SCRIPT_NAME"] = "";
-            
+            if (scriptName == "/")
+                scriptName = string.Empty;
+
+            SetEnv(env, "SCRIPT_NAME", scriptName);
+
             // PATH_INFO:	The remainder of the request URL’s “path”, 
             //   designating the virtual “location” of the request’s target 
             //   within the application. This may be an empty string, if the 
             //   request URL targets the application root and does not have a 
             //   trailing slash. This value may be percent-encoded when I 
             //   originating from a URL.
+
+
             // The PATH_INFO, if non-empty, must start with /
 
-            env["PATH_INFO"] = request.OrigionalRequest.Path.Substring(
+            string pathInfo = request.OrigionalRequest.Path.Substring(
                 request.OrigionalRequest.Path.IndexOf(request.OrigionalRequest.ApplicationPath) +
                 request.OrigionalRequest.ApplicationPath.Length
             );
-            if(env["PATH_INFO"].ToString() != string.Empty && !((string)env["PATH_INFO"]).StartsWith("/")) {
-                env["PATH_INFO"] = "/" + env["PATH_INFO"];
+
+            if(pathInfo.Length > 0 && !pathInfo.StartsWith("/")) {
+                pathInfo = "/" + pathInfo;
             }
             
             // PATH_INFO should be / if SCRIPT_NAME is empty. 
             
-            if(env["SCRIPT_NAME"].ToString() == string.Empty) 
-                env["PATH_INFO"] = "/";
+            if(pathInfo.Length == 0) 
+               pathInfo = "/";
+
+            SetEnv(env, "PATH_INFO", pathInfo);
 
             // One of SCRIPT_NAME or PATH_INFO must be set.
 
@@ -96,7 +104,7 @@ namespace IronRuby.Rack.Handler {
             // QUERY_STRING:	The portion of the request URL that follows the
             //   ?, if any. May be empty, but is always required!
             
-            env["QUERY_STRING"] = request.QueryString ?? "";
+            SetEnv(env, "QUERY_STRING", request.QueryString ?? "");
 
             // SERVER_NAME, SERVER_PORT:	When combined with SCRIPT_NAME and
             //   PATH_INFO, these variables can be used to complete the URL. 
@@ -105,8 +113,8 @@ namespace IronRuby.Rack.Handler {
             //   SERVER_NAME and SERVER_PORT can never be empty strings, and so
             //   are always required.
             
-            env["SERVER_NAME"] = request.OrigionalRequest.Url.Host;
-            env["SERVER_PORT"] = request.OrigionalRequest.Url.Port;
+            SetEnv(env, "SERVER_NAME", request.OrigionalRequest.Url.Host);
+            SetEnv(env, "SERVER_PORT", request.OrigionalRequest.Url.Port.ToString());
             
             // HTTP_ Variables:	Variables corresponding to the client-supplied 
             //   HTTP request headers (i.e., variables whose names begin with 
@@ -119,20 +127,20 @@ namespace IronRuby.Rack.Handler {
                 var prepend = "HTTP_";
                 if (pair.Key.ToString() == "Content-Length" || pair.Key.ToString() == "Content-Type")
                     prepend = "";
-                env[prepend + pair.Key.ToString().ToUpper().Replace("-", "_")] = pair.Value;
+                SetEnv(env, prepend + pair.Key.ToString().ToUpper().Replace("-", "_"), pair.Value.ToString());
             }
 
             // In addition to this, the Rack environment must include these 
             // Rack-specific variables:
             //
-            // rack.version:	The Array [1,0], representing this version of 
-            //   Rack.
-            
-            env["rack.version"] = new int[]{1,0};
+            // rack.version:	The Array (for example: [1, 0], representing
+            //     this version of Rack.
+
+            SetEnv(env, "rack.version", App.ActualRackVersion);
             
             // rack.url_scheme:	http or https, depending on the request URL.
             
-            env["rack.url_scheme"] = request.OrigionalRequest.IsSecureConnection ? "https" : "http";
+            SetEnv(env, "rack.url_scheme", request.OrigionalRequest.IsSecureConnection ? "https" : "http");
 
             // rack.input: The input stream is an IO-like object which contains
             // the raw HTTP POST data. If it is a file then it must be opened 
@@ -159,7 +167,7 @@ namespace IronRuby.Rack.Handler {
             //   object if the underlying input stream is not rewindable.
             // close must never be called on the input stream.
             
-            env["rack.input"] = RubyEngine.Execute("StringIO.new(__request.body || '')", handle_scope);
+            SetEnv(env, "rack.input", request.Body);
 
             // rack.errors:	The error stream must respond to puts, write and flush.
             //
@@ -168,25 +176,25 @@ namespace IronRuby.Rack.Handler {
             // flush must be called without arguments and must be called in 
             //   order to make the error appear for sure.
             // close must never be called on the error stream.
-            
-            env["rack.errors"] = RubyEngine.Execute("$stderr");
+
+            SetEnv(env, "rack.errors", IronRuby.Ruby.GetExecutionContext(RubyEngine.Engine).StandardErrorOutput);
 
             // rack.multithread:	true if the application object may be simultaneously
             //   invoked by another thread in the same process, false otherwise.
-            
-            env["rack.multithread"] = true;
+
+            SetEnv(env, "rack.multithread", true);
 
             // rack.multiprocess:	true if an equivalent application object may be
             //   simultaneously invoked by another process, false otherwise.
-            
-            env["rack.multiprocess"] = false;
+
+            SetEnv(env, "rack.multiprocess", false);
             
             // rack.run_once:	true if the server expects (but does not guarantee!)
             //   that the application will only be invoked this one time during the 
             //   life of its containing process. Normally, this will only be true for
             //   a server based on CGI (or something similar).
             
-            env["rack.run_once"] = false;
+            SetEnv(env, "rack.run_once", false);
             
             // Additional environment specifications have approved to standardized
             // middleware APIs. None of these are required to be implemented by the server.
@@ -213,25 +221,19 @@ namespace IronRuby.Rack.Handler {
             // (use the versions without HTTP_). The CGI keys (named without a period)
             // must have String values.
 
-            env.Remove("HTTP_CONTENT_LENGTH");
-            env.Remove("HTTP_CONTENT_TYPE");
+            RemoveEnv(env, "HTTP_CONTENT_LENGTH");
+            RemoveEnv(env, "HTTP_CONTENT_TYPE");
 
             // Set other vars based on what WEBrick sets:
 
-            env["REMOTE_HOST"] = request.OrigionalRequest.Url.Host;
-            env["SERVER_PROTOCOL"] = request.OrigionalRequest.Params["SERVER_PROTOCOL"];
-            env["REQUEST_PATH"] = request.OrigionalRequest.Path;
-            env["SERVER_SOFTWARE"] = request.OrigionalRequest.Params["SERVER_SOFTWARE"];
-            env["REMOTE_ADDR"] = "127.0.0.1";
-            env["HTTP_VERSION"] = request.OrigionalRequest.Params["SERVER_PROTOCOL"];
-            env["REQUEST_URI"] = request.OrigionalRequest.Url.AbsoluteUri;
-            env["GATEWAY_INTERFACE"] = request.OrigionalRequest.Params["GATEWAY_INTERFACE"];
-
-            // CONTENT_TYPE shouldn't be empty (Sinatra freaks out over this)
-
-            if (((string)env["CONTENT_TYPE"]) == string.Empty) {
-                env.Remove("CONTENT_TYPE");
-            }
+            SetEnv(env, "REMOTE_HOST", request.OrigionalRequest.Url.Host);
+            SetEnv(env, "SERVER_PROTOCOL", request.OrigionalRequest.Params["SERVER_PROTOCOL"]);
+            SetEnv(env, "REQUEST_PATH", request.OrigionalRequest.Path);
+            SetEnv(env, "SERVER_SOFTWARE", request.OrigionalRequest.Params["SERVER_SOFTWARE"]);
+            SetEnv(env, "REMOTE_ADDR", "127.0.0.1");
+            SetEnv(env, "HTTP_VERSION", request.OrigionalRequest.Params["SERVER_PROTOCOL"]);
+            SetEnv(env, "REQUEST_URI", request.OrigionalRequest.Url.AbsoluteUri);
+            SetEnv(env, "GATEWAY_INTERFACE", request.OrigionalRequest.Params["GATEWAY_INTERFACE"]);
 
             // A Rack application is an Ruby object (not a class) that responds
             // to call. It takes exactly one argument, the environment and 
@@ -241,8 +243,6 @@ namespace IronRuby.Rack.Handler {
             RubyArray ruby_response = App.Call(env);
 
             try {
-                handle_scope.SetVariable("__body", ruby_response[2]);
-
                 // The Response
                 // ============
                 
@@ -275,7 +275,7 @@ namespace IronRuby.Rack.Handler {
                 // ----------------
                 // There must be a Content-Type, except when the Status is 1xx,
                 // 204 or 304, in which case there must be none given.
-                
+
                 // TODO
 
                 // The Content-Length
@@ -298,12 +298,41 @@ namespace IronRuby.Rack.Handler {
                 // response. The Body commonly is an Array of Strings, the
                 // application instance itself, or a File-like object.
 
-                RubyEngine.Execute("__body.each { |part| __response.write part }", handle_scope);
+
+                handle_scope.SetVariable("__body", ruby_response[2]);
+                RubyEngine.Execute(@"
+                    __body.each do |part| 
+                        __response.write part 
+                    end
+                    ", handle_scope);
 
             } finally {
-                RubyEngine.Execute("__body.close if __body.respond_to? :close", handle_scope);
+                RubyEngine.Execute(@"
+                    __body.close if __body.respond_to? :close
+                    ", handle_scope);
             }
         }
 
+        private void SetEnv(Hash env, string key, string value) {
+            env[RubyString(key)] = RubyString(value);
+        }
+
+        private void SetEnv(Hash env, string key, object value) {
+            env[RubyString(key)] = value;
+        }
+
+        private void RemoveEnv(Hash env, string key) {
+            var rubyKey = RubyString(key);
+            if (env.ContainsKey(rubyKey)) env.Remove(rubyKey);
+        }
+
+        private object GetEnv(Hash env, string key) {
+            var rubyKey = RubyString(key);
+            return env.ContainsKey(rubyKey) ? env[rubyKey] : null;
+        }
+
+        private MutableString RubyString(string str) {
+            return MutableString.Create(str, RubyEncoding.Default);
+        }
     }
 }

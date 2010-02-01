@@ -286,25 +286,63 @@ p $Sx.class_variables.sort
         }
 
         public void AllowedSingletons1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 ok = ['x', true, false, nil, //]
 error = [1 << 70, 1, 1.0, :foo]
 
-ok.each { |x| def x.foo; end }
+ok.each do |x| 
+  def x.foo; end 
+end
 
 error.each { |x| 
   begin
     def x.foo; end
   rescue
   else
-    raise 
+    raise x.to_s
   end
 }
 
 puts 'ok'
+",
+@"ok"
+);
+        }
+
+        public void AllowedSingletons2() {
+            TestOutput(@"
+ok = ['x', true, false, nil, //, 1 << 70, 1.0]
+error = [1, :foo]
+
+ok.each do |x| 
+  class << x; end
+end
+
+error.each { |x| 
+  begin
+    class << x; end
+  rescue
+  else
+    raise x.to_s
+  end
+}
+
+puts 'ok'
+",
+@"ok"
+);
+        }
+
+        public void SingletonMethodDefinitionOnSingletons1() {
+            TestOutput(@"
+def true.foo; 't'; end
+def false.bar; 'f'; end
+def nil.baz; 'n'; end
+
+print true.foo, false.bar, nil.baz
+", @"
+tfn
 ");
-            }, @"ok");
         }
     }
 }

@@ -126,12 +126,11 @@ namespace IronRuby.Hosting {
                 return;
             }
 
-#if !SILVERLIGHT
             if (arg.StartsWith("-K", StringComparison.Ordinal)) {
                 LanguageSetup.Options["KCode"] = arg.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(arg[2]) : null;
                 return;
             }
-#endif
+
             if (arg.StartsWith("-r", StringComparison.Ordinal)) {
                 _requiredPaths.Add((arg == "-r") ? PopNextArg() : arg.Substring(2));
                 return;

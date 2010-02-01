@@ -123,7 +123,7 @@ namespace IronRuby.Tests {
                 UnicodeEscapes2,
 
                 Heredoc1,
-                Symbols1,
+                ParsingSymbols1,
                 
                 KCode1,
                 KCode2,
@@ -157,6 +157,7 @@ namespace IronRuby.Tests {
                 Strings9,
                 ToSConversion1,
                 ToSConversion2,
+                Symbols1,
                 Inspect1,
                 Inspect2,
                 File1,
@@ -422,6 +423,7 @@ namespace IronRuby.Tests {
                 RequireInterop2,
                 Load1,
                 LibraryLoader1,
+                LibraryLoader2,
 
                 ClrFields1,
                 ClrTypes1,
@@ -583,6 +585,8 @@ namespace IronRuby.Tests {
                 SingletonCaching2C,
                 Scenario_ClassVariables_Singletons,
                 AllowedSingletons1,
+                AllowedSingletons2,
+                SingletonMethodDefinitionOnSingletons1,
 
                 Super1,
                 SuperParameterless1,
@@ -689,6 +693,8 @@ namespace IronRuby.Tests {
                 AliasInModuleEval1,
                 MethodAliasInModuleEval1,
                 SuperInModuleEval1,
+                SuperCallInEvalWithBinding18,
+                SuperCallInEvalWithBinding19,
                 // TODO: SuperParameterlessEval1,
                 // TODO: SuperParameterlessEval2,
                 SuperInDefineMethodEval1,

@@ -23,156 +23,146 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 
 namespace IronRuby.StandardLibrary.Yaml {
+    public sealed class RubyRepresenter : Representer {
+        private readonly YamlCallSiteStorage/*!*/ _siteStorage;
 
-    [RubyClass("Out")]
-    public class RubyRepresenter : Representer {
-        private readonly RubyContext/*!*/ _context;
-        private readonly CallSite<Func<CallSite, object, object>> _TagUri;
-        private readonly CallSite<Func<CallSite, object, object>> _ToYamlStyle;
-        private readonly CallSite<Func<CallSite, object, RubyRepresenter, object>> _ToYamlNode;
-        private readonly CallSite<Func<CallSite, object, RubyRepresenter, object>> _ToYaml;
-        private readonly CallSite<Func<CallSite, object, object>> _ToYamlProperties;
-
-        private RubyMemberInfo _objectToYamlMethod;
-
-        public RubyContext/*!*/ Context {
-            get { return _context; }
+        internal RubyContext/*!*/ Context {
+            get { return _siteStorage.Context; }
         }
 
-        public RubyRepresenter(RubyContext/*!*/ context, Serializer/*!*/ serializer, YamlOptions/*!*/ opts)
-            : base(serializer, opts) {
-            _context = context;
-            _objectToYamlMethod = context.GetClass(typeof(object)).ResolveMethod("to_yaml", VisibilityContext.AllVisible).Info;
-
-             _TagUri =
-                CallSite<Func<CallSite, object, object>>.Create(
-                RubyCallAction.Make(context, "taguri", RubyCallSignature.WithImplicitSelf(0))
-            );
-
-            _ToYamlStyle =
-                CallSite<Func<CallSite, object, object>>.Create(
-                RubyCallAction.Make(context, "to_yaml_style", RubyCallSignature.WithImplicitSelf(0))
-            );
-
-            _ToYamlNode =
-                CallSite<Func<CallSite, object, RubyRepresenter, object>>.Create(
-                RubyCallAction.Make(context, "to_yaml_node", RubyCallSignature.WithImplicitSelf(1))
-            );
-
-            _ToYaml =
-                CallSite<Func<CallSite, object, RubyRepresenter, object>>.Create(
-                RubyCallAction.Make(context, "to_yaml", RubyCallSignature.WithImplicitSelf(0))
-            );
-
-            _ToYamlProperties = 
-                CallSite<Func<CallSite, object, object>>.Create(
-                RubyCallAction.Make(context, "to_yaml_properties", RubyCallSignature.WithImplicitSelf(0))
-            );
+        internal RubyRepresenter(YamlCallSiteStorage/*!*/ siteStorage) {
+            _siteStorage = siteStorage;
         }
 
-        #region dynamic sites
+        #region TagUri, ToYamlStyle
 
-        internal MutableString GetTagUri(object obj) {
-            return (MutableString)_TagUri.Target(_TagUri, obj);
+        internal string GetTagUri(object obj) {
+            return GetTagUri(obj, null, null);
         }
 
-        internal MutableString ToYamlStyle(object obj) {
-            return (MutableString)_ToYamlStyle.Target(_ToYamlStyle, obj);
+        internal string GetTagUri(object obj, string defaultTag, Type defaultTagType) {
+            var site = _siteStorage.TagUri;
+            return ToTag(site.Target(site, obj), obj, defaultTag, defaultTagType);
         }
 
-        internal RubyArray ToYamlProperties(object obj) {
-            return (RubyArray)_ToYamlProperties.Target(_ToYamlProperties, obj);
+        internal string ToTag(object tagUri) {
+            return ToTag(tagUri, null, null, null);
+        }
+
+        private string ToTag(object tagUri, object obj, string defaultTag, Type defaultTagType) {
+            if (tagUri == null) {
+                return String.Empty;
+            }
+
+            // TODO: any conversions?
+            var mstr = tagUri as MutableString;
+            if (mstr == null) {
+                throw RubyExceptions.CreateUnexpectedTypeError(Context, tagUri, "String");
+            }
+
+            // TODO: MRI seems to save binary representation of the returned value, 
+            // yet there is no encoding information saved along. So the reader would read meaningless binary data.
+            if (!mstr.IsAscii()) {
+                throw new NotSupportedException("Non-ASCII tags not supported");
+            }
+            
+            string tag = mstr.ToString();
+            return (tag != defaultTag || obj.GetType() != defaultTagType) ? tag : null;
+        }
+
+        internal ScalarQuotingStyle GetYamlStyle(object obj) {
+            var site = _siteStorage.ToYamlStyle;
+            return RubyYaml.ToYamlStyle(Context, site.Target(site, obj));
         }
 
         #endregion
 
-        protected override Node CreateNode(object data) {
-            RubyMemberInfo method = _context.GetImmediateClassOf(data).ResolveMethodForSite("to_yaml", VisibilityContext.AllVisible).Info;
+        #region Node Construction
 
-            if (method == _objectToYamlMethod) {
-                return (Node)_ToYamlNode.Target(_ToYamlNode, data, this);
+        protected override bool HasIdentity(object data) {
+            return RubyUtils.IsRubyValueType(data) || base.HasIdentity(data);
+        }
+
+        protected override Node/*!*/ CreateNode(object data) {
+            RubyMemberInfo method = Context.GetImmediateClassOf(data).ResolveMethodForSite("to_yaml", VisibilityContext.AllVisible).Info;
+            if (method == _siteStorage.ObjectToYamlMethod) {
+                var site = _siteStorage.ToYamlNode;
+                return ToNode(site.Target(site, data, this));
             } else {
-                // TODO: this is not correct:
-                return (Node)_ToYaml.Target(_ToYaml, data, this);
+                var site = _siteStorage.ToYaml;
+                return ToNode(site.Target(site, data, this));
             }
         }
 
-        protected override bool IgnoreAliases(object data) {
- 	         return RubyUtils.IsRubyValueType(data) || base.IgnoreAliases(data);
-        }
-
-        internal Node Scalar(MutableString taguri, MutableString value, SymbolId style) {
-            return Scalar(
-                taguri != null ? taguri.ConvertToString() : "",
-                value != null ? value.ConvertToString() : "",
-                //It's not clear what style argument really means, it seems to be always :plain
-                //for now we are ignoring it, defaulting to \0 (see Representer class)
-                '\0'
-            );
-        }
-
-        internal Node Scalar(object self, MutableString value) {
-            MutableString taguri = GetTagUri(self);
-            MutableString styleStr = ToYamlStyle(self);
-
-            char style = '\0';
-            if (!MutableString.IsNullOrEmpty(styleStr)) {
-                style = styleStr.GetChar(0);
+        internal Node/*!*/ ToNode(object obj) {
+            Node node = obj as Node;
+            if (node == null) {
+                throw RubyExceptions.CreateUnexpectedTypeError(Context, obj, "YAML node");
             }
-
-            return Scalar(
-                taguri != null ? taguri.ConvertToString() : "",
-                value != null ? value.ConvertToString() : "",
-                style
-            );
+            return node;
         }
 
-        internal Node/*!*/ Map(object self, IDictionary/*!*/ map) {
-            MutableString taguri = GetTagUri(self);
-            object style = ToYamlStyle(self);
-            return Map(taguri, style, map);
-        }
-
-        internal Node/*!*/ Map(MutableString taguri, object to_yaml_style, IDictionary/*!*/ map) {
+        internal Node/*!*/ Map(object obj, IDictionary/*!*/ map) {
             return Map(
-                taguri != null ? taguri.ConvertToString() : "tag:yaml.org,2002:map",
-                map,
-                RubyOps.IsTrue(to_yaml_style)
+                GetTagUri(obj, Tags.Map, typeof(Hash)), 
+                map, 
+                GetYamlStyle(obj)
             );
         }
 
-        [RubyMethod("map")]
-        public static Node/*!*/ Map(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyRepresenter/*!*/ self, [DefaultProtocol]MutableString taguri, object to_yaml_style) {
-            var map = new Dictionary<object, object>();
-            object blockResult;
-            block.Yield(map, out blockResult);
-            return self.Map(taguri, to_yaml_style ?? false, map);
+        internal Node/*!*/ Map(string tag, IDictionary/*!*/ map, ScalarQuotingStyle style) {
+            return Map(tag, map, style != ScalarQuotingStyle.None ? FlowStyle.Inline : FlowStyle.Block);
         }
 
-        internal Node Sequence(object self, RubyArray seq) {
-            MutableString taguri = GetTagUri(self);
-            MutableString style = ToYamlStyle(self);
+        #endregion
 
-            return Sequence(
-                taguri != null ? taguri.ConvertToString() : "",
-                seq,
-                style != null
-            );
+        #region Properties
+
+        /// <summary>
+        /// Dynamically calls to_yaml_properties on a given object. The method should return a list of 
+        /// instance variable names (Symbols or Strings) of the object that should be serialized into the output stream.
+        /// </summary>
+        internal IList/*!*/ ToYamlProperties(object obj) {
+            var site = _siteStorage.ToYamlProperties;
+            var props = site.Target(site, obj) as IList;
+            if (props == null) {
+                throw RubyExceptions.CreateTypeError("to_yaml_properties must return an array");
+            }
+            return props;
         }
 
-
-        internal void AddYamlProperties(object self, Dictionary<MutableString, object>/*!*/ map) {
-            AddYamlProperties(self, map, ToYamlProperties(self));
+        internal void AddYamlProperties(Dictionary<object, object>/*!*/ propertyMap, object obj, bool plainNames) {
+            AddYamlProperties(propertyMap, obj, ToYamlProperties(obj), plainNames);
         }
 
-        internal void AddYamlProperties(object self, Dictionary<MutableString, object>/*!*/ map, RubyArray/*!*/ props) {
-            foreach (object prop in props) {
-                // TODO: ToString? encoding?
-                string p = prop.ToString();
-                map[MutableString.Create(p.Substring(1), RubyEncoding.UTF8)] = KernelOps.InstanceVariableGet(_context, self, p);
+        internal void AddYamlProperties(Dictionary<object, object>/*!*/ propertyMap, object obj, IList/*!*/ instanceVariableNames, bool plainNames) {
+            foreach (object name in instanceVariableNames) {
+                RubySymbol symbol;
+                MutableString mstr;
+
+                // MRI doesn't use a dynamic conversion:
+                if ((symbol = name as RubySymbol) != null) {
+                    propertyMap[plainNames ? (object)symbol.GetSlice(1) : symbol] = KernelOps.InstanceVariableGet(Context, obj, symbol.ToString());
+                } else if ((mstr = name as MutableString) != null) {
+                    propertyMap[plainNames ? mstr.GetSlice(1) : mstr] = KernelOps.InstanceVariableGet(Context, obj, mstr.ToString());
+                } else {
+                    throw RubyExceptions.CreateTypeError("unexpected type {0}, expected Symbol or String", Context.GetClassDisplayName(name));
+                }
             }
         }
+
+        internal static string/*!*/ ConvertToFieldName(RubyContext/*!*/ context, object name) {
+            // MRI doesn't use a dynamic conversion:
+            if (name is RubySymbol || name is MutableString) {
+                return name.ToString();
+            } else {
+                throw RubyExceptions.CreateTypeError("unexpected type {0}, expected Symbol or String", context.GetClassDisplayName(name));
+            }
+        }
+
+        #endregion
     }
 }

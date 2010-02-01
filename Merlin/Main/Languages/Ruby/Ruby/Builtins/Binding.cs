@@ -19,14 +19,30 @@ using IronRuby.Runtime;
 namespace IronRuby.Builtins {
     public sealed class Binding {
         private readonly RubyScope/*!*/ _localScope;
+        private readonly object _self;
 
+        /// <summary>
+        /// Local scope captured by the binding.
+        /// </summary>
         public RubyScope/*!*/ LocalScope {
             get { return _localScope; }
         }
 
-        public Binding(RubyScope/*!*/ localScope) {
+        /// <summary>
+        /// Self object captured by the binding. Can be different from LocalScope.SelfObject in MRI 1.8.
+        /// </summary>
+        public object SelfObject {
+            get { return _self; }
+        }
+
+        public Binding(RubyScope/*!*/ localScope) 
+            : this(localScope, localScope.SelfObject) {
+        }
+
+        public Binding(RubyScope/*!*/ localScope, object self) {
             Assert.NotNull(localScope);
             _localScope = localScope;
+            _self = self;
         }
     }
 }

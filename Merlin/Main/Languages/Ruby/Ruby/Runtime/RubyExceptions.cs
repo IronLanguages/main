@@ -29,7 +29,7 @@ namespace IronRuby.Runtime {
     /// </summary>
     public static class RubyExceptions {
         public static string FormatMessage(string/*!*/ message, params object[] args) {
-            return String.Format(CultureInfo.InvariantCulture, message, args);
+            return args != null && args.Length > 0 ? String.Format(CultureInfo.InvariantCulture, message, args) : message;
         }
 
         #region TypeError (InvalidOperationException)

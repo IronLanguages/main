@@ -39,12 +39,14 @@ namespace IronRuby.StandardLibrary.Yaml {
         private readonly static Regex _regexPattern = new Regex("^/(?<expr>.+)/(?<opts>[eimnosux]*)$", RegexOptions.Compiled);
 
         private readonly CallSite<Func<CallSite, RubyModule, object, object, object, object>> _newSite;
-
         private readonly CallSite<Func<CallSite, object, object, Hash, object>> _yamlInitializeSite;
+        private readonly RubyEncoding/*!*/ _encoding;
         
         public RubyConstructor(RubyGlobalScope/*!*/ scope, NodeProvider/*!*/ nodeProvider)
             : base(nodeProvider, scope) {
-            
+
+            _encoding = RubyEncoding.GetRubyEncoding(nodeProvider.Encoding);
+
             _newSite = CallSite<Func<CallSite, RubyModule, object, object, object, object>>.Create(
                 RubyCallAction.Make(scope.Context, "new", RubyCallSignature.WithImplicitSelf(3))
             ); 
@@ -54,14 +56,19 @@ namespace IronRuby.StandardLibrary.Yaml {
             );
         }
 
+        public RubyEncoding/*!*/ RubyEncoding {
+            get { return _encoding; }
+        }
+
         static RubyConstructor() {
-            AddConstructor("tag:yaml.org,2002:str", ConstructRubyScalar);
-            AddConstructor("tag:ruby.yaml.org,2002:range", ConstructRubyRange);
-            AddConstructor("tag:ruby.yaml.org,2002:regexp", ConstructRubyRegexp);
+            AddConstructor(Tags.Str, ConstructRubyString);
+            AddConstructor(Tags.RubySymbol, ConstructRubySymbol);
+            AddConstructor(Tags.RubyRange, ConstructRubyRange);
+            AddConstructor(Tags.RubyRegexp, ConstructRubyRegexp);
             AddMultiConstructor("tag:ruby.yaml.org,2002:object:", ConstructPrivateObject);
             AddMultiConstructor("tag:ruby.yaml.org,2002:struct:", ConstructRubyStruct);
-            AddConstructor("tag:yaml.org,2002:binary", ConstructRubyBinary);
-            AddConstructor("tag:yaml.org,2002:timestamp#ymd", ConstructRubyTimestampYMD);
+            AddConstructor(Tags.Binary, ConstructRubyBinary);
+            AddConstructor(Tags.TimestampYmd, ConstructRubyDate);
 
             //AddConstructor("tag:yaml.org,2002:omap", ConstructRubyOmap);
             //AddMultiConstructor("tag:yaml.org,2002:seq:", ConstructSpecializedRubySequence);
@@ -118,7 +125,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
             public object Construct(BaseConstructor ctor, string tag, Node node) {                
                 object result;
-                _block.Yield(MutableString.Create(tag, RubyEncoding.UTF8), ctor.ConstructPrimitive(node), out result);
+                _block.Yield(MutableString.Create(tag, RubyEncoding.GetRubyEncoding(ctor.Encoding)), ctor.ConstructPrimitive(node), out result);
                 return result;                
             }
 
@@ -140,20 +147,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        private static object ConstructRubyScalar(RubyConstructor/*!*/ ctor, Node node) {
-            object value = ctor.ConstructScalar(node);
-            if (value == null) {
-                return value;
-            }
-            string str = value as string;
-            if (str != null) {
-                return MutableString.Create(str, RubyEncoding.UTF8);
-            }
-            return value;
-        }
-
-        private static object ParseObject(RubyConstructor/*!*/ ctor, string value) {
-            Composer composer = RubyYaml.MakeComposer(new StringReader(value));
+        private static object ParseObject(RubyConstructor/*!*/ ctor, string/*!*/ value) {
+            Composer composer = RubyYaml.MakeComposer(new StringReader(value), ctor.Encoding);
             if (composer.CheckNode()) {
                 return ctor.ConstructObject(composer.GetNode());
             } else {
@@ -161,7 +156,29 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        private static Range ConstructRubyRange(RubyConstructor/*!*/ ctor, Node node) {
+        /// <summary>
+        /// Returns MutableString or RubySymbol.
+        /// </summary>
+        private static object ConstructRubyString(RubyConstructor/*!*/ ctor, Node/*!*/ node) {
+            ScalarNode scalar = (ScalarNode)node;
+            string value = ctor.ConstructScalar(node);
+
+            if (value == null) {
+                return null;
+            }
+
+            if (value.Length > 1 && value[0] == ':' && scalar.Style == ScalarQuotingStyle.None) {
+                return ctor.GlobalScope.Context.CreateAsciiSymbol(value.Substring(1));
+            }
+
+            return MutableString.CreateMutable(value, ctor.RubyEncoding);
+        }
+
+        private static object ConstructRubySymbol(RubyConstructor/*!*/ ctor, Node/*!*/ node) {
+            return ctor.GlobalScope.Context.CreateAsciiSymbol(((ScalarNode)node).Value);
+        }
+
+        private static Range/*!*/ ConstructRubyRange(RubyConstructor/*!*/ ctor, Node/*!*/ node) {
             object begin = null;
             object end = null;
             bool excludeEnd = false;
@@ -169,11 +186,11 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (scalar != null) {
                 string value = scalar.Value;                
                 int dotsIdx;
-                if ((dotsIdx = value.IndexOf("...")) != -1) {
+                if ((dotsIdx = value.IndexOf("...", StringComparison.Ordinal)) != -1) {
                     begin = ParseObject(ctor, value.Substring(0, dotsIdx));                
                     end = ParseObject(ctor, value.Substring(dotsIdx + 3));
                     excludeEnd = true;
-                } else if ((dotsIdx = value.IndexOf("..")) != -1) {
+                } else if ((dotsIdx = value.IndexOf("..", StringComparison.Ordinal)) != -1) {
                     begin = ParseObject(ctor, value.Substring(0, dotsIdx));
                     end = ParseObject(ctor, value.Substring(dotsIdx + 2));
                 } else {
@@ -194,10 +211,12 @@ namespace IronRuby.StandardLibrary.Yaml {
                             end = ctor.ConstructObject(n.Value);
                             break;
                         case "excl":
-                            TryConstructYamlBool(ctor, n.Value, out excludeEnd);
+                            if (!TryConstructYamlBool(ctor, n.Value, out excludeEnd)) {
+                                throw new ConstructorException("Invalid Range: " + node);    
+                            }
                             break;
                         default:
-                            throw new ConstructorException(string.Format("'{0}' is not allowed as an instance variable name for class Range", key));
+                            throw new ConstructorException(String.Format("'{0}' is not allowed as an instance variable name for class Range", key));
                     }
                 }                
             }
@@ -206,7 +225,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             return new Range(comparisonStorage, ctor.GlobalScope.Context, begin, end, excludeEnd);            
         }
 
-        private static RubyRegex ConstructRubyRegexp(RubyConstructor/*!*/ ctor, Node node) {
+        private static RubyRegex/*!*/ ConstructRubyRegexp(RubyConstructor/*!*/ ctor, Node/*!*/ node) {
             ScalarNode scalar = node as ScalarNode;
             if (node == null) {
                 throw RubyExceptions.CreateTypeError("Can only create regex from scalar node");
@@ -248,11 +267,12 @@ namespace IronRuby.StandardLibrary.Yaml {
                 Hash values = ctor.ConstructMapping(mapping);
                 RubyMethodInfo method = module.GetMethod("yaml_initialize") as RubyMethodInfo;
                 if (method != null) {
+                    // TODO: call allocate here:
                     object result = RubyUtils.CreateObject((RubyClass)module);
                     ctor._yamlInitializeSite.Target(ctor._yamlInitializeSite, result, className, values);
                     return result;
                 } else {
-                    return RubyUtils.CreateObject((RubyClass)module, values, true);
+                    return RubyUtils.CreateObject((RubyClass)module, EnumerateAttributes(globalScope.Context, values));
                 }
             } else {
                 //TODO: YAML::Object
@@ -260,40 +280,57 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        private static object ConstructRubyStruct(RubyConstructor/*!*/ ctor, string className, Node node) {
+        private static IEnumerable<KeyValuePair<string, object>>/*!*/ EnumerateAttributes(RubyContext/*!*/ context, Hash/*!*/ mapping) {
+            foreach (var entry in mapping) {
+                yield return new KeyValuePair<string, object>("@" + RubyRepresenter.ConvertToFieldName(context, entry.Key), entry.Value);
+            }
+        }
+
+        private static object ConstructRubyStruct(RubyConstructor/*!*/ ctor, string/*!*/ structName, Node/*!*/ node) {
             MappingNode mapping = node as MappingNode;
             if (mapping == null) {
                 throw new ConstructorException("can only construct struct from mapping node");
             }
 
+            if (structName.Length == 0) {
+                // TODO:
+                throw new NotSupportedException("anonymous structs not supported");
+            }
+
             RubyContext context = ctor.GlobalScope.Context;
             RubyModule module;
-            RubyClass cls;
-            if (context.TryGetModule(ctor.GlobalScope, className, out module)) {
-                cls = module as RubyClass;
-                if (cls == null) {
-                    throw new ConstructorException("Struct type name must be Ruby class");
-                }
-            } else {
-                RubyModule structModule = context.GetModule(typeof(RubyStruct));
-                cls = RubyUtils.GetConstant(ctor.GlobalScope, structModule, className, false) as RubyClass;
-                if (cls == null) {
-                    throw new ConstructorException(String.Format("Cannot find struct class \"{0}\"", className));
-                }
+
+            // TODO: MRI calls "members" on an arbitrary object
+            
+            // MRI checks Struct first, then falls back to Object
+            if (!context.TryGetModule(ctor.GlobalScope, "Struct::" + structName, out module) && 
+                !context.TryGetModule(ctor.GlobalScope, structName, out module)) {
+                throw RubyExceptions.CreateTypeError("Undefined struct `{0}'", structName);
+            }
+
+            RubyClass cls = module as RubyClass;
+            if (cls == null) {
+                throw RubyExceptions.CreateTypeError("`{0}' is not a class", structName);
             }
 
             RubyStruct newStruct = RubyStruct.Create(cls);
             foreach (var pair in ctor.ConstructMapping(mapping)) {
-                RubyStructOps.SetValue(newStruct, SymbolTable.StringToId(pair.Key.ToString()), pair.Value);        
+                var attributeName = pair.Key as MutableString;
+                int index;
+
+                // TODO: encoding
+                if (attributeName != null && newStruct.TryGetIndex(attributeName.ToString(), out index)) {
+                    newStruct[index] = pair.Value;
+                }
             }
             return newStruct;
         }
 
-        private static MutableString ConstructRubyBinary(RubyConstructor/*!*/ ctor, Node node) {
+        private static MutableString/*!*/ ConstructRubyBinary(RubyConstructor/*!*/ ctor, Node/*!*/ node) {
             return MutableString.CreateBinary(BaseConstructor.ConstructYamlBinary(ctor, node));
         }
 
-        private static object ConstructRubyTimestampYMD(RubyConstructor/*!*/ ctor, Node node) {
+        private static object ConstructRubyDate(RubyConstructor/*!*/ ctor, Node node) {
             ScalarNode scalar = node as ScalarNode;
             if (scalar == null) {
                 throw new ConstructorException("Can only contruct timestamp from scalar node.");

@@ -371,7 +371,14 @@ namespace IronRuby.Compiler {
             }
 
             while (true) {
-                int c = _input.Read();
+                int c;
+                try {
+                    c = _input.Read();
+                } catch (DecoderFallbackException e) {
+                    ReportError(Errors.InvalidMultibyteCharacter, BitConverter.ToString(e.BytesUnknown).Replace('-', ' '), _encoding.Name);
+                    c = -1;
+                }
+
                 if (c == -1) {
                     if (size > 0) {
                         if (size < _lineBuffer.Length) {

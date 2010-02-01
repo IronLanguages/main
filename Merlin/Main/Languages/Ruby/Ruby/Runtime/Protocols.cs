@@ -298,7 +298,7 @@ namespace IronRuby.Runtime {
 
         public static bool RespondTo(RespondToStorage/*!*/ respondToStorage, object target, string/*!*/ methodName) {
             var site = respondToStorage.GetCallSite();
-            return IsTrue(site.Target(site, target, SymbolTable.StringToId(methodName)));
+            return IsTrue(site.Target(site, target, respondToStorage.Context.EncodeIdentifier(methodName)));
         }
 
         public static void Write(BinaryOpStorage/*!*/ writeStorage, object target, object value) {

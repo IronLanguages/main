@@ -13,7 +13,7 @@ namespace IronRuby.Rack {
     /// what the handler needs to delegate between IIS and Rack.
     /// </summary>
     public class HttpHandlerFactory : IHttpHandlerFactory {
-        private static readonly object _GlobalLock = new object();
+
         private static HttpHandler _Handler;
 
         /// <summary>
@@ -22,38 +22,30 @@ namespace IronRuby.Rack {
         /// HttpHandler capable of serving Rack requests.
         /// </summary>
         public IHttpHandler GetHandler(HttpContext/*!*/ context, string/*!*/ requestType, string/*!*/ url, string/*!*/ pathTranslated) {
-
-            // TODO is this lock needed?
             if (_Handler == null) {
-                lock (_GlobalLock) {
-                    if (_Handler == null) {
 
-                        Utils.InitializeLog();
-                        Utils.Log("");
-                        Utils.Log("=> Booting IronRack");
+                Utils.InitializeLog();
+                Utils.Log("");
+                Utils.Log("=== Booting ironruby-rack at " + DateTime.Now.ToString());
 
-                        Application app;
+                Application app;
 
-                        try {
-                            var stopWatch = new Stopwatch();
-                            stopWatch.Start();
+                try {
+                    var stopWatch = new Stopwatch();
+                    stopWatch.Start();
 
-                            app = new Application(context);
-                            Handler.IIS.Run(app);
-                            _Handler = new HttpHandler();
+                    app = new Application(context);
+                    Handler.IIS.Run(app);
+                    //_Handler = new HttpAsyncHandler();
+                    _Handler = new HttpHandler();
 
-                            stopWatch.Stop();
-                            Utils.Log("=> Rack application loaded (" + stopWatch.ElapsedMilliseconds + " ms)");
-                        } catch (Exception e) {
-                            Utils.ReportError(context, e);
-
-                            context.Response.StatusCode = 200;
-                            return null;
-                        }
-                    }
+                    stopWatch.Stop();
+                    Utils.Log("=> Rack application loaded (" + stopWatch.ElapsedMilliseconds + " ms)");
+                } catch (Exception e) {
+                    Utils.ReportError(context, e);
+                    return null;
                 }
             }
-
             return _Handler;
         }
 

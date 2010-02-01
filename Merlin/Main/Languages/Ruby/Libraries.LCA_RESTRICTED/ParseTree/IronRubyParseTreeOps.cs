@@ -52,7 +52,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     return RubyArray.Create(null);
                 }
 
-                var visitor = new AstVisitor(GetNodeNames(module.Context, self), false);
+                var visitor = new AstVisitor(module.Context, GetNodeNames(module.Context, self), false);
                 visitor.Walk(method.GetSyntaxTree());
                 
                 return visitor.Result;
@@ -73,7 +73,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 SourceUnitTree ast = new Parser().Parse(source, options, scope.RubyContext.RuntimeErrorSink);
                 // TODO:
                 // bool includeNewLines = IncludeNewLines(scope.RubyContext, self);
-                var visitor = new AstVisitor(GetNodeNames(scope.RubyContext, self), false);
+                var visitor = new AstVisitor(scope.RubyContext, GetNodeNames(scope.RubyContext, self), false);
                 visitor.Walk(ast);
                 return visitor.Result;
             }
@@ -147,16 +147,22 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 // null -> no rhs
                 private Rhs _rhs;
 
+                private readonly RubyContext/*!*/ _context;
                 private readonly RubyArray/*!*/ _nodeNames;
                 private bool _isMethodAlias;
 
-                public AstVisitor(RubyArray/*!*/ nodeNames, bool isMethodAlias) {
+                public AstVisitor(RubyContext/*!*/ context, RubyArray/*!*/ nodeNames, bool isMethodAlias) {
                     Assert.NotNull(nodeNames);
                     _nodeNames = nodeNames;
                     _isMethodAlias = isMethodAlias;
+                    _context = context;
                 }
 
                 #region Helpers
+
+                private RubySymbol/*!*/ CreateSymbol(string/*!*/ identifier) {
+                    return _context.CreateSymbol(identifier, _encoding);
+                }
 
                 private object GetNodeName(NodeKind nodeKind) {
                     int index = (int)nodeKind;
@@ -300,13 +306,13 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 }
 
                 public override bool Enter(SymbolLiteral/*!*/ node) {
-                    _result = MakeNode(NodeKind.lit, SymbolTable.StringToId(node.GetMutableString(_encoding).ToString()));
+                    _result = MakeNode(NodeKind.lit, _context.CreateSymbol(node.GetMutableString(_encoding)));
                     return false;
                 }
 
                 public override bool Enter(FileLiteral/*!*/ node) {
                     // TODO:
-                    _result = MakeNode(NodeKind.lit, SymbolTable.StringToId("__FILE__"));
+                    _result = MakeNode(NodeKind.lit, CreateSymbol("__FILE__"));
                     return false;
                 }
 
@@ -316,7 +322,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         NodeKind kind;
                         object value;
                         switch (node.Kind) {
-                            case StringKind.Immutable: kind = NodeKind.lit; value = SymbolTable.StringToId(lit.GetMutableString(_encoding).ToString()); break;
+                            case StringKind.Symbol: kind = NodeKind.lit; value = _context.CreateSymbol(lit.GetMutableString(_encoding)); break;
                             case StringKind.Command: kind = NodeKind.xstr; value = lit.GetMutableString(_encoding); break;
                             case StringKind.Mutable: kind = NodeKind.str; value = lit.GetMutableString(_encoding); break;
                             default: throw Assert.Unreachable;
@@ -327,7 +333,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         NodeKind kind;
                         switch (node.Kind) {
                             case StringKind.Command: kind = NodeKind.dxstr; break;
-                            case StringKind.Immutable: kind = NodeKind.dsym; break;
+                            case StringKind.Symbol: kind = NodeKind.dsym; break;
                             case StringKind.Mutable: kind = NodeKind.dstr; break;
                             default: throw Assert.Unreachable;
                         }
@@ -456,7 +462,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     }
 
                     // add name:
-                    call.Add(SymbolTable.StringToId(node.MethodName));
+                    call.Add(CreateSymbol(node.MethodName));
                     
                     // add arguments:
                     AddArguments(call, node.Arguments);
@@ -627,7 +633,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 #region Variables
 
                 public bool EnterVariable(string/*!*/ name, NodeKind read, NodeKind write) {
-                    SymbolId symbol = SymbolTable.StringToId(name);
+                    RubySymbol symbol = CreateSymbol(name);
 
                     RubyArray variable;
                     if (_rhs == null || _rhs.IsRhsArg) {
@@ -657,7 +663,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         Walk(node.Qualifier);
                         qualified.Add(_result);
 
-                        qualified.Add(SymbolTable.StringToId(node.Name));
+                        qualified.Add(CreateSymbol(node.Name));
 
                         _result = qualified;
                         return false;
@@ -686,7 +692,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         _result = MakeNode(NodeKind.nth_ref, ScriptingRuntimeHelpers.Int32ToObject(node.Index));
                     } else {
                         Debug.Assert(_rhs == null);
-                        _result = MakeNode(NodeKind.back_ref, SymbolTable.StringToId(node.VariableName));
+                        _result = MakeNode(NodeKind.back_ref, CreateSymbol(node.VariableName));
                     }
                     return false;
                 }
@@ -713,7 +719,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                     if (node.Operation != null && !isAnd && !isOr) {
                         Walk(node.Left);
-                        rvalue = MakeNode(NodeKind.call, _result, SymbolTable.StringToId(node.Operation), MakeNode(NodeKind.array, rvalue));
+                        rvalue = MakeNode(NodeKind.call, _result, CreateSymbol(node.Operation), MakeNode(NodeKind.array, rvalue));
                     }
 
                     _rhs = new Rhs { Value = rvalue };
@@ -782,7 +788,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         call.Add(_result);
 
                         // add name:
-                        call.Add(SymbolTable.StringToId("[]"));
+                        call.Add(CreateSymbol("[]"));
 
                         // add arguments:
                         AddArguments(call, node.Arguments);
@@ -799,7 +805,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                             assignment.Add(_result);
                         });
 
-                        assignment.Add(SymbolTable.StringToId("[]="));
+                        assignment.Add(CreateSymbol("[]="));
 
                         AddArguments(assignment, node.Arguments);
 
@@ -822,7 +828,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     });
 
                     // name:
-                    assignment.Add(SymbolTable.StringToId(node.Name));
+                    assignment.Add(CreateSymbol(node.Name));
 
                     // rhs array:
                     object rhsValue;
@@ -903,13 +909,13 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 public override bool Enter(AliasStatement/*!*/ node) {
                     if (node.IsGlobalVariableAlias) {
                         _result = MakeNode(NodeKind.valias,
-                            SymbolTable.StringToId("$" + node.NewName),
-                            SymbolTable.StringToId("$" + node.OldName)
+                            CreateSymbol("$" + node.NewName),
+                            CreateSymbol("$" + node.OldName)
                         );
                     } else {
                         _result = MakeNode(NodeKind.alias,
-                            MakeNode(NodeKind.lit, SymbolTable.StringToId(node.NewName)),
-                            MakeNode(NodeKind.lit, SymbolTable.StringToId(node.OldName))
+                            MakeNode(NodeKind.lit, CreateSymbol(node.NewName)),
+                            MakeNode(NodeKind.lit, CreateSymbol(node.OldName))
                         );
                     }
                     return false;
@@ -917,11 +923,11 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                 public override bool Enter(UndefineStatement/*!*/ node) {
                     if (node.Items.Count == 1) {
-                        _result = MakeNode(NodeKind.undef, MakeNode(NodeKind.lit, SymbolTable.StringToId(node.Items[0].Name)));
+                        _result = MakeNode(NodeKind.undef, MakeNode(NodeKind.lit, CreateSymbol(node.Items[0].Name)));
                     } else {
                         var block = MakeNode(NodeKind.block, node.Items.Count);
                         foreach (var item in node.Items) {
-                            block.Add(MakeNode(NodeKind.undef, MakeNode(NodeKind.lit, SymbolTable.StringToId(item.Name))));
+                            block.Add(MakeNode(NodeKind.undef, MakeNode(NodeKind.lit, CreateSymbol(item.Name))));
                         }
                         _result = block;
                     }
@@ -1111,7 +1117,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         }
 
                         if (clause.Target != null) {
-                            UsingRhs(new Rhs { Value = MakeNode(NodeKind.gvar, SymbolTable.StringToId("$!")) }, () => {
+                            UsingRhs(new Rhs { Value = MakeNode(NodeKind.gvar, CreateSymbol("$!")) }, () => {
                                 Walk(clause.Target);
                             });
                             var assignment = _result;
@@ -1446,7 +1452,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         method = MakeNode(NodeKind.defn, 2);
                     }
 
-                    method.Add(SymbolTable.StringToId(node.Name));
+                    method.Add(CreateSymbol(node.Name));
 
                     var scope = MakeNode(NodeKind.scope, 1);
                     var block = MakeNode(NodeKind.block, 5);
@@ -1459,18 +1465,18 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                     if (node.Parameters.Mandatory != null) {
                         foreach (var p in node.Parameters.Mandatory) {
-                            parameters.Add(SymbolTable.StringToId(p.Name));
+                            parameters.Add(CreateSymbol(p.Name));
                         }
                     }
 
                     if (node.Parameters.Optional != null) {
                         foreach (var assignment in node.Parameters.Optional) {
-                            parameters.Add(SymbolTable.StringToId(((LocalVariable)assignment.Left).Name));
+                            parameters.Add(CreateSymbol(((LocalVariable)assignment.Left).Name));
                         }
                     }
 
                     if (node.Parameters.Array != null) {
-                        parameters.Add(SymbolTable.StringToId("*" + node.Parameters.Array.Name));
+                        parameters.Add(CreateSymbol("*" + node.Parameters.Array.Name));
                     }
 
                     if (node.Parameters.Optional != null) {
@@ -1485,7 +1491,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     block.Add(parameters);
 
                     if (node.Parameters.Block != null) {
-                        block.Add(MakeNode(NodeKind.block_arg, SymbolTable.StringToId(node.Parameters.Block.Name)));
+                        block.Add(MakeNode(NodeKind.block_arg, CreateSymbol(node.Parameters.Block.Name)));
                     }
 
                     AddBody(block, node.Body);

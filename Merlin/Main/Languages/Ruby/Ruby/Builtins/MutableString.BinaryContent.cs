@@ -182,7 +182,7 @@ namespace IronRuby.Builtins {
                 // TODO:
                 var a = ToByteArray();
                 return new BinaryContent(
-                    BinaryEncoding.Obsolete.GetBytes(RubyRegex.Escape(BinaryEncoding.Obsolete.GetString(a, 0, a.Length))),
+                    BinaryEncoding.Instance.GetBytes(RubyRegex.Escape(BinaryEncoding.Instance.GetString(a, 0, a.Length))),
                     _owner
                 );
             }

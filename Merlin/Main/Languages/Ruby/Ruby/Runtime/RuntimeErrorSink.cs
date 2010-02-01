@@ -64,8 +64,12 @@ namespace IronRuby.Runtime {
                 path = sourceUnit.Path;
                 using (SourceCodeReader reader = sourceUnit.GetReader()) {
                     if (line > 0) {
-                        reader.SeekLine(line);
-                        codeLine = reader.ReadLine();
+                        try {
+                            reader.SeekLine(line);
+                            codeLine = reader.ReadLine();
+                        } catch (Exception) {
+                            codeLine = null;
+                        }
                     } else {
                         codeLine = null;
                     }

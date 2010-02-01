@@ -86,13 +86,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("name")]
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ GetName(TypeGroup/*!*/ self) {
-            return MutableString.Create(self.Name, RubyEncoding.UTF8);
+        public static MutableString/*!*/ GetName(RubyContext/*!*/ context, TypeGroup/*!*/ self) {
+            return MutableString.Create(self.Name, context.GetIdentifierEncoding());
         }
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, TypeGroup/*!*/ self) {
-            var result = MutableString.CreateMutable(RubyEncoding.ClassName);
+            var result = MutableString.CreateMutable(context.GetIdentifierEncoding());
             result.Append("#<TypeGroup: ");
 
             bool isFirst = true;

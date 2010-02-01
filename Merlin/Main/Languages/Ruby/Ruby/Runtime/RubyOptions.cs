@@ -119,11 +119,9 @@ namespace IronRuby.Runtime {
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
             _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
 
-#if !SILVERLIGHT
             if (_compatibility == RubyCompatibility.Ruby18) {
                 _kcode = GetKCoding(options, "KCode", null);
             }
-#endif
         }
 
         private static RubyCompatibility GetCompatibility(IDictionary<string, object>/*!*/ options, string/*!*/ name, RubyCompatibility defaultValue) {
@@ -147,7 +145,6 @@ namespace IronRuby.Runtime {
             return defaultValue;
         }
 
-#if !SILVERLIGHT
         private static RubyEncoding GetKCoding(IDictionary<string, object>/*!*/ options, string/*!*/ name, RubyEncoding defaultValue) {
             object value;
             if (options != null && options.TryGetValue(name, out value)) {
@@ -160,6 +157,5 @@ namespace IronRuby.Runtime {
             }
             return defaultValue;
         }
-#endif
     }
 }

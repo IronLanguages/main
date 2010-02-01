@@ -57,6 +57,13 @@ namespace IronRuby.Builtins {
         NoUnderlyingType = 8,
 
         /// <summary>
+        /// By default a non-builtin library load fails if it defines a class whose name conflicts with an existing constant name.
+        /// If this restriction is applied to a class it can reopen an existing Ruby class of the same name but it can't specify an underlying type.
+        /// This is required so that the library load doesn't depend on whether or not any instances of the existing Ruby class already exist. 
+        /// </summary>
+        AllowReopening = 16 | NoUnderlyingType,
+
+        /// <summary>
         /// Default restrictions for built-in modules.
         /// </summary>
         Builtin = NoOverrides | NoNameMapping | NotPublished,
@@ -93,11 +100,12 @@ namespace IronRuby.Builtins {
 
         private readonly RubyContext/*!*/ _context;
 
-        // the type this module represents or null:
-        private readonly TypeTracker _typeTracker;
-
         // the namespace this module represents or null:
         private readonly NamespaceTracker _namespaceTracker;
+
+        // The type this module represents or null. 
+        // TODO: unify with _underlyingSystemType on classes
+        private readonly TypeTracker _typeTracker;
 
         private readonly ModuleRestrictions _restrictions;
         private readonly WeakReference/*!*/ _weakSelf;
@@ -173,7 +181,7 @@ namespace IronRuby.Builtins {
 
         #region Dynamic Sites
 
-        // RubyModule, SymbolId -> object
+        // RubyModule, symbol -> object
         private CallSite<Func<CallSite, object, object, object>> _constantMissingCallbackSite;
         private CallSite<Func<CallSite, object, object, object>> _methodAddedCallbackSite;
         private CallSite<Func<CallSite, object, object, object>> _methodRemovedCallbackSite;
@@ -1038,8 +1046,12 @@ namespace IronRuby.Builtins {
         internal bool TryGetConstantNoAutoloadCheck(string/*!*/ name, out ConstantStorage storage) {
             Context.RequiresClassHierarchyLock();
 
-            InitializeConstantsNoLock();
+            if (name.Length == 0) {
+                storage = default(ConstantStorage);
+                return false;
+            }
 
+            InitializeConstantsNoLock();
             if (_constants.TryGetValue(name, out storage)) {
                 if (storage.IsRemoved) {
                     storage = default(ConstantStorage);
@@ -1059,6 +1071,13 @@ namespace IronRuby.Builtins {
 
             storage = default(ConstantStorage);
             return false;
+        }
+
+        // Direct lookup into the constant table (if it exists).
+        internal bool TryGetConstantNoAutoloadNoInit(string/*!*/ name, out ConstantStorage storage) {
+            Context.RequiresClassHierarchyLock();
+            storage = default(ConstantStorage);
+            return _constants != null && _constants.TryGetValue(name, out storage) && !storage.IsRemoved;
         }
 
         // thread-safe:
@@ -1926,7 +1945,7 @@ namespace IronRuby.Builtins {
                 }
 
                 if (constantsInitializer != null) {
-                    IncludeTraitNoLock(ref _constantsInitializer, _constantsState, instanceTrait);
+                    IncludeTraitNoLock(ref _constantsInitializer, _constantsState, constantsInitializer);
                 }
 
                 if (classTrait != null) {
@@ -1950,7 +1969,7 @@ namespace IronRuby.Builtins {
             if (IsSingletonClass) {
                 RubyClass c = (RubyClass)this;
                 object singletonOf;
-                MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
+                MutableString result = MutableString.CreateMutable(context.GetIdentifierEncoding());
 
                 int nestings = 0;
                 while (true) {
@@ -1982,7 +2001,7 @@ namespace IronRuby.Builtins {
                 if (showEmptyName) {
                     return MutableString.FrozenEmpty;
                 } else {
-                    MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
+                    MutableString result = MutableString.CreateMutable(context.GetIdentifierEncoding());
                     result.Append("#<");
                     result.Append(_context.GetClassOf(this).GetName(context));
                     result.Append(':');
@@ -1991,7 +2010,7 @@ namespace IronRuby.Builtins {
                     return result;
                 }
             } else {
-                return MutableString.CreateMutable(GetName(context), RubyEncoding.ClassName);
+                return MutableString.CreateMutable(GetName(context), context.GetIdentifierEncoding());
             }
         }
 

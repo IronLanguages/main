@@ -39,10 +39,10 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, SymbolId firstAttibuteName,
+        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, [NotNull]RubySymbol/*!*/ firstAttibuteName,
             [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
-            return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertSymbolIdToSymbol(firstAttibuteName), attributeNames);
+            return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertSymbolToClrString(firstAttibuteName), attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
@@ -120,12 +120,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]")]
-        public static object GetValue(RubyStruct/*!*/ self, SymbolId name) {
-            return self[SymbolTable.IdToString(name)];
+        public static object GetValue(RubyStruct/*!*/ self, [NotNull]RubySymbol/*!*/ name) {
+            return self[name.ToString()];
         }
 
         [RubyMethod("[]")]
-        public static object GetValue(RubyStruct/*!*/ self, MutableString/*!*/ name) {
+        public static object GetValue(RubyStruct/*!*/ self, [NotNull]MutableString/*!*/ name) {
             return self[name.ConvertToString()];
         }
 
@@ -140,12 +140,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static object SetValue(RubyStruct/*!*/ self, SymbolId name, object value) {
-            return self[SymbolTable.IdToString(name)] = value;
+        public static object SetValue(RubyStruct/*!*/ self, [NotNull]RubySymbol/*!*/ name, object value) {
+            return self[name.ToString()] = value;
         }
 
         [RubyMethod("[]=")]
-        public static object SetValue(RubyStruct/*!*/ self, MutableString/*!*/ name, object value) {
+        public static object SetValue(RubyStruct/*!*/ self, [NotNull]MutableString/*!*/ name, object value) {
             return self[name.ConvertToString()] = value;
         }
 
@@ -176,9 +176,10 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.NoBlockGiven();
             }
 
+            var context = self.ImmediateClass.Context;
             foreach (KeyValuePair<string, object> entry in self.GetItems()) {
                 object result;
-                if (block.Yield(SymbolTable.StringToId(entry.Key), entry.Value, out result)) {
+                if (block.Yield(context.EncodeIdentifier(entry.Key), entry.Value, out result)) {
                     return result;
                 }
             }

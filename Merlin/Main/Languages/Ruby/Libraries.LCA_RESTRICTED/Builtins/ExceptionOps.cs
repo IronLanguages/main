@@ -85,7 +85,7 @@ namespace IronRuby.Builtins {
         public static Exception/*!*/ ReinitializeException(RubyContext/*!*/ context, Exception/*!*/ self, [DefaultParameterValue(null)]object message) {
             var instance = RubyExceptionData.GetInstance(self);
             instance.Backtrace = null;
-            instance.Message = message ?? MutableString.Create(context.GetClassOf(self).Name, RubyEncoding.ClassName);
+            instance.Message = message ?? MutableString.Create(context.GetClassOf(self).Name, context.GetIdentifierEncoding());
             return self;
         }
 
@@ -176,7 +176,7 @@ namespace IronRuby.Builtins {
             object message = RubyExceptionData.GetInstance(self).Message;
             string className = inspectStorage.Context.GetClassDisplayName(self);
 
-            MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
+            MutableString result = MutableString.CreateMutable(inspectStorage.Context.GetIdentifierEncoding());
             result.Append("#<");
             result.Append(className);
             result.Append(": ");

@@ -71,7 +71,7 @@ namespace IronRuby.Builtins {
 
         internal class RubyThreadInfo {
             private static readonly Dictionary<int, RubyThreadInfo> _mapping = new Dictionary<int, RubyThreadInfo>();
-            private readonly Dictionary<SymbolId, object> _threadLocalStorage;
+            private readonly Dictionary<RubySymbol, object> _threadLocalStorage;
             private ThreadGroup _group;
             private readonly Thread _thread;
             private bool _blocked;
@@ -80,7 +80,7 @@ namespace IronRuby.Builtins {
             private bool _isSleeping;
 
             private RubyThreadInfo(Thread thread) {
-                _threadLocalStorage = new Dictionary<SymbolId, object>();
+                _threadLocalStorage = new Dictionary<RubySymbol, object>();
                 _group = ThreadGroup.Default;
                 _thread = thread;
             }
@@ -101,7 +101,7 @@ namespace IronRuby.Builtins {
                 FromThread(t);
             }
 
-            internal object this[SymbolId key] {
+            internal object this[RubySymbol/*!*/ key] {
                 get {
                     lock (_threadLocalStorage) {
                         object result;
@@ -122,7 +122,7 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            internal bool HasKey(SymbolId key) {
+            internal bool HasKey(RubySymbol/*!*/ key) {
                 lock (_threadLocalStorage) {
                     return _threadLocalStorage.ContainsKey(key);
                 }
@@ -131,7 +131,7 @@ namespace IronRuby.Builtins {
             internal RubyArray GetKeys() {
                 lock (_threadLocalStorage) {
                     RubyArray result = new RubyArray(_threadLocalStorage.Count);
-                    foreach (SymbolId key in _threadLocalStorage.Keys) {
+                    foreach (RubySymbol key in _threadLocalStorage.Keys) {
                         result.Add(key);
                     }
                     return result;
@@ -226,14 +226,14 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]")]
-        public static object GetElement(Thread/*!*/ self, SymbolId key) {
+        public static object GetElement(Thread/*!*/ self, [NotNull]RubySymbol/*!*/ key) {
             RubyThreadInfo info = RubyThreadInfo.FromThread(self);
             return info[key];
         }
 
         [RubyMethod("[]")]
-        public static object GetElement(Thread/*!*/ self, [NotNull]MutableString/*!*/ key) {
-            return GetElement(self, SymbolTable.StringToId(key.ConvertToString()));
+        public static object GetElement(RubyContext/*!*/ context, Thread/*!*/ self, [NotNull]MutableString/*!*/ key) {
+            return GetElement(self, context.CreateSymbol(key));
         }
 
         [RubyMethod("[]")]
@@ -242,15 +242,15 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static object SetElement(Thread/*!*/ self, SymbolId key, object value) {
+        public static object SetElement(Thread/*!*/ self, [NotNull]RubySymbol/*!*/ key, object value) {
             RubyThreadInfo info = RubyThreadInfo.FromThread(self);
             info[key] = value;
             return value;
         }
 
         [RubyMethod("[]=")]
-        public static object SetElement(Thread/*!*/ self, [NotNull]MutableString/*!*/ key, object value) {
-            return SetElement(self, SymbolTable.StringToId(key.ConvertToString()), value);
+        public static object SetElement(RubyContext/*!*/ context, Thread/*!*/ self, [NotNull]MutableString/*!*/ key, object value) {
+            return SetElement(self, context.CreateSymbol(key), value);
         }
 
         [RubyMethod("[]=")]
@@ -287,7 +287,7 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
 
-            MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
+            MutableString result = MutableString.CreateMutable(context.GetIdentifierEncoding());
             result.Append("#<");
             result.Append(context.GetClassDisplayName(self));
             result.Append(':');
@@ -370,14 +370,14 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("key?")]
-        public static object HasKey(Thread/*!*/ self, SymbolId key) {
+        public static object HasKey(Thread/*!*/ self, [NotNull]RubySymbol/*!*/ key) {
             RubyThreadInfo info = RubyThreadInfo.FromThread(self);
             return info.HasKey(key);
         }
 
         [RubyMethod("key?")]
-        public static object HasKey(Thread/*!*/ self, [NotNull]MutableString/*!*/ key) {
-            return HasKey(self, SymbolTable.StringToId(key.ConvertToString()));
+        public static object HasKey(RubyContext/*!*/ context, Thread/*!*/ self, [NotNull]MutableString/*!*/ key) {
+            return HasKey(self, context.CreateSymbol(key));
         }
 
         [RubyMethod("key?")]

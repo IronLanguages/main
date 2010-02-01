@@ -69,18 +69,21 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(char self) {
+        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, char self) {
             return MutableString.Create(
-                MutableString.AppendUnicodeRepresentation(new StringBuilder().Append('\''), self.ToString(), false, false, '\'', -1).Append("' (Char)").ToString(),
-                RubyEncoding.UTF8
+                MutableString.AppendUnicodeRepresentation(
+                    new StringBuilder().Append('\''), self.ToString(), MutableString.Escape.Special, '\'', -1
+                ).Append("' (Char)").ToString(),
+                context.GetIdentifierEncoding()
             );
         }
 
         [RubyMethod("dump", RubyMethodAttributes.PublicInstance)]
-        public static MutableString/*!*/ Dump(string/*!*/ self) {
-            return MutableString.Create(
-                MutableString.AppendUnicodeRepresentation(new StringBuilder().Append('\''), self.ToString(), false, true, '\'', -1).Append("' (Char)").ToString(),
-                RubyEncoding.UTF8
+        public static MutableString/*!*/ Dump(char self) {
+            return MutableString.CreateAscii(
+                MutableString.AppendUnicodeRepresentation(
+                    new StringBuilder().Append('\''), self.ToString(), MutableString.Escape.Special | MutableString.Escape.NonAscii, '\'', -1
+                ).Append("' (Char)").ToString()
             );
         }
     }

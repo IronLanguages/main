@@ -173,7 +173,7 @@ Python
         public class TestLibraryInitializer1 : LibraryInitializer {
             protected override void LoadModules() {
                 Context.ObjectClass.SetConstant("TEST_LIBRARY", "hello from library");
-                DefineGlobalModule("Object", typeof(Object), 0, ObjectMonkeyPatch, null, null, RubyModule.EmptyArray);  
+                ExtendClass(typeof(Object), 0, null, ObjectMonkeyPatch, null, null, RubyModule.EmptyArray);  
             }
 
             private void ObjectMonkeyPatch(RubyModule/*!*/ module) {
@@ -184,7 +184,6 @@ Python
                 });
             }
 
-            // TODO: might be called by MI.Invoke -> needs to be public in partial trust
             public static string MonkeyWorker(object obj) {
                 return "This is monkey!";
             }
@@ -202,6 +201,41 @@ puts object_monkey
             }, @"
 hello from library
 This is monkey!
+");
+
+        }
+
+        public class TestLibraryInitializer2 : LibraryInitializer {
+            protected override void LoadModules() {
+                DefineGlobalModule("LibModule", typeof(Object), 0, null, LibModuleSingletonMethods, null, RubyModule.EmptyArray);
+            }
+
+            private void LibModuleSingletonMethods(RubyModule/*!*/ module) {
+                DefineLibraryMethod(module, "bar", (int)RubyMethodAttributes.PublicSingleton, new System.Delegate[] {
+                    new Func<RubyModule, string>(Bar),
+                });
+            }
+
+            public static string Bar(RubyModule/*!*/ self) {
+                return "bar";
+            }
+        }
+
+        public void LibraryLoader2() {
+            Context.DefineGlobalVariable("lib_name", MutableString.CreateAscii(typeof(TestLibraryInitializer2).AssemblyQualifiedName));
+
+            TestOutput(@"
+module LibModule
+  def self.foo
+    'foo'
+  end
+end
+require($lib_name)
+puts LibModule.foo
+puts LibModule.bar
+", @"
+foo
+bar
 ");
 
         }

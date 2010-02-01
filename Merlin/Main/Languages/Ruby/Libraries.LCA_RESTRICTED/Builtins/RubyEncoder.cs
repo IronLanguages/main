@@ -31,7 +31,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Math;
 
 namespace IronRuby.Builtins {
-    internal static class RubyEncoder {
+    public static class RubyEncoder {
         #region UTF8
 
         private static void GetCodePointByteCount(int codepoint, out int count, out int mark) {
@@ -246,7 +246,11 @@ namespace IronRuby.Builtins {
             (byte)'8', (byte)'9', (byte)'+', (byte)'/'
         };
 
-        private static void WriteBase64(Stream/*!*/ stream, MutableString/*!*/ str, int bytesPerLine) {
+        public static void WriteBase64(Stream/*!*/ stream, MutableString/*!*/ str, int bytesPerLine) {
+            ContractUtils.RequiresNotNull(stream, "stream");
+            ContractUtils.RequiresNotNull(str, "str");
+            ContractUtils.Requires(bytesPerLine > 2, "bytesPerLine");
+
             bytesPerLine = bytesPerLine - bytesPerLine % 3;
             int a, b, c;
             int length = str.GetByteCount();

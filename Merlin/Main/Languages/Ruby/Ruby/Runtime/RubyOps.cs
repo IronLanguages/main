@@ -94,11 +94,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, SymbolId[] variableNames, 
+        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, string[] variableNames, 
             InterpretedFrame interpretedFrame) {
 
             if (!scope.LocalsInitialized) {
-                scope.SetLocals(locals, variableNames ?? SymbolId.EmptySymbols);
+                scope.SetLocals(locals, variableNames ?? ArrayUtils.EmptyStrings);
             }
             scope.InterpretedFrame = interpretedFrame;
         }
@@ -124,37 +124,37 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, SymbolId[] variableNames, 
+        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, string[] variableNames, 
             RubyScope/*!*/ parent, RubyModule/*!*/ module) {
 
             RubyModuleScope scope = new RubyModuleScope(parent, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
-            scope.SetLocals(locals, variableNames ?? SymbolId.EmptySymbols);
+            scope.SetLocals(locals, variableNames ?? ArrayUtils.EmptyStrings);
             return scope;
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, SymbolId[] variableNames, int visibleParameterCount,
+        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, string[] variableNames, int visibleParameterCount,
             RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName, 
             object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
 
             return new RubyMethodScope(
-                locals, variableNames ?? SymbolId.EmptySymbols, visibleParameterCount,
+                locals, variableNames ?? ArrayUtils.EmptyStrings, visibleParameterCount,
                 parentScope, declaringModule, definitionName, selfObject, blockParameter,
                 interpretedFrame
             );            
         }
 
         [Emitted]
-        public static RubyScope/*!*/ CreateFileInitializerScope(MutableTuple locals, SymbolId[] variableNames, RubyScope/*!*/ parent) {
-            return new RubyFileInitializerScope(locals, variableNames, parent);
+        public static RubyScope/*!*/ CreateFileInitializerScope(MutableTuple locals, string[] variableNames, RubyScope/*!*/ parent) {
+            return new RubyFileInitializerScope(locals, variableNames ?? ArrayUtils.EmptyStrings, parent);
         }
 
         [Emitted]
-        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, SymbolId[] variableNames, 
+        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, string[] variableNames, 
             BlockParam/*!*/ blockParam, object selfObject, InterpretedFrame interpretedFrame) {
 
-            return new RubyBlockScope(locals, variableNames ?? SymbolId.EmptySymbols, blockParam, selfObject, interpretedFrame);
+            return new RubyBlockScope(locals, variableNames ?? ArrayUtils.EmptyStrings, blockParam, selfObject, interpretedFrame);
         }
 
         [Emitted]
@@ -202,12 +202,12 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object GetLocalVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            return scope.ResolveLocalVariable(SymbolTable.StringToId(name));
+            return scope.ResolveLocalVariable(name);
         }
 
         [Emitted]
         public static object SetLocalVariable(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            return scope.ResolveAndSetLocalVariable(SymbolTable.StringToId(name), value);
+            return scope.ResolveAndSetLocalVariable(name, value);
         }
 
         [Emitted]
@@ -498,7 +498,7 @@ namespace IronRuby.Runtime {
             bool moduleFunction = false;
 
             if (body.HasTarget) {
-                if (!RubyUtils.CanCreateSingleton(target)) {
+                if (!RubyUtils.CanDefineSingletonMethod(target)) {
                     throw RubyExceptions.CreateTypeError("can't define singleton method for literals");
                 }
 
@@ -639,7 +639,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyClass/*!*/ DefineSingletonClass(RubyScope/*!*/ scope, object obj) {
-            if (obj != null && !(obj is bool) && RubyUtils.IsRubyValueType(obj)) {
+            if (!RubyUtils.HasSingletonClass(obj)) {
                 throw RubyExceptions.CreateTypeError(String.Format("no virtual class for {0}", scope.RubyContext.GetClassOf(obj).Name));
             }
             return scope.RubyContext.CreateSingletonClass(obj);
@@ -672,11 +672,11 @@ namespace IronRuby.Runtime {
 
                 RubyClass cls = existing.Value as RubyClass;
                 if (cls == null || !cls.IsClass) {
-                    throw RubyExceptions.CreateTypeError(String.Format("{0} is not a class", name));
+                    throw RubyExceptions.CreateTypeError("{0} is not a class", name);
                 }
 
                 if (superClassObject != null && !ReferenceEquals(cls.SuperClass, superClass)) {
-                    throw RubyExceptions.CreateTypeError(String.Format("superclass mismatch for class {0}", name));
+                    throw RubyExceptions.CreateTypeError("superclass mismatch for class {0}", name);
                 }
                 return cls;
             } else {
@@ -688,7 +688,7 @@ namespace IronRuby.Runtime {
             if (superClassObject != null) {
                 RubyClass superClass = superClassObject as RubyClass;
                 if (superClass == null) {
-                    throw RubyExceptions.CreateTypeError(String.Format("superclass must be a Class ({0} given)", ec.GetClassOf(superClassObject).Name));
+                    throw RubyExceptions.CreateTypeError("superclass must be a Class ({0} given)", ec.GetClassOf(superClassObject).Name);
                 }
 
                 if (superClass.IsSingletonClass) {
@@ -1541,40 +1541,28 @@ namespace IronRuby.Runtime {
         #region CreateSymbol
 
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolL(string/*!*/ str1, RubyEncoding/*!*/ encoding) {
-            return ToSymbolChecked(CreateMutableStringL(str1, encoding));
+        public static RubySymbol/*!*/ CreateSymbolM(MutableString str1, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
+            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringM(str1, encoding));
+        }
+
+        [Emitted]
+        public static RubySymbol/*!*/ CreateSymbolLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
+            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringLM(str1, str2, encoding));
+        }
+
+        [Emitted]
+        public static RubySymbol/*!*/ CreateSymbolML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
+            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringML(str1, str2, encoding));
         }
         
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolM(MutableString str1, RubyEncoding/*!*/ encoding) {
-            return ToSymbolChecked(CreateMutableStringM(str1, encoding));
+        public static RubySymbol/*!*/ CreateSymbolMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
+            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringMM(str1, str2, encoding));
         }
 
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding) {
-            return ToSymbolChecked(CreateMutableStringLM(str1, str2, encoding));
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding) {
-            return ToSymbolChecked(CreateMutableStringML(str1, str2, encoding));
-        }
-        
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding) {
-            return ToSymbolChecked(CreateMutableStringMM(str1, str2, encoding));
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolN(object[]/*!*/ strings, RubyEncoding/*!*/ encoding) {
-            return ToSymbolChecked(CreateMutableStringN(strings, encoding));
-        }
-
-        private static SymbolId/*!*/ ToSymbolChecked(MutableString/*!*/ str) {
-            if (str.IsEmpty) {
-                throw RubyExceptions.CreateArgumentError("interning empty string");
-            }
-            return SymbolTable.StringToId(str.ToString());
+        public static RubySymbol/*!*/ CreateSymbolN(object[]/*!*/ strings, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
+            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringN(strings, encoding));
         }
 
         #endregion
@@ -2014,29 +2002,24 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] // ProtocolConversionAction
-        public static string/*!*/ ConvertSymbolIdToSymbol(SymbolId value) {
-            return SymbolTable.IdToString(value);
+        public static string/*!*/ ConvertSymbolToClrString(RubySymbol/*!*/ value) {
+            return value.ToString();
         }
 
         [Emitted] // ProtocolConversionAction
-        public static string/*!*/ ConvertFixnumToSymbol(RubyContext/*!*/ context, int value) {
+        public static string/*!*/ ConvertSymbolIdToClrString(RubyContext/*!*/ context, int value) {
             context.ReportWarning("do not use Fixnums as Symbols");
 
-            SymbolId result;
-            if (TryConvertFixnumToSymbol(value, out result)) {
-                return SymbolTable.IdToString(result);
+            RubySymbol result = context.FindSymbol(value);
+            if (result != null) {
+                return result.ToString();
             } else {
                 throw RubyExceptions.CreateArgumentError(String.Format("{0} is not a symbol", value));
             }
         }
 
-        public static bool TryConvertFixnumToSymbol(int number, out SymbolId symbol) {
-            symbol = new SymbolId(number);
-            return !symbol.IsEmpty && SymbolTable.ContainsId(symbol);
-        }
-
         [Emitted] // ProtocolConversionAction
-        public static string/*!*/ ConvertMutableStringToSymbol(MutableString/*!*/ value) {
+        public static string/*!*/ ConvertMutableStringToClrString(MutableString/*!*/ value) {
             return value.ConvertToString();
         }
         
@@ -2359,7 +2342,7 @@ namespace IronRuby.Runtime {
             RubyOps.GetInstanceData(ref instanceData).Tainted = value;
         }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT // serialization
         [Emitted(UseReflection = true)] //RubyTypeBuilder
         public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
             immediateClass = (RubyClass)info.GetValue(RubyUtils.SerializationInfoClassKey, typeof(RubyClass));

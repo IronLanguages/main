@@ -191,13 +191,6 @@ class UnitTestSetup
   end
 
   def disable_critical_failures
-    # Bug 3466 - IronRuby causes an exception while printing the failure information of some tests with
-    # non-ASCII names. So we disable them programatically
-    TestJSONDecoding.class_eval do
-      tests_with_bad_names = TestJSONDecoding.instance_methods(false).select { |m| m.to_s =~ /matzue/x }
-      tests_with_bad_names.each { |e| undef_method(e.to_s) }
-    end
-
     # ArgumentError: wrong number of arguments (1 for 0)
     # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/activesupport/test/message_encryptor_test.rb:5:in `setup'
     disable MessageEncryptorTest, :setup
@@ -257,12 +250,14 @@ class UnitTestSetup
       :test_indexed_insert_should_raise_on_index_overflow,
       # IndexError: Index was outside the bounds of the array.
       :test_indexed_insert_should_take_character_offsets,
-      # RangeError: Non-negative number required.
+      # RangeError: Non-negative number required.
+
       # Parameter name: length
       :test_ljust_should_count_characters_instead_of_bytes,
       # ActiveSupport::Multibyte::EncodingError: malformed UTF-8 character
       :test_rindex_should_return_character_offset,
-      # RangeError: Count must be positive and count must refer to a location within the string/array/collection.
+      # RangeError: Count must be positive and count must refer to a location within the string/array/collection.
+
       # Parameter name: count
       :test_should_know_if_one_includes_the_other,
       # <false> is not true.
@@ -297,24 +292,9 @@ class UnitTestSetup
       # <false> is not true.
       :test_inspect
 
-    disable TestJSONDecoding,
-      # <StandardError> exception expected but was
-      # Class: <IronRuby::StandardLibrary::Yaml::ParserException>
-      # Message: <"while scanning a flow node: expected the node content, but found: #<ValueToken>">
-      :test_failed_json_decoding
-      
-    disable TestJSONEncoding, 
-      # <"\"\\u20ac2.99\""> expected but was
-      # <"\"€2.99\"">.
-      :test_utf8_string_encoded_properly_when_kcode_is_utf8
-
     disable TimeWithZoneTest, 
       # ArgumentError: invalid date
-      :test_change,
-      # NameError: uninitialized constant YAML::Emitter
-      :test_ruby_to_yaml,
-      # NameError: uninitialized constant YAML::Emitter
-      :test_to_yaml
+      :test_change
 
     disable TimeZoneTest, 
       # <Fri Dec 31 19:00:00 UTC 1999> expected but was

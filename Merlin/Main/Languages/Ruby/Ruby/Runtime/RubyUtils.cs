@@ -48,20 +48,50 @@ namespace IronRuby.Runtime {
         public static readonly int NilObjectId = 4;
 
         /// <summary>
-        /// Determines whether the given object is a value type in Ruby (i.e. they have value equality)
+        /// Ruby value types:
         /// 
-        /// In Ruby, immediate values are Fixnums, Symbols, true, false, and nil
-        /// All of those have value equality, whereas other types like Bignum & Float have reference equality
-        /// 
-        /// TODO: currently we treat all .NET value types (except floating point) as if they were
-        /// immediate values. Is this correct?
+        /// NilClass
+        /// TrueClass
+        /// FalseClass
+        /// Fixnum
+        /// Symbol
+        /// + CLR structs
         /// </summary>
         public static bool IsRubyValueType(object obj) {
-            return obj == null || obj is ValueType && !(obj is float || obj is double);
+            return (obj == null || obj is ValueType || obj is RubySymbol) && !(obj is float || obj is double);
         }
 
-        public static bool CanCreateSingleton(object obj) {
-            return !(obj is int || obj is SymbolId || obj is float || obj is double || obj is BigInteger);
+        /// <summary>
+        /// The object maintains a state (frozen, tainted flags and instance variables).
+        /// <code>
+        /// obj.instance_variable_set(:@foo, 'bar')
+        /// puts obj.instance_variable_get(:@foo)     # => 'bar'
+        /// puts obj.taint.tainted?                   # => true
+        /// </code>
+        /// </summary>
+        public static bool HasObjectState(object obj) {
+            return !IsRubyValueType(obj);
+        }
+
+        /// <summary>
+        /// Can the object be cloned?
+        /// </summary>
+        public static bool CanClone(object obj) {
+            return !IsRubyValueType(obj);
+        }
+
+        /// <summary>
+        /// Is it allowed to define a sigleton method for the object?
+        /// </summary>
+        public static bool CanDefineSingletonMethod(object obj) {
+            return !(obj is ValueType || obj is RubySymbol || obj is BigInteger) || obj is bool;
+        }
+
+        /// <summary>
+        /// Does the object have a sigleton class?
+        /// </summary>
+        public static bool HasSingletonClass(object obj) {
+            return !(obj is int || obj is RubySymbol);
         }
 
         public static void RequiresNotFrozen(RubyContext/*!*/ context, object/*!*/ obj) {
@@ -79,7 +109,7 @@ namespace IronRuby.Runtime {
                     return MutableString.CreateAscii("...");
                 }
 
-                MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
+                MutableString str = MutableString.CreateMutable(context.GetIdentifierEncoding());
                 str.Append("#<");
                 str.Append(context.GetClassDisplayName(obj));
 
@@ -118,8 +148,8 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static MutableString/*!*/ FormatObjectPrefix(string/*!*/ className, long objectId, bool isTainted) {
-            MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
+        public static MutableString/*!*/ FormatObjectPrefix(RubyContext/*!*/ context, string/*!*/ className, long objectId, bool isTainted) {
+            MutableString str = MutableString.CreateMutable(context.GetIdentifierEncoding());
             str.Append("#<");
             str.Append(className);
 
@@ -131,16 +161,16 @@ namespace IronRuby.Runtime {
             return str;
         }
 
-        public static MutableString/*!*/ FormatObject(string/*!*/ className, long objectId, bool isTainted) {
-            return FormatObjectPrefix(className, objectId, isTainted).Append(">");
+        public static MutableString/*!*/ FormatObject(RubyContext/*!*/ context, string/*!*/ className, long objectId, bool isTainted) {
+            return FormatObjectPrefix(context, className, objectId, isTainted).Append(">");
         }
 
         public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
-            return FormatObject(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
+            return FormatObject(context, context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
         }
 
         public static MutableString/*!*/ ObjectToMutableStringPrefix(RubyContext/*!*/ context, object obj) {
-            return FormatObjectPrefix(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
+            return FormatObjectPrefix(context, context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
         }
 
         public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, long objectId) {
@@ -148,7 +178,12 @@ namespace IronRuby.Runtime {
         }
 
         public static MutableString/*!*/ ObjectToMutableString(IRubyObject/*!*/ self) {
-            return RubyUtils.FormatObject(self.ImmediateClass.GetNonSingletonClass().Name, self.GetInstanceData().ObjectId, self.IsTainted);
+            return RubyUtils.FormatObject(
+                self.ImmediateClass.Context, 
+                self.ImmediateClass.GetNonSingletonClass().Name, 
+                self.GetInstanceData().ObjectId, 
+                self.IsTainted
+            );
         }
 
         public static MutableString/*!*/ ObjectBaseToMutableString(IRubyObject/*!*/ self) {
@@ -165,7 +200,7 @@ namespace IronRuby.Runtime {
             object obj, bool cloneSemantics, out object copy) {
 
             // Ruby value types can't be cloned
-            if (RubyUtils.IsRubyValueType(obj)) {
+            if (!RubyUtils.CanClone(obj)) {
                 copy = null;
                 return false;
             }
@@ -838,8 +873,8 @@ namespace IronRuby.Runtime {
 
         public static object EvaluateInSingleton(object self, BlockParam/*!*/ block, object[] args) {
             // TODO: this is checked in method definition, if no method is defined it is ok.
-            // => singleton is create in method definition also.
-            if (!RubyUtils.CanCreateSingleton(self)) {
+            // => singleton is created in method definition also.
+            if (!RubyUtils.CanDefineSingletonMethod(self)) {
                 throw RubyExceptions.CreateTypeError("can't define singleton method for literals");
             }
 
@@ -869,42 +904,38 @@ namespace IronRuby.Runtime {
 
         private static readonly Type[] _ccTypes1 = new Type[] { typeof(RubyClass) };
         private static readonly Type[] _ccTypes2 = new Type[] { typeof(RubyContext) };
-#if !SILVERLIGHT
+#if !SILVERLIGHT // serialization
         private static readonly Type[] _serializableTypeSignature = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 #endif
 
         public static readonly string SerializationInfoClassKey = "#immediateClass";
 
-        public static object/*!*/ CreateObject(RubyClass/*!*/ theclass, Hash/*!*/ attributes, bool decorate) {
+        public static object/*!*/ CreateObject(RubyClass/*!*/ theclass, IEnumerable<KeyValuePair<string, object>>/*!*/ attributes) {
             Assert.NotNull(theclass, attributes);
 
             Type baseType = theclass.GetUnderlyingSystemType();
             object obj;
             if (typeof(ISerializable).IsAssignableFrom(baseType)) {
-#if !SILVERLIGHT
+#if !SILVERLIGHT // serialization
                 BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
                 ConstructorInfo ci = baseType.GetConstructor(bindingFlags, null, _serializableTypeSignature, null);
                 if (ci == null) {
 #endif
-                    string message = String.Format("Class {0} does not have a valid deserializing constructor", baseType.FullName);
+                string message = String.Format("Class {0} does not have a valid deserializing constructor", baseType.FullName);
                     throw new NotSupportedException(message);
-#if !SILVERLIGHT
+#if !SILVERLIGHT // serialization
                 }
                 SerializationInfo info = new SerializationInfo(baseType, new FormatterConverter());
                 info.AddValue(SerializationInfoClassKey, theclass);
-                foreach (KeyValuePair<object, object> pair in attributes) {
-                    string key = pair.Key.ToString();
-                    key = decorate ? "@" + key : key;
-                    info.AddValue(key, pair.Value);
+                foreach (var pair in attributes) {
+                    info.AddValue(pair.Key, pair.Value);
                 }
                 obj = ci.Invoke(new object[2] { info, new StreamingContext(StreamingContextStates.Other, theclass) });
 #endif
             } else {
                 obj = CreateObject(theclass);
-                foreach (KeyValuePair<object, object> pair in attributes) {
-                    string key = pair.Key.ToString();
-                    key = decorate ? "@" + key : key;
-                    theclass.Context.SetInstanceVariable(obj, key, pair.Value);
+                foreach (var pair in attributes) {
+                    theclass.Context.SetInstanceVariable(obj, pair.Key, pair.Value);
                 }
             }
             return obj;
@@ -914,6 +945,7 @@ namespace IronRuby.Runtime {
             return method != null && !method.IsPrivate && !method.IsAssembly && !method.IsFamilyAndAssembly;
         }
 
+        // TODO: remove
         public static object/*!*/ CreateObject(RubyClass/*!*/ theClass) {
             Assert.NotNull(theClass);
 
