@@ -38,7 +38,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("print")]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]params object[]/*!*/ args) {
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, params object[]/*!*/ args) {
             foreach (object arg in args) {
                 Print(writeStorage, self, arg);
             }
@@ -112,7 +112,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("puts")]
         public static void Puts(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
-            ConversionStorage<IList>/*!*/ tryToAry, object self, [NotNull]params object[]/*!*/ vals) {
+            ConversionStorage<IList>/*!*/ tryToAry, object self, params object[]/*!*/ vals) {
 
             for (int i = 0; i < vals.Length; i++) {
                 Puts(writeStorage, tosConversion, tryToAry, self, vals[i]);
@@ -124,7 +124,7 @@ namespace IronRuby.Builtins {
             StringFormatterSiteStorage/*!*/ storage,
             ConversionStorage<MutableString>/*!*/ stringCast,
             BinaryOpStorage/*!*/ writeStorage,
-            object/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
+            object/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, params object[]/*!*/ args) {
 
             KernelOps.PrintFormatted(storage, stringCast, writeStorage, null, self, format, args);
         }

@@ -42,7 +42,11 @@ namespace IronPython.Runtime {
     /// (default=0)
     /// </summary>
     [PythonType("bytearray")]
-    public class ByteArray : IList<byte>, ICodeFormattable, IValueEquality {
+    public class ByteArray : IList<byte>, ICodeFormattable
+#if CLR2
+        , IValueEquality
+#endif
+    {
         private List<byte>/*!*/ _bytes;
 
         public ByteArray() {
@@ -1379,20 +1383,40 @@ namespace IronPython.Runtime {
         #endregion
 
         #region IValueEquality Members
-
+#if CLR2
         int IValueEquality.GetValueHashCode() {
             throw PythonOps.TypeError("bytearray object is unhashable");
         }
 
         bool IValueEquality.ValueEquals(object other) {
+            return Equals(other);
+        }
+#endif
+
+        public const object __hash__ = null;
+
+        public override int GetHashCode() {
+            return (PythonTuple.MakeTuple(_bytes.ToArray())).GetHashCode();
+        }
+
+        public override bool Equals(object other) {
             IList<byte> bytes = other as IList<byte>;
-            if (bytes == null) {
+            if (bytes == null || Count != bytes.Count) {
                 return false;
+            } else if (Count == 0) {
+                // 2 empty ByteArrays are equal
+                return true;
             }
 
             using (new OrderedLocker(this, other)) {
-                return _bytes.Compare(bytes) == 0;
+                for (int i = 0; i < Count; i++) {
+                    if (_bytes[i] != bytes[i]) {
+                        return false;
+                    }
+                }
             }
+
+            return true;
         }
 
         #endregion

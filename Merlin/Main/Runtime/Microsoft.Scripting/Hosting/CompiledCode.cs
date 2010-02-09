@@ -107,6 +107,28 @@ namespace Microsoft.Scripting.Hosting {
             return new ObjectHandle((object)Execute(scope));
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        public ObjectHandle ExecuteAndWrap(out ObjectHandle exception) {
+            exception = null;
+            try {
+                return new ObjectHandle((object)Execute());
+            } catch (Exception e) {
+                exception = new ObjectHandle(e);
+                return null;
+            }
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        public ObjectHandle ExecuteAndWrap(ScriptScope scope, out ObjectHandle exception) {
+            exception = null;
+            try{
+                return new ObjectHandle((object)Execute(scope));
+            } catch (Exception e) {
+                exception = new ObjectHandle(e);
+                return null;
+            }
+        }
+
         // TODO: Figure out what is the right lifetime
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService() {

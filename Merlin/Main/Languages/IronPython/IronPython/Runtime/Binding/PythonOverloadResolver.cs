@@ -107,12 +107,12 @@ namespace IronPython.Runtime.Binding {
         }
 
         protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {
-            var infos = mapping.ParameterInfos;
+            var infos = mapping.Overload.Parameters;
             BitArray special = base.MapSpecialParameters(mapping);
 
-            if (infos.Length > 0) {
+            if (infos.Count > 0) {
                 bool normalSeen = false;
-                for (int i = 0; i < infos.Length; i++) {
+                for (int i = 0; i < infos.Count; i++) {
                     bool isSpecial = false;
                     if (infos[i].ParameterType.IsSubclassOf(typeof(SiteLocalStorage))) {
                         mapping.AddBuilder(new SiteLocalStorageBuilder(infos[i]));
@@ -125,7 +125,7 @@ namespace IronPython.Runtime.Binding {
                     }
 
                     if (isSpecial) {
-                        (special = special ?? new BitArray(infos.Length))[i] = true;
+                        (special = special ?? new BitArray(infos.Count))[i] = true;
                     }
                 }
             }
@@ -137,8 +137,8 @@ namespace IronPython.Runtime.Binding {
             return Expression.Call(typeof(PythonOps).GetMethod("MakeTuple"), argumentArrayExpression);
         }
 
-        protected override bool AllowKeywordArgumentSetting(MethodBase method) {
-            return CompilerHelpers.IsConstructor(method) && !method.DeclaringType.IsDefined(typeof(PythonTypeAttribute), true);
+        protected override bool AllowMemberInitialization(OverloadInfo method) {
+            return method.IsInstanceFactory && !method.DeclaringType.IsDefined(typeof(PythonTypeAttribute), true);
         }
 
         public override Expression Convert(DynamicMetaObject metaObject, Type restrictedType, ParameterInfo info, Type toType) {

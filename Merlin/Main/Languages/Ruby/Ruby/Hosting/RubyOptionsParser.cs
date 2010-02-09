@@ -270,8 +270,13 @@ namespace IronRuby.Hosting {
                         if (mainFileFromPath != null) {
                             ConsoleOptions.FileName = FindMainFileFromPath(mainFileFromPath);
                         }
-                        LanguageSetup.Options["MainFile"] = RubyUtils.CanonicalizePath(ConsoleOptions.FileName);
-                        LanguageSetup.Options["Arguments"] = PopRemainingArgs();
+
+                        if (ConsoleOptions.Command == null) {
+                            SetupOptionsForMainFile();
+                        } else {
+                            SetupOptionsForCommand();
+                        }
+                        
                         LanguageSetup.Options["ArgumentEncoding"] = 
 #if SILVERLIGHT
                             RubyEncoding.UTF8;
@@ -281,6 +286,22 @@ namespace IronRuby.Hosting {
                     } 
                     break;
             }
+        }
+
+        private void SetupOptionsForMainFile() {
+            LanguageSetup.Options["MainFile"] = RubyUtils.CanonicalizePath(ConsoleOptions.FileName);
+            LanguageSetup.Options["Arguments"] = PopRemainingArgs();;
+        }
+
+        private void SetupOptionsForCommand() {
+            string firstArg = ConsoleOptions.FileName;
+            ConsoleOptions.FileName = null;
+
+            List<string> args = new List<string>(new string[] { firstArg });
+            args.AddRange(PopRemainingArgs());
+
+            LanguageSetup.Options["MainFile"] = "-e";
+            LanguageSetup.Options["Arguments"] = args.ToArray();
         }
 
         private string FindMainFileFromPath(string mainFileFromPath) {

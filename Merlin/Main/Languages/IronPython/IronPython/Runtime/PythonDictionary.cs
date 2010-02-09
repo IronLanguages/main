@@ -26,8 +26,11 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Runtime {
 
     [PythonType("dict"), Serializable, DebuggerTypeProxy(typeof(PythonDictionary.DebugProxy)), DebuggerDisplay("dict, {Count} items")]
-    public class PythonDictionary : IDictionary<object, object>, IValueEquality,
-        IDictionary, ICodeFormattable, IAttributesCollection {
+    public class PythonDictionary : IDictionary<object, object>, IDictionary, IAttributesCollection,
+#if CLR2
+        IValueEquality,
+#endif
+        ICodeFormattable, IStructuralEquatable {
         [MultiRuntimeAware]
         private static object DefaultGetItem;   // our cached __getitem__ method
         internal readonly DictionaryStorage _storage;
@@ -189,7 +192,7 @@ namespace IronPython.Runtime {
 
         public int Count {
             [PythonHidden]
-            get { return __len__(); }
+            get { return _storage.Count; }
         }
 
         bool ICollection<KeyValuePair<object, object>>.IsReadOnly {
@@ -306,7 +309,7 @@ namespace IronPython.Runtime {
         #region IPythonContainer Members
 
         public virtual int __len__() {
-            return _storage.Count;
+            return Count;
         }
 
         #endregion
@@ -481,21 +484,23 @@ namespace IronPython.Runtime {
         // needs a custom __eq__ / __ne__ implementation.
 
         [return: MaybeNotImplemented]
-        public object __eq__(object other) {
+        public object __eq__(CodeContext/*!*/ context, object other) {
             if (!(other is PythonDictionary || other is IDictionary<object, object>))
                 return NotImplementedType.Value;
 
-            return ScriptingRuntimeHelpers.BooleanToObject(((IValueEquality)this).ValueEquals(other));
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                ((IStructuralEquatable)this).Equals(other, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+            );
         }
 
         [return: MaybeNotImplemented]
-        public object __ne__(object other) {
-            object res = __eq__(other);
-            if (res != NotImplementedType.Value) {
-                return ScriptingRuntimeHelpers.BooleanToObject(PythonOps.Not(res));
-            }
+        public object __ne__(CodeContext/*!*/ context, object other) {
+            if (!(other is PythonDictionary || other is IDictionary<object, object>))
+                return NotImplementedType.Value;
 
-            return res;
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                !((IStructuralEquatable)this).Equals(other, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+            );
         }
 
         [return: MaybeNotImplemented]
@@ -510,7 +515,7 @@ namespace IronPython.Runtime {
                 }
 
                 // user-defined dictionary...
-                int lcnt = __len__();
+                int lcnt = Count;
                 int rcnt = PythonContext.GetContext(context).ConvertToInt32(PythonOps.CallWithContext(context, len));
 
                 if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
@@ -563,24 +568,59 @@ namespace IronPython.Runtime {
         #endregion
 
         #region IValueEquality Members
-
+#if CLR2
         int IValueEquality.GetValueHashCode() {
             throw PythonOps.TypeErrorForUnhashableType("dict");
         }
 
         bool IValueEquality.ValueEquals(object other) {
+            return EqualsWorker(other, null);
+        }
+#endif
+        #endregion
+
+        #region IStructuralEquatable Members
+
+        public const object __hash__ = null;
+
+        int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+            if (CompareUtil.Check(this)) {
+                return 0;
+            }
+
+            int res;
+            ISet pairs = new FrozenSetCollection();
+            foreach (KeyValuePair<object, object> kvp in _storage.GetItems()) {
+                pairs.PrivAdd(PythonTuple.MakeTuple(kvp.Key, kvp.Value));
+            }
+
+            CompareUtil.Push(this);
+            try {
+                res = pairs.GetHashCode(comparer);
+            } finally {
+                CompareUtil.Pop(this);
+            }
+
+            return res;
+        }
+
+        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+            return EqualsWorker(other, comparer);
+        }
+
+        private bool EqualsWorker(object other, IEqualityComparer comparer) {
             if (Object.ReferenceEquals(this, other)) return true;
 
             IDictionary<object, object> oth = other as IDictionary<object, object>;
             if (oth == null) return false;
-            if (oth.Count != __len__()) return false;
+            if (oth.Count != Count) return false;
 
             PythonDictionary pd = other as PythonDictionary;
             if (pd != null) {
-                return ValueEqualsPythonDict(pd);
+                return ValueEqualsPythonDict(pd, comparer);
             }
             // we cannot call Compare here and compare against zero because Python defines
-            // value equality as working even if the keys/values are unordered.
+            // value equality even if the keys/values are unordered.
             List myKeys = keys();
 
             foreach (object o in myKeys) {
@@ -589,7 +629,11 @@ namespace IronPython.Runtime {
 
                 CompareUtil.Push(res);
                 try {
-                    if (!PythonOps.EqualRetBool(res, this[o])) return false;
+                    if (comparer == null) {
+                        if (!PythonOps.EqualRetBool(res, this[o])) return false;
+                    } else {
+                        if (!comparer.Equals(res, this[o])) return false;
+                    }
                 } finally {
                     CompareUtil.Pop(res);
                 }
@@ -597,7 +641,7 @@ namespace IronPython.Runtime {
             return true;
         }
 
-        private bool ValueEqualsPythonDict(PythonDictionary pd) {
+        private bool ValueEqualsPythonDict(PythonDictionary pd, IEqualityComparer comparer) {
             List myKeys = keys();
 
             foreach (object o in myKeys) {
@@ -606,16 +650,17 @@ namespace IronPython.Runtime {
 
                 CompareUtil.Push(res);
                 try {
-                    if (!PythonOps.EqualRetBool(res, this[o])) return false;
+                    if (comparer == null) {
+                        if (!PythonOps.EqualRetBool(res, this[o])) return false;
+                    } else {
+                        if (!comparer.Equals(res, this[o])) return false;
+                    }
                 } finally {
                     CompareUtil.Pop(res);
                 }
             }
             return true;
         }
-
-        public const object __hash__ = null;
-
 
         #endregion
 
@@ -738,7 +783,7 @@ namespace IronPython.Runtime {
          *
          */
 
-        #region IAttributesDictionary Members
+        #region IAttributesCollection Members
 
         void IAttributesCollection.Add(SymbolId name, object value) {
             this[SymbolTable.IdToString(name)] = value;
@@ -758,7 +803,7 @@ namespace IronPython.Runtime {
 
         int IAttributesCollection.Count {
             get {
-                return __len__();
+                return Count;
             }
         }
 

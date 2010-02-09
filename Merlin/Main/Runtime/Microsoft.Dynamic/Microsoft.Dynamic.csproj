@@ -173,6 +173,7 @@
     <Compile Include="Actions\Calls\MethodCandidate.cs" />
     <Compile Include="Actions\Calls\NarrowingLevel.cs" />
     <Compile Include="Actions\Calls\OutArgBuilder.cs" />
+    <Compile Include="Actions\Calls\OverloadInfo.cs" />
     <Compile Include="Actions\Calls\OverloadResolver.cs" />
     <Compile Include="Actions\Calls\OverloadResolverFactory.cs" />
     <Compile Include="Actions\Calls\ParameterMapping.cs" />
@@ -439,7 +440,6 @@
     <Compile Include="Ast\IfStatementTest.cs" />
     <Compile Include="Generation\CompilerHelpers.cs" />
     <Compile Include="Generation\IExpressionSerializable.cs" />
-    <Compile Include="Generation\ParameterInfoWrapper.cs" />
     <Compile Include="Generation\ToDiskRewriter.cs" />
     <Compile Include="Runtime\AssemblyTypeNames.cs" />
     <Compile Include="Runtime\BaseSymbolDictionary.cs" />

@@ -321,7 +321,7 @@ namespace IronPython.Runtime.Operations {
                     }
                 }
             }
-            if (initializedSlotValues.__len__() == 0) return null;
+            if (initializedSlotValues.Count == 0) return null;
             return initializedSlotValues;
         }
 
@@ -405,9 +405,9 @@ namespace IronPython.Runtime.Operations {
                 if (newArgs == null) {
                     throw PythonOps.TypeError("__getnewargs__ should return a tuple");
                 }
-                funcArgs = new object[1 + newArgs.__len__()];
+                funcArgs = new object[1 + newArgs.Count];
                 funcArgs[0] = myType;
-                for (int i = 0; i < newArgs.__len__(); i++) funcArgs[i + 1] = newArgs[i];
+                for (int i = 0; i < newArgs.Count; i++) funcArgs[i + 1] = newArgs[i];
             } else {
                 funcArgs = new object[] { myType };
             }
@@ -425,7 +425,7 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 PythonDictionary initializedSlotValues = GetInitializedSlotValues(self);
-                if (initializedSlotValues != null && initializedSlotValues.__len__() == 0) {
+                if (initializedSlotValues != null && initializedSlotValues.Count == 0) {
                     initializedSlotValues = null;
                 }
 

@@ -61,6 +61,16 @@ csc <<-EOL
   }
 
   public class SubStaticNotMangled : StaticNotMangled {}
+
+  public static class ObjectExtensions {
+    public static bool IsNotNull(this object value){
+      return value != null;
+    }
+
+    public static bool IsNull(this object value){
+      return value == null;
+    }
+  }
 EOL
 no_csc do
   class CLRNew::Ctor

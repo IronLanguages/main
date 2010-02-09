@@ -152,8 +152,35 @@ csc <<-EOL
           }
       }
   }
+
+  public interface IHaveGenerics {
+    T GenericsHere<T>(string arg1);
+    T MoreGenericsHere<T,S>(S x);
+  }
+
+  public class EatIHaveGenerics {
+    public static string TestGenericsHere(IHaveGenerics ihg){
+      return ihg.GenericsHere<string>("test");
+    }
+
+    public static string TestMoreGenericsHere(IHaveGenerics ihg){
+      return ihg.MoreGenericsHere<string, int>(1);
+    }
+  }
 EOL
 no_csc do
+  class RubyHasGenerics
+    include IHaveGenerics
+
+    def generics_here(arg)
+      "ruby generics here"
+    end
+
+    def more_generics_here(arg)
+      "ruby more generics here"
+    end
+  end
+  
   class RubyImplementsIInterface
     include IInterface
     

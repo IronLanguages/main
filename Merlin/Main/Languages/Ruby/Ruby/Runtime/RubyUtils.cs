@@ -39,6 +39,7 @@ using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     using EvalEntryPointDelegate = Func<RubyScope, object, RubyModule, Proc, object>;
+    using Microsoft.Scripting.Actions.Calls;
 
     public static class RubyUtils {
         #region Objects
@@ -419,6 +420,7 @@ namespace IronRuby.Runtime {
                 case ('g' << 8) | 'o':
                 case ('m' << 8) | 'e':
                 case ('m' << 8) | 'y':
+                case ('n' << 8) | 'o':
                 case ('o' << 8) | 'f':
                 case ('o' << 8) | 'k':
                 case ('o' << 8) | 'n':
@@ -547,8 +549,8 @@ namespace IronRuby.Runtime {
             return (methodName == Symbols.Initialize || methodName == Symbols.InitializeCopy) ? RubyMethodVisibility.Private : visibility;
         }
 
-        internal static string MapOperator(string/*!*/ name) {
-            switch (name) {
+        internal static string ToClrOperatorName(string/*!*/ rubyName) {
+            switch (rubyName) {
                 case "+": return "op_Addition";
                 case "-": return "op_Subtraction";
                 case "/": return "op_Division";
@@ -577,12 +579,8 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal static string MapOperator(MethodBase/*!*/ method) {
-            if (!method.IsStatic || !method.IsSpecialName) {
-                return null;
-            }
-
-            switch (method.Name) {
+        internal static string ToRubyOperatorName(string/*!*/ clrName) {
+            switch (clrName) {
                 case "op_Addition": return "+";
                 case "op_Subtraction": return "-";
                 case "op_Division": return "/";
@@ -611,11 +609,19 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal static bool IsOperator(MethodBase/*!*/ method) {
+        internal static string MapOperator(OverloadInfo/*!*/ method) {
+            return method.IsStatic && method.IsSpecialName ? ToRubyOperatorName(method.Name) : null;
+        }
+
+        internal static string MapOperator(MethodInfo/*!*/ method) {
+            return method.IsStatic && method.IsSpecialName ? ToRubyOperatorName(method.Name) : null;
+        }
+
+        internal static bool IsOperator(OverloadInfo/*!*/ method) {
             return MapOperator(method) != null;
         }
 
-        internal static bool IsExtension(MethodBase/*!*/ method) {
+        internal static bool IsExtension(OverloadInfo/*!*/ method) {
             return false;
         }
 

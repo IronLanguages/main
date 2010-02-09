@@ -25,10 +25,9 @@ using Microsoft.Scripting.Utils;
 namespace Microsoft.Scripting.Actions.Calls {
     public sealed class ParameterMapping {
         private readonly OverloadResolver _resolver;
-        private readonly MethodBase _method;
+        private readonly OverloadInfo _overload;
         private readonly IList<string> _argNames;
 
-        private readonly ParameterInfo[] _parameterInfos;
         private readonly List<ParameterWrapper> _parameters;
         private readonly List<ArgBuilder> _arguments;
 
@@ -44,26 +43,38 @@ namespace Microsoft.Scripting.Actions.Calls {
         private bool _hasDefaults;
         private ParameterWrapper _paramsDict;
 
-        public MethodBase Method { get { return _method; } }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")] // TODO
-        public ParameterInfo[] ParameterInfos { get { return _parameterInfos; } }
-        public int ArgIndex { get { return _argIndex; } } 
+        public OverloadInfo Overload { 
+            get { return _overload; }
+        }
 
-        internal ParameterMapping(OverloadResolver resolver, MethodBase method, ParameterInfo[] parameterInfos, IList<string> argNames) {
+        public int ArgIndex {
+            get { return _argIndex; }
+        } 
+
+        [Obsolete("Use Overload.ReflectionInfo instead")]
+        public MethodBase Method { 
+            get { return _overload.ReflectionInfo; } 
+        }
+
+        [Obsolete("Use Overload.Parameters instead")]
+        public ParameterInfo[] ParameterInfos { 
+            get { return ArrayUtils.MakeArray(_overload.Parameters); } 
+        }
+
+        internal ParameterMapping(OverloadResolver resolver, OverloadInfo method, IList<string> argNames) {
             Assert.NotNull(resolver, method);
             _resolver = resolver;
-            _method = method;
+            _overload = method;
             _argNames = argNames;
-            _parameterInfos = parameterInfos ?? method.GetParameters();
             _parameters = new List<ParameterWrapper>();
-            _arguments = new List<ArgBuilder>(_parameterInfos.Length);
+            _arguments = new List<ArgBuilder>(method.ParameterCount);
             _defaultArguments = new List<ArgBuilder>();
 	    }
 
         internal void MapParameters(bool reduceByRef) {
             if (reduceByRef) {
                 _returnArgs = new List<int>();
-                if (_method.GetReturnType() != typeof(void)) {
+                if (_overload.ReturnType != typeof(void)) {
                     _returnArgs.Add(-1);
                 }
             }
@@ -74,12 +85,12 @@ namespace Microsoft.Scripting.Actions.Calls {
                 _instanceBuilder = new InstanceBuilder(-1);
             }
 
-            for (int infoIndex = 0; infoIndex < _parameterInfos.Length; infoIndex++) {
-                if (!IsSpecialParameter(specialParameters, infoIndex)) {
+            foreach (var parameter in _overload.Parameters) {
+                if (!IsSpecialParameter(specialParameters, parameter.Position)) {
                     if (reduceByRef) {
-                        MapParameterReduceByRef(_parameterInfos[infoIndex]);
+                        MapParameterReduceByRef(parameter);
                     } else {
-                        MapParameter(_parameterInfos[infoIndex]);
+                        MapParameter(parameter);
                     }
                 }
             }
@@ -148,17 +159,13 @@ namespace Microsoft.Scripting.Actions.Calls {
             if (pi.ParameterType.IsByRef) {
                 _hasByRef = true;
                 Type refType = typeof(StrongBox<>).MakeGenericType(pi.ParameterType.GetElementType());
-                _parameters.Add(new ParameterWrapper(pi, refType, pi.Name, true, false, false, false));
+                _parameters.Add(new ParameterWrapper(pi, refType, pi.Name, ParameterBindingFlags.ProhibitNull));
                 ab = new ReferenceArgBuilder(pi, refType, indexForArgBuilder);
-            } else if (pi.IsParamDictionary()) {
-                _paramsDict = new ParameterWrapper(pi);
-                ab = new SimpleArgBuilder(pi, indexForArgBuilder);
-            } else if (pi.Position == 0 && pi.Member.IsExtension()) {
-                _parameters.Add(new ParameterWrapper(pi, pi.ParameterType, pi.Name, false, false, false, true));
-                ab = new SimpleArgBuilder(pi, indexForArgBuilder);
+            } else if (pi.Position == 0 && _overload.IsExtension) {
+                _parameters.Add(new ParameterWrapper(pi, pi.ParameterType, pi.Name, ParameterBindingFlags.IsHidden));
+                ab = new SimpleArgBuilder(pi.ParameterType, indexForArgBuilder, false, false);
             } else {
-                _parameters.Add(new ParameterWrapper(pi));
-                ab = new SimpleArgBuilder(pi, indexForArgBuilder);
+                ab = AddSimpleParameterMapping(pi, indexForArgBuilder);
             }
 
             if (nameIndex == -1) {
@@ -192,14 +199,10 @@ namespace Microsoft.Scripting.Actions.Calls {
                 if ((pi.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) != ParameterAttributes.In) {
                     _returnArgs.Add(_arguments.Count);
                 }
-                _parameters.Add(new ParameterWrapper(pi, pi.ParameterType.GetElementType(), pi.Name, false, false, false, false));
+                _parameters.Add(new ParameterWrapper(pi, pi.ParameterType.GetElementType(), pi.Name, ParameterBindingFlags.None));
                 ab = new ReturnReferenceArgBuilder(pi, indexForArgBuilder);
-            } else if (pi.IsParamDictionary()) {
-                _paramsDict = new ParameterWrapper(pi);
-                ab = new SimpleArgBuilder(pi, indexForArgBuilder);
             } else {
-                _parameters.Add(new ParameterWrapper(pi));
-                ab = new SimpleArgBuilder(pi, indexForArgBuilder);
+                ab = AddSimpleParameterMapping(pi, indexForArgBuilder);
             }
 
             if (nameIndex == -1) {
@@ -210,8 +213,35 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
+        private ParameterWrapper CreateParameterWrapper(ParameterInfo info) {
+            bool isParamArray = _overload.IsParamArray(info.Position);
+            bool isParamDict = !isParamArray && _overload.IsParamDictionary(info.Position);
+            bool prohibitsNullItems = (isParamArray || isParamDict) && _overload.ProhibitsNullItems(info.Position);
+
+            return new ParameterWrapper(
+                info,
+                info.ParameterType,
+                info.Name,
+                (_overload.ProhibitsNull(info.Position) ? ParameterBindingFlags.ProhibitNull : 0) |
+                (prohibitsNullItems ? ParameterBindingFlags.ProhibitNullItems : 0) |
+                (isParamArray ? ParameterBindingFlags.IsParamArray : 0) |
+                (isParamDict ? ParameterBindingFlags.IsParamDictionary : 0)
+            );
+        }
+
+        private SimpleArgBuilder AddSimpleParameterMapping(ParameterInfo info, int index) {
+            var param = CreateParameterWrapper(info);
+            if (param.IsParamsDict) {
+                _paramsDict = param;
+            } else {
+                _parameters.Add(param);
+            }
+
+            return new SimpleArgBuilder(info, info.ParameterType, index, param.IsParamsArray, param.IsParamsDict);
+        }
+
         internal MethodCandidate CreateCandidate() {
-            return new MethodCandidate(_resolver, _method, _parameters, _paramsDict, _returnBuilder, _instanceBuilder, _arguments, null);
+            return new MethodCandidate(_resolver, _overload, _parameters, _paramsDict, _returnBuilder, _instanceBuilder, _arguments, null);
         }
 
         internal MethodCandidate CreateByRefReducedCandidate() {
@@ -219,7 +249,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return null;
             }
 
-            var reducedMapping = new ParameterMapping(_resolver, _method, _parameterInfos, _argNames);
+            var reducedMapping = new ParameterMapping(_resolver, _overload, _argNames);
             reducedMapping.MapParameters(true);
             return reducedMapping.CreateCandidate();
         }
@@ -259,7 +289,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             // shift any arguments forward that need to be...
-            int curArg = CompilerHelpers.IsStatic(_method) ? 0 : 1;
+            int curArg = _overload.IsStatic ? 0 : 1;
             for (int i = 0; i < defaultArgBuilders.Count; i++) {
                 SimpleArgBuilder sab = defaultArgBuilders[i] as SimpleArgBuilder;
                 if (sab != null) {
@@ -267,7 +297,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 }
             }
 
-            return new MethodCandidate(_resolver, _method, necessaryParams, _paramsDict, _returnBuilder, _instanceBuilder, defaultArgBuilders, null);
+            return new MethodCandidate(_resolver, _overload, necessaryParams, _paramsDict, _returnBuilder, _instanceBuilder, defaultArgBuilders, null);
         }
 
         #endregion
@@ -277,9 +307,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         private ReturnBuilder MakeReturnBuilder(BitArray specialParameters) {
             ReturnBuilder returnBuilder = (_returnArgs != null) ?
                 new ByRefReturnBuilder(_returnArgs) :
-                new ReturnBuilder(_method.GetReturnType());
+                new ReturnBuilder(_overload.ReturnType);
             
-            if (_argNames.Count > 0 && _resolver.AllowKeywordArgumentSetting(_method)) {
+            if (_argNames.Count > 0 && _resolver.AllowMemberInitialization(_overload)) {
                 List<string> unusedNames = GetUnusedArgNames(specialParameters);
                 List<MemberInfo> bindableMembers = GetBindableMembers(returnBuilder.ReturnType, unusedNames);
                 if (unusedNames.Count == bindableMembers.Count) {
@@ -288,7 +318,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     foreach (MemberInfo mi in bindableMembers) {
                         var type = (mi.MemberType == MemberTypes.Property) ? ((PropertyInfo)mi).PropertyType : ((FieldInfo)mi).FieldType;
                         
-                        _parameters.Add(new ParameterWrapper(type, mi.Name, false));
+                        _parameters.Add(new ParameterWrapper(null, type, mi.Name, ParameterBindingFlags.None));
                         nameIndices.Add(_argNames.IndexOf(mi.Name));
                     }
 
@@ -338,7 +368,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             List<string> unusedNames = new List<string>();
             foreach (string name in _argNames) {
                 bool found = false;
-                foreach (ParameterInfo pi in _parameterInfos) {
+                foreach (ParameterInfo pi in _overload.Parameters) {
                     if (!IsSpecialParameter(specialParameters, pi.Position) && pi.Name == name) {
                         found = true;
                         break;

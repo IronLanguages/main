@@ -29,16 +29,13 @@ using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime.Calls;
-using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Conversions {
     using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class RubyConversionAction : RubyMetaBinder {
         protected RubyConversionAction() 

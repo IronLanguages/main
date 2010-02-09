@@ -329,7 +329,7 @@ namespace IronRuby.StandardLibrary.StringIO {
         }
 
         [RubyMethod("print")]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]params object[]/*!*/ args) {
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, params object[]/*!*/ args) {
             // MRI: StringIO#print is different from PrintOps.Print - it doesn't output delimiter after each arg.
             MutableString delimiter = writeStorage.Context.OutputSeparator;
 
@@ -381,7 +381,7 @@ namespace IronRuby.StandardLibrary.StringIO {
 
         [RubyMethod("puts")]
         public static void Puts(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
-            ConversionStorage<IList>/*!*/ tryToAry, object self, [NotNull]params object[]/*!*/ vals) {
+            ConversionStorage<IList>/*!*/ tryToAry, object self, params object[]/*!*/ vals) {
 
             PrintOps.Puts(writeStorage, tosConversion, tryToAry, self, vals);
         }
@@ -391,7 +391,7 @@ namespace IronRuby.StandardLibrary.StringIO {
             StringFormatterSiteStorage/*!*/ storage,
             ConversionStorage<MutableString>/*!*/ stringCast,
             BinaryOpStorage/*!*/ writeStorage,
-            StringIO/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
+            StringIO/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, params object[]/*!*/ args) {
 
             PrintOps.PrintFormatted(storage, stringCast, writeStorage, self, format, args);
         }

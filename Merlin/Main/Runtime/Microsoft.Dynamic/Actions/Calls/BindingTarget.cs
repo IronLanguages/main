@@ -138,14 +138,22 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Returns the method if the binding succeeded, or null if no method was applicable.
         /// </summary>
+        [Obsolete("Use Overload instead")]
         public MethodBase Method {
             get {
                 if (_candidate != null) {
-                    return _candidate.Method;
+                    return _candidate.Overload.ReflectionInfo;
                 }
 
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Returns the selected overload if the binding succeeded, or null if no one was applicable.
+        /// </summary>
+        public OverloadInfo Overload {
+            get { return (_candidate != null) ? _candidate.Overload : null; }
         }
 
         /// <summary>

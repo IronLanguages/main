@@ -501,12 +501,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("zip")]
         public static object Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToA, BlockParam block,
-            object self, [NotNull]params object[] args) {
+            object self, params object[]/*!*/ args) {
 
             // Call to_a on each argument
             IList[] otherArrays = new IList[args.Length];
             for (int i = 0; i < args.Length; i++) {
-                otherArrays[i] = args[i] as IList != null ? args[i] as IList : Protocols.TryConvertToArray(tryToA, args[i]);
+                otherArrays[i] = (args[i] as IList) ?? Protocols.TryConvertToArray(tryToA, args[i]);
             }
 
             return Zip(each, tryToA, block, self, otherArrays);

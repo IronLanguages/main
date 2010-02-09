@@ -45,6 +45,7 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryUnmangleName("as") == "As");
             Assert(RubyUtils.TryUnmangleName("my") == "My");
             Assert(RubyUtils.TryUnmangleName("me") == "Me");
+            Assert(RubyUtils.TryUnmangleName("no") == "No");
             
             Assert(RubyUtils.TryUnmangleName("ip") == "IP");
             Assert(RubyUtils.TryUnmangleName("rx") == "RX");
@@ -110,6 +111,8 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryUnmangleName("ME") == null);
             Assert(RubyUtils.TryUnmangleName("ID") == null);
             Assert(RubyUtils.TryUnmangleName("OK") == null);
+            Assert(RubyUtils.TryUnmangleName("NO") == null);
+
 
             Assert(RubyUtils.TryMangleName("NaN") == null);
             Assert(RubyUtils.TryMangleName("NaNValue") == null);

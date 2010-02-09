@@ -1746,7 +1746,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("delete")]
         public static MutableString/*!*/ Delete(RubyContext/*!*/ context, MutableString/*!*/ self, 
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
             if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
@@ -1755,7 +1755,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("delete!")]
         public static MutableString/*!*/ DeleteInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
             self.RequireNotFrozen();
 
             if (strs.Length == 0) {
@@ -1781,7 +1781,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("count")]
         public static object Count(RubyContext/*!*/ context, MutableString/*!*/ self, 
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
             if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
@@ -2268,7 +2268,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("squeeze")]
         public static MutableString/*!*/ Squeeze(RubyContext/*!*/ context, MutableString/*!*/ self, 
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             MutableString result = self.Clone();
             SqueezeMutableString(result, args);
             return result;
@@ -2276,7 +2276,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("squeeze!")]
         public static MutableString/*!*/ SqueezeInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             return SqueezeMutableString(self, args);
         }
 

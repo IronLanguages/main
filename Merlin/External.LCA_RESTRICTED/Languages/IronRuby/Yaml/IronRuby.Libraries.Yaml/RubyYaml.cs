@@ -275,7 +275,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("dump_stream", RubyMethodAttributes.PublicSingleton)]
         public static object DumpStream(UnaryOpStorage/*!*/ newStorage, BinaryOpStorage/*!*/ addStorage, UnaryOpStorage/*!*/ emitStorage,
-            RubyScope/*!*/ scope, RubyModule/*!*/ self, [NotNull]params object[] args) {
+            RubyScope/*!*/ scope, RubyModule/*!*/ self, params object[]/*!*/ args) {
 
             object io = CreateDefaultStream(newStorage, scope, self);
             AddDocumentsToStream(addStorage, args, io);
@@ -286,7 +286,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         // TODO:
         [RubyMethod("quick_emit_node", RubyMethodAttributes.PublicSingleton)]
-        public static object QuickEmitNode(BlockParam block, RubyModule/*!*/ self, object arg, params object[] rest) {
+        public static object QuickEmitNode(BlockParam block, RubyModule/*!*/ self, object arg, params object[]/*!*/ rest) {
             if (block != null) {
                 object result;
                 block.Yield(arg, out result);

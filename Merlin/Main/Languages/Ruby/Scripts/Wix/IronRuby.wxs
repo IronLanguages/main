@@ -13,16 +13,11 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
 4. Check that the IronRuby "ARP*" property links are still valid
 -->
 
-<?define ProductShortName = "IronRuby" ?>
-<?define ProductVersion = "0.9.3.0" ?>
-<?define ProductVersionText = "0.9.3.0" ?>
-<?define Manufacturer = "Microsoft Corporation" ?>
-<?define UpgradeCode = "AC5205E2-8D34-446E-9CE4-BF9D8F65AF93" ?>
-
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="????????-????-????-????-????????????" UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)">
-    <Package Id="????????-????-????-????-????????????" Compressed="yes" Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" InstallerVersion="200" ShortNames="no" Manufacturer="$(var.Manufacturer)" />
+  <?include $(sys.CURRENTDIR)\config.wxi?>
+  <Product Id="*" UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)">
+    <Package Id="*" Compressed="yes" Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" InstallerVersion="400" ShortNames="no" Manufacturer="$(var.Manufacturer)" />
     <Media Id="1" Cabinet="IronRb.cab" EmbedCab="yes" />
     
       <!-- Major upgrade -->
@@ -32,45 +27,76 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
     </Upgrade>
 
     <!-- Properties -->
-    <Property Id="ALLUSERS" Value="1" />
     <Property Id="ARPHELPLINK" Value="http://rubyforge.org/mailman/listinfo/ironruby-core" />
     <Property Id="ARPURLINFOABOUT" Value="http://www.ironruby.com" />
     <Property Id="ARPURLUPDATEINFO" Value="http://ironruby.codeplex.com" />
-    <Property Id="NET20DETECTED">
-      <RegistrySearch Id="Net20RegSearch" Root="HKLM" Key="Software\Microsoft\NET Framework Setup\NDP\v2.0.50727" Name="Install" Type="raw" />
-    </Property>
+    <Property Id="ApplicationFolderName" Value="$(var.ProductShortName) $(var.ProductVersionText)" />
+    <Property Id="ALLUSERS" Value="1" />
 
     <!-- Launch conditions -->
-    <Condition Message="An administrator must approve or install [ProductName]."> Privileged </Condition>
     <Condition Message="A later version of [ProductName] is already installed."> NOT NEWERVERSIONDETECTED </Condition>
     <Condition Message="[ProductName] requires .NET Framework 2.0 SP1 or later.">  Installed OR MsiNetAssemblySupport >= "2.0.50727.1433" </Condition>
-    <Condition Message="[ProductName] requires .NET Framework 2.0 SP1 or later. .NET 4.0 is not supported.">NET20DETECTED</Condition>
 
     <!-- Root directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
 
       <Directory Id="ProgramMenuFolder" Name="PMENU">
-        <Directory Id="Dir_StartMenu" Name="IRONRB" LongName="$(var.ProductShortName) $(var.ProductVersionText)" />
+        <Directory Id="Dir_StartMenu" Name="$(var.ProductShortName) $(var.ProductVersionText)" />
       </Directory>
 
       <Directory Id="ProgramFilesFolder" Name="PFILES">
-        <Directory Id="INSTALLDIR" Name="IRONRB" LongName="$(var.ProductShortName) $(var.ProductVersionText)" />
+        <Directory Id="APPLICATIONFOLDER" Name= "$(var.ProductShortName) $(var.ProductVersionText)"
+ />
       </Directory>
       
     </Directory>
 
     <!-- Root feature -->
-    <Feature Id="Feature_IronRuby" ConfigurableDirectory="INSTALLDIR" Absent="disallow" AllowAdvertise="no" Display="expand" Level="1" Title="IronRuby">
-      <FeatureRef Id="Feature_Core" />
-      <FeatureRef Id="Feature_Lib" />
-      <FeatureRef Id="Feature_Samples" />
+    <Feature Id="Feature_IronRuby" ConfigurableDirectory="APPLICATIONFOLDER" Absent="disallow" AllowAdvertise="no" Display="expand" Level="1" Title="IronRuby">
+      <Feature Id="Feature_Core" Absent="disallow" AllowAdvertise="no" Level="1" Title="Runtime" Description="IronRuby binaries for the Desktop CLR.">
+        <Feature Id="Feature_CoreNGen" Level="1" Title="NGen" Description="NGen
+          the IronRuby binaries">
+          <Condition Level="0">ALLUSERS=2</Condition>
+          <ComponentGroupRef Id="CG_CoreNGen" />
+        </Feature>
+        
+        <ComponentGroupRef Id="CG_Core" />
+        <ComponentRef Id="Comp_Core" />
+        <ComponentRef Id="Comp_Core_Shortcut" />
+        <ComponentRef Id="Comp_Scripts" />
+        <ComponentRef Id="Comp_Scripts64" />
+        <Feature Id="Feature_Path" AllowAdvertise="no" Level="1" Title="Add IronRuby to %PATH%" Description="Add the installation directory to %PATH% in order to use IronRuby from the command line.">
+          <ComponentRef Id="Comp_path" />
+          <ComponentRef Id="Comp_path_local" />
+        </Feature>
+      </Feature>
+      <Feature Id="Feature_Lib" AllowAdvertise="no" Level="1" Title="Standard Library" Description="Ruby Standard Library">
+        <ComponentGroupRef Id="CG_Lib" />
+      </Feature>
+      <Feature Id="Feature_Samples" AllowAdvertise="no" Level="1" Title="Samples" Description="Samples showing IronRuby working with various .NET apps and a Tutorial application">
+        <ComponentGroupRef Id="CG_Samples" />
+      </Feature>
+      <Feature Id="Feature_Silverlight" AllowAdvertise="no" Level="1"
+        Title="Silverlight binaries" Description="Binaries and scripts to do Silverlight development with IronRuby">
+        <ComponentGroupRef Id="CG_Silverlight" />
+      </Feature>
     </Feature>
 
     <!-- Sequences -->
     <InstallExecuteSequence>
-      <RemoveExistingProducts After="FindRelatedProducts"  />
+      <RemoveExistingProducts After="InstallValidate"  />
       <Custom Action='SetInstallLocation' After="InstallValidate" />
-      
+      <!-- These custom actions and the other ones below should make it possible
+           to have a non-elevating install on Win7, but they aren't working :( -->
+      <!--<Custom Action='SetAllUsers' After="WixSetPerMachineFolder">-->
+        <!--WixAppFolder = "WixPerUserFolder"-->
+      <!--</Custom>-->
+      <!--<Custom Action='SetMSIPerUser' After="WixSetPerMachineFolder">-->
+        <!--WixAppFolder = "WixPerUserFolder"-->
+      <!--</Custom>-->
+      <!--<Custom Action='SetMSIFastInstall' After="WixSetPerMachineFolder">-->
+        <!--WixAppFolder = "WixPerUserFolder"-->
+      <!--</Custom>-->
     </InstallExecuteSequence>
 
 
@@ -78,15 +104,28 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
     <InstallUISequence>
       <!-- Because we have a launch condition that uses the results of FindRelatedProducts, put it first. -->
       <LaunchConditions After="FindRelatedProducts" />
+      <!--<Custom Action='SetAllUsers' After="WixSetPerMachineFolder">-->
+        <!--WixAppFolder = "WixPerUserFolder"-->
+      <!--</Custom>-->
+      <!--<Custom Action='SetMSIPerUser' After="WixSetPerMachineFolder">-->
+        <!--WixAppFolder = "WixPerUserFolder"-->
+      <!--</Custom>-->
+      <!--<Custom Action='SetMSIFastInstall' After="WixSetPerMachineFolder">-->
+        <!--WixAppFolder = "WixPerUserFolder"-->
+      <!--</Custom>-->
     </InstallUISequence>
 
 
 
     <!-- User interface -->
     <UIRef Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
 
     <!-- InstallLocation key -->
-    <CustomAction Id="SetInstallLocation" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
+    <CustomAction Id="SetInstallLocation" Property="ARPINSTALLLOCATION" Value="[APPLICATIONFOLDER]" />
+    <!--<CustomAction Id="SetAllUsers" Property="ALLUSERS" Value="2" />-->
+    <!--<CustomAction Id="SetMSIPerUser" Property="MSIINSTALLPERUSER" Value="1" />-->
+    <!--<CustomAction Id="SetMSIFastInstall" Property="MSIFASTINSTALL" Value="1" />-->
 
   </Product>
 

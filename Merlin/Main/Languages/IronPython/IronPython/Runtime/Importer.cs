@@ -678,7 +678,7 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        private static object MemberTrackerToPython(CodeContext/*!*/ context, object ret) {
+        internal static object MemberTrackerToPython(CodeContext/*!*/ context, object ret) {
             MemberTracker res = ret as MemberTracker;
             if (res != null) {
                 context.ShowCls = true;

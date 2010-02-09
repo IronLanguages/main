@@ -71,6 +71,9 @@ namespace IronPython.Runtime.Operations {
     ///     get: added for types that implement IDescriptor
     /// </summary>
     public static class InstanceOps {
+
+        #region Construction
+
         [MultiRuntimeAware]
         private static BuiltinFunction _New;
         internal static readonly BuiltinFunction NewCls = CreateFunction("__new__", "DefaultNew", "DefaultNewClsKW");
@@ -185,6 +188,10 @@ namespace IronPython.Runtime.Operations {
             return type\u00F8.CreateInstance(context, args, names);
         }
 
+        #endregion
+
+        #region Iteration
+
         // 3.0-only
         public static object IterMethodForString(string self) {
             return PythonOps.StringEnumerator(self);
@@ -217,6 +224,8 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.StopIteration();
         }
 
+        #endregion
+
         /// <summary>
         /// __dir__(self) -> Returns the list of members defined on a foreign IDynamicMetaObjectProvider.
         /// </summary>
@@ -242,6 +251,8 @@ namespace IronPython.Runtime.Operations {
         public static int GenericLengthMethod<T>(ICollection<T> self) {
             return self.Count;
         }
+
+        #region Representation and Formatting
 
         public static string SimpleRepr(object self) {
             return String.Format("<{0} object at {1}>",
@@ -305,6 +316,15 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
+        public static string Format(IFormattable formattable, string format) {
+            return formattable.ToString(format, null);
+        }
+
+        #endregion
+
+        #region Comparison and Hashing
+
+#if CLR2
         // Value equality helpers:  These are the default implementation for classes that implement
         // IValueEquality.  We promote the ReflectedType to having these helper methods which will
         // automatically test the type and return NotImplemented for mixed comparisons.  For non-mixed
@@ -349,17 +369,9 @@ namespace IronPython.Runtime.Operations {
             where T : IValueEquality {
             if (!(y is T)) return NotImplementedType.Value;
 
-            return ScriptingRuntimeHelpers.BooleanToObject(x.ValueEquals(y));
+            return ScriptingRuntimeHelpers.BooleanToObject(!x.ValueEquals(y));
         }
-
-        // TODO: Remove me
-        public static object ValueHashMethod(object x) {
-            return ((IValueEquality)x).GetValueHashCode();
-        }
-
-        public static int GetHashCodeMethod(object x) {
-            return x.GetHashCode();
-        }
+#endif
 
         public static bool EqualsMethod(object x, object y) {
             return x.Equals(y);
@@ -368,6 +380,356 @@ namespace IronPython.Runtime.Operations {
         public static bool NotEqualsMethod(object x, object y) {
             return !x.Equals(y);
         }
+
+        // Structural Equality and Hashing Helpers
+
+        public static int StructuralHashMethod(CodeContext/*!*/ context, IStructuralEquatable x) {
+            return x.GetHashCode(PythonContext.GetContext(context).EqualityComparerNonGeneric);
+        }
+
+        public static bool StructuralEqualityMethod<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+            where T : IStructuralEquatable {
+            return x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric);
+        }
+
+        public static bool StructuralInequalityMethod<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+            where T : IStructuralEquatable {
+            return !x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralEqualityMethod<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+            where T : IStructuralEquatable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralInequalityMethod<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+            where T : IStructuralEquatable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                !x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralEqualityMethod<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+            where T : IStructuralEquatable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralInequalityMethod<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+            where T : IStructuralEquatable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                !x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+            );
+        }
+
+        // Structural Comparison Helpers
+
+        private static int StructuralCompare(CodeContext/*!*/ context, IStructuralComparable x, object y) {
+            return x.CompareTo(y, PythonContext.GetContext(context).GetComparer(null, null));
+        }
+
+        public static bool StructuralComparableEquality<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+            where T : IStructuralComparable {
+            return StructuralCompare(context, x, y) == 0;
+        }
+
+        public static bool StructuralComparableInequality<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+            where T : IStructuralComparable {
+            return StructuralCompare(context, x, y) != 0;
+        }
+
+        public static bool StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+            where T : IStructuralComparable {
+            return StructuralCompare(context, x, y) > 0;
+        }
+
+        public static bool StructuralComparableLessThan<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+            where T : IStructuralComparable {
+            return StructuralCompare(context, x, y) < 0;
+        }
+
+        public static bool StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+            where T : IStructuralComparable {
+            return StructuralCompare(context, x, y) >= 0;
+        }
+
+        public static bool StructuralComparableLessEqual<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+            where T : IStructuralComparable {
+            return StructuralCompare(context, x, y) <= 0;
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableEquality<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                StructuralCompare(context, x, y) == 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableInequality<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                StructuralCompare(context, x, y) != 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                StructuralCompare(context, x, y) > 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableLessThan<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                StructuralCompare(context, x, y) < 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                StructuralCompare(context, x, y) >= 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableLessEqual<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                StructuralCompare(context, x, y) <= 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableEquality<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                StructuralCompare(context, x, y) == 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableInequality<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                StructuralCompare(context, x, y) != 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                // operator direction is reversed
+                StructuralCompare(context, x, y) < 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableLessThan<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                // operator direction is reversed
+                StructuralCompare(context, x, y) > 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                // operator direction is reversed
+                StructuralCompare(context, x, y) <= 0
+            );
+        }
+
+        [return: MaybeNotImplemented]
+        public static object StructuralComparableLessEqual<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+            where T : IStructuralComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                // operator direction is reversed
+                StructuralCompare(context, x, y) >= 0
+            );
+        }
+
+        // Comparison Helpers
+
+        public static bool ComparableEquality<T>(T x, [NotNull]T y)
+            where T : IComparable {
+            return x.CompareTo(y) == 0;
+        }
+
+        public static bool ComparableInequality<T>(T x, [NotNull]T y)
+            where T : IComparable {
+            return x.CompareTo(y) != 0;
+        }
+
+        public static bool ComparableGreaterThan<T>(T x, [NotNull]T y)
+            where T : IComparable {
+            return x.CompareTo(y) > 0;
+        }
+
+        public static bool ComparableLessThan<T>(T x, [NotNull]T y)
+            where T : IComparable {
+            return x.CompareTo(y) < 0;
+        }
+
+        public static bool ComparableGreaterEqual<T>(T x, [NotNull]T y)
+            where T : IComparable {
+            return x.CompareTo(y) >= 0;
+        }
+
+        public static bool ComparableLessEqual<T>(T x, [NotNull]T y)
+            where T : IComparable {
+            return x.CompareTo(y) <= 0;
+        }
+        
+        [return: MaybeNotImplemented]
+        public static object ComparableEquality<T>([NotNull]T x, object y)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) == 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableInequality<T>([NotNull]T x, object y)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) != 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableGreaterThan<T>([NotNull]T x, object y)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) > 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableLessThan<T>([NotNull]T x, object y)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) < 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableGreaterEqual<T>([NotNull]T x, object y)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) >= 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableLessEqual<T>([NotNull]T x, object y)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) <= 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableEquality<T>(object y, [NotNull]T x)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) == 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableInequality<T>(object y, [NotNull]T x)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) != 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableGreaterThan<T>(object y, [NotNull]T x)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            // operator direction is reversed
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) < 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableLessThan<T>(object y, [NotNull]T x)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            // operator direction is reversed
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) > 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableGreaterEqual<T>(object y, [NotNull]T x)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            // operator direction is reversed
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) <= 0);
+        }
+
+        [return: MaybeNotImplemented]
+        public static object ComparableLessEqual<T>(object y, [NotNull]T x)
+            where T : IComparable {
+            if (!(y is T)) return NotImplementedType.Value;
+
+            // operator direction is reversed
+            return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) >= 0);
+        }
+        
+        #endregion
 
         /// <summary>
         /// Provides the implementation of __enter__ for objects which implement IDisposable.
@@ -444,6 +806,8 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
+        #region Contains
+
         /// <summary>
         /// Implements __contains__ for types implementing IEnumerable of T.
         /// </summary>
@@ -497,6 +861,8 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
+        #endregion
+
 #if !SILVERLIGHT
         /// <summary>
         /// Implements __reduce_ex__ for .NET types which are serializable.  This uses the .NET
@@ -519,10 +885,6 @@ namespace IronPython.Runtime.Operations {
             );
         }
 #endif
-
-        public static string Format(IFormattable formattable, string format) {
-            return formattable.ToString(format, null);
-        }
 
         internal const string ObjectNewNoParameters = "object.__new__() takes no parameters";
 

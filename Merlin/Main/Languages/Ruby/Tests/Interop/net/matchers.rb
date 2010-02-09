@@ -112,6 +112,20 @@ class InferMatcher
   end
 end
 
+class ClasslikeMatcher
+  def matches?(klass)
+    @klass = klass
+    x = klass.new
+    kind = x.kind_of? klass
+    name = x.inspect.match(/#{klass}/)
+    name && kind
+  end
+
+  def failure_message
+    ["Expected class #{klass.name}", "to include it's classname in inspect and have the right type'"]
+  end
+end
+
 class Object
   def infer(meth)
     InferMatcher.new(meth)
@@ -123,5 +137,9 @@ class Object
 
   def equal_clr_string(str)
     ClrStringMatcher.new(str)
+  end
+
+  def be_classlike
+    ClasslikeMatcher.new
   end
 end

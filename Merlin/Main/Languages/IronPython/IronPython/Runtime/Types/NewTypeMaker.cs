@@ -296,8 +296,9 @@ namespace IronPython.Runtime.Types {
 #if !SILVERLIGHT // ICustomTypeDescriptor
             ImplementCustomTypeDescriptor();
 #endif
+#if CLR2
             ImplementPythonEquals();
-
+#endif
             ImplementWeakReference();
 
             AddDebugView();
@@ -779,12 +780,14 @@ namespace IronPython.Runtime.Types {
             }
         }
 
+#if CLR2
         private void ImplementPythonEquals() {
             if (this._baseType.GetInterface("IValueEquality", false) == null) {
                 DefineHelperInterface(typeof(IValueEquality));
             }
         }
-        
+#endif
+
         private void ImplementWeakReference() {
             if (typeof(IWeakReferenceable).IsAssignableFrom(_baseType)) {
                 return;

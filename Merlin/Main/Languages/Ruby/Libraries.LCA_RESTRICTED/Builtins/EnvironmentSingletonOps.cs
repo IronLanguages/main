@@ -213,15 +213,15 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("indices")]
-        public static RubyArray/*!*/ Indices(RubyContext/*!*/ context, object/*!*/ self, 
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ keys) {
+        public static RubyArray/*!*/ Indices(RubyContext/*!*/ context, object/*!*/ self,
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ keys) {
             context.ReportWarning("ENV.indices is deprecated; use ENV.values_at");
             return ValuesAt(context, self, keys);
         }
 
         [RubyMethod("indexes")]
         public static RubyArray/*!*/ Index(RubyContext/*!*/ context, object/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ keys) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ keys) {
             context.ReportWarning("ENV.indexes is deprecated; use ENV.values_at");
             return ValuesAt(context, self, keys);
         }
@@ -330,8 +330,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("values_at")]
-        public static RubyArray/*!*/ ValuesAt(RubyContext/*!*/ context, object/*!*/ self, 
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ keys) {
+        public static RubyArray/*!*/ ValuesAt(RubyContext/*!*/ context, object/*!*/ self,
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ keys) {
             RubyArray result = new RubyArray(keys.Length);
             foreach (MutableString key in keys) {
                 result.Add(GetVariable(context, self, key));

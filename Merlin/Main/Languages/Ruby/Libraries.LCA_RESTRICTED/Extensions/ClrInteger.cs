@@ -426,7 +426,7 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("+")]
         public static object/*!*/ Add(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, 
-            RubyContext/*!*/ context, object/*!*/ self, object other) {
+            object/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "+", self, other);
         }
 

@@ -368,7 +368,20 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        //sysopen
+        #region sysopen
+        [RubyMethod("sysopen", RubyMethodAttributes.PublicSingleton)]
+        public static int SysOpen(RubyClass/*!*/ self, [NotNull]MutableString path, [Optional]MutableString mode, [Optional]int perm) {
+            if (RubyFileOps.DirectoryExists(self.Context, path)) {
+                // TODO: What file descriptor should be returned for a directory?
+                return -1;
+            }
+            RubyIO io = new RubyFile(self.Context, path.ToString(), IOModeEnum.Parse(mode));
+            int fileDesc = io.GetFileDescriptor();
+            io.Close();
+            return fileDesc;
+        }
+        #endregion
+
 
         [RubyMethod("binmode")]
         public static RubyIO/*!*/ Binmode(RubyIO/*!*/ self) {

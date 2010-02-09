@@ -52,6 +52,7 @@ using PyAst = IronPython.Compiler.Ast;
 
 namespace IronPython.Runtime {
     public delegate void CommandDispatcher(Delegate command);
+    public delegate int HashDelegate(object o, ref HashDelegate dlg);
 
     public sealed partial class PythonContext : LanguageContext {
         internal const string/*!*/ IronPythonDisplayName = "IronPython 2.6";
@@ -146,8 +147,9 @@ namespace IronPython.Runtime {
         private FloatFormat _floatFormat, _doubleFormat;
         private CultureInfo _collateCulture, _ctypeCulture, _timeCulture, _monetaryCulture, _numericCulture;
         private CodeContext _defaultContext, _defaultClsContext;
-        private readonly IEqualityComparer<object> _equalityComparer;
         private readonly TopNamespaceTracker _topNamespace;
+        private readonly IEqualityComparer<object> _equalityComparer;
+        private readonly IEqualityComparer _equalityComparerNonGeneric;
 
         private Dictionary<Type, CallSite<Func<CallSite, object, object, bool>>> _equalSites;
 
@@ -300,6 +302,14 @@ namespace IronPython.Runtime {
 #endif
 
             _equalityComparer = new PythonEqualityComparer(this);
+            _equalityComparerNonGeneric = (IEqualityComparer)_equalityComparer;
+
+            InitialHasher = InitialHasherImpl;
+            IntHasher = IntHasherImpl;
+            DoubleHasher = DoubleHasherImpl;
+            StringHasher = StringHasherImpl;
+            FallbackHasher = FallbackHasherImpl;
+
             _topNamespace = new TopNamespaceTracker(manager);
             foreach (Assembly asm in manager.GetLoadedAssemblyList()) {
                 _topNamespace.LoadAssembly(asm);
@@ -377,22 +387,147 @@ namespace IronPython.Runtime {
             get { return _equalityComparer; }
         }
 
-        private sealed class PythonEqualityComparer : IEqualityComparer<object> {
-            private readonly PythonContext/*!*/ _context;
+        public IEqualityComparer/*!*/ EqualityComparerNonGeneric {
+            get { return _equalityComparerNonGeneric; }
+        }
+
+        internal sealed class PythonEqualityComparer : IEqualityComparer, IEqualityComparer<object> {
+            public readonly PythonContext/*!*/ Context;
 
             public PythonEqualityComparer(PythonContext/*!*/ context) {
                 Assert.NotNull(context);
-                _context = context;
+                Context = context;
+            }
+
+            bool IEqualityComparer.Equals(object x, object y) {
+                return PythonOps.EqualRetBool(Context._defaultContext, x, y);
             }
 
             bool IEqualityComparer<object>.Equals(object x, object y) {
-                return PythonOps.EqualRetBool(_context._defaultContext, x, y);
+                return PythonOps.EqualRetBool(Context._defaultContext, x, y);
+            }
+
+            int IEqualityComparer.GetHashCode(object obj) {
+                return PythonContext.Hash(obj);
             }
 
             int IEqualityComparer<object>.GetHashCode(object obj) {
                 return PythonContext.Hash(obj);
             }
         }
+
+        #region Specialized Hashers
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        internal readonly HashDelegate InitialHasher;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        internal readonly HashDelegate IntHasher;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        internal readonly HashDelegate DoubleHasher;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        internal readonly HashDelegate StringHasher;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        internal readonly HashDelegate FallbackHasher;
+
+        private int InitialHasherImpl(object o, ref HashDelegate dlg) {
+            if (o == null) {
+                return NoneTypeOps.NoneHashCode;
+            }
+
+            switch (Type.GetTypeCode(o.GetType())) {
+                case TypeCode.String:
+                    dlg = StringHasher;
+                    return StringHasher(o, ref dlg);
+                case TypeCode.Int32:
+                    dlg = IntHasher;
+                    return IntHasher(o, ref dlg);
+                case TypeCode.Double:
+                    dlg = DoubleHasher;
+                    return DoubleHasher(o, ref dlg);
+                default:
+                    if (o is IPythonObject) {
+                        dlg = new OptimizedUserHasher(this, ((IPythonObject)o).PythonType).Hasher;
+                    } else {
+                        dlg = new OptimizedBuiltinHasher(this, o.GetType()).Hasher;
+                    }
+
+                    return dlg(o, ref dlg);
+            }
+        }
+
+        private int IntHasherImpl(object o, ref HashDelegate dlg) {
+            if (o != null && o.GetType() == typeof(int)) {
+                return o.GetHashCode();
+            }
+
+            dlg = FallbackHasher;
+            return FallbackHasher(o, ref dlg);
+        }
+
+        private int DoubleHasherImpl(object o, ref HashDelegate dlg) {
+            if (o != null && o.GetType() == typeof(double)) {
+                return DoubleOps.__hash__((double)o);
+            }
+
+            dlg = FallbackHasher;
+            return FallbackHasher(o, ref dlg);
+        }
+
+        private int StringHasherImpl(object o, ref HashDelegate dlg) {
+            if (o != null && o.GetType() == typeof(string)) {
+                return o.GetHashCode();
+            }
+
+            dlg = FallbackHasher;
+            return FallbackHasher(o, ref dlg);
+        }
+
+        private int FallbackHasherImpl(object o, ref HashDelegate dlg) {
+            return PythonOps.Hash(this.SharedContext, o);
+        }
+
+        private sealed class OptimizedUserHasher {
+            private readonly PythonContext _context;
+            private readonly PythonType _pt;
+
+            public OptimizedUserHasher(PythonContext context, PythonType pt) {
+                _context = context;
+                _pt = pt;
+            }
+
+            public int Hasher(object o, ref HashDelegate dlg) {
+                IPythonObject ipo = o as IPythonObject;
+                if (ipo != null && ipo.PythonType == _pt) {
+                    return _pt.Hash(o);
+                }
+
+                dlg = _context.FallbackHasher;
+                return _context.FallbackHasher(o, ref dlg);
+            }
+        }
+
+        private sealed class OptimizedBuiltinHasher {
+            private readonly PythonContext _context;
+            private readonly Type _type;
+            private readonly PythonType _pt;
+
+            public OptimizedBuiltinHasher(PythonContext context, Type type) {
+                _context = context;
+                _type = type;
+                _pt = DynamicHelpers.GetPythonTypeFromType(type);
+            }
+
+            public int Hasher(object o, ref HashDelegate dlg) {
+                if (o != null && o.GetType() == _type) {
+                    return _pt.Hash(o);
+                }
+
+                dlg = _context.FallbackHasher;
+                return _context.FallbackHasher(o, ref dlg);
+            }
+        }
+
+        #endregion
 
         public override LanguageOptions/*!*/ Options {
             get { return PythonOptions; }
@@ -1503,6 +1638,8 @@ namespace IronPython.Runtime {
                 return (TService)(object)new Tokenizer(ErrorSink.Null, GetPythonCompilerOptions(), true);
             } else if (typeof(TService) == typeof(PythonService)) {
                 return (TService)(object)GetPythonService((Microsoft.Scripting.Hosting.ScriptEngine)args[0]);
+            } else if (typeof(TService) == typeof(DocumentationProvider)) {
+                return (TService)(object)new PythonDocumentationProvider(this);
             }
 
             return base.GetService<TService>(args);
@@ -2677,7 +2814,7 @@ namespace IronPython.Runtime {
             if (o != null) {
                 switch (Type.GetTypeCode(o.GetType())) {
                     case TypeCode.Int32: return Int32Ops.__hash__((int)o);
-                    case TypeCode.String: return o.GetHashCode();
+                    case TypeCode.String: return ((string)o).GetHashCode();
                     case TypeCode.Double: return DoubleOps.__hash__((double)o);
                     case TypeCode.Int16: return Int16Ops.__hash__((short)o);
                     case TypeCode.Int64: return Int64Ops.__hash__((long)o);

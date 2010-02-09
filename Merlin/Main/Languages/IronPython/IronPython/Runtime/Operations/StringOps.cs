@@ -35,7 +35,11 @@ namespace IronPython.Runtime.Operations {
     /// that derive from string.  It carries along with it the string's value and
     /// our converter recognizes it as a string.
     /// </summary>
-    public class ExtensibleString : Extensible<string>, ICodeFormattable, IValueEquality {
+    public class ExtensibleString : Extensible<string>, ICodeFormattable, IStructuralEquatable
+#if CLR2
+        , IValueEquality
+#endif
+    {
         public ExtensibleString() : base(String.Empty) { }
         public ExtensibleString(string self) : base(self) { }
 
@@ -54,7 +58,7 @@ namespace IronPython.Runtime.Operations {
         [return: MaybeNotImplemented]
         public object __eq__(object other) {
             if (other is string || other is ExtensibleString || other is Bytes) {
-                return ScriptingRuntimeHelpers.BooleanToObject(((IValueEquality)this).ValueEquals(other));
+                return ScriptingRuntimeHelpers.BooleanToObject(EqualsWorker(other));
             }
 
             return NotImplementedType.Value;
@@ -62,21 +66,51 @@ namespace IronPython.Runtime.Operations {
 
         [return: MaybeNotImplemented]
         public object __ne__(object other) {
-            object res = __eq__(other);
-            if (res != NotImplementedType.Value) {
-                return ScriptingRuntimeHelpers.BooleanToObject(PythonOps.Not(res));
+            if (other is string || other is ExtensibleString || other is Bytes) {
+                return ScriptingRuntimeHelpers.BooleanToObject(!EqualsWorker(other));
             }
 
-            return res;
+            return NotImplementedType.Value;
         }
 
         #region IValueEquality members
-
+#if CLR2
         int IValueEquality.GetValueHashCode() {
             return GetHashCode();
         }
 
         bool IValueEquality.ValueEquals(object other) {
+            return EqualsWorker(other);
+        }
+#endif
+        #endregion
+
+        #region IStructuralEquatable Members
+
+        int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+            if (comparer is PythonContext.PythonEqualityComparer) {
+                return GetHashCode();
+            }
+
+            return ((IStructuralEquatable)PythonTuple.MakeTuple(Value.ToCharArray())).GetHashCode(comparer);
+        }
+
+        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+            if (comparer is PythonContext.PythonEqualityComparer) {
+                return EqualsWorker(other);
+            }
+
+            ExtensibleString es = other as ExtensibleString;
+            if (es != null) return EqualsWorker(es.Value, comparer);
+            string os = other as string;
+            if (os != null) return EqualsWorker(os, comparer);
+            Bytes tempBytes = other as Bytes;
+            if (tempBytes != null) return EqualsWorker(tempBytes.ToString(), comparer);
+
+            return false;
+        }
+
+        private bool EqualsWorker(object other) {
             if (other == null) return false;
 
             ExtensibleString es = other as ExtensibleString;
@@ -87,6 +121,25 @@ namespace IronPython.Runtime.Operations {
             if (tempBytes != null) return Value == tempBytes.ToString();
 
             return false;
+        }
+
+        private bool EqualsWorker(string/*!*/ other, IEqualityComparer comparer) {
+            Debug.Assert(other != null);
+
+            if (Value.Length != other.Length) {
+                return false;
+            } else if (Value.Length == 0) {
+                // 2 empty strings are equal
+                return true;
+            }
+
+            for (int i = 0; i < Value.Length; i++) {
+                if (!comparer.Equals(Value[i], other[i])) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         #endregion

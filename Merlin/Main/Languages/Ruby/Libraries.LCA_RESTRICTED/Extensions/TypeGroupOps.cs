@@ -39,7 +39,7 @@ namespace IronRuby.Builtins {
     public static class TypeGroupOps {
         [RubyMethod("of")]
         [RubyMethod("[]")]
-        public static RubyModule/*!*/ Of(RubyContext/*!*/ context, TypeGroup/*!*/ self, [NotNull]params object[]/*!*/ typeArgs) {
+        public static RubyModule/*!*/ Of(RubyContext/*!*/ context, TypeGroup/*!*/ self, [NotNullItems]params object/*!*/[]/*!*/ typeArgs) {
             TypeTracker tracker = self.GetTypeForArity(typeArgs.Length);
 
             if (tracker == null) {
@@ -131,7 +131,7 @@ namespace IronRuby.Builtins {
         }
 
         private static object/*!*/ New(string/*!*/ methodName, CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage,
-            TypeGroup/*!*/ self,[NotNull]params object[] args) {
+            TypeGroup/*!*/ self, params object[]/*!*/ args) {
 
             var cls = GetNonGenericClass(storage.Context, self);
             var site = storage.GetCallSite(methodName,
@@ -142,7 +142,7 @@ namespace IronRuby.Builtins {
         }
 
         private static object/*!*/ New(string/*!*/ methodName, CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block, 
-            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            TypeGroup/*!*/ self, params object[]/*!*/ args) {
 
             var cls = GetNonGenericClass(storage.Context, self);
             var site = storage.GetCallSite(methodName,
@@ -155,14 +155,14 @@ namespace IronRuby.Builtins {
         // ARGS: N
         [RubyMethod("new")]
         public static object/*!*/ New(CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage, 
-            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            TypeGroup/*!*/ self, params object[]/*!*/ args) {
             return New("new", storage, self, args);
         }
 
         // ARGS: N&
         [RubyMethod("new")]
         public static object/*!*/ New(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block, 
-            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            TypeGroup/*!*/ self, params object[]/*!*/ args) {
             return New("new", storage, block, self, args);
         }
 
@@ -175,14 +175,14 @@ namespace IronRuby.Builtins {
         // ARGS: N
         [RubyMethod("clr_new")]
         public static object/*!*/ ClrNew(CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage,
-            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            TypeGroup/*!*/ self, params object[]/*!*/ args) {
             return New("clr_new", storage, self, args);
         }
 
         // ARGS: N&
         [RubyMethod("clr_new")]
         public static object/*!*/ ClrNew(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block,
-            TypeGroup/*!*/ self, [NotNull]params object[] args) {
+            TypeGroup/*!*/ self, params object[]/*!*/ args) {
             return New("clr_new", storage, block, self, args);
         }
 

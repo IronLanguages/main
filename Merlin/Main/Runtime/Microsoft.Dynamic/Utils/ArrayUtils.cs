@@ -108,6 +108,32 @@ namespace Microsoft.Scripting.Utils {
             return (array.Length > 0) ? (T[])array.Clone() : array;
         }
 
+        /// <summary>
+        /// Converts a generic ICollection of T into an array of T.  
+        /// 
+        /// If the collection is already an  array of T the original collection is returned.
+        /// </summary>
+        public static T[] ToArray<T>(ICollection<T> list) {
+            return (list as T[]) ?? MakeArray(list);
+        }
+
+        /// <summary>
+        /// Converts a generic ICollection of T into an array of R using a given conversion.  
+        /// 
+        /// If the collection is already an array of R the original collection is returned.
+        /// </summary>
+        public static TResult[] ToArray<TElement, TResult>(ICollection<TElement> list, Func<TElement, TResult> convertor) {
+            TResult[] res = list as TResult[];
+            if (res == null) {
+                res = new TResult[list.Count];
+                int i = 0;
+                foreach (TElement obj in list) {
+                    res[i++] = convertor(obj);
+                }
+            }
+            return res;
+        }
+
         public static T[] MakeArray<T>(ICollection<T> list) {
             if (list.Count == 0) {
                 return new T[0];
@@ -307,23 +333,6 @@ namespace Microsoft.Scripting.Utils {
                 Array.Copy(array, array.Length - remaining, result, result.Length - remaining, remaining);
             }
             return result;
-        }
-
-        /// <summary>
-        /// Converts a generic ICollection of T into an array of T.  
-        /// 
-        /// If the collection is already an  array of T the original collection is returned.
-        /// </summary>
-        public static T[] ToArray<T>(ICollection<T> list) {
-            T[] res = list as T[];
-            if (res == null) {
-                res = new T[list.Count];
-                int i = 0;
-                foreach (T obj in list) {
-                    res[i++] = obj;
-                }
-            }
-            return res;
         }
 
         public static bool ValueEquals<T>(this T[] array, T[] other) {

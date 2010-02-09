@@ -33,10 +33,10 @@ gencache  =%MERLIN_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cm
 ;= Silverlight Build Commands
 ;=
 
-bsrbd    =msbuild %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Silverlight Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.40818.0"
-bsrbr    =msbuild %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Silverlight Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.40818.0"
-bsd      =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.40818.0"
-bsr      =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.40818.0"
+bsrbd    =msbuild %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Silverlight Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsrbr    =msbuild %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Silverlight Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsd      =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsr      =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
 
 ;==============================================================================
 ;= [Iron]Python program aliases

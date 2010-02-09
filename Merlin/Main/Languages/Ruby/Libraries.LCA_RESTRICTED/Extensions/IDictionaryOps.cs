@@ -319,7 +319,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("indexes")]
         [RubyMethod("indices")]
-        public static RubyArray/*!*/ Indexes(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, [NotNull]params object[] keys) {
+        public static RubyArray/*!*/ Indexes(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, params object[]/*!*/ keys) {
             context.ReportWarning("Hash#indices is deprecated; use Hash#values_at");
             return ValuesAt(context, self, keys);
         }
@@ -536,7 +536,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("values_at")]
-        public static RubyArray/*!*/ ValuesAt(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, [NotNull]params object[] keys) {
+        public static RubyArray/*!*/ ValuesAt(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, params object[]/*!*/ keys) {
             RubyArray values = new RubyArray();
             foreach (object key in keys) {
                 values.Add(GetElement(context, self, key));

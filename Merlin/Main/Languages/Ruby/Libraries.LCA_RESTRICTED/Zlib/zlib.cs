@@ -930,7 +930,6 @@ namespace IronRuby.StandardLibrary.Zlib {
 #if !SILVERLIGHT
         [RubyClass("Deflate", BuildConfig="!SILVERLIGHT")]
         public class Deflate : ZStream {
-
             /// <summary>
             /// Adds a 2 byte header, and a 4 byte adler checksum footer.
             /// </summary>
@@ -1041,7 +1040,24 @@ namespace IronRuby.StandardLibrary.Zlib {
                 };
             }
 
-            public Deflate() {
+            public Deflate()
+                : this(-1, -1, -1, -1) {
+            }
+
+            public Deflate(int level)
+                : this(level, -1, -1, -1) {
+            }
+
+            public Deflate(int level, int windowBits)
+                : this(level, windowBits, -1, -1) {
+            }
+
+            public Deflate(int level, int windowBits, int memlevel)
+                : this(level, windowBits, memlevel, -1) {
+            }
+
+            public Deflate(int level, int windowBits, int memlevel, int strategy) {
+                // TODO: use parameters
             }
 
             [RubyMethod("deflate")]

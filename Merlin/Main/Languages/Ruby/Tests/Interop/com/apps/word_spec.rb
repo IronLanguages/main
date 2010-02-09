@@ -82,6 +82,8 @@ if ENV["THISISSNAP"] || ComHelper.word_installed?
     describe "spellchecker" do
       before(:each) do
         @suggestions = @app.GetSpellingSuggestions("waht")
+        @useable_suggestions = []
+        @suggestions.each {|e| @useable_suggestions << e.name}
       end
 
       it "returns suggestions" do
@@ -89,12 +91,12 @@ if ENV["THISISSNAP"] || ComHelper.word_installed?
       end
 
       it "supports enumeration" do
-        @suggestions.each { |s| s.name }
+        lambda {@suggestions.each { |s| s.name }}.should_not raise_error
       end
 
       it "contains suggestions" do
-        @suggestions.should include("what")
-        @suggestions.should include("with")
+        @useable_suggestions.should include("what")
+        @useable_suggestions.should include("with")
       end
     end
   end

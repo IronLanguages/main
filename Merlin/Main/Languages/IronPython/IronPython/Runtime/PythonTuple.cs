@@ -31,7 +31,12 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("tuple"), Serializable, DebuggerTypeProxy(typeof(CollectionDebugProxy)), DebuggerDisplay("tuple, {Count} items")]
-    public class PythonTuple : ICollection, IEnumerable, IEnumerable<object>, IValueEquality, IList<object>, ICodeFormattable, IList {
+    public class PythonTuple : ICollection, IEnumerable, IEnumerable<object>, IList, IList<object>, ICodeFormattable,
+#if CLR2
+        IValueEquality,
+#endif
+        IStructuralEquatable, IStructuralComparable
+    {
         internal readonly object[] _data;
         
         internal static readonly PythonTuple EMPTY = new PythonTuple();
@@ -262,7 +267,7 @@ namespace IronPython.Runtime {
 
         public int Count {
             [PythonHidden]
-            get { return __len__(); }
+            get { return _data.Length; }
         }
 
         [PythonHidden]
@@ -327,7 +332,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public int IndexOf(object item) {
-            for (int i = 0; i < __len__(); i++) {
+            for (int i = 0; i < Count; i++) {
                 if (PythonOps.EqualRetBool(this[i], item)) return i;
             }
             return -1;
@@ -375,7 +380,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public void CopyTo(object[] array, int arrayIndex) {
-            for (int i = 0; i < __len__(); i++) {
+            for (int i = 0; i < Count; i++) {
                 array[arrayIndex + i] = this[i];
             }
         }
@@ -414,21 +419,40 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        public override bool Equals(object obj) {
-            PythonTuple other = obj as PythonTuple;
-            if (other == null) return false;
-            if (other.__len__() != __len__()) return false;
+        #region IStructuralComparable Members
 
-            for (int i = 0; i < __len__(); i++) {
-                if (this[i] != null) {
-                    if (!this[i].Equals(other[i])) {
-                        return false;
-                    }
-                } else if (other[i] != null) {
-                    return false;
-                }
+        int IStructuralComparable.CompareTo(object obj, IComparer comparer) {
+            PythonTuple other = obj as PythonTuple;
+            if (other == null) {
+                throw new ArgumentException("expected tuple");
             }
 
+            return PythonOps.CompareArrays(_data, _data.Length, other._data, other._data.Length, comparer);
+        }
+
+        #endregion
+
+        public override bool Equals(object obj) {
+            if (!Object.ReferenceEquals(this, obj)) {
+                PythonTuple other = obj as PythonTuple;
+                if (other == null || _data.Length != other._data.Length) {
+                    return false;
+                }
+
+                for (int i = 0; i < _data.Length; i++) {
+                    object obj1 = this[i], obj2 = other[i];
+
+                    if (Object.ReferenceEquals(obj1, obj2)) {
+                        continue;
+                    } else if (obj1 != null) {
+                        if (!obj1.Equals(obj2)) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+            }
             return true;
         }
 
@@ -437,125 +461,20 @@ namespace IronPython.Runtime {
             int hash2 = hash1;
 
             for (int i = 0; i < _data.Length; i += 2) {
-                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ ((_data[i] == null) ? 0 : _data[i].GetHashCode());
+                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ _data[i].GetHashCode();
 
                 if (i == _data.Length - 1) {
                     break;
                 }
-                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ ((_data[i + 1] == null) ? 0 : _data[i + 1].GetHashCode());
+                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ _data[i + 1].GetHashCode();
             }
-
             return hash1 + (hash2 * 1566083941);
         }
 
-        public override string ToString() {
-            return __repr__(DefaultContext.Default);
-        }
-
-        #region IValueEquality Members
-
-        private delegate int HashDelegate(object o, ref HashDelegate dlg);
-        private static HashDelegate _strHasher = StringHasher, _intHasher = IntHasher, _initialHasher = InitialHasher, _doubleHasher = DoubleHasher;
-
-        private static int InitialHasher(object o, ref HashDelegate dlg) {
-            if (o == null) {
-                return NoneTypeOps.NoneHashCode;
-            }
-
-            switch (Type.GetTypeCode(o.GetType())) {
-                case TypeCode.String:
-                    dlg = _strHasher;
-                    return o.GetHashCode();
-                case TypeCode.Int32:
-                    dlg = _intHasher;
-                    return (int)o;
-                case TypeCode.Double:
-                    dlg = _doubleHasher;
-                    return DoubleOps.__hash__((double)o);
-                default:
-                    if (o is IPythonObject) {
-                        dlg = new OptimizedUserHasher(((IPythonObject)o).PythonType).Hasher;
-                    } else {
-                        dlg = new OptimizedBuiltinHasher(o.GetType()).Hasher;
-                    }
-
-                    return dlg(o, ref dlg);                    
-            }
-        }
-
-        class OptimizedUserHasher {
-            private readonly PythonType _pt;
-
-            public OptimizedUserHasher(PythonType pt) {
-                _pt = pt;
-            }
-
-            public int Hasher(object o, ref HashDelegate dlg) {
-                IPythonObject ipo = o as IPythonObject;
-                if (ipo != null && ipo.PythonType == _pt) {
-                    return _pt.Hash(o);
-                }
-
-                dlg = GenericHasher;
-                return GenericHasher(o, ref dlg);
-            }
-        }
-        
-        class OptimizedBuiltinHasher {
-            private readonly Type _type;
-            private readonly PythonType _pt;
-            
-            public OptimizedBuiltinHasher(Type type) {
-                _type = type;
-                _pt = DynamicHelpers.GetPythonTypeFromType(type);
-            }
-
-            public int Hasher(object o, ref HashDelegate dlg) {
-                if (o != null && o.GetType() == _type) {
-                    return _pt.Hash(o);
-                }
-
-                dlg = GenericHasher;
-                return GenericHasher(o, ref dlg);
-            }
-        }
-
-        private static int GenericHasher(object o, ref HashDelegate dlg) {
-            return PythonOps.Hash(DefaultContext.Default, o);
-        }
-
-        private static int IntHasher(object o, ref HashDelegate dlg) {
-            if (o != null && o.GetType() == typeof(int)) {
-                return o.GetHashCode();
-            }
-
-            dlg = GenericHasher;
-            return GenericHasher(o, ref dlg);
-        }
-
-        private static int DoubleHasher(object o, ref HashDelegate dlg) {
-            if (o != null && o.GetType() == typeof(double)) {
-                return DoubleOps.__hash__((double)o);
-            }
-
-            dlg = GenericHasher;
-            return GenericHasher(o, ref dlg);
-        }
-
-        private static int StringHasher(object o, ref HashDelegate dlg) {
-            if (o != null && o.GetType() == typeof(string)) {
-                return o.GetHashCode();
-            }
-
-            dlg = GenericHasher;
-            return GenericHasher(o, ref dlg);
-        }
-
-        int IValueEquality.GetValueHashCode() {
+        private int GetHashCode(HashDelegate dlg) {
             int hash1 = 6551;
             int hash2 = hash1;
 
-            HashDelegate dlg = _initialHasher;
             for (int i = 0; i < _data.Length; i += 2) {
                 hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ dlg(_data[i], ref dlg);
 
@@ -565,7 +484,31 @@ namespace IronPython.Runtime {
                 hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ dlg(_data[i + 1], ref dlg);
             }
             return hash1 + (hash2 * 1566083941);
+        }
 
+        private int GetHashCode(IEqualityComparer comparer) {
+            int hash1 = 6551;
+            int hash2 = hash1;
+
+            for (int i = 0; i < _data.Length; i += 2) {
+                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ comparer.GetHashCode(_data[i]);
+
+                if (i == _data.Length - 1) {
+                    break;
+                }
+                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ comparer.GetHashCode(_data[i + 1]);
+            }
+            return hash1 + (hash2 * 1566083941);
+        }
+
+        public override string ToString() {
+            return __repr__(DefaultContext.Default);
+        }
+
+        #region IValueEquality Members
+#if CLR2
+        int IValueEquality.GetValueHashCode() {
+            return GetHashCode(DefaultContext.DefaultPythonContext.InitialHasher);
         }
 
         bool IValueEquality.ValueEquals(object other) {
@@ -581,6 +524,40 @@ namespace IronPython.Runtime {
                     if (Object.ReferenceEquals(obj1, obj2)) {
                         continue;
                     } else if (!PythonOps.EqualRetBool(obj1, obj2)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+#endif
+        #endregion
+
+        #region IStructuralEquatable Members
+
+        int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+            // Optimization for when comparer is IronPython's default IEqualityComparer
+            PythonContext.PythonEqualityComparer pythonComparer = comparer as PythonContext.PythonEqualityComparer;
+            if (pythonComparer != null) {
+                return GetHashCode(pythonComparer.Context.InitialHasher);
+            }
+
+            return GetHashCode(comparer);
+        }
+
+        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+            if (!Object.ReferenceEquals(other, this)) {
+                PythonTuple l = other as PythonTuple;
+                if (l == null || _data.Length != l._data.Length) {
+                    return false;
+                }
+
+                for (int i = 0; i < _data.Length; i++) {
+                    object obj1 = _data[i], obj2 = l._data[i];
+
+                    if (Object.ReferenceEquals(obj1, obj2)) {
+                        continue;
+                    } else if (!comparer.Equals(obj1, obj2)) {
                         return false;
                     }
                 }
@@ -676,7 +653,7 @@ namespace IronPython.Runtime {
         }
 
         public bool MoveNext() {
-            if ((_curIndex + 1) >= _tuple.__len__()) {
+            if ((_curIndex + 1) >= _tuple.Count) {
                 return false;
             }
             _curIndex++;

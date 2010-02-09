@@ -463,7 +463,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("method_missing", RubyMethodAttributes.PrivateInstance)]
         [RubyStackTraceHidden]
-        public static object MethodMissing(RubyScope/*!*/ scope, BlockParam block, string/*!*/ self, [NotNull]RubySymbol/*!*/ name, [NotNull]params object[]/*!*/ args) {
+        public static object MethodMissing(RubyScope/*!*/ scope, BlockParam block, string/*!*/ self, [NotNull]RubySymbol/*!*/ name, params object[]/*!*/ args) {
             if (name.EndsWith('=') || name.EndsWith('!')) {
                 throw RubyExceptions.CreateTypeError("Mutating method `{0}' called for an immutable string (System::String)", name);
             }

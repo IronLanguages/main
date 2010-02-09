@@ -128,6 +128,15 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// of the particular overload.
         /// </summary>
         public BindingTarget ResolveOverload(string methodName, IList<MethodBase> methods, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
+            return ResolveOverload(
+                methodName,
+                ArrayUtils.ToArray(methods, (m) => new ReflectionOverloadInfo(m)),
+                minLevel,
+                maxLevel
+            );
+        }
+
+        public BindingTarget ResolveOverload(string methodName, IList<OverloadInfo> methods, NarrowingLevel minLevel, NarrowingLevel maxLevel) {
             ContractUtils.RequiresNotNullItems(methods, "methods");
             ContractUtils.Requires(minLevel <= maxLevel);
 
@@ -171,9 +180,16 @@ namespace Microsoft.Scripting.Actions.Calls {
         #region Step 1: TargetSet construction, custom special parameters handling
 
         /// <summary>
-        /// Checks to see if the language allows keyword arguments to be bound to instance fields or
-        /// properties and turned into sets.  By default this is only allowed on contructors.
+        /// Checks to see if the language allows named arguments to be bound to instance fields or
+        /// properties and turned into setters. By default this is only allowed on contructors.
         /// </summary>
+        internal protected virtual bool AllowMemberInitialization(OverloadInfo method) {
+#pragma warning disable 618 // obsolete
+            return AllowKeywordArgumentSetting(method.ReflectionInfo);
+#pragma warning restore 618
+        }
+
+        [Obsolete("Use OverloadInfo.AllowMemberInitialization instead")]
         internal protected virtual bool AllowKeywordArgumentSetting(MethodBase method) {
             return CompilerHelpers.IsConstructor(method);
         }
@@ -186,8 +202,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         /// <summary>
-        /// Always expand params array/dictionary parameters to simple parameters. 
-        /// Do not allow an array/dictionary to be passed to params array/dictionary.
+        /// Allow to bind an array/dictionary instance or a null reference to params array/dictionary parameter.
         /// </summary>
         protected virtual bool BindToUnexpandedParams(MethodCandidate candidate) {
             return true;
@@ -202,22 +217,22 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "3#")]
         internal protected virtual BitArray MapSpecialParameters(ParameterMapping mapping) {
-            if (!CompilerHelpers.IsStatic(mapping.Method)) {
-                var type = mapping.Method.DeclaringType;
-                mapping.AddParameter(new ParameterWrapper(null, type, null, true, false, false, false));
+            if (!mapping.Overload.IsStatic) {
+                var type = mapping.Overload.DeclaringType;
+                mapping.AddParameter(new ParameterWrapper(null, type, null, ParameterBindingFlags.ProhibitNull));
                 mapping.AddInstanceBuilder(new InstanceBuilder(mapping.ArgIndex));
             }
 
             return null;
         }
 
-        private void BuildCandidateSets(IList<MethodBase> methods) {
+        private void BuildCandidateSets(IEnumerable<OverloadInfo> methods) {
             Debug.Assert(_candidateSets == null);
             Debug.Assert(_argNames != null);
 
             _candidateSets = new Dictionary<int, CandidateSet>();
 
-            foreach (MethodBase method in methods) {
+            foreach (OverloadInfo method in methods) {
                 if (IsUnsupported(method)) continue;
 
                 AddBasicMethodTargets(method);
@@ -297,10 +312,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        private void AddBasicMethodTargets(MethodBase method) {
+        private void AddBasicMethodTargets(OverloadInfo method) {
             Assert.NotNull(method);
 
-            var mapping = new ParameterMapping(this, method, null, _argNames);
+            var mapping = new ParameterMapping(this, method, _argNames);
 
             mapping.MapParameters(false);
 
@@ -316,7 +331,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             AddSimpleTarget(mapping.CreateCandidate());
         }
 
-        private static bool IsUnsupported(MethodBase method) {
+        private static bool IsUnsupported(OverloadInfo method) {
             return (method.CallingConvention & CallingConventions.VarArgs) != 0;
         }
 
@@ -425,7 +440,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             var result = new List<ApplicableCandidate>();
             foreach (ApplicableCandidate candidate in candidates) {
-                if (candidate.Method.Method.ContainsGenericParameters) {
+                if (candidate.Method.Overload.ContainsGenericParameters) {
                     continue;
                 }
 
@@ -440,7 +455,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             if (result.Count == 0) {
                 // attempt generic method type inference
                 foreach (ApplicableCandidate candidate in candidates) {
-                    if (!candidate.Method.Method.IsGenericMethodDefinition) {
+                    if (!candidate.Method.Overload.IsGenericMethodDefinition) {
                         continue;
                     }
 
@@ -515,7 +530,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             // There must be at least one expanded parameter preceding splat index (see MethodBinder.GetSplatLimits):
             ParameterWrapper parameter = candidate.GetParameter(_actualArguments.SplatIndex - 1);
-            Debug.Assert(parameter.ParameterInfo != null && parameter.ParameterInfo.IsParamArray());
+            Debug.Assert(parameter.ParameterInfo != null && candidate.Overload.IsParamArray(parameter.ParameterInfo.Position));
 
             for (int i = 0; i < _actualArguments.CollapsedCount; i++) {
                 object value = GetCollapsedArgumentValue(i);
@@ -653,18 +668,18 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         internal Candidate CompareEquivalentParameters(MethodCandidate one, MethodCandidate two) {
             // Prefer normal methods over explicit interface implementations
-            if (two.Method.IsPrivate && !one.Method.IsPrivate) return Candidate.One;
-            if (one.Method.IsPrivate && !two.Method.IsPrivate) return Candidate.Two;
+            if (two.Overload.IsPrivate && !one.Overload.IsPrivate) return Candidate.One;
+            if (one.Overload.IsPrivate && !two.Overload.IsPrivate) return Candidate.Two;
 
             // Prefer non-generic methods over generic methods
-            if (one.Method.IsGenericMethod) {
-                if (!two.Method.IsGenericMethod) {
+            if (one.Overload.IsGenericMethod) {
+                if (!two.Overload.IsGenericMethod) {
                     return Candidate.Two;
                 } else {
                     //!!! Need to support selecting least generic method here
                     return Candidate.Equivalent;
                 }
-            } else if (two.Method.IsGenericMethod) {
+            } else if (two.Overload.IsGenericMethod) {
                 return Candidate.One;
             }
 
@@ -686,11 +701,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             // prefer methods whose name exactly matches the call site name:
-            if (one.Method.Name != two.Method.Name) {
-                if (one.Method.Name == _methodName) {
+            if (one.Overload.Name != two.Overload.Name) {
+                if (one.Overload.Name == _methodName) {
                     return Candidate.One;
                 }
-                if (two.Method.Name == _methodName) {
+                if (two.Overload.Name == _methodName) {
                     return Candidate.Two;
                 }
             }

@@ -56,8 +56,8 @@ namespace IronRuby.Runtime {
         public static readonly int MriPatchLevel = 368;
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.9.3.0";
-        public static readonly Version IronRubyVersion = new Version(0, 9, 3, 0);
+        public const string/*!*/ IronRubyVersionString = "0.9.4.0";
+        public static readonly Version IronRubyVersion = new Version(0, 9, 4, 0);
         internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";
@@ -2390,8 +2390,13 @@ namespace IronRuby.Runtime {
             if (bindGlobals) {
                 // method_missing:
                 mainSingleton.SetMethodNoEvent(this, Symbols.MethodMissing, 
-                    new RubyLibraryMethodInfo(new Delegate[] {
-                        new Func<RubyScope, BlockParam, object, RubySymbol, object[], object>(RubyTopLevelScope.TopMethodMissing)
+                    new RubyLibraryMethodInfo(new[] {
+                        LibraryOverload.Create(
+                            new Func<RubyScope, BlockParam, object, RubySymbol, object[], object>(RubyTopLevelScope.TopMethodMissing),
+                            true,
+                            0,
+                            0
+                        )
                     }, RubyMemberFlags.Private, mainSingleton)
                 );
 

@@ -59,6 +59,7 @@ describe "File.expand_path" do
       File.expand_path('~/').should == home
       File.expand_path('~/..badfilename').should == "#{home}/..badfilename"
       File.expand_path('~/a','~/b').should == "#{home}/a"
+      File.expand_path("~\\testdir").should == "#{home}/testdir"
       
       
       ENV['HOME'] = nil

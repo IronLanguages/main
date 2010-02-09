@@ -64,7 +64,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         [Confined]
         public override string ToString() {
-            return string.Format("{0}: ({1} on {2})", _arity, _candidates[0].Method.Name, _candidates[0].Method.DeclaringType.FullName);
+            return string.Format("{0}: ({1} on {2})", _arity, _candidates[0].Overload.Name, _candidates[0].Overload.DeclaringType.FullName);
         }
     }
 }

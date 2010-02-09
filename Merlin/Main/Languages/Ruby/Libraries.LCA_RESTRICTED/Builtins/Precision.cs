@@ -82,7 +82,7 @@ namespace IronRuby.Builtins {
                 context,
                 "induced_from",
                 new RubyLibraryMethodInfo(
-                    new Delegate[] { new Func<RubyModule, object, object>(InducedFrom) }, 
+                    new[] { LibraryOverload.Create(new Func<RubyModule, object, object>(InducedFrom), false, 0, 0) }, 
                     RubyMethodVisibility.Public, 
                     includedIn.SingletonClass
                 )

@@ -13,10 +13,10 @@ if SILVERLIGHT
 
   dyneng = DynamicApplication.current.engine
   engine = dyneng.runtime.get_engine("ruby")
-  repl = Repl.show(engine, dyneng.create_scope)
+  $repl = Repl.show(engine, dyneng.create_scope)
 
-  $stdout = repl.output_buffer
-  $stderr = repl.output_buffer
+  $stdout = $repl.output_buffer
+  $stderr = $repl.output_buffer
 
   Application.current.root_visual = UserControl.new  
 end

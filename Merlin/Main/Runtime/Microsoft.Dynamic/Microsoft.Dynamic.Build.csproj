@@ -128,6 +128,7 @@
       <Compile Include="Actions\Calls\MethodCandidate.cs" />
       <Compile Include="Actions\Calls\NarrowingLevel.cs" />
       <Compile Include="Actions\Calls\OutArgBuilder.cs" />
+      <Compile Include="Actions\Calls\OverloadInfo.cs" />
       <Compile Include="Actions\Calls\OverloadResolver.cs" />
       <Compile Include="Actions\Calls\OverloadResolverFactory.cs" />
       <Compile Include="Actions\Calls\ParameterMapping.cs" />
@@ -252,7 +253,6 @@
       <Compile Include="Generation\ILGen.cs" />
       <Compile Include="Generation\KeyedQueue.cs" />
       <Compile Include="Generation\MethodSignatureInfo.cs" />
-      <Compile Include="Generation\ParameterInfoWrapper.cs" />
       <Compile Include="Generation\Snippets.cs" />
       <Compile Include="Generation\ToDiskRewriter.cs" />
       <Compile Include="Generation\TypeGen.cs" />

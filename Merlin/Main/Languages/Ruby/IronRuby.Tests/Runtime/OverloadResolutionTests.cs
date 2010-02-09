@@ -42,12 +42,18 @@ namespace IronRuby.Tests {
             return new DynamicMetaObject(Ast.Constant(value), BindingRestrictions.Empty, value);
         }
 
-        private static MethodInfo/*!*/[]/*!*/ GetStaticMethods(Type/*!*/ type, string/*!*/ name) {
-            return Array.ConvertAll(type.GetMember(name, BindingFlags.Public | BindingFlags.Static), (mi) => (MethodInfo)mi);
+        private static OverloadInfo/*!*/[]/*!*/ GetStaticMethods(Type/*!*/ type, string/*!*/ name) {
+            return Array.ConvertAll(
+                type.GetMember(name, BindingFlags.Public | BindingFlags.Static),
+                (mi) => new ReflectionOverloadInfo((MethodBase)mi)
+            );
         }
 
-        private static MethodInfo/*!*/[]/*!*/ GetInstanceMethods(Type/*!*/ type, string/*!*/ name) {
-            return Array.ConvertAll(type.GetMember(name, BindingFlags.Public | BindingFlags.Instance), (mi) => (MethodInfo)mi);
+        private static OverloadInfo/*!*/[]/*!*/ GetInstanceMethods(Type/*!*/ type, string/*!*/ name) {
+            return Array.ConvertAll(
+                type.GetMember(name, BindingFlags.Public | BindingFlags.Instance), 
+                (mi) => new ReflectionOverloadInfo((MethodBase)mi)
+            );
         }
 
         #region Block
@@ -241,8 +247,8 @@ namespace IronRuby.Tests {
                 return new KeyValuePair<int, Array>(5, new object[] { p1, p2, p3, ps });
             }
 
-            internal static List<MethodInfo>/*!*/ GetMethods() {
-                var methods = new List<MethodInfo>();
+            internal static List<OverloadInfo>/*!*/ GetMethods() {
+                var methods = new List<OverloadInfo>();
                 methods.AddRange(GetStaticMethods(typeof(MethodsWithParamArrays), "F*"));
                 methods.Add(CreateParamsArrayMethod("F0", new[] { typeof(int), typeof(int[]), typeof(string), typeof(int) }, 1, 0));
                 return methods;

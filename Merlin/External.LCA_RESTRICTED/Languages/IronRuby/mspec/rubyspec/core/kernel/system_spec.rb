@@ -36,7 +36,7 @@ describe "Kernel#system" do
   end
 
   it "does not write to stderr when it can't find a command" do
-    system("sad").should output_to_fd("") # nothing in stderr
+    lambda {system("sad")}.should output_to_fd("") # nothing in stderr
   end  
 
   it "uses /bin/sh if freaky shit is in the command" do
@@ -65,25 +65,36 @@ describe "Kernel#system" do
     platform_is_not(:windows) do
       @shell_var =  '$TEST_SH_EXPANSION'
     end
-    @helper_script = KernelSpecs.helper_script
+    @helper_script = fixture(__FILE__, 'check_expansion.rb')
+    @tmp = tmp('system_spec.txt')
+    touch @tmp
   end
 
-  it "expands shell variables when given a single string argument" do
-    result = system("ruby #{@helper_script} #{@shell_var} foo")
-    result.should be_true
+  after(:each) do
+    rm_r @tmp
   end
-  
-  it "does not expand shell variables when given multiples arguments" do
+
+  it "does not expand shell variables" do
+    cmd = "ruby #{@helper_script} #{@shell_var} foo"
+    result = system cmd
+    result.should be_false
     result = system("ruby", @helper_script, @shell_var, "foo")
     result.should be_false
   end
 
   it "sets $?" do
-    system("cd > #{tmp('system_spec.txt')}")
+    system("cd > #{@tmp}")
     $?.exitstatus.should == 0
 
     system("cd non-existent")
     $?.exitstatus.should_not == 0
   end
+  
+  it "captures stdout" do
+    lambda { system("echo stdout")}.should output_to_fd(/stdout/)
+  end
 
+  it "captures stderr" do
+    lambda { system("echo stderr>&2")}.should output_to_fd(/stderr/, STDERR)
+  end
 end

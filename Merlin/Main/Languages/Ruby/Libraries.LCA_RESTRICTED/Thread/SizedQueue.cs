@@ -77,7 +77,7 @@ namespace IronRuby.StandardLibrary.Threading {
         [RubyMethod("deq")]
         [RubyMethod("pop")]
         [RubyMethod("shift")]
-        public static object Dequeue(SizedQueue/*!*/ self, [NotNull]params object[]/*!*/ values) {
+        public static object Dequeue(SizedQueue/*!*/ self, params object[]/*!*/ values) {
             // TODO: 
             if (values.Length != 0) {
                 throw new NotImplementedException();

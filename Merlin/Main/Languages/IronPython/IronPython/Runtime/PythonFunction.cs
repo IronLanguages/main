@@ -534,7 +534,11 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("cell")]
-    public sealed class ClosureCell : ICodeFormattable, IValueEquality {
+    public sealed class ClosureCell : ICodeFormattable
+#if CLR2
+        , IValueEquality
+#endif
+    {
         [PythonHidden]
         public object Value;
 
@@ -575,6 +579,9 @@ namespace IronPython.Runtime {
 
         #region IValueEquality Members
 
+        public const object __hash__ = null;
+
+#if CLR2
         int IValueEquality.GetValueHashCode() {
             throw PythonOps.TypeError("unhashable type: cell");
         }
@@ -582,7 +589,7 @@ namespace IronPython.Runtime {
         bool IValueEquality.ValueEquals(object other) {
             return __cmp__(other) == 0;
         }
-
+#endif
         #endregion
 
         [Python3Warning("cell comparisons not supported in 3.x")]

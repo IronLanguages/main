@@ -25,6 +25,10 @@ describe "win32ole" do
     m = Module.new
     WIN32OLE.const_load(@fs, m)
     m.const_get("SystemFolder").should == 1
-    m.const_get("CONSTANTS")["SystemFolder"].should == 1
+    m.const_get("CONSTANTS")["SystemFolder"].should == 1 #fails on MRI
+  end
+
+  it "raises WIN32OLERuntimeError for unknown servers" do
+    lambda {WIN32OLE.new("IDONTEXIST.IAMNOTREAL")}.should raise_error(WIN32OLERuntimeError, /IDONTEXIST\.IAMNOTREAL/)
   end
 end

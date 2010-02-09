@@ -88,5 +88,12 @@ namespace Microsoft.Scripting.Hosting.Providers {
         public static TRet CallEngine<T, TRet>(ScriptEngine engine, Func<LanguageContext, T, TRet> f, T arg) {            
             return engine.Call(f, arg);
         }
+
+        /// <summary>
+        /// Creates a new DocumentationOperations object from the given DocumentationProvider.
+        /// </summary>
+        public static DocumentationOperations CreateDocumentationOperations(DocumentationProvider provider) {
+            return new DocumentationOperations(provider);
+        }
     }
 }

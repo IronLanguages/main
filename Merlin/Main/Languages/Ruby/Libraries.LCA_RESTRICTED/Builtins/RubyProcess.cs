@@ -178,7 +178,7 @@ namespace IronRuby.Builtins {
             return -1;
         }
 
-        private static string[] _ExecutableExtensions = new[] { ".exe", ".com" };
+        private static string[] _ExecutableExtensions = new[] { ".exe", ".com", ".bat", ".cmd" };
 
         private static IEnumerable<string>/*!*/ GetExecutableFiles(PlatformAdaptationLayer/*!*/ pal, string/*!*/ path) {
             if (path[0] == '"' || path[path.Length - 1] == '"') {

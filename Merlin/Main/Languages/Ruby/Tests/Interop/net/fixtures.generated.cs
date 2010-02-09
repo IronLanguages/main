@@ -92,6 +92,12 @@ public partial class Klass {
       return sizeof(Decimal);
     }
   }
+  namespace RegressionSpecs {
+    public class B { }
+    public class C : B { }
+    public interface I1 { int f(); }
+    public interface I2 { int g(); }
+  }
 #line 1 "./class/fixtures/classes.rb"
 #line 5 "./class/fixtures/classes.rb"
 public class EmptyClass {}
@@ -434,6 +440,21 @@ public interface IDoFoo {
               return new PrivateClass(); 
           }
       }
+  }
+
+  public interface IHaveGenerics {
+    T GenericsHere<T>(string arg1);
+    T MoreGenericsHere<T,S>(S x);
+  }
+
+  public class EatIHaveGenerics {
+    public static string TestGenericsHere(IHaveGenerics ihg){
+      return ihg.GenericsHere<string>("test");
+    }
+
+    public static string TestMoreGenericsHere(IHaveGenerics ihg){
+      return ihg.MoreGenericsHere<string, int>(1);
+    }
   }
 #line 1 "./interfacegroup/fixtures/classes.rb"
 public interface IEmptyInterfaceGroup { }
@@ -1735,6 +1756,16 @@ namespace CLRNew {
   }
 
   public class SubStaticNotMangled : StaticNotMangled {}
+
+  public static class ObjectExtensions {
+    public static bool IsNotNull(this object value){
+      return value != null;
+    }
+
+    public static bool IsNull(this object value){
+      return value == null;
+    }
+  }
 #line 1 "./struct/fixtures/classes.rb"
 public struct EmptyStruct {}
   public struct CStruct { public int m1() {return 1;}}

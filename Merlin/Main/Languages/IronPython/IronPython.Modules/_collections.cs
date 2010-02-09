@@ -40,7 +40,11 @@ namespace IronPython.Modules {
 
         [PythonType]
         [DontMapIEnumerableToContains, DebuggerDisplay("deque, {__len__()} items"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
-        public class deque : IEnumerable, IComparable, ICodeFormattable, IValueEquality, ICollection, IReversible {
+        public class deque : IEnumerable, IComparable, ICodeFormattable, IStructuralEquatable, IStructuralComparable, ICollection, IReversible
+#if CLR2
+            , IValueEquality
+#endif
+        {
             private object[] _data;
             private object _lockObj = new object();
             private int _head, _tail;
@@ -445,6 +449,12 @@ namespace IronPython.Modules {
             }
 
             private int CompareToWorker(deque otherDeque) {
+                return CompareToWorker(otherDeque, null);
+            }
+
+            private int CompareToWorker(deque otherDeque, IComparer comparer) {
+                Assert.NotNull(otherDeque);
+
                 if (otherDeque._itemCnt == 0 && _itemCnt == 0) {
                     // comparing two empty deques
                     return 0;
@@ -457,7 +467,12 @@ namespace IronPython.Modules {
                     int otherIndex = otherDeque._head, ourIndex = _head;
 
                     for (; ; ) {
-                        int result = PythonOps.Compare(_data[ourIndex], otherDeque._data[otherIndex]);
+                        int result;
+                        if (comparer == null) {
+                            result = PythonOps.Compare(_data[ourIndex], otherDeque._data[otherIndex]);
+                        } else {
+                            result = comparer.Compare(_data[ourIndex], otherDeque._data[otherIndex]);
+                        }
                         if (result != 0) {
                             return result;
                         }
@@ -466,14 +481,16 @@ namespace IronPython.Modules {
                         otherIndex++;
                         if (otherIndex == otherDeque._data.Length) {
                             otherIndex = 0;
-                        } else if (otherIndex == otherDeque._tail) {
+                        }
+                        if (otherIndex == otherDeque._tail) {
                             break;
                         }
 
                         ourIndex++;
                         if (ourIndex == _data.Length) {
                             ourIndex = 0;
-                        } else if (ourIndex == _tail) {
+                        }
+                        if (ourIndex == _tail) {
                             break;
                         }
                     }
@@ -489,6 +506,20 @@ namespace IronPython.Modules {
                     CompareUtil.Pop(this);
                 }
             }
+
+            #endregion
+
+            #region IStructuralComparable Members
+
+            int IStructuralComparable.CompareTo(object other, IComparer comparer) {
+                deque otherDeque = other as deque;
+                if (otherDeque == null) {
+                    throw new ArgumentException("expected deque");
+                }
+
+                return CompareToWorker(otherDeque, comparer);
+            }
+
             #endregion
 
             #region IEnumerable Members
@@ -742,16 +773,92 @@ namespace IronPython.Modules {
             #endregion
 
             #region IValueEquality Members
-
+#if CLR2
             int IValueEquality.GetValueHashCode() {
                 throw PythonOps.TypeError("deque objects are unhashable");
             }
 
-
             bool IValueEquality.ValueEquals(object other) {
                 if (!(other is deque)) return false;
 
-                return ((IComparable)this).CompareTo(other) == 0;
+                return EqualsWorker((deque)other);
+            }
+#endif
+            #endregion
+
+            #region IStructuralEquatable Members
+
+            public const object __hash__ = null;
+
+            int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+                if (CompareUtil.Check(this)) {
+                    return 0;
+                }
+
+                int res;
+                CompareUtil.Push(this);
+                try {
+                    res = ((IStructuralEquatable)new PythonTuple(this)).GetHashCode(comparer);
+                } finally {
+                    CompareUtil.Pop(this);
+                }
+
+                return res;
+            }
+
+            bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+                if (!(other is deque)) return false;
+
+                return EqualsWorker((deque)other, comparer);
+            }
+
+            private bool EqualsWorker(deque other) {
+                return EqualsWorker(other, null);
+            }
+
+            private bool EqualsWorker(deque otherDeque, IEqualityComparer comparer) {
+                Assert.NotNull(otherDeque);
+
+                if (otherDeque._itemCnt != _itemCnt) {
+                    // number of items is different, deques can't be equal
+                    return false;
+                } else if (otherDeque._itemCnt == 0) {
+                    // two empty deques are equal
+                    return true;
+                }
+
+                if (CompareUtil.Check(this)) return true;
+
+                CompareUtil.Push(this);
+                try {
+                    for (int otherIndex = otherDeque._head, ourIndex = _head; ourIndex != _tail; ) {
+                        bool result;
+                        if (comparer == null) {
+                            result = PythonOps.EqualRetBool(_data[ourIndex], otherDeque._data[otherIndex]);
+                        } else {
+                            result = comparer.Equals(_data[ourIndex], otherDeque._data[otherIndex]);
+                        }
+                        if (!result) {
+                            return false;
+                        }
+
+                        // advance both indices
+                        otherIndex++;
+                        if (otherIndex == otherDeque._data.Length) {
+                            otherIndex = 0;
+                        }
+
+                        ourIndex++;
+                        if (ourIndex == _data.Length) {
+                            ourIndex = 0;
+                        }
+                    }
+
+                    // same # of items, all items are equal
+                    return true;
+                } finally {
+                    CompareUtil.Pop(this);
+                }
             }
 
             #endregion

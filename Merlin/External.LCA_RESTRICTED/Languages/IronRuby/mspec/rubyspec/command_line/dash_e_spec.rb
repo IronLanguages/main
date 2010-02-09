@@ -23,5 +23,10 @@ describe "The -e command line option" do
   it "uses '-e' as $0" do
     ruby_exe("puts $0").chomp.should == "-e"
   end
+
+  it "preserves ARGV" do
+    ruby_exe(nil, :args => %Q{-eputs(ARGV);puts($0) 1 2 3 4}).chomp.should == "1\n2\n3\n4\n-e"
+  end
+
   #needs to test return => LocalJumpError
 end

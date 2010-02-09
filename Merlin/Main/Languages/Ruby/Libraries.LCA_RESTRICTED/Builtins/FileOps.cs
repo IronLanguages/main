@@ -322,7 +322,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
-        public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ paths) {
+        public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ paths) {
             foreach (MutableString path in paths) {
                 Delete(self, path);
             }
@@ -413,7 +413,7 @@ namespace IronRuby.Builtins {
         #region join
 
         [RubyMethod("join", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]params object[] parts) {
+        public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, params object[]/*!*/ parts) {
             MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
             Dictionary<object, bool> visitedLists = null;
             var worklist = new Stack<object>();
@@ -628,7 +628,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("utime", RubyMethodAttributes.PublicSingleton)]
         public static int UpdateTimes(RubyClass/*!*/ self, object accessTime, object modifiedTime,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ paths) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ paths) {
 
             RubyTime atime = MakeTime(self.Context, accessTime);
             RubyTime mtime = MakeTime(self.Context, modifiedTime);

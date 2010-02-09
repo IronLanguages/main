@@ -21,6 +21,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -179,8 +180,8 @@ Python
             private void ObjectMonkeyPatch(RubyModule/*!*/ module) {
                 Debug.Assert(module == Context.ObjectClass);
 
-                DefineLibraryMethod(module, "object_monkey", 0x9, new System.Delegate[] {
-                    new Func<object, string>(MonkeyWorker),
+                DefineLibraryMethod(module, "object_monkey", 0x9, new[] {
+                    LibraryOverload.Reflect(new Func<object, string>(MonkeyWorker)),
                 });
             }
 
@@ -211,8 +212,8 @@ This is monkey!
             }
 
             private void LibModuleSingletonMethods(RubyModule/*!*/ module) {
-                DefineLibraryMethod(module, "bar", (int)RubyMethodAttributes.PublicSingleton, new System.Delegate[] {
-                    new Func<RubyModule, string>(Bar),
+                DefineLibraryMethod(module, "bar", (int)RubyMethodAttributes.PublicSingleton, new[] {
+                    LibraryOverload.Reflect(new Func<RubyModule, string>(Bar)),
                 });
             }
 

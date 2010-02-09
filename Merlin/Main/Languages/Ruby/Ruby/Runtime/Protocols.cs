@@ -417,8 +417,8 @@ namespace IronRuby.Runtime {
             }
 
             if (coercedValues != null && coercedValues.Count == 2) {
-                var compare = binaryOpStorage.GetCallSite(binaryOp);
-                result = compare.Target(compare, coercedValues[0], coercedValues[1]);
+                var opSite = binaryOpStorage.GetCallSite(binaryOp);
+                result = opSite.Target(opSite, coercedValues[0], coercedValues[1]);
                 return true;
             }
 

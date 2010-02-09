@@ -32,7 +32,7 @@ namespace IronRuby.Builtins {
         #region method_missing
 
         [RubyMethod("method_missing", RubyMethodAttributes.PrivateInstance)]
-        public static object MethodMissing(RubyScope/*!*/ scope, BlockParam block, Scope/*!*/ self, [NotNull]RubySymbol/*!*/ symbol, [NotNull]params object[]/*!*/ args) {
+        public static object MethodMissing(RubyScope/*!*/ scope, BlockParam block, Scope/*!*/ self, [NotNull]RubySymbol/*!*/ symbol, params object[]/*!*/ args) {
             return RubyTopLevelScope.ScopeMethodMissing(scope.RubyContext, self, block, null, symbol, args);
         }
 

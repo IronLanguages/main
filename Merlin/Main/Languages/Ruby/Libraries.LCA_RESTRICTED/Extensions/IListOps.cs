@@ -1213,7 +1213,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("indices")]
         public static object Indexes(ConversionStorage<int>/*!*/ fixnumCast, 
             CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
-            IList/*!*/ self, [NotNull]params object[]/*!*/ values) {
+            IList/*!*/ self, params object[]/*!*/ values) {
             fixnumCast.Context.ReportWarning("Array#indexes and Array#indices are deprecated; use Array#values_at");
 
             RubyArray result = new RubyArray();
@@ -1237,7 +1237,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("values_at")]
         public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ fixnumCast, 
             CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
-             IList/*!*/ self, [NotNull]params object[]/*!*/ values) {
+            IList/*!*/ self, params object[]/*!*/ values) {
             RubyArray result = new RubyArray();
 
             for (int i = 0; i < values.Length; i++) {
@@ -1419,7 +1419,7 @@ namespace IronRuby.Builtins {
         #region insert, push, pop, shift, unshift, <<
 
         [RubyMethod("insert")]
-        public static IList/*!*/ Insert(IList/*!*/ self, [DefaultProtocol]int index, [NotNull]params object[]/*!*/ args) {
+        public static IList/*!*/ Insert(IList/*!*/ self, [DefaultProtocol]int index, params object[]/*!*/ args) {
             if (args.Length == 0) {
                 return self;
             }
@@ -1445,7 +1445,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("push")]
-        public static IList/*!*/ Push(IList/*!*/ self, [NotNull]params object[]/*!*/ values) {
+        public static IList/*!*/ Push(IList/*!*/ self, params object[]/*!*/ values) {
             AddRange(self, values);
             return self;
         }
@@ -1479,7 +1479,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("unshift")]
-        public static IList/*!*/ Unshift(IList/*!*/ self, [NotNull]params object[]/*!*/ args) {
+        public static IList/*!*/ Unshift(IList/*!*/ self, params object[]/*!*/ args) {
             if (args.Length > 0) {
                 InsertRange(self, 0, args, 0, args.Length);
             }
@@ -1675,7 +1675,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("zip")]
         public static object Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToAry, BlockParam block,
-            object self, [DefaultProtocol, NotNull, NotNullItems]params IList[]/*!*/ args) {
+            object self, [DefaultProtocol, NotNullItems]params IList/*!*/[]/*!*/ args) {
 
             return Enumerable.Zip(each, tryToAry, block, self, args);
         }

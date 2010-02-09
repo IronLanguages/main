@@ -25,21 +25,22 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Policy;
 using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
-using Microsoft.Scripting.Utils;
-using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Math;
+using IronPython.Runtime.Types;
 
 [assembly: ExtensionType(typeof(IronPythonTest.IFooable), typeof(IronPythonTest.FooableExtensions))]
 namespace IronPythonTest {
@@ -487,6 +488,239 @@ namespace IronPythonTest {
                     BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
                 );
             }
+        }
+
+        private void TestTarget(object sender, EventArgs args) {
+        }
+
+#if !SILVERLIGHT
+        public void ScenarioDocumentation() {
+            ScriptScope scope = _pe.CreateScope();
+            ScriptSource src = _pe.CreateScriptSourceFromString(@"
+import System
+
+def f0(a, b): pass
+def f1(a, *b): pass
+def f2(a, **b): pass
+def f3(a, *b, **c): pass
+
+class C:
+    m0 = f0
+    m1 = f1
+    m2 = f2
+    m3 = f3
+    def __init__(self):
+        self.foo = 42
+
+class SC(C): pass
+
+inst = C()
+
+class NC(object):
+    m0 = f0
+    m1 = f1
+    m2 = f2
+    m3 = f3
+    def __init__(self):
+        self.foo = 42
+
+class SNC(NC): pass
+
+ncinst = C()
+
+class EmptyNC(object): pass
+
+enc = EmptyNC()
+
+m0 = C.m0
+m1 = C.m1
+m2 = C.m2
+m3 = C.m3
+
+z = zip
+i = int
+
+", SourceCodeKind.File);
+
+            var doc = _pe.GetService<DocumentationOperations>();
+            src.Execute(scope);
+            scope.SetVariable("dlg", new EventHandler(TestTarget));
+
+            object f0 = scope.GetVariable("f0");
+            object f1 = scope.GetVariable("f1");
+            object f2 = scope.GetVariable("f2");
+            object f3 = scope.GetVariable("f3");
+            object zip = scope.GetVariable("z");
+            object dlg = scope.GetVariable("dlg");
+            object m0 = scope.GetVariable("m0");
+            object m1 = scope.GetVariable("m1");
+            object m2 = scope.GetVariable("m2");
+            object m3 = scope.GetVariable("m3");
+
+            var tests = new [] { 
+                new { 
+                    Obj=f0, 
+                    Result = new [] { 
+                        new[] {
+                            new { ParamName="a", ParamAttrs = ParameterFlags.None }, 
+                            new { ParamName="b", ParamAttrs = ParameterFlags.None } 
+                        }
+                    } 
+                },
+                new { 
+                    Obj=f1, 
+                    Result = new [] { 
+                        new[] { 
+                            new { ParamName="a", ParamAttrs = ParameterFlags.None }, 
+                            new { ParamName="b", ParamAttrs = ParameterFlags.ParamsArray } 
+                        }
+                    } 
+                },
+                new { 
+                    Obj=f2, 
+                    Result = new [] { 
+                        new[] { 
+                            new { ParamName="a", ParamAttrs = ParameterFlags.None }, 
+                            new { ParamName="b", ParamAttrs = ParameterFlags.ParamsDict} 
+                        }
+                    } 
+                },
+                new { 
+                    Obj=f3, 
+                    Result = new [] { 
+                        new [] { 
+                            new { ParamName="a", ParamAttrs = ParameterFlags.None}, 
+                            new { ParamName="b", ParamAttrs = ParameterFlags.ParamsArray},
+                            new { ParamName="c", ParamAttrs = ParameterFlags.ParamsDict} 
+                        } 
+                    }
+                },
+                new {
+                    Obj = zip,
+                    Result = new [] {
+                        new [] {
+                            new { ParamName="s0", ParamAttrs = ParameterFlags.None },
+                            new { ParamName="s1", ParamAttrs = ParameterFlags.None },
+                        },
+                        new [] {
+                            new { ParamName="seqs", ParamAttrs = ParameterFlags.ParamsArray },
+                        }
+                    }
+                },
+                new { 
+                    Obj=dlg, 
+                    Result = new [] { 
+                        new [] { 
+                            new { ParamName="sender", ParamAttrs = ParameterFlags.None}, 
+                            new { ParamName="args", ParamAttrs = ParameterFlags.None},
+                        } 
+                    }
+                },
+                new { 
+                    Obj=m0, 
+                    Result = new [] { 
+                        new[] {
+                            new { ParamName="a", ParamAttrs = ParameterFlags.None }, 
+                            new { ParamName="b", ParamAttrs = ParameterFlags.None } 
+                        }
+                    } 
+                },
+                new { 
+                    Obj=m1, 
+                    Result = new [] { 
+                        new[] { 
+                            new { ParamName="a", ParamAttrs = ParameterFlags.None }, 
+                            new { ParamName="b", ParamAttrs = ParameterFlags.ParamsArray } 
+                        }
+                    } 
+                },
+                new { 
+                    Obj=m2, 
+                    Result = new [] { 
+                        new[] { 
+                            new { ParamName="a", ParamAttrs = ParameterFlags.None }, 
+                            new { ParamName="b", ParamAttrs = ParameterFlags.ParamsDict} 
+                        }
+                    } 
+                },
+                new { 
+                    Obj=m3, 
+                    Result = new [] { 
+                        new [] { 
+                            new { ParamName="a", ParamAttrs = ParameterFlags.None}, 
+                            new { ParamName="b", ParamAttrs = ParameterFlags.ParamsArray},
+                            new { ParamName="c", ParamAttrs = ParameterFlags.ParamsDict} 
+                        } 
+                    }
+                },
+
+            };
+
+            foreach (var test in tests) {
+                var result = new List<OverloadDoc>(doc.GetOverloads(test.Obj));                
+                AreEqual(result.Count, test.Result.Length);
+
+                for (int i = 0; i < result.Count; i++) {
+                    var received = result[i]; ;
+                    var expected = test.Result[i];
+
+                    AreEqual(received.Parameters.Count, expected.Length);
+                    var recvParams = new List<ParameterDoc>(received.Parameters);
+
+                    for (int j = 0; j < expected.Length; j++) {
+                        var receivedParam = recvParams[j];
+                        var expectedParam = expected[j];
+
+                        AreEqual(receivedParam.Flags, expectedParam.ParamAttrs);
+                        AreEqual(receivedParam.Name, expectedParam.ParamName);
+                    }
+                }
+            }
+
+            object inst = scope.GetVariable("inst");
+            object ncinst = scope.GetVariable("ncinst");
+            object klass = scope.GetVariable("C");
+            object newklass = scope.GetVariable("NC");
+            object subklass = scope.GetVariable("SC");
+            object subnewklass = scope.GetVariable("SNC");
+            object System = scope.GetVariable("System");
+
+            foreach (object o in new[] { inst, ncinst }) {
+                var members = doc.GetMembers(o);
+                ContainsMemberName(members, "m0", MemberKind.Method);
+                ContainsMemberName(members, "foo", MemberKind.None);
+            }
+            
+            ContainsMemberName(doc.GetMembers(klass), "m0", MemberKind.Method);
+            ContainsMemberName(doc.GetMembers(newklass), "m0", MemberKind.Method);
+            ContainsMemberName(doc.GetMembers(subklass), "m0", MemberKind.Method);
+            ContainsMemberName(doc.GetMembers(subnewklass), "m0", MemberKind.Method);
+            ContainsMemberName(doc.GetMembers(System), "Collections", MemberKind.Namespace);
+
+            object intType = scope.GetVariable("i");
+            foreach (object o in new object[] { intType, 42 }) {
+                var members = doc.GetMembers(o);
+                ContainsMemberName(members, "__add__", MemberKind.Method);
+                ContainsMemberName(members, "conjugate", MemberKind.Method);
+                ContainsMemberName(members, "real", MemberKind.Property);
+            }
+            
+            ContainsMemberName(doc.GetMembers(new List<object>()), "Count", MemberKind.Property);
+            ContainsMemberName(doc.GetMembers(DynamicHelpers.GetPythonTypeFromType(typeof(DateTime))), "MaxValue", MemberKind.Field);
+
+            doc.GetMembers(scope.GetVariable("enc"));
+        }
+#endif
+
+        private void ContainsMemberName(ICollection<MemberDoc> members, string name, MemberKind kind) {
+            foreach (var member in members) {
+                if (member.Name == name) {
+                    AreEqual(member.Kind, kind);
+                    return;
+                }
+            }
+
+            Assert(false, "didn't find member " + name);
         }
 
         public void ScenarioDlrInterop() {

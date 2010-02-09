@@ -20,6 +20,7 @@ using System.Windows.Browser;
 using System.IO;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Utils;
+using System.Windows.Threading;
 
 namespace Microsoft.Scripting.Silverlight {
     public class Repl {
@@ -62,8 +63,6 @@ namespace Microsoft.Scripting.Silverlight {
         private bool                _multiLine;
         private bool                _multiLinePrompt;
         private bool                _multiLineComplete;
-        private List<string>        _history;
-        private int                 _currentCommand = -1;
         private ReplOutputBuffer    _outputBuffer;
         private ReplInputBuffer     _inputBuffer;
         private HtmlElement         _silverlightDlrReplCode;
@@ -72,6 +71,7 @@ namespace Microsoft.Scripting.Silverlight {
         private ScriptEngine        _engine;
         private ScriptScope         _currentScope;
         private static int          _count;
+        private ReplHistory         _history = new ReplHistory();
         #endregion
 
         #region Public properties
@@ -94,6 +94,14 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public ScriptEngine Engine {
             get { return _engine; }
+        }
+
+        public ReplHistory History {
+            get { return _history; }
+        }
+
+        public HtmlElement Input {
+            get { return _silverlightDlrReplCode; }
         }
         #endregion
 
@@ -202,35 +210,39 @@ namespace Microsoft.Scripting.Silverlight {
             _outputBuffer = new ReplOutputBuffer(_silverlightDlrReplResult, _sdlrOutput);
             ShowDefaults();
             ShowPrompt();
-            _silverlightDlrReplCode.AttachEvent("onkeypress", new EventHandler<HtmlEventArgs>(OnKeyPress));
+            _silverlightDlrReplCode.AttachEvent("onkeydown", new EventHandler<HtmlEventArgs>(OnKeyDown));
+        }
+
+        private void OnKeyDown(object sender, HtmlEventArgs args) {
+            SendCharacterCode(args.CharacterCode, args.CtrlKey, args.ShiftKey);
         }
 
         /// <summary>
-        /// On each key press, process the key.
+        /// Processes a key press:
         /// - On enter, run the code in the input buffer. Pass the ctrl-key
         ///   to decide whether to force execution, even if the expression is
         ///   incomplete.
         /// - On up arrow, show the previous command.
         /// - On down arrow (and the shift key is not pressed), show the next 
         ///   command.
-        /// - Otherwise, set the current command index to the history count:
-        ///   this maintains the UNIX style history.
+        /// - Otherwise, just remeber the char for history purposes.
         /// </summary>
-        private void OnKeyPress(object sender, HtmlEventArgs args) {
-            switch(args.CharacterCode) {
+        /// <param name="c">int representation of the char to handle</param>
+        /// <param name="ctrlKey">Was the ctrl key pressed?</param>
+        /// <param name="shiftKey">Was the shift key pressed?</param>
+        public void SendCharacterCode(int c, bool ctrlKey, bool shiftKey) {
+            switch(c) {
             case 13:
-                RunCode(args.CtrlKey);
+                Store();
+                RunCode(ctrlKey);
                 break;
             case 38:
                 ShowPreviousCommand();
                 break;
             case 40:
-                if (!args.ShiftKey) {
+                if (!shiftKey) {
                     ShowNextCommand();
                 }
-                break;
-            default:
-                _currentCommand = _history.Count;
                 break;
             };
         }
@@ -247,65 +259,128 @@ namespace Microsoft.Scripting.Silverlight {
         #endregion
 
         #region History
-        /// <summary>
-        /// Get the current command from the history
-        /// </summary>
-        private int CurrentCommand {
-            get {
-                if (_history == null) {
-                    _currentCommand = -1;
-                } else if(_currentCommand == -1) {
-                    _currentCommand = _history.Count != 0 ? _history.Count - 1 : 0;
-                }
-                return _currentCommand;
-            }
-            set {
-                if (_history == null) {
-                    _currentCommand = -1;
-                } else if (value < 0) {
-                    _currentCommand = 0;
-                } else if (value > _history.Count - 1) {
-                    _currentCommand = _history.Count - 1;
-                } else {
-                    _currentCommand = value;
-                }
-            }
+
+        private string Remember() {
+            return _history.ReplaceWriteCommand(Input.GetProperty("value").ToString());
         }
 
-        /// <summary>
-        /// Get the "index" command from the history
-        /// </summary>
-        private string TryGetFromHistory(int index) {
-            if (_history == null)
-                return "";
-            return _history[index];
+        private void Store() {
+            Remember();
+            _history.StartNewCommand();
         }
 
         /// <summary>
         /// Get the next command
         /// </summary>
         public string GetNextCommand() {
-            CurrentCommand++;
-            return TryGetFromHistory(CurrentCommand); 
+            _history.ReadNext();
+            return _history.CurrentReadCommand;
         }
 
         /// <summary>
         /// Get the previous command
         /// </summary>
         public string GetPreviousCommand() {
-            --CurrentCommand;
-            return TryGetFromHistory(CurrentCommand);
+            Remember();
+            _history.ReadPrev();
+            return _history.CurrentReadCommand;
         }
 
-        /// <summary>
-        /// Add line to the history
-        /// </summary>
-        private void Remember(string line) {
-            if (_history == null) {
-                _history = new List<string>();
+        public class ReplHistory {
+
+            private List<string> _commands;
+            private int _readPointer;
+            private int _writePointer;
+            private Func<bool> ResetReadPointerBehavior { get; set; }
+
+            public List<string> Commands { get { return _commands; } }
+            
+            public ReplHistory() : this(true) {
+                Clear();
             }
-            _history.Add(line);
+
+            public ReplHistory(bool cmdExeBehavior) {
+                if (cmdExeBehavior) {
+                    ResetReadPointerBehavior = new Func<bool>(() => _readPointer == _writePointer);
+                } else {
+                    ResetReadPointerBehavior = new Func<bool>(() => true);
+                }
+            }
+
+            public string CurrentReadCommand {
+                get {
+                    return GetCommand(_readPointer);
+                }
+            }
+
+            public string CurrentWriteCommand {
+                get {
+                    return GetCommand(_writePointer);
+                }
+            }
+
+            public int ReadPrev() {
+                if (_readPointer > 0)
+                    _readPointer -= 1;
+                return _readPointer;
+            }
+
+            public int ReadNext() {
+                if (_readPointer < (_commands.Count - 1))
+                    _readPointer += 1;
+                return _readPointer;
+            }
+
+            public string GetCommand(int index) {
+                if (_commands.Count == 0) return "";
+                return _commands[PointerValue(index)];
+            }
+
+            public string SetCommand(int index, string cmd) {
+                if (_commands.Count == 0) StartNewCommand();
+                return _commands[PointerValue(_writePointer)] = cmd;
+            }
+
+            public int ResetReadPointer() {
+                return _readPointer = PointerValue(_commands.Count - 1);
+            }
+
+            public int ResetWritePointer() {
+                return _writePointer = PointerValue(_commands.Count - 1);
+            }
+
+            private int PointerValue(int p) {
+                if (p <= 0) return 0;
+                else if (p > _commands.Count - 1) return _commands.Count - 1;
+                return p;
+            }
+
+            public string AppendWriteCommand(string cmd) {
+                return ReplaceWriteCommand(CurrentWriteCommand + cmd);
+            }
+
+            public string AppendWriteCommand(char c) {
+                return ReplaceWriteCommand(CurrentWriteCommand + c);
+            }
+
+            public string ReplaceWriteCommand(string cmd) {
+                return SetCommand(_writePointer, cmd);
+            }
+
+            public void StartNewCommand() {
+                _commands.Add("");
+                if (ResetReadPointerBehavior())
+                    ResetReadPointer();
+                ResetWritePointer();
+            }
+
+            public void Clear() {
+                _commands = new List<string>(new string[] { "" });
+                _readPointer = 0;
+                _writePointer = 0;
+            }
         }
+
         #endregion
 
         #region Running Code
@@ -453,7 +528,6 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="line"></param>
         /// <param name="result"></param>
         internal void ShowLineAndResult(string line, object result) {
-            Remember(line);
             ShowCodeLineInResultDiv(line);
 
             if (!_multiLine || _multiLineComplete) {

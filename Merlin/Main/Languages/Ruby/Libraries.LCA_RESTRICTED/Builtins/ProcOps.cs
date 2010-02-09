@@ -120,7 +120,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]"), RubyMethod("call")]
-        public static object Call(Proc/*!*/ self, [NotNull]params object[]/*!*/ args) {
+        public static object Call(Proc/*!*/ self, params object[]/*!*/ args) {
             RequireParameterCount(self, args.Length);
             return self.CallN(args);
         }

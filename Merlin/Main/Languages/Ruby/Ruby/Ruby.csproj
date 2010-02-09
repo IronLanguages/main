@@ -252,6 +252,7 @@
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
+    <Compile Include="Runtime\Calls\LibraryOverloadInfo.cs" />
     <Compile Include="Runtime\ConstantSiteCache.cs" />
     <Compile Include="Runtime\ConstantStorage.cs" />
     <Compile Include="Runtime\Conversions\GenericConversionAction.cs" />

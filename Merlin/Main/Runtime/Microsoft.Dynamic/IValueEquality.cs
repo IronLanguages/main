@@ -13,6 +13,10 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+
+// IValueEquality is unnecessary in .NET 4.0 and can be replaced by IStructuralEquatable
+// given some default IEqualityComparer
 namespace Microsoft.Scripting {
     /// <summary>
     /// Provides hashing and equality based upon the value of the object instead of the reference.
@@ -34,3 +38,48 @@ namespace Microsoft.Scripting {
         bool ValueEquals(object other);
     }
 }
+
+// IStructuralEquatable/IStructuralComparable are included in .NET 4.0.
+namespace System.Collections {
+    /// <summary>
+    /// Defines methods to support the comparison of objects for structural equality.
+    /// </summary>
+    public interface IStructuralEquatable {
+        /// <summary>
+        /// Determines whether an object is equal to the current instance.
+        /// </summary>
+        /// <param name="other">The object to compare with the current instance.</param>
+        /// <param name="comparer">An object that determines whether the current instance and other are equal.</param>
+        /// <returns>true if the two objects are equal; otherwise, false.</returns>
+        bool Equals(object other, IEqualityComparer comparer);
+        /// <summary>
+        /// Returns a hash code for the current instance.
+        /// </summary>
+        /// <param name="comparer">An object that computes the hash code of the current object.</param>
+        /// <returns>The hash code for the current instance.</returns>
+        int GetHashCode(IEqualityComparer comparer);
+    }
+
+    /// <summary>
+    /// Supports the structural comparison of collection objects.
+    /// </summary>
+    public interface IStructuralComparable {
+        /// <summary>
+        /// Determines whether the current collection object precedes, occurs in the
+        /// same position as, or follows another object in the sort order.
+        /// </summary>
+        /// <param name="other">The object to compare with the current instance.</param>
+        /// <param name="comparer">An object that compares the current object and other.</param>
+        /// <returns>
+        /// An integer that indicates the relationship of the current collection object
+        /// to other, as shown in the following table.
+        /// Return value    Description
+        /// -1              The current instance precedes other.
+        /// 0               The current instance and other are equal.
+        /// 1               The current instance follows other.
+        /// </returns>
+        int CompareTo(object other, IComparer comparer);
+    }
+}
+
+#endif

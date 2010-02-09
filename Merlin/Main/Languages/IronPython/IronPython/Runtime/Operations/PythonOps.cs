@@ -529,7 +529,7 @@ namespace IronPython.Runtime.Operations {
             //TODO just can't seem to shake these fast paths
             if (x is int && y is int) { return ((int)x) == ((int)y); }
             if (x is string && y is string) { return ((string)x).Equals((string)y); }
-
+            
             return DynamicHelpers.GetPythonType(x).EqualRetBool(x, y);
         }
 
@@ -700,6 +700,16 @@ namespace IronPython.Runtime.Operations {
             return size0 > size1 ? +1 : -1;
         }
 
+        public static int CompareArrays(object[] data0, int size0, object[] data1, int size1, IComparer comparer) {
+            int size = Math.Min(size0, size1);
+            for (int i = 0; i < size; i++) {
+                int c = comparer.Compare(data0[i], data1[i]);
+                if (c != 0) return c;
+            }
+            if (size0 == size1) return 0;
+            return size0 > size1 ? +1 : -1;
+        }
+
         public static bool ArraysEqual(object[] data0, int size0, object[] data1, int size1) {
             if (size0 != size1) {
                 return false;
@@ -707,6 +717,22 @@ namespace IronPython.Runtime.Operations {
             for (int i = 0; i < size0; i++) {
                 if (data0[i] != null) {
                     if (!EqualRetBool(data0[i], data1[i])) {
+                        return false;
+                    }
+                } else if (data1[i] != null) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool ArraysEqual(object[] data0, int size0, object[] data1, int size1, IEqualityComparer comparer) {
+            if (size0 != size1) {
+                return false;
+            }
+            for (int i = 0; i < size0; i++) {
+                if (data0[i] != null) {
+                    if (!comparer.Equals(data0[i], data1[i])) {
                         return false;
                     }
                 } else if (data1[i] != null) {
@@ -766,7 +792,7 @@ namespace IronPython.Runtime.Operations {
         // and hash appropriately.
         //
         // Types which differ in hashing from .NET have __hash__ functions defined in their
-        //  ops classes which do the appropriate hashing.        
+        // ops classes which do the appropriate hashing.        
         public static int Hash(CodeContext/*!*/ context, object o) {
             return PythonContext.Hash(o);
         }
@@ -810,12 +836,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int Length(object o) {
-            string s = o as String;
-            if (s != null) return s.Length;
-
-            ICollection ic = o as ICollection;
-            if (ic != null) return ic.Count;
-
             object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, "len() of unsized object");
 
             int res;

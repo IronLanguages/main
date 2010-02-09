@@ -18,6 +18,11 @@ module ComHelper
   end
   private :app_installed?
   module_function :app_installed?
+  
+  def srv_registered?(progid)
+    !Registry.classes_root.get_sub_key_names.grep(/#{progid}/i).empty?
+  end
+  module_function :srv_registered?
 
   def excel_installed?
     app_installed?("excel")

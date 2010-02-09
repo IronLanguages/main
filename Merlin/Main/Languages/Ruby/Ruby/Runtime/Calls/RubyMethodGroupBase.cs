@@ -48,22 +48,22 @@ namespace IronRuby.Runtime.Calls {
     /// </summary>
     public abstract class RubyMethodGroupBase : RubyMemberInfo {
         // Not protected by a lock. Immutable after initialized. 
-        private MethodBase/*!*/[] _methodBases;
-        
-        protected RubyMethodGroupBase(MethodBase/*!*/[] methods, RubyMemberFlags flags, RubyModule/*!*/ declaringModule)
+        private OverloadInfo/*!*/[] _methodBases;
+
+        protected RubyMethodGroupBase(OverloadInfo/*!*/[] methods, RubyMemberFlags flags, RubyModule/*!*/ declaringModule)
             : base(flags, declaringModule) {
             if (methods != null) {
                 SetMethodBasesNoLock(methods);
             }
         }
 
-        protected abstract RubyMemberInfo/*!*/ Copy(MethodBase/*!*/[]/*!*/ methods);
+        protected abstract RubyMemberInfo/*!*/ Copy(OverloadInfo/*!*/[]/*!*/ methods);
 
-        internal protected virtual MethodBase/*!*/[]/*!*/ MethodBases {
+        internal protected virtual OverloadInfo/*!*/[]/*!*/ MethodBases {
             get { return _methodBases; }
         }
 
-        internal MethodBase/*!*/[]/*!*/ SetMethodBasesNoLock(MethodBase/*!*/[]/*!*/ methods) {
+        internal OverloadInfo/*!*/[]/*!*/ SetMethodBasesNoLock(OverloadInfo/*!*/[]/*!*/ methods) {
             Debug.Assert(
                 CollectionUtils.TrueForAll(methods, (method) => method.IsStatic || method.DeclaringType == typeof(Object)) ||
                 CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || RubyUtils.IsExtension(method) || RubyUtils.IsOperator(method))
@@ -73,7 +73,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return ArrayUtils.MakeArray(MethodBases);
+            return ArrayUtils.ToArray(MethodBases, (o) => (MemberInfo)o.ReflectionInfo);
         }
 
         internal abstract SelfCallConvention CallConvention { get; }
@@ -83,9 +83,9 @@ namespace IronRuby.Runtime.Calls {
             int minParameters = Int32.MaxValue;
             int maxParameters = 0;
             bool hasOptional = false;
-            foreach (MethodBase method in MethodBases) {
+            foreach (OverloadInfo method in MethodBases) {
                 int mandatory, optional;
-                RubyOverloadResolver.GetParameterCount(method, method.GetParameters(), CallConvention, out mandatory, out optional);
+                RubyOverloadResolver.GetParameterCount(method, CallConvention, out mandatory, out optional);
                 if (mandatory < minParameters) {
                     minParameters = mandatory;
                 }
@@ -106,12 +106,11 @@ namespace IronRuby.Runtime.Calls {
         #region Generic Parameters, Overloads Selection
 
         public override RubyMemberInfo TryBindGenericParameters(Type/*!*/[]/*!*/ typeArguments) {
-            var boundMethods = new List<MethodBase>();
+            var boundMethods = new List<OverloadInfo>();
             foreach (var method in MethodBases) {
                 if (method.IsGenericMethodDefinition) {
-                    if (typeArguments.Length == method.GetGenericArguments().Length) {
-                        Debug.Assert(!(method is ConstructorInfo));
-                        boundMethods.Add(((MethodInfo)method).MakeGenericMethod(typeArguments));
+                    if (typeArguments.Length == method.GenericArguments.Count) {
+                        boundMethods.Add(method.MakeGenericMethod(typeArguments));
                     }
                 } else if (typeArguments.Length == 0) {
                     boundMethods.Add(method);
@@ -129,7 +128,7 @@ namespace IronRuby.Runtime.Calls {
         /// Filters out methods that don't exactly match parameter types except for hidden parameters (RubyContext, RubyScope, site local storage).
         /// </summary>
         public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
-            var boundMethods = new List<MethodBase>();
+            var boundMethods = new List<OverloadInfo>();
             foreach (var method in MethodBases) {
                 if (IsOverloadSignature(method, parameterTypes)) {
                     boundMethods.Add(method);
@@ -143,11 +142,11 @@ namespace IronRuby.Runtime.Calls {
             return Copy(boundMethods.ToArray());
         }
 
-        private bool IsOverloadSignature(MethodBase/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
-            var infos = method.GetParameters();
-            int firstInfo = RubyOverloadResolver.GetHiddenParameterCount(method, infos, CallConvention);
+        private bool IsOverloadSignature(OverloadInfo/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
+            int firstInfo = RubyOverloadResolver.GetHiddenParameterCount(method, CallConvention);
+            var infos = method.Parameters;
             
-            if (infos.Length - firstInfo != parameterTypes.Length) {
+            if (infos.Count - firstInfo != parameterTypes.Length) {
                 return false;
             }
 
@@ -186,8 +185,8 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        internal static IList<MethodBase>/*!*/ GetVisibleOverloads(CallArguments/*!*/ args, IList<MethodBase>/*!*/ overloads, bool isSuperCall) {
-            IList<MethodBase> newOverloads = null;
+        internal static IList<OverloadInfo>/*!*/ GetVisibleOverloads(CallArguments/*!*/ args, IList<OverloadInfo>/*!*/ overloads, bool isSuperCall) {
+            IList<OverloadInfo> newOverloads = null;
             Debug.Assert(overloads.Count > 0);
 
             // handle CLR-protected and virtual methods:
@@ -203,7 +202,7 @@ namespace IronRuby.Runtime.Calls {
 
                 for (int i = 0; i < overloads.Count; i++) {
                     var overload = overloads[i];
-                    if ((isSuperCall && overload.IsVirtual && !overload.IsFinal) || overload.IsProtected()) {
+                    if ((isSuperCall && overload.IsVirtual && !overload.IsFinal) || overload.IsProtected) {
                         if (newOverloads == null) {
                             newOverloads = CollectionUtils.GetRange(overloads, 0, i);
 
@@ -220,10 +219,10 @@ namespace IronRuby.Runtime.Calls {
 
                         if (underlyingType != null) {
                             // TODO (opt): we can define a method on the emitted type that does this more efficently:
-                            Type[] genericArguments = overload.IsGenericMethod ? overload.GetGenericArguments() : null;
+                            IList<Type> genericArguments = overload.IsGenericMethod ? overload.GenericArguments : null;
 
-                            MethodInfo visibleMethod = GetMethodOverload(
-                                ReflectionUtils.GetParameterTypes(overload.GetParameters()),
+                            OverloadInfo visibleMethod = GetMethodOverload(
+                                ArrayUtils.ToArray(overload.Parameters, (pi) => pi.ParameterType),
                                 genericArguments,
                                 underlyingType,
                                 ClsTypeEmitter.BaseMethodPrefix + overload.Name,
@@ -243,7 +242,7 @@ namespace IronRuby.Runtime.Calls {
             return newOverloads ?? overloads;
         }
 
-        private static MethodInfo/*!*/ GetMethodOverload(Type/*!*/[]/*!*/ parameterTypes, Type/*!*/[] genericParameterTypes,
+        private static OverloadInfo/*!*/ GetMethodOverload(Type/*!*/[]/*!*/ parameterTypes, IList<Type/*!*/> genericParameterTypes,
             Type/*!*/ type, string/*!*/ name, BindingFlags bindingFlags) {
 
             var overloads = type.GetMember(name, MemberTypes.Method, bindingFlags);
@@ -255,27 +254,27 @@ namespace IronRuby.Runtime.Calls {
                 }
 
                 if (overload.IsGenericMethod) {
-                    if (overload.GetGenericArguments().Length != genericParameterTypes.Length) {
+                    if (overload.GetGenericArguments().Length != genericParameterTypes.Count) {
                         continue;
                     }
-                    overload = overload.MakeGenericMethod(genericParameterTypes);
+                    overload = overload.MakeGenericMethod(ArrayUtils.ToArray(genericParameterTypes));
                 }
 
-                if (ReflectionUtils.GetParameterTypes(overload.GetParameters()).ValueEquals(parameterTypes)) {
-                    return originalOverload;
+                if (ArrayUtils.ToArray(overload.GetParameters(), (pi) => pi.ParameterType).ValueEquals(parameterTypes)) {
+                    return new ReflectionOverloadInfo(originalOverload);
                 }
             }
             return null;
         }
 
         internal static BindingTarget/*!*/ ResolveOverload(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name,
-            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention, bool implicitProtocolConversions, 
+            IList<OverloadInfo>/*!*/ overloads, SelfCallConvention callConvention, bool implicitProtocolConversions, 
             out RubyOverloadResolver/*!*/ resolver) {
 
             resolver = new RubyOverloadResolver(metaBuilder, args, callConvention, implicitProtocolConversions);
             var bindingTarget = resolver.ResolveOverload(name, overloads, NarrowingLevel.None, NarrowingLevel.All);
 
-            bool calleeHasBlockParam = bindingTarget.Success && HasBlockParameter(bindingTarget.Method);
+            bool calleeHasBlockParam = bindingTarget.Success && HasBlockParameter(bindingTarget.Overload);
             
             // At runtime the BlockParam is created with a new RFC instance that identifies the library method frame as 
             // a proc-converter target of a method unwinder triggered by break from a block.
@@ -294,15 +293,16 @@ namespace IronRuby.Runtime.Calls {
         /// The resulting expression on meta-builder doesn't handle block control flow yet.
         /// </summary>
         internal static void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name,
-            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention, bool implicitProtocolConversions) {
+            IList<OverloadInfo>/*!*/ overloads, SelfCallConvention callConvention, bool implicitProtocolConversions) {
 
             RubyOverloadResolver resolver;
             var bindingTarget = ResolveOverload(metaBuilder, args, name, overloads, callConvention, implicitProtocolConversions, out resolver);
             if (bindingTarget.Success) {
-                if (ReferenceEquals(bindingTarget.Method, Methods.CreateDefaultInstance)) {
+                // TODO: create a custom overload info:
+                if (ReferenceEquals(bindingTarget.Overload.ReflectionInfo, Methods.CreateDefaultInstance)) {
                     Debug.Assert(args.TargetClass.TypeTracker.Type.IsValueType);
                     metaBuilder.Result = Ast.New(args.TargetClass.TypeTracker.Type);
-                } else if (args.Signature.IsVirtualCall && bindingTarget.Method.IsVirtual) {
+                } else if (args.Signature.IsVirtualCall && bindingTarget.Overload.IsVirtual) {
                     // Virtual methods that have been detached from the CLR type and 
                     // defined on the corresponding Ruby class or its subclass are not
                     // directly invoked from a dynamic virtual call to prevent recursion.
@@ -371,8 +371,8 @@ namespace IronRuby.Runtime.Calls {
             );
         }
 
-        private static bool HasBlockParameter(MethodBase/*!*/ method) {
-            foreach (ParameterInfo param in method.GetParameters()) {
+        private static bool HasBlockParameter(OverloadInfo/*!*/ method) {
+            foreach (ParameterInfo param in method.Parameters) {
                 if (param.ParameterType == typeof(BlockParam)) {
                     return true;
                 }

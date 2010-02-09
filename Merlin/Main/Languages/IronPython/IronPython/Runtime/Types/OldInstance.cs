@@ -44,7 +44,9 @@ namespace IronPython.Runtime.Types {
     [DebuggerTypeProxy(typeof(OldInstance.OldInstanceDebugView)), DebuggerDisplay("old-style instance of {ClassName}")]
     public sealed partial class OldInstance :
         ICodeFormattable,
+#if CLR2
         IValueEquality,
+#endif
 #if !SILVERLIGHT // ICustomTypeDescriptor
         ICustomTypeDescriptor,
 #endif
@@ -731,10 +733,10 @@ namespace IronPython.Runtime.Types {
         #region Rich Equality
         // Specific rich equality support for when the user calls directly from oldinstance type.
 
-        public int __hash__() {
+        public int __hash__(CodeContext/*!*/ context) {
             object func;
             object ret = InvokeOne(this, "__hash__");
-            if(ret != NotImplementedType.Value) {
+            if (ret != NotImplementedType.Value) {
                 BigInteger bi = ret as BigInteger;
                 if (!Object.ReferenceEquals(bi, null)) {
                     return BigIntegerOps.__hash__(bi);
@@ -744,12 +746,35 @@ namespace IronPython.Runtime.Types {
                 return (int)ret;
             }
 
-            if (TryGetBoundCustomMember(DefaultContext.Default, "__cmp__", out func) ||
-                TryGetBoundCustomMember(DefaultContext.Default, "__eq__", out func)) {
+            if (TryGetBoundCustomMember(context, "__cmp__", out func) ||
+                TryGetBoundCustomMember(context, "__eq__", out func)) {
                 throw PythonOps.TypeError("unhashable instance");
             }
 
-            return GetHashCode();
+            return base.GetHashCode();
+        }
+
+
+        public override int GetHashCode() {
+            object ret;
+            try {
+                ret = InvokeOne(this, "__hash__");
+            } catch {
+                return base.GetHashCode();
+            }
+
+            if (ret != NotImplementedType.Value) {
+                if (ret is int) {
+                    return (int)ret;
+                }
+
+                BigInteger bi = ret as BigInteger;
+                if (!Object.ReferenceEquals(bi, null)) {
+                    return BigIntegerOps.__hash__(bi);
+                }
+            }
+
+            return base.GetHashCode();
         }
 
         [return: MaybeNotImplemented]
@@ -924,19 +949,15 @@ namespace IronPython.Runtime.Types {
         #endregion
 
         #region IValueEquality Members
-
+#if CLR2
         int IValueEquality.GetValueHashCode() {
-            object res = __hash__();
-            if (res is int) {
-                return (int)res;
-            }
-            return base.GetHashCode();
+            return GetHashCode();
         }
 
         bool IValueEquality.ValueEquals(object other) {
             return Equals(other);
         }
-
+#endif
         #endregion
 
         #region IDynamicMetaObjectProvider Members

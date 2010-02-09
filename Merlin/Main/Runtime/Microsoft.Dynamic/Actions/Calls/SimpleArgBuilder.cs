@@ -50,11 +50,12 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Type and whether the parameter is a params-array or params-dictionary is derived from info.
         /// </summary>
+        [Obsolete("Use other overload")]
         public SimpleArgBuilder(ParameterInfo info, int index)
             : this(info, info.ParameterType, index, info.IsParamArray(), info.IsParamDictionary()) {
         }
         
-        protected SimpleArgBuilder(ParameterInfo info, Type parameterType, int index, bool isParams, bool isParamsDict)
+        public SimpleArgBuilder(ParameterInfo info, Type parameterType, int index, bool isParams, bool isParamsDict)
             : base(info) {
             ContractUtils.Requires(index >= 0);
             ContractUtils.RequiresNotNull(parameterType, "parameterType");
@@ -85,15 +86,11 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         public bool IsParamsArray {
-            get {
-                return _isParams;
-            }
+            get { return _isParams; }
         }
 
         public bool IsParamsDict {
-            get {
-                return _isParamsDict;
-            }
+            get { return _isParamsDict; }
         }
 
         internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {

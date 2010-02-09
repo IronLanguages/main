@@ -1235,7 +1235,10 @@ internal class LibraryDef {
                 _output.Write("DefineLibraryMethod(module, \"{0}\", 0x{1:x}", def.Name, attributes);
 
                 _output.WriteLine(", ");
-
+                _output.Indent++;
+                GenerateParameterAttributes(def.Overloads);
+                _output.Indent--;
+                _output.WriteLine(", ");
                 GenerateDelegatesListCreation(def.Overloads);
 
                 _output.WriteLine(");");
@@ -1251,7 +1254,6 @@ internal class LibraryDef {
 
     private void GenerateDelegatesListCreation(IEnumerable<MethodInfo>/*!*/ methods) {
         _output.Indent++;
-
         bool first = true;
         foreach (MethodInfo method in methods) {
             if (first) {
@@ -1261,9 +1263,28 @@ internal class LibraryDef {
             }
             GenerateDelegateCreation(method);
         }
-
-        _output.WriteLine();
         _output.Indent--;
+        _output.WriteLine();
+    }
+
+    private void GenerateParameterAttributes(ICollection<MethodInfo>/*!*/ methods) {
+        if (methods.Count > LibraryInitializer.MaxOverloads) {
+            _output.Write("new[] { ");
+        }
+
+        bool first = true;
+        foreach (MethodInfo method in methods) {
+            if (first) {
+                first = false;
+            } else {
+                _output.Write(", ");
+            }
+            _output.Write("0x{0,8:x8}U", LibraryOverload.EncodeCustomAttributes(method));
+        }
+
+        if (methods.Count > LibraryInitializer.MaxOverloads) {
+            _output.Write("}");
+        }
     }
 
     private const string ExceptionFactoryPrefix = "ExceptionFactory__";

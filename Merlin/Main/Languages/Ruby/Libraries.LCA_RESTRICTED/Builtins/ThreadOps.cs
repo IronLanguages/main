@@ -673,7 +673,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("start", RubyMethodAttributes.PublicSingleton)]
-        public static Thread/*!*/ CreateThread(RubyContext/*!*/ context, BlockParam startRoutine, object self, [NotNull]params object[]/*!*/ args) {
+        public static Thread/*!*/ CreateThread(RubyContext/*!*/ context, BlockParam startRoutine, object self, params object[]/*!*/ args) {
             if (startRoutine == null) {
                 throw new ThreadError("must be called with a block");
             }

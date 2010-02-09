@@ -19,17 +19,11 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Emit;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
-using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Actions.Calls;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = MSA.Expression;
@@ -42,7 +36,7 @@ namespace IronRuby.Runtime.Calls {
         // False: The group contain instance methods and/or extension methods, or operators.
         private readonly bool _isStatic;
 
-        internal RubyMethodGroupInfo(MethodBase/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule, bool isStatic)
+        internal RubyMethodGroupInfo(OverloadInfo/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule, bool isStatic)
             : base(methods, RubyMemberFlags.Public, declaringModule) {
             _isStatic = isStatic;
         }
@@ -54,7 +48,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // copy ctor
-        private RubyMethodGroupInfo(RubyMethodGroupInfo/*!*/ info, MethodBase/*!*/[] methods)
+        private RubyMethodGroupInfo(RubyMethodGroupInfo/*!*/ info, OverloadInfo/*!*/[] methods)
             : base(methods, info.Flags, info.DeclaringModule) {
             _isStatic = info._isStatic;
         }
@@ -63,7 +57,7 @@ namespace IronRuby.Runtime.Calls {
             return new RubyMethodGroupInfo(this, flags, module);
         }
 
-        protected override RubyMemberInfo/*!*/ Copy(MethodBase/*!*/[]/*!*/ methods) {
+        protected override RubyMemberInfo/*!*/ Copy(OverloadInfo/*!*/[]/*!*/ methods) {
             return new RubyMethodGroupInfo(this, methods);
         }
 
@@ -80,7 +74,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return ArrayUtils.MakeArray(MethodBases);
+            return ArrayUtils.ConvertAll(MethodBases, (o) => o.ReflectionInfo);
         }
         
         #region Dynamic Call

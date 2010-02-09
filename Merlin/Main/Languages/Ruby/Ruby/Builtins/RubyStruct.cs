@@ -152,7 +152,7 @@ namespace IronRuby.Builtins {
             cls.SingletonClass.AddMethod(context, "new", new RubyCustomMethodInfo(newInstance, RubyMemberFlags.Public, cls.SingletonClass));
 
             cls.SingletonClass.AddMethod(context, "members", new RubyLibraryMethodInfo(
-                new Delegate[] { new Func<RubyClass, RubyArray>(GetMembers) },
+                new[] { LibraryOverload.Create(new Func<RubyClass, RubyArray>(GetMembers), false, 0, 0) },
                 RubyMemberFlags.Public, 
                 cls.SingletonClass
             ));

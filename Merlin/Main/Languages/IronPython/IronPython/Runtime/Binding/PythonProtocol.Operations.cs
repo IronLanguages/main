@@ -1763,7 +1763,7 @@ namespace IronPython.Runtime.Binding {
                     }
 
                     WarningInfo info;
-                    if (BindingWarnings.ShouldWarn(Binder.Context, target.Method, out info)) {
+                    if (BindingWarnings.ShouldWarn(Binder.Context, target.Overload, out info)) {
                         res = info.AddWarning(Ast.Constant(PythonContext.SharedContext), res);
                     }
                 } else if (customFailure == null || (res = customFailure()) == null) {

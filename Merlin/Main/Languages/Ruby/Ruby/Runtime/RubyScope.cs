@@ -1062,7 +1062,7 @@ var closureScope = scope as RubyClosureScope;
 
         // "method_missing" on main singleton in DLR Scope bound code.
         // Might be called via a site -> needs to be public in partial trust.
-        public static object TopMethodMissing(RubyScope/*!*/ localScope, BlockParam block, object/*!*/ self, RubySymbol name, [NotNull]params object[]/*!*/ args) {
+        public static object TopMethodMissing(RubyScope/*!*/ localScope, BlockParam block, object/*!*/ self, RubySymbol name, params object[]/*!*/ args) {
             return ScopeMethodMissing(localScope.RubyContext, localScope.GlobalScope.Scope, block, self, name, args);
         }
 

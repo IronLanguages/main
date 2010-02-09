@@ -29,4 +29,17 @@ describe "System::Decimal" do
     a.should be_kind_of System::Decimal
     b.should be_kind_of System::Decimal
   end
+  
+  it "properly initializes and compares" do
+    a = System::Decimal.new 0.5
+    a.should == 0.5
+    a.should_not == 0
+
+  end
+
+  it "properly parses and compares" do
+    b = System::Decimal.parse '1.5'
+    b.should == 1.5
+    b.should_not == 1
+  end
 end

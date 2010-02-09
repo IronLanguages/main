@@ -40,21 +40,21 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, [NotNull]RubySymbol/*!*/ firstAttibuteName,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertSymbolToClrString(firstAttibuteName), attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, [NotNull]string/*!*/ firstAttibuteName,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             return CreateAnonymousWithFirstAttribute(block, self, firstAttibuteName, attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewStruct(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol]MutableString className,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             if (className == null) {
                 return Create(block, self, null, attributeNames);
@@ -87,7 +87,7 @@ namespace IronRuby.Builtins {
 
         // Reinitialization. Called only from derived struct's initializer.
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static void Reinitialize(RubyStruct/*!*/ self, [NotNull]params object[]/*!*/ items) {
+        public static void Reinitialize(RubyStruct/*!*/ self, params object[]/*!*/ items) {
             self.SetValues(items);
         }
 
@@ -265,7 +265,7 @@ namespace IronRuby.Builtins {
 
         // equivalent to Array#values_at over the data array
         [RubyMethod("values_at")]
-        public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ fixnumCast, RubyStruct/*!*/ self, [NotNull]params object[] values) {
+        public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ fixnumCast, RubyStruct/*!*/ self, params object[]/*!*/ values) {
             RubyArray result = new RubyArray();
             object[] data = self.Values;
 

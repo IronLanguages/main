@@ -8,7 +8,7 @@ call %~dp0clean.bat > %~dp0clean.log
 
 echo Make a %config% silverlight build, which generates slvx files
 
-msbuild "%~dp0..\Silverlight.sln" /p:Configuration="Silverlight %config%" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.40818.0" /t:Rebuild /nologo /noconlog
+msbuild "%~dp0..\Silverlight.sln" /p:Configuration="Silverlight %config%" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0" /t:Rebuild /nologo /noconlog
 
 if errorlevel 1 goto BUILDFAIL
 

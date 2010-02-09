@@ -276,7 +276,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("union", RubyMethodAttributes.PublicSingleton)]
-        public static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]params object[]/*!*/ strings) {
+        public static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, params object[]/*!*/ strings) {
 
             if (strings.Length == 0) {
                 return new RubyRegex(MutableString.CreateAscii("(?!)"), RubyRegexOptions.NONE);

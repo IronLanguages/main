@@ -38,7 +38,11 @@ namespace IronPython.Modules {
         public static readonly PythonType/*!*/ ArrayType = DynamicHelpers.GetPythonTypeFromType(typeof(array));
 
         [PythonType]
-        public class array : IPythonArray, IValueEquality, IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object> {
+        public class array : IPythonArray, IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable
+#if CLR2
+            , IValueEquality
+#endif
+        {
             private ArrayData _data;
             private char _typeCode;
             private WeakRefTracker _tracker;
@@ -1007,7 +1011,7 @@ namespace IronPython.Modules {
             }
 
             #region IValueEquality Members
-
+#if CLR2
             int IValueEquality.GetValueHashCode() {
                 throw PythonOps.TypeError("unhashable type");
             }
@@ -1019,6 +1023,50 @@ namespace IronPython.Modules {
                 if (_data.Length != pa._data.Length) return false;
                 for (int i = 0; i < _data.Length; i++) {
                     if (!_data.GetData(i).Equals(pa._data.GetData(i))) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+#endif
+            #endregion
+
+            #region IStructuralEquatable Members
+
+            public const object __hash__ = null;
+
+            int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+                IStructuralEquatable dataTuple;
+
+                switch(_typeCode) {
+                    case 'c': dataTuple = PythonTuple.MakeTuple(((ArrayData<char>)_data).Data); break;
+                    case 'b': dataTuple = PythonTuple.MakeTuple(((ArrayData<sbyte>)_data).Data); break;
+                    case 'B': dataTuple = PythonTuple.MakeTuple(((ArrayData<byte>)_data).Data); break;
+                    case 'u': dataTuple = PythonTuple.MakeTuple(((ArrayData<char>)_data).Data); break;
+                    case 'h': dataTuple = PythonTuple.MakeTuple(((ArrayData<short>)_data).Data); break;
+                    case 'H': dataTuple = PythonTuple.MakeTuple(((ArrayData<ushort>)_data).Data); break;
+                    case 'l':
+                    case 'i': dataTuple = PythonTuple.MakeTuple(((ArrayData<int>)_data).Data); break;
+                    case 'L':
+                    case 'I': dataTuple = PythonTuple.MakeTuple(((ArrayData<uint>)_data).Data); break;
+                    case 'f': dataTuple = PythonTuple.MakeTuple(((ArrayData<float>)_data).Data); break;
+                    case 'd': dataTuple = PythonTuple.MakeTuple(((ArrayData<double>)_data).Data); break;
+                    default:
+                        throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                }
+
+                return dataTuple.GetHashCode(comparer);
+            }
+
+            bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+                array pa = other as array;
+                if (pa == null) return false;
+
+                if (_data.Length != pa._data.Length) return false;
+
+                for (int i = 0; i < _data.Length; i++) {
+                    if (!comparer.Equals(_data.GetData(i), pa._data.GetData(i))) {
                         return false;
                     }
                 }

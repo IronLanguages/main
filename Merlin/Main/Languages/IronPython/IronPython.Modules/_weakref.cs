@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -66,7 +67,11 @@ namespace IronPython.Modules {
         public static readonly PythonType ReferenceType = DynamicHelpers.GetPythonTypeFromType(typeof(@ref));
 
         [PythonType]
-        public class @ref : IValueEquality {
+        public class @ref : IStructuralEquatable
+#if CLR2
+            , IValueEquality
+#endif
+        {
             private WeakHandle _target;
             private int _hashVal;
             private bool _fHasHash;
@@ -199,20 +204,51 @@ namespace IronPython.Modules {
             }
 
             #region IValueEquality Members
-
+#if CLR2
             int IValueEquality.GetValueHashCode() {
+                return __hash__(DefaultContext.Default);
+            }
+
+            bool IValueEquality.ValueEquals(object other) {
+                return EqualsWorker(other, null);
+            }
+#endif
+            #endregion
+
+            #region IStructuralEquatable Members
+
+            /// <summary>
+            /// Special hash function because IStructuralEquatable.GetHashCode is not allowed to throw.
+            /// </summary>
+            public int __hash__(CodeContext/*!*/ context) {
                 if (!_fHasHash) {
                     object refObj = _target.Target;
                     if (refObj == null) throw PythonOps.TypeError("weak object has gone away");
                     GC.KeepAlive(this);
-                    _hashVal = refObj.GetHashCode();
+                    _hashVal = PythonContext.GetContext(context).EqualityComparerNonGeneric.GetHashCode(refObj);
                     _fHasHash = true;
                 }
                 return _hashVal;
             }
 
-            bool IValueEquality.ValueEquals(object other) {
-                if ((object)this == other) return true;
+            int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+                if (!_fHasHash) {
+                    object refObj = _target.Target;
+                    GC.KeepAlive(this);
+                    _hashVal = comparer.GetHashCode(refObj);
+                    _fHasHash = true;
+                }
+                return _hashVal;
+            }
+
+            bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+                return EqualsWorker(other, comparer);
+            }
+
+            private bool EqualsWorker(object other, IEqualityComparer comparer) {
+                if (object.ReferenceEquals(this, other)) {
+                    return true;
+                }
 
                 bool fResult = false;
                 @ref wr = other as @ref;
@@ -223,7 +259,7 @@ namespace IronPython.Modules {
                     GC.KeepAlive(this);
                     GC.KeepAlive(wr);
                     if (ourTarget != null && itsTarget != null) {
-                        fResult = RefEquals(DefaultContext.Default, ourTarget, itsTarget);
+                        fResult = RefEquals(ourTarget, itsTarget, comparer);
                     }
                 }
                 GC.KeepAlive(this);
@@ -234,7 +270,14 @@ namespace IronPython.Modules {
             /// Special equals because none of the special cases in Ops.Equals
             /// are applicable here, and the reference equality check breaks some tests.
             /// </summary>
-            private static bool RefEquals(CodeContext context, object x, object y) {
+            private static bool RefEquals(object x, object y, IEqualityComparer comparer) {
+                CodeContext context;
+                if (comparer != null && comparer is PythonContext.PythonEqualityComparer) {
+                    context = ((PythonContext.PythonEqualityComparer)comparer).Context.SharedContext;
+                } else {
+                    context = DefaultContext.Default;
+                }
+
                 object ret;
                 if (PythonTypeOps.TryInvokeBinaryOperator(context, x, y, "__eq__", out ret) &&
                     ret != NotImplementedType.Value) {
@@ -246,6 +289,10 @@ namespace IronPython.Modules {
                     return (bool)ret;
                 }
 
+                if (comparer != null) {
+                    return comparer.Equals(x, y);
+                }
+
                 return x.Equals(y);
             }
 
@@ -254,7 +301,11 @@ namespace IronPython.Modules {
         }
 
         [PythonType, DynamicBaseTypeAttribute, PythonHidden]
-        public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IValueEquality, IPythonMembersList {
+        public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IPythonMembersList, IStructuralEquatable
+#if CLR2
+            , IValueEquality
+#endif
+        {
             private readonly WeakHandle _target;
             private readonly CodeContext/*!*/ _context;
 
@@ -434,18 +485,72 @@ namespace IronPython.Modules {
             #endregion
 
             #region IValueEquality Members
-
+#if CLR2
             int IValueEquality.GetValueHashCode() {
                 throw PythonOps.TypeErrorForUnhashableType("weakproxy");
             }
 
             bool IValueEquality.ValueEquals(object other) {
                 weakproxy wrp = other as weakproxy;
-                if (wrp != null) return PythonOps.EqualRetBool(_context, GetObject(), wrp.GetObject());
+                if (wrp != null) return EqualsWorker(wrp);
 
                 return PythonOps.EqualRetBool(_context, GetObject(), other);
             }
+#endif
+            #endregion
 
+            #region IStructuralEquatable Members
+
+            public const object __hash__ = null;
+
+            private bool EqualsWorker(weakproxy other) {
+                return PythonOps.EqualRetBool(_context, GetObject(), other.GetObject());
+            }
+
+            /// <summary>
+            /// Special equality function because IStructuralEquatable.Equals is not allowed to throw.
+            /// </summary>
+            [return: MaybeNotImplemented]
+            public object __eq__(object other) {
+                if (!(other is weakproxy)) return NotImplementedType.Value;
+
+                return ScriptingRuntimeHelpers.BooleanToObject(EqualsWorker((weakproxy)other));
+            }
+
+            [return: MaybeNotImplemented]
+            public object __ne__(object other) {
+                if (!(other is weakproxy)) return NotImplementedType.Value;
+
+                return ScriptingRuntimeHelpers.BooleanToObject(!EqualsWorker((weakproxy)other));
+            }
+
+            int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+                object obj;
+                if (TryGetObject(out obj)) {
+                    return comparer.GetHashCode(obj);
+                }
+                return comparer.GetHashCode(null);
+            }
+
+            bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+                object obj;
+                if (!TryGetObject(out obj)) {
+                    obj = null;
+                }
+
+                weakproxy wrp = other as weakproxy;
+                if (wrp != null) {
+                    object otherObj;
+                    if (!TryGetObject(out otherObj)) {
+                        otherObj = null;
+                    }
+
+                    return comparer.Equals(obj, otherObj);
+                }
+
+                return comparer.Equals(obj, other);
+            }
+            
             #endregion
 
             public object __nonzero__() {
@@ -462,7 +567,10 @@ namespace IronPython.Modules {
             IPythonObject,
             ICodeFormattable,            
             IProxyObject,
+            IStructuralEquatable,
+#if CLR2
             IValueEquality,
+#endif
             IPythonMembersList {
 
             private WeakHandle _target;
@@ -657,16 +765,60 @@ namespace IronPython.Modules {
             #endregion
 
             #region IValueEquality Members
-
+#if CLR2
             int IValueEquality.GetValueHashCode() {
                 throw PythonOps.TypeErrorForUnhashableType("weakcallableproxy");
             }
 
             bool IValueEquality.ValueEquals(object other) {
+                return __eq__(other);
+            }
+#endif
+            #endregion
+
+            #region IStructuralEquatable Members
+
+            public const object __hash__ = null;
+
+            /// <summary>
+            /// Special equality function because IStructuralEquatable.Equals is not allowed to throw.
+            /// </summary>
+            public bool __eq__(object other) {
                 weakcallableproxy wrp = other as weakcallableproxy;
                 if (wrp != null) return GetObject().Equals(wrp.GetObject());
 
                 return PythonOps.EqualRetBool(_context, GetObject(), other);
+            }
+
+            public bool __ne__(object other) {
+                return !__eq__(other);
+            }
+
+            int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+                object obj;
+                if (TryGetObject(out obj)) {
+                    return comparer.GetHashCode(obj);
+                }
+                return comparer.GetHashCode(null);
+            }
+
+            bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+                object obj;
+                if (!TryGetObject(out obj)) {
+                    obj = null;
+                }
+
+                weakcallableproxy wrp = other as weakcallableproxy;
+                if (wrp != null) {
+                    object otherObj;
+                    if (!TryGetObject(out otherObj)) {
+                        otherObj = null;
+                    }
+
+                    return comparer.Equals(obj, otherObj);
+                }
+
+                return comparer.Equals(obj, other);
             }
 
             #endregion

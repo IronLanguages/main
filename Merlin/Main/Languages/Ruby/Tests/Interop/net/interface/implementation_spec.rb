@@ -101,3 +101,21 @@ describe "Implementing interfaces that define events" do
     exposer.handlers.should be_empty
   end
 end
+
+describe "Implementing interfaces that define generic methods" do
+  it "can create an object that implements the interface" do
+    RubyHasGenerics.should be_classlike
+  end
+
+  it "can call interface methods from ruby" do
+    rhg = RubyHasGenerics.new
+    rhg.generics_here("a").should == "ruby generics here"
+    rhg.more_generics_here("a").should == 'ruby more generics here'
+  end
+
+  it "cal call interface methods from C#" do
+    rhg = RubyHasGenerics.new
+    EatIHaveGenerics.test_generics_here(rhg).should == "ruby generics here"
+    EatIHaveGenerics.test_more_generics_here(rhg).should == "ruby more generics here"
+  end
+end

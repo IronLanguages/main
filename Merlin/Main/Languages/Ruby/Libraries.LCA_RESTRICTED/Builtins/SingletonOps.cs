@@ -47,7 +47,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("public", RubyMethodAttributes.PublicInstance)]
         public static RubyModule/*!*/ SetPublicVisibility(RubyScope/*!*/ scope, object/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
 
             return SetVisibility(scope, self, methodNames, RubyMethodAttributes.PublicInstance);
         }
@@ -55,7 +55,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("private", RubyMethodAttributes.PublicInstance)]
         public static RubyModule/*!*/ SetPrivateVisibility(RubyScope/*!*/ scope, object/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
 
             return SetVisibility(scope, self, methodNames, RubyMethodAttributes.PrivateInstance);
         }

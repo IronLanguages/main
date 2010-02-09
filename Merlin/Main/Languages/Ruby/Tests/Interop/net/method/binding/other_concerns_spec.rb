@@ -219,3 +219,25 @@ describe "Generic class methods" do
     end
   end
 end
+
+describe "Binding methods" do
+  #This is a temporary regression until I rewrite these specs.
+  it "StrongBox works" do
+    require 'microsoft.scripting.core'
+    SI = System::Runtime::CompilerServices::StrongBox[Fixnum]
+    cwm = ClassWithMethods.new
+    si = SI.new(0)
+    si.value.should == 0
+    cwm.RefInt32Arg(si).should == "RefInt32Arg"
+    si.value.should == 1
+  end
+
+  it "OutNonByRef works" do
+    cwm = ClassWithMethods.new
+    lambda {cwm.OutNonByRefInt32Arg}.should raise_error
+    cwm.OutNonByRefInt32Arg(1).should == 'OutNonByRefInt32Arg'
+    cwm.tracker.should == [1]
+    cwm.OutNonByRefInt32Arg(2)
+    cwm.tracker.should == [1,1]
+  end
+end

@@ -33,7 +33,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
         [RubyMethod("to_enum")]
         [RubyMethod("enum_for")]
         public static Enumerable.Enumerator/*!*/ Create(object self, [DefaultProtocol, NotNull]string/*!*/ enumeratorName, 
-            [NotNull]params object[] targetParameters) {
+            params object[]/*!*/ targetParameters) {
             return new Enumerable.Enumerator(self, enumeratorName, targetParameters);
         }
     }
@@ -68,7 +68,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
 
             [RubyConstructor]
             public static Enumerator/*!*/ Create(RubyClass/*!*/ self, object targetObject, [DefaultProtocol]string targetName,
-                [NotNull]params object[] targetArguments) {
+                params object[]/*!*/ targetArguments) {
 
                 return Reinitialize(new Enumerator(), targetObject, targetName, targetArguments);
             }
@@ -80,7 +80,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
 
             [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
             public static Enumerator/*!*/ Reinitialize(Enumerator/*!*/ self, object targetObject, [DefaultProtocol]string targetName, 
-                [NotNull]params object[] targetArguments) {
+                params object[]/*!*/ targetArguments) {
 
                 self._targetObject = targetObject;
                 self._targetName = targetName ?? "each";

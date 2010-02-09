@@ -38,7 +38,7 @@ namespace IronRuby.StandardLibrary.Iconv {
         [RubyConstructor]
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
         public static Iconv/*!*/ Create(RubyClass/*!*/ self,
-            [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ toEncoding, [DefaultProtocol, NotNull]MutableString/*!*/ fromEncoding) {
 
             Iconv converter = new Iconv();
             return Initialize(converter, toEncoding, fromEncoding);
@@ -53,7 +53,7 @@ namespace IronRuby.StandardLibrary.Iconv {
         // Reinitialization. Not called when a factory/non-default ctor is called.
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static Iconv/*!*/ Initialize(Iconv/*!*/ self,
-            [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ toEncoding, [DefaultProtocol, NotNull]MutableString/*!*/ fromEncoding) {
 
             self._toEncodingString = toEncoding.ConvertToString().ToUpperInvariant();
 
@@ -76,7 +76,7 @@ namespace IronRuby.StandardLibrary.Iconv {
 
         [RubyMethod("iconv")]
         public static MutableString/*!*/ iconv(Iconv/*!*/ self,
-            [DefaultProtocol]MutableString/*!*/ str,
+            [DefaultProtocol]MutableString str,
             [DefaultProtocol, DefaultParameterValue(0)]int startIndex,
             object length) {
 
@@ -88,7 +88,7 @@ namespace IronRuby.StandardLibrary.Iconv {
 
         [RubyMethod("iconv")]
         public static MutableString/*!*/ iconv(Iconv/*!*/ self, 
-            [DefaultProtocol]MutableString/*!*/ str,
+            [DefaultProtocol]MutableString str,
             [DefaultProtocol, DefaultParameterValue(0)]int startIndex, 
             [DefaultProtocol, NotNull, DefaultParameterValue(-1)]int length) {
 
@@ -169,10 +169,10 @@ namespace IronRuby.StandardLibrary.Iconv {
             }
         }
 
-        private static MutableString[] /*!*/ Convert(
+        private static MutableString[]/*!*/ Convert(
             MutableString/*!*/ toEncoding, 
             MutableString/*!*/ fromEncoding, 
-            params MutableString [] strings) {
+            MutableString[]/*!*/ strings) {
 
             Iconv conveter = Create(null, toEncoding, fromEncoding);
             MutableString[] convertedStrings = new MutableString[strings.Length];
@@ -190,11 +190,12 @@ namespace IronRuby.StandardLibrary.Iconv {
         }
 
         [RubyMethod("conv", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Convert(RubyClass/*!*/ self, 
-            [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding, 
-            [DefaultProtocol]MutableString/*!*/ str) {
-            MutableString[] /*!*/ convertedStrings = Convert(toEncoding, fromEncoding, str, null);
-            MutableString /*!*/ result = MutableString.CreateEmpty();
+        public static MutableString/*!*/ Convert(RubyClass/*!*/ self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ toEncoding, [DefaultProtocol, NotNull]MutableString/*!*/ fromEncoding, 
+            [DefaultProtocol]MutableString str) {
+
+            MutableString[] convertedStrings = Convert(toEncoding, fromEncoding, new MutableString[] { str, null });
+            MutableString result = MutableString.CreateEmpty();
             foreach (MutableString s in convertedStrings) {
                 result.Append(s);
             }
@@ -209,16 +210,16 @@ namespace IronRuby.StandardLibrary.Iconv {
 
         [RubyMethod("iconv", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ iconv(RubyClass/*!*/ self,
-            [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding,
-            [NotNull]params MutableString[]/*!*/ strings) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ toEncoding, [DefaultProtocol, NotNull]MutableString/*!*/ fromEncoding,
+            params MutableString[]/*!*/ strings) {
 
-            MutableString[] /*!*/ convertedStrings = Convert(toEncoding, fromEncoding, strings);
+            MutableString[] convertedStrings = Convert(toEncoding, fromEncoding, strings);
             return new RubyArray(convertedStrings);
         }
         
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
         public static object Open([NotNull]BlockParam/*!*/ block, RubyClass/*!*/ self,
-            [DefaultProtocol]MutableString/*!*/ toEncoding, [DefaultProtocol]MutableString/*!*/ fromEncoding) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ toEncoding, [DefaultProtocol, NotNull]MutableString/*!*/ fromEncoding) {
 
             Iconv converter = Create(self, toEncoding, fromEncoding);
             if (block == null) {
@@ -233,6 +234,8 @@ namespace IronRuby.StandardLibrary.Iconv {
                 }
             }
         }
+
+        #region Exceptions
 
         [RubyModule("Failure")]
         public static class Failure {
@@ -336,5 +339,7 @@ namespace IronRuby.StandardLibrary.Iconv {
                 return result;
             }
         }
+
+        #endregion
     }
 }
