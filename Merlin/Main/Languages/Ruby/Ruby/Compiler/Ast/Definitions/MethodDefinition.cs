@@ -19,17 +19,17 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System;
+using System.Runtime.CompilerServices;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System;
-using System.Runtime.CompilerServices;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
     using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
     using AstParameters = ReadOnlyCollectionBuilder<MSA.ParameterExpression>;
     

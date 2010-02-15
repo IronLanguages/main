@@ -20,10 +20,10 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
-using System.Text;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
 using AstUtils = Microsoft.Scripting.Ast.Utils;

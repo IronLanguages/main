@@ -35,6 +35,14 @@ namespace IronPython.Runtime {
         public override ICollection<MemberDoc> GetMembers(object value) {
             List<MemberDoc> res = new List<MemberDoc>();
 
+            PythonModule mod = value as PythonModule;
+            if (mod != null) {
+                foreach (var kvp in mod.__dict__) {
+                    AddMember(res, kvp, false);
+                }
+                return res;
+            }
+
             NamespaceTracker ns = value as NamespaceTracker;
             if (ns != null) {
                 foreach (var v in ns.SymbolAttributes) {

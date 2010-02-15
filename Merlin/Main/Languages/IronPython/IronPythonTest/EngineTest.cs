@@ -278,6 +278,84 @@ namespace IronPythonTest {
         }
 #endif
 
+#if !SILVERLIGHT        
+        public void ScenarioCodePlex20472() {
+            try {
+                string fileName = System.IO.Directory.GetCurrentDirectory() + "\\encoded_files\\cp20472.py";
+                _pe.CreateScriptSourceFromFile(fileName, System.Text.Encoding.GetEncoding(1251));
+
+                //Disabled. The line above should have thrown a syntax exception or an import error,
+                //but does not.
+
+                //throw new Exception("ScenarioCodePlex20472");
+            }
+            catch (IronPython.Runtime.Exceptions.ImportException) { }
+        }
+#endif
+
+        public class TestCodePlex23562 {
+            public bool MethodCalled = false;
+            public TestCodePlex23562() {
+            }
+            public void TestMethod() {
+                MethodCalled = true;
+            }
+        }
+
+        public void ScenarioCodePlex23562()
+        {
+            string pyCode = @"
+test = TestCodePlex23562()
+test.TestMethod()
+";
+            var scope = _pe.CreateScope();
+            scope.SetVariable("TestCodePlex23562", typeof(TestCodePlex23562));
+            _pe.Execute(pyCode, scope);
+
+            TestCodePlex23562 temp = scope.GetVariable<TestCodePlex23562>("test");
+            Assert(temp.MethodCalled);
+        }
+
+        public void ScenarioCodePlex18595() {
+            string pyCode = @"
+str_tuple = ('ab', 'cd')
+str_list  = ['abc', 'def', 'xyz']
+
+py_func_called = False
+def py_func():
+    global py_func_called
+    py_func_called = True
+";
+            var scope = _pe.CreateScope();
+            _pe.Execute(pyCode, scope);
+
+            IList<string> str_tuple = scope.GetVariable<IList<string>>("str_tuple");
+            AreEqual<int>(str_tuple.Count, 2);
+            IList<string> str_list  = scope.GetVariable<IList<string>>("str_list");
+            AreEqual<int>(str_list.Count, 3);
+            VoidDelegate py_func = scope.GetVariable<VoidDelegate>("py_func");
+            py_func();
+            AreEqual<bool>(scope.GetVariable<bool>("py_func_called"), true);
+        }
+
+        public void ScenarioCodePlex24077()
+        {
+            string pyCode = @"
+class K(object):
+    def __init__(self, a, b, c):
+        global A, B, C
+        A = a
+        B = b
+        C = c
+";
+            var scope = _pe.CreateScope();
+            _pe.Execute(pyCode, scope);
+            object KKlass = scope.GetVariable("K");
+            object[] Kparams = new object[] { 1, 3.14, "abc"};
+            _pe.Operations.CreateInstance(KKlass, Kparams);
+            AreEqual<int>(scope.GetVariable<int>("A"), 1);
+        }
+
         // Execute
         public void ScenarioExecute() {
             ClsPart clsPart = new ClsPart();
@@ -498,6 +576,7 @@ namespace IronPythonTest {
             ScriptScope scope = _pe.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 import System
+import clr
 
 def f0(a, b): pass
 def f1(a, *b): pass
@@ -684,6 +763,7 @@ i = int
             object subklass = scope.GetVariable("SC");
             object subnewklass = scope.GetVariable("SNC");
             object System = scope.GetVariable("System");
+            object clr = scope.GetVariable("clr");
 
             foreach (object o in new[] { inst, ncinst }) {
                 var members = doc.GetMembers(o);
@@ -696,6 +776,7 @@ i = int
             ContainsMemberName(doc.GetMembers(subklass), "m0", MemberKind.Method);
             ContainsMemberName(doc.GetMembers(subnewklass), "m0", MemberKind.Method);
             ContainsMemberName(doc.GetMembers(System), "Collections", MemberKind.Namespace);
+            ContainsMemberName(doc.GetMembers(clr), "AddReference", MemberKind.Function);
 
             object intType = scope.GetVariable("i");
             foreach (object o in new object[] { intType, 42 }) {

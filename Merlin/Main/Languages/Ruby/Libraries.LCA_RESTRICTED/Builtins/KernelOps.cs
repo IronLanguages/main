@@ -534,7 +534,9 @@ namespace IronRuby.Builtins {
             object self, [NotNull]RubyModule/*!*/ module, [NotNullItems]params RubyModule/*!*/[]/*!*/ modules) {
 
             Assert.NotNull(self, modules);
-            RubyUtils.RequireMixins(module.SingletonClass, modules);
+
+            // TODO: this is strange:
+            RubyUtils.RequireMixins(module.GetOrCreateSingletonClass(), modules);
 
             var extendObject = extendObjectStorage.GetCallSite("extend_object", 1);
             var extended = extendedStorage.GetCallSite("extended", 1);
@@ -640,7 +642,7 @@ namespace IronRuby.Builtins {
         public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
             [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
 
-            RubyClass singleton = scope.RubyContext.CreateSingletonClass(self);
+            RubyClass singleton = scope.RubyContext.GetOrCreateSingletonClass(self);
             return RubyUtils.Evaluate(code, scope, self, singleton, file, line);
         }
 

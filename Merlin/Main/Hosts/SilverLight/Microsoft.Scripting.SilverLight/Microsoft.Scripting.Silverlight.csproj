@@ -136,7 +136,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
       <Private>False</Private>
-      <Aliases>systemcore</Aliases>
+      <Aliases Condition=" '$(TargetFrameworkVersion)' != 'v4.0' ">systemcore</Aliases>
     </Reference>
   </ItemGroup>
   <ItemGroup>

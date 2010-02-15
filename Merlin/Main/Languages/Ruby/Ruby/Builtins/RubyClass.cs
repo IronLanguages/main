@@ -44,13 +44,15 @@ namespace IronRuby.Builtins {
 	using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public sealed partial class RubyClass : RubyModule, IDuplicable {
-        public const string/*!*/ ClassSingletonName = "__ClassSingleton";
-        public const string/*!*/ ClassSingletonSingletonName = "__ClassSingletonSingleton";
         public const string/*!*/ MainSingletonName = "__MainSingleton";
 
         // Level in class hierarchy (0 == Object)
         private readonly int _level;
         private readonly RubyClass _superClass;
+
+        // Lazy interlocked init.
+        // Created for classes that represent a subclass of Module class.
+        private RubyClass _dummySingletonClass;
 
         // is this class a singleton class?
         private readonly bool _isSingletonClass;
@@ -226,6 +228,25 @@ namespace IronRuby.Builtins {
             get { return _singletonClassOf; }
         }
 
+        internal void InitializeDummySingleton() {
+            Debug.Assert(_dummySingletonClass == null);
+            _dummySingletonClass = CreateDummySingleton();
+        }
+
+        internal RubyClass/*!*/ GetDummySingletonClass() {
+            if (_dummySingletonClass == null) {
+                Debug.Assert(IsSubclassOf(Context.ModuleClass));
+                Interlocked.CompareExchange(ref _dummySingletonClass, CreateDummySingleton(), null);
+            }
+            return _dummySingletonClass;
+        }
+
+        private RubyClass/*!*/ CreateDummySingleton() {
+            var result = new RubyClass(Context, null, null, this, null, null, null, this.ImmediateClass, null, null, null, false, true, ModuleRestrictions.None);
+            result.InitializeImmediateClass(result);
+            return result;
+        }
+
         // A class defined in Ruby code (not libraries, CLR types)
         public bool IsRubyClass {
             get { return _isRubyClass; }
@@ -271,8 +292,7 @@ namespace IronRuby.Builtins {
         public RubyClass(RubyClass/*!*/ rubyClass)
             : this(rubyClass.Context, null, null, null, null, null, null, rubyClass.Context.ObjectClass, null, null, null, true, false, ModuleRestrictions.None) {
             
-            // all modules need a singleton (see RubyContext.CreateModule):
-            InitializeDummySingletonClass(rubyClass, null);
+            InitializeImmediateClass(rubyClass, null);
         }
         
         // friend: RubyContext
@@ -550,7 +570,7 @@ namespace IronRuby.Builtins {
 
             if (!IsSingletonClass) {
                 // singleton members are copied here, not in InitializeCopy:
-                result.SingletonClass.InitializeMembersFrom(SingletonClass);
+                result.ImmediateClass.InitializeMembersFrom(ImmediateClass);
 
                 // copy instance variables and taint flag:
                 Context.CopyInstanceData(this, result, false);
@@ -581,6 +601,9 @@ namespace IronRuby.Builtins {
             return false;
         }
 
+        /// <summary>
+        /// Returns true if this class is equal to super or it is its descendant.
+        /// </summary>
         public bool IsSubclassOf(RubyClass/*!*/ super) {
             Assert.NotNull(super);
 
@@ -987,7 +1010,7 @@ namespace IronRuby.Builtins {
             }
 
             MemberInfo[] altResult = GetDeclaredClrMethods(type, bindingFlags, prefix + altName);
-            return ArrayUtils.AppendRange(result, altResult);
+            return Utils.Concatenate(result, altResult);
         }
 
         private static MemberInfo/*!*/[]/*!*/ GetDeclaredClrMethods(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name) {
@@ -1230,7 +1253,10 @@ namespace IronRuby.Builtins {
         }
 
         public void BuildObjectConstructionNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName) {
-            Debug.Assert(!IsSingletonClass, "Cannot instantiate singletons");
+            if (IsSingletonClass) {
+                metaBuilder.SetError(Methods.MakeVirtualClassInstantiatedError.OpCall());
+                return;
+            }
 
             Type type = GetUnderlyingSystemType();
 

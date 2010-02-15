@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Silverlight Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}</ProjectGuid>
@@ -23,7 +23,7 @@
     <SignedDir Condition="$(SignAssembly) != true">Unsigned</SignedDir>
     <DelaySign>true</DelaySign>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -33,7 +33,7 @@
     <WarningLevel>4</WarningLevel>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\Silverlight Release\</OutputPath>
@@ -119,8 +119,8 @@
   -->
   <PropertyGroup>
     <PostBuildEvent>
-if exist "$(ProjectDir)..\Scripts\package_slvx.bat" call "$(ProjectDir)..\Scripts\package_slvx.bat" $(ConfigurationName)
-if exist "$(ProjectDir)..\TestSuites\setup\deploy_test_binaries.bat" call "$(ProjectDir)..\TestSuites\setup\deploy_test_binaries.bat" $(ConfigurationName)
+if exist "$(ProjectDir)..\Scripts\package_slvx.bat" call "$(ProjectDir)..\Scripts\package_slvx.bat" "$(ConfigurationName)"
+if exist "$(ProjectDir)..\TestSuites\setup\deploy_test_binaries.bat" call "$(ProjectDir)..\TestSuites\setup\deploy_test_binaries.bat" "$(ConfigurationName)"
     </PostBuildEvent>
     <PreBuildEvent>
     </PreBuildEvent>

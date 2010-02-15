@@ -59,10 +59,18 @@ namespace IronRuby.Builtins {
                 } else if (additionalCapacity == 0) {
                     return _owner._encoding.StrictEncoding.GetBytes(_data, 0, _count);
                 } else {
-                    var result = new byte[_owner._encoding.StrictEncoding.GetByteCount(_data, 0, _count) + additionalCapacity];
-                    _owner._encoding.StrictEncoding.GetBytes(_data, 0, _count, result, 0);
+                    var result = new byte[GetDataByteCount() + additionalCapacity];
+                    GetDataBytes(result, 0);
                     return result;
                 }
+            }
+
+            internal int GetDataByteCount() {
+                return _owner._encoding.StrictEncoding.GetByteCount(_data, 0, _count);
+            }
+
+            internal void GetDataBytes(byte[]/*!*/ bytes, int start) {
+                _owner._encoding.StrictEncoding.GetBytes(_data, 0, _count, bytes, start);
             }
 
             public char DataGetChar(int index) {
@@ -317,6 +325,41 @@ namespace IronRuby.Builtins {
 
             public override int LastIndexIn(Content/*!*/ str, int start, int count) {
                 return str.LastIndexOf(ToString(), start, count);
+            }
+
+            #endregion
+
+            #region Concatenate (read-only)
+
+            public override Content/*!*/ Concat(Content/*!*/ content) {
+                return content.ConcatTo(this);
+            }
+
+            internal CharArrayContent/*!*/ Concatenate(StringContent/*!*/ content) {
+                int count = content.Data.Length;
+                var result = new char[_count + count];
+                Array.Copy(_data, 0, result, 0, _count);
+                content.Data.CopyTo(0, result, _count, count);
+                return new CharArrayContent(result, null);
+            }
+
+            // binary + chars(self) -> binary
+            public override Content/*!*/ ConcatTo(BinaryContent/*!*/ content) {
+                return content.Concatenate(this);
+            }
+
+            // chars + chars(self) -> chars
+            public override Content/*!*/ ConcatTo(CharArrayContent/*!*/ content) {
+                return new CharArrayContent(Utils.Concatenate(content._data, content._count, _data, _count), null);
+            }
+
+            // string + chars(self) -> chars
+            public override Content/*!*/ ConcatTo(StringContent/*!*/ content) {
+                int count = content.Data.Length;
+                var result = new char[count + _count];
+                content.Data.CopyTo(0, result, 0, count);
+                Array.Copy(_data, 0, result, count, _count);
+                return new CharArrayContent(result, null);
             }
 
             #endregion

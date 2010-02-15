@@ -120,7 +120,7 @@ namespace IronRuby.Builtins {
             }
 
             object result = new RubyObject(_context.ObjectClass);
-            RubyClass singleton = _context.CreateInstanceSingleton(result, instanceTrait, classTrait, constantsInitializer, expandedMixins);
+            RubyClass singleton = _context.GetOrCreateInstanceSingleton(result, instanceTrait, classTrait, constantsInitializer, expandedMixins);
 
             return result;
         }

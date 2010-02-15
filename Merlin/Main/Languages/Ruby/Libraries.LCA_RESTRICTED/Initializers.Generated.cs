@@ -38,8 +38,6 @@ namespace IronRuby.Builtins {
     public sealed class BuiltinsLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
         protected override void LoadModules() {
             Context.RegisterPrimitives(
-                Load__ClassSingleton_Instance,
-                Load__ClassSingletonSingleton_Instance,
                 Load__MainSingleton_Instance,
                 LoadKernel_Instance, LoadKernel_Class, null,
                 LoadObject_Instance, LoadObject_Class, LoadObject_Constants,
@@ -48,7 +46,6 @@ namespace IronRuby.Builtins {
             );
             
             
-            // Skipped primitive: __ClassSingleton
             // Skipped primitive: __MainSingleton
             IronRuby.Builtins.RubyModule def49 = DefineGlobalModule("Comparable", typeof(IronRuby.Builtins.Comparable), 0x0000000F, LoadComparable_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             IronRuby.Builtins.RubyModule def40 = DefineGlobalModule("Enumerable", typeof(IronRuby.Builtins.Enumerable), 0x0000000F, LoadEnumerable_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -78,7 +75,6 @@ namespace IronRuby.Builtins {
             DefineGlobalModule("Signal", typeof(IronRuby.Builtins.Signal), 0x0000000F, null, LoadSignal_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
             #endif
             ExtendClass(typeof(System.Type), 0x00000000, null, LoadSystem__Type_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            // Skipped primitive: __ClassSingletonSingleton
             #if !SILVERLIGHT
             object def1 = DefineSingleton(Load__Singleton_ArgFilesSingletonOps_Instance, null, null, def40);
             #endif
@@ -317,7 +313,8 @@ namespace IronRuby.Builtins {
             DefineGlobalClass("FloatDomainError", typeof(IronRuby.Builtins.FloatDomainError), 0x0000000F, def44, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
             new Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__FloatDomainError));
             DefineGlobalClass("NoMethodError", typeof(System.MissingMethodException), 0x00000007, def53, LoadNoMethodError_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
-            new Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__NoMethodError));
+                new Func<IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Object, System.MissingMethodException>(IronRuby.Builtins.NoMethodErrorOps.Factory)
+            );
             SetBuiltinConstant(def30, "Constants", def31);
             SetBuiltinConstant(def27, "Clr", def4);
             SetBuiltinConstant(def4, "BigInteger", def5);
@@ -359,60 +356,6 @@ namespace IronRuby.Builtins {
             SetBuiltinConstant(def2, "EPIPE", def21);
             SetBuiltinConstant(def2, "ESPIPE", def19);
             SetBuiltinConstant(def2, "EXDEV", def17);
-        }
-        
-        private static void Load__ClassSingleton_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            DefineLibraryMethod(module, "allocate", 0x51, 
-                0x00000000U, 
-                new Action<IronRuby.Builtins.RubyClass>(IronRuby.Builtins.ClassSingletonOps.Allocate)
-            );
-            
-            DefineLibraryMethod(module, "inherited", 0x52, 
-                0x00000002U, 
-                new Action<System.Object, IronRuby.Builtins.RubyClass>(IronRuby.Builtins.ClassSingletonOps.Inherited)
-            );
-            
-            DefineLibraryMethod(module, "initialize", 0x52, 
-                0x00000000U, 
-                new Func<System.Object, System.Object>(IronRuby.Builtins.ClassSingletonOps.Initialize)
-            );
-            
-            DefineLibraryMethod(module, "initialize_copy", 0x52, 
-                0x00000000U, 
-                new Func<System.Object, System.Object, System.Object>(IronRuby.Builtins.ClassSingletonOps.InitializeCopy)
-            );
-            
-            DefineLibraryMethod(module, "new", 0x51, 
-                0x00000000U, 
-                new Action<IronRuby.Builtins.RubyClass>(IronRuby.Builtins.ClassSingletonOps.New)
-            );
-            
-            DefineLibraryMethod(module, "superclass", 0x51, 
-                0x00000000U, 
-                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyClass>(IronRuby.Builtins.ClassSingletonOps.GetSuperClass)
-            );
-            
-        }
-        
-        private static void Load__ClassSingleton_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
-        }
-        
-        private static void Load__ClassSingletonSingleton_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            Load__ClassSingleton_Instance(module);
-            DefineLibraryMethod(module, "constants", 0x51, 
-                0x00000000U, 
-                new Func<System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ClassSingletonSingletonOps.GetConstants)
-            );
-            
-            DefineLibraryMethod(module, "nesting", 0x51, 
-                0x00000000U, 
-                new Func<System.Object, IronRuby.Builtins.RubyModule>(IronRuby.Builtins.ClassSingletonSingletonOps.GetNesting)
-            );
-            
-        }
-        
-        private static void Load__ClassSingletonSingleton_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
-            Load__ClassSingleton_Class(module);
         }
         
         private static void Load__MainSingleton_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
@@ -4319,7 +4262,7 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "values_at", 0x51, 
-                0x80020004U, 
+                0x80020000U, 
                 new Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Builtins.MatchData, System.Int32[], IronRuby.Builtins.RubyArray>(IronRuby.Builtins.MatchDataOps.ValuesAt)
             );
             
@@ -4858,8 +4801,7 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "extend_object", 0x52, 
-                0x00000002U, 0x00000000U, 
-                new Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyModule, IronRuby.Builtins.RubyModule>(IronRuby.Builtins.ModuleOps.ExtendObject), 
+                0x00000000U, 
                 new Func<IronRuby.Builtins.RubyModule, System.Object, System.Object>(IronRuby.Builtins.ModuleOps.ExtendObject)
             );
             
@@ -5030,8 +4972,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "remove_method", 0x52, 
-                0x00010002U, 
-                new Func<IronRuby.Builtins.RubyModule, System.String, IronRuby.Builtins.RubyModule>(IronRuby.Builtins.ModuleOps.RemoveMethod)
+                0x80010002U, 
+                new Func<IronRuby.Builtins.RubyModule, System.String[], IronRuby.Builtins.RubyModule>(IronRuby.Builtins.ModuleOps.RemoveMethod)
             );
             
             DefineLibraryMethod(module, "to_clr_ref", 0x51, 
@@ -5050,8 +4992,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "undef_method", 0x52, 
-                0x00010002U, 
-                new Func<IronRuby.Builtins.RubyModule, System.String, IronRuby.Builtins.RubyModule>(IronRuby.Builtins.ModuleOps.UndefineMethod)
+                0x80010002U, 
+                new Func<IronRuby.Builtins.RubyModule, System.String[], IronRuby.Builtins.RubyModule>(IronRuby.Builtins.ModuleOps.UndefineMethod)
             );
             
         }
@@ -5136,6 +5078,11 @@ namespace IronRuby.Builtins {
         
         private static void LoadNoMethodError_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.HideMethod("message");
+            DefineLibraryMethod(module, "args", 0x51, 
+                0x00000000U, 
+                new Func<System.MissingMethodException, System.Object>(IronRuby.Builtins.NoMethodErrorOps.GetArguments)
+            );
+            
         }
         
         private static void LoadNumeric_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
@@ -5375,8 +5322,8 @@ namespace IronRuby.Builtins {
         private static void LoadProc_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "new", 0x61, 
                 0x00000000U, 0x00000000U, 
-                new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Proc>(IronRuby.Builtins.ProcOps.CreateNew), 
-                new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Proc>(IronRuby.Builtins.ProcOps.CreateNew)
+                new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, System.Object>>, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Proc>(IronRuby.Builtins.ProcOps.CreateNew), 
+                new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, System.Object, System.Object>>, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, System.Object>(IronRuby.Builtins.ProcOps.CreateNew)
             );
             
         }
@@ -8823,7 +8770,8 @@ namespace IronRuby.StandardLibrary.OpenSsl {
     public sealed class OpenSslLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
         protected override void LoadModules() {
             IronRuby.Builtins.RubyClass classRef0 = GetClass(typeof(System.Object));
-            IronRuby.Builtins.RubyClass classRef1 = GetClass(typeof(System.Runtime.InteropServices.ExternalException));
+            IronRuby.Builtins.RubyClass classRef1 = GetClass(typeof(System.SystemException));
+            IronRuby.Builtins.RubyClass classRef2 = GetClass(typeof(System.Runtime.InteropServices.ExternalException));
             
             
             IronRuby.Builtins.RubyModule def1 = DefineGlobalModule("OpenSSL", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl), 0x00000008, null, null, LoadOpenSSL_Constants, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -8833,29 +8781,35 @@ namespace IronRuby.StandardLibrary.OpenSsl {
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.StandardLibrary.OpenSsl.OpenSsl.DigestFactory.Digest>(IronRuby.StandardLibrary.OpenSsl.OpenSsl.DigestFactory.Digest.CreateDigest)
             );
             IronRuby.Builtins.RubyClass def5 = DefineClass("OpenSSL::HMAC", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.HMAC), 0x00000008, classRef0, null, LoadOpenSSL__HMAC_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyModule def6 = DefineModule("OpenSSL::PKey", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.PKey), 0x00000008, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyClass def7 = DefineClass("OpenSSL::PKey::RSA", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.PKey.RSA), 0x00000008, classRef0, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyModule def8 = DefineModule("OpenSSL::Random", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.RandomModule), 0x00000008, null, LoadOpenSSL__Random_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyModule def9 = DefineModule("OpenSSL::X509", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509), 0x00000008, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyClass def10 = DefineClass("OpenSSL::X509::Certificate", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.Certificate), 0x00000008, classRef0, LoadOpenSSL__X509__Certificate_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
+            IronRuby.Builtins.RubyClass def6 = DefineClass("OpenSSL::OpenSSLError", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.OpenSSLError), 0x00000008, classRef1, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyModule def7 = DefineModule("OpenSSL::PKey", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.PKey), 0x00000008, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyClass def8 = DefineClass("OpenSSL::PKey::RSA", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.PKey.RSA), 0x00000008, classRef0, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyModule def9 = DefineModule("OpenSSL::Random", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.RandomModule), 0x00000008, null, LoadOpenSSL__Random_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyModule def10 = DefineModule("OpenSSL::SSL", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.SSL), 0x00000008, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyModule def12 = DefineModule("OpenSSL::X509", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509), 0x00000008, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyClass def13 = DefineClass("OpenSSL::X509::Certificate", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.Certificate), 0x00000008, classRef0, LoadOpenSSL__X509__Certificate_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.Certificate>(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.Certificate.CreateCertificate), 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.Certificate>(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.Certificate.CreateCertificate)
             );
-            IronRuby.Builtins.RubyClass def12 = DefineClass("OpenSSL::X509::CertificateError", typeof(System.Security.Cryptography.CryptographicException), 0x00000000, classRef1, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
+            IronRuby.Builtins.RubyClass def15 = DefineClass("OpenSSL::X509::CertificateError", typeof(System.Security.Cryptography.CryptographicException), 0x00000000, classRef2, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Security.Cryptography.CryptographicException>(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.CryptographicExceptionOps.Create)
             );
-            IronRuby.Builtins.RubyClass def11 = DefineClass("OpenSSL::X509::Name", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.Name), 0x00000008, classRef0, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyClass def14 = DefineClass("OpenSSL::X509::Name", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.X509.Name), 0x00000008, classRef0, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyClass def11 = DefineClass("OpenSSL::SSL::SSLError", typeof(IronRuby.StandardLibrary.OpenSsl.OpenSsl.SSL.SSLError), 0x00000008, def6, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             SetConstant(def1, "BN", def2);
             SetConstant(def1, "Digest", def3);
             SetConstant(def3, "Digest", def4);
             SetConstant(def1, "HMAC", def5);
-            SetConstant(def1, "PKey", def6);
-            SetConstant(def6, "RSA", def7);
-            SetConstant(def1, "Random", def8);
-            SetConstant(def1, "X509", def9);
-            SetConstant(def9, "Certificate", def10);
-            SetConstant(def9, "CertificateError", def12);
-            SetConstant(def9, "Name", def11);
+            SetConstant(def1, "OpenSSLError", def6);
+            SetConstant(def1, "PKey", def7);
+            SetConstant(def7, "RSA", def8);
+            SetConstant(def1, "Random", def9);
+            SetConstant(def1, "SSL", def10);
+            SetConstant(def1, "X509", def12);
+            SetConstant(def12, "Certificate", def13);
+            SetConstant(def12, "CertificateError", def15);
+            SetConstant(def12, "Name", def14);
+            SetConstant(def10, "SSLError", def11);
         }
         
         private static void LoadOpenSSL_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
@@ -9121,7 +9075,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             IronRuby.Builtins.RubyClass classRef2 = GetClass(typeof(IronRuby.Builtins.RuntimeError));
             
             
-            IronRuby.Builtins.RubyModule def1 = DefineGlobalModule("Zlib", typeof(IronRuby.StandardLibrary.Zlib.Zlib), 0x00000008, null, null, LoadZlib_Constants, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyModule def1 = DefineGlobalModule("Zlib", typeof(IronRuby.StandardLibrary.Zlib.Zlib), 0x00000008, null, LoadZlib_Class, LoadZlib_Constants, IronRuby.Builtins.RubyModule.EmptyArray);
             IronRuby.Builtins.RubyClass def5 = DefineClass("Zlib::Error", typeof(IronRuby.StandardLibrary.Zlib.Zlib.Error), 0x00000008, classRef0, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
             new Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(ZlibLibraryInitializer.ExceptionFactory__Zlib__Error));
             IronRuby.Builtins.RubyClass def6 = DefineClass("Zlib::GzipFile", typeof(IronRuby.StandardLibrary.Zlib.Zlib.GZipFile), 0x00000008, classRef1, LoadZlib__GzipFile_Instance, LoadZlib__GzipFile_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -9187,6 +9141,17 @@ namespace IronRuby.StandardLibrary.Zlib {
             SetConstant(module, "Z_DEFLATED", IronRuby.StandardLibrary.Zlib.Zlib.Z_DEFLATED);
             SetConstant(module, "ZLIB_VERSION", IronRuby.StandardLibrary.Zlib.Zlib.ZLIB_VERSION);
             
+        }
+        
+        private static void LoadZlib_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
+            #if !SILVERLIGHT
+            DefineLibraryMethod(module, "crc32", 0x21, 
+                0x00000000U, 0x00010000U, 
+                new Func<IronRuby.Builtins.RubyModule, System.Int32>(IronRuby.StandardLibrary.Zlib.Zlib.GetCrc), 
+                new Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, System.Int32, System.Object>(IronRuby.StandardLibrary.Zlib.Zlib.GetCrc)
+            );
+            
+            #endif
         }
         
         #if !SILVERLIGHT

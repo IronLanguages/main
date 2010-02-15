@@ -21,6 +21,7 @@ using MSAst = Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Actions;
@@ -28,6 +29,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Interpreter;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler.Ast {
 
@@ -75,11 +77,15 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
+            return UnicodeCall() ?? NormalCall(_target);
+        }
+
+        private MSAst.Expression NormalCall(MSAst.Expression target) {
             MSAst.Expression[] values = new MSAst.Expression[_args.Length + 2];
             Argument[] kinds = new Argument[_args.Length];
 
             values[0] = Parent.LocalContext;
-            values[1] = _target;
+            values[1] = target;
 
             for (int i = 0; i < _args.Length; i++) {
                 kinds[i] = _args[i].GetArgumentInfo();
@@ -92,9 +98,36 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
+        private MSAst.Expression UnicodeCall() {
+            if (_target is NameExpression && ((NameExpression)_target).Name == "unicode") {
+                // NameExpressions are always typed to object
+                Debug.Assert(_target.Type == typeof(object));
+
+                var tmpVar = Expression.Variable(typeof(object));
+                return Expression.Block(
+                    new[] { tmpVar },
+                    Expression.Assign(tmpVar, _target),
+                    Expression.Condition(
+                        Expression.Call(
+                            AstMethods.IsUnicode,
+                            tmpVar
+                        ),
+                        NormalCall(Expression.Constant(UnicodeHelper.Function)),
+                        NormalCall(tmpVar)
+                    )
+                );            
+            }
+            return null;
+        }
+
         #region IInstructionProvider Members
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
+            if (_target is NameExpression && ((NameExpression)_target).Name == "unicode") {
+                compiler.Compile(Reduce());
+                return;
+            }
+
             for (int i = 0; i < _args.Length; i++) {
                 if (!_args[i].GetArgumentInfo().IsSimple) {
                     compiler.Compile(Reduce());

@@ -885,7 +885,7 @@ namespace IronRuby.Runtime {
             }
 
             object result;
-            EvaluateBlock(block, block.RubyContext.CreateSingletonClass(self), self, args, out result);
+            EvaluateBlock(block, block.RubyContext.GetOrCreateSingletonClass(self), self, args, out result);
             return result;
         }
 

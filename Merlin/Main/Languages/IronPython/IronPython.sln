@@ -18,6 +18,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Silverlight", "..\..\Hosts\SilverLight\Microsoft.Scripting.SilverLight\Microsoft.Scripting.Silverlight.csproj", "{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chiron", "..\..\Hosts\SilverLight\Chiron\Chiron.csproj", "{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{02FF0909-F5AD-48CF-A86A-345E721B7E40} = {02FF0909-F5AD-48CF-A86A-345E721B7E40}
+		{155CE436-1669-4A48-8095-410F2430237F} = {155CE436-1669-4A48-8095-410F2430237F}
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF} = {ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}
+		{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4} = {2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}
+		{EB66B766-6354-4208-A3D4-AACBDCB5C3B3} = {EB66B766-6354-4208-A3D4-AACBDCB5C3B3}
+		{8B0F1074-750E-4D64-BF23-A1E0F54261E5} = {8B0F1074-750E-4D64-BF23-A1E0F54261E5}
+		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D} = {C86A7A7B-3086-4136-9B56-17E8DCB38C8D}
+		{95289EA9-5778-489D-AB48-F81F2CE2DA32} = {95289EA9-5778-489D-AB48-F81F2CE2DA32}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.ExtensionAttribute", "..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.ExtensionAttribute.csproj", "{8B0F1074-750E-4D64-BF23-A1E0F54261E5}"
 EndProject
@@ -86,24 +96,19 @@ Global
 		SccProvider9 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccProjectUniqueName10 = IronPythonConsoleAny\\IronPythonConsoleAny.csproj
 		SccProjectName10 = IronPythonConsoleAny
-		SccLocalPath10 = IronPythonConsoleAny
 		SccAuxPath10 = http://vstfdevdiv:8080
+		SccLocalPath10 = IronPythonConsoleAny
 		SccProvider10 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccProjectUniqueName11 = IronPythonWindowAny\\IronPythonWindowAny.csproj
 		SccProjectName11 = IronPythonWindowAny
-		SccLocalPath11 = IronPythonWindowAny
 		SccAuxPath11 = http://vstfdevdiv:8080
+		SccLocalPath11 = IronPythonWindowAny
 		SccProvider11 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccProjectUniqueName12 = ..\\..\\Debugging\\Microsoft.Scripting.Debugging\\Microsoft.Scripting.Debugging.csproj
 		SccProjectName12 = ../../Debugging/Microsoft.Scripting.Debugging
 		SccAuxPath12 = http://vstfdevdiv:8080
 		SccLocalPath12 = ..\\..\\Debugging\\Microsoft.Scripting.Debugging
 		SccProvider12 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName13 = ..\\..\\Runtime\\Microsoft.Scripting\\Microsoft.Dynamic.csproj
-		SccProjectName13 = ../../Runtime/Microsoft.Scripting
-		SccAuxPath13 = http://vstfdevdiv:8080
-		SccLocalPath13 = ..\\..\\Runtime\\Microsoft.Scripting
-		SccProvider13 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Build Debug|Any CPU = Build Debug|Any CPU
@@ -205,16 +210,16 @@ Global
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}.Silverlight Debug|Any CPU.Build.0 = Silverlight Debug|Any CPU
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}.Silverlight Release|Any CPU.ActiveCfg = Silverlight Release|Any CPU
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}.Silverlight Release|Any CPU.Build.0 = Silverlight Release|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Build Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Build Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.FxCop|Any CPU.Build.0 = Release|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight Release|Any CPU.Build.0 = Release|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Build Debug|Any CPU.ActiveCfg = Silverlight Debug|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Build Release|Any CPU.ActiveCfg = Silverlight Release|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Debug|Any CPU.ActiveCfg = Silverlight Debug|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.FxCop|Any CPU.ActiveCfg = Silverlight Release|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.FxCop|Any CPU.Build.0 = Silverlight Release|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Release|Any CPU.ActiveCfg = Silverlight Release|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight Debug|Any CPU.ActiveCfg = Silverlight Debug|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight Debug|Any CPU.Build.0 = Silverlight Debug|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight Release|Any CPU.ActiveCfg = Silverlight Release|Any CPU
+		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight Release|Any CPU.Build.0 = Silverlight Release|Any CPU
 		{8B0F1074-750E-4D64-BF23-A1E0F54261E5}.Build Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8B0F1074-750E-4D64-BF23-A1E0F54261E5}.Build Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B0F1074-750E-4D64-BF23-A1E0F54261E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

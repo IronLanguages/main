@@ -399,7 +399,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("+")]
         public static MutableString/*!*/ Concatenate(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ other) {
             // doesn't create a subclass:
-            return MutableString.Create(self).Append(other).TaintBy(self).TaintBy(other);
+            return self.Concat(other).TaintBy(self).TaintBy(other);
         }
 
         #endregion

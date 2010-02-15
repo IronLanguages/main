@@ -207,6 +207,72 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("expected str, got {0} from __str__", DynamicHelpers.GetPythonType(value).Name);
         }
 
+
+        internal static object FastNewUnicode(CodeContext context, object value, object encoding, object errors) {
+            string strErrors = errors as string;
+            if (strErrors == null) {
+                throw PythonOps.TypeError("unicode() argument 3 must be string, not {0}", PythonTypeOps.GetName(errors));
+            }
+
+            if (value != null) {
+                string strValue = value as string;
+                if (strValue != null) {
+                    return StringOps.RawDecode(context, strValue, encoding, strErrors);
+                }
+
+                Extensible<string> es = value as Extensible<string>;
+                if (es != null) {
+                    return StringOps.RawDecode(context, es.Value, encoding, strErrors);
+                }
+
+                Bytes bytes = value as Bytes;
+                if (bytes != null) {                    
+                    return StringOps.RawDecode(context, bytes.ToString(), encoding, strErrors);
+                }
+
+                PythonBuffer buffer = value as PythonBuffer;
+                if (buffer != null) {
+                    return StringOps.RawDecode(context, buffer.ToString(), encoding, strErrors);
+                }                
+            }
+
+            throw PythonOps.TypeError("coercing to Unicode: need string or buffer, {0} found", PythonTypeOps.GetName(value));
+        }
+
+        internal static object FastNewUnicode(CodeContext context, object value, object encoding) {
+            return FastNewUnicode(context, value, encoding, "strict");
+        }
+
+        internal static object FastNewUnicode(CodeContext context, object value) {
+            if (value == null) {
+                return "None";
+            } else if (value is string) {
+                return value;
+            }
+
+            object res;
+            OldInstance oi = value as OldInstance;
+            if (oi != null &&
+                (oi.TryGetBoundCustomMember(context, "__unicode__", out res) || oi.TryGetBoundCustomMember(context, "__str__", out res))) {
+                res = context.LanguageContext.Call(context, res);
+                if (res is string || res is Extensible<string>) {
+                    return res;
+                }
+                throw PythonOps.TypeError("coercing to Unicode: expected string, got {0}", PythonTypeOps.GetName(value));
+            }
+
+
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, value, "__unicode__", out res) ||
+                PythonTypeOps.TryInvokeUnaryOperator(context, value, "__str__", out res)) {
+                if (res is string || res is Extensible<string>) {
+                    return res;
+                }
+                throw PythonOps.TypeError("coercing to Unicode: expected string, got {0}", PythonTypeOps.GetName(value));
+            }
+
+            return FastNewUnicode(context, value, context.LanguageContext.DefaultEncoding.WebName, "strict");
+        }
+
         private static object CheckAsciiString(CodeContext context, string s) {
             for (int i = 0; i < s.Length; i++) {
                 if (s[i] > '\x80')
@@ -2601,5 +2667,6 @@ namespace IronPython.Runtime.Operations {
         public static string/*!*/ __repr__(string/*!*/ self) {
             return StringOps.Quote(self);
         }
+
     }
 }

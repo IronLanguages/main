@@ -42,6 +42,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _AllocateStructInstance;
         public static MethodInfo/*!*/ BlockBreak { get { return _BlockBreak ?? (_BlockBreak = CallInstruction.CacheFunc<IronRuby.Runtime.BlockParam, System.Object, System.Object>(RubyOps.BlockBreak)); } }
         private static MethodInfo _BlockBreak;
+        public static MethodInfo/*!*/ BlockPropagateReturn { get { return _BlockPropagateReturn ?? (_BlockPropagateReturn = CallInstruction.CacheFunc<IronRuby.Runtime.BlockParam, System.Object, System.Object>(RubyOps.BlockPropagateReturn)); } }
+        private static MethodInfo _BlockPropagateReturn;
         public static MethodInfo/*!*/ BlockRetry { get { return _BlockRetry ?? (_BlockRetry = CallInstruction.CacheFunc<IronRuby.Runtime.BlockParam, System.Object>(RubyOps.BlockRetry)); } }
         private static MethodInfo _BlockRetry;
         public static MethodInfo/*!*/ BlockReturn { get { return _BlockReturn ?? (_BlockReturn = CallInstruction.CacheFunc<IronRuby.Runtime.BlockParam, System.Object, System.Object>(RubyOps.BlockReturn)); } }
@@ -186,6 +188,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _EvalBreak;
         public static MethodInfo/*!*/ EvalNext { get { return _EvalNext ?? (_EvalNext = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope, System.Object>(RubyOps.EvalNext)); } }
         private static MethodInfo _EvalNext;
+        public static MethodInfo/*!*/ EvalPropagateReturn { get { return _EvalPropagateReturn ?? (_EvalPropagateReturn = CallInstruction.CacheFunc<System.Object, System.Object>(RubyOps.EvalPropagateReturn)); } }
+        private static MethodInfo _EvalPropagateReturn;
         public static MethodInfo/*!*/ EvalRedo { get { return _EvalRedo ?? (_EvalRedo = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope>(RubyOps.EvalRedo)); } }
         private static MethodInfo _EvalRedo;
         public static MethodInfo/*!*/ EvalRetry { get { return _EvalRetry ?? (_EvalRetry = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope>(RubyOps.EvalRetry)); } }
@@ -268,8 +272,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetProcSelf;
         public static MethodInfo/*!*/ GetQualifiedConstant { get { return _GetQualifiedConstant ?? (_GetQualifiedConstant = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Runtime.ConstantSiteCache, System.String[], System.Boolean, System.Object>(RubyOps.GetQualifiedConstant)); } }
         private static MethodInfo _GetQualifiedConstant;
-        public static MethodInfo/*!*/ GetRetrySingleton { get { return _GetRetrySingleton ?? (_GetRetrySingleton = CallInstruction.CacheFunc<System.Object>(RubyOps.GetRetrySingleton)); } }
-        private static MethodInfo _GetRetrySingleton;
         public static MethodInfo/*!*/ GetSelfClassVersionHandle { get { return _GetSelfClassVersionHandle ?? (_GetSelfClassVersionHandle = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Runtime.Calls.VersionHandle>(RubyOps.GetSelfClassVersionHandle)); } }
         private static MethodInfo _GetSelfClassVersionHandle;
         public static MethodInfo/*!*/ GetSuperCallTarget { get { return _GetSuperCallTarget ?? (_GetSuperCallTarget = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.Int32, System.Object>(RubyOps.GetSuperCallTarget)); } }
@@ -400,6 +402,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MakeTopLevelSuperException;
         public static MethodInfo/*!*/ MakeTypeConversionError { get { return _MakeTypeConversionError ?? (_MakeTypeConversionError = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, System.Object, System.Type, System.Exception>(RubyOps.MakeTypeConversionError)); } }
         private static MethodInfo _MakeTypeConversionError;
+        public static MethodInfo/*!*/ MakeVirtualClassInstantiatedError { get { return _MakeVirtualClassInstantiatedError ?? (_MakeVirtualClassInstantiatedError = CallInstruction.CacheFunc<System.Exception>(RubyOps.MakeVirtualClassInstantiatedError)); } }
+        private static MethodInfo _MakeVirtualClassInstantiatedError;
         public static MethodInfo/*!*/ MakeWrongNumberOfArgumentsError { get { return _MakeWrongNumberOfArgumentsError ?? (_MakeWrongNumberOfArgumentsError = CallInstruction.CacheFunc<System.Int32, System.Int32, System.ArgumentException>(RubyOps.MakeWrongNumberOfArgumentsError)); } }
         private static MethodInfo _MakeWrongNumberOfArgumentsError;
         public static MethodInfo/*!*/ MarkException { get { return _MarkException ?? (_MarkException = CallInstruction.CacheFunc<System.Exception, System.Exception>(RubyOps.MarkException)); } }
@@ -412,8 +416,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MethodBreak;
         public static MethodInfo/*!*/ MethodNext { get { return _MethodNext ?? (_MethodNext = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope, System.Object>(RubyOps.MethodNext)); } }
         private static MethodInfo _MethodNext;
-        public static MethodInfo/*!*/ MethodProcCall { get { return _MethodProcCall ?? (_MethodProcCall = CallInstruction.CacheFunc<IronRuby.Runtime.BlockParam, System.Object, System.Boolean>(RubyOps.MethodProcCall)); } }
+        public static MethodInfo/*!*/ MethodProcCall { get { return _MethodProcCall ?? (_MethodProcCall = CallInstruction.CacheFunc<IronRuby.Runtime.BlockParam, System.Object, System.Object>(RubyOps.MethodProcCall)); } }
         private static MethodInfo _MethodProcCall;
+        public static MethodInfo/*!*/ MethodPropagateReturn { get { return _MethodPropagateReturn ?? (_MethodPropagateReturn = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Builtins.Proc, IronRuby.Runtime.BlockReturnResult, System.Object>(RubyOps.MethodPropagateReturn)); } }
+        private static MethodInfo _MethodPropagateReturn;
         public static MethodInfo/*!*/ MethodRedo { get { return _MethodRedo ?? (_MethodRedo = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope>(RubyOps.MethodRedo)); } }
         private static MethodInfo _MethodRedo;
         public static MethodInfo/*!*/ MethodRetry { get { return _MethodRetry ?? (_MethodRetry = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Builtins.Proc, System.Object>(RubyOps.MethodRetry)); } }

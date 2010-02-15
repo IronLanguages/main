@@ -37,6 +37,8 @@ function global:bsrbd { cmd /C "msbuild ${env:MERLIN_ROOT}\Languages\Ruby\Ruby.s
 function global:bsrbr { cmd /C "msbuild ${env:MERLIN_ROOT}\Languages\Ruby\Ruby.sln /p:Configuration=`"Silverlight Release`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.50106.0`"" }
 function global:bsd { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration=`"Silverlight Debug`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.50106.0`"" }
 function global:bsr { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration=`"Silverlight Release`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.50106.0`"" }
+function global:bsd4 { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight4.sln /p:Configuration=`"Silverlight 4 Debug`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\4.0.41108.0 `"" }
+function global:bsr4 { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight4.sln /p:Configuration=`"Silverlight 4 Release`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\4.0.41108.0 `"" }
 
 #=============================================================================
 # [Iron]Python program aliases
@@ -80,6 +82,8 @@ function global:msir { cmd /C "${env:windir}\system32\WindowsPowerShell\v1.0\pow
 
 function global:chd { cmd /C "`"${env:MERLIN_ROOT}\Bin\Silverlight Debug\Chiron.exe`" $args" }
 function global:chr { cmd /C "`"${env:MERLIN_ROOT}\Bin\Silverlight Release\Chiron.exe`" $args" }
+function global:chd4 { cmd /C "`"${env:MERLIN_ROOT}\Bin\Silverlight 4 Debug\Chiron.exe`" $args" }
+function global:chr4 { cmd /C "`"${env:MERLIN_ROOT}\Bin\Silverlight 4 Release\Chiron.exe`" $args" }
 
 #=============================================================================
 # Miscellaneous utilities

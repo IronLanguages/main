@@ -68,17 +68,9 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("extend_object", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ ExtendObject(RubyModule/*!*/ self, [NotNull]RubyModule/*!*/ extendedModule) {
-            // include self into extendedModule's singleton class
-            extendedModule.SingletonClass.IncludeModules(self);
-            return self;
-        }
-
-        // thread-safe:
-        [RubyMethod("extend_object", RubyMethodAttributes.PrivateInstance)]
         public static object ExtendObject(RubyModule/*!*/ self, object extendedObject) {
             // include self into extendedObject's singleton
-            self.Context.CreateSingletonClass(extendedObject).IncludeModules(self);
+            self.Context.GetOrCreateSingletonClass(extendedObject).IncludeModules(self);
             return extendedObject;
         }
 
@@ -156,7 +148,7 @@ namespace IronRuby.Builtins {
         [RubyMethodAttribute("private_class_method")]
         public static RubyModule/*!*/ MakeClassMethodsPrivate(RubyModule/*!*/ self,
             [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
-            SetMethodAttributes(self.SingletonClass, methodNames, RubyMethodAttributes.Private);
+            SetMethodAttributes(self.GetOrCreateSingletonClass(), methodNames, RubyMethodAttributes.Private);
             return self;
         }
 
@@ -164,7 +156,7 @@ namespace IronRuby.Builtins {
         [RubyMethodAttribute("public_class_method")]
         public static RubyModule/*!*/ MakeClassMethodsPublic(RubyModule/*!*/ self,
             [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
-            SetMethodAttributes(self.SingletonClass, methodNames, RubyMethodAttributes.Public);
+            SetMethodAttributes(self.GetOrCreateSingletonClass(), methodNames, RubyMethodAttributes.Public);
             return self;
         }
 
@@ -211,7 +203,7 @@ namespace IronRuby.Builtins {
 
                     method = module.ResolveMethodNoLock(methodName, VisibilityContext.AllVisible, options).Info;
                     if (method == null) {
-                        throw RubyExceptions.CreateNameError(RubyExceptions.FormatMethodMissingMessage(context, module, methodName));
+                        throw RubyExceptions.CreateUndefinedMethodError(module, methodName);
                     }
 
                     // MRI only adds method to the target module if visibility differs:
@@ -229,7 +221,7 @@ namespace IronRuby.Builtins {
                 }
 
                 if (isModuleFunction) {
-                    module.SingletonClass.MethodAdded(methodName);
+                    module.GetOrCreateSingletonClass().MethodAdded(methodName);
                 }
             }
         }
@@ -469,25 +461,29 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         [RubyMethod("remove_method", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ RemoveMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
+        public static RubyModule/*!*/ RemoveMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNullItems]params string[]/*!*/ methodNames) {
             // MRI 1.8: reports a warning and allows removal
             // MRI 1.9: throws a NameError
-            if (self == self.Context.ObjectClass && methodName == Symbols.Initialize) {
-                throw RubyExceptions.CreateNameError("Cannot remove Object#initialize");
-            }
-            if (!self.RemoveMethod(methodName)) {
-                throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
+            foreach (var methodName in methodNames) {
+                if (self == self.Context.ObjectClass && methodName == Symbols.Initialize) {
+                    throw RubyExceptions.CreateNameError("Cannot remove Object#initialize");
+                }
+                if (!self.RemoveMethod(methodName)) {
+                    throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
+                }
             }
             return self;
         }
 
         // thread-safe:
         [RubyMethod("undef_method", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ UndefineMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            if (!self.ResolveMethod(methodName, VisibilityContext.AllVisible).Found) {
-                throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
+        public static RubyModule/*!*/ UndefineMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNullItems]params string[]/*!*/ methodNames) {
+            foreach (var methodName in methodNames) {
+                if (!self.ResolveMethod(methodName, VisibilityContext.AllVisible).Found) {
+                    throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
+                }
+                self.UndefineMethod(methodName);
             }
-            self.UndefineMethod(methodName);
             return self;
         }
 

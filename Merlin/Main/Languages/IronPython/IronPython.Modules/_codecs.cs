@@ -51,6 +51,70 @@ namespace IronPython.Modules {
 
         #endregion
 
+        /// <summary>
+        /// Creates an optimized encoding mapping that can be consumed by an optimized version of charmap_encode.
+        /// </summary>
+        public static EncodingMap charmap_build(string decoding_table) {
+            if (decoding_table.Length != 256) {
+                throw PythonOps.TypeError("charmap_build expected 256 character string");
+            }
+
+            EncodingMap map = new EncodingMap();
+            for (int i = 0; i < decoding_table.Length; i++) {
+                map.Mapping[(int)decoding_table[i]] = (char)i;
+            }
+            return map;
+        }
+
+        /// <summary>
+        /// Optimied encoding mapping that can be consumed by charmap_encode.
+        /// </summary>
+        [PythonHidden]
+        public class EncodingMap {
+            internal Dictionary<int, char> Mapping = new Dictionary<int, char>();
+        }
+
+        /// <summary>
+        /// Decodes the input string using the provided string mapping.
+        /// </summary>
+        public static PythonTuple charmap_decode(string input, string errors, [NotNull]string map) {
+            StringBuilder res = new StringBuilder();
+            for (int i = 0; i < input.Length; i++) {
+                var charIndex = (int)input[i];
+
+                if (map.Length <= charIndex) {
+                    if (errors == "strict") {
+                        throw PythonOps.UnicodeDecodeError("failed to find key in mapping");
+                    }
+                    res.Append("\ufffd");
+                } else {
+                    res.Append(map[input[i]]);
+                }
+            }
+            return PythonTuple.MakeTuple(res.ToString(), res.Length);
+        }
+
+        /// <summary>
+        /// Encodes the input string with the specified optimized encoding map.
+        /// </summary>
+        public static PythonTuple charmap_encode(string input, string errors, [NotNull]EncodingMap map) {
+            StringBuilder res = new StringBuilder();
+            var dict = map.Mapping;
+            for (int i = 0; i < input.Length; i++) {
+                char val;
+
+                if (!dict.TryGetValue(input[i], out val)) {
+                    if (errors == "strict") {
+                        throw PythonOps.UnicodeEncodeError("failed to find key in mapping");
+                    }
+                    res.Append("\ufffd");
+                } else {
+                    res.Append(val);
+                }
+            }
+            return PythonTuple.MakeTuple(res.ToString(), res.Length);
+        }
+
         public static object charbuffer_encode() {
             throw PythonOps.NotImplementedError("charbuffer_encode");
         }

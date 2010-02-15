@@ -21,6 +21,9 @@ using System.IO;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Utils;
 using System.Windows.Threading;
+#if CLR4
+using System.Core;
+#endif
 
 namespace Microsoft.Scripting.Silverlight {
     public class Repl {

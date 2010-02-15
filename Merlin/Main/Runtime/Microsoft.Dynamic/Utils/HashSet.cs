@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if CLR2 || SILVERLIGHT
+#if CLR2
 using System.Collections;
 using System.Collections.Generic;
 

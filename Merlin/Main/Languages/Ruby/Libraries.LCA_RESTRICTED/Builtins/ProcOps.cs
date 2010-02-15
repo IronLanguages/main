@@ -148,7 +148,7 @@ namespace IronRuby.Builtins {
         #region Singleton Methods
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, Proc, Proc, object>>/*!*/ storage, 
+        public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, object, object>>/*!*/ storage, 
             RubyScope/*!*/ scope, RubyClass/*!*/ self) {
 
             RubyMethodScope methodScope = scope.GetInnerMostMethodScope();
@@ -156,23 +156,7 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");
             }
 
-            return CreateNew(storage, self, methodScope.BlockParameter);
-        }
-
-        [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, Proc, Proc, object>>/*!*/ storage, 
-            BlockParam block, RubyClass/*!*/ self) {
-
-            if (block == null) {
-                throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");
-            }
-
-            return CreateNew(storage, self, block.Proc);
-        }
-
-        public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, Proc, Proc, object>>/*!*/ storage,
-            RubyClass/*!*/ self, Proc/*!*/ proc) {
-            Assert.NotNull(storage, self, proc);
+            var proc = methodScope.BlockParameter;
 
             // an instance of Proc class, the identity is preserved:
             if (self.GetUnderlyingSystemType() == typeof(Proc)) {
@@ -182,22 +166,36 @@ namespace IronRuby.Builtins {
             // an instance of a Proc subclass:
             var result = new Proc.Subclass(self, proc);
 
+            var initialize = storage.GetCallSite("initialize", new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf));
+            initialize.Target(initialize, result);
+
+            return result;
+        }
+
+        [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
+        public static object CreateNew(CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage, 
+            BlockParam block, RubyClass/*!*/ self) {
+
+            if (block == null) {
+                throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");
+            }
+
+            var proc = block.Proc;
+
+            // an instance of Proc class, the identity is preserved:
+            if (self.GetUnderlyingSystemType() == typeof(Proc)) {
+                return proc;
+            }
+
+            // an instance of a Proc subclass:
+            var result = new Proc.Subclass(self, proc);
+
+            // propagate retry and return control flow:
             var initialize = storage.GetCallSite("initialize", new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock));
-
-            // a call to the initializer with a block:
-            object initResult = null;
-            do {
-                // a new proc is created each iteration (even if a subclass is passed in, the Proc class is created):
-                var argProc = proc.Create(proc);
-
-                try {
-                    initResult = initialize.Target(initialize, proc, argProc);
-                } catch (EvalUnwinder u) {
-                    initResult = u.ReturnValue;
-                }
-
-                Debug.Assert(proc != argProc, "retry doesn't propagate to the caller");
-            } while (RubyOps.IsRetrySingleton(initResult));
+            object initResult = initialize.Target(initialize, result, block.Proc);
+            if (initResult is BlockReturnResult) {
+                return initResult;
+            }
 
             return result;
         }

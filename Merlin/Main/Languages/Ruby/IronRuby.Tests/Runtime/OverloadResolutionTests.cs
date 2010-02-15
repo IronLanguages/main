@@ -108,7 +108,7 @@ namespace IronRuby.Tests {
                 );
 
                 Assert(bindingTarget.Success);
-                Assert(bindingTarget.Method.Name == results[i]);
+                Assert(bindingTarget.Overload.Name == results[i]);
             }
         }
 
@@ -218,7 +218,7 @@ namespace IronRuby.Tests {
                 var overloads = GetInstanceMethods(typeof(Overloads1), cases[i].Overloads);
                 var result = resolver.ResolveOverload(i.ToString(), overloads, NarrowingLevel.None, NarrowingLevel.All);
 
-                Assert(result.Success && result.Method.Name == cases[i].Result);
+                Assert(result.Success && result.Overload.Name == cases[i].Result);
             }
         }
 

@@ -242,8 +242,6 @@ namespace IronRuby.Runtime {
         private RubyClass _standardErrorClass;
         private RubyClass _comObjectClass;
 
-        private Action<RubyModule>/*!*/ _classSingletonTrait;
-        private Action<RubyModule>/*!*/ _singletonSingletonTrait;
         private Action<RubyModule>/*!*/ _mainSingletonTrait;
 
         // internally set by Initializer:
@@ -267,9 +265,6 @@ namespace IronRuby.Runtime {
                 return _comObjectClass;
             }
         }
-
-        internal Action<RubyModule>/*!*/ ClassSingletonTrait { get { return _classSingletonTrait; } }
-        internal Action<RubyModule>/*!*/ SingletonSingletonTrait { get { return _singletonSingletonTrait; } }
 
         // Set of names that method_missing defined on any module was resolved for and that are cached. Lazy init.
         // 
@@ -611,8 +606,6 @@ namespace IronRuby.Runtime {
 
         // TODO: internal
         public void RegisterPrimitives(
-            Action<RubyModule>/*!*/ classSingletonTrait,
-            Action<RubyModule>/*!*/ singletonSingletonTrait,
             Action<RubyModule>/*!*/ mainSingletonTrait,
 
             Action<RubyModule>/*!*/ kernelInstanceTrait,
@@ -631,12 +624,10 @@ namespace IronRuby.Runtime {
             Action<RubyModule>/*!*/ classClassTrait,
             Action<RubyModule> classConstantsInitializer) {
 
-            Assert.NotNull(classSingletonTrait, singletonSingletonTrait, mainSingletonTrait);
+            Assert.NotNull(mainSingletonTrait);
             Assert.NotNull(objectInstanceTrait, kernelInstanceTrait, moduleInstanceTrait, classInstanceTrait);
             Assert.NotNull(objectClassTrait, kernelClassTrait, moduleClassTrait, classClassTrait);
 
-            _classSingletonTrait = classSingletonTrait;
-            _singletonSingletonTrait = singletonSingletonTrait;
             _mainSingletonTrait = mainSingletonTrait;
 
             // inheritance hierarchy:
@@ -669,12 +660,20 @@ namespace IronRuby.Runtime {
                 _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, objectConstantsInitializer, null, null, new[] { _kernelModule }, objectTracker, null, false, false, ModuleRestrictions.Builtin & ~ModuleRestrictions.NoOverrides);
                 _moduleClass = new RubyClass(this, Symbols.Module, typeof(RubyModule), null, moduleInstanceTrait, moduleConstantsInitializer, moduleFactories, _objectClass, null, null, null, false, false, ModuleRestrictions.Builtin);
                 _classClass = new RubyClass(this, Symbols.Class, typeof(RubyClass), null, classInstanceTrait, classConstantsInitializer, classFactories, _moduleClass, null, null, null, false, false, ModuleRestrictions.Builtin);
+                
+                _objectClass.InitializeImmediateClass(_objectClass.CreateSingletonClass(_classClass, objectClassTrait));
+                _moduleClass.InitializeImmediateClass(_moduleClass.CreateSingletonClass(_objectClass.ImmediateClass, moduleClassTrait));
+                _classClass.InitializeImmediateClass(_classClass.CreateSingletonClass(_moduleClass.ImmediateClass, classClassTrait));
 
-                _kernelModule.InitializeDummySingletonClass(_moduleClass, kernelClassTrait);
-                _objectClass.InitializeDummySingletonClass(_classClass, objectClassTrait);
-                _moduleClass.InitializeDummySingletonClass(_objectClass.SingletonClass, moduleClassTrait);
-                _classClass.InitializeDummySingletonClass(_moduleClass.SingletonClass, classClassTrait);
+                _moduleClass.InitializeDummySingleton();
+                _classClass.InitializeDummySingleton();
 
+                _objectClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
+                _moduleClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
+                _classClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
+                
+                _kernelModule.InitializeImmediateClass(_moduleClass, kernelClassTrait);
+                
                 _objectClass.SetConstantNoMutateNoLock(_moduleClass.Name, _moduleClass);
                 _objectClass.SetConstantNoMutateNoLock(_classClass.Name, _classClass);
                 _objectClass.SetConstantNoMutateNoLock(_objectClass.Name, _objectClass);
@@ -877,6 +876,9 @@ namespace IronRuby.Runtime {
 
         #region Class and Module Factories (thread-safe)
 
+        /// <summary>
+        /// Class factory. Do not use RubyClass constructor except for special cases (Object, Class, Module, singleton classes).
+        /// </summary>
         internal RubyClass/*!*/ CreateClass(string name, Type type, object classSingletonOf,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer, Delegate/*!*/[] factories,
             RubyClass/*!*/ superClass, RubyModule/*!*/[] expandedMixins, TypeTracker tracker, RubyStruct.Info structInfo, 
@@ -888,10 +890,13 @@ namespace IronRuby.Runtime {
                 isRubyClass, isSingletonClass, restrictions
             );
 
-            result.InitializeDummySingletonClass(superClass.SingletonClass, classTrait);
+            result.InitializeImmediateClass(superClass.ImmediateClass, classTrait);
             return result;
         }
 
+        /// <summary>
+        /// Module factory. Do not use RubyModule constructor except special cases (Kernel).
+        /// </summary>
         internal RubyModule/*!*/ CreateModule(string name,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             RubyModule/*!*/[] expandedMixins, NamespaceTracker namespaceTracker, TypeTracker typeTracker, ModuleRestrictions restrictions) {
@@ -899,27 +904,28 @@ namespace IronRuby.Runtime {
             RubyModule result = new RubyModule(
                 this, name, instanceTrait, constantsInitializer, expandedMixins, namespaceTracker, typeTracker, restrictions
             );
-            result.InitializeDummySingletonClass(_moduleClass, classTrait);
+
+            result.InitializeImmediateClass(_moduleClass, classTrait);
             return result;
         }
 
         /// <summary>
         /// Creates a singleton class for specified object unless it already exists. 
         /// </summary>
-        public RubyClass/*!*/ CreateSingletonClass(object obj) {
+        public RubyClass/*!*/ GetOrCreateSingletonClass(object obj) {
             RubyModule module = obj as RubyModule;
             if (module != null) {
-                return module.CreateSingletonClass();
+                return module.GetOrCreateSingletonClass();
             }
 
-            return CreateInstanceSingleton(obj, null, null, null, null);
+            return GetOrCreateInstanceSingleton(obj, null, null, null, null);
         }
 
-        internal RubyClass/*!*/ CreateMainSingleton(object obj, RubyModule/*!*/[] expandedMixins) {
-            return CreateInstanceSingleton(obj, _mainSingletonTrait, null, null, expandedMixins);
+        internal RubyClass/*!*/ GetOrCreateMainSingleton(object obj, RubyModule/*!*/[] expandedMixins) {
+            return GetOrCreateInstanceSingleton(obj, _mainSingletonTrait, null, null, expandedMixins);
         }
 
-        internal RubyClass/*!*/ CreateInstanceSingleton(object obj, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, 
+        internal RubyClass/*!*/ GetOrCreateInstanceSingleton(object obj, Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, 
             Action<RubyModule> constantsInitializer, RubyModule/*!*/[] expandedMixins) {
             Debug.Assert(!(obj is RubyModule));
             Debug.Assert(RubyUtils.HasSingletonClass(obj));
@@ -940,7 +946,7 @@ namespace IronRuby.Runtime {
             }
 
             RubyClass result = CreateClass(
-                null, null, obj, instanceTrait, classTrait ?? _classSingletonTrait, constantsInitializer, null,
+                null, null, obj, instanceTrait, classTrait, constantsInitializer, null,
                 immediate, expandedMixins, null, null, true, true, ModuleRestrictions.None
             );
 
@@ -2384,7 +2390,7 @@ namespace IronRuby.Runtime {
             }
 
             RubyObject mainObject = new RubyObject(_objectClass);
-            RubyClass mainSingleton = CreateMainSingleton(mainObject, null);
+            RubyClass mainSingleton = GetOrCreateMainSingleton(mainObject, null);
 
             RubyGlobalScope result = new RubyGlobalScope(this, globalScope, mainObject, createHosted);
             if (bindGlobals) {

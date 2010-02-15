@@ -9,12 +9,12 @@ rt      =cd /d %MERLIN_ROOT%\Runtime
 r       =cd /d %MERLIN_ROOT%
 mspc    =cd /d %MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec
 
-irk     =cd /d "%MERLIN_ROOT%\Hosts\IronRuby.Rack\"
-rbs     =cd /d "%MERLIN_ROOT%\Languages\Ruby\Samples\"
-msl     =cd /d "%PROGRAM_FILES_32%\Microsoft Silverlight\"
-mss     =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\"
-ch      =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\Chiron\"
-sls     =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\Samples\"
+irk     =cd /d %MERLIN_ROOT%\Hosts\IronRuby.Rack
+rbs     =cd /d %MERLIN_ROOT%\Languages\Ruby\Samples
+msl     =cd /d %PROGRAM_FILES_32%\Microsoft Silverlight
+mss     =cd /d %MERLIN_ROOT%\Hosts\Silverlight
+ch      =cd /d %MERLIN_ROOT%\Hosts\Silverlight\Chiron
+sls     =cd /d %MERLIN_ROOT%\Hosts\Silverlight\Samples
 
 ;==============================================================================
 ;= Build commands
@@ -37,6 +37,8 @@ bsrbd    =msbuild %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Silver
 bsrbr    =msbuild %MERLIN_ROOT%\Languages\Ruby\Ruby.sln /p:Configuration="Silverlight Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
 bsd      =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
 bsr      =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsd4     =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight 4 Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
+bsr4     =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight 4 Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
 
 ;==============================================================================
 ;= [Iron]Python program aliases
@@ -80,6 +82,8 @@ msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command
 
 chd     ="%MERLIN_ROOT%\Bin\Silverlight Debug\Chiron.exe" $*
 chr     ="%MERLIN_ROOT%\Bin\Silverlight Release\Chiron.exe" $*
+chd4    ="%MERLIN_ROOT%\Bin\Silverlight 4 Debug\Chiron.exe" $*
+chr4    ="%MERLIN_ROOT%\Bin\Silverlight 4 Release\Chiron.exe" $*
 
 ;==============================================================================
 ;= Miscellaneous utilities

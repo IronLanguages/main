@@ -504,7 +504,7 @@ namespace IronRuby.Runtime {
 
                 instanceOwner = null;
                 instanceFlags = RubyMemberFlags.Invalid;
-                singletonOwner = scope.RubyContext.CreateSingletonClass(target);
+                singletonOwner = scope.RubyContext.GetOrCreateSingletonClass(target);
                 singletonFlags = RubyMemberFlags.Public;
             } else {
                 var attributesScope = scope.GetMethodAttributesDefinitionScope();
@@ -527,7 +527,7 @@ namespace IronRuby.Runtime {
                     }
 
                     instanceFlags = RubyMemberFlags.Private;
-                    singletonOwner = instanceOwner.SingletonClass;
+                    singletonOwner = instanceOwner.GetOrCreateSingletonClass();
                     singletonFlags = RubyMemberFlags.Public;
                     moduleFunction = true;
                 } else {
@@ -559,7 +559,7 @@ namespace IronRuby.Runtime {
 
             if (moduleFunction) {
                 Debug.Assert(!method.DeclaringModule.IsClass);
-                method.DeclaringModule.SingletonClass.MethodAdded(body.Name);
+                method.DeclaringModule.GetOrCreateSingletonClass().MethodAdded(body.Name);
             }
 
             return null;
@@ -642,7 +642,7 @@ namespace IronRuby.Runtime {
             if (!RubyUtils.HasSingletonClass(obj)) {
                 throw RubyExceptions.CreateTypeError(String.Format("no virtual class for {0}", scope.RubyContext.GetClassOf(obj).Name));
             }
-            return scope.RubyContext.CreateSingletonClass(obj);
+            return scope.RubyContext.GetOrCreateSingletonClass(obj);
         }
 
         [Emitted] 
@@ -1765,6 +1765,11 @@ namespace IronRuby.Runtime {
         [Emitted] //SuperCallAction
         public static Exception/*!*/ MakeMissingSuperException(string/*!*/ name) {
             return new MissingMethodException(String.Format("super: no superclass method `{0}'", name));
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeVirtualClassInstantiatedError() {
+            return RubyExceptions.CreateTypeError("can't create instance of virtual class");
         }
 
         [Emitted]

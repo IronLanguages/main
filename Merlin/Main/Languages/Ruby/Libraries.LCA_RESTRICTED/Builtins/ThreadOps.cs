@@ -678,7 +678,7 @@ namespace IronRuby.Builtins {
                 throw new ThreadError("must be called with a block");
             }
             ThreadGroup group = Group(Thread.CurrentThread);
-            Thread result = new Thread(new ThreadStart(delegate() { RubyThreadStart(context, startRoutine, args, group); }));
+            Thread result = new Thread(new ThreadStart(() => RubyThreadStart(context, startRoutine, args, group)));
 
             // Ruby exits when the main thread exits. So all other threads need to be marked as background threads
             result.IsBackground = true;
@@ -687,7 +687,7 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private static void RubyThreadStart(RubyContext/*!*/ context, BlockParam startRoutine, object[]/*!*/ args, ThreadGroup group) {
+        private static void RubyThreadStart(RubyContext/*!*/ context, BlockParam/*!*/ startRoutine, object[]/*!*/ args, ThreadGroup group) {
             RubyThreadInfo info = RubyThreadInfo.FromThread(Thread.CurrentThread);
             info.CreatedFromRuby = true;
 
@@ -695,9 +695,13 @@ namespace IronRuby.Builtins {
 
             try {
                 object threadResult;
-                // TODO: break?
-                startRoutine.Yield(args, out threadResult);
+                // TODO: break/returns might throw LocalJumpError if the RFC that was created for startRoutine is not active anymore:
+                if (startRoutine.Yield(args, out threadResult) && startRoutine.Returning(threadResult, out threadResult)) {
+                    info.Exception = new ThreadError("return can't jump across threads");
+                }
                 info.Result = threadResult;
+            } catch (MethodUnwinder) {
+                info.Exception = new ThreadError("return can't jump across threads");
             } catch (Exception e) {
                 if (info.ExitRequested) {
                     // Note that "e" may not be ThreadAbortException at this point If an exception was raised from a finally block,

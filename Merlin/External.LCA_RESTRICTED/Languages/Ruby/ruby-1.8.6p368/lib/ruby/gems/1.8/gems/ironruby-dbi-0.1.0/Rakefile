@@ -1,0 +1,22 @@
+require 'rubygems'
+require 'hoe'
+
+$:.unshift 'lib'
+require 'dbd/mssql'
+
+Hoe.spec 'ironruby-dbi' do
+  developer 'Ivan Porto Carrero', 'ivan@flanders.co.nz'
+  self.version = DBI::DBD::MSSQL::VERSION
+  self.url = 'http://github.com/casualjim/ironruby-dbi'
+  extra_deps << ['deprecated', '>=2.0.1']
+end
+
+desc "Tests the dbd driver for adonet"
+task :test_dbd do
+    ruby("test/ts_dbd.rb")
+end
+
+task :test => [:test_dbd]
+
+task :default => :test
+

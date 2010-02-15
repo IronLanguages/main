@@ -19,19 +19,20 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
+using System;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.Diagnostics;
-using System;
-using Microsoft.Scripting.Utils;
-using System.Collections.Generic;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Reflection;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using System.Runtime.CompilerServices;
+using System.Text;
+using Microsoft.Scripting.Utils;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Interpreter;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Runtime.Calls {
+	using AstUtils = Microsoft.Scripting.Ast.Utils;
     using Ast = Expression;
 
     public abstract class RubyMetaBinder : DynamicMetaObjectBinder, ILightCallSiteBinder, IExpressionSerializable {
@@ -84,6 +85,22 @@ namespace IronRuby.Runtime.Calls {
                 return null;
             }
 
+#if DEBUG
+            if (RubyOptions.ShowRules) {
+	            var sb = new StringBuilder();
+	            for (int i = 1; i < args.Length; i++) {
+	                sb.Append(RubyUtils.ObjectToMutableString(context, args[i]));
+	                sb.Append(", ");
+	            }
+
+                Utils.Log(String.Format(
+                    "{0}: {1}; {2}",
+                    this,
+                    sb,
+                    args.Length > 1 ? context.GetClassOf(args[1]).DebugName : null
+                ), "BIND");
+            }
+#endif
             result = this.LightBind(site, args, context.Options.CompilationThreshold);
             CacheTarget(result);
             return result;

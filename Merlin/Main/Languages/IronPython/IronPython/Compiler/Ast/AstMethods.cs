@@ -90,6 +90,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo GetCurrentMethod = GetMethod((Func<MethodBase>)MethodBase.GetCurrentMethod);
         public static readonly MethodInfo ForLoopDispose = GetMethod((Action<KeyValuePair<IEnumerator, IDisposable>>)PythonOps.ForLoopDispose);
         public static readonly MethodInfo GetClosureTupleFromContext = GetMethod((Func<CodeContext, MutableTuple>)PythonOps.GetClosureTupleFromContext);
+        public static readonly MethodInfo IsUnicode = GetMethod((Func<object, bool>)PythonOps.IsUnicode);
         
         private static MethodInfo GetMethod(Delegate x) {
             return x.Method;

@@ -1034,6 +1034,19 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region Concat (read-only)
+
+        /// <summary>
+        /// Returns a concatenation of this string with other.
+        /// </summary>
+        public MutableString/*!*/ Concat(MutableString/*!*/ other) {
+            ContractUtils.RequiresNotNull(other, "other");
+            var encoding = RequireCompatibleEncoding(other) ?? _encoding;
+            return new MutableString(_content.Concat(other._content), encoding);
+        }
+
+        #endregion
+
         #region Append
 
         /// <summary>

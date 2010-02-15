@@ -339,26 +339,26 @@ namespace IronRuby.Tests {
 
             x = MS(invalid_utf8, RubyEncoding.UTF8);
             y = MS("α", RubyEncoding.UTF8);
-            Assert(x.Append(y).ToByteArray().ValueEquals(ArrayUtils.AppendRange(invalid_utf8, valid_utf8)));
+            Assert(x.Append(y).ToByteArray().ValueEquals(Utils.Concatenate(invalid_utf8, valid_utf8)));
 
             x = MS(invalid_utf8, RubyEncoding.UTF8);
             y = MS("α", RubyEncoding.UTF8);
-            Assert(y.Append(x).ToByteArray().ValueEquals(ArrayUtils.AppendRange(valid_utf8, invalid_utf8)));
+            Assert(y.Append(x).ToByteArray().ValueEquals(Utils.Concatenate(valid_utf8, invalid_utf8)));
 
             x = MS(invalid_utf8, RubyEncoding.UTF8);
-            Assert(x.Append(x).ToByteArray().ValueEquals(ArrayUtils.AppendRange(invalid_utf8, invalid_utf8)));
+            Assert(x.Append(x).ToByteArray().ValueEquals(Utils.Concatenate(invalid_utf8, invalid_utf8)));
 
 
             x = MS(invalid_utf8, RubyEncoding.UTF8);
             y = MS("βαγ", RubyEncoding.UTF8);
-            Assert(x.Append(y, 1, 1).ToByteArray().ValueEquals(ArrayUtils.AppendRange(invalid_utf8, valid_utf8)));
+            Assert(x.Append(y, 1, 1).ToByteArray().ValueEquals(Utils.Concatenate(invalid_utf8, valid_utf8)));
 
             x = MS(invalid_utf8, RubyEncoding.UTF8);
             y = MS("α", RubyEncoding.UTF8);
-            Assert(y.Append(x, 1, 2).ToByteArray().ValueEquals(ArrayUtils.AppendRange(valid_utf8, new byte[] { 0x85, 0x9c })));
+            Assert(y.Append(x, 1, 2).ToByteArray().ValueEquals(Utils.Concatenate(valid_utf8, new byte[] { 0x85, 0x9c })));
 
             x = MS(invalid_utf8, RubyEncoding.UTF8);
-            Assert(x.Append(x, 1, 2).ToByteArray().ValueEquals(ArrayUtils.AppendRange(invalid_utf8, new byte[] { 0x85, 0x9c })));
+            Assert(x.Append(x, 1, 2).ToByteArray().ValueEquals(Utils.Concatenate(invalid_utf8, new byte[] { 0x85, 0x9c })));
         }
 
         [Options(NoRuntime = true)]
@@ -559,7 +559,7 @@ namespace IronRuby.Tests {
             var s = MutableStringOps.Concatenate(s1, s2);
             Assert(s.Encoding == resultEncoding);
             var b = s.ToByteArray();
-            Assert(b.ValueCompareTo(b.Length, ArrayUtils.AppendRange(b1, b2)) == 0);
+            Assert(b.ValueCompareTo(b.Length, Utils.Concatenate(b1, b2)) == 0);
         }
 
         [Options(NoRuntime = true)]
@@ -691,7 +691,7 @@ namespace IronRuby.Tests {
             MutableString a;
             string s = "12123";
 
-            a = MutableString.CreateBinary(ArrayUtils.AppendRange(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
+            a = MutableString.CreateBinary(Utils.Concatenate(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
             a.Remove(s.Length, 2);
 
             Action<string> test1 = (value) => {
@@ -724,7 +724,7 @@ namespace IronRuby.Tests {
             MutableString a;
             string s = "12123";
 
-            a = MutableString.CreateBinary(ArrayUtils.AppendRange(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
+            a = MutableString.CreateBinary(Utils.Concatenate(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
             a.Remove(s.Length, 2);
 
             Action<string> test1 = (value) => {

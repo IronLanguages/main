@@ -130,7 +130,7 @@ namespace IronRuby.Builtins {
             return context.GetClass(type);
         }
 
-        private static object/*!*/ New(string/*!*/ methodName, CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage,
+        private static object New(string/*!*/ methodName, CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ storage,
             TypeGroup/*!*/ self, params object[]/*!*/ args) {
 
             var cls = GetNonGenericClass(storage.Context, self);
@@ -141,7 +141,7 @@ namespace IronRuby.Builtins {
             return site.Target(site, cls, RubyOps.MakeArrayN(args));
         }
 
-        private static object/*!*/ New(string/*!*/ methodName, CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block, 
+        private static object New(string/*!*/ methodName, CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block, 
             TypeGroup/*!*/ self, params object[]/*!*/ args) {
 
             var cls = GetNonGenericClass(storage.Context, self);
@@ -161,7 +161,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: N&
         [RubyMethod("new")]
-        public static object/*!*/ New(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block, 
+        public static object New(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block, 
             TypeGroup/*!*/ self, params object[]/*!*/ args) {
             return New("new", storage, block, self, args);
         }
@@ -181,7 +181,7 @@ namespace IronRuby.Builtins {
 
         // ARGS: N&
         [RubyMethod("clr_new")]
-        public static object/*!*/ ClrNew(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block,
+        public static object ClrNew(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ storage, BlockParam block,
             TypeGroup/*!*/ self, params object[]/*!*/ args) {
             return New("clr_new", storage, block, self, args);
         }

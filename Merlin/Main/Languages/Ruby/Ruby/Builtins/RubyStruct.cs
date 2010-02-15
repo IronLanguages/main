@@ -148,13 +148,15 @@ namespace IronRuby.Builtins {
             var newInstance = new RuleGenerator(RuleGenerators.InstanceConstructor);
             var context = cls.Context;
 
-            cls.SingletonClass.AddMethod(context, "[]", new RubyCustomMethodInfo(newInstance, RubyMemberFlags.Public, cls.SingletonClass));
-            cls.SingletonClass.AddMethod(context, "new", new RubyCustomMethodInfo(newInstance, RubyMemberFlags.Public, cls.SingletonClass));
+            var singletonClass = cls.GetOrCreateSingletonClass();
 
-            cls.SingletonClass.AddMethod(context, "members", new RubyLibraryMethodInfo(
+            singletonClass.AddMethod(context, "[]", new RubyCustomMethodInfo(newInstance, RubyMemberFlags.Public, singletonClass));
+            singletonClass.AddMethod(context, "new", new RubyCustomMethodInfo(newInstance, RubyMemberFlags.Public, singletonClass));
+
+            singletonClass.AddMethod(context, "members", new RubyLibraryMethodInfo(
                 new[] { LibraryOverload.Create(new Func<RubyClass, RubyArray>(GetMembers), false, 0, 0) },
-                RubyMemberFlags.Public, 
-                cls.SingletonClass
+                RubyMemberFlags.Public,
+                singletonClass
             ));
 
             for (int i = 0; i < structMembers.Length; i++) {

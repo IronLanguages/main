@@ -232,14 +232,22 @@ namespace Microsoft.Scripting {
 
         [Obsolete("Use GetFileSystemEntries instead")]
         public virtual string[] GetFiles(string path, string searchPattern) {
+#if !SILVERLIGHT
             return Directory.GetFiles(path, searchPattern);
             // TODO: return GetFileSystemEntries(path, searchPattern, true, false);
+#else
+            throw new NotImplementedException();
+#endif
         }
 
         [Obsolete("Use GetFileSystemEntries instead")]
         public virtual string[] GetDirectories(string path, string searchPattern) {
+#if !SILVERLIGHT
             return Directory.GetDirectories(path, searchPattern);
             // TODO: return GetFileSystemEntries(path, searchPattern, false, true);
+#else
+            throw new NotImplementedException();
+#endif
         }
 
         public string[] GetFileSystemEntries(string path, string searchPattern) {

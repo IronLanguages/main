@@ -1052,7 +1052,7 @@ var closureScope = scope as RubyClosureScope;
             
             RubyModule module = context.CreateModule(null, null, null, null, null, null, null, ModuleRestrictions.None);
             RubyObject mainObject = new RubyObject(context.ObjectClass);
-            context.CreateMainSingleton(mainObject, new[] { module });
+            context.GetOrCreateMainSingleton(mainObject, new[] { module });
 
             RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, module, null, mainObject);
             scope.SetDebugName("top-level-wrapped");

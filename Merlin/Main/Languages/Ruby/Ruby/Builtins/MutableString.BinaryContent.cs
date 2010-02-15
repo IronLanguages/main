@@ -319,6 +319,52 @@ namespace IronRuby.Builtins {
 
             #endregion
 
+            #region Concatenate (read-only)
+
+            public override Content/*!*/ Concat(Content/*!*/ content) {
+                return content.ConcatTo(this);
+            }
+
+            internal BinaryContent/*!*/ Concatenate(CharArrayContent/*!*/ content) {
+                int count = content.GetDataByteCount();
+                var result = new byte[_count + count];
+                Array.Copy(_data, 0, result, 0, _count);
+                content.GetDataBytes(result, _count);
+                return new BinaryContent(result, null);
+            }
+
+            internal BinaryContent/*!*/ Concatenate(StringContent/*!*/ content) {
+                int count = content.GetDataByteCount();
+                var result = new byte[_count + count];
+                Array.Copy(_data, 0, result, 0, _count);
+                content.GetDataBytes(result, _count);
+                return new BinaryContent(result, null);
+            }
+
+            // binary + binary(self) -> binary
+            public override Content/*!*/ ConcatTo(BinaryContent/*!*/ content) {
+                return new BinaryContent(Utils.Concatenate(content._data, content._count, _data, _count), null);
+            }
+
+            // chars + binary(self) -> binary
+            public override Content/*!*/ ConcatTo(CharArrayContent/*!*/ content) {
+                int count = content.GetDataByteCount();
+                var result = new byte[count + _count];
+                content.GetDataBytes(result, 0);
+                Array.Copy(_data, 0, result, count, _count);
+                return new BinaryContent(result, null);
+            }
+
+            // string + binary(self) -> binary
+            public override Content/*!*/ ConcatTo(StringContent/*!*/ content) {
+                int count = content.GetDataByteCount();
+                var result = new byte[count + _count];
+                content.GetDataBytes(result, 0);
+                Array.Copy(_data, 0, result, count, _count);
+                return new BinaryContent(result, null);
+            }
+
+            #endregion
 
             #region Append
 

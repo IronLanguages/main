@@ -192,8 +192,6 @@ internal class LibraryDef {
             get {
                 return !IsExtension && (
                        QualifiedName == RubyClass.MainSingletonName
-                    || QualifiedName == RubyClass.ClassSingletonName
-                    || QualifiedName == RubyClass.ClassSingletonSingletonName
                     || Extends == typeof(Kernel)
                     || Extends == typeof(Object)
                     || Extends == typeof(RubyClass)
@@ -872,8 +870,6 @@ internal class LibraryDef {
             _output.WriteLine("Context.RegisterPrimitives(");
             _output.Indent++;
 
-            _output.WriteLine("Load{0}_Instance,", RubyClass.ClassSingletonName);
-            _output.WriteLine("Load{0}_Instance,", RubyClass.ClassSingletonSingletonName);
             _output.WriteLine("Load{0}_Instance,", RubyClass.MainSingletonName);
 
             _output.WriteLine(_moduleDefs[typeof(Kernel)].GetInitializerDelegates() + ",");

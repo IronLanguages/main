@@ -16,8 +16,10 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting;
 using System.Security;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
@@ -175,7 +177,42 @@ namespace IronRuby.Builtins {
 
     [RubyException("NoMethodError", Extends = typeof(MissingMethodException), Inherits = typeof(MemberAccessException))]
     [HideMethod("message")]
-    public static class NoMethodErrorOps {
+    public static class NoMethodErrorOps {        
+        [RubyConstructor]
+        public static MissingMethodException/*!*/ Factory(
+            RubyClass/*!*/ self,
+            [DefaultParameterValue(null)]object message, 
+            [DefaultParameterValue(null)]object name,
+            [DefaultParameterValue(null)]object args) {
+            MissingMethodException result = new MissingMethodException(RubyExceptionData.GetClrMessage(self, message ?? "NoMethodError"));
+            RubyExceptionData.InitializeException(result, message);
+            // Exception.Data requires the value to be Serializable. We workaround this using an array
+            // of size 1 since System.Array is serializable. This will allow the exception to be marshalled.
+            // If the value cannot actually be marshalled, it will fail only if the value is later accessed.
+#if SILVERLIGHT
+            result.Data[typeof(NoMethodErrorOps)] = new object[1] { args };
+#else
+            result.Data[typeof(NoMethodErrorOps)] = new ObjectHandle[1] { new ObjectHandle(args) };
+#endif
+            return result;
+        }
+
+        [RubyMethod("args")]
+        public static object GetArguments(MissingMethodException/*!*/ self) {
+#if SILVERLIGHT
+            object[] args = self.Data[typeof(NoMethodErrorOps)] as object[];
+            if (args == null) {
+                return null;
+            }
+            return args[0];
+#else
+            ObjectHandle[] args = self.Data[typeof(NoMethodErrorOps)] as ObjectHandle[];
+            if (args == null) {
+                return null;
+            }
+            return args[0].Unwrap();
+#endif
+        }
     }
 
     [RubyException("SecurityError", Extends = typeof(SecurityException), Inherits = typeof(SystemException))]

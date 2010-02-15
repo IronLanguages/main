@@ -143,6 +143,17 @@ namespace IronRuby.Runtime {
             }
         }
 
+        internal static T[]/*!*/ Concatenate<T>(T[]/*!*/ array1, T[]/*!*/ array2) {
+            return Concatenate(array1, array1.Length, array2, array2.Length);
+        }
+
+        internal static T[]/*!*/ Concatenate<T>(T[]/*!*/ array1, int itemCount1, T[]/*!*/ array2, int itemCount2) {
+            T[] result = new T[itemCount1 + itemCount2];
+            Array.Copy(array1, 0, result, 0, itemCount1);
+            Array.Copy(array2, 0, result, itemCount1, itemCount2);
+            return result;
+        }
+
         internal static int Append<T>(ref T[]/*!*/ array, int itemCount, T item, int repeatCount) {
             Resize(ref array, itemCount + repeatCount);
             Fill(array, itemCount, item, repeatCount);

@@ -41,7 +41,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 // bool includeNewLines = IncludeNewLines(module.Context, self);
 
                 if (isClassMethod) {
-                    module = module.SingletonClass;
+                    module = module.ImmediateClass;
                 }
 
                 var member = module.GetMethod(methodName);

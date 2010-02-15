@@ -205,21 +205,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TProc>(CallSite/*!*/ callSite, object self, TProc proc /*$Parameters*/) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p /*$Arguments*/);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc /*$Arguments*/);
             } else {
                 return ((CallSite<Func<CallSite, object, TProc /*$GenericParams*/, object>>)callSite).
                     Update(callSite, self, proc /*$Arguments*/);
@@ -238,21 +225,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TScope, TProc>(CallSite/*!*/ callSite, TScope/*!*/ scope, object self, TProc proc /*$Parameters*/) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p /*$Arguments*/);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc /*$Arguments*/);
             } else {
                 return ((CallSite<Func<CallSite, TScope, object, TProc /*$GenericParams*/, object>>)callSite).
                     Update(callSite, scope, self, proc /*$Arguments*/);
@@ -306,21 +280,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TProc>(CallSite/*!*/ callSite, object self, TProc proc ,T0 arg0) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0);
             } else {
                 return ((CallSite<Func<CallSite, object, TProc , T0, object>>)callSite).
                     Update(callSite, self, proc ,arg0);
@@ -339,21 +300,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TScope, TProc>(CallSite/*!*/ callSite, TScope/*!*/ scope, object self, TProc proc ,T0 arg0) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0);
             } else {
                 return ((CallSite<Func<CallSite, TScope, object, TProc , T0, object>>)callSite).
                     Update(callSite, scope, self, proc ,arg0);
@@ -404,21 +352,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TProc>(CallSite/*!*/ callSite, object self, TProc proc ,T0 arg0, T1 arg1) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0, arg1);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0, arg1);
             } else {
                 return ((CallSite<Func<CallSite, object, TProc , T0 , T1, object>>)callSite).
                     Update(callSite, self, proc ,arg0, arg1);
@@ -437,21 +372,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TScope, TProc>(CallSite/*!*/ callSite, TScope/*!*/ scope, object self, TProc proc ,T0 arg0, T1 arg1) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0, arg1);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0, arg1);
             } else {
                 return ((CallSite<Func<CallSite, TScope, object, TProc , T0 , T1, object>>)callSite).
                     Update(callSite, scope, self, proc ,arg0, arg1);
@@ -502,21 +424,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TProc>(CallSite/*!*/ callSite, object self, TProc proc ,T0 arg0, T1 arg1, T2 arg2) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0, arg1, arg2);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0, arg1, arg2);
             } else {
                 return ((CallSite<Func<CallSite, object, TProc , T0 , T1 , T2, object>>)callSite).
                     Update(callSite, self, proc ,arg0, arg1, arg2);
@@ -535,21 +444,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TScope, TProc>(CallSite/*!*/ callSite, TScope/*!*/ scope, object self, TProc proc ,T0 arg0, T1 arg1, T2 arg2) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0, arg1, arg2);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0, arg1, arg2);
             } else {
                 return ((CallSite<Func<CallSite, TScope, object, TProc , T0 , T1 , T2, object>>)callSite).
                     Update(callSite, scope, self, proc ,arg0, arg1, arg2);
@@ -600,21 +496,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TProc>(CallSite/*!*/ callSite, object self, TProc proc ,T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0, arg1, arg2, arg3);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0, arg1, arg2, arg3);
             } else {
                 return ((CallSite<Func<CallSite, object, TProc , T0 , T1 , T2 , T3, object>>)callSite).
                     Update(callSite, self, proc ,arg0, arg1, arg2, arg3);
@@ -633,21 +516,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TScope, TProc>(CallSite/*!*/ callSite, TScope/*!*/ scope, object self, TProc proc ,T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0, arg1, arg2, arg3);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0, arg1, arg2, arg3);
             } else {
                 return ((CallSite<Func<CallSite, TScope, object, TProc , T0 , T1 , T2 , T3, object>>)callSite).
                     Update(callSite, scope, self, proc ,arg0, arg1, arg2, arg3);
@@ -698,21 +568,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TProc>(CallSite/*!*/ callSite, object self, TProc proc ,T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0, arg1, arg2, arg3, arg4);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0, arg1, arg2, arg3, arg4);
             } else {
                 return ((CallSite<Func<CallSite, object, TProc , T0 , T1 , T2 , T3 , T4, object>>)callSite).
                     Update(callSite, self, proc ,arg0, arg1, arg2, arg3, arg4);
@@ -731,21 +588,8 @@ namespace IronRuby.Runtime.Calls {
         public object Invoke<TScope, TProc>(CallSite/*!*/ callSite, TScope/*!*/ scope, object self, TProc proc ,T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
             IRubyObject obj = self as IRubyObject;
             if (obj != null && obj.ImmediateClass.Version.Method == Version) {
-                var p = (Proc)(object)proc;
-
-                // see RubyMethodInfo.cs: RuleControlFlowBuilder
-                var rfc = RubyOps.CreateRfcForMethod(p);
-                try {
-                    return Method(self, p ,arg0, arg1, arg2, arg3, arg4);
-                } catch (MethodUnwinder unwinder) {
-                    if (unwinder.TargetFrame == rfc) {
-                        return unwinder.ReturnValue;
-                    } else {
-                        throw;
-                    }
-                } finally {
-                    rfc.LeaveMethod();
-                }
+                // Dispatching to a Ruby method - the method scope sets the proc's converter to itself, hence we don't need to do it here:
+                return Method(self, (Proc)(object)proc ,arg0, arg1, arg2, arg3, arg4);
             } else {
                 return ((CallSite<Func<CallSite, TScope, object, TProc , T0 , T1 , T2 , T3 , T4, object>>)callSite).
                     Update(callSite, scope, self, proc ,arg0, arg1, arg2, arg3, arg4);

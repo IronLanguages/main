@@ -99,6 +99,11 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateUndefinedMethodError(RubyModule/*!*/ module, string/*!*/ methodName) {
+            // MRI doesn't display the singleton's name:
+            if (module.IsSingletonClass) {
+                module = ((RubyClass)module).GetNonSingletonClass();
+            }
+
             return CreateNameError("undefined method `{0}' for {2} `{1}'",
                 methodName, module.Name, module.IsClass ? "class" : "module");
         }

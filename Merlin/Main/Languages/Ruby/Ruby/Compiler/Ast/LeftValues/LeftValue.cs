@@ -48,11 +48,5 @@ namespace IronRuby.Compiler.Ast {
 
         internal abstract MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, MSA.Expression targetValue, bool tryRead);
         internal abstract MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, MSA.Expression targetValue, MSA.Expression/*!*/ rightValue);
-
-        internal virtual List<LeftValue>/*!*/ ToList() {
-            List<LeftValue> result = new List<LeftValue>();
-            result.Add(this);
-            return result;
-        }
     }
 }

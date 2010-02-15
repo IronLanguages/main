@@ -78,13 +78,14 @@ namespace IronRuby.Builtins {
         /// <param name="includedIn">The host class including the module</param>
         [RubyMethod("included", RubyMethodAttributes.PublicSingleton)]
         public static object Included(RubyContext/*!*/ context, RubyModule/*!*/ self, RubyModule/*!*/ includedIn) {
-            includedIn.SingletonClass.AddMethod(
+            var singleton = includedIn.GetOrCreateSingletonClass();
+            singleton.AddMethod(
                 context,
                 "induced_from",
                 new RubyLibraryMethodInfo(
                     new[] { LibraryOverload.Create(new Func<RubyModule, object, object>(InducedFrom), false, 0, 0) }, 
                     RubyMethodVisibility.Public, 
-                    includedIn.SingletonClass
+                    singleton
                 )
             );
             return self;

@@ -53,7 +53,7 @@ namespace IronRuby.Builtins {
                 if (predicate != null) {
                     if (predicate.Yield(item, out item)) {
                         result = item;
-                        return selfBlock.Break(item);
+                        return selfBlock.PropagateFlow(predicate, item);
                     }
                 }
 
@@ -82,7 +82,7 @@ namespace IronRuby.Builtins {
                 if (collector != null) {
                     if (collector.Yield(item, out item)) {
                         result = item;
-                        return selfBlock.Break(item);
+                        return selfBlock.PropagateFlow(collector, item);
                     }
                 }
                 resultArray.Add(item);
@@ -109,7 +109,7 @@ namespace IronRuby.Builtins {
                 object blockResult;
                 if (predicate.Yield(item, out blockResult)) {
                     result = blockResult;
-                    return selfBlock.Break(blockResult);
+                    return selfBlock.PropagateFlow(predicate, blockResult);
                 }
 
                 if (Protocols.IsTrue(blockResult)) {
@@ -149,7 +149,7 @@ namespace IronRuby.Builtins {
                 object blockResult;
                 if (block.Yield(item, index, out blockResult)) {
                     result = blockResult;
-                    return selfBlock.Break(blockResult);
+                    return selfBlock.PropagateFlow(block, blockResult);
                 }
                 index += 1;
                 return null;
@@ -202,7 +202,7 @@ namespace IronRuby.Builtins {
                 object blockResult;
                 if (predicate.Yield(item, out blockResult)) {
                     result = blockResult;
-                    return selfBlock.Break(blockResult);
+                    return selfBlock.PropagateFlow(predicate, blockResult);
                 }
 
                 // Check if the result is what we expect (use true to select, false to reject)
@@ -232,7 +232,7 @@ namespace IronRuby.Builtins {
                     if (action != null) {
                         if (action.Yield(item, out item)) {
                             result = item;
-                            return selfBlock.Break(item);
+                            return selfBlock.PropagateFlow(action, item);
                         }
                     }
                     resultArray.Add(item);
@@ -282,7 +282,7 @@ namespace IronRuby.Builtins {
                 }
 
                 if (operation.Yield(result, item, out result)) {
-                    return selfBlock.Break(result);
+                    return selfBlock.PropagateFlow(operation, result);
                 }
 
                 return null;
@@ -338,7 +338,7 @@ namespace IronRuby.Builtins {
                     object blockResult;
                     if (comparer.Yield(result, item, out blockResult)) {
                         result = blockResult;
-                        return selfBlock.Break(blockResult);
+                        return selfBlock.PropagateFlow(comparer, blockResult);
                     }
 
                     if (blockResult == null) {
@@ -380,7 +380,7 @@ namespace IronRuby.Builtins {
                 object blockResult;
                 if (predicate.Yield(item, out blockResult)) {
                     result = blockResult;
-                    return selfBlock.Break(blockResult);
+                    return selfBlock.PropagateFlow(predicate, blockResult);
                 }
 
                 if (Protocols.IsTrue(blockResult)) {
@@ -432,7 +432,7 @@ namespace IronRuby.Builtins {
                 if (keySelector.Yield(item, out key)) {
                     keyValuePairs = null;
                     result = key;
-                    return selfBlock.Break(key);
+                    return selfBlock.PropagateFlow(keySelector, key);
                 }
 
                 keyValuePairs.Add(new KeyValuePair<object, object>(key, item));
@@ -487,7 +487,7 @@ namespace IronRuby.Builtins {
                     object blockResult;
                     if (block.Yield(array, out blockResult)) {
                         result = blockResult;
-                        return selfBlock.Break(blockResult);
+                        return selfBlock.PropagateFlow(block, blockResult);
                     }
                 }
                 else {

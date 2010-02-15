@@ -99,6 +99,8 @@ namespace IronRuby.Builtins {
         }
 
         private readonly RubyContext/*!*/ _context;
+        
+        #region CLR Types and Namespaces
 
         // the namespace this module represents or null:
         private readonly NamespaceTracker _namespaceTracker;
@@ -107,16 +109,118 @@ namespace IronRuby.Builtins {
         // TODO: unify with _underlyingSystemType on classes
         private readonly TypeTracker _typeTracker;
 
+        public TypeTracker TypeTracker {
+            get { return _typeTracker; }
+        }
+
+        public NamespaceTracker NamespaceTracker {
+            get { return _namespaceTracker; }
+        }
+
+        public bool IsInterface {
+            get { return _typeTracker != null && _typeTracker.Type.IsInterface; }
+        }
+
+        public bool IsClrModule {
+            get { return _typeTracker != null && IsModuleType(_typeTracker.Type); }
+        }
+
+        public virtual Type/*!*/ GetUnderlyingSystemType() {
+            if (IsClrModule) {
+                return _typeTracker.Type;
+            } else {
+                throw new InvalidOperationException();
+            }
+        }
+        
+        #endregion
+
         private readonly ModuleRestrictions _restrictions;
         private readonly WeakReference/*!*/ _weakSelf;
         
         // name of the module or null for anonymous modules:
         private string _name;
 
-        // lazy interlocked init:
-        private RubyClass _singletonClass;
-
+        // Lazy interlocked init'd.
         private RubyInstanceData _instanceData;
+        
+        #region Immediate/Singleton/Super Class
+
+        // Lazy interlocked init'd.
+        // Classes
+        //   Null immediately after construction, initialized by RubyContext.CreateClass factory to a singleton class.
+        //   This lazy initialization is needed to allow circular references among Kernel, Object, Module and Class.
+        //   We create the singleton class eagerly in the factory since classes' singleton classes form a hierarchy parallel 
+        //   to the main inheritance hierarachy of classes. If we didn't we would need to update super-references of all singleton subclasses 
+        //   that were created after a singleton class is lazily created.
+        // Modules
+        //   Initialized to the class of the module and may later be changed to a singleton class (only if the singleton is needed).
+        //   We don't create the singleton class eagerly to optimize rule generation. If we did, each (meta)module instance would receive its own immediate class
+        //   different from other instances of the (meta)module. And thus the instances would use different method table versions eventhough they are the same.
+        // Singleton Classes
+        //   Self reference for dummy singletons (tha last singletons in the singleton chain).
+        private RubyClass _immediateClass;
+
+        /// <summary>
+        /// A dummy singleton class is an immutable class that has no members and is used to terminate singleton class chain.
+        /// </summary>
+        /// <remarks>
+        /// A method invoked on the last class in the singleton class chain before the dummy singleton is searched in the inheritance hierarchy of the dummy singleton:
+        /// [dummy singleton, singleton(Class), singleton(Module), singleton(Object), Class, Module, Object].
+        /// The ImmediateClass reference cannot be null (that would cause null-ref exception in rules), so we need to set it to the dummy.
+        /// </remarks>
+        public bool IsDummySingletonClass {
+            get { return _immediateClass == this; }
+        }
+
+        public virtual bool IsSingletonClass {
+            get { return false; }
+        }
+
+        public virtual bool IsClass {
+            get { return false; }
+        }
+
+        public bool IsObjectClass {
+            get { return ReferenceEquals(this, Context.ObjectClass); }
+        }
+
+        public bool IsComClass {
+            get { return ReferenceEquals(this, Context.ComObjectClass); }
+        }
+
+        internal virtual RubyClass GetSuperClass() {
+            return null;
+        }
+
+        // thread safe:
+        internal void InitializeImmediateClass(RubyClass/*!*/ cls) {
+            Debug.Assert(_immediateClass == null);
+            _immediateClass = cls;
+        }
+
+        // thread safe:
+        internal void InitializeImmediateClass(RubyClass/*!*/ singletonSuperClass, Action<RubyModule> trait) {
+            Assert.NotNull(singletonSuperClass);
+
+            RubyClass immediate;
+            if (IsClass) {
+                // class: eager singleton class construction:
+                immediate = CreateSingletonClass(singletonSuperClass, trait);
+                immediate.InitializeImmediateClass(_context.ClassClass.GetDummySingletonClass());
+            } else if (trait != null) {
+                // module: eager singleton class construction:
+                immediate = CreateSingletonClass(singletonSuperClass, trait);
+                immediate.InitializeImmediateClass(singletonSuperClass.GetDummySingletonClass());
+            } else {
+                // module: lazy singleton class construction:
+                immediate = singletonSuperClass;
+            }
+
+            InitializeImmediateClass(immediate);
+        }
+
+        #endregion
 
         #region Mutable state guarded by ClassHierarchyLock
 
@@ -216,45 +320,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        public TypeTracker TypeTracker {
-            get { return _typeTracker; }
-        }
-
-        public NamespaceTracker NamespaceTracker {
-            get { return _namespaceTracker; }
-        }
-
-        public bool IsInterface {
-            get { return _typeTracker != null && _typeTracker.Type.IsInterface; }
-        }
-
-        public bool IsClrModule {
-            get { return _typeTracker != null && IsModuleType(_typeTracker.Type); }
-        }
-
-        public virtual Type/*!*/ GetUnderlyingSystemType() {
-            if (IsClrModule) {
-                return _typeTracker.Type;
-            } else {
-                throw new InvalidOperationException();
-            }
-        }
-
-        public RubyClass/*!*/ SingletonClass {
-            get {
-                Debug.Assert(_singletonClass != null);
-                return _singletonClass;
-            }
-        }
-
-        public bool IsDummySingletonClass {
-            get { return ReferenceEquals(_singletonClass, this); }
-        }
-
-        public virtual bool IsSingletonClass {
-            get { return false; }
-        }
-
         public ModuleRestrictions Restrictions {
             get { return _restrictions; }
         }
@@ -272,22 +337,6 @@ namespace IronRuby.Builtins {
             get { return _context; }
         }
 
-        public virtual bool IsClass {
-            get { return false; }
-        }
-
-        public bool IsObjectClass {
-            get { return ReferenceEquals(this, Context.ObjectClass); }
-        }
-
-        public bool IsComClass {
-            get { return ReferenceEquals(this, Context.ComObjectClass); }
-        }
-
-        internal virtual RubyClass GetSuperClass() {
-            return null;
-        }
-
         internal virtual RubyGlobalScope GlobalScope {
             get { return null; }
         }
@@ -297,16 +346,16 @@ namespace IronRuby.Builtins {
         }
 
         // default allocator:
-        public RubyModule(RubyClass/*!*/ rubyClass) 
-            : this(rubyClass, null) {
+        public RubyModule(RubyClass/*!*/ metaModuleClass) 
+            : this(metaModuleClass, null) {
         }
 
-        // creates an empty module:
+        // creates an empty (meta)module:
         protected RubyModule(RubyClass/*!*/ metaModuleClass, string name)
             : this(metaModuleClass.Context, name, null, null, null, null, null, ModuleRestrictions.None) {
-
-            // all modules need a singleton (see RubyContext.CreateModule):
-            InitializeDummySingletonClass(metaModuleClass, null);
+            
+            // metaModuleClass represents a subclass of Module or its duplicate (Kernel#dup)
+            InitializeImmediateClass(metaModuleClass, null);
         }
 
         internal RubyModule(RubyContext/*!*/ context, string name, Action<RubyModule> methodsInitializer, Action<RubyModule> constantsInitializer,
@@ -548,16 +597,20 @@ namespace IronRuby.Builtins {
         }
 
         object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
-            // the meta-module class of this module is the singleton's super class:
-            RubyModule result = new RubyModule(_singletonClass.SuperClass, null);
-                
+            
+            // capture the current immediate class (it can change any time if it not a singleton class)
+            RubyClass immediate = _immediateClass;
+
+            RubyModule result = new RubyModule(immediate.IsSingletonClass ? immediate.SuperClass : immediate, null);
+
             // singleton members are copied here, not in InitializeCopy:
-            if (copySingletonMembers && !IsSingletonClass) {
+            if (copySingletonMembers && immediate.IsSingletonClass) {
+                var singletonClass = result.GetOrCreateSingletonClass();
                 using (Context.ClassHierarchyLocker()) {
-                    result.SingletonClass.InitializeMembersFrom(SingletonClass);
+                    singletonClass.InitializeMembersFrom(immediate);
                 }
             }
-
+            
             // copy instance variables:
             _context.CopyInstanceData(this, result, false);
             return result;
@@ -569,6 +622,7 @@ namespace IronRuby.Builtins {
 
         // A version of a frozen module can still change if its super-classes/mixins change.
         private void Mutate() {
+            Debug.Assert(!IsDummySingletonClass);
             if (IsFrozen) {
                 throw RubyExceptions.CreateTypeError(String.Format("can't modify frozen {0}", IsClass ? "class" : "module"));
             }
@@ -664,11 +718,10 @@ namespace IronRuby.Builtins {
         // thread-safe:
         public RubyClass ImmediateClass {
             get {
-                return _singletonClass;
+                return _immediateClass;
             }
             set {
-                // all modules have singleton classes initialized at the creation time, these cannot be changed:
-                throw Assert.Unreachable;
+                throw new InvalidOperationException("Cannot change the immediate class of a module");
             }
         }
 
@@ -730,31 +783,42 @@ namespace IronRuby.Builtins {
         }
 
         // thread safe:
-        public RubyClass/*!*/ CreateSingletonClass() {
-            Debug.Assert(!IsDummySingletonClass);
-
-            var singleton = _singletonClass;
-            if (singleton.IsDummySingletonClass) {
-                RubyClass super = ((RubyModule)singleton.SingletonClassOf).IsClass ? Context.ClassClass.SingletonClass : Context.ModuleClass.SingletonClass;
-                RubyClass newDummy = CreateDummySingletonClass(super, Context.SingletonSingletonTrait);
-                
-                // update singleton only if it still points to itself:
-                Interlocked.CompareExchange(ref singleton._singletonClass, newDummy, singleton);
+        public RubyClass/*!*/ GetOrCreateSingletonClass() {
+            if (IsDummySingletonClass) {
+                throw new InvalidOperationException("Dummy singleton class has no singleton class");
             }
 
-            Debug.Assert(_singletonClass.IsSingletonClass && !_singletonClass.IsDummySingletonClass);
-            return _singletonClass;
+            RubyClass immediate = _immediateClass;
+            RubyClass singletonSuper;
+            RubyClass singletonImmediate;
+
+            if (!immediate.IsSingletonClass) {
+                // finish module singleton initialization:
+                Debug.Assert(!IsClass);
+                singletonSuper = immediate;
+                singletonImmediate = immediate.GetDummySingletonClass();
+            } else if (immediate.IsDummySingletonClass) {
+                // expanding singleton chain:
+                singletonSuper = immediate.SuperClass;
+                singletonImmediate = immediate;
+            } else {
+                return immediate;
+            }
+
+            var singleton = CreateSingletonClass(singletonSuper, null);
+            singleton.InitializeImmediateClass(singletonImmediate);
+            Interlocked.CompareExchange(ref _immediateClass, singleton, immediate);
+
+            Debug.Assert(_immediateClass.IsSingletonClass && !_immediateClass.IsDummySingletonClass);
+            return _immediateClass;
         }
 
-        // thread safe:
-        internal void InitializeDummySingletonClass(RubyClass/*!*/ superClass, Action<RubyModule> trait) {
-            // if multiple threads are trying to set the singleton, the first one should win:
-            var previous = Interlocked.CompareExchange(ref _singletonClass, CreateDummySingletonClass(superClass, trait), null);
-            Debug.Assert(previous == null);
-        }
-
-        // thread safe:
-        private RubyClass/*!*/ CreateDummySingletonClass(RubyClass/*!*/ superClass, Action<RubyModule> trait) {
+        /// <summary>
+        /// Create a new singleton class for this module. 
+        /// Doesn't attach this module to it yet, the caller needs to do so.
+        /// </summary>
+        /// <remarks>Thread safe.</remarks>
+        internal RubyClass/*!*/ CreateSingletonClass(RubyClass/*!*/ superClass, Action<RubyModule> trait) {
             // Note that in MRI, member tables of dummy singleton are shared with the class the dummy is singleton for
             // This is obviously an implementation detail leaking to the language and we don't support that.
 
@@ -770,9 +834,6 @@ namespace IronRuby.Builtins {
 #if DEBUG
             result.Version.SetName(result.DebugName);
 #endif
-            result._singletonClass = result;
-            
-            // MRI: 
             return result;
         }
 
@@ -1107,9 +1168,11 @@ namespace IronRuby.Builtins {
                 result = false;
             }
 
-            if (_namespaceTracker != null && _namespaceTracker.TryGetValue(SymbolTable.StringToId(name), out value)) {
+            object namespaceValue;
+            if (_namespaceTracker != null && _namespaceTracker.TryGetValue(SymbolTable.StringToId(name), out namespaceValue)) {
                 _constants[name] = ConstantStorage.Removed;
                 _context.ConstantAccessVersion++;
+                value = namespaceValue;
                 result = true;
             } else if (result) {
                 _constants.Remove(name);
@@ -1222,7 +1285,8 @@ namespace IronRuby.Builtins {
         public void SetModuleFunctionNoEventNoLock(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
             // CLR members: Detaches the member from its underlying type (by creating a copy).
             // TODO: check for CLR instance members, it should be an error to call module_function on them:
-            SingletonClass.SetMethodNoEventNoLock(callerContext, name, method.Copy(RubyMemberFlags.Public, SingletonClass));
+            var singletonClass = GetOrCreateSingletonClass();
+            singletonClass.SetMethodNoEventNoLock(callerContext, name, method.Copy(RubyMemberFlags.Public, singletonClass));
         }
 
         // thread-safe:
@@ -1949,7 +2013,8 @@ namespace IronRuby.Builtins {
                 }
 
                 if (classTrait != null) {
-                    SingletonClass.IncludeTraitNoLock(ref SingletonClass._methodsInitializer, SingletonClass._methodsState, classTrait);
+                    var singleton = GetOrCreateSingletonClass();
+                    singleton.IncludeTraitNoLock(ref singleton._methodsInitializer, singleton._methodsState, classTrait);
                 }
                     
                 // updates the module version:
@@ -1980,7 +2045,7 @@ namespace IronRuby.Builtins {
 
                     RubyModule module = singletonOf as RubyModule;
 
-                    if (module == null) {
+                    if (module == null || !module.IsSingletonClass && module.Name == null) {
                         nestings++;
                         result.Append("#<");
                         result.Append(c.SuperClass.GetName(context));

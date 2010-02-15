@@ -344,5 +344,148 @@ print true.foo, false.bar, nil.baz
 tfn
 ");
         }
+
+        /// <summary>
+        /// Singleton(module)'s super-class is singleton(Module).
+        /// </summary>
+        public void ModuleSingletons1() {
+            TestOutput(@"
+class Class
+  def self.c_c
+    :c_c
+  end 
+end
+
+class Module
+  def self.c_m
+    :c_m
+  end 
+end
+
+module M
+  class << self
+    $SM = self
+  end  
+end 
+
+$SM.method(:c_c) rescue p $!
+$SM.c_c rescue p $!
+
+p $SM.c_m
+", @"
+#<NameError: undefined method `c_c' for class `Class'>
+#<NoMethodError: undefined method `c_c' for #<Class:M>>
+:c_m
+");
+        }
+
+        /// <summary>
+        /// Cannot instantiate singleton(class).
+        /// </summary>
+        public void ClassSingletons1() {
+            TestOutput(@"
+class C; end
+class << C
+  p method(:new)
+  new rescue p $!
+end
+", @"
+#<Method: Class#new>
+#<TypeError: can't create instance of virtual class>
+");
+        }
+
+        private const string SingletonHelpers = @"
+def get_singletons(cls, n)
+  result = [cls]
+  n.times do  
+    cls = class << cls; self; end
+    result << cls
+  end
+  result
+end
+";
+
+        public void DummySingletons1() {
+            Engine.Execute(SingletonHelpers);
+            AssertOutput(() =>
+                CompilerTest(@"
+[
+  class C; self; end,
+  module M; self; end,
+  class MM < Module; new; end
+].each do |c|
+  get_singletons(c, 4).each do |s|
+    printf '%-50s %s', s, s.superclass rescue print $!
+    puts
+  end
+  puts
+end
+"), @"
+C                                                  Object
+#<Class:C>                                         #<Class:#<Class:C>>
+#<Class:#<Class:C>>                                #<Class:#<Class:#<Class:C>>>
+#<Class:#<Class:#<Class:C>>>                       #<Class:#<Class:#<Class:#<Class:C>>>>
+#<Class:#<Class:#<Class:#<Class:C>>>>              #<Class:#<Class:#<Class:#<Class:C>>>>
+
+undefined method `superclass' for M:Module
+#<Class:M>                                         #<Class:#<Class:M>>
+#<Class:#<Class:M>>                                #<Class:#<Class:#<Class:M>>>
+#<Class:#<Class:#<Class:M>>>                       #<Class:#<Class:#<Class:#<Class:M>>>>
+#<Class:#<Class:#<Class:#<Class:M>>>>              #<Class:#<Class:#<Class:#<Class:M>>>>
+
+undefined method `superclass' for #<MM:0x*>
+#<Class:#<MM:0x*>>                           #<Class:#<Class:#<MM:0x*>>>
+#<Class:#<Class:#<MM:0x*>>>                  #<Class:#<Class:#<Class:#<MM:0x*>>>>
+#<Class:#<Class:#<Class:#<MM:0x*>>>>         #<Class:#<Class:#<Class:#<Class:#<MM:0x*>>>>>
+#<Class:#<Class:#<Class:#<Class:#<MM:0x*>>>>> #<Class:#<Class:#<Class:#<Class:#<MM:0x*>>>>>
+", OutputFlags.Match);
+        }
+
+        public void DummySingletons2() {
+            Engine.Execute(SingletonHelpers);
+            TestOutput(@"
+class MetaModule < Module
+end
+MM = MetaModule.new
+
+[Object, Module, Class, MetaModule].each do |c|
+  s = class << c; self; end
+  
+  c.send(:define_method, :f) { c.name }
+  s.send(:define_method, :f) { 'S(' + c.name + ')' }
+end
+
+[
+  MM,
+  module M; self; end,
+  Module,
+  MetaModule
+].each do |c|
+  get_singletons(c, 2).each do |s|                                      # the results differ from MRI for other values than 2, it seems like a bug in MRI
+    printf '%-30s %s', s, s.f
+    puts    
+  end
+  puts
+end
+", @"
+MM                             MetaModule
+#<Class:MM>                    S(MetaModule)
+#<Class:#<Class:MM>>           S(MetaModule)
+
+M                              Module
+#<Class:M>                     S(Module)
+#<Class:#<Class:M>>            S(Module)
+
+Module                         S(Module)
+#<Class:Module>                S(Class)
+#<Class:#<Class:Module>>       S(Class)
+
+MetaModule                     S(MetaModule)
+#<Class:MetaModule>            S(Class)
+#<Class:#<Class:MetaModule>>   S(Class)
+");
+        }
+        
     }
 }

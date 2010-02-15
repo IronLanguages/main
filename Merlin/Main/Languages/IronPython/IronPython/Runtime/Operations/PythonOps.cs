@@ -4288,6 +4288,40 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.GetAttrNames(context, scope);
         }
 
+        public static bool IsUnicode(object unicodeObj) {
+            return unicodeObj == TypeCache.String;
+        }
+    }
+
+    /// <summary>
+    /// Helper clas for calls to unicode(...).  We generate code which checks if unicode
+    /// is str and if it is we redirect those calls to the unicode function defined on this
+    /// class.
+    /// </summary>
+    public class UnicodeHelper {
+        internal static BuiltinFunction Function = BuiltinFunction.MakeFunction("unicode",
+            ArrayUtils.ConvertAll(
+                typeof(UnicodeHelper).GetMember("unicode"),
+                x => (MethodInfo)x
+            ),
+            typeof(string)
+        );
+
+        public static object unicode(CodeContext context) {
+            return String.Empty;
+        }
+
+        public static object unicode(CodeContext context, object @string) {
+            return StringOps.FastNewUnicode(context, @string);
+        }
+
+        public static object unicode(CodeContext context, object @string, object encoding) {
+            return StringOps.FastNewUnicode(context, @string, encoding);
+        }
+
+        public static object unicode(CodeContext context, object @string, [Optional]object encoding, object errors) {
+            return StringOps.FastNewUnicode(context, @string, encoding, errors);
+        }
     }
 
     public struct FunctionStack {
