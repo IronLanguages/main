@@ -1,0 +1,51 @@
+// COMTest.idl : IDL source for COMTest
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (COMTest.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+	object,
+	uuid(C819EB8A-97B9-4DF4-9557-FBEE6BD88EF0),
+	dual,
+	nonextensible,
+	helpstring("ISimpleComObject Interface"),
+	pointer_default(unique)
+]
+interface ISimpleComObject : IDispatch{
+	[propget, id(1), helpstring("property FloatProperty")] HRESULT FloatProperty([out, retval] FLOAT* pVal);
+	[propput, id(1), helpstring("property FloatProperty")] HRESULT FloatProperty([in] FLOAT newVal);
+	[id(2), helpstring("method HelloWorld")] HRESULT HelloWorld([out,retval] BSTR* pRet);
+	[id(3), helpstring("method GetProcessThreadID")] HRESULT GetProcessThreadID([out] LONG* pdwProcessId, [out] LONG* pdwThreadId);
+};
+[
+	uuid(A5619E05-E89F-4336-A78A-BEEAEBD2B556),
+	version(1.0),
+	helpstring("COMTest 1.0 Type Library")
+]
+library COMTestLib
+{
+	importlib("stdole2.tlb");
+	[
+		uuid(D293233D-AB87-464B-B438-28AB8CABAC03),
+		helpstring("_ISimpleComObjectEvents Interface")
+	]
+	dispinterface _ISimpleComObjectEvents
+	{
+		properties:
+		methods:
+			[id(1), helpstring("method FloatPropertyChanging")] void FloatPropertyChanging([in] FLOAT NewValue, [in,out] VARIANT_BOOL* Cancel);
+	};
+	[
+		uuid(78A03F3F-C7D0-43A4-B21E-C82CE9BF3267),
+		helpstring("SimpleComObject Class")
+	]
+	coclass SimpleComObject
+	{
+		[default] interface ISimpleComObject;
+		[default, source] dispinterface _ISimpleComObjectEvents;
+	};
+};

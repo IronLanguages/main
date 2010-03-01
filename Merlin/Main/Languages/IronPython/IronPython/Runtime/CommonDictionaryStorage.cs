@@ -14,12 +14,12 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 
@@ -648,7 +648,9 @@ namespace IronPython.Runtime {
         }
 
         private static int TupleHash(object o) {
-            return ((IValueEquality)o).GetValueHashCode();
+            return ((IStructuralEquatable)o).GetHashCode(
+                DefaultContext.DefaultPythonContext.EqualityComparerNonGeneric
+            );
         }
 
         private static bool StringEquals(object o1, object o2) {
@@ -664,7 +666,9 @@ namespace IronPython.Runtime {
         }
 
         private static bool TupleEquals(object o1, object o2) {
-            return ((IValueEquality)o1).ValueEquals(o2);
+            return ((IStructuralEquatable)o1).Equals(
+                o2, DefaultContext.DefaultPythonContext.EqualityComparerNonGeneric
+            );
         }
 
         private static bool GenericEquals(object o1, object o2) {

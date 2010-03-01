@@ -371,7 +371,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         #region IValueEquality Helpers
-
+#if CLR2
         public static int GetValueHashCodeHelper(object self) {
             // new-style classes only lookup in slots, not in instance
             // members
@@ -399,7 +399,7 @@ namespace IronPython.Runtime.Operations {
 
             return NotImplementedType.Value;
         }
-
+#endif
         #endregion
 
         internal static Binding.FastBindResult<T> MakeGetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, Binding.PythonGetMemberBinder getBinder) where T : class {

@@ -738,7 +738,7 @@ namespace IronPython.Runtime.Binding {
         #region IInvokeOnGetBinder Members
 
         public bool InvokeOnGet {
-            get { return true; }
+            get { return false; }
         }
         #endregion
 #endif

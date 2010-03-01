@@ -54,4 +54,14 @@ describe "Module#remove_method" do
       end
     }.should raise_error(NameError)
   end
+  
+  it "removes multiple methods one by one" do
+    M = Module.new do
+      def foo; end
+      def bar; end
+      
+      remove_method :foo, :undefined, :bar rescue 0
+      instance_methods.map { |x| x.to_s }.should == ["bar"]
+    end
+  end
 end

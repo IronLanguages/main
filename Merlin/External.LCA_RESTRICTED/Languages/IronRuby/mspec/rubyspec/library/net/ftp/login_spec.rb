@@ -25,7 +25,7 @@ describe "Net::FTP#login" do
     
     it "sends the current username + hostname as a password when required" do
       passhost = Socket.gethostname
-      if not passhost.index(".")
+      unless passhost.index(".")
         passhost = Socket.gethostbyname(passhost)[0]
       end
       pass = username + "@" + passhost 

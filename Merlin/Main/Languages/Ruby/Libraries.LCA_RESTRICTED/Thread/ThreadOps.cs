@@ -22,16 +22,14 @@ namespace IronRuby.StandardLibrary.Threading {
     /// <summary>
     /// These methods are loaded only after doing "require 'thread'"
     /// </summary>
-    [RubyClass("Thread", Extends = typeof(Thread), Inherits = typeof(object))]
+    [RubyClass(Extends = typeof(Thread), Inherits = typeof(object))]
     public static class ThreadOps {
         [RubyMethod("exclusive", RubyMethodAttributes.PublicSingleton)]
         public static object Exclusive(RubyContext/*!*/ context, [NotNull]BlockParam /*!*/block, object self) {
             IronRuby.Builtins.ThreadOps.Critical(context, self, true);
             try {
-                object result = null;
-                if (block.Yield(out result)) {
-                    return block.Break(result);
-                }
+                object result;
+                block.Yield(out result);
                 return result;
             } finally {
                 // Note that we assume that Thread.critical was false when this method was called.

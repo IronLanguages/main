@@ -2,10 +2,10 @@
 
 echo DLR slvx files being created ...
 
-set configuration=Debug
-if "%1" neq "" set configuration=%1
+set configuration="Silverlight Debug"
+if %1 neq "" set configuration=%1
 
-set build_path="%MERLIN_ROOT%\Bin\Silverlight %configuration%"
+set build_path="%MERLIN_ROOT%\Bin"\%configuration%
 
 if not exist %build_path% goto END
 
@@ -23,9 +23,17 @@ xcopy /Y /Q IronPython.dll __IronPython.slvx
 xcopy /Y /Q IronPython.Modules.dll __IronPython.slvx
 xcopy /Y /Q Microsoft.Scripting.dll __Microsoft.Scripting.slvx
 xcopy /Y /Q Microsoft.Dynamic.dll __Microsoft.Scripting.slvx
-xcopy /Y /Q Microsoft.Scripting.Core.dll __Microsoft.Scripting.slvx
-xcopy /Y /Q Microsoft.Scripting.ExtensionAttribute.dll __Microsoft.Scripting.slvx
 xcopy /Y /Q Microsoft.Scripting.Silverlight.dll __Microsoft.Scripting.slvx
+if exist Microsoft.Scripting.Core.dll (
+  xcopy /Y /Q Microsoft.Scripting.Core.dll __Microsoft.Scripting.slvx
+  xcopy /Y /Q Microsoft.Scripting.ExtensionAttribute.dll __Microsoft.Scripting.slvx
+)
+if exist System.Numerics.dll (
+  xcopy /Y /Q System.Numerics.dll __Microsoft.Scripting.slvx
+)
+if exist Microsoft.CSharp.dll (
+  xcopy /Y /Q Microsoft.CSharp.dll __Microsoft.Scripting.slvx
+)
 
 REM Create the SLVX files
 chiron /d:__IronRuby.slvx /x:IronRuby.slvx /s
@@ -44,6 +52,8 @@ popd
 GOTO VERYEND
 
 :END
-echo Silverlight %configuration% build does not exist, aborting slvx creation
+echo %configuration% build does not exist, aborting slvx creation
+exit /b 1
 
 :VERYEND
+exit /b 0

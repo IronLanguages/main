@@ -38,6 +38,7 @@ namespace IronPythonTest.Stress {
 
         static long GetTotalMemory() {
             // Critical objects can take upto 3 GCs to be collected
+            System.Threading.Thread.Sleep(1000);
             for (int i = 0; i < 3; i++) {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
@@ -55,6 +56,7 @@ namespace IronPythonTest.Stress {
                 scope.SetVariable("x", "Hello");
                 _pe.CreateScriptSourceFromFile(Common.InputTestDirectory + "\\simpleCommand.py").Execute(scope);
                 AreEqual(_pe.CreateScriptSourceFromString("x").Execute<int>(scope), 1);
+                scope = null;
             }
 
             long finalMemory = GetTotalMemory();
@@ -62,9 +64,14 @@ namespace IronPythonTest.Stress {
             const long memoryThreshold = 100000;
 
             bool emitsUncollectibleCode = Snippets.Shared.SaveSnippets || _env.Setup.DebugMode;
-            if (!emitsUncollectibleCode) {
+            if (!emitsUncollectibleCode)
+            {
+                System.Console.WriteLine("ScenarioGC used {0} bytes of memory.", memoryUsed);
                 if (memoryUsed > memoryThreshold)
                     throw new Exception(String.Format("ScenarioGC used {0} bytes of memory. The threshold is {1} bytes", memoryUsed, memoryThreshold));
+            }
+            else {
+                System.Console.WriteLine("Skipping memory usage test under SaveSnippets and/or Debug mode.");
             }
         }
 #endif

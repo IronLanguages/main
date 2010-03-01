@@ -466,6 +466,8 @@ namespace IronPython.Runtime.Types {
             return location;
         }
 
+        private const string _frameworkReferencePath = @"Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0";
+
         /// <summary>
         /// Gets the XPathDocument for the specified assembly, or null if one is not available.
         /// </summary>
@@ -489,8 +491,22 @@ namespace IronPython.Runtime.Types {
                 if (!System.IO.File.Exists(xml)) {
                     xml = Path.Combine(baseDir, baseFile);
                     if (!System.IO.File.Exists(xml)) {
-                        _AssembliesWithoutXmlDoc.Add(asm);
-                        return null;
+#if !CLR2
+                        // On .NET 4.0 documentation is in the reference assembly location
+                        xml = Path.Combine(
+                            Path.Combine(
+                                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
+                                _frameworkReferencePath
+                            ),
+                            baseFile
+                        );
+
+                        if (!File.Exists(xml)) 
+#endif
+                        {
+                            _AssembliesWithoutXmlDoc.Add(asm);
+                            return null;
+                        }
                     }
                 }
             }

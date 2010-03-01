@@ -81,6 +81,10 @@ namespace IronRuby.Runtime.Calls {
 
         #region Step 1: Special Parameters
 
+        protected override bool AllowMemberInitialization(OverloadInfo method) {
+            return false;
+        }
+
         /// <summary>
         /// We expand params arrays for library methods. Splat operator needs to be used to pass content of an array/list into params array method.
         /// </summary>
@@ -90,9 +94,9 @@ namespace IronRuby.Runtime.Calls {
         }
 
         protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {
-            var infos = mapping.ParameterInfos;
-            var method = mapping.Method;
-            var special = new BitArray(infos.Length);
+            var method = mapping.Overload;
+            var infos = method.Parameters;
+            var special = new BitArray(infos.Count);
 
             // Method signatures                                                                                  SelfCallConvention
             // RubyMethod/RubyCtor:   [(CallSiteStorage)*, (RubyContext|RubyScope)?, (BlockParam)?, self, args]  SelfIsParameter
@@ -102,16 +106,15 @@ namespace IronRuby.Runtime.Calls {
             var i = 0;
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
-                if (CompilerHelpers.IsStatic(method)) {
+                if (method.IsStatic) {
                     Debug.Assert(RubyUtils.IsOperator(method) || RubyUtils.IsExtension(method));
 
                     // receiver maps to the first parameter:
-                    mapping.AddParameter(new ParameterWrapper(infos[i], infos[i].ParameterType, null, true, false, false, true));
-                    mapping.AddBuilder(new SimpleArgBuilder(infos[i], mapping.ArgIndex));
+                    AddSimpleHiddenMapping(mapping, infos[i], true);
                     special[i++] = true;
                 } else {
                     // receiver maps to the instance (no parameter info represents it):
-                    mapping.AddParameter(new ParameterWrapper(null, method.DeclaringType, null, true, false, false, true));
+                    mapping.AddParameter(new ParameterWrapper(null, method.DeclaringType, null, ParameterBindingFlags.ProhibitNull | ParameterBindingFlags.IsHidden));
                     mapping.AddInstanceBuilder(new InstanceBuilder(mapping.ArgIndex));
                 }
             } else if (_callConvention == SelfCallConvention.NoSelf) {
@@ -122,12 +125,12 @@ namespace IronRuby.Runtime.Calls {
                 }
             }
 
-            while (i < infos.Length && infos[i].ParameterType.IsSubclassOf(typeof(RubyCallSiteStorage))) {
+            while (i < infos.Count && infos[i].ParameterType.IsSubclassOf(typeof(RubyCallSiteStorage))) {
                 mapping.AddBuilder(new RubyCallSiteStorageBuilder(infos[i]));
                 special[i++] = true;
             }
 
-            if (i < infos.Length) {
+            if (i < infos.Count) {
                 var info = infos[i];
 
                 if (info.ParameterType == typeof(RubyScope)) {
@@ -158,46 +161,50 @@ namespace IronRuby.Runtime.Calls {
             // (implicit, BP,  ... )      MBP -> BP  (2)            BP -> BP  (2)               BP -> BP  (1)
             // (implicit, BP!, ... )          N/A                   BP -> BP! (1)                  N/A    
             //
-            if (i < infos.Length && infos[i].ParameterType == typeof(BlockParam)) {
-                var info = infos[i];
-                mapping.AddBuilder(new SimpleArgBuilder(info, mapping.ArgIndex));
-                mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, info.ProhibitsNull(), false, false, true));
+            if (i < infos.Count && infos[i].ParameterType == typeof(BlockParam)) {
+                AddSimpleHiddenMapping(mapping, infos[i], mapping.Overload.ProhibitsNull(i));
                 special[i++] = true;
-            } else if (i >= infos.Length || infos[i].ParameterType != typeof(BlockParam)) {
+            } else if (i >= infos.Count || infos[i].ParameterType != typeof(BlockParam)) {
                 mapping.AddBuilder(new MissingBlockArgBuilder(mapping.ArgIndex));
-                mapping.AddParameter(new ParameterWrapper(null, typeof(MissingBlockParam), null, false, false, false, true));
+                mapping.AddParameter(new ParameterWrapper(null, typeof(MissingBlockParam), null, ParameterBindingFlags.IsHidden));
             }
 
             if (_callConvention == SelfCallConvention.SelfIsParameter) {
                 // Ruby library methods only:
-                Debug.Assert(CompilerHelpers.IsStatic(method));
-                Debug.Assert(i < infos.Length);
-                var info = infos[i];
+                Debug.Assert(method.IsStatic);
+                Debug.Assert(i < infos.Count);
 
                 // receiver maps to the first visible parameter:
-                mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, info.ProhibitsNull(), false, false, true));
-                mapping.AddBuilder(new SimpleArgBuilder(info, mapping.ArgIndex));
+                AddSimpleHiddenMapping(mapping, infos[i], mapping.Overload.ProhibitsNull(i));
                 special[i++] = true;
             }
 
             return special;
         }
 
-        internal static int GetHiddenParameterCount(MethodBase/*!*/ method, ParameterInfo/*!*/[]/*!*/ infos, SelfCallConvention callConvention) {
+        private void AddSimpleHiddenMapping(ParameterMapping mapping, ParameterInfo info, bool prohibitNull) {
+            mapping.AddBuilder(new SimpleArgBuilder(info, info.ParameterType, mapping.ArgIndex, false, false));
+            mapping.AddParameter(new ParameterWrapper(info, info.ParameterType, null, 
+                ParameterBindingFlags.IsHidden | (prohibitNull ? ParameterBindingFlags.ProhibitNull : 0)
+            ));
+        }
+
+        internal static int GetHiddenParameterCount(OverloadInfo/*!*/ method, SelfCallConvention callConvention) {
             int i = 0;
+            var infos = method.Parameters;
 
             if (callConvention == SelfCallConvention.SelfIsInstance) {
-                if (CompilerHelpers.IsStatic(method)) {
+                if (method.IsStatic) {
                     Debug.Assert(RubyUtils.IsOperator(method) || RubyUtils.IsExtension(method));
                     i++;
                 }
             }
 
-            while (i < infos.Length && infos[i].ParameterType.IsSubclassOf(typeof(RubyCallSiteStorage))) {
+            while (i < infos.Count && infos[i].ParameterType.IsSubclassOf(typeof(RubyCallSiteStorage))) {
                 i++;
             }
 
-            if (i < infos.Length) {
+            if (i < infos.Count) {
                 var info = infos[i];
 
                 if (info.ParameterType == typeof(RubyScope)) {
@@ -209,28 +216,26 @@ namespace IronRuby.Runtime.Calls {
                 }
             }
 
-            if (i < infos.Length && infos[i].ParameterType == typeof(BlockParam)) {
+            if (i < infos.Count && infos[i].ParameterType == typeof(BlockParam)) {
                 i++;
             }
 
             if (callConvention == SelfCallConvention.SelfIsParameter) {
-                Debug.Assert(i < infos.Length);
-                Debug.Assert(CompilerHelpers.IsStatic(method));
+                Debug.Assert(i < infos.Count);
+                Debug.Assert(method.IsStatic);
                 i++;
             }
 
             return i;
         }
 
-        internal static void GetParameterCount(MethodBase/*!*/ method, ParameterInfo/*!*/[]/*!*/ parameterInfos, SelfCallConvention callConvention, 
-            out int mandatory, out int optional) {
-
+        internal static void GetParameterCount(OverloadInfo/*!*/ method, SelfCallConvention callConvention, out int mandatory, out int optional) {
             mandatory = 0;
             optional = 0;
-            for (int i = GetHiddenParameterCount(method, parameterInfos, callConvention); i < parameterInfos.Length; i++) {
-                var info = parameterInfos[i];
+            for (int i = GetHiddenParameterCount(method, callConvention); i < method.ParameterCount; i++) {
+                var info = method.Parameters[i];
 
-                if (info.IsParamArray()) {
+                if (method.IsParamArray(i)) {
                     // TODO: indicate splat args separately?
                     optional++;
                 } else if (info.IsOutParameter()) {

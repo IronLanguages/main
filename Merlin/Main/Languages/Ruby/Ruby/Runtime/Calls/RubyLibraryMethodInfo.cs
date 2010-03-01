@@ -46,30 +46,30 @@ namespace IronRuby.Runtime.Calls {
     /// Currently this is used for all builtin libary methods and interop calls to CLR methods
     /// </summary>
     public sealed class RubyLibraryMethodInfo : RubyMethodGroupBase {
-        private readonly Delegate/*!*/[]/*!*/ _overloads;
+        private readonly LibraryOverload/*!*/[]/*!*/ _overloads;
 
         /// <summary>
         /// Creates a Ruby method implemented by a method group of CLR methods.
         /// </summary>
-        internal RubyLibraryMethodInfo(Delegate/*!*/[]/*!*/ overloads, RubyMemberFlags flags, RubyModule/*!*/ declaringModule)
+        internal RubyLibraryMethodInfo(LibraryOverload/*!*/[]/*!*/ overloads, RubyMemberFlags flags, RubyModule/*!*/ declaringModule)
             : base(null, flags, declaringModule) {
             Assert.NotNullItems(overloads);
             Assert.NotEmpty(overloads);
             _overloads = overloads;
         }
 
-        public RubyLibraryMethodInfo(Delegate/*!*/[]/*!*/ overloads, RubyMethodVisibility visibility, RubyModule/*!*/ declaringModule) 
+        public RubyLibraryMethodInfo(LibraryOverload/*!*/[]/*!*/ overloads, RubyMethodVisibility visibility, RubyModule/*!*/ declaringModule) 
             : this(overloads, (RubyMemberFlags)visibility & RubyMemberFlags.VisibilityMask, declaringModule) {
             ContractUtils.RequiresNotNull(declaringModule, "declaringModule");
             ContractUtils.RequiresNotNullItems(overloads, "overloads");
         }
 
         // copy ctor
-        private RubyLibraryMethodInfo(RubyLibraryMethodInfo/*!*/ info, MethodBase/*!*/[]/*!*/ methods)
+        private RubyLibraryMethodInfo(RubyLibraryMethodInfo/*!*/ info, OverloadInfo/*!*/[]/*!*/ methods)
             : base(methods, info.Flags, info.DeclaringModule) {
         }
 
-        internal Delegate/*!*/[]/*!*/ Overloads {
+        internal LibraryOverload/*!*/[]/*!*/ Overloads {
             get { return _overloads; }
         }
 
@@ -81,24 +81,24 @@ namespace IronRuby.Runtime.Calls {
             get { return false; }
         }
 
-        internal protected override MethodBase/*!*/[]/*!*/ MethodBases {
+        internal protected override OverloadInfo/*!*/[]/*!*/ MethodBases {
             get {
                 Debug.Assert(base.MethodBases != null || _overloads != null);
 
                 // don't need to lock MethodBases since all values calculated by multiple threads are the same: 
-                return base.MethodBases ?? SetMethodBasesNoLock(_overloads.ConvertAll((d) => d.Method));
+                return base.MethodBases ?? SetMethodBasesNoLock(_overloads);
             }
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return ArrayUtils.MakeArray(MethodBases);
+            return ArrayUtils.ConvertAll(MethodBases, (o) => o.ReflectionInfo);
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
             return new RubyLibraryMethodInfo(_overloads, flags, module);
         }
 
-        protected override RubyMemberInfo/*!*/ Copy(MethodBase/*!*/[]/*!*/ methods) {
+        protected override RubyMemberInfo/*!*/ Copy(OverloadInfo/*!*/[]/*!*/ methods) {
             return new RubyLibraryMethodInfo(this, methods);
         }
 

@@ -429,5 +429,38 @@ namespace IronRuby.StandardLibrary.OpenSsl {
                 // to_s
             }
         }
+
+        [RubyClass("OpenSSLError"), Serializable]
+        public class OpenSSLError : SystemException {
+            private const string/*!*/ M = "OpenSSL error";
+
+            public OpenSSLError() : this(null, null) { }
+            public OpenSSLError(string message) : this(message, null) { }
+            public OpenSSLError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public OpenSSLError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected OpenSSLError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyModule("SSL")]
+        public static class SSL {
+            [RubyClass("SSLError"), Serializable]
+            public class SSLError : OpenSSLError {
+                private const string/*!*/ M = "SSL error";
+
+                public SSLError() : this(null, null) { }
+                public SSLError(string message) : this(message, null) { }
+                public SSLError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+                public SSLError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+                protected SSLError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                    : base(info, context) { }
+#endif
+            }
+        }
     }
 }

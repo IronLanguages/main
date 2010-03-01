@@ -20,6 +20,7 @@ using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using IronRuby.Builtins;
 
 namespace IronRuby.Runtime {
 
@@ -69,11 +70,11 @@ namespace IronRuby.Runtime {
         }
     }
 
-    public sealed class RespondToStorage : CallSiteStorage<Func<CallSite, object, SymbolId, object>> {
+    public sealed class RespondToStorage : CallSiteStorage<Func<CallSite, object, RubySymbol, object>> {
         [Emitted]
         public RespondToStorage(RubyContext/*!*/ context) : base(context) { }
 
-        public CallSite<Func<CallSite, object, SymbolId, object>>/*!*/ GetCallSite() {
+        public CallSite<Func<CallSite, object, RubySymbol, object>>/*!*/ GetCallSite() {
             return GetCallSite("respond_to?", 1);
         }
     }

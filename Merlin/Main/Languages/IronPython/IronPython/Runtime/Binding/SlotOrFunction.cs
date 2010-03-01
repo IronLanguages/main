@@ -87,11 +87,8 @@ namespace IronPython.Runtime.Binding {
         public bool MaybeNotImplemented {
             get {
                 if (_function != null) {
-                    MethodInfo mi = _function.Method as MethodInfo;
-                    if (mi != null) {
-                        return mi.ReturnTypeCustomAttributes.IsDefined(typeof(MaybeNotImplementedAttribute), false);
-                    }
-                    return false;
+                    ParameterInfo ret = _function.Overload.ReturnParameter;
+                    return ret != null && ret.IsDefined(typeof(MaybeNotImplementedAttribute), false);
                 }
 
                 return true;
@@ -154,7 +151,7 @@ namespace IronPython.Runtime.Binding {
 
         public bool ShouldWarn(PythonContext context, out WarningInfo info) {
             if (_function != null) {
-                return BindingWarnings.ShouldWarn(context, _function.Method, out info);
+                return BindingWarnings.ShouldWarn(context, _function.Overload, out info);
             }
 
             info = null;
@@ -286,7 +283,7 @@ namespace IronPython.Runtime.Binding {
                     binder = state.Binder.CallMethod(mc, targets.ToArray(), BindingRestrictions.Empty, null, PythonNarrowing.None, PythonNarrowing.BinaryOperator, out bt);
 
                     foreach (MethodBase mb in yBf.Targets) {
-                        if (bt.Method == mb) {
+                        if (bt.Overload.ReflectionInfo == mb) {
                             declaringType = DynamicHelpers.GetPythonTypeFromType(yBf.DeclaringType);
                             break;
                         }

@@ -59,6 +59,7 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo InvalidInstanceVariableName      = new ErrorInfo(Tokenizer + 14, "`@{0}' is not allowed as an instance variable name");
         public static readonly ErrorInfo InvalidClassVariableName         = new ErrorInfo(Tokenizer + 15, "`@@{0}' is not allowed as a class variable name");
         public static readonly ErrorInfo InvalidCharacterInExpression     = new ErrorInfo(Tokenizer + 16, "Invalid character '{0}' in expression");
+        public static readonly ErrorInfo InvalidMultibyteCharacter        = new ErrorInfo(Tokenizer + 17, "Invalid multibyte character: {0} ({1})");
         
         public static readonly ErrorInfo MatchGroupReferenceOverflow = new ErrorInfo(Tokenizer + 30, "Match group reference ${0} doesn't fit into Fixnum");
         public static readonly ErrorInfo MatchGroupReferenceReadOnly = new ErrorInfo(Tokenizer + 31, "Can't set variable ${0}");

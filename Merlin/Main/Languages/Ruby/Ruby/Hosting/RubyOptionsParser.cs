@@ -126,12 +126,11 @@ namespace IronRuby.Hosting {
                 return;
             }
 
-#if !SILVERLIGHT
             if (arg.StartsWith("-K", StringComparison.Ordinal)) {
                 LanguageSetup.Options["KCode"] = arg.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(arg[2]) : null;
                 return;
             }
-#endif
+
             if (arg.StartsWith("-r", StringComparison.Ordinal)) {
                 _requiredPaths.Add((arg == "-r") ? PopNextArg() : arg.Substring(2));
                 return;
@@ -269,21 +268,15 @@ namespace IronRuby.Hosting {
 
                     if (ConsoleOptions.FileName != null) {
                         if (mainFileFromPath != null) {
-                            ConsoleOptions.FileName = null;
-                            string path = Platform.GetEnvironmentVariable("PATH");
-                            foreach (string p in path.Split(';')) {
-                                string fullPath = RubyUtils.CombinePaths(p, mainFileFromPath);
-                                if (Platform.FileExists(fullPath)) {
-                                    ConsoleOptions.FileName = fullPath;
-                                    break;
-                                }
-                            }
-                            if (ConsoleOptions.FileName == null) {
-                                ConsoleOptions.FileName = mainFileFromPath;
-                            }
+                            ConsoleOptions.FileName = FindMainFileFromPath(mainFileFromPath);
                         }
-                        LanguageSetup.Options["MainFile"] = RubyUtils.CanonicalizePath(ConsoleOptions.FileName);
-                        LanguageSetup.Options["Arguments"] = PopRemainingArgs();
+
+                        if (ConsoleOptions.Command == null) {
+                            SetupOptionsForMainFile();
+                        } else {
+                            SetupOptionsForCommand();
+                        }
+                        
                         LanguageSetup.Options["ArgumentEncoding"] = 
 #if SILVERLIGHT
                             RubyEncoding.UTF8;
@@ -293,6 +286,33 @@ namespace IronRuby.Hosting {
                     } 
                     break;
             }
+        }
+
+        private void SetupOptionsForMainFile() {
+            LanguageSetup.Options["MainFile"] = RubyUtils.CanonicalizePath(ConsoleOptions.FileName);
+            LanguageSetup.Options["Arguments"] = PopRemainingArgs();;
+        }
+
+        private void SetupOptionsForCommand() {
+            string firstArg = ConsoleOptions.FileName;
+            ConsoleOptions.FileName = null;
+
+            List<string> args = new List<string>(new string[] { firstArg });
+            args.AddRange(PopRemainingArgs());
+
+            LanguageSetup.Options["MainFile"] = "-e";
+            LanguageSetup.Options["Arguments"] = args.ToArray();
+        }
+
+        private string FindMainFileFromPath(string mainFileFromPath) {
+            string path = Platform.GetEnvironmentVariable("PATH");
+            foreach (string p in path.Split(';')) {
+                string fullPath = RubyUtils.CombinePaths(p, mainFileFromPath);
+                if (Platform.FileExists(fullPath)) {
+                    return fullPath;
+                }
+            }
+            return mainFileFromPath;
         }
 
         protected override void AfterParse() {

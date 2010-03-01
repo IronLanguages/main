@@ -1,5 +1,3 @@
-$: << File.join(File.dirname(__FILE__), "/utr")
-
 class UnitTestRunner
   def self.ironruby?
     defined?(RUBY_ENGINE) and RUBY_ENGINE == "ironruby"
@@ -7,8 +5,9 @@ class UnitTestRunner
   
   def parse_options(args)
     require "optparse"
+    pass_through_args = false
     parser = OptionParser.new(args) do |opts|
-      opts.banner = "USAGE: utr libname [-a] [-g] [-t TestClass#test_method]"
+      opts.banner = "USAGE: utr libname [-a] [-g] [-t TestClass#test_method] [-- <Test::Unit options>]"
   
       opts.separator ""
   
@@ -21,22 +20,39 @@ class UnitTestRunner
       opts.on("-g", "--generate-tags", "Generate tags to disable failing tests") do |g|
         @generate_tags = true
       end
+      opts.on("-i", "--generate-incremental", "Generate tags to disable *additional* failing tests") do |g|
+        @generate_tags = true
+        @generate_incremental = true
+      end
   
       opts.on_tail("-h", "--help", "Show this message") do |n|
         puts opts
+        puts
+        puts "Test::Unit help:"
+        require "rubygems"
+        require "test/unit"
+        require "test/unit/autorunner"
+        $0 = ""
+        Test::Unit::AutoRunner.new(true).process_args(["-h"])
         exit
       end
+      
+      opts.on_tail("--", "Pass the remaining options to Test::Unit") do |n|
+        pass_through_args = true
+        opts.terminate
+      end
     end
-        
+
     remaining_args = parser.parse!
     abort "Please specify the test suite to use" if remaining_args.empty?
-    @lib = remaining_args.shift
-    abort "Extra arguments: #{remaining_args}" if not remaining_args.empty?  
+    test_suite = remaining_args.shift
+    @lib = File.expand_path("utr/#{test_suite}_tests.rb", File.dirname(__FILE__)) 
+    abort "Extra arguments: #{remaining_args}" if not remaining_args.empty? and not pass_through_args
   end
     
   def initialize(args)
     parse_options(args)
-    require "#{@lib}_tests"
+    require @lib
     @setup = UnitTestSetup.new
   end
 
@@ -57,10 +73,15 @@ class UnitTestRunner
       @setup.disable_unstable_tests      
 
       if @generate_tags
-        require "generate_test-unit_tags"
+        @setup.disable_tests if @generate_incremental
+        require "generate_test-unit_tags.rb"
+        TagGenerator.test_file = @lib
+        TagGenerator.initial_tag_generation = !@generate_incremental
       else
         @setup.disable_tests unless @all
       end
+      
+      at_exit { puts "Disabled #{@setup.disabled} tests" }
     end    
   end    
      
@@ -97,7 +118,9 @@ class UnitTestSetup
   def disable_unstable_tests; end
   def disable_tests;end
   def sanity; end
-            
+  
+  attr :disabled
+  
   def require_tests
     # Note that the tests are registered using Kernel#at_exit, and will run during shutdown
     # The "require" statement just registers the tests for being run later...
@@ -106,11 +129,15 @@ class UnitTestSetup
             
   private   
   def disable(klass, *methods)
+    @disabled ||= 0
+    @disabled += methods.size
     klass.class_eval do
-      def noop;end
       methods.each do |method| 
-        alias_method method, :noop
-      end   
+        undef_method method.to_sym rescue puts "Could not undef #{klass}##{method}"
+      end
+      # If all the test methods have been removed, test/unit complains saying "No tests were specified."
+      # So we monkey-patch the offending method to be a noop.
+      klass.class_eval { def default_test() end }
     end     
   end       
             
@@ -120,7 +147,7 @@ class UnitTestSetup
             
   def sanity_version(expected, actual)
     abort("Loaded the wrong version #{actual} of #{@name} instead of the expected #{expected}...") unless actual == expected
-  end       
+  end
 
   # Helpers for Rails tests
   

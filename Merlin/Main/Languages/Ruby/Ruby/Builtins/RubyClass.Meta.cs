@@ -46,7 +46,7 @@ namespace IronRuby.Builtins {
                 var names = new List<string>();
 
                 using (Context.ClassHierarchyLocker()) {
-                    Value.SingletonClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, module, member) => names.Add(name));
+                    Value.ImmediateClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, module, member) => names.Add(name));
                 }
 
                 return names;

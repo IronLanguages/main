@@ -96,8 +96,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
 
             [RubyMethod("emit")]
-            public static object Emit(RubyContext/*!*/ context, YamlStream/*!*/ self, [Optional]RubyIO io) {
-                return RubyYaml.DumpAll(context, self._documents, io);
+            public static object Emit(YamlCallSiteStorage/*!*/ siteStorage, YamlStream/*!*/ self, [Optional]RubyIO io) {
+                return RubyYaml.DumpAll(siteStorage, self._documents, io);
             }
 
             [RubyMethod("inspect")]

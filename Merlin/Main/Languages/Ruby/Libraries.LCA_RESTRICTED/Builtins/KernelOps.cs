@@ -143,7 +143,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("binding", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("binding", RubyMethodAttributes.PublicSingleton)]
         public static Binding/*!*/ GetLocalScope(RubyScope/*!*/ scope, object self) {
-            return new Binding(scope);
+            if (scope.RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                return new Binding(scope, self);
+            } else {
+                return new Binding(scope);
+            }
         }
 
         [RubyMethod("block_given?", RubyMethodAttributes.PrivateInstance)]
@@ -158,14 +162,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("local_variables", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("local_variables", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetLocalVariableNames(RubyScope/*!*/ scope, object self) {
-            List<string> names = scope.GetVisibleLocalNames();
-
-            RubyArray result = new RubyArray(names.Count);
-            for (int i = 0; i < names.Count; i++) {
-                // TODO (encoding):
-                result.Add(MutableString.Create(names[i], RubyEncoding.UTF8));
-            }
-            return result;
+            var names = scope.GetVisibleLocalNames();
+            return new RubyArray(names.Count).AddRange(scope.RubyContext.StringifyIdentifiers(names));
         }
 
         [RubyMethod("caller", RubyMethodAttributes.PrivateInstance)]
@@ -395,7 +393,6 @@ namespace IronRuby.Builtins {
         public static bool IsEqual(object self, object other) {
             // Comparing object IDs is (potentially) expensive because it forces us
             // to generate InstanceData and a new object ID
-            //return GetObjectId(self) == GetObjectId(other);
             if (self == other) {
                 return true;
             }
@@ -534,10 +531,12 @@ namespace IronRuby.Builtins {
         public static object Extend(
             CallSiteStorage<Func<CallSite, RubyModule, object, object>>/*!*/ extendObjectStorage,
             CallSiteStorage<Func<CallSite, RubyModule, object, object>>/*!*/ extendedStorage,
-            object self, [NotNull]RubyModule/*!*/ module, [NotNull]params RubyModule/*!*/[]/*!*/ modules) {
+            object self, [NotNull]RubyModule/*!*/ module, [NotNullItems]params RubyModule/*!*/[]/*!*/ modules) {
 
             Assert.NotNull(self, modules);
-            RubyUtils.RequireMixins(module.SingletonClass, modules);
+
+            // TODO: this is strange:
+            RubyUtils.RequireMixins(module.GetOrCreateSingletonClass(), modules);
 
             var extendObject = extendObjectStorage.GetCallSite("extend_object", 1);
             var extended = extendedStorage.GetCallSite("extended", 1);
@@ -566,7 +565,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("frozen?")]
         public static bool Frozen(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return false; // can't freeze value types
             }
             return context.IsObjectFrozen(self);
@@ -574,7 +573,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("freeze")]
         public static object Freeze(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return self; // can't freeze value types
             }
             context.FreezeObject(self);
@@ -583,7 +582,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("tainted?")]
         public static bool Tainted(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return false; // can't taint value types
             }
             return context.IsObjectTainted(self);
@@ -591,7 +590,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("taint")]
         public static object Taint(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return self;
             }
             context.SetObjectTaint(self, true);
@@ -600,7 +599,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("untaint")]
         public static object Untaint(RubyContext/*!*/ context, object self) {
-            if (RubyUtils.IsRubyValueType(self)) {
+            if (!RubyUtils.HasObjectState(self)) {
                 return self;
             }
             context.SetObjectTaint(self, false);
@@ -619,8 +618,16 @@ namespace IronRuby.Builtins {
         public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
             [Optional]Binding binding, [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
 
-            RubyScope targetScope = (binding != null) ? binding.LocalScope : scope;
-            return RubyUtils.Evaluate(code, targetScope, targetScope.SelfObject, null, file, line);
+            RubyScope targetScope;
+            object targetSelf;
+            if (binding != null) {
+                targetScope = binding.LocalScope;
+                targetSelf = binding.SelfObject;
+            } else {
+                targetScope = scope;
+                targetSelf = self;
+            }
+            return RubyUtils.Evaluate(code, targetScope, targetSelf, null, file, line);
         }
 
         [RubyMethod("eval", RubyMethodAttributes.PrivateInstance)]
@@ -635,7 +642,7 @@ namespace IronRuby.Builtins {
         public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
             [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
 
-            RubyClass singleton = scope.RubyContext.CreateSingletonClass(self);
+            RubyClass singleton = scope.RubyContext.GetOrCreateSingletonClass(self);
             return RubyUtils.Evaluate(code, scope, self, singleton, file, line);
         }
 
@@ -646,7 +653,7 @@ namespace IronRuby.Builtins {
 
         // This method is not available in 1.8 so far, but since the usual workaround is very inefficient it is useful to have it in 1.8 as well.
         [RubyMethod("instance_exec")]
-        public static object InstanceExec([NotNull]BlockParam/*!*/ block, object self, [NotNull]params object[]/*!*/ args) {
+        public static object InstanceExec([NotNull]BlockParam/*!*/ block, object self, params object[]/*!*/ args) {
             return RubyUtils.EvaluateInSingleton(self, block, args);
         }
 
@@ -655,15 +662,8 @@ namespace IronRuby.Builtins {
         #region instance_variables, instance_variable_defined?, instance_variable_get, instance_variable_set, remove_instance_variable
 
         [RubyMethod("instance_variables")]
-        public static RubyArray/*!*/ InstanceVariables(RubyContext/*!*/ context, object self) {
-            string[] names = context.GetInstanceVariableNames(self);
-
-            RubyArray result = new RubyArray(names.Length);
-            foreach (string name in names) {
-                // TODO (encoding):
-                result.Add(MutableString.Create(name, RubyEncoding.UTF8));
-            }
-            return result;
+        public static RubyArray/*!*/ GetInstanceVariableNames(RubyContext/*!*/ context, object self) {
+            return context.StringifyIdentifiers(context.GetInstanceVariableNames(self));
         }
 
         [RubyMethod("instance_variable_get")]
@@ -720,9 +720,7 @@ namespace IronRuby.Builtins {
             lock (context.GlobalVariablesLock) {
                 foreach (KeyValuePair<string, GlobalVariable> global in context.GlobalVariables) {
                     if (global.Value.IsEnumerated) {
-                        // TODO: Ruby 1.9 returns symbols:
-                        // TODO (encoding):
-                        result.Add(MutableString.Create(global.Key, RubyEncoding.UTF8));
+                        result.Add(context.StringifyIdentifier(global.Key));
                     }
                 }
             }
@@ -760,9 +758,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("method_missing", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("method_missing", RubyMethodAttributes.PublicSingleton)]
         [RubyStackTraceHidden]
-        public static object MethodMissing(RubyContext/*!*/ context, object/*!*/ self, SymbolId symbol, [NotNull]params object[]/*!*/ args) {
-            string name = SymbolTable.IdToString(symbol);
-            throw RubyExceptions.CreateMethodMissing(context, self, name);
+        public static object MethodMissing(RubyContext/*!*/ context, object/*!*/ self, [NotNull]RubySymbol/*!*/ name, params object[]/*!*/ args) {
+            throw RubyExceptions.CreateMethodMissing(context, self, name.ToString());
         }
 
         #endregion
@@ -864,8 +861,8 @@ namespace IronRuby.Builtins {
         // ARGS: N
         [RubyMethod("send"), RubyMethod("__send__")]
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
-            [NotNull]params object[] args) {
-
+            params object[]/*!*/ args) {
+            
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, RubyArray, object>>(
                 methodName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument)
             );
@@ -876,7 +873,7 @@ namespace IronRuby.Builtins {
         // ARGS: N&
         [RubyMethod("send"), RubyMethod("__send__")]
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
-            [NotNull]params object[] args) {
+            params object[]/*!*/ args) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, RubyArray, object>>(
                 methodName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument |
@@ -1028,7 +1025,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ args) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             Process p = RubyProcess.CreateProcess(context, command, args);
             Exit(self, p.ExitCode);
         }
@@ -1048,7 +1045,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             try {
                 Process p = RubyProcess.CreateProcess(context, command, args);
                 return p.ExitCode == 0;
@@ -1404,7 +1401,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("p", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("p", RubyMethodAttributes.PublicSingleton)]
         public static void PrintInspect(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
-            object self, [NotNull]params object[]/*!*/ args) {
+            object self, params object[]/*!*/ args) {
 
             var inspect = inspectStorage.GetCallSite("inspect");
             var inspectedArgs = new MutableString[args.Length];
@@ -1434,9 +1431,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage,
-            object self, [NotNull]params object[]/*!*/ args) {
-
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, params object[]/*!*/ args) {
             // no dynamic dispatch to "print":
             PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, args);
         }
@@ -1448,7 +1443,7 @@ namespace IronRuby.Builtins {
             StringFormatterSiteStorage/*!*/ storage,
             ConversionStorage<MutableString>/*!*/ stringCast,
             BinaryOpStorage/*!*/ writeStorage,
-            object self, [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
+            object self, [NotNull]MutableString/*!*/ format, params object[]/*!*/ args) {
 
             PrintFormatted(storage, stringCast, writeStorage, self, storage.Context.StandardOutput, format, args);
         }
@@ -1459,7 +1454,7 @@ namespace IronRuby.Builtins {
             StringFormatterSiteStorage/*!*/ storage,
             ConversionStorage<MutableString>/*!*/ stringCast,
             BinaryOpStorage/*!*/ writeStorage,
-            object self, object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
+            object self, object io, [NotNull]object/*!*/ format, params object[]/*!*/ args) {
 
             Debug.Assert(!(io is MutableString));
 
@@ -1510,7 +1505,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
         public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
-            ConversionStorage<IList>/*!*/ tryToAry, object self, [NotNull]params object[]/*!*/ args) {
+            ConversionStorage<IList>/*!*/ tryToAry, object self, params object[]/*!*/ args) {
 
             // call directly, no dynamic dispatch to "self":
             PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, args);
@@ -1572,7 +1567,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("sprintf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sprintf", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ Sprintf(StringFormatterSiteStorage/*!*/ storage,
-            object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
+            object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, params object[]/*!*/ args) {
 
             return new StringFormatter(storage, format.ConvertToString(), format.Encoding, args).Format();
         }

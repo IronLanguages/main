@@ -249,10 +249,6 @@ module KernelSpecs
     end
   end
 
-  def self.helper_script
-    File.dirname(__FILE__) + '/check_expansion.rb'
-  end
-
   module DuplicateM
     def repr
       self.class.name.to_s

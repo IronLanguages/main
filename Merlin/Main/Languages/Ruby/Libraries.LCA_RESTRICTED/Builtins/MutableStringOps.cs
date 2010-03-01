@@ -399,7 +399,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("+")]
         public static MutableString/*!*/ Concatenate(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ other) {
             // doesn't create a subclass:
-            return MutableString.Create(self).Append(other).TaintBy(self).TaintBy(other);
+            return self.Concat(other).TaintBy(self).TaintBy(other);
         }
 
         #endregion
@@ -1081,8 +1081,7 @@ namespace IronRuby.Builtins {
             return self.AppendRepresentation(
                 new StringBuilder().Append(quote),
                 (isDump || !is18) ? null : context.KCode ?? RubyEncoding.Binary,
-                is18, 
-                isDump,
+                MutableString.Escape.Special | (is18 ? MutableString.Escape.Octal : 0) | (isDump ? MutableString.Escape.NonAscii : 0),
                 quote
             ).Append(quote).ToString();
         }
@@ -1218,7 +1217,7 @@ namespace IronRuby.Builtins {
         }
 
         // encoding aware
-        [RubyMethod("encoding")]
+        [RubyMethod("encoding", Compatibility=RubyCompatibility.Ruby19)]
         public static RubyEncoding/*!*/ GetEncoding(MutableString/*!*/ self) {
             return self.Encoding;
         }
@@ -1747,7 +1746,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("delete")]
         public static MutableString/*!*/ Delete(RubyContext/*!*/ context, MutableString/*!*/ self, 
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
             if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
@@ -1756,7 +1755,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("delete!")]
         public static MutableString/*!*/ DeleteInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
             self.RequireNotFrozen();
 
             if (strs.Length == 0) {
@@ -1782,7 +1781,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("count")]
         public static object Count(RubyContext/*!*/ context, MutableString/*!*/ self, 
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
             if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
@@ -2269,7 +2268,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("squeeze")]
         public static MutableString/*!*/ Squeeze(RubyContext/*!*/ context, MutableString/*!*/ self, 
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             MutableString result = self.Clone();
             SqueezeMutableString(result, args);
             return result;
@@ -2277,7 +2276,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("squeeze!")]
         public static MutableString/*!*/ SqueezeInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
+            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             return SqueezeMutableString(self, args);
         }
 
@@ -2352,8 +2351,8 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("to_sym")]
         [RubyMethod("intern")]
-        public static SymbolId ToSymbol(MutableString/*!*/ self) {
-            return ClrString.ToSymbol(self.ConvertToString());
+        public static RubySymbol/*!*/ ToSymbol(RubyContext/*!*/ context, MutableString/*!*/ self) {
+            return context.CreateSymbol(self);
         }
 
         #endregion

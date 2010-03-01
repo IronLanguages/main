@@ -28,12 +28,17 @@ namespace IronRuby.Runtime {
         internal static FieldInfo ReturnValueField { get { return typeof(StackUnwinder).GetField("ReturnValue"); } }
 
         public StackUnwinder(object returnValue) {
+            // we don't need exact number in multi-threaded scenarios:
+            InstanceCount++;
             ReturnValue = returnValue;
         }
+
+        // used for control-flow optimization testing:
+        internal static int InstanceCount = 0;
     }
     
     /// <summary>
-    /// Return.
+    /// Return (thrown or passed as a return value) and retry (retry singleton).
     /// </summary>
     public sealed class MethodUnwinder : StackUnwinder {
         [Emitted]

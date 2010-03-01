@@ -204,8 +204,12 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static Type[] GetParameterTypes(ParameterInfo[] parameterInfos) {
-            Type[] result = new Type[parameterInfos.Length];
-            for (int i = 0; i < parameterInfos.Length; i++) {
+            return GetParameterTypes((IList<ParameterInfo>)parameterInfos);
+        }
+
+        public static Type[] GetParameterTypes(IList<ParameterInfo> parameterInfos) {
+            Type[] result = new Type[parameterInfos.Count];
+            for (int i = 0; i < result.Length; i++) {
                 result[i] = parameterInfos[i].ParameterType;
             }
             return result;
@@ -234,9 +238,9 @@ namespace Microsoft.Scripting.Utils {
 #endif
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static bool IsExtension(this MemberInfo parameter) {
+        public static bool IsExtension(this MemberInfo member) {
             var dlrExtension = typeof(ExtensionAttribute);
-            if (parameter.IsDefined(dlrExtension, false)) {
+            if (member.IsDefined(dlrExtension, false)) {
                 return true;
             }
 
@@ -251,7 +255,7 @@ namespace Microsoft.Scripting.Utils {
             }
 
             if (_ExtensionAttributeType != dlrExtension) {
-                return parameter.IsDefined(_ExtensionAttributeType, false);
+                return member.IsDefined(_ExtensionAttributeType, false);
             }
 #endif
             return false;

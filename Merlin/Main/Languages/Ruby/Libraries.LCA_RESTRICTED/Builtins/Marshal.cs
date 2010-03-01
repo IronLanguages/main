@@ -27,6 +27,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 using IronRuby.Runtime.Calls;
 using System.Globalization;
+using System.Text;
 
 namespace IronRuby.Builtins {
 
@@ -209,7 +210,7 @@ namespace IronRuby.Builtins {
             }
 
             private void WriteModuleName(RubyModule/*!*/ module) {
-                WriteSymbol(module.Name, RubyEncoding.ClassName);
+                WriteSymbol(module.Name, module.Context.GetIdentifierEncoding());
             }
 
             private void WriteStringValue(string/*!*/ value, RubyEncoding/*!*/ encoding) {
@@ -323,13 +324,13 @@ namespace IronRuby.Builtins {
             private void WriteClass(RubyClass/*!*/ obj) {
                 _writer.Write((byte)'c');
                 TestForAnonymous(obj);
-                WriteStringValue(obj.Name, RubyEncoding.ClassName);
+                WriteStringValue(obj.Name, _context.GetIdentifierEncoding());
             }
 
             private void WriteModule(RubyModule/*!*/ obj) {
                 _writer.Write((byte)'m');
                 TestForAnonymous(obj);
-                WriteStringValue(obj.Name, RubyEncoding.ClassName);
+                WriteStringValue(obj.Name, _context.GetIdentifierEncoding());
             }
 
             private void WriteStruct(RubyStruct/*!*/ obj) {
@@ -343,7 +344,7 @@ namespace IronRuby.Builtins {
                 foreach (string name in names) {
                     int index = obj.GetIndex(name);
                     // TODO (encoding):
-                    WriteSymbol(name, RubyEncoding.UTF8);
+                    WriteSymbol(name, _context.GetIdentifierEncoding());
                     WriteAnObject(obj[index]);
                 }
             }
@@ -364,15 +365,16 @@ namespace IronRuby.Builtins {
                 }
 
                 // TODO: use RubyUtils.IsRubyValueType?
+                RubySymbol sym;
                 if (obj == null) {
                     _writer.Write((byte)'0');
                 } else if (obj is bool) {
                     _writer.Write((byte)((bool)obj ? 'T' : 'F'));
                 } else if (obj is int) {
                     WriteFixnum((int)obj);
-                } else if (obj is SymbolId) {
+                } else if ((sym = obj as RubySymbol) != null) {
                     // TODO (encoding):
-                    WriteSymbol(SymbolTable.IdToString((SymbolId)obj), RubyEncoding.UTF8);
+                    WriteSymbol(sym.ToString(), sym.Encoding);
                 } else {
                     int objectRef;
                     if (_objects.TryGetValue(obj, out objectRef)) {
@@ -448,13 +450,14 @@ namespace IronRuby.Builtins {
 
                         if (writeInstanceData) {
                             WriteInt32(instanceNames.Length);
+                            var encoding = _context.GetIdentifierEncoding();
                             foreach (string name in instanceNames) {
                                 object value;
                                 if (!_context.TryGetInstanceVariable(obj, name, out value)) {
                                     value = null;
                                 }
                                 // TODO (encoding):
-                                WriteSymbol(name, RubyEncoding.UTF8);
+                                WriteSymbol(name, encoding);
                                 WriteAnObject(value);
                             }
                         }
@@ -477,11 +480,29 @@ namespace IronRuby.Builtins {
         #region MarshalReader
 
         internal class MarshalReader {
+            private sealed class Symbol {
+                private string _string;
+                private RubySymbol _symbol;
+
+                public Symbol(string str, RubySymbol sym) {
+                    _string = str;
+                    _symbol = sym;
+                }
+
+                public string/*!*/ GetString() {
+                    return _string ?? (_string = _symbol.ToString());
+                }
+
+                public RubySymbol/*!*/ GetSymbol(RubyContext/*!*/ context) {
+                    return _symbol ?? (_symbol = context.EncodeIdentifier(_string));
+                }
+            }
+
             private readonly BinaryReader/*!*/ _reader;
             private readonly ReaderSites/*!*/ _sites;
             private readonly RubyGlobalScope/*!*/ _globalScope;
             private readonly Proc _proc;
-            private readonly Dictionary<int, string>/*!*/ _symbols;
+            private readonly Dictionary<int, Symbol>/*!*/ _symbols; 
             private readonly Dictionary<int, object>/*!*/ _objects;
 
             private RubyContext/*!*/ Context {
@@ -494,7 +515,7 @@ namespace IronRuby.Builtins {
                 _reader = reader;
                 _globalScope = globalScope;
                 _proc = proc;
-                _symbols = new Dictionary<int, string>();
+                _symbols = new Dictionary<int, Symbol>();
                 _objects = new Dictionary<int, object>();
             }
 
@@ -593,9 +614,10 @@ namespace IronRuby.Builtins {
             }
 
             private MutableString/*!*/ ReadString() {
+                // TODO: encoding
                 int count = ReadInt32();
                 byte[] data = _reader.ReadBytes(count);
-                return MutableString.CreateBinary(data);
+                return MutableString.CreateBinary(data, RubyEncoding.Binary);
             }
 
             private RubyRegex/*!*/ ReadRegex() {
@@ -626,30 +648,37 @@ namespace IronRuby.Builtins {
                 return result;
             }
 
-            private string ReadSymbol() {
-                return ReadSymbol(_reader.ReadByte());
+            private string/*!*/ ReadIdentifier() {
+                return ReadSymbolOrIdentifier(_reader.ReadByte(), false).GetString();
             }
 
-            private string ReadSymbol(int typeFlag) {
-                string result = null;
+            // We don't want to intern identifiers unnecessarily, so we read them as CLR strings.
+            private Symbol/*!*/ ReadSymbolOrIdentifier(int typeFlag, bool symbol) {
+                Symbol result;
                 if (typeFlag == ';') {
                     int position = ReadInt32();
                     if (!_symbols.TryGetValue(position, out result)) {
                         throw RubyExceptions.CreateArgumentError("bad symbol");
                     }
                 } else {
-                    // Ruby appears to assume that it's a ':' in this context
-                    MutableString symbolName = ReadString();
-                    result = symbolName.ToString();
-                    int position = _symbols.Count;
-                    _symbols[position] = result;
+                    // Ruby appears to assume ':'
+
+                    // TODO: encoding
+                    int count = ReadInt32();
+                    byte[] data = _reader.ReadBytes(count);
+                    if (symbol) {
+                        result = new Symbol(null, Context.CreateSymbol(data, RubyEncoding.Binary));
+                    } else {
+                        result = new Symbol(Context.GetIdentifierEncoding().Encoding.GetString(data, 0, data.Length), null);
+                    }
+
+                    _symbols[_symbols.Count] = result;
                 }
                 return result;
             }
 
             private RubyClass/*!*/ ReadType() {
-                string name = ReadSymbol();
-                return (RubyClass)ReadClassOrModule('c', name);
+                return (RubyClass)ReadClassOrModule('c', ReadIdentifier());
             }
 
             private object/*!*/ UnmarshalNewObject() {
@@ -659,12 +688,12 @@ namespace IronRuby.Builtins {
             private object/*!*/ ReadObject() {
                 RubyClass theClass = ReadType();
                 int count = ReadInt32();
-                Hash attributes = new Hash(Context);
+                var attributes = new Dictionary<string, object>();
                 for (int i = 0; i < count; i++) {
-                    string name = ReadSymbol();
+                    string name = ReadIdentifier();
                     attributes[name] = ReadAnObject(false);
                 }
-                return RubyUtils.CreateObject(theClass, attributes, false);
+                return RubyUtils.CreateObject(theClass, attributes);
             }
 
             private object/*!*/ ReadUsingLoad() {
@@ -712,7 +741,7 @@ namespace IronRuby.Builtins {
                 }
 
                 for (int i = 0; i < count; i++) {
-                    string name = ReadSymbol();
+                    string name = ReadIdentifier();
                     if (name != names[i]) {
                         RubyClass theClass = Context.GetClassOf(obj);
                         throw RubyExceptions.CreateTypeError("struct {0} not compatible ({1} for {2})", theClass.Name, name, names[i]);
@@ -727,7 +756,7 @@ namespace IronRuby.Builtins {
                 object obj = ReadAnObject(true);
                 int count = ReadInt32();
                 for (int i = 0; i < count; i++) {
-                    string name = ReadSymbol();
+                    string name = ReadIdentifier();
                     Context.SetInstanceVariable(obj, name, ReadAnObject(false));
                 }
                 return obj;
@@ -735,8 +764,8 @@ namespace IronRuby.Builtins {
 
 
             private object/*!*/ ReadExtended() {
-                string extensionName = ReadSymbol();
-                RubyModule module = (ReadClassOrModule('m', extensionName) as RubyModule);
+                string extensionName = ReadIdentifier();
+                RubyModule module = ReadClassOrModule('m', extensionName) as RubyModule;
                 object obj = ReadAnObject(true);
                 ModuleOps.ExtendObject(module, obj);
                 return obj;
@@ -816,11 +845,11 @@ namespace IronRuby.Builtins {
                         break;
 
                     case ':':
-                        obj = SymbolTable.StringToId(ReadSymbol(typeFlag));
+                        obj = ReadSymbolOrIdentifier(typeFlag, true).GetSymbol(Context);
                         break;
 
                     case ';':
-                        obj = SymbolTable.StringToId(ReadSymbol(typeFlag));
+                        obj = ReadSymbolOrIdentifier(typeFlag, true).GetSymbol(Context);
                         runProc = false;
                         break;
 

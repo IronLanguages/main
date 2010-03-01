@@ -178,7 +178,7 @@ namespace IronRuby.Builtins {
             return -1;
         }
 
-        private static string[] _ExecutableExtensions = new[] { ".exe", ".com" };
+        private static string[] _ExecutableExtensions = new[] { ".exe", ".com", ".bat", ".cmd" };
 
         private static IEnumerable<string>/*!*/ GetExecutableFiles(PlatformAdaptationLayer/*!*/ pal, string/*!*/ path) {
             if (path[0] == '"' || path[path.Length - 1] == '"') {
@@ -498,7 +498,7 @@ namespace IronRuby.Builtins {
             }
 
             // trigger constant initialization of Struct class:
-            context.GetClass(typeof(RubyStruct)).TryGetConstant(null, String.Empty, out value);
+            context.GetClass(typeof(RubyStruct)).TryGetConstant(null, "Tms", out value);
 
             // try again:
             if (context.TryGetLibraryData(TmsStructClassKey, out value)) {

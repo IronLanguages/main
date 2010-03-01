@@ -17,17 +17,23 @@ using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using System.IO;
 
 namespace IronRuby.Builtins {
     public sealed class RubyInputProvider {
         private readonly RubyContext/*!*/ _context;
 
         // $<. ARGF
-        private object/*!*/ _singleton; 
+        private object/*!*/ _singleton;
+        //TODO: thread safety
+        private RubyIO _singletonStream;
+        private IOMode _defaultMode;
         
         // $*, ARGV
         private readonly RubyArray/*!*/ _commandLineArguments;
 
+        //TODO: thread safety
+        private int _currentFileIndex;
         // $.
         private int _lastInputLineNumber;
 
@@ -43,7 +49,9 @@ namespace IronRuby.Builtins {
 
             _commandLineArguments = args;
             _lastInputLineNumber = 1;
+            _currentFileIndex = -1;
             _singleton = new object();
+            _defaultMode = IOMode.ReadOnly;
         }
         
         public RubyContext/*!*/ Context {
@@ -59,6 +67,19 @@ namespace IronRuby.Builtins {
             }
         }
 
+        public RubyIO SingletonStream {
+            get { return _singletonStream; }
+            private set {
+                Assert.NotNull(value);
+                _singletonStream = value;
+            }
+        }
+
+        public IOMode DefaultMode {
+            get { return _defaultMode; }
+            set { _defaultMode = value; }
+        }
+
         public RubyArray/*!*/ CommandLineArguments {
             get { return _commandLineArguments; }
         }
@@ -70,13 +91,45 @@ namespace IronRuby.Builtins {
 
         public MutableString/*!*/ CurrentFileName {
             get {
-                // TODO:
-                return MutableString.CreateAscii("-");
+                if (CommandLineArguments.Count == 0) {
+                    return MutableString.CreateAscii("-");
+                } else {
+                    //TODO: convert any non-string
+                    return (MutableString)CommandLineArguments[_currentFileIndex];
+                }
             }
         }
 
+
+        public RubyIO GetCurrentStream() {
+            return GetCurrentStream(false);
+        }
+
+        public RubyIO GetCurrentStream(bool reset) {
+            if (null == SingletonStream || (reset && (SingletonStream.Closed || SingletonStream.IsEndOfStream()))){
+                IncrementCurrentFileIndex();
+                ResetCurrentStream();
+            } 
+            return SingletonStream;
+        }
+
+        public RubyIO GetOrResetCurrentStream() {
+            return GetCurrentStream(true);
+        }
+
+        public void ResetCurrentStream() {
+            string file = CurrentFileName.ToString();
+            Stream stream = RubyFile.OpenFileStream(_context, file, _defaultMode);
+            SingletonStream = new RubyIO(_context, stream, _defaultMode);
+        }
+
+
         public void IncrementLastInputLineNumber() {
             Interlocked.Increment(ref _lastInputLineNumber);
+        }
+
+        public void IncrementCurrentFileIndex() {
+            Interlocked.Increment(ref _currentFileIndex);
         }
 
         private void ExpandArgument(RubyArray/*!*/ args, string/*!*/ arg, RubyEncoding/*!*/ encoding) {
@@ -93,6 +146,10 @@ namespace IronRuby.Builtins {
             } else {
                 args.Add(MutableString.Create(arg, encoding));
             }
+        }
+
+        public bool HasMoreFiles() {
+            return !Interlocked.Equals(_currentFileIndex, _commandLineArguments.Count - 1);
         }
     }
 }

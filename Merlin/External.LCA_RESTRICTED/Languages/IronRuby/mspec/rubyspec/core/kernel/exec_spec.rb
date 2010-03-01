@@ -8,7 +8,15 @@ describe "Kernel#exec" do
   
   it "raises a SystemCallError if cmd cannot execute" do
     lambda { exec "" }.should raise_error(SystemCallError)
-  end  
+  end
+
+  it 'can call bat files' do
+    ruby_exe("exec '#{File.dirname(__FILE__) + "/fixtures/comspec.bat"} success'").chomp.should == 'success'
+  end
+
+  it 'can call cmd files' do
+    ruby_exe("exec '#{File.dirname(__FILE__) + "/fixtures/comspec.cmd"} success'").chomp.should == 'success'
+  end
 end
 
 describe "Kernel.exec" do

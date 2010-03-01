@@ -263,6 +263,101 @@ namespace IronPython.Runtime.Types {
         }
 
         /// <summary>
+        /// Resolves methods mapped to __eq__ and __ne__ from:
+        ///     1. IStructuralEquatable.Equals
+        ///     2. IValueEquality.Equals (CLR2 only)
+        /// </summary>
+        class EqualityResolver : MemberResolver {
+            public static readonly EqualityResolver Instance = new EqualityResolver();
+
+            private EqualityResolver() { }
+
+            public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
+                Assert.NotNull(binder, action, type, name);
+
+                bool equality;
+                switch (name) {
+                    case "__eq__": equality = true; break;
+                    case "__ne__": equality = false; break;
+                    default:
+                        return MemberGroup.EmptyGroup;
+                }
+
+                if (typeof(IStructuralEquatable).IsAssignableFrom(type)) {
+                    return new MemberGroup(
+                        GetEqualityMethods(type, equality ? "StructuralEqualityMethod" : "StructuralInequalityMethod")
+                    );
+#if CLR2
+                } else if (typeof(IValueEquality).IsAssignableFrom(type)) {
+                    return new MemberGroup(
+                        GetEqualityMethods(type, equality ? "ValueEqualsMethod" : "ValueNotEqualsMethod")
+                    );
+#endif
+                }
+
+                return MemberGroup.EmptyGroup;
+            }
+
+            protected override IEnumerable<string/*!*/>/*!*/ GetCandidateNames(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type) {
+                yield return "__eq__";
+                yield return "__ne__";
+            }
+        }
+
+        /// <summary>
+        /// Resolves methods mapped to __gt__, __lt__, __ge__, __le__, as well as providing an alternate resolution
+        /// for __eq__ and __ne__, from the comparable type's CompareTo method.
+        /// 
+        /// This should be run after the EqualityResolver.
+        /// </summary>
+        class ComparisonResolver : MemberResolver {
+            private readonly bool _excludePrimitiveTypes;
+            private readonly Type/*!*/ _comparable;
+            private readonly Dictionary<string/*!*/, string/*!*/>/*!*/ _helperMap;
+
+            public ComparisonResolver(Type/*!*/ comparable, string/*!*/ helperPrefix) {
+                Assert.NotNull(comparable, helperPrefix);
+
+                _excludePrimitiveTypes = comparable == typeof(IComparable);
+                _comparable = comparable;
+                _helperMap = new Dictionary<string, string>();
+                _helperMap["__eq__"] = helperPrefix + "Equality";
+                _helperMap["__ne__"] = helperPrefix + "Inequality";
+                _helperMap["__gt__"] = helperPrefix + "GreaterThan";
+                _helperMap["__lt__"] = helperPrefix + "LessThan";
+                _helperMap["__ge__"] = helperPrefix + "GreaterEqual";
+                _helperMap["__le__"] = helperPrefix + "LessEqual";
+            }
+
+            public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
+                Assert.NotNull(binder, action, type, name);
+
+                // Do not map IComparable if this is a primitive numeric type.
+                if (_excludePrimitiveTypes) {
+                    if (type == typeof(bool) || type == typeof(int) || type == typeof(double) ||
+                        type == typeof(BigInteger) || type == typeof(string) || type == typeof(char) ||
+                        type == typeof(byte) || type == typeof(float) ||type == typeof(long) ||
+                        type == typeof(decimal) || type == typeof(uint) || type == typeof(sbyte) ||
+                        type == typeof(ulong) || type == typeof(short) || type == typeof(ushort)) {
+                        return MemberGroup.EmptyGroup;
+                    }
+                }
+
+                string helperName;
+                if (_helperMap.TryGetValue(name, out helperName) &&
+                    _comparable.IsAssignableFrom(type)) {
+                    return new MemberGroup(GetEqualityMethods(type, helperName));
+                }
+
+                return MemberGroup.EmptyGroup;
+            }
+
+            protected override IEnumerable<string/*!*/>/*!*/ GetCandidateNames(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type) {
+                return _helperMap.Keys;
+            }
+        }
+
+        /// <summary>
         /// Resolves methods mapped to __*__ methods automatically from the .NET operator.
         /// </summary>
         class OperatorResolver : MemberResolver {
@@ -515,18 +610,19 @@ namespace IronPython.Runtime.Types {
                 // Runs after StandardResolver so custom __eq__ methods can be added
                 // that support things like returning NotImplemented vs. IValueEquality
                 // which only supports true/false.  Runs before OperatorResolver so that
-                // IValueEquality takes precedence over Equals which can be provided for
-                // nice .NET interop.
+                // IStructuralEquatable and IValueEquality take precedence over Equals,
+                // which can be provided for nice .NET interop.
+                
+                EqualityResolver.Instance,
+                new ComparisonResolver(typeof(IStructuralComparable), "StructuralComparable"),
+                
                 new OneOffResolver("__all__", AllResolver),
-
                 new OneOffResolver("__contains__", ContainsResolver),
                 new OneOffResolver("__dir__", DirResolver),
                 new OneOffResolver("__doc__", DocResolver),
                 new OneOffResolver("__enter__", EnterResolver),
-                new OneOffResolver("__eq__", EqualityResolver),
                 new OneOffResolver("__exit__", ExitResolver),
                 new OneOffResolver("__len__", LengthResolver),
-                new OneOffResolver("__ne__", InequalityResolver),
                 new OneOffResolver("__format__", FormatResolver),
                 new OneOffResolver("next", NextResolver),
 
@@ -559,6 +655,9 @@ namespace IronPython.Runtime.Types {
                 
                 // Runs after operator resolver to map __ne__ -> !__eq__
                 new OneOffResolver("__ne__", FallbackInequalityResolver),
+
+                // Runs after the operator resolver to map IComparable
+                new ComparisonResolver(typeof(IComparable), "Comparable"),
                 
                 // Protected members are visible but only usable from derived types
                 new ProtectedMemberResolver(),
@@ -736,12 +835,19 @@ namespace IronPython.Runtime.Types {
 #endif
 
         /// <summary>
-        /// Provides a resolution for IValueEquality.GetValueHashCode to __hash__.
+        /// Provides a resolution for __hash__, first looking for IStructuralEquatable.GetHashCode,
+        /// then IValueEquality.GetValueHashCode.
         /// </summary>
         private static MemberGroup/*!*/ HashResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (typeof(IValueEquality).IsAssignableFrom(type) && !type.IsInterface) {
-                // check and see if __new__ has been overridden by the base type.
+#if CLR2
+            if ((typeof(IStructuralEquatable).IsAssignableFrom(type) ||
+                 typeof(IValueEquality).IsAssignableFrom(type)) && !type.IsInterface) {
+#else
+            if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface) {
+#endif
+                // check and see if __hash__ has been overridden by the base type.
                 foreach (Type t in binder.GetContributingTypes(type)) {
+                    // if it's defined on object, it's not overridden
                     if (t == typeof(ObjectOps) || t == typeof(object)) {
                         break;
                     }
@@ -751,8 +857,17 @@ namespace IronPython.Runtime.Types {
                         return MemberGroup.EmptyGroup;
                     }
                 }
+#if CLR2
+                if (typeof(IStructuralEquatable).IsAssignableFrom(type)) {
+                    return GetInstanceOpsMethod(type, "StructuralHashMethod");
+                }
 
-                return new MemberGroup(typeof(IValueEquality).GetMethod("GetValueHashCode"));
+                if (typeof(IValueEquality).IsAssignableFrom(type)) {
+                    return new MemberGroup(typeof(IValueEquality).GetMethod("GetValueHashCode"));
+                }
+#else
+                return GetInstanceOpsMethod(type, "StructuralHashMethod");
+#endif
             }
 
             // otherwise we'll pick up __hash__ from ObjectOps which will call .NET's .GetHashCode therefore
@@ -879,40 +994,17 @@ namespace IronPython.Runtime.Types {
 
             if (!type.IsDefined(typeof(DontMapIEnumerableToIterAttribute), true)) {
                 // no special __iter__, use the default.
-                if (typeof(System.Collections.Generic.IEnumerable<>).IsAssignableFrom(type)) {
+                if (typeof(IEnumerable<>).IsAssignableFrom(type)) {
                     return GetInstanceOpsMethod(type, "IterMethodForGenericEnumerable");
-                } else if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type)) {
+                } else if (typeof(IEnumerable).IsAssignableFrom(type)) {
                     return GetInstanceOpsMethod(type, "IterMethodForEnumerable");
-                } else if (typeof(System.Collections.Generic.IEnumerator<>).IsAssignableFrom(type)) {
+                } else if (typeof(IEnumerator<>).IsAssignableFrom(type)) {
                     return GetInstanceOpsMethod(type, "IterMethodForGenericEnumerator");
-                } else if (typeof(System.Collections.IEnumerator).IsAssignableFrom(type)) {
+                } else if (typeof(IEnumerator).IsAssignableFrom(type)) {
                     return GetInstanceOpsMethod(type, "IterMethodForEnumerator");
                 }
             }
             
-            return MemberGroup.EmptyGroup;
-        }
-
-        /// <summary>
-        /// Provides a mapping of IValueEquality.ValueEquals to __eq__
-        /// </summary>
-        private static MemberGroup/*!*/ EqualityResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (typeof(IValueEquality).IsAssignableFrom(type)) {
-                return new MemberGroup(GetEqualityMethods(type, "ValueEqualsMethod"));
-            }
-
-            return MemberGroup.EmptyGroup;
-        }
-
-
-        /// <summary>
-        /// Provides a mapping of IValueEquality.ValueNotEquals to __ne__
-        /// </summary>
-        private static MemberGroup/*!*/ InequalityResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (typeof(IValueEquality).IsAssignableFrom(type)) {
-                return new MemberGroup(GetEqualityMethods(type, "ValueNotEqualsMethod"));
-            }
-
             return MemberGroup.EmptyGroup;
         }
 

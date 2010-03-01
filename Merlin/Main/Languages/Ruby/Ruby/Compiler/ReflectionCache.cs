@@ -21,24 +21,18 @@ using MSA = Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using IronRuby.Compiler.Generation;
-using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using IronRuby.Builtins;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Runtime;
-
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 
 namespace IronRuby.Compiler {
+    using MSAst = Microsoft.Scripting.Ast;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
+
     public static partial class Fields {
         private static FieldInfo _StrongBox_Value;
         
@@ -97,7 +91,10 @@ namespace IronRuby.Compiler {
                 case 2: return Methods.MakeArray2.OpCall(AstUtils.Box(args[0]), AstUtils.Box(args[1]));
                 case 3: return Methods.MakeArray3.OpCall(AstUtils.Box(args[0]), AstUtils.Box(args[1]), AstUtils.Box(args[2]));
                 case 4: return Methods.MakeArray4.OpCall(AstUtils.Box(args[0]), AstUtils.Box(args[1]), AstUtils.Box(args[2]), AstUtils.Box(args[3]));
-                case 5: return Methods.MakeArray5.OpCall(AstUtils.Box(args[0]), AstUtils.Box(args[1]), AstUtils.Box(args[2]), AstUtils.Box(args[3]), AstUtils.Box(args[4]));
+                case 5: 
+                    return Methods.MakeArray5.OpCall(new AstExpressions {
+                        AstUtils.Box(args[0]), AstUtils.Box(args[1]), AstUtils.Box(args[2]), AstUtils.Box(args[3]), AstUtils.Box(args[4])
+                    });
 
                 default:
                     Debug.Assert(args.Count > Runtime.RubyOps.OptimizedOpCallParamCount);
@@ -122,33 +119,31 @@ namespace IronRuby.Compiler {
 
     public static class MethodInfoExtensions {
         public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method) {
-            Assert.NotNull(method);
             return MSA.Expression.Call(null, method);
         }
 
-        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, MSA.Expression/*!*/ arg1) {
-            Assert.NotNull(method);
-            return MSA.Expression.Call(method, arg1);
+        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, MSA.Expression/*!*/ arg0) {
+            return MSA.Expression.Call(method, arg0);
         }
 
-        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, MSA.Expression/*!*/ arg1, MSA.Expression/*!*/ arg2) {
-            Assert.NotNull(method);
-            return MSA.Expression.Call(null, method, arg1, arg2);
+        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, MSA.Expression/*!*/ arg0, MSA.Expression/*!*/ arg1) {
+            return MSA.Expression.Call(method, arg0, arg1);
         }
 
-        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, MSA.Expression/*!*/ arg1, MSA.Expression/*!*/ arg2, MSA.Expression/*!*/ arg3) {
-            Assert.NotNull(method);
-            return MSA.Expression.Call(null, method, arg1, arg2, arg3);
+        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, MSA.Expression/*!*/ arg0, MSA.Expression/*!*/ arg1, MSA.Expression/*!*/ arg2) {
+            return MSA.Expression.Call(method, arg0, arg1, arg2);
         }
 
-        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, params MSA.Expression[]/*!*/ args) {
-            Assert.NotNull(method, args);
-            return MSA.Expression.Call(null, method, new ReadOnlyCollection<MSA.Expression>(args));
+        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, MSA.Expression/*!*/ arg0, MSA.Expression/*!*/ arg1, MSA.Expression/*!*/ arg2, MSA.Expression/*!*/ arg3) {
+            return MSA.Expression.Call(method, arg0, arg1, arg2, arg3);
         }
 
-        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, List<MSA.Expression>/*!*/ args) {
-            Assert.NotNull(method, args);
-            return MSA.Expression.Call(null, method, new ReadOnlyCollection<MSA.Expression>(args));
+        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, AstExpressions/*!*/ args) {
+            return MSA.Expression.Call(method, args);
+        }
+
+        public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method, MSAst.ExpressionCollectionBuilder/*!*/ args) {
+            return args.ToMethodCall(null, method);
         }
     }
 }

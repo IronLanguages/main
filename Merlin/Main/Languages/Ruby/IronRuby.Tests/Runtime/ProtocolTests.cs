@@ -19,17 +19,18 @@ using System.Text;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
 
     public class DefaultProtocolTester : LibraryInitializer {
         protected override void LoadModules() {
             DefineGlobalModule("Tests", typeof(DefaultProtocolTester), (int)ModuleRestrictions.NoUnderlyingType, null, (module) => {
-                    DefineLibraryMethod(module, "to_int_to_str", (int)RubyMethodAttributes.PublicSingleton, new System.Delegate[] {
-                        new Func<RubyModule, Union<int, MutableString>, RubyArray>(ToIntToStr),
+                    DefineLibraryMethod(module, "to_int_to_str", (int)RubyMethodAttributes.PublicSingleton, new[] {
+                        LibraryOverload.Reflect(new Func<RubyModule, Union<int, MutableString>, RubyArray>(ToIntToStr)),
                     });
-                    DefineLibraryMethod(module, "to_str_to_int", (int)RubyMethodAttributes.PublicSingleton, new System.Delegate[] {
-                        new Func<RubyModule, Union<MutableString, int>, RubyArray>(ToStrToInt),
+                    DefineLibraryMethod(module, "to_str_to_int", (int)RubyMethodAttributes.PublicSingleton, new[] {
+                        LibraryOverload.Reflect(new Func<RubyModule, Union<MutableString, int>, RubyArray>(ToStrToInt)),
                     });
                 }, 
                 null, RubyModule.EmptyArray);

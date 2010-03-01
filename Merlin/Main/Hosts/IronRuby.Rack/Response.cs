@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Web;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Rack {
     public class Response {
@@ -12,21 +13,15 @@ namespace IronRuby.Rack {
         /// Initializes a new instance of the HttpResponseAdapter class.
         /// </summary>
         /// <param name="response">The HttpResponseBase to adapt</param>
-        public Response(HttpResponseBase response)
-        {
-            if (response == null)
-            {
-                throw new ArgumentNullException("response");
-            }
-
+        public Response(HttpResponseBase response) {
+            ContractUtils.RequiresNotNull(response, "response");
             this.OrigionalResponse = response;
         }
 
         /// <summary>
         /// Gets or sets the status associated with this HTTP response
         /// </summary>
-        public int Status
-        {
+        public int Status {
             get { return this.OrigionalResponse.StatusCode; }
             set { this.OrigionalResponse.StatusCode = value; }
         }
@@ -36,8 +31,7 @@ namespace IronRuby.Rack {
         /// </summary>
         /// <param name="key">The HTTP header name</param>
         /// <param name="value">The HTTP header value</param>
-        public void AppendHeader(string key, string value)
-        {
+        public void AppendHeader(string key, string value) {
             this.OrigionalResponse.AppendHeader(key, value);
         }
 
@@ -45,8 +39,7 @@ namespace IronRuby.Rack {
         /// Writes a chunk of data to the HTTP response
         /// </summary>
         /// <param name="data">The data to write</param>
-        public void Write(string data)
-        {
+        public void Write(string data) {
             this.OrigionalResponse.Output.Write(data);
         }
     }

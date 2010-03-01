@@ -42,7 +42,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         public ParamsDictArgBuilder(ParameterInfo info, int argIndex, string[] names, int[] nameIndexes) 
             : base(info) {
-            Assert.NotNull(names, nameIndexes);
+            Assert.NotNull(info, names, nameIndexes);
 
             _argIndex = argIndex;
             _names = names;

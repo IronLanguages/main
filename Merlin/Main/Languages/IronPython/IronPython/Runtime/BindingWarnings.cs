@@ -26,6 +26,7 @@ using System.Threading;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -34,10 +35,10 @@ namespace IronPython.Runtime.Binding {
     /// Provides support for emitting warnings when built in methods are invoked at runtime.
     /// </summary>
     internal static class BindingWarnings {
-        public static bool ShouldWarn(PythonContext/*!*/ context, MethodBase/*!*/ method, out WarningInfo info) {
+        public static bool ShouldWarn(PythonContext/*!*/ context, OverloadInfo/*!*/ method, out WarningInfo info) {
             Assert.NotNull(method);
 
-            ObsoleteAttribute[] os = (ObsoleteAttribute[])method.GetCustomAttributes(typeof(ObsoleteAttribute), true);
+            ObsoleteAttribute[] os = (ObsoleteAttribute[])method.ReflectionInfo.GetCustomAttributes(typeof(ObsoleteAttribute), true);
             if (os.Length > 0) {
                 info = new WarningInfo(
                     PythonExceptions.DeprecationWarning,
@@ -52,7 +53,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             if (context.PythonOptions.WarnPython30) {
-                Python3WarningAttribute[] py3kwarnings = (Python3WarningAttribute[])method.GetCustomAttributes(typeof(Python3WarningAttribute), true);
+                Python3WarningAttribute[] py3kwarnings = (Python3WarningAttribute[])method.ReflectionInfo.GetCustomAttributes(typeof(Python3WarningAttribute), true);
                 if (py3kwarnings.Length > 0) {
                     info = new WarningInfo(
                         PythonExceptions.DeprecationWarning,

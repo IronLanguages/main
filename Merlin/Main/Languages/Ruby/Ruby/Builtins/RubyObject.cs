@@ -150,7 +150,7 @@ namespace IronRuby.Builtins {
 
         #region Serialization
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT // serialization
         protected RubyObject(SerializationInfo/*!*/ info, StreamingContext context) {
             RubyOps.DeserializeObject(out _instanceData, out _immediateClass, info);
         }

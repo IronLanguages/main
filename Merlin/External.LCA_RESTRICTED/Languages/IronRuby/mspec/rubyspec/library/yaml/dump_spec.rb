@@ -25,7 +25,7 @@ describe "YAML.dump" do
   it "dumps strings into YAML strings" do
     YAML.dump("str").should == "--- str\n"
   end
-
+  
   it "dumps hashes into YAML key-values" do
     YAML.dump({ "a" => "b" }).should ==  "--- \na: b\n"
   end

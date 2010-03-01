@@ -4,7 +4,6 @@ Snippets.scripting.dll
 /Merlin/Main/test.txt
 /Merlin/Main/Languages/Ruby/Tests/Syntax/generated/*
 /Merlin/Main/Languages/Ruby/Samples/Tutorial/Libs
-/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6*/lib/ruby/gems/1.8
 /Merlin/Main/bin
 /Merlin/Main/Bin
 /Merlin/Main/External
@@ -25,3 +24,5 @@ sources
 *.vshost.exe.manifest
 .eprj
 *_S*
+1
+rubyspec_temp

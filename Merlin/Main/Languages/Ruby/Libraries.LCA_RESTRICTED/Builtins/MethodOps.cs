@@ -83,17 +83,17 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("of")]
-        public static RubyMethod/*!*/ BindGenericParameters(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ typeArgs) {
+        public static RubyMethod/*!*/ BindGenericParameters(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNullItems]params object/*!*/[]/*!*/ typeArgs) {
             return new RubyMethod(self.Target, BindGenericParameters(context, self.Info, self.Name, typeArgs), self.Name);
         }
 
         [RubyMethod("overloads")]
-        public static RubyMethod/*!*/ SelectOverload_old(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+        public static RubyMethod/*!*/ SelectOverload_old(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNullItems]params object/*!*/[]/*!*/ parameterTypes) {
             throw RubyExceptions.CreateNameError("Method#overloads is an obsolete name, use Method#overload.");
         }
 
         [RubyMethod("overload")]
-        public static RubyMethod/*!*/ SelectOverload(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+        public static RubyMethod/*!*/ SelectOverload(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNullItems]params object/*!*/[]/*!*/ parameterTypes) {
             return new RubyMethod(self.Target, SelectOverload(context, self.Info, self.Name, parameterTypes), self.Name);
         }
 

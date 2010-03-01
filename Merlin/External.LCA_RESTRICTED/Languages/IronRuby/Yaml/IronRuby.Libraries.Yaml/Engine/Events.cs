@@ -24,10 +24,6 @@ using System.Collections;
 namespace IronRuby.StandardLibrary.Yaml {
     public abstract class YamlEvent {
         internal YamlEvent() { }
-
-        public override string ToString() {
-            return "#<" + GetType().Name + ">";
-        }
     }
 
     public abstract class NodeEvent : YamlEvent {
@@ -48,31 +44,27 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         public bool Explicit { get { return _explicit; } }
-
-        public override string ToString() {
-            return string.Format("#<{0} Explicit={1}", GetType().Name, Explicit);
-        }
     }
 
     public abstract class CollectionStartEvent : NodeEvent {
         private readonly string _tag;
-        private readonly bool _implicit;
-        private readonly bool _flowStyle;
+        private readonly FlowStyle _flowStyle;
 
-        internal CollectionStartEvent(string anchor, string tag, bool @implicit, bool flowStyle)
+        internal CollectionStartEvent(string anchor, string tag, FlowStyle flowStyle)
             : base(anchor) {
-            _tag = tag;
-            _implicit = @implicit;
+            _tag = tag != "!" ? tag : null;
             _flowStyle = flowStyle;
         }
 
+        /// <summary>
+        /// A tag or null if the implicit tag should be used.
+        /// </summary>
         public string Tag { get { return _tag; } }
-        public bool Implicit { get { return _implicit; } }
-        public bool FlowStyle { get { return _flowStyle; } }
 
-        public override string ToString() {
-            return string.Format("#<{0} Tag=\"{1}\", Implicit={2} FlowStyle={3}>", GetType().Name, Tag, Implicit, FlowStyle);
-        }
+        /// <summary>
+        /// False if formatted as a block (each item on its own line). 
+        /// </summary>
+        public FlowStyle FlowStyle { get { return _flowStyle; } }
     }
 
     public abstract class CollectionEndEvent : YamlEvent {
@@ -105,22 +97,6 @@ namespace IronRuby.StandardLibrary.Yaml {
         public IDictionary<string, string> Tags {
             get { return _tags; }
         }
-
-        public override string ToString() {
-            string tags = "null";
-            if (_tags != null) {
-                StringBuilder str = new StringBuilder('{');
-                foreach (KeyValuePair<string, string> t in _tags) {
-                    if (str.Length != 1) {
-                        str.Append(", ");
-                    }
-                    str.Append('\'').Append(t.Key).Append("': '").Append(t.Value).Append('\'');
-                }
-                str.Append('}');
-                tags = str.ToString();
-            }
-            return string.Format("#<DocumentStartEvent Version={0}, Tags={1}>", Version, tags);
-        }
     }
 
     public sealed class MappingEndEvent : CollectionEndEvent {
@@ -129,42 +105,57 @@ namespace IronRuby.StandardLibrary.Yaml {
     }
 
     public sealed class MappingStartEvent : CollectionStartEvent {
-        public MappingStartEvent(string anchor, string tag, bool @implicit, bool flowStyle)
-            : base(anchor, tag, @implicit, flowStyle) {
+        public MappingStartEvent(string anchor, string tag, FlowStyle flowStyle)
+            : base(anchor, tag, flowStyle) {
         }
+    }
+
+    public enum ScalarValueType {
+        Unknown,
+        String,
+        Other
     }
     
     public sealed class ScalarEvent : NodeEvent {
-        // TODO: can tag, implicit merge with CollectionStartEvent?
         private readonly string _tag;
-        private readonly bool[] _implicit; // TODO: one element array?
+        private readonly ScalarValueType _type;
         private readonly string _value;
-        private readonly char _style;
+        private readonly ScalarQuotingStyle _style;
+        private ScalarProperties? _analysis; // lazy
 
-        public ScalarEvent(string anchor, string tag, bool[] @implicit, string value, char style)
+        public ScalarEvent(string anchor, string tag, ScalarValueType type, string value, ScalarQuotingStyle style)
             : base(anchor) {
-            if (@implicit == null || @implicit.Length != 2) {
-                throw new ArgumentException("requires a 2 element array", "@implicit");
-            }
             _tag = tag;
-            _implicit = @implicit;
+            _type = type;
             _value = value;
             _style = style;
         }
 
         public string Tag { get { return _tag; } }
-        public bool[] Implicit { get { return _implicit; } }
+        public ScalarValueType Type { get { return _type; } }
         public string Value { get { return _value; } }
-        public char Style { get { return _style; } }
+        public ScalarQuotingStyle Style { get { return _style; } }
 
+        public bool IsEmpty { get { return (Analysis & ScalarProperties.Empty) != 0; } }
+        public bool IsMultiline { get { return (Analysis & ScalarProperties.Multiline) != 0; } }
+        public bool AllowFlowPlain { get { return (Analysis & ScalarProperties.AllowFlowPlain) != 0; } }
+        public bool AllowBlockPlain { get { return (Analysis & ScalarProperties.AllowBlockPlain) != 0; } }
+        public bool AllowSingleQuoted { get { return (Analysis & ScalarProperties.AllowSingleQuoted) != 0; } }
+        public bool AllowDoubleQuoted { get { return (Analysis & ScalarProperties.AllowDoubleQuoted) != 0; } }
+        public bool AllowBlock { get { return (Analysis & ScalarProperties.AllowBlock) != 0; } }
+        public bool HasSpecialCharacters { get { return (Analysis & ScalarProperties.SpecialCharacters) != 0; } }
 
-        public override string ToString() {
-            string value = Value.Replace("\r", "\\r").Replace("\n", "\\n");
-            if (value.Length > 30) {
-                value = value.Substring(0, 27) + "...";
+        internal ScalarProperties Analysis {
+            get {
+                if (_analysis == null) {
+                    _analysis = Emitter.AnalyzeScalar(_value);
+                }
+                return _analysis.Value;
             }
-            string @implicit = (_implicit[0] ? "T" : "F") + "," + (_implicit[1] ? "T" : "F");
-            return string.Format("#<ScalarEvent Tag=\"{0}\", Implicit={1} Style='{2}' Value=\"{3}\">", Tag, @implicit, Style, value);
+        }
+
+        internal bool IsBinary {
+            get { return _tag == Tags.Binary; }
         }
     }
 
@@ -174,8 +165,8 @@ namespace IronRuby.StandardLibrary.Yaml {
     }
 
     public sealed class SequenceStartEvent : CollectionStartEvent {
-        public SequenceStartEvent(string anchor, string tag, bool @implicit, bool flowStyle)
-            : base(anchor, tag, @implicit, flowStyle) {
+        public SequenceStartEvent(string anchor, string tag, FlowStyle flowStyle)
+            : base(anchor, tag, flowStyle) {
         }
     }
 

@@ -78,4 +78,4 @@ namespace IronRuby.Builtins {
     }
 }
 
-#endif // !SILVERLIGHT
+#endif

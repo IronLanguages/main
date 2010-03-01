@@ -16,6 +16,27 @@ module YamlSpecs
     end  
   end
   
+  class StringSubclass < String
+  end
+  
+  class RangeSubclass < Range
+  end
+  
+  class RegexpSubclass < Regexp
+  end
+  
+  class ArraySubclass < Array
+  end
+  
+  class HashSubclass < Hash
+  end
+  
+  class TimeSubclass < Time
+  end
+  
+  class DateSubclass < Date
+  end
+  
   class Outer
     def initialize
       @outer1 = 1

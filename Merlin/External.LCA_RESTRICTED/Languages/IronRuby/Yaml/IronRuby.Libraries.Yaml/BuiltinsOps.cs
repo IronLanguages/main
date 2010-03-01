@@ -14,33 +14,30 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
-using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
-using System.Runtime.InteropServices;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
-using System.Collections.Generic;
-using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
     [RubyClass(Extends = typeof(object))]
-    public static class YamlObjectOps {        
-
+    public static class YamlObjectOps {
+        /// <summary>
+        /// Returns an array of sorted instance variable names.
+        /// </summary>
         [RubyMethod("to_yaml_properties")]
-        public static RubyArray/*!*/ ToYamlProperties(
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            object self) {
-            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage,
-                KernelOps.InstanceVariables(comparisonStorage.Context, self)
-            );
+        public static RubyArray/*!*/ ToYamlProperties(RubyContext/*!*/ context, object self) {
+            string[] names = context.GetInstanceVariableNames(self);
+            Array.Sort(names);
+            return context.StringifyIdentifiers(names);
         }
 
         [RubyMethod("to_yaml_style")]
@@ -50,21 +47,36 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static object ToYamlProperties(object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            var map = new Dictionary<MutableString, object>();
-            rep.AddYamlProperties(self, map);
+            var map = new Dictionary<object, object>();
+            rep.AddYamlProperties(map, self, true);
             return rep.Map(self, map);
         }
 
         [RubyMethod("to_yaml")]
-        public static object ToYaml(RubyContext/*!*/ context, object self, params object[] args) {
-            return RubyYaml.DumpAll(context, new object[] { self }, null);
+        public static object ToYaml(object self, [NotNull]RubyRepresenter/*!*/ emitter) {
+            if (emitter.Level > 0) {
+                // return a node:
+                return emitter.Represent(self);
+            } else {
+                // return a string:
+                return RubyYaml.DumpAll(emitter, new object[] { self }, null);
+            }
+        }
+
+        [RubyMethod("to_yaml")]
+        public static object ToYaml(YamlCallSiteStorage/*!*/ siteStorage, object self, [DefaultParameterValue(null)]object options) {
+            return RubyYaml.DumpAll(siteStorage, new object[] { self }, null);
         }
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, object self) {
-            return MutableString.Create("!ruby/object:", RubyEncoding.ClassName).
-                Append(context.GetClassName(self)).
-                Append(' ');
+            var result = MutableString.Create(Tags.RubyObject, context.GetIdentifierEncoding());
+            var selfClass = context.GetClassOf(self);
+            if (selfClass != context.ObjectClass) {
+                return result.Append(':').Append(context.GetClassName(self));
+            } else {
+                return result;
+            }
         }
     }
 
@@ -94,8 +106,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, object self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:map");
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, object/*!*/ self) {
+            return RubyYaml.GetTagUri(context, self, Tags.Map, typeof(Hash));
         }
     }
 
@@ -103,36 +115,43 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlArrayOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node ToYamlNode(RubyContext/*!*/ context, RubyArray/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Sequence(self, self);
+            return rep.Sequence(
+                rep.GetTagUri(self, Tags.Seq, typeof(RubyArray)), 
+                self, 
+                rep.GetYamlStyle(self) != ScalarQuotingStyle.None ? FlowStyle.Inline : FlowStyle.Block
+            );
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, object self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:seq");
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, RubyArray/*!*/ self) {
+            return RubyYaml.GetTagUri(context, self, Tags.Seq, typeof(RubyArray));
         }
     }
 
     [RubyModule(Extends = typeof(RubyStruct))]
     public static class YamlStructOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node ToYamlNode(RubyStruct/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
+        public static Node/*!*/ ToYamlNode(RubyStruct/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
+            var encoding = self.ImmediateClass.Context.GetIdentifierEncoding();
             var fieldNames = self.GetNames();
-            var map = new Dictionary<MutableString, object>(fieldNames.Count);
+
+            var fields = new Dictionary<Node, Node>(fieldNames.Count);
             for (int i = 0; i < fieldNames.Count; i++) {
-                // TODO: symbol encodings
-                map[MutableString.Create(fieldNames[i], RubyEncoding.UTF8)] = self[i];
+                fields[rep.Scalar(null, fieldNames[i], ScalarQuotingStyle.None)] = rep.RepresentItem(self.Values[i]);
             }
-            rep.AddYamlProperties(self, map);
-            return rep.Map(self, map);
+
+            var map = new Dictionary<object, object>();
+            rep.AddYamlProperties(map, self, false);
+            return rep.Map(fields, rep.GetTagUri(self), map, FlowStyle.Block);
         }
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(RubyStruct/*!*/ self) {
-            MutableString str = MutableString.CreateMutable("tag:ruby.yaml.org,2002:struct:", RubyEncoding.ClassName);
+            MutableString str = MutableString.CreateMutable("tag:ruby.yaml.org,2002:struct:", self.ImmediateClass.Context.GetIdentifierEncoding());
             string name = self.ImmediateClass.GetNonSingletonClass().Name;
             if (name != null) {
                 string structPrefix = "Struct::";
-                if (name.StartsWith(structPrefix)) {
+                if (name.StartsWith(structPrefix, StringComparison.Ordinal)) {
                     name = name.Substring(structPrefix.Length);
                 }
             }
@@ -143,28 +162,59 @@ namespace IronRuby.StandardLibrary.Yaml {
     [RubyModule(Extends = typeof(Exception))]
     public static class YamlExceptionOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node ToYamlNode(CallSiteStorage<Func<CallSite, Exception, object>>/*!*/ messageStorage,
-            Exception/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
-
+        public static Node ToYamlNode(UnaryOpStorage/*!*/ messageStorage, Exception/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
             var site = messageStorage.GetCallSite("message", 0);
-            var map = new Dictionary<MutableString, object>() {
-                { MutableString.CreateAscii("message"), site.Target(site, self) }
-            };
-            
-            rep.AddYamlProperties(self, map);
-            return rep.Map(self, map);
+            var map = new Dictionary<object, object>();
+            rep.AddYamlProperties(map, self, false);
+            return rep.Map(
+                new Dictionary<Node, Node> {
+                    { rep.Scalar(null, "message", ScalarQuotingStyle.None), rep.RepresentItem(site.Target(site, self)) }
+                },
+                rep.GetTagUri(self),
+                map, 
+                FlowStyle.Block
+            );
         }
 
         [RubyMethod("taguri")]
         public static MutableString TagUri(RubyContext/*!*/ context, object self) {
-            return MutableString.CreateMutable(RubyEncoding.ClassName).
-                Append("!ruby/exception:").
-                Append(context.GetClassName(self));
+            return RubyYaml.GetTagUri(context, self, Tags.RubyException, typeof(Exception));
         }
     }
 
     [RubyModule(Extends = typeof(MutableString))]
-    public static class YamlStringOps {
+    public static class YamlMutableStringOps {
+        // True if has a newline & something is after it
+        private static bool AfterNewLine(string/*!*/ str) {
+            int i = str.IndexOf('\n');
+            return i >= 0 && i < str.Length - 1;
+        }
+
+        /// <summary>
+        /// Returns true if the string binary representation contains bytes from set: 0..0x1f + 0x7f..0xff - [0x0a, 0x0d].
+        /// </summary>
+        internal static bool ContainsBinaryData(MutableString/*!*/ str) {
+            if (!str.IsAscii()) {
+                return true;
+            }
+
+            // for ascii strings we can iterate over bytes or characters without converting the string repr:
+            for (int i = 0; i < str.GetByteCount(); i++) {
+                byte b = str.GetByte(i);
+                if (b < 0x20 && b != 0x0a && b != 0x0d || b >= 0x7f) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// True if the string representation is multi-line, i.e. if
+        /// - the string contains \n followed by data, 
+        /// - any YAML properties has been attached to the string (to_yaml_properties returns non-null),
+        /// - to_yaml_style returns true value (???)
+        /// </summary>
         [RubyMethod("is_complex_yaml?")]
         public static bool IsComplexYaml(
             CallSiteStorage<Func<CallSite, object, MutableString>>/*!*/ toYamlStyleStorage,
@@ -179,108 +229,94 @@ namespace IronRuby.StandardLibrary.Yaml {
                    AfterNewLine(self.ConvertToString());
         }
 
-        // True if has a newline & something is after it
-        private static bool AfterNewLine(string str) {
-            int i = str.IndexOf('\n');
-            return i >= 0 && i < str.Length - 1;
-        }
-
-        [RubyMethod("is_binary_data?")]
-        public static object IsBinaryData(UnaryOpStorage/*!*/ isEmptyStorage, MutableString/*!*/ self) {
-
-            var site = isEmptyStorage.GetCallSite("empty?");
-            if (RubyOps.IsTrue(site.Target(site, self))) {
-                return null;
-            }
-
-            return ScriptingRuntimeHelpers.BooleanToObject((self.IsBinary ? self.IndexOf(0) : self.IndexOf('\0')) >= 0);
-        }
-
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYamlNode(UnaryOpStorage/*!*/ isBinaryDataStorage, MutableString/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
-
-            var site = isBinaryDataStorage.GetCallSite("is_binary_data?");
-            if (RubyOps.IsTrue(site.Target(site, self))) {
-                return rep.BaseCreateNode(self.ConvertToBytes());
+        public static Node/*!*/ ToYamlNode(MutableString/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
+            if (!self.IsEmpty && ContainsBinaryData(self)) {
+                return rep.BaseCreateNode(self.ToByteArray());
             }
 
-            string str = self.ConvertToString();
-            RubyArray props = rep.ToYamlProperties(self);
-            if (props.Count == 0) {
-                MutableString taguri = rep.GetTagUri(self);
+            Debug.Assert(self.IsAscii());
+            string str = self.ToString();
 
-                char style = '\0';
-                if (str.StartsWith(":")) {
-                    style = '"';
-                } else {
-                    MutableString styleStr = rep.ToYamlStyle(self);
-                    if (styleStr != null && styleStr.Length > 0) {
-                        style = styleStr.GetChar(0);
-                    }
-                }
-
-                return rep.Scalar(taguri != null ? taguri.ConvertToString() : "", str, style);
+            ScalarQuotingStyle style = ScalarQuotingStyle.None;
+            if (str.StartsWith(":", StringComparison.Ordinal)) {
+                style = ScalarQuotingStyle.Double;
+            } else {
+                style = rep.GetYamlStyle(self);
             }
 
-            var map = new Dictionary<MutableString, object>() {
-                { MutableString.CreateAscii("str"), str }
-            };
-            rep.AddYamlProperties(self, map, props);
-            return rep.Map(self, map);
+            var tag = rep.GetTagUri(self, Tags.Str, typeof(MutableString));
+            IList instanceVariableNames = rep.ToYamlProperties(self);
+            if (instanceVariableNames.Count == 0) {
+                return rep.Scalar(tag, str, style);
+            }
+
+            var map = new Dictionary<object, object>();
+            rep.AddYamlProperties(map, self, instanceVariableNames, false);
+            return rep.Map(
+                new Dictionary<Node, Node> {
+                    { rep.Scalar(null, "str", style), rep.Scalar(null, str, style) }
+                },
+                tag,
+                map,
+                FlowStyle.Block
+            );
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:str");
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, MutableString/*!*/ self) {
+            return RubyYaml.GetTagUri(context, self, Tags.Str, typeof(MutableString));
         }
     }
 
-    [RubyModule(Extends = typeof(Integer))]
-    public static class YamlIntegerOps {
+    [RubyModule(Extends = typeof(int))]
+    public static class YamlFixnumOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosConversion, self));
+        public static Node/*!*/ ToYaml(int self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return rep.Scalar(Tags.Int, self.ToString(), ScalarQuotingStyle.None);
         }          
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:int");
+        public static MutableString/*!*/ TagUri(int self) {
+            return MutableString.CreateAscii(Tags.Fixnum);
         }
     }
 
     [RubyModule(Extends = typeof(BigInteger))]
     public static class YamlBigIntegerOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, [NotNull]BigInteger self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return YamlIntegerOps.ToYaml(tosConversion, self, rep);
+        public static Node/*!*/ ToYaml([NotNull]BigInteger self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return rep.Scalar(Tags.Bignum, self.ToString(CultureInfo.InvariantCulture), ScalarQuotingStyle.None);
         } 
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri([NotNull]BigInteger self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:int:Bignum");            
+            return MutableString.CreateAscii(Tags.Bignum);            
         }
     }
 
     [RubyModule(Extends = typeof(double))]
     public static class YamlDoubleOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, double self, [NotNull]RubyRepresenter/*!*/ rep) {
-            MutableString str = Protocols.ConvertToString(tosConversion, self);
-            if (str != null) {
-                if (str.Equals("Infinity")) {
-                    str = MutableString.CreateAscii(".Inf");
-                } else if (str.Equals("-Infinity")) {
-                    str = MutableString.CreateAscii("-.Inf");
-                } else if (str.Equals("NaN")) {
-                    str = MutableString.CreateAscii(".NaN");
-                }
+        public static Node/*!*/ ToYaml(double self, [NotNull]RubyRepresenter/*!*/ rep) {
+            if (Double.IsNaN(self)) {
+                return rep.Scalar(Tags.Float, ".NaN", ScalarQuotingStyle.None);
             }
-            return rep.Scalar(self, str);
+
+            if (Double.IsNegativeInfinity(self)) {
+                return rep.Scalar(Tags.Float, "-.Inf", ScalarQuotingStyle.None);
+            }
+
+            if (Double.IsPositiveInfinity(self)) {
+                return rep.Scalar(Tags.Float, ".Inf", ScalarQuotingStyle.None);
+            }
+
+            return rep.Scalar(Tags.Float, ClrFloat.ToS(rep.Context, self).ToString(), ScalarQuotingStyle.None);
         }    
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(double self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:float");
+            return MutableString.CreateAscii(Tags.Float);
         }
     }
 
@@ -293,19 +329,23 @@ namespace IronRuby.StandardLibrary.Yaml {
             var begin = beginStorage.GetCallSite("begin");
             var end = endStorage.GetCallSite("end");
 
-            var map = new Dictionary<MutableString, object>() {
-                { MutableString.CreateAscii("begin"), begin.Target(begin, self) },
-                { MutableString.CreateAscii("end"), end.Target(end, self) },
-                { MutableString.CreateAscii("excl"), self.ExcludeEnd },
-            };
-
-            rep.AddYamlProperties(self, map);
-            return rep.Map(self, map);
+            var map = new Dictionary<object, object>();
+            rep.AddYamlProperties(map, self, false);
+            return rep.Map(
+                new Dictionary<Node, Node> {
+                    { rep.Scalar(null, "begin", ScalarQuotingStyle.None), rep.RepresentItem(begin.Target(begin, self)) },
+                    { rep.Scalar(null, "end", ScalarQuotingStyle.None), rep.RepresentItem(end.Target(end, self)) },
+                    { rep.Scalar(null, "excl", ScalarQuotingStyle.None), rep.Scalar(self.ExcludeEnd) },
+                },
+                rep.GetTagUri(self),
+                map,
+                FlowStyle.Block
+            );
         }
 
         [RubyMethod("taguri")]
-        public static MutableString TagUri([NotNull]Range self) {
-            return MutableString.CreateAscii("tag:ruby.yaml.org,2002:range");
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, Range/*!*/ self) {
+            return RubyYaml.GetTagUri(context, self, Tags.RubyRange, typeof(Range));
         }
     }
 
@@ -313,73 +353,104 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlRegexpOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node/*!*/ ToYaml(RubyRegex/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, rep.Context.Inspect(self));
+            return rep.Scalar(
+                rep.GetTagUri(self), 
+                self.Inspect().ToAsciiString(rep.Context.RubyOptions.Compatibility == RubyCompatibility.Ruby18),
+                ScalarQuotingStyle.None
+            );
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(RubyRegex/*!*/ self) {
-            return MutableString.CreateAscii("tag:ruby.yaml.org,2002:regexp");
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, RubyRegex/*!*/ self) {
+            return RubyYaml.GetTagUri(context, self, Tags.RubyRegexp, typeof(RubyRegex));
         }
     }
 
     [RubyModule(Extends = typeof(RubyTime))]
-    public static class TimeOps {
+    public static class YamlTimeOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(RubyTime self, [NotNull]RubyRepresenter/*!*/ rep) {
+        public static Node/*!*/ ToYaml(RubyTime/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
             TimeSpan offset = self.GetCurrentZoneOffset();
             long fractional = self.Microseconds;
-            return rep.Scalar(self, MutableString.CreateAscii(String.Format(CultureInfo.InvariantCulture,
+            string value = String.Format(CultureInfo.InvariantCulture,
                 "{0:yyyy-MM-dd HH:mm:ss}" + (fractional == 0 ? "" : ".{1:D6}") + (self.Kind == DateTimeKind.Utc ? " Z" : " {2}{3:D2}:{4:D2}"),
                 self.DateTime,
                 fractional,
                 offset.Hours >= 0 ? "+" : "",
-                offset.Hours, 
+                offset.Hours,
                 offset.Minutes
-            )));
+            );
+
+            return rep.Scalar(rep.GetTagUri(self), value, ScalarQuotingStyle.None);
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(RubyTime self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:timestamp");
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, RubyTime/*!*/ self) {
+            return RubyYaml.GetTagUri(context, self, Tags.Timestamp, typeof(RubyTime));
         }
     }
 
-    [RubyModule(Extends = typeof(SymbolId))]
+    [RubyClass("Date", Restrictions = ModuleRestrictions.AllowReopening)]
+    public static class YamlDateOps {
+        [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
+        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, object/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
+            string value = Protocols.ConvertToString(tosConversion, self).ToString();
+            return rep.Scalar(rep.GetTagUri(self), value, ScalarQuotingStyle.None);
+        }
+
+        [RubyMethod("taguri")]
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, object/*!*/ self) {
+            var result = MutableString.Create(Tags.TimestampYmd, context.GetIdentifierEncoding());
+            string className = context.GetClassName(self);
+            if (className != "Date") {
+                return result.Append(':').Append(className);
+            } else {
+                return result;
+            }
+        }
+    }
+
+    [RubyModule(Extends = typeof(RubySymbol))]
     public static class YamlSymbolOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, rep.Context.Inspect(self));
+        public static Node/*!*/ ToYaml(RubySymbol/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return rep.Scalar(
+                // TODO: we should use RubySymbol but that would require ResolverScanner to recognize symbols in order not to emit a tag
+                Tags.Str,
+                SymbolOps.Inspect(rep.Context, self).ToAsciiString(rep.Context.RubyOptions.Compatibility == RubyCompatibility.Ruby18), 
+                ScalarQuotingStyle.None
+            );
         }
         
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:str");
+            return MutableString.CreateAscii(Tags.RubySymbol);
         }
     }
 
     [RubyModule(Extends = typeof(TrueClass))]
     public static class YamlTrueOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosConversion, self));
+        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, bool self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return rep.Scalar(self);
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:bool");
+        public static MutableString/*!*/ TagUri(bool self) {
+            return MutableString.CreateAscii(Tags.True);
         }
     }
 
     [RubyModule(Extends = typeof(FalseClass))]
     public static class YamlFalseOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, Protocols.ConvertToString(tosConversion, self));
+        public static Node/*!*/ ToYaml(ConversionStorage<MutableString>/*!*/ tosConversion, bool self, [NotNull]RubyRepresenter/*!*/ rep) {
+            return rep.Scalar(self);
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:bool");
+        public static MutableString/*!*/ TagUri(bool self) {
+            return MutableString.CreateAscii(Tags.False);
         }
     }
 
@@ -387,20 +458,12 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlNilOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node/*!*/ ToYaml(object self, [NotNull]RubyRepresenter/*!*/ rep) {
-            return rep.Scalar(self, null);
+            return rep.Scalar(Tags.Null, null, ScalarQuotingStyle.None);
         }
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.CreateAscii("tag:yaml.org,2002:null");
-        }
-    }
-
-    [RubyClass(Extends = typeof(Node))]
-    public static class YamlNodeOps {
-        [RubyMethod("transform")]
-        public static object Transform(RubyScope/*!*/ scope, Node/*!*/ self) {
-            return new RubyConstructor(scope.GlobalScope, new SimpleNodeProvider(self)).GetData();
+            return MutableString.CreateAscii(Tags.Null);
         }
     }
 }

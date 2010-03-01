@@ -47,7 +47,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("public", RubyMethodAttributes.PublicInstance)]
         public static RubyModule/*!*/ SetPublicVisibility(RubyScope/*!*/ scope, object/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
 
             return SetVisibility(scope, self, methodNames, RubyMethodAttributes.PublicInstance);
         }
@@ -55,7 +55,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("private", RubyMethodAttributes.PublicInstance)]
         public static RubyModule/*!*/ SetPrivateVisibility(RubyScope/*!*/ scope, object/*!*/ self,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ methodNames) {
 
             return SetVisibility(scope, self, methodNames, RubyMethodAttributes.PrivateInstance);
         }
@@ -82,79 +82,6 @@ namespace IronRuby.Builtins {
             RubyClass result = context.GetClassOf(self);
             result.IncludeModules(modules);
             return result;
-        }
-
-        #endregion
-    }
-
-    /// <summary>
-    /// Methods on Singleton(class), Singleton(Singleton(object)).
-    /// </summary>
-    [RubyModule(RubyClass.ClassSingletonName)]
-    public static class ClassSingletonOps {
-        #region Private Instance Methods
-
-        // Reinitialization. Not called when a factory/non-default ctor is called.
-        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static object/*!*/ Initialize(object/*!*/ self) {
-            // TODO:
-            throw new NotImplementedException("TODO");
-        }
-
-        [RubyMethod("initialize_copy", RubyMethodAttributes.PrivateInstance)]
-        public static object InitializeCopy(object/*!*/ self, object other) {
-            // TODO:
-            throw new NotImplementedException("TODO");
-        }
-
-        [RubyMethod("inherited", RubyMethodAttributes.PrivateInstance)]
-        public static void Inherited(object/*!*/ self, [NotNull]RubyClass/*!*/ subclass) {
-            // TODO:
-            throw new NotImplementedException("TODO");
-        }
-
-        #endregion
-
-        #region Public Instance Methods
-
-        [RubyMethod("allocate", RubyMethodAttributes.PublicInstance)]
-        public static void Allocate(RubyClass/*!*/ self) {
-            throw RubyExceptions.CreateTypeError("can't create instance of virtual class");
-        }
-
-        [RubyMethod("superclass", RubyMethodAttributes.PublicInstance)]
-        public static RubyClass/*!*/ GetSuperClass(RubyClass/*!*/ self) {
-            RubyClass result = self.SingletonClass;
-            Debug.Assert(result != null && result.IsSingletonClass);
-
-            // do not return dummy singletons, also do not create a new singleton (MRI does):
-            return result.IsDummySingletonClass ? self : result;
-        }
-
-        [RubyMethod("new", RubyMethodAttributes.PublicInstance)]
-        public static void New(RubyClass/*!*/ self) {
-            Allocate(self);
-        }
-
-        #endregion
-    }
-
-    /// <summary>
-    /// Methods on Singleton(Singleton(class)), Singleton(Singleton(Singleton(object))).
-    /// </summary>
-    [RubyModule(RubyClass.ClassSingletonSingletonName), Includes(typeof(ClassSingletonOps), Copy = true)]
-    public static class ClassSingletonSingletonOps {
-
-        #region Public Instance Methods
-
-        [RubyMethod("constants", RubyMethodAttributes.PublicInstance)]
-        public static RubyArray/*!*/ GetConstants(object/*!*/ self) {
-            throw new NotImplementedException("TODO");
-        }
-
-        [RubyMethod("nesting", RubyMethodAttributes.PublicInstance)]
-        public static RubyModule/*!*/ GetNesting(object/*!*/ self) {
-            throw new NotImplementedException("TODO");
         }
 
         #endregion

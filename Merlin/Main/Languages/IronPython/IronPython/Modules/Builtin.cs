@@ -641,7 +641,7 @@ namespace IronPython.Modules {
         }
 
         public static int hash(CodeContext/*!*/ context, [NotNull]PythonTuple o) {
-            return ((IValueEquality)o).GetValueHashCode();
+            return ((IStructuralEquatable)o).GetHashCode(PythonContext.GetContext(context).EqualityComparerNonGeneric);
         }
 
         // this is necessary because overload resolution selects the int form.
@@ -993,10 +993,33 @@ namespace IronPython.Modules {
             return new SentinelIterator(context, func, sentinel);
         }
 
+        public static int len([NotNull]string/*!*/ str) {
+            return str.Length;
+        }
+
+        public static int len([NotNull]ExtensibleString/*!*/ str) {
+            return str.__len__();
+        }
+
+        public static int len([NotNull]List/*!*/ list) {
+            return list.__len__();
+        }
+
+        public static int len([NotNull]PythonTuple/*!*/ tuple) {
+            return tuple.__len__();
+        }
+
+        public static int len([NotNull]PythonDictionary/*!*/ dict) {
+            return dict.__len__();
+        }
+
+        public static int len([NotNull]ICollection/*!*/ collection) {
+            return collection.Count;
+        }
+
         public static int len(object o) {
             return PythonOps.Length(o);
         }
-
 
         public static PythonType set {
             get {

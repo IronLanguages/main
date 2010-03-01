@@ -36,6 +36,13 @@ namespace IronRuby.Runtime.Calls {
 
         // an additional argument following splat arguments (e.g. target[args, *splat]=rhs)
         HasRhsArgument = 4,
+
+        /// <summary>
+        /// The site must propagate return from the block as implemented in <see cref="RubyOps.MethodPropagateReturn"/>.
+        /// This means that if the method that uses the site itself takes a block no action is needed, just pass the return value thru.
+        /// If it doesn't take a block but is yielding to a user block (a rare case) it needs to throw <see cref="MethodUnwinder"/> exception
+        /// if the yielded block returns.
+        /// </summary>
         HasBlock = 8,
 
         // Used for private visibility check. By default method call sites have explicit self, so private methods are not visible.

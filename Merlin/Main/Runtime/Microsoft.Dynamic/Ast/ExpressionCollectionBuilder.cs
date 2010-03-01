@@ -13,13 +13,22 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;
+using System.Reflection;
 
 namespace Microsoft.Scripting.Ast {
+    using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
+
     public class ExpressionCollectionBuilder<TExpression> : IEnumerable<TExpression> {
         public TExpression Expression0 { get; private set; }
         public TExpression Expression1 { get; private set; }
@@ -106,6 +115,36 @@ namespace Microsoft.Scripting.Ast {
 
         IEnumerator/*!*/ IEnumerable.GetEnumerator() {
             return CollectionUtils.ToCovariant<TExpression, object>((IEnumerable<TExpression>)this).GetEnumerator();
+        }
+    }
+
+    public class ExpressionCollectionBuilder : ExpressionCollectionBuilder<Expression> {
+        public Expression/*!*/ ToMethodCall(Expression instance, MethodInfo/*!*/ method) {
+            switch (Count) {
+                case 0: 
+                    return Expression.Call(instance, method);
+
+                case 1:
+                    // we have no specialized subclass for instance method call expression with 1 arg:
+                    return instance != null ? 
+                        Expression.Call(instance, method, new AstExpressions { Expression0 }) : 
+                        Expression.Call(method, Expression0);
+
+                case 2: 
+                    return Expression.Call(instance, method, Expression0, Expression1);
+
+                case 3: 
+                    return Expression.Call(instance, method, Expression0, Expression1, Expression2);
+
+                case 4:
+                    // we have no specialized subclass for instance method call expression with 4 args:
+                    return instance != null ?
+                        Expression.Call(instance, method, new AstExpressions { Expression0, Expression1, Expression2, Expression3 }) :
+                        Expression.Call(method, Expression0, Expression1, Expression2, Expression3);
+
+                default: 
+                    return Expression.Call(instance, method, Expressions);
+            }
         }
     }
 }

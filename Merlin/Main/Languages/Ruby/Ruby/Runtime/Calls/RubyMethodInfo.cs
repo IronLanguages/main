@@ -105,11 +105,6 @@ namespace IronRuby.Runtime.Calls {
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             Assert.NotNull(metaBuilder, args, name);
 
-            // any user method can yield to a block (regardless of whether block parameter is present or not):
-            if (args.Signature.HasBlock) {
-                metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
-            }
-
             // 2 implicit args: self, block
             var argsBuilder = new ArgsBuilder(2, MandatoryParamCount, OptionalParamCount, _body.HasUnsplatParameter);
             argsBuilder.SetImplicit(0, AstUtils.Box(args.TargetExpression));

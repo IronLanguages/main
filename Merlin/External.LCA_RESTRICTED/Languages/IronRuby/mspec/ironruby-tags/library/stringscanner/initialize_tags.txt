@@ -1,1 +1,0 @@
-fails:StringScanner#initialize ignores second parameter

@@ -449,7 +449,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
         public static RubyTime/*!*/ CreateLocalTime(ConversionStorage<int>/*!*/ conversionStorage, ConversionStorage<MutableString>/*!*/ strConversionStorage,
-            RubyClass/*!*/ self, [NotNull]params object[]/*!*/ components) {
+            RubyClass/*!*/ self, params object[]/*!*/ components) {
 
             return CreateTime(conversionStorage, strConversionStorage, components, DateTimeKind.Local);
         }
@@ -471,7 +471,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
         public static RubyTime/*!*/ CreateGmtTime(ConversionStorage<int>/*!*/ conversionStorage, ConversionStorage<MutableString>/*!*/ strConversionStorage,
-            RubyClass/*!*/ self, [NotNull]params object[]/*!*/ components) {
+            RubyClass/*!*/ self, params object[]/*!*/ components) {
 
             return CreateTime(conversionStorage, strConversionStorage, components, DateTimeKind.Utc);
         }

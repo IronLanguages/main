@@ -1011,6 +1011,16 @@ namespace IronPython.Compiler {
             return null;
         }
 
+        private ErrorExpression Error() {
+            var res = new ErrorExpression();
+            res.SetLoc(GetStart(), GetEnd());
+            return res;
+        }
+
+        private ExpressionStatement ErrorStmt() {
+            return new ExpressionStatement(Error());
+        }
+
         //classdef: 'class' NAME ['(' testlist ')'] ':' suite
         private ClassDefinition ParseClassDef() {
             Eat(TokenKind.KeywordClass);
@@ -1019,7 +1029,7 @@ namespace IronPython.Compiler {
             string name = ReadName();
             if (name == null) {
                 // no name, assume there's no class.
-                return new ClassDefinition(null, new Expression[0], new ExpressionStatement(new ErrorExpression()));
+                return new ClassDefinition(null, new Expression[0], ErrorStmt());
             }
 
             Expression[] bases = new Expression[0];
@@ -1028,7 +1038,7 @@ namespace IronPython.Compiler {
 
                 if (l.Count == 1 && l[0] is ErrorExpression) {
                     // error handling, classes is incomplete.
-                    return new ClassDefinition(name, new Expression[0], new ExpressionStatement(new ErrorExpression()));
+                    return new ClassDefinition(name, new Expression[0], ErrorStmt());
                 }
                 bases = l.ToArray();
                 Eat(TokenKind.RightParenthesis);
@@ -1307,8 +1317,7 @@ namespace IronPython.Compiler {
                     return ne;
                 default:
                     ReportSyntaxError(_token);
-                    ret = new ErrorExpression();
-                    ret.SetLoc(GetStart(), GetEnd());
+                    ret = Error();
                     break;
             }
             return ret;
@@ -1643,7 +1652,7 @@ namespace IronPython.Compiler {
         private Statement ParseSuite() {
             if (!EatNoEof(TokenKind.Colon)) {
                 // improve error handling...
-                return new ExpressionStatement(new ErrorExpression());
+                return ErrorStmt();
             }
 
             TokenWithSpan cur = _lookahead;
@@ -1669,7 +1678,7 @@ namespace IronPython.Compiler {
                     } else {
                         ReportSyntaxError(cur, ErrorCodes.IndentationError);
                     }
-                    return new ExpressionStatement(new ErrorExpression());
+                    return ErrorStmt();
                 }
 
                 while (true) {
@@ -2034,7 +2043,7 @@ namespace IronPython.Compiler {
                         case TokenKind.Constant:
                             // abc.1, abc"", abc 1L, abc 0j
                             ReportSyntaxError("invalid syntax");
-                            return new ErrorExpression();
+                            return Error();
                         default:
                             return ret;
                     }

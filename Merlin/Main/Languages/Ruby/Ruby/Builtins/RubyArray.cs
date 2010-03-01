@@ -552,7 +552,7 @@ namespace IronRuby.Builtins {
             return Array.IndexOf(_content, item, _start + startIndex, count);
         }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT // Array.FindIndex
         public int FindIndex(Predicate<object> match) {
             return FindIndex(0, _count, match);
         }

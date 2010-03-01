@@ -298,7 +298,7 @@ namespace IronRuby.Runtime {
 
         public static bool RespondTo(RespondToStorage/*!*/ respondToStorage, object target, string/*!*/ methodName) {
             var site = respondToStorage.GetCallSite();
-            return IsTrue(site.Target(site, target, SymbolTable.StringToId(methodName)));
+            return IsTrue(site.Target(site, target, respondToStorage.Context.EncodeIdentifier(methodName)));
         }
 
         public static void Write(BinaryOpStorage/*!*/ writeStorage, object target, object value) {
@@ -417,8 +417,8 @@ namespace IronRuby.Runtime {
             }
 
             if (coercedValues != null && coercedValues.Count == 2) {
-                var compare = binaryOpStorage.GetCallSite(binaryOp);
-                result = compare.Target(compare, coercedValues[0], coercedValues[1]);
+                var opSite = binaryOpStorage.GetCallSite(binaryOp);
+                result = opSite.Target(opSite, coercedValues[0], coercedValues[1]);
                 return true;
             }
 

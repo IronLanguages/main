@@ -83,3 +83,15 @@ describe "Module#undef_method with string" do
     ancestor.another_method_to_undef.should == 1
   end
 end
+
+describe "Module#undef_method with multiple parameters" do
+  it "undefines methods one by one" do
+    M = Module.new do
+      def foo; end
+      def bar; end
+      
+      undef_method :foo, :undefined, :bar rescue 0
+      instance_methods.map { |x| x.to_s }.should == ["bar"]
+    end
+  end
+end

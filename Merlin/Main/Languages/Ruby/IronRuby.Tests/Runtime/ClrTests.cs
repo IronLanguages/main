@@ -424,10 +424,11 @@ Baz(I): 1
                 Context.ObjectClass.EnumerateConstants((module, name, value) => {
                     RubyModule m = value as RubyModule;
                     if (m != null && Array.IndexOf(irModules, m.Name) == -1) {
+                        var s = m.GetOrCreateSingletonClass();
                         AssertNoClrNames(ModuleOps.GetInstanceMethods(m, true), m.Name);
                         AssertNoClrNames(ModuleOps.GetPrivateInstanceMethods(m, true), m.Name);
-                        AssertNoClrNames(ModuleOps.GetInstanceMethods(m.SingletonClass, true), m.Name);
-                        AssertNoClrNames(ModuleOps.GetPrivateInstanceMethods(m.SingletonClass, true), m.Name);
+                        AssertNoClrNames(ModuleOps.GetInstanceMethods(s, true), m.Name);
+                        AssertNoClrNames(ModuleOps.GetPrivateInstanceMethods(s, true), m.Name);
                     }
                     return false;
                 });

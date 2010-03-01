@@ -105,6 +105,30 @@ namespace IronRuby.Builtins {
 
             // Convert input to a string. Force k-coding if necessary.
             if (kc != 0) {
+                // Handling multi-byte K-coded characters is not entirely correct here.
+                // Three cases to be considered:
+                // 1) Multi-byte character is explicitly contained in the pattern: /€*/
+                // 2) Subsequent escapes form a complete character: /\342\202\254*/ or /\xe2\x82\xac*/
+                // 3) Subsequent escapes form an incomplete character: /[\x7f-\xff]{1,3}/
+                //
+                // In the first two cases we want to "group" the byte triplet so that regex operators like *, +, ? and {n,m} operate on 
+                // the entire character, not just the last byte. We could unescape the bytes and replace them with complete Unicode characters.
+                // Then we could encode the input using the same K-coding and we would get a match. 
+                // However, case 3) requires the opposite: to match the bytes we need to encode the input using binary encoding. 
+                // Using this encoding makes *+? operators operate on the last byte (encoded as UTF16 character).
+                // 
+                // The right solution would require the regex engine to handle multi-byte escaped characters, which it doesn't.
+                //
+                // TODO:
+                // A correct workaround would be to wrap the byte sequence that forms a character into a non-capturing group, 
+                // for example transform /\342\202\254*/ to /(?:\342\202\254)*/ and use binary encoding on both input and pattern.
+                // For now, we just detect if there are any non-ascii character escapes. If so we use a binary encoding accomodating case 3), 
+                // but breaking cases 1 and 2. Otherwise we encode using k-coding to make case 1 match.
+                if (HasEscapedNonAsciiBytes(_pattern)) {
+                    kcoding = RubyEncoding.Binary;
+                    kc = 0;
+                }
+                
                 try {
                     strInput = ForceEncoding(input, kcoding.StrictEncoding, start);
                 } catch (DecoderFallbackException) {
@@ -121,18 +145,18 @@ namespace IronRuby.Builtins {
             return TransformPattern(kcoding, kc);
         }
 
-        private Regex/*!*/ TransformPattern(RubyEncoding kcoding, RubyRegexOptions kc) {
+        private Regex/*!*/ TransformPattern(RubyEncoding encoding, RubyRegexOptions kc) {
             // We can reuse cached CLR regex if it was created for the same k-coding:
             if (_cachedRegex != null && kc == _cachedKCode) {
                 return _cachedRegex;
             }
 
             string pattern;
-            if (kc != 0) {
+            if (kc != 0 || encoding == RubyEncoding.Binary) {
                 try {
-                    pattern = _pattern.ToString(kcoding.StrictEncoding);
+                    pattern = _pattern.ToString(encoding.StrictEncoding);
                 } catch (DecoderFallbackException) {
-                    throw RubyExceptions.CreateArgumentError(String.Format("invalid multi-byte sequence in {0} regex pattern", kcoding));
+                    throw RubyExceptions.CreateArgumentError(String.Format("invalid multi-byte sequence in {0} regex pattern", encoding));
                 }
             } else {
                 pattern = _pattern.ConvertToString();
@@ -148,6 +172,47 @@ namespace IronRuby.Builtins {
             _cachedKCode = kc;
             _cachedRegex = result;
             return result;
+        }
+
+        /// <summary>
+        /// Searches the pattern for hexadecimal and octal character escapes that represent a non-ASCII character.
+        /// </summary>
+        private static bool HasEscapedNonAsciiBytes(MutableString/*!*/ pattern) {
+            int i = 0;
+            int length = pattern.GetByteCount();
+            while (i < length - 2) {
+                int c = pattern.GetByte(i++);
+                if (c == '\\') {
+                    c = pattern.GetByte(i++);
+                    if (c == 'x') {
+                        // hexa escape:
+                        int d1 = Tokenizer.ToDigit(PeekByte(pattern, length, i++));
+                        if (d1 < 16) {
+                            int d2 = Tokenizer.ToDigit(PeekByte(pattern, length, i++));
+                            if (d2 < 16) {
+                                return (d1 * 16 + d2 >= 0x80);
+                            }
+                        }
+                    } else if (c >= '2' && c <= '7') {
+                        // a backreference (\1..\9) or an octal escape:
+                        int d = Tokenizer.ToDigit(PeekByte(pattern, length, i++));
+                        if (d < 8) {
+                            int value = Tokenizer.ToDigit(c) * 8 + d;
+                            d = Tokenizer.ToDigit(PeekByte(pattern, length, i++));
+                            if (d < 8) {
+                                value = value * 8 + d;
+                            }
+                            return value >= 0x80;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static int PeekByte(MutableString/*!*/ str, int length, int i) {
+            return (i < length) ? str.GetByte(i) : -1;
         }
 
         private static string/*!*/ ForceEncoding(MutableString/*!*/ input, Encoding/*!*/ encoding, int start) {

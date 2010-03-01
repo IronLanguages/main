@@ -36,6 +36,7 @@ namespace Microsoft.Scripting.Actions.Calls {
     internal sealed class DefaultArgBuilder : ArgBuilder {
         public DefaultArgBuilder(ParameterInfo info) 
             : base(info) {
+            Assert.NotNull(info);
         }
 
         public override int Priority {

@@ -39,15 +39,15 @@ objects.each do |x|
   x.instance_variable_set(:@iv_x, 4);
   y = x.clone
   
-  raise unless y.tainted?
+  raise '0' unless y.tainted?
 
   class << y
-    raise unless CONST == 1                                     # singleton constants copied
-    raise unless instance_variables.size == 0                   # singleton instance variables not copied
+    raise '1' unless CONST == 1                                     # singleton constants copied
+    raise '2' unless instance_variables.size == 0                   # singleton instance variables not copied
   end
   
-  raise unless y.foo == 3                                       # singleton methods copied
-  raise unless y.instance_variable_get(:@iv_x) == 4             # instance variables copied
+  raise '3' unless y.foo == 3                                       # singleton methods copied
+  raise '4' unless y.instance_variable_get(:@iv_x) == 4             # instance variables copied
 end
 ");
             }, @"

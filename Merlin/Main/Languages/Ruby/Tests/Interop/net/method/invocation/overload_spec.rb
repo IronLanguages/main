@@ -15,7 +15,7 @@ describe "Overload resolution" do
             [lambda {|meth| meth.call("a","b","c")}, "SO string params(string[])"],
             [lambda {|meth| meth.call("a",1,1)}, "SO string int int"],
             [lambda {|meth| meth.call(1,2,3)}, "SO params(int[])"]]
-    @out_or_ref_calls = [[lambda {|meth| meth.overload(System::String.GetType.MakeByRefType.to_class).call()}, "SO ref string"]] #this array will hold more once this works.
+    @out_or_ref_calls = [[lambda {|meth| meth.overload(System::String.to_clr_ref).call("1")}, "SO ref string"]] #this array will hold more once this works.
   end
 
   it "is performed" do
@@ -48,20 +48,19 @@ describe "Overload resolution" do
     lambda { method.call("abc").should equal_clr_string("protected overload") }.should raise_error(ArgumentError, /1 for 0/)
   end
   
-  #http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1849
   it "is performed for various ref and out calls" do
     @out_or_ref_calls.each do |meth, result| 
-      meth.call(@void_method)
+      meth.call(@void_method).should == '1'
       @klass.tracker.should equal_clr_string result
       @klass.tracker = System::String.empty
-      meth.call(@val_methods[0]).should == 1
+      meth.call(@val_methods[0]).should == [1,'1']
       @klass.tracker.should equal_clr_string result
       @klass.tracker = System::String.empty
-      meth.call(@val_methods[1]).should == System::Array.of(Fixnum).new(1,1)
+      meth.call(@val_methods[1]).should == [System::Array.of(Fixnum).new(1,1), '1']
       @klass.tracker.should equal_clr_string result
       @klass.tracker = System::String.empty
-      meth.call(@ref_methods[0]).should equal_clr_string result
-      meth.call(@ref_methods[1]).should == System::Array.of(System::String).new(1,result.to_clr_string)
+      meth.call(@ref_methods[0]).should == [result, '1']
+      meth.call(@ref_methods[1]).should == [System::Array.of(System::String).new(1,result.to_clr_string), '1']
     end
   end
 end

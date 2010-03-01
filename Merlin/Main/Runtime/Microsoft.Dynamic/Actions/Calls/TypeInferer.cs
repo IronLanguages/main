@@ -33,7 +33,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         internal static MethodCandidate InferGenericMethod(ApplicableCandidate/*!*/ candidate, ActualArguments/*!*/ actualArgs) {
-            MethodInfo target = ((MethodInfo)candidate.Method.Method);
+            OverloadInfo target = candidate.Method.Overload;
             Assert.NotNull(target);
             Debug.Assert(target.IsGenericMethodDefinition);
             Debug.Assert(target.IsGenericMethod && target.ContainsGenericParameters);
@@ -73,13 +73,11 @@ namespace Microsoft.Scripting.Actions.Calls {
                     return null;
                 }
                 
-                MethodInfo newMethod = target.MakeGenericMethod(genArgs);
-                ParameterInfo[] newParams = newMethod.GetParameters();
-                ParameterInfo[] oldParams = target.GetParameters();
+                OverloadInfo newMethod = target.MakeGenericMethod(genArgs);
 
-                List<ParameterWrapper> newWrappers = CreateNewWrappers(candidate.Method, newParams, oldParams);
+                List<ParameterWrapper> newWrappers = CreateNewWrappers(candidate.Method, newMethod, target);
 
-                List<ArgBuilder> argBuilders = CreateNewArgBuilders(candidate.Method, newParams);
+                List<ArgBuilder> argBuilders = CreateNewArgBuilders(candidate.Method, newMethod);
                 if (argBuilders == null) {
                     // one or more arg builders don't support type inference
                     return null;
@@ -100,8 +98,8 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Gets the generic arguments for method based upon the constraints discovered during
         /// type inference.  Returns null if not all generic arguments had their types inferred.
         /// </summary>
-        private static Type[] GetGenericArgumentsForInferedMethod(MethodInfo target, Dictionary<Type, Type> constraints) {
-            Type[] genArgs = target.GetGenericArguments();
+        private static Type[] GetGenericArgumentsForInferedMethod(OverloadInfo target, Dictionary<Type, Type> constraints) {
+            Type[] genArgs = ArrayUtils.MakeArray(target.GenericArguments);
             for (int i = 0; i < genArgs.Length; i++) {
                 Type newType;
                 if (!constraints.TryGetValue(genArgs[i], out newType)) {
@@ -117,13 +115,13 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Creates a new set of arg builders for the given generic method definition which target the new
         /// parameters.
         /// </summary>
-        private static List<ArgBuilder> CreateNewArgBuilders(MethodCandidate candidate, ParameterInfo[] newParams) {
+        private static List<ArgBuilder> CreateNewArgBuilders(MethodCandidate candidate, OverloadInfo newOverload) {
             List<ArgBuilder> argBuilders = new List<ArgBuilder>();
             foreach (ArgBuilder oldArgBuilder in candidate.ArgBuilders) {
                 var pi = oldArgBuilder.ParameterInfo;
 
                 if (pi != null && (pi.ParameterType.IsGenericParameter || pi.ParameterType.ContainsGenericParameters)) {
-                    ArgBuilder replacement = oldArgBuilder.Clone(newParams[pi.Position]);
+                    ArgBuilder replacement = oldArgBuilder.Clone(newOverload.Parameters[pi.Position]);
 
                     if (replacement == null) {
                         return null;
@@ -139,15 +137,15 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Creates a new list of ParameterWrappers for the generic method replacing the old parameters with the new ones.
         /// </summary>
-        private static List<ParameterWrapper> CreateNewWrappers(MethodCandidate candidate, ParameterInfo[] newParams, ParameterInfo[] oldParams) {
+        private static List<ParameterWrapper> CreateNewWrappers(MethodCandidate candidate, OverloadInfo newOverload, OverloadInfo oldOverload) {
             List<ParameterWrapper> newWrappers = new List<ParameterWrapper>();
             for (int i = 0; i < candidate.ParameterCount; i++) {
                 ParameterWrapper oldWrap = candidate.GetParameter(i);
                 ParameterInfo pi = null;
                 Type newType = oldWrap.Type;
                 if (oldWrap.ParameterInfo != null) {
-                    pi = newParams[oldWrap.ParameterInfo.Position];
-                    ParameterInfo oldParam = oldParams[oldWrap.ParameterInfo.Position];
+                    pi = newOverload.Parameters[oldWrap.ParameterInfo.Position];
+                    ParameterInfo oldParam = oldOverload.Parameters[oldWrap.ParameterInfo.Position];
                     if (oldParam.ParameterType == oldWrap.Type) {
                         newType = pi.ParameterType;
                     } else {
@@ -156,7 +154,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     }
                 }
 
-                newWrappers.Add(new ParameterWrapper(pi, newType, oldWrap.Name, oldWrap.ProhibitNull, oldWrap.IsParamsArray, oldWrap.IsParamsDict, oldWrap.IsHidden));
+                newWrappers.Add(new ParameterWrapper(pi, newType, oldWrap.Name, oldWrap.Flags));
             }
             return newWrappers;
         }
@@ -179,8 +177,8 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// that are depended upon by other type arguments are sorted before
         /// their dependencies.
         /// </summary>
-        private static Type[] GetSortedGenericArguments(MethodBase mb, Dictionary<Type, List<Type>> dependencies) {
-            Type[] genArgs = mb.GetGenericArguments();
+        private static Type[] GetSortedGenericArguments(OverloadInfo info, Dictionary<Type, List<Type>> dependencies) {
+            Type[] genArgs = ArrayUtils.MakeArray(info.GenericArguments);
 
             // Then sort the arguments based upon those dependencies
             Array.Sort(genArgs, (x, y) => {
@@ -242,12 +240,11 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// We need to first infer the type information for T1 before we infer the type information
         /// for T0 so that we can ensure the constraints are correct.
         /// </summary>
-        private static Dictionary<Type, List<Type>> GetDependencyMapping(MethodBase mb) {
-            Type[] genArgs = mb.GetGenericArguments();
+        private static Dictionary<Type, List<Type>> GetDependencyMapping(OverloadInfo info) {
             Dictionary<Type, List<Type>> dependencies = new Dictionary<Type, List<Type>>();
 
             // need to calculate any dependencies between parameters.
-            foreach (Type genArg in genArgs) {
+            foreach (Type genArg in info.GenericArguments) {
                 Type[] constraints = genArg.GetGenericParameterConstraints();
                 foreach (Type t in constraints) {
                     if (t.IsGenericParameter) {

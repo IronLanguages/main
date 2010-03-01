@@ -35,7 +35,11 @@ namespace IronPython.Runtime.Operations {
     /// that derive from string.  It carries along with it the string's value and
     /// our converter recognizes it as a string.
     /// </summary>
-    public class ExtensibleString : Extensible<string>, ICodeFormattable, IValueEquality {
+    public class ExtensibleString : Extensible<string>, ICodeFormattable, IStructuralEquatable
+#if CLR2
+        , IValueEquality
+#endif
+    {
         public ExtensibleString() : base(String.Empty) { }
         public ExtensibleString(string self) : base(self) { }
 
@@ -54,7 +58,7 @@ namespace IronPython.Runtime.Operations {
         [return: MaybeNotImplemented]
         public object __eq__(object other) {
             if (other is string || other is ExtensibleString || other is Bytes) {
-                return ScriptingRuntimeHelpers.BooleanToObject(((IValueEquality)this).ValueEquals(other));
+                return ScriptingRuntimeHelpers.BooleanToObject(EqualsWorker(other));
             }
 
             return NotImplementedType.Value;
@@ -62,21 +66,51 @@ namespace IronPython.Runtime.Operations {
 
         [return: MaybeNotImplemented]
         public object __ne__(object other) {
-            object res = __eq__(other);
-            if (res != NotImplementedType.Value) {
-                return ScriptingRuntimeHelpers.BooleanToObject(PythonOps.Not(res));
+            if (other is string || other is ExtensibleString || other is Bytes) {
+                return ScriptingRuntimeHelpers.BooleanToObject(!EqualsWorker(other));
             }
 
-            return res;
+            return NotImplementedType.Value;
         }
 
         #region IValueEquality members
-
+#if CLR2
         int IValueEquality.GetValueHashCode() {
             return GetHashCode();
         }
 
         bool IValueEquality.ValueEquals(object other) {
+            return EqualsWorker(other);
+        }
+#endif
+        #endregion
+
+        #region IStructuralEquatable Members
+
+        int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+            if (comparer is PythonContext.PythonEqualityComparer) {
+                return GetHashCode();
+            }
+
+            return ((IStructuralEquatable)PythonTuple.MakeTuple(Value.ToCharArray())).GetHashCode(comparer);
+        }
+
+        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+            if (comparer is PythonContext.PythonEqualityComparer) {
+                return EqualsWorker(other);
+            }
+
+            ExtensibleString es = other as ExtensibleString;
+            if (es != null) return EqualsWorker(es.Value, comparer);
+            string os = other as string;
+            if (os != null) return EqualsWorker(os, comparer);
+            Bytes tempBytes = other as Bytes;
+            if (tempBytes != null) return EqualsWorker(tempBytes.ToString(), comparer);
+
+            return false;
+        }
+
+        private bool EqualsWorker(object other) {
             if (other == null) return false;
 
             ExtensibleString es = other as ExtensibleString;
@@ -87,6 +121,25 @@ namespace IronPython.Runtime.Operations {
             if (tempBytes != null) return Value == tempBytes.ToString();
 
             return false;
+        }
+
+        private bool EqualsWorker(string/*!*/ other, IEqualityComparer comparer) {
+            Debug.Assert(other != null);
+
+            if (Value.Length != other.Length) {
+                return false;
+            } else if (Value.Length == 0) {
+                // 2 empty strings are equal
+                return true;
+            }
+
+            for (int i = 0; i < Value.Length; i++) {
+                if (!comparer.Equals(Value[i], other[i])) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         #endregion
@@ -152,6 +205,72 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw PythonOps.TypeError("expected str, got {0} from __str__", DynamicHelpers.GetPythonType(value).Name);
+        }
+
+
+        internal static object FastNewUnicode(CodeContext context, object value, object encoding, object errors) {
+            string strErrors = errors as string;
+            if (strErrors == null) {
+                throw PythonOps.TypeError("unicode() argument 3 must be string, not {0}", PythonTypeOps.GetName(errors));
+            }
+
+            if (value != null) {
+                string strValue = value as string;
+                if (strValue != null) {
+                    return StringOps.RawDecode(context, strValue, encoding, strErrors);
+                }
+
+                Extensible<string> es = value as Extensible<string>;
+                if (es != null) {
+                    return StringOps.RawDecode(context, es.Value, encoding, strErrors);
+                }
+
+                Bytes bytes = value as Bytes;
+                if (bytes != null) {                    
+                    return StringOps.RawDecode(context, bytes.ToString(), encoding, strErrors);
+                }
+
+                PythonBuffer buffer = value as PythonBuffer;
+                if (buffer != null) {
+                    return StringOps.RawDecode(context, buffer.ToString(), encoding, strErrors);
+                }                
+            }
+
+            throw PythonOps.TypeError("coercing to Unicode: need string or buffer, {0} found", PythonTypeOps.GetName(value));
+        }
+
+        internal static object FastNewUnicode(CodeContext context, object value, object encoding) {
+            return FastNewUnicode(context, value, encoding, "strict");
+        }
+
+        internal static object FastNewUnicode(CodeContext context, object value) {
+            if (value == null) {
+                return "None";
+            } else if (value is string) {
+                return value;
+            }
+
+            object res;
+            OldInstance oi = value as OldInstance;
+            if (oi != null &&
+                (oi.TryGetBoundCustomMember(context, "__unicode__", out res) || oi.TryGetBoundCustomMember(context, "__str__", out res))) {
+                res = context.LanguageContext.Call(context, res);
+                if (res is string || res is Extensible<string>) {
+                    return res;
+                }
+                throw PythonOps.TypeError("coercing to Unicode: expected string, got {0}", PythonTypeOps.GetName(value));
+            }
+
+
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, value, "__unicode__", out res) ||
+                PythonTypeOps.TryInvokeUnaryOperator(context, value, "__str__", out res)) {
+                if (res is string || res is Extensible<string>) {
+                    return res;
+                }
+                throw PythonOps.TypeError("coercing to Unicode: expected string, got {0}", PythonTypeOps.GetName(value));
+            }
+
+            return FastNewUnicode(context, value, context.LanguageContext.DefaultEncoding.WebName, "strict");
         }
 
         private static object CheckAsciiString(CodeContext context, string s) {
@@ -2548,5 +2667,6 @@ namespace IronPython.Runtime.Operations {
         public static string/*!*/ __repr__(string/*!*/ self) {
             return StringOps.Quote(self);
         }
+
     }
 }

@@ -67,7 +67,7 @@ if NOT EXIST "%HOME_FOR_MSPECRC%\.mspecrc" (
   copy "%MERLIN_ROOT%\Languages\Ruby\default.mspec" "%HOME_FOR_MSPECRC%\.mspecrc"
 )
 
-call doskey /macrofile=%MERLIN_ROOT%\Scripts\Bat\%Alias.txt
+call doskey /macrofile="%MERLIN_ROOT%\Scripts\Bat\%Alias.txt"
 cd /D %CURRENT%
 
 :Continue

@@ -53,8 +53,8 @@ end
 $modules = [
     module MyModule; self; end,
     module MyModule; class << self; self; end; end,
-	class MyClass; self; end,
-	class << Object.new; self; end,
+    class MyClass; self; end,
+    class << Object.new; self; end,
 ]
 
 def test met, x, y
@@ -62,25 +62,25 @@ def test met, x, y
   $modules.each { |m|
     puts "-- #{m} --------------"
     
-	m.module_eval do
-	  puts send(met, *[:ai_k, :i_k][x,y]) rescue p $!
-	  puts send(met, *[:ai_x, :i_x][x,y]) rescue p $!
-	  puts send(met, *[:ai_o, :i_o][x,y]) rescue p $!
-	  
-	  # errors:
-	  
-	  puts send(met, *[:ac_k, :c_k][x,y]) rescue p $!
-	  puts send(met, *[:ac_x, :c_x][x,y]) rescue p $!  
-	  puts send(met, *[:ac_o, :c_o][x,y]) rescue p $!
-	  
-	  puts send(met, *[:ai_c, :i_c][x,y]) rescue p $!    
-	  puts send(met, *[:ac_c, :c_c][x,y]) rescue p $!
-	  puts send(met, *[:ai_m, :i_m][x,y]) rescue p $!    
-	  puts send(met, *[:ac_m, :c_m][x,y]) rescue p $!
-	  
-	end
-	
-	puts
+    m.module_eval do
+      puts send(met, *[:ai_k, :i_k][x,y]) rescue p $!
+      puts send(met, *[:ai_x, :i_x][x,y]) rescue p $!
+      puts send(met, *[:ai_o, :i_o][x,y]) rescue p $!
+      
+      # errors:
+      
+      puts send(met, *[:ac_k, :c_k][x,y]) rescue p $!
+      puts send(met, *[:ac_x, :c_x][x,y]) rescue p $!  
+      puts send(met, *[:ac_o, :c_o][x,y]) rescue p $!
+      
+      puts send(met, *[:ai_c, :i_c][x,y]) rescue p $!    
+      puts send(met, *[:ac_c, :c_c][x,y]) rescue p $!
+      puts send(met, *[:ai_m, :i_m][x,y]) rescue p $!    
+      puts send(met, *[:ac_m, :c_m][x,y]) rescue p $!
+      
+    end
+    
+    puts
   }
 end
 

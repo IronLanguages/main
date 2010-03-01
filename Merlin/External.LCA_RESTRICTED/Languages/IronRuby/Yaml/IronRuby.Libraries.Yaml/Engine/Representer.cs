@@ -22,44 +22,48 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Globalization;
 
 namespace IronRuby.StandardLibrary.Yaml {
-
     public class Representer {
-        private readonly Serializer/*!*/ _serializer;
-        private readonly char _defaultStyle;
         private readonly Dictionary<object, Node>/*!*/ _representedObjects = new Dictionary<object, Node>(ReferenceEqualityComparer<object>.Instance);
         private readonly Dictionary<object, List<LinkNode>>/*!*/ _links = new Dictionary<object, List<LinkNode>>(ReferenceEqualityComparer<object>.Instance);
         private readonly static object _NullKey = new object();
 
-        public Representer(Serializer/*!*/ serializer, YamlOptions opts)
-            : this(serializer, opts.UseDouble ? '"' : (opts.UseSingle ? '\'' : '\0')) {
+        // recursion level as we build YAML representation of an object graph:
+        private int _level;
+
+        public Representer() {
         }
 
-        public Representer(Serializer/*!*/ serializer, char defaultStyle) {
-            ContractUtils.RequiresNotNull(serializer, "serializer");
-            if (defaultStyle != '"' && defaultStyle != '\'' && defaultStyle != '\0') {
-                throw new ArgumentException("must be single quote, double quote, or zero", "defaultStyle");
+        public int Level {
+            get { return _level; }
+            set { _level = value; }
+        }
+
+        public void ForgetObjects() {
+            _representedObjects.Clear();
+        }
+
+        public Node/*!*/ RepresentItem(object item) {
+            int oldLevel = _level++;
+            try {
+                return Represent(item);
+            } finally {
+                _level = oldLevel;
             }
-
-            _serializer = serializer;
-            _defaultStyle = defaultStyle;
         }
 
-        public Serializer/*!*/ Serializer {
-            get { return _serializer; }
-        }
+        public Node/*!*/ Represent(object data) {
+            Node node;
 
-        private Node RepresentData(object data) {
-            Node node = null;
-
-            bool ignoreAlias = IgnoreAliases(data);
+            bool ignoreAlias = HasIdentity(data);
 
             object dataKey = data ?? _NullKey;
 
             if (!ignoreAlias) {
-                if (_representedObjects.TryGetValue(dataKey , out node)) {
-                    if (null == node) {
+                if (_representedObjects.TryGetValue(dataKey, out node)) {
+                    if (node == null) {
                         LinkNode link = new LinkNode();
                         List<LinkNode> list;
                         if (!_links.TryGetValue(dataKey, out list)) {
@@ -89,32 +93,34 @@ namespace IronRuby.StandardLibrary.Yaml {
             return node;
         }
 
-        public Node Scalar(string tag, string value, char style) {
-            return new ScalarNode(tag, value, style == 0 ? _defaultStyle : style);
+        public ScalarNode/*!*/ Scalar(string tag, string value, ScalarQuotingStyle style) {
+            return new ScalarNode(tag, value, style);
         }
 
-        public Node Sequence(string tag, IList sequence, bool flowStyle) {
+        public ScalarNode/*!*/ Scalar(bool value) {
+            return Scalar(value ? Tags.True : Tags.False, value ? "true" : "false", ScalarQuotingStyle.None);
+        }
+
+        public SequenceNode/*!*/ Sequence(string tag, IList/*!*/ sequence, FlowStyle flowStyle) {
             List<Node> value = new List<Node>(sequence.Count);
             foreach (object x in sequence) {
-                value.Add(RepresentData(x));
+                value.Add(RepresentItem(x));
             }
             return new SequenceNode(tag, value, flowStyle);
         }
 
-        public Node/*!*/ Map(string tag, IDictionary/*!*/ mapping, bool flowStyle) {
-            Dictionary<Node, Node> value = new Dictionary<Node, Node>(mapping.Count);
+        public MappingNode/*!*/ Map(string tag, IDictionary/*!*/ mapping, FlowStyle flowStyle) {
+            return Map(new Dictionary<Node, Node>(mapping.Count), tag, mapping, flowStyle);
+        }
+
+        public MappingNode/*!*/ Map(Dictionary<Node, Node> value, string tag, IDictionary/*!*/ mapping, FlowStyle flowStyle) {
             foreach (DictionaryEntry entry in mapping) {
-                value.Add(RepresentData(entry.Key), RepresentData(entry.Value));
+                value.Add(RepresentItem(entry.Key), RepresentItem(entry.Value));
             }
             return new MappingNode(tag, value, flowStyle);
         }
 
-        public void Represent(object data) {
-            _serializer.Serialize(RepresentData(data));
-            _representedObjects.Clear();
-        }
-
-        protected virtual bool IgnoreAliases(object data) {
+        protected virtual bool HasIdentity(object data) {
             return data == null || data is string || data is bool || data is int || data is float || data is double || data is decimal;
         }
 
@@ -124,28 +130,24 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         protected internal Node BaseCreateNode(object data) {
             if (data == null) {
-                return Scalar("tag:yaml.org,2002:null", "", (char)0);
+                return Scalar(Tags.Null, null, ScalarQuotingStyle.None);
             }
 
             IDictionary map = data as IDictionary;
             if (map != null) {
-                string taguri = map is Dictionary<object, object>
-                    ? "tag:yaml.org,2002:map"
-                    : "tag:yaml.org,2002:map:" + map.GetType().Name;
-                return Map(taguri, map, false);
+                string taguri = map is Dictionary<object, object> ? Tags.Map : Tags.Map + ":" + map.GetType().Name;
+                return Map(taguri, map, FlowStyle.Block);
             }
 
             byte[] bytes = data as byte[];
             if (bytes != null) {
-                return Scalar("tag:yaml.org,2002:binary", Convert.ToBase64String(bytes), (char)0);
+                return Scalar(Tags.Binary, Convert.ToBase64String(bytes) + "\n", ScalarQuotingStyle.None);
             }
 
             IList seq = data as IList;
             if (seq != null) {
-                string taguri = seq is List<object>
-                    ? "tag:yaml.org,2002:seq"
-                    : "tag:yaml.org,2002:seq:" + seq.GetType().Name;
-                return Sequence(taguri, seq, false);
+                string taguri = seq is List<object> ? Tags.Seq : Tags.Seq + ":" + seq.GetType().Name;
+                return Sequence(taguri, seq, FlowStyle.Block);
             }
 
             ICollection set = data as ICollection;
@@ -154,12 +156,12 @@ namespace IronRuby.StandardLibrary.Yaml {
                 foreach (object x in set) {
                     entries.Add(x, null);
                 }
-                return Map("tag:yaml.org,2002:set", entries, false);
+                return Map("tag:yaml.org,2002:set", entries, FlowStyle.Block);
             }
 
             PrivateType pt = data as PrivateType;
             if (pt != null) {
-                Node n = RepresentData(pt.Value);
+                Node n = Represent(pt.Value);
                 n.Tag = pt.Tag;
                 return n;
             }
@@ -170,6 +172,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     tag = "tag:yaml.org,2002:bool";
                     value = data.ToString();
                     break;
+
                 case TypeCode.Byte:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
@@ -179,13 +182,14 @@ namespace IronRuby.StandardLibrary.Yaml {
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                 case TypeCode.Char:
-                    tag = "tag:yaml.org,2002:int";
+                    tag = Tags.Int;
                     value = data.ToString();
                     break;
+
                 case TypeCode.Single:
                 case TypeCode.Double:
                 case TypeCode.Decimal:
-                    tag = "tag:yaml.org,2002:float";
+                    tag = Tags.Float;
                     value = data.ToString();
                     if (value == "Infinity") {
                         value = ".inf";
@@ -195,25 +199,28 @@ namespace IronRuby.StandardLibrary.Yaml {
                         value = ".nan";
                     }
                     break;
+
                 case TypeCode.String:
-                    tag = "tag:yaml.org,2002:str";
+                    tag = Tags.Str;
                     value = data.ToString();
                     break;
+
                 case TypeCode.DateTime:
                     DateTime date = (DateTime)data;
                     string format = (date.Millisecond != 0) ? "yyyy-MM-dd HH:mm:ss.SSS Z" : "yyyy-MM-dd HH:mm:ss Z";
-                    value = date.ToString(format);
+                    value = date.ToString(format, CultureInfo.InvariantCulture);
                     // TODO: what is this code for?
                     if (value.Length >= 23) {
                         value = value.Substring(0, 23) + ":" + value.Substring(23);
                     }
-                    tag = "tag:yaml.org,2002:timestamp";
+                    tag = Tags.Timestamp;
                     break;
+
                 default:
                     return CreateNodeForObject(data);
             }
 
-            return Scalar(tag, value, (char)0);
+            return Scalar(tag, value, ScalarQuotingStyle.None);
         }
 
         // TODO: use some type of standard .NET serialization
@@ -230,7 +237,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     }
                 }
             }
-            return Map("!cli/object:" + data.GetType().Name, values, false);
+            return Map("!cli/object:" + data.GetType().Name, values, FlowStyle.Block);
         }
     }
 }

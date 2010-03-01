@@ -109,6 +109,11 @@ namespace IronRuby.Builtins {
             public abstract int LastIndexOf(byte[]/*!*/ bytes, int start, int count);
             public abstract int LastIndexIn(Content/*!*/ str, int start, int count);
 
+            public abstract Content/*!*/ Concat(Content/*!*/ content);
+            public abstract Content/*!*/ ConcatTo(BinaryContent/*!*/ content);
+            public abstract Content/*!*/ ConcatTo(CharArrayContent/*!*/ content);
+            public abstract Content/*!*/ ConcatTo(StringContent/*!*/ content);
+
             // write:
             public abstract void Append(char c, int repeatCount);
             public abstract void Append(byte b, int repeatCount);

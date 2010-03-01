@@ -180,20 +180,19 @@ namespace IronRuby.Builtins {
             CallArguments/*!*/ args             // user arguments passed to the proc
         ) {
             var bfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
-            var resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
 
             metaBuilder.Result = Ast.Block(
                 Ast.Assign(bfcVariable, Methods.CreateBfcForProcCall.OpCall(AstUtils.Convert(procExpression, typeof(Proc)))),
-                Ast.Assign(resultVariable, AstFactory.YieldExpression(
-                    args.RubyContext,
-                    args.GetSimpleArgumentExpressions(),
-                    args.GetSplattedArgumentExpression(),
-                    args.GetRhsArgumentExpression(),
-                    bfcVariable,
-                    selfExpression
-                )),
-                Methods.MethodProcCall.OpCall(bfcVariable, resultVariable),
-                resultVariable
+                Methods.MethodProcCall.OpCall(bfcVariable, 
+                    AstFactory.YieldExpression(
+                        args.RubyContext,
+                        args.GetSimpleArgumentExpressions(),
+                        args.GetSplattedArgumentExpression(),
+                        args.GetRhsArgumentExpression(),
+                        bfcVariable,
+                        selfExpression
+                    )
+                )
             );
         }
 
@@ -205,9 +204,7 @@ namespace IronRuby.Builtins {
 
         public object Call() {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            var result = RubyOps.Yield0(_self, blockParam);
-            RubyOps.MethodProcCall(blockParam, result);
-            return result;
+            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield0(_self, blockParam));
         }
 
         public object Call(object arg1) {
@@ -218,29 +215,22 @@ namespace IronRuby.Builtins {
                 RubyOps.YieldNoAutoSplat1(arg1, _self, blockParam) :
                 RubyOps.Yield1(arg1, _self, blockParam);
 
-            RubyOps.MethodProcCall(blockParam, result);
-            return result;
+            return RubyOps.MethodProcCall(blockParam, result);
         }
 
         public object Call(object arg1, object arg2) {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            var result = RubyOps.Yield2(arg1, arg2, _self, blockParam);
-            RubyOps.MethodProcCall(blockParam, result);
-            return result;
+            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield2(arg1, arg2, _self, blockParam));
         }
 
         public object Call(object arg1, object arg2, object arg3) {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            var result = RubyOps.Yield3(arg1, arg2, arg3, _self, blockParam);
-            RubyOps.MethodProcCall(blockParam, result);
-            return result;
+            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield3(arg1, arg2, arg3, _self, blockParam));
         }
 
         public object Call(object arg1, object arg2, object arg3, object arg4) {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            var result = RubyOps.Yield4(arg1, arg2, arg3, arg4, _self, blockParam);
-            RubyOps.MethodProcCall(blockParam, result);
-            return result;
+            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield4(arg1, arg2, arg3, arg4, _self, blockParam));
         }
 
         public object Call(params object[]/*!*/ args) {
@@ -253,17 +243,13 @@ namespace IronRuby.Builtins {
             }
 
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            var result = RubyOps.YieldN(args, _self, blockParam);
-            RubyOps.MethodProcCall(blockParam, result);
-            return result;
+            return RubyOps.MethodProcCall(blockParam, RubyOps.YieldN(args, _self, blockParam));
         }
 
         public object CallN(object[]/*!*/ args) {
             Debug.Assert(args.Length > 4);
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            var result = RubyOps.YieldN(args, _self, blockParam);
-            RubyOps.MethodProcCall(blockParam, result);
-            return result;
+            return RubyOps.MethodProcCall(blockParam, RubyOps.YieldN(args, _self, blockParam));
         }
 
         #endregion

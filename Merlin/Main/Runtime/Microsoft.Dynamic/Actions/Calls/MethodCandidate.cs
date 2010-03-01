@@ -46,7 +46,7 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// </summary>
     public sealed class MethodCandidate {
         private readonly OverloadResolver _resolver;
-        private readonly MethodBase _method;
+        private readonly OverloadInfo _overload;
 
         private readonly List<ParameterWrapper> _parameters;
         private readonly ParameterWrapper _paramsDict;
@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly ReturnBuilder _returnBuilder;
         private readonly Dictionary<DynamicMetaObject, BindingRestrictions> _restrictions;
 
-        internal MethodCandidate(OverloadResolver resolver, MethodBase method, List<ParameterWrapper> parameters, ParameterWrapper paramsDict,
+        internal MethodCandidate(OverloadResolver resolver, OverloadInfo method, List<ParameterWrapper> parameters, ParameterWrapper paramsDict,
             ReturnBuilder returnBuilder, InstanceBuilder instanceBuilder, IList<ArgBuilder> argBuilders, Dictionary<DynamicMetaObject, BindingRestrictions> restrictions) {
 
             Assert.NotNull(resolver, method, instanceBuilder, returnBuilder);
@@ -65,7 +65,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             Assert.NotNullItems(argBuilders);
 
             _resolver = resolver;
-            _method = method;
+            _overload = method;
             _instanceBuilder = instanceBuilder;
             _argBuilders = argBuilders;
             _returnBuilder = returnBuilder;
@@ -78,7 +78,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             parameters.TrimExcess();
         }
 
-        internal MethodCandidate ReplaceMethod(MethodBase newMethod, List<ParameterWrapper> parameters, IList<ArgBuilder> argBuilders, Dictionary<DynamicMetaObject, BindingRestrictions> restrictions) {
+        internal MethodCandidate ReplaceMethod(OverloadInfo newMethod, List<ParameterWrapper> parameters, IList<ArgBuilder> argBuilders, Dictionary<DynamicMetaObject, BindingRestrictions> restrictions) {
             return new MethodCandidate(_resolver, newMethod, parameters, _paramsDict, _returnBuilder, _instanceBuilder, argBuilders, restrictions);
         }
 
@@ -94,14 +94,17 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return _resolver; }
         }
 
+        [Obsolete("Use Overload instead")]
         public MethodBase Method {
-            get { return _method; }
+            get { return _overload.ReflectionInfo; }
+        }
+
+        public OverloadInfo Overload {
+            get { return _overload; }
         }
 
         internal Dictionary<DynamicMetaObject, BindingRestrictions> Restrictions {
-            get {
-                return _restrictions;
-            }
+            get { return _restrictions; }
         }
 
         public Type ReturnType {
@@ -166,7 +169,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// fill in those spots w/ extra ParameterWrapper's.  
         /// </summary>
         internal MethodCandidate MakeParamsExtended(int count, IList<string> names) {
-            Debug.Assert(ReflectionUtils.IsParamsMethod(_method));
+            Debug.Assert(_overload.IsVariadic);
 
             List<ParameterWrapper> newParameters = new List<ParameterWrapper>(count);
             
@@ -206,10 +209,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             if (_paramsDict != null) {
-                bool nonNullItems = _paramsDict.ParameterInfo.ProhibitsNullItems();
+                var flags = (_overload.ProhibitsNullItems(_paramsDict.ParameterInfo.Position) ? ParameterBindingFlags.ProhibitNull : 0) |
+                            (_paramsDict.IsHidden ? ParameterBindingFlags.IsHidden : 0);
 
                 foreach (string name in unusedNames) {
-                    newParameters.Add(new ParameterWrapper(_paramsDict.ParameterInfo, typeof(object), name, nonNullItems, false, false, _paramsDict.IsHidden));
+                    newParameters.Add(new ParameterWrapper(_paramsDict.ParameterInfo, typeof(object), name, flags));
                 }
             } else if (unusedNames.Count != 0) {
                 // unbound kw args and no where to put them, can't call...
@@ -226,12 +230,12 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         private MethodCandidate MakeParamsExtended(string[] names, int[] nameIndices, List<ParameterWrapper> parameters) {
-            Debug.Assert(ReflectionUtils.IsParamsMethod(Method));
+            Debug.Assert(Overload.IsVariadic);
 
             List<ArgBuilder> newArgBuilders = new List<ArgBuilder>(_argBuilders.Count);
 
             // current argument that we consume, initially skip this if we have it.
-            int curArg = CompilerHelpers.IsStatic(_method) ? 0 : 1;
+            int curArg = _overload.IsStatic ? 0 : 1;
             int kwIndex = -1;
             ArgBuilder paramsDictBuilder = null;
 
@@ -246,7 +250,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                         int paramsUsed = parameters.Count -
                             GetConsumedArguments() -
                             names.Length +
-                            (CompilerHelpers.IsStatic(_method) ? 1 : 0);
+                            (_overload.IsStatic ? 1 : 0);
 
                         newArgBuilders.Add(new ParamsArgBuilder(
                             sab.ParameterInfo,
@@ -278,7 +282,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 newArgBuilders.Insert(kwIndex, new ParamsDictArgBuilder(paramsDictBuilder.ParameterInfo, curArg, names, nameIndices));
             }
 
-            return new MethodCandidate(_resolver, _method, parameters, null, _returnBuilder, _instanceBuilder, newArgBuilders, null);
+            return new MethodCandidate(_resolver, _overload, parameters, null, _returnBuilder, _instanceBuilder, newArgBuilders, null);
         }
 
         private int GetConsumedArguments() {
@@ -311,7 +315,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return null;
             }
 
-            MethodInfo mi = Method as MethodInfo;
+            MethodInfo mi = Overload.ReflectionInfo as MethodInfo;
             if (mi == null) {
                 return null;
             }
@@ -432,7 +436,14 @@ namespace Microsoft.Scripting.Actions.Calls {
             Expression[] callArgs = GetArgumentExpressions(restrictedArgs, out usageMarkers, out spilledArgs);
 
             Expression call;
-            MethodInfo mi = Method as MethodInfo;
+            MethodBase mb = _overload.ReflectionInfo;
+
+            // TODO: make MakeExpression virtual on OverloadInfo?
+            if (mb == null) {
+                throw new InvalidOperationException("Cannot generate an expression for an overload w/o MethodBase");
+            }
+
+            MethodInfo mi = mb as MethodInfo;
             if (mi != null) {
                 Expression instance;
                 if (mi.IsStatic) {
@@ -454,7 +465,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     );
                 }
             } else {
-                ConstructorInfo ci = (ConstructorInfo)Method;
+                ConstructorInfo ci = (ConstructorInfo)mb;
                 if (CompilerHelpers.IsVisible(ci)) {
                     call = AstUtils.SimpleNewHelper(ci, callArgs);
                 } else {
@@ -567,7 +578,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         [Confined]
         public override string ToString() {
-            return string.Format("MethodCandidate({0} on {1})", Method, Method.DeclaringType.FullName);
+            return string.Format("MethodCandidate({0} on {1})", Overload.ReflectionInfo, Overload.DeclaringType.FullName);
         }
     }
 }

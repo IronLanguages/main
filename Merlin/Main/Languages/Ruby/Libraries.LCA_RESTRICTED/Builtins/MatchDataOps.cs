@@ -155,7 +155,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("values_at")]
         public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ conversionStorage, 
-            MatchData/*!*/ self, [DefaultProtocol, NotNull]params int[]/*!*/ indices) {
+            MatchData/*!*/ self, [DefaultProtocol]params int[]/*!*/ indices) {
 
             RubyArray result = new RubyArray();
             for (int i = 0; i < indices.Length; i++) {

@@ -29,9 +29,5 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         public string Tag { get { return _tag; } }
         public object Value { get { return _value; } }
-
-        public override string ToString() {
-            return "#<PrivateType Tag=\"" + _tag + "\" Value=\"" + _value + "\">";
-        }
     }
 }

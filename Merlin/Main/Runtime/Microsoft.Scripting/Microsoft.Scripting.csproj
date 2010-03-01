@@ -160,6 +160,13 @@
     </Compile>
     <Compile Include="ArgumentTypeException.cs" />
     <Compile Include="AssemblyLoadedEventArgs.cs" />
+    <Compile Include="Hosting\DocumentationOperations.cs" />
+    <Compile Include="Hosting\MemberDoc.cs" />
+    <Compile Include="Hosting\MemberKind.cs" />
+    <Compile Include="Hosting\OverloadDoc.cs" />
+    <Compile Include="Hosting\ParameterDoc.cs" />
+    <Compile Include="Hosting\ParameterFlags.cs" />
+    <Compile Include="Runtime\DocumentationProvider.cs" />
     <Compile Include="Stubs.cs" />
     <Compile Include="CompilerOptions.cs" />
     <Compile Include="ErrorSink.cs" />

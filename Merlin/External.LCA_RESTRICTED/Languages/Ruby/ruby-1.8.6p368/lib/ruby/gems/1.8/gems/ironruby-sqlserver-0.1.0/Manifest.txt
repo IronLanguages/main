@@ -1,0 +1,6 @@
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+lib/activerecord-sqlserver-adapter/adonet_patch.rb
+lib/ironruby_sqlserver.rb

@@ -162,6 +162,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
     </Reference>
+    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Numerics.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' != 'v4.0'">
@@ -226,6 +230,7 @@
     <Compile Include="Builtins\RubyModule.Meta.cs" />
     <Compile Include="Builtins\RubyRegexOptions.cs" />
     <Compile Include="Builtins\RubyStruct.cs" />
+    <Compile Include="Builtins\RubySymbol.cs" />
     <Compile Include="Builtins\Stubs.cs" />
     <Compile Include="Builtins\Subclasses.Generated.cs" />
     <Compile Include="Builtins\TypeDescriptor.Generated.cs" />
@@ -251,6 +256,7 @@
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
+    <Compile Include="Runtime\Calls\LibraryOverloadInfo.cs" />
     <Compile Include="Runtime\ConstantSiteCache.cs" />
     <Compile Include="Runtime\ConstantStorage.cs" />
     <Compile Include="Runtime\Conversions\GenericConversionAction.cs" />

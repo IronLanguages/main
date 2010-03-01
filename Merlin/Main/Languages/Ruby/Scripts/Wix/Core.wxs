@@ -1,65 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 
-  IronRuby core runtime components
+IronRuby core runtime components
 
-  2009-09-16 JDeville Created
+2009-09-16 JDeville Created
+2010-01-31 JDeville modified to not force elevation
 -->
-<Wix xmlns="http://schemas.microsoft.com/wix/2003/01/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+  <?include $(sys.CURRENTDIR)\config.wxi?>
   <Fragment>
-    <FeatureRef Id="Feature_IronRuby">
-      <Feature Id="Feature_Core" Absent="disallow" AllowAdvertise="no" Level="1" Title="Runtime" Description="IronRuby binaries for the Desktop CLR.">
-        <Feature Id="Feature_CoreNGen" Level="1" Display="hidden">
-          <ComponentRef Id="Comp_NGen_Binaries" />
-          <ComponentRef Id="Comp_NGen64_Binaries" />
-        </Feature>
-        <ComponentRef Id="Comp_Core" />
-        <ComponentRef Id="Comp_Scripts" />
-      </Feature>
-      <Feature Id="Feature_Silverlight" AllowAdvertise="no" Level="1" Title="Silverlight binaries" Description="Binaries and scripts to do Silverlight development with IronRuby">
-        <ComponentRef Id="Comp_silverlight" />
-        <ComponentRef Id="Comp_bin" />
-        <ComponentRef Id="Comp_python" />
-        <ComponentRef Id="Comp_app" />
-        <ComponentRef Id="Comp_ruby" />
-        <ComponentRef Id="Comp_app_directory7" />
-        <ComponentRef Id="Comp_photoviewer" />
-        <ComponentRef Id="Comp_images" />
-        <ComponentRef Id="Comp_css" />
-        <ComponentRef Id="Comp_images_directory12" />
-        <ComponentRef Id="Comp_js" />
-        <ComponentRef Id="Comp_ruby_directory14" />
-        <ComponentRef Id="Comp_stylesheets" />
-        <ComponentRef Id="Comp_python_directory17" />
-        <ComponentRef Id="Comp_python_directory18" />
-        <ComponentRef Id="Comp_ruby_directory19" />
-        <ComponentRef Id="Comp_ruby_directory20" />
-        <ComponentRef Id="Comp_script" />
-        <ComponentRef Id="Comp_python_directory23" />
-        <ComponentRef Id="Comp_app_directory24" />
-        <ComponentRef Id="Comp_css_directory25" />
-        <ComponentRef Id="Comp_js_directory26" />
-        <ComponentRef Id="Comp_ruby_directory27" />
-        <ComponentRef Id="Comp_app_directory28" />
-        <ComponentRef Id="Comp_css_directory29" />
-        <ComponentRef Id="Comp_js_directory30" />
-      </Feature>
-      <Feature Id="Feature_Path" AllowAdvertise="no" Level="1" Title="Add IronRuby to %PATH%" Description="Add the installation directory to %PATH% in order to use IronRuby from the command line.">
-        <ComponentRef Id="Comp_path" />
-      </Feature>
-    </FeatureRef>
+    <ComponentGroup Id="CG_CoreNGen">
+      <ComponentGroupRef Id="CG_NGen_Dlls" />
+      <ComponentRef Id="Comp_NGen_ir64" />
+      <ComponentRef Id="Comp_NGen_ir" />
+      <ComponentRef Id="Comp_SCNGEN64" />
+      <ComponentRef Id="Comp_SCNGEN" />
+    </ComponentGroup>
+    <ComponentGroup Id="CG_Core">
+      <ComponentGroupRef Id="CG_Dlls" />
+      <ComponentRef Id="Comp_ir64" />
+      <ComponentRef Id="Comp_ir" />
+      <ComponentRef Id="Comp_SC64" />
+      <ComponentRef Id="Comp_SC" />
+    </ComponentGroup>
+    <ComponentGroup Id="CG_NGen_Dlls" >
+      <ComponentRef Id="NGENComp_Microsoft.Scripting.dll" />
+      <ComponentRef Id="NGENComp_Microsoft.Dynamic.dll" />
+      <ComponentRef Id="NGENComp_Microsoft.Scripting.Core.dll" />
+      <ComponentRef Id="NGENComp_Microsoft.Scripting.Debugging.dll" />
+      <ComponentRef Id="NGENComp_Microsoft.Scripting.ExtensionAttribute.dll" />
+      <ComponentRef Id="NGENComp_IronRuby.dll" />
+      <ComponentRef Id="NGENComp_IronRuby.Libraries.dll" />
+      <ComponentRef Id="NGENComp_IronRuby.Libraries.YAML.dll" />
+    </ComponentGroup>
+    <ComponentGroup Id="CG_Dlls" >
+      <ComponentRef Id="Comp_Microsoft.Scripting.dll" />
+      <ComponentRef Id="Comp_Microsoft.Dynamic.dll" />
+      <ComponentRef Id="Comp_Microsoft.Scripting.Core.dll" />
+      <ComponentRef Id="Comp_Microsoft.Scripting.Debugging.dll" />
+      <ComponentRef Id="Comp_Microsoft.Scripting.ExtensionAttribute.dll" />
+      <ComponentRef Id="Comp_IronRuby.dll" />
+      <ComponentRef Id="Comp_IronRuby.Libraries.dll" />
+      <ComponentRef Id="Comp_IronRuby.Libraries.YAML.dll" />
+    </ComponentGroup>
 
-    <DirectoryRef Id="INSTALLDIR" FileSource=".">
+    <DirectoryRef Id="Dir_StartMenu">
+      <Component Id="Comp_Core_Shortcut" DiskId="1" Guid="4718d9bb-de0c-4ed7-bdb3-00226fec023d">
+        <CreateFolder />
+        <Shortcut Id="Shortcut_Readme" Name="IronRuby Readme" Target="[#File_Readme.txt]" />
+        <RegistryValue Root="HKMU"
+          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Type='string'
+          Value ='[Dir_StartMenu]'
+          KeyPath='yes' />
+        <RemoveFolder Id="Dir_StartMenu" On='uninstall' />
+      </Component>
+      <Component Id="Comp_SCNGEN" DiskId="1" Guid="9A663596-2F2A-475F-AD5E-71E143EDAA45">
+        <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+        <Shortcut Id="NGENShortcut_Console" Name="IronRuby Console" Target="[#NGENFile_ir.exe]" />
+        <RegistryValue Root="HKMU"
+          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Type='string'
+          Value ='[Dir_StartMenu]'
+          KeyPath='yes' />
+      </Component>
+      <Component Id="Comp_SCNGEN64" DiskId="1" Guid="3F993BF0-6A6E-4B05-A371-C816C67E1F83">
+        <Condition><![CDATA[((ALLUSERS = 1) AND VersionNT64)]]></Condition>
+        <Shortcut Id="NGEN6464Shortcut_Console" Name="IronRuby 64-bit Console" Target="[#NGENFile_ir64.exe]"  />
+        <RegistryValue Root="HKMU"
+          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Type='string'
+          Value ='[Dir_StartMenu]'
+          KeyPath='yes' />
+      </Component>
+      <Component Id="Comp_SC" DiskId="1" Guid="CFCDE631-985A-4B61-8D87-82CDAD530B55">
+        <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+        <Shortcut Id="Shortcut_Console" Name="IronRuby Console" Target="[#File_ir.exe]"  />
+        <RegistryValue Root="HKMU"
+          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Type='string'
+          Value ='[Dir_StartMenu]'
+          KeyPath='yes' />
+      </Component>
+      <Component Id="Comp_SC64" DiskId="1" Guid="906BADCC-A1DD-47AD-937F-E8E035DB7206">
+        <Condition><![CDATA[((WixAppFolder = "WixPerFolder") AND VersionNT64)]]></Condition>
+        <Shortcut Id="Shortcut64_Console64" Name="IronRuby 64-bit Console" Target="[#File_ir64.exe]" />
+        <RegistryValue Root="HKMU"
+          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Type='string'
+          Value ='[Dir_StartMenu]'
+          KeyPath='yes' />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="APPLICATIONFOLDER" FileSource=".">
       <Component Id="Comp_Core" DiskId="1" Guid="A05DFDF8-A83C-4d27-B5AC-299158736CE1">
-        <File Id="File_Changelog.txt" Name="CHANGE_1.TXT" LongName="CHANGELOG.txt" />
-        <File Id="File_License.cpl.txt" Name="LICENS_1.TXT" LongName="LICENSE.CPL.txt" />
-        <File Id="File_License.mspl.txt" Name="LICENS_1.HTM" LongName="LICENSE.MSPL.html" />
-        <File Id="File_License.ruby.txt" Name="LICENS_2.TXT" LongName="LICENSE.Ruby.txt" />
+        <File Id="File_Changelog.txt" Name="CHANGELOG.txt" />
+        <File Id="File_License.cpl.txt" Name="LICENSE.CPL.txt" />
+        <File Id="File_License.mspl.txt" Name="LICENSE.MSPL.html" />
+        <File Id="File_License.ruby.txt" Name="LICENSE.Ruby.txt" />
         <File Id="File_Readme.txt" Name="README.txt" />
-        <Shortcut Id="Shortcut_Readme" Directory="Dir_StartMenu" Name="IRRBRDME" LongName="IronRuby Readme" Target="[#File_Readme.html]" />
+      </Component>
+      <Component Id="Comp_path" DiskId="1" Guid="BC955F96-6C4E-4CC1-8CE8-A3F996D193DE">
+        <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+        <Environment Id='UpdatePath' Name='PATH' Action='set' System='yes' Part='last' Value='[APPLICATIONFOLDER]bin' />
+        <CreateFolder />
       </Component>
 
-      <Component Id="Comp_path" DiskId="1" Guid="BC955F96-6C4E-4CC1-8CE8-A3F996D193DE">
-        <Environment Id='UpdatePath' Name='PATH' Action='create' System='yes' Part='last' Value='[INSTALLDIR]bin' />
+      <Component Id="Comp_path_local" DiskId="1" Guid="87d7a513-968a-42d7-991c-957641d19e49">
+        <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+        <Environment Id='UpdatePathLocal' Name='PATH' Action='set' System='no' Part='last' Value='[APPLICATIONFOLDER]bin' />
+        <CreateFolder />
       </Component>
 
 
@@ -69,7 +119,7 @@
           <File Id="File_igem.bat" Name="igem.bat" />
           <File Id="File_iirb" Name="iirb" />
           <File Id="File_iirb.bat" Name="iirb.bat" />
-          <File Id="File_ir.exe.config" Name="IREXE_1.CON" LongName="ir.exe.config" />
+          <File Id="File_ir.exe.config" Name="ir.exe.config" />
           <File Id="File_irackup" Name="irackup" />
           <File Id="File_irackup.bat" Name="irackup.bat" />
           <File Id="File_irails" Name="irails"/>
@@ -82,253 +132,119 @@
           <File Id="File_iri" Name="iri" />
           <File Id="File_iri.bat" Name="iri.bat" />
           <File Id="File_tutorial.bat" Name="tutorial.bat" />
+          <RemoveFile Id='ExtraBins' On='uninstall' Name='*' />
         </Component>
-      
-        <!--NEGENx86 BINARIES-->
-        <Component Id="Comp_NGen_Binaries" DiskId="1" Guid="2EC87D80-ECA8-4F00-8599-FDA3ED4DB616">
-          <Condition>NOT VersionNT64</Condition>
-          <File Id="NGENFile_Microsoft.Scripting.dll" Name="DLROUTER" LongName="Microsoft.Scripting.dll" >
-            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.dll" Priority="1"/>
+
+        <Component Id="Comp_Scripts64" DiskId="1" Guid="B1E09F34-D506-41AE-87C6-2099D3B77D01">
+          <Condition>VersionNT64</Condition>
+          <File Id="File_ir64.exe.config" Name="ir64.exe.config" />
+        </Component>
+
+        <Component Id="NGENComp_Microsoft.Scripting.dll" DiskId="1" Guid="2e115a02-1572-459c-bb74-2568d7ee4bed">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_Microsoft.Scripting.dll" Name="Microsoft.Scripting.dll" >
+            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.dll" Priority="1" Platform="all" />
           </File>
-          <File Id="NGENFile_Microsoft.Dynamic.dll" Name="DLROTER2" LongName="Microsoft.Dynamic.dll" >
-            <netfx:NativeImage Id="NGEN_File_Microsoft.Dynamic.dll" Priority="1"/>
+        </Component>
+        <Component Id="NGENComp_Microsoft.Dynamic.dll" DiskId="1" Guid="0bad1a1b-c748-4ab7-aab2-8c90725dfb70">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_Microsoft.Dynamic.dll" Name="Microsoft.Dynamic.dll" >
+            <netfx:NativeImage Id="NGEN_File_Microsoft.Dynamic.dll" Priority="1" Platform="all" />
           </File>
-          <File Id="NGENFile_Microsoft.Scripting.Debugging.dll" Name="DLRDEBUG" LongName="Microsoft.Scripting.Debugging.dll" >
-            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.Debugging.dll" Priority="1"/>
+        </Component>
+        <Component Id="NGENComp_Microsoft.Scripting.Core.dll" DiskId="1" Guid="6c374102-5b41-4de2-8315-15cb79ba0bca">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_Microsoft.Scripting.Core.dll" Name="Microsoft.Scripting.Core.dll" >
+            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.core.dll" Priority="1" Platform="all" />
           </File>
-          <File Id="NGENFile_Microsoft.Scripting.Core.dll" Name="DLRCORE" LongName="Microsoft.Scripting.Core.dll" >
-            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.core.dll" Priority="1"/>
+        </Component>
+        <Component Id="NGENComp_Microsoft.Scripting.Debugging.dll" DiskId="1" Guid="acffd246-d410-4f89-9d70-4158edfb11aa">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_Microsoft.Scripting.Debugging.dll" Name="Microsoft.Scripting.Debugging.dll" >
+            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.Debugging.dll" Priority="1" Platform="all" />
           </File>
-          <File Id="NGENFile_Microsoft.Scripting.ExtensionAttribute.dll" Name="DLREXTNS" LongName="Microsoft.Scripting.ExtensionAttribute.dll" >
-            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.ExtensionAttribute.dll" Priority="1"/>
+        </Component>
+        <Component Id="NGENComp_Microsoft.Scripting.ExtensionAttribute.dll" DiskId="1" Guid="374e3a66-2955-49d4-af44-3962a308cb21">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_Microsoft.Scripting.ExtensionAttribute.dll" Name="Microsoft.Scripting.ExtensionAttribute.dll" >
+            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.ExtensionAttribute.dll" Priority="1" Platform="all" />
           </File>
-          <File Id="NGENFile_IronRuby.dll" Name="IRONRB.DLL" LongName="IronRuby.dll" >
-            <netfx:NativeImage Id="NGEN_File_IronRuby.dll"  Priority="1"/>
+        </Component>
+        <Component Id="NGENComp_IronRuby.dll" DiskId="1" Guid="aa117df6-e5bb-4a48-9a0f-01c1ace18390">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_IronRuby.dll" Name="IronRuby.dll" >
+            <netfx:NativeImage Id="NGEN_File_IronRuby.dll"  Priority="1" Platform="all" />
           </File>
-          <File Id="NGENFile_IronRuby.Libraries.dll" Name="IRBLIBS.DLL" LongName="IronRuby.Libraries.dll" >
-            <netfx:NativeImage Id="NGEN_File_IronRuby.Libraries.dll" Priority="1"/>
+        </Component>
+        <Component Id="NGENComp_IronRuby.Libraries.dll" DiskId="1" Guid="649aca43-7150-4597-bb9a-615a5711e11b">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_IronRuby.Libraries.dll" Name="IronRuby.Libraries.dll" >
+            <netfx:NativeImage Id="NGEN_File_IronRuby.Libraries.dll" Priority="1" Platform="all" />
           </File>
-          <File Id="NGENFile_IronRuby.Libraries.YAML.dll" Name="IRBLYML.DLL" LongName="IronRuby.Libraries.YAML.dll" >
-            <netfx:NativeImage Id="NGEN_File_IronRuby.Libraries.YAML.dll" Priority="1"/>
+        </Component>
+        <Component Id="NGENComp_IronRuby.Libraries.YAML.dll" DiskId="1" Guid="2286bbcd-c65c-4628-ab66-b17aafbf8903">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_IronRuby.Librarie.YAML.dll" Name="IronRuby.Libraries.YAML.dll" >
+            <netfx:NativeImage Id="NGEN_File_IronRuby.Libraries.YAML.dll" Priority="1" Platform="all" />
           </File>
+        </Component>
+
+        <Component Id="Comp_NGen_ir" DiskId="1" Guid="63a84eaf-8570-406a-9919-0e980c30f445">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
           <File Id="NGENFile_ir.exe" Name="ir.exe" >
-            <netfx:NativeImage Id="NGEN_File_ir.exe" Priority="1"/>
+            <netfx:NativeImage Id="NGEN_File_ir.exe" Priority="1" Platform="32bit"/>
           </File>
-          <Shortcut Id="NGENShortcut_Console" Directory="Dir_StartMenu" Name="IRRBCONS" LongName="IronRuby Console" Target="[#NGENFile_ir.exe]" />
+        </Component>
+
+        <Component Id="Comp_NGen_ir64" DiskId="1" Guid="b8119cad-bc20-4cbb-8551-363ea10f277d">
+          <Condition><![CDATA[((ALLUSERS = 1) AND VersionNT64)]]></Condition>
+          <File Id="NGENFile_ir64.exe" Name="ir64.exe" >
+            <netfx:NativeImage Id="NGEN_File_ir64.exe" Priority="1" Platform="64bit" />
+          </File>
         </Component>
         
-        <!--#NEGEN64 BINARIES-->
-        <Component Id="Comp_NGen64_Binaries" DiskId="1" Guid="306BA7F6-8595-4DA0-8E1A-4873A42AC5DE">
-          <Condition>VersionNT64</Condition>
-          <File Id="NGEN64File_Microsoft.Scripting.dll" Name="DLROUTER" LongName="Microsoft.Scripting.dll" >
-            <netfx:NativeImage Id="NGEN64_File_Microsoft.Scripting.dll" Priority="1" Platform="all" />
-          </File>
-          <File Id="NGEN64File_Microsoft.Dynamic.dll" Name="DLROTER2" LongName="Microsoft.Dynamic.dll" >
-            <netfx:NativeImage Id="NGEN64_File_Microsoft.Dynamic.dll" Priority="1" Platform="all" />
-          </File>
-          <File Id="NGEN64File_Microsoft.Scripting.Core.dll" Name="DLRCORE" LongName="Microsoft.Scripting.Core.dll" >
-            <netfx:NativeImage Id="NGEN64_File_Microsoft.Scripting.core.dll" Priority="1" Platform="all" />
-          </File>
-          <File Id="NGEN64File_Microsoft.Scripting.Debugging.dll" Name="DLRDEBUG" LongName="Microsoft.Scripting.Debugging.dll" >
-            <netfx:NativeImage Id="NGEN64_File_Microsoft.Scripting.Debugging.dll" Priority="1" Platform="64bit" />
-          </File>
-          <File Id="NGEN64File_Microsoft.Scripting.ExtensionAttribute.dll" Name="DLREXTNS" LongName="Microsoft.Scripting.ExtensionAttribute.dll" >
-            <netfx:NativeImage Id="NGEN64_File_Microsoft.Scripting.ExtensionAttribute.dll" Priority="1" Platform="all" />
-          </File>
-          <File Id="NGEN64File_IronRuby.dll" Name="IRONRB.DLL" LongName="IronRuby.dll" >
-            <netfx:NativeImage Id="NGEN64_File_IronRuby.dll"  Priority="1" Platform="all" />
-          </File>
-          <File Id="NGEN64File_IronRuby.Libraries.dll" Name="IRBLIBS.DLL" LongName="IronRuby.Libraries.dll" >
-            <netfx:NativeImage Id="NGEN64_File_IronRuby.Libraries.dll" Priority="1" Platform="all" />
-          </File>
-          <File Id="NGEN64File_IronRuby.Libraries.YAML.dll" Name="IRBLYML.DLL" LongName="IronRuby.Libraries.YAML.dll" >
-            <netfx:NativeImage Id="NGEN64_File_IronRuby.Libraries.YAML.dll" Priority="1" Platform="all" />
-          </File>
-          <File Id="NGEN64File_ir.exe" Name="ir.exe" >
-            <netfx:NativeImage Id="NGEN64_File_ir.exe" Priority="1" Platform="32bit" />
-          </File>
-          <File Id="NGEN64File_ir64.exe" Name="ir64.exe" >
-            <netfx:NativeImage Id="NGEN64_File_ir64.exe" Priority="1" Platform="64bit" />
-          </File>
-          <Shortcut Id="NGEN64Shortcut_Console" Directory="Dir_StartMenu" Name="IRRBCONS" LongName="IronRuby Console" Target="[#NGEN64File_ir.exe]" />
-          <Shortcut Id="NGEN6464Shortcut_Console" Directory="Dir_StartMenu" Name="IPYCON64" LongName="IronRuby 64-bit Console" Target="[#NGEN64File_ir64.exe]" />
+        <Component Id="Comp_Microsoft.Scripting.dll" DiskId="1" Guid="9cb378be-ad0e-4658-8733-1ca79f834f93">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_Microsoft.Scripting.dll" Name="Microsoft.Scripting.dll" />
         </Component>
-      </Directory>
+        <Component Id="Comp_Microsoft.Dynamic.dll" DiskId="1" Guid="d3560bf4-25b6-4213-998b-4eb1a1a85cd1">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_Microsoft.Dynamic.dll" Name="Microsoft.Dynamic.dll" />
+        </Component>
+        <Component Id="Comp_Microsoft.Scripting.Core.dll" DiskId="1" Guid="ec1bddfb-b853-47e3-b460-05f1b71f01a9">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_Microsoft.Scripting.Core.dll" Name="Microsoft.Scripting.Core.dll" />
+        </Component>
+        <Component Id="Comp_Microsoft.Scripting.Debugging.dll" DiskId="1" Guid="aeea20d2-ab7b-4d7c-afbe-b714a8d84f37">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_Microsoft.Scripting.Debugging.dll" Name="Microsoft.Scripting.Debugging.dll" />
+        </Component>
+        <Component Id="Comp_Microsoft.Scripting.ExtensionAttribute.dll" DiskId="1" Guid="8e216b71-c789-4b7d-92c1-66ad23229388">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_Microsoft.Scripting.ExtensionAttribute.dll" Name="Microsoft.Scripting.ExtensionAttribute.dll" />
+        </Component>
+        <Component Id="Comp_IronRuby.dll" DiskId="1" Guid="eb73e090-89c5-4301-a4a9-4dbe44f11432">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_IronRuby.dll" Name="IronRuby.dll" />
+        </Component>
+        <Component Id="Comp_IronRuby.Libraries.dll" DiskId="1" Guid="e47d6753-ad2c-42ae-a295-b7cde46276c8">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_IronRuby.Libraries.dll" Name="IronRuby.Libraries.dll" />
+        </Component>
+        <Component Id="Comp_IronRuby.Libraries.YAML.dll" DiskId="1" Guid="075bb9dd-f220-42a5-8ffd-4816d84fd9ac">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_IronRuby.Librarie.YAML.dll" Name="IronRuby.Libraries.YAML.dll" />
+        </Component>
 
-      <Directory Id="Dir_silverlight" Name="SILVER_1" LongName="silverlight">
-        <Component Id="Comp_silverlight" DiskId="1" Guid="5736f072-b988-4f98-908f-f0a9ef2e657f">
-          <File Id="File_README.txt" Name="README.txt" />
+        <Component Id="Comp_ir" DiskId="1" Guid="76d8e4c4-32d4-473a-b87c-7f508ad873ea">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_ir.exe" Name="ir.exe" />
         </Component>
-        <Directory Id="Dir_bin" Name="bin">
-          <Component Id="Comp_bin" DiskId="1" Guid="8995f45b-7448-402c-b940-6cee2a782fb2">
-            <File Id="File_Chiron.exe" Name="Chiron.exe" />
-            <File Id="File_Chiron.exe.config" Name="CHIRON_1.CON" LongName="Chiron.exe.config" />
-            <File Id="File_IronPython.dll" Name="IRONPY_1.DLL" LongName="IronPython.dll" />
-            <File Id="File_IronPython.Modules.dll" Name="IRONPY_2.DLL" LongName="IronPython.Modules.dll" />
-            <File Id="File_IronRuby.dll" Name="IronRuby.dll" />
-            <File Id="File_IronRuby.Libraries.dll" Name="IRONRU_1.DLL" LongName="IronRuby.Libraries.dll" />
-            <File Id="File_Microsoft.Dynamic.dll" Name="MICROS_1.DLL" LongName="Microsoft.Dynamic.dll" />
-            <File Id="File_Microsoft.Scripting.Core.dll" Name="MICROS_2.DLL" LongName="Microsoft.Scripting.Core.dll" />
-            <File Id="File_Microsoft.Scripting.Debugging.dll" Name="MICROS_3.DLL" LongName="Microsoft.Scripting.Debugging.dll" />
-            <File Id="File_Microsoft.Scripting.dll" Name="MICROS_4.DLL" LongName="Microsoft.Scripting.dll" />
-            <File Id="File_Microsoft.Scripting.ExtensionAttribute.dll" Name="MID079_1.DLL" LongName="Microsoft.Scripting.ExtensionAttribute.dll" />
-            <File Id="File_Microsoft.Scripting.Silverlight.dll" Name="MI42E3_1.DLL" LongName="Microsoft.Scripting.Silverlight.dll" />
-          </Component>
-        </Directory>
-        <Directory Id="Dir_samples" Name="samples">
-          <Directory Id="Dir_clock" Name="clock">
-            <Directory Id="Dir_python" Name="python">
-              <Component Id="Comp_python" DiskId="1" Guid="fd9a7782-4f78-4ebd-a885-221fac1984be">
-                <File Id="File_index.html" Name="INDEX_1.HTM" LongName="index.html" />
-              </Component>
-              <Directory Id="Dir_app" Name="app">
-                <Component Id="Comp_app" DiskId="1" Guid="10bc8a46-bcb2-4644-80f4-b3edb674d685">
-                  <File Id="File_app.py" Name="app.py" />
-                  <File Id="File_app.xaml" Name="APP_1.XAM" LongName="app.xaml" />
-                </Component>
-              </Directory>
-            </Directory>
-            <Directory Id="Dir_ruby" Name="ruby">
-              <Component Id="Comp_ruby" DiskId="1" Guid="7b657f8a-332b-4bb6-98d7-82b371ba935a">
-                <File Id="File_ruby_index.html" Name="INDEX_1.HTM" LongName="index.html" />
-              </Component>
-              <Directory Id="Dir_app_directory7" Name="app">
-                <Component Id="Comp_app_directory7" DiskId="1" Guid="d672c9bd-10ae-46d1-9ca9-66f58c6a4618">
-                  <File Id="File_app.rb" Name="app.rb" />
-                  <File Id="File_app_directory7_app.xaml" Name="APP_1.XAM" LongName="app.xaml" />
-                  <File Id="File_Silverlight.rb" Name="SILVER_1.RB" LongName="Silverlight.rb" />
-                </Component>
-              </Directory>
-            </Directory>
-          </Directory>
-          <Directory Id="Dir_photoviewer" Name="PHOTOV_1" LongName="photoviewer">
-            <Component Id="Comp_photoviewer" DiskId="1" Guid="c739285d-2115-428a-a889-9e4bf8a3ff6f">
-              <File Id="File_photoviewer_index.html" Name="INDEX_1.HTM" LongName="index.html" />
-            </Component>
-            <Directory Id="Dir_images" Name="images">
-              <Component Id="Comp_images" DiskId="1" Guid="348f285b-a6a5-4ba5-88f7-6bb24bd7b47c">
-                <File Id="File_loading.gif" Name="loading.gif" />
-              </Component>
-            </Directory>
-            <Directory Id="Dir_lightbox" Name="lightbox">
-              <Directory Id="Dir_css" Name="css">
-                <Component Id="Comp_css" DiskId="1" Guid="0739d87c-e01a-4d71-9891-61d3b13e5ff4">
-                  <File Id="File_lightbox.css" Name="lightbox.css" />
-                </Component>
-              </Directory>
-              <Directory Id="Dir_images_directory12" Name="images">
-                <Component Id="Comp_images_directory12" DiskId="1" Guid="65a53a47-530f-4176-9995-d682dfda5756">
-                  <File Id="File_blank.gif" Name="blank.gif" />
-                  <File Id="File_close.gif" Name="close.gif" />
-                  <File Id="File_closelabel.gif" Name="CLOSEL_1.GIF" LongName="closelabel.gif" />
-                  <File Id="File_images_directory12_loading.gif" Name="loading.gif" />
-                  <File Id="File_next.gif" Name="next.gif" />
-                  <File Id="File_nextlabel.gif" Name="NEXTLA_1.GIF" LongName="nextlabel.gif" />
-                  <File Id="File_prev.gif" Name="prev.gif" />
-                  <File Id="File_prevlabel.gif" Name="PREVLA_1.GIF" LongName="prevlabel.gif" />
-                </Component>
-              </Directory>
-              <Directory Id="Dir_js" Name="js">
-                <Component Id="Comp_js" DiskId="1" Guid="a1787f43-9fad-47d9-b3c1-dc2ed7750f5e">
-                  <File Id="File_effects.js" Name="effects.js" />
-                  <File Id="File_lightbox.js" Name="lightbox.js" />
-                  <File Id="File_prototype.js" Name="PROTOT_1.JS" LongName="prototype.js" />
-                  <File Id="File_scriptaculous.js" Name="SCRIPT_1.JS" LongName="scriptaculous.js" />
-                </Component>
-              </Directory>
-            </Directory>
-            <Directory Id="Dir_ruby_directory14" Name="ruby">
-              <Component Id="Comp_ruby_directory14" DiskId="1" Guid="dde126c2-a327-486c-8dc8-16efe9f78293">
-                <File Id="File_ruby_directory14_app.rb" Name="app.rb" />
-                <File Id="File_render.rb" Name="render.rb" />
-                <File Id="File_silverlight.rb" Name="SILVER_1.RB" LongName="silverlight.rb" />
-                <File Id="File_system_json.rb" Name="SYSTEM_1.RB" LongName="system-json.rb" />
-                <File Id="File_System.Json.dll" Name="SYSTEM_1.DLL" LongName="System.Json.dll" />
-              </Component>
-            </Directory>
-            <Directory Id="Dir_stylesheets" Name="STYLES_1" LongName="stylesheets">
-              <Component Id="Comp_stylesheets" DiskId="1" Guid="e92d6d2c-e7c6-44a0-960d-128679891984">
-                <File Id="File_screen.css" Name="screen.css" />
-              </Component>
-            </Directory>
-          </Directory>
-          <Directory Id="Dir_repl" Name="repl">
-            <Directory Id="Dir_python_directory17" Name="python">
-              <Component Id="Comp_python_directory17" DiskId="1" Guid="44d4c52d-385d-442c-a875-81ee85aa2e61">
-                <File Id="File_console.css" Name="console.css" />
-                <File Id="File_python_directory17_index.html" Name="INDEX_1.HTM" LongName="index.html" />
-              </Component>
-              <Directory Id="Dir_python_directory18" Name="python">
-                <Component Id="Comp_python_directory18" DiskId="1" Guid="190a85a7-c635-41ae-9d57-c23a70e2fb37">
-                  <File Id="File_python_directory18_app.py" Name="app.py" />
-                </Component>
-              </Directory>
-            </Directory>
-            <Directory Id="Dir_ruby_directory19" Name="ruby">
-              <Component Id="Comp_ruby_directory19" DiskId="1" Guid="839dc266-ee84-4a01-a4a0-a79bbf80d563">
-                <File Id="File_ruby_directory19_console.css" Name="console.css" />
-                <File Id="File_ruby_directory19_index.html" Name="INDEX_1.HTM" LongName="index.html" />
-              </Component>
-              <Directory Id="Dir_ruby_directory20" Name="ruby">
-                <Component Id="Comp_ruby_directory20" DiskId="1" Guid="56d9b7ef-8a6a-4614-8743-a8225a82df51">
-                  <File Id="File_ruby_directory20_app.rb" Name="app.rb" />
-                </Component>
-              </Directory>
-            </Directory>
-          </Directory>
-        </Directory>
-        <Directory Id="Dir_script" Name="script">
-          <Component Id="Comp_script" DiskId="1" Guid="86f8eb27-de58-4830-8684-067a952ca049">
-            <File Id="File_chr" Name="chr" />
-            <File Id="File_chr.bat" Name="chr.bat" />
-            <File Id="File_sl" Name="sl" />
-            <File Id="File_sl.bat" Name="sl.bat" />
-          </Component>
-          <Directory Id="Dir_templates" Name="TEMPLA_1" LongName="templates">
-            <Directory Id="Dir_python_directory23" Name="python">
-              <Component Id="Comp_python_directory23" DiskId="1" Guid="e905c60d-3687-4ca5-a60f-0f64e83b6300">
-                <File Id="File_python_directory23_index.html" Name="INDEX_1.HTM" LongName="index.html" />
-              </Component>
-              <Directory Id="Dir_app_directory24" Name="app">
-                <Component Id="Comp_app_directory24" DiskId="1" Guid="856c8652-1240-418b-b573-a6b7c41e3d7c">
-                  <File Id="File_app_directory24_app.py" Name="app.py" />
-                  <File Id="File_app_directory24_app.xaml" Name="APP_1.XAM" LongName="app.xaml" />
-                </Component>
-              </Directory>
-              <Directory Id="Dir_css_directory25" Name="css">
-                <Component Id="Comp_css_directory25" DiskId="1" Guid="637bb4ef-ecfb-405e-8138-e5d10b748729">
-                  <File Id="File_css_directory25_screen.css" Name="screen.css" />
-                </Component>
-              </Directory>
-              <Directory Id="Dir_js_directory26" Name="js">
-                <Component Id="Comp_js_directory26" DiskId="1" Guid="55dcf28d-8b1f-447b-8319-9f0eab6b7d88">
-                  <File Id="File_error.js" Name="error.js" />
-                </Component>
-              </Directory>
-            </Directory>
-            <Directory Id="Dir_ruby_directory27" Name="ruby">
-              <Component Id="Comp_ruby_directory27" DiskId="1" Guid="60cd72ad-92f3-4958-81af-ae9717547b27">
-                <File Id="File_ruby_directory27_index.html" Name="INDEX_1.HTM" LongName="index.html" />
-              </Component>
-              <Directory Id="Dir_app_directory28" Name="app">
-                <Component Id="Comp_app_directory28" DiskId="1" Guid="e4952709-30da-4e73-b841-a9e476f9d95b">
-                  <File Id="File_app_directory28_app.rb" Name="app.rb" />
-                  <File Id="File_app_directory28_app.xaml" Name="APP_1.XAM" LongName="app.xaml" />
-                </Component>
-              </Directory>
-              <Directory Id="Dir_css_directory29" Name="css">
-                <Component Id="Comp_css_directory29" DiskId="1" Guid="b6aeed6c-bcae-48e6-8992-d409c210ee8b">
-                  <File Id="File_css_directory29_screen.css" Name="screen.css" />
-                </Component>
-              </Directory>
-              <Directory Id="Dir_js_directory30" Name="js">
-                <Component Id="Comp_js_directory30" DiskId="1" Guid="8ba74451-42b3-4cdf-bb05-08ec00889c8b">
-                  <File Id="File_js_directory30_error.js" Name="error.js" />
-                </Component>
-              </Directory>
-            </Directory>
-          </Directory>
-        </Directory>
+
+        <Component Id="Comp_ir64" DiskId="1" Guid="f710f534-a814-4b22-a3f4-f2996ae49923">
+          <Condition><![CDATA[((ALLUSERS = 2) AND VersionNT64)]]></Condition>
+          <File Id="File_ir64.exe" Name="ir64.exe" />
+        </Component>
       </Directory>
     </DirectoryRef>
   </Fragment>

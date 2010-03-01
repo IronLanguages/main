@@ -18,3 +18,9 @@ describe "nil.GetHashCode" do
   end
 end
 
+describe "nil and extension methods" do
+  it "can be extended via object" do
+    ObjectExtensions.IsNotNull(nil).should be_false
+    ObjectExtensions.IsNull(nil).should be_true
+  end
+end

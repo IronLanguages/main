@@ -45,7 +45,7 @@ end
 #endif
         }
 
-        public void Scenario_RubyWhileLoop1() {
+        public void WhileLoop1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 0
@@ -64,7 +64,10 @@ nil
 ");
         }
 
-        public void Scenario_RubyWhileLoop2() {
+        /// <summary>
+        /// Break in a while loop.
+        /// </summary>
+        public void LoopBreak1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 3
@@ -85,9 +88,9 @@ nil
         }
 
         /// <summary>
-        /// Break in a while loop.
+        /// Break with a value in a while loop.
         /// </summary>
-        public void Scenario_RubyWhileLoop3() {
+        public void LoopBreak2() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 3
@@ -108,9 +111,33 @@ foo
         }
 
         /// <summary>
+        /// Loop break from within class declaration.
+        /// </summary>
+        public void LoopBreak3() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+i = 0
+while i < 5 do
+  puts i
+
+  class C
+    puts 'in C'
+    break
+  end
+  
+  i = i + 1
+end
+");
+            }, @"
+0
+in C
+");
+        }
+
+        /// <summary>
         /// Redo in a while loop.
         /// </summary>
-        public void Scenario_RubyWhileLoop4() {
+        public void LoopRedo1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 3
@@ -138,7 +165,7 @@ nil
         /// <summary>
         /// Next in a while loop.
         /// </summary>
-        public void Scenario_RubyWhileLoop5() {
+        public void LoopNext1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 3
@@ -164,26 +191,36 @@ nil
         }
 
         /// <summary>
-        /// Loop break from within class declaration.
+        /// Break, retry, redo and next in a method, out of loop/rescue.
         /// </summary>
-        public void Scenario_RubyWhileLoop6() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-i = 0
-while i < 5 do
-  puts i
+        public void MethodBreakRetryRedoNext1() {
+            TestOutput(@"
+def _break; break rescue p $!; end
+def _redo; redo rescue puts 'not caught here'; end
+def _retry; retry rescue puts 'not caught here'; end
+def _next; next rescue puts 'not caught here'; end
+def e_break; eval('break') rescue p $!; end
+def e_redo; eval('redo') rescue puts 'not caught here'; end
+def e_retry; eval('retry') rescue puts 'not caught here'; end           # // TODO: bug
+def e_next; eval('next') rescue puts 'not caught here'; end             # // TODO: bug
 
-  class C
-    puts 'in C'
-    break
-  end
-  
-  i = i + 1
-end
-");
-            }, @"
-0
-in C
+_break
+_retry rescue p $!
+_redo rescue p $!
+_next rescue p $!
+e_break
+e_retry rescue p $!
+e_redo rescue p $!
+e_next rescue p $!
+", @"
+#<LocalJumpError: unexpected break>
+#<LocalJumpError: retry used out of rescue>
+#<LocalJumpError: unexpected redo>
+#<LocalJumpError: unexpected next>
+#<LocalJumpError: unexpected break>
+#<LocalJumpError: retry used out of rescue>
+not caught here
+not caught here
 ");
         }
 

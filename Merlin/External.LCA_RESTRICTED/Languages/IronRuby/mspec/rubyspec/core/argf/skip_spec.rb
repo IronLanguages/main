@@ -5,6 +5,7 @@ describe "ARGF.skip" do
     @file1_name = fixture __FILE__, "file1.txt"
     @file2_name = fixture __FILE__, "file2.txt"
 
+    @file1 = File.readlines @file1_name
     @file2 = File.readlines @file2_name
   end
 
@@ -21,11 +22,13 @@ describe "ARGF.skip" do
   end
 
   it "has no effect when called twice in a row" do
-    argv [@file1_name, @file2_name] do
+    argv [@file1_name, @file2_name, @file1_name] do
       ARGF.read(1)
       ARGF.skip
       ARGF.skip
       ARGF.gets.should == @file2.first
+      ARGF.skip
+      ARGF.gets.should == @file1.first
     end
   end
 

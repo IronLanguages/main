@@ -191,6 +191,7 @@ div.silverlightDlrErrorStackTraceLine {
 }
 .silverlightDlrReplCode:focus {
   border: 0px;
+  outline: none;
 }
 
 .silverlightDlrReplRun {

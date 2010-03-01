@@ -2,8 +2,21 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/common'
 
 describe "NoMethodError.new" do
-  it "allows passing method args" do
-    NoMethodError.new("msg","name","args").args.should == "args"
+  it "can be called with no arguments" do
+    NoMethodError.new().should_not be_nil
+  end
+  
+  it "can be called with upto 3 arguments" do
+    NoMethodError.new("msg", "name", ["arg1", "arg2"]).should_not be_nil
+  end
+
+  it "allows passing nil" do
+    NoMethodError.new(nil, nil, nil).should_not be_nil
+  end
+
+  it "can be called with arbitrary objects" do
+    m = mock("some object")
+    NoMethodError.new(m, m, m).should_not be_nil
   end
 end
 
@@ -22,7 +35,7 @@ describe "NoMethodError#args" do
       NoMethodErrorSpecs::NoMethodErrorB.new.foo(1,a)
     rescue Exception => e
       e.args.should == [1,a]
-      e.args[1].object_id.should == a.object_id
+      e.args[1].should equal(a)
     end
   end
 end

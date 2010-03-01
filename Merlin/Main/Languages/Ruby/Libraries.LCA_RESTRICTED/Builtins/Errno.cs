@@ -285,20 +285,21 @@ namespace IronRuby.Builtins {
                 : base(info, context) { }
 #endif
         }
-    }
 
-    [RubyClass("ESPIPE"), Serializable]
-    public class InvalidSeekError : ExternalException {
-        private const string/*!*/ M = "Invalid seek";
+        [RubyClass("ESPIPE"), Serializable]
+        public class InvalidSeekError : ExternalException {
+            private const string/*!*/ M = "Invalid seek";
 
-        public InvalidSeekError() : this(null, null) { }
-        public InvalidSeekError(string message) : this(message, null) { }
-        public InvalidSeekError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
-        public InvalidSeekError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public InvalidSeekError() : this(null, null) { }
+            public InvalidSeekError(string message) : this(message, null) { }
+            public InvalidSeekError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public InvalidSeekError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
-        protected InvalidSeekError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-            : base(info, context) { }
+            protected InvalidSeekError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
 #endif
+        }
+
     }
 }

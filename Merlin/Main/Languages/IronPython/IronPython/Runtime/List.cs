@@ -33,7 +33,11 @@ namespace IronPython.Runtime {
 
     [PythonType("list"), Serializable, System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [DebuggerTypeProxy(typeof(ObjectCollectionDebugProxy)), DebuggerDisplay("list, {Count} items")]
-    public class List : IList, ICodeFormattable, IValueEquality, IList<object>, IReversible {
+    public class List : IList, ICodeFormattable, IList<object>, IReversible, IStructuralEquatable, IStructuralComparable
+#if CLR2
+        , IValueEquality
+#endif
+    {
         internal int _size;
         internal volatile object[] _data;
 
@@ -356,8 +360,6 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        public const object __hash__ = null;
-
         #region ISequence Members
 
         internal void AddRange<T>(ICollection<T> otherList) {
@@ -427,7 +429,7 @@ namespace IronPython.Runtime {
 
         internal object[] GetSliceAsArray(int start, int stop) {
             if (start < 0) start = 0;
-            if (stop > __len__()) stop = __len__();
+            if (stop > Count) stop = Count;
 
             lock (this) return ArrayOps.GetSlice(_data, start, stop);
         }
@@ -1105,15 +1107,27 @@ namespace IronPython.Runtime {
             lock (this) return Array.BinarySearch(_data, index, count, value, comparer);
         }
 
-        internal bool EqualsWorker(List l) {
+        internal bool EqualsWorker(List l, IEqualityComparer comparer) {
             using (new OrderedLocker(this, l)) {
-                return PythonOps.ArraysEqual(_data, _size, l._data, l._size);
+                if (comparer == null) {
+                    return PythonOps.ArraysEqual(_data, _size, l._data, l._size);
+                } else {
+                    return PythonOps.ArraysEqual(_data, _size, l._data, l._size, comparer);
+                }
             }
         }
 
         internal int CompareToWorker(List l) {
+            return CompareToWorker(l, null);
+        }
+
+        internal int CompareToWorker(List l, IComparer comparer) {
             using (new OrderedLocker(this, l)) {
-                return PythonOps.CompareArrays(_data, _size, l._data, l._size);
+                if (comparer == null) {
+                    return PythonOps.CompareArrays(_data, _size, l._data, l._size);
+                } else {
+                    return PythonOps.CompareArrays(_data, _size, l._data, l._size, comparer);
+                }
             }
         }
 
@@ -1242,7 +1256,7 @@ namespace IronPython.Runtime {
 
         public int Count {
             [PythonHidden]
-            get { return __len__(); }
+            get { return _size; }
         }
 
         [PythonHidden]
@@ -1299,7 +1313,7 @@ namespace IronPython.Runtime {
         #endregion
 
         #region IValueEquality Members
-
+#if CLR2
         int IValueEquality.GetValueHashCode() {
             throw PythonOps.TypeError("list object is unhashable");
         }
@@ -1308,8 +1322,38 @@ namespace IronPython.Runtime {
             if (Object.ReferenceEquals(this, other)) return true;
 
             List l = other as List;
-            if (l == null || l.__len__() != this.__len__()) return false;
+            if (l == null || l.Count != Count) return false;
             return Equals(l);
+        }
+#endif
+        #endregion
+
+        #region IStructuralEquatable Members
+
+        public const object __hash__ = null;
+
+        int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+            if (CompareUtil.Check(this)) {
+                return 0;
+            }
+
+            int res; 
+            CompareUtil.Push(this);
+            try {
+                res = ((IStructuralEquatable)new PythonTuple(this)).GetHashCode(comparer);
+            } finally {
+                CompareUtil.Pop(this);
+            }
+
+            return res;
+        }
+
+        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+            if (Object.ReferenceEquals(this, other)) return true;
+
+            List l = other as List;
+            if (l == null || l.Count != Count) return false;
+            return Equals(l, comparer);
         }
 
         #endregion
@@ -1321,7 +1365,7 @@ namespace IronPython.Runtime {
         }
 
         public void CopyTo(object[] array, int arrayIndex) {
-            for (int i = 0; i < __len__(); i++) {
+            for (int i = 0; i < Count; i++) {
                 array[arrayIndex + i] = this[i];
             }
         }
@@ -1350,18 +1394,26 @@ namespace IronPython.Runtime {
         #endregion
 
         private bool Equals(List other) {
+            return Equals(other, null);
+        }
+
+        private bool Equals(List other, IEqualityComparer comparer) {
             CompareUtil.Push(this, other);
             try {
-                return EqualsWorker(other);
+                return EqualsWorker(other, comparer);
             } finally {
                 CompareUtil.Pop(this, other);
             }
         }
 
         internal int CompareTo(List other) {
+            return CompareTo(other, null);
+        }
+
+        internal int CompareTo(List other, IComparer comparer) {
             CompareUtil.Push(this, other);
             try {
-                return CompareToWorker(other);
+                return CompareToWorker(other, comparer);
             } finally {
                 CompareUtil.Pop(this, other);
             }
@@ -1399,6 +1451,19 @@ namespace IronPython.Runtime {
             if (l == null) return NotImplementedType.Value;
 
             return self.CompareTo(l) <= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        #endregion
+
+        #region IStructuralComparable Members
+
+        int IStructuralComparable.CompareTo(object other, IComparer comparer) {
+            List l = other as List;
+            if (l == null) {
+                throw new ArgumentException("expected List");
+            }
+
+            return CompareTo(l, comparer);
         }
 
         #endregion

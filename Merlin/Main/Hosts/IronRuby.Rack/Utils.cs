@@ -21,6 +21,7 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using System.IO;
 using System.Configuration;
+using System.Collections;
 
 namespace IronRuby.Rack {
     public class Utils {
@@ -29,32 +30,67 @@ namespace IronRuby.Rack {
         
         internal const string LogOptionName = "Log";
 
-        internal static void ReportError(HttpContext/*!*/ context, Exception/*!*/ e) {
-            var trace = RubyEngine.Engine.GetService<ExceptionOperations>().FormatException(e);
+        internal static void ReportError(HttpContext context, Exception e) {
+            Utils.ReportErrorToLog(context, e);
+#if !DEBUG
+            if (Handler.IIS.Current.App.RackEnv == "development") {
+#endif
+                Utils.ReportErrorToResponse(context, e);
+                context.Response.StatusCode = 500;
+#if !DEBUG
+            }
+#endif
+        }
 
-            context.Response.Write("<html>\r\n");
-            context.Response.Write(String.Format(@"
+        internal static void ReportErrorToLog(HttpContext/*!*/ context, Exception/*!*/ e) {
+            ReportErrorAsText(context, e, Log);
+        }
+
+        internal static void ReportErrorToResponse(HttpContext/*!*/ context, Exception/*!*/ e) {
+            ReportErrorAsHTML(context, e, context.Response.Write);
+        }
+
+        internal static void ReportErrorAsText(HttpContext context, Exception e, Action<string> write) {
+            var exops = RubyEngine.Engine.GetService<ExceptionOperations>();
+            write(e.Message + "\n" + exops.FormatException(e) + "\n");
+        }
+
+        internal static void ReportErrorAsHTML(HttpContext/*!*/ context, Exception/*!*/ e, Action<string> write) {
+            var trace = RubyEngine.Engine == null ? 
+                e.Message + "\n" + e.StackTrace + "\n" : 
+                RubyEngine.Engine.GetService<ExceptionOperations>().FormatException(e);
+
+            write("<html>\r\n");
+            write(String.Format(@"
 <h4>Error: {0}</h4>
 <pre>
 {1}
 </pre>
 ", HttpUtility.HtmlEncode(e.Message), HttpUtility.HtmlEncode(trace)));
 
-            context.Response.Write("<h4>Search paths</h4>\r\n");
-            context.Response.Write("<pre>\r\n");
-            foreach (var path in RubyEngine.Engine.GetSearchPaths()) {
-                context.Response.Write(HttpUtility.HtmlEncode(path));
-                context.Response.Write("\r\n");
+            if (RubyEngine.Engine != null) {
+                write("<h4>Search paths</h4>\r\n");
+                write("<pre>\r\n");
+                foreach (var path in RubyEngine.Engine.GetSearchPaths()) {
+                    write(HttpUtility.HtmlEncode(path));
+                    write("\r\n");
+                }
+                write("</pre>\r\n");
+            
+                try {
+                    var gempaths = RubyEngine.Execute<RubyArray>("require 'rubygems'; Gem.path");
+                    write("<h4>Gem paths</h4>\r\n");
+                    write("<pre>\r\n");
+                    foreach (var gempath in gempaths) {
+                        write(HttpUtility.HtmlEncode(((MutableString)gempath).ToString()));
+                        write("\r\n");
+                    }
+                    write("</pre>\r\n");
+                } catch {
+                    // who cares if it fails
+                }
             }
-            context.Response.Write("</pre>\r\n");
-            context.Response.Write("<h4>Gem paths</h4>\r\n");
-            context.Response.Write("<pre>\r\n");
-            foreach (var gempath in RubyEngine.Execute<RubyArray>("require 'rubygems'; Gem.path")) {
-                context.Response.Write(HttpUtility.HtmlEncode(((MutableString)gempath).ToString()));
-                context.Response.Write("\r\n");
-            }
-            context.Response.Write("</pre>\r\n");
-            context.Response.Write("</html>\r\n");
+            write("</html>\r\n");
         }
 
         internal static void InitializeLog() {
@@ -72,10 +108,17 @@ namespace IronRuby.Rack {
         public static void Log(string/*!*/ message) {
             if (_LogWriter != null) {
                 lock (_LogWriter) {
-                    _LogWriter.WriteLine(message.Replace("\n", "\r\n\t"));
+                    _LogWriter.WriteLine(message.Replace("\n", "\n    "));
                     _LogWriter.Flush();
                 }
             }
+        }
+
+        public static MutableString Join(RubyArray array, string joiner) {
+            return IronRuby.Builtins.IListOps.Join(
+                new IronRuby.Runtime.ConversionStorage<MutableString>(RubyEngine.Context),
+                array, MutableString.Create(joiner, RubyEncoding.Default)
+            );
         }
     }
 }

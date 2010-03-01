@@ -38,8 +38,29 @@ namespace IronRuby.Runtime {
     
     public enum BlockReturnReason {
         Undefined = 0,
-        Retry,
-        Break
+        Retry = 1,
+        Return = 2,
+        Break = 3,
+    }
+
+    public sealed class BlockReturnResult {
+        internal static BlockReturnResult Retry = new BlockReturnResult();
+
+        internal readonly object ReturnValue;
+        internal readonly RuntimeFlowControl TargetFrame; // non-null for return, null for retry
+
+        private BlockReturnResult() {
+        }
+
+        internal BlockReturnResult(RuntimeFlowControl/*!*/ targetFrame, object returnValue) {
+            Assert.NotNull(targetFrame);
+            TargetFrame = targetFrame;
+            ReturnValue = returnValue;
+        }
+
+        public MethodUnwinder/*!*/ ToUnwinder() {
+            return new MethodUnwinder(TargetFrame, ReturnValue);
+        }
     }
 
     public enum BlockCallerKind {
@@ -138,14 +159,41 @@ namespace IronRuby.Runtime {
         #region Library Block Yield Helpers
 
         /// <summary>
+        /// Must be called on the result of RubyOps.Yield. Implements post-yield control flow operation.
+        /// </summary>
+        /// <remarks>
         /// Used by library methods that take a block. The binder creates an instance of BlockParam holding on RFC if necessary.
         /// A library method that creates a block yet doesn't take one needs to manage RFC on its own.
-        /// </summary>
-        public bool BlockJumped(object returnValue) {
+        /// </remarks>
+        internal bool BlockJumped(object returnValue) {
             // if this method is a proc converter then the current frame is Proc.Converter, otherwise it is not available:
             return RubyOps.MethodYieldRfc(_isLibProcConverter ? _proc.Converter : null, this, returnValue);
         }
 
+        public bool Returning(object returnValue, out object result) {
+            if (ReturnReason == BlockReturnReason.Return) {
+                result = ((BlockReturnResult)returnValue).ReturnValue;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Propagates control flow (break/return) from the yielded block to the enclosing block.
+        /// </summary>
+        public object PropagateFlow(BlockParam/*!*/ yieldedBlock, object returnValue) {
+            if (yieldedBlock.ReturnReason == BlockReturnReason.Break) {
+                return Break(returnValue);
+            } else {
+                _returnReason = yieldedBlock.ReturnReason;
+                return returnValue;
+            }
+        }
+
+        /// <summary>
+        /// Breaks from the current block.
+        /// </summary>
         public object Break(object returnValue) {
             Debug.Assert(_proc.Converter != null);
 

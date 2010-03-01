@@ -16,6 +16,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using IronRuby.Builtins;
+using Microsoft.Scripting.Actions.Calls;
 
 namespace IronRuby.Runtime.Calls {
     /// <summary>
@@ -33,7 +34,7 @@ namespace IronRuby.Runtime.Calls {
 
         #endregion
 
-        internal RubyOverloadGroupInfo(MethodBase/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule,
+        internal RubyOverloadGroupInfo(OverloadInfo/*!*/[]/*!*/ methods, RubyModule/*!*/ declaringModule,
             RubyOverloadGroupInfo/*!*/[] overloadOwners, bool isStatic)
             : base(methods, declaringModule, isStatic) {
             Debug.Assert(overloadOwners == null || methods.Length == overloadOwners.Length);

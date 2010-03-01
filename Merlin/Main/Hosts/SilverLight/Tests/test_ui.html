@@ -1,0 +1,16 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+  <title>DLR Silverlight tests - UI</title>
+  <script type="text/javascript" src="dlr.js"></script>
+  <script type="application/ruby" src="test_ui.rb" defer='true'></script>
+</head>
+<body>
+  <script type="text/ruby" src="rblib/bacon_runner.rb" defer='true'></script>
+  <script type="text/ruby" src="rblib/bacon.rb" defer='true'></script>
+  <script type="text/ruby">
+    require 'rblib/bacon_runner'
+    BaconRunner.run(%W(test_ui))
+  </script>
+</body>
+</html>

@@ -22,11 +22,12 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Actions.Calls;
 
 namespace IronRuby.Tests {
 
     public partial class Tests {
-        internal static MethodInfo/*!*/ CreateParamsArrayMethod(string/*!*/ name, Type/*!*/[]/*!*/ paramTypes, int paramsArrayIndex, int returnValue) {
+        internal static OverloadInfo/*!*/ CreateParamsArrayMethod(string/*!*/ name, Type/*!*/[]/*!*/ paramTypes, int paramsArrayIndex, int returnValue) {
             var tb = Snippets.Shared.DefineType("<T>", typeof(object), false, false).TypeBuilder;
             var mb = tb.DefineMethod(name, CompilerHelpers.PublicStatic, typeof(KeyValuePair<int, Array>), paramTypes);
             var pb = mb.DefineParameter(1 + paramsArrayIndex, ParameterAttributes.None, "ps");
@@ -37,7 +38,7 @@ namespace IronRuby.Tests {
             il.Emit(OpCodes.Ldarg, paramsArrayIndex);
             il.Emit(OpCodes.Newobj, typeof(KeyValuePair<int, Array>).GetConstructor(new[] { typeof(int), typeof(Array) }));
             il.Emit(OpCodes.Ret);
-            return tb.CreateType().GetMethod(name, BindingFlags.Public | BindingFlags.Static);
+            return new ReflectionOverloadInfo(tb.CreateType().GetMethod(name, BindingFlags.Public | BindingFlags.Static));
         }
 
         public void Scenario_RubyArgSplatting1() {

@@ -29,16 +29,13 @@ using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime.Calls;
-using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Conversions {
     using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class RubyConversionAction : RubyMetaBinder {
         protected RubyConversionAction() 
@@ -271,7 +268,7 @@ namespace IronRuby.Runtime.Conversions {
                     AstUtils.LightDynamic(
                             RubyCallAction.Make(args.RubyContext, Symbols.RespondTo, RubyCallSignature.WithImplicitSelf(1)),
                             args.TargetExpression, 
-                            AstUtils.Constant(SymbolTable.StringToId(toMethodName))
+                            Ast.Constant(args.RubyContext.CreateSymbol(toMethodName, RubyEncoding.Binary))
                         )
                     ),
 
@@ -433,17 +430,17 @@ namespace IronRuby.Runtime.Conversions {
 
             var str = target as MutableString;
             if (str != null) {
-                metaBuilder.Result = Methods.ConvertMutableStringToSymbol.OpCall(AstUtils.Convert(targetExpression, typeof(MutableString)));
+                metaBuilder.Result = Methods.ConvertMutableStringToClrString.OpCall(AstUtils.Convert(targetExpression, typeof(MutableString)));
                 return true;
             }
 
-            if (target is SymbolId) {
-                metaBuilder.Result = Methods.ConvertSymbolIdToSymbol.OpCall(AstUtils.Convert(targetExpression, typeof(SymbolId)));
+            if (target is RubySymbol) {
+                metaBuilder.Result = Methods.ConvertSymbolToClrString.OpCall(AstUtils.Convert(targetExpression, typeof(RubySymbol)));
                 return true;
             }
 
             if (target is int) {
-                metaBuilder.Result = Methods.ConvertFixnumToSymbol.OpCall(
+                metaBuilder.Result = Methods.ConvertSymbolIdToClrString.OpCall(
                     AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
                     AstUtils.Convert(targetExpression, typeof(int))
                 );

@@ -32,6 +32,10 @@ namespace IronRuby.Builtins {
                 _data = data;
             }
 
+            internal string/*!*/ Data {
+                get { return _data; }
+            }
+
             internal BinaryContent/*!*/ SwitchToBinary() {
                 var bytes = DataToBytes();
                 return WrapContent(bytes, bytes.Length);
@@ -53,6 +57,14 @@ namespace IronRuby.Builtins {
 
             protected byte[]/*!*/ DataToBytes() {
                 return _data.Length > 0 ? _owner._encoding.StrictEncoding.GetBytes(_data) : Utils.EmptyBytes;
+            }
+
+            internal int GetDataByteCount() {
+                return _owner._encoding.StrictEncoding.GetByteCount(_data);
+            }
+
+            internal void GetDataBytes(byte[]/*!*/ bytes, int start) {
+                _owner._encoding.StrictEncoding.GetBytes(_data, 0, _data.Length, bytes, start);
             }
 
             #region GetHashCode, Length, Clone (read-only), Count
@@ -151,7 +163,7 @@ namespace IronRuby.Builtins {
             }
 
             public override void CheckEncoding() {
-                _owner._encoding.StrictEncoding.GetByteCount(_data);
+                GetDataByteCount();
             }
 
             #endregion
@@ -268,6 +280,29 @@ namespace IronRuby.Builtins {
 
             public override int LastIndexIn(Content/*!*/ str, int start, int count) {
                 return str.LastIndexOf(_data, start, count);
+            }
+
+            #endregion
+
+            #region Concatenate (read-only)
+
+            public override Content/*!*/ Concat(Content/*!*/ content) {
+                return content.ConcatTo(this);
+            }
+
+            // binary + string -> binary
+            public override Content/*!*/ ConcatTo(BinaryContent/*!*/ content) {
+                return content.Concatenate(this);
+            }
+
+            // chars + string -> chars
+            public override Content/*!*/ ConcatTo(CharArrayContent/*!*/ content) {
+                return content.Concatenate(this);
+            }
+
+            // string + string -> string
+            public override Content/*!*/ ConcatTo(StringContent/*!*/ content) {
+                return new StringContent(content.Data + _data, null);
             }
 
             #endregion

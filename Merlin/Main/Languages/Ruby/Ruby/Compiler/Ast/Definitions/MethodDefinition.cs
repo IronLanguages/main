@@ -19,17 +19,17 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System;
+using System.Runtime.CompilerServices;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System;
-using System.Runtime.CompilerServices;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
     using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
     using AstParameters = ReadOnlyCollectionBuilder<MSA.ParameterExpression>;
     
@@ -190,7 +190,7 @@ namespace IronRuby.Compiler.Ast {
             body = gen.AddReturnTarget(
                 scope.CreateScope(
                     scopeVariable,
-                    Methods.CreateMethodScope.OpCall(
+                    Methods.CreateMethodScope.OpCall(new AstExpressions {
                         scope.MakeLocalsStorage(),
                         scope.GetVariableNamesExpression(),
                         Ast.Constant(visiblePrameterCountAndSignatureFlags),
@@ -199,7 +199,7 @@ namespace IronRuby.Compiler.Ast {
                         Ast.Constant(_name),
                         selfParameter, blockParameter,
                         EnterInterpretedFrameExpression.Instance
-                    ),
+                    }),
                     body
                 )
             );
@@ -239,7 +239,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return Methods.DefineMethod.OpCall(
-                (_target != null) ? _target.TransformRead(gen) : AstUtils.Constant(null),
+                (_target != null) ? AstUtils.Box(_target.TransformRead(gen)) : AstUtils.Constant(null),
                 gen.CurrentScopeVariable,
                 Ast.Constant(new RubyMethodBody(this, gen.Document, gen.Encoding))
             );

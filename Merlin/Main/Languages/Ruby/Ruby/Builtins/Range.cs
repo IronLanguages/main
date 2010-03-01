@@ -25,11 +25,7 @@ using System.Text;
 
 namespace IronRuby.Builtins {
 
-    public partial class Range : IDuplicable
-#if !SILVERLIGHT
-        , ISerializable
-#endif
-    {
+    public partial class Range : IDuplicable, ISerializable {
         private object _begin;
         private object _end;
         private bool _excludeEnd;

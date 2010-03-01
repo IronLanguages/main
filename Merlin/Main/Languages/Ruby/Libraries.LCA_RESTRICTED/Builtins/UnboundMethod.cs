@@ -91,7 +91,7 @@ namespace IronRuby.Builtins {
         internal static MutableString/*!*/ ToS(RubyContext/*!*/ context, string/*!*/ methodName, RubyModule/*!*/ declaringModule, RubyModule/*!*/ targetModule, 
             string/*!*/ classDisplayName) {
 
-            MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
+            MutableString result = MutableString.CreateMutable(context.GetIdentifierEncoding());
 
             result.Append("#<");
             result.Append(classDisplayName);
@@ -113,17 +113,17 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("of")]
-        public static UnboundMethod/*!*/ BingGenericParameters(RubyContext/*!*/ context, UnboundMethod/*!*/ self, [NotNull]params object[]/*!*/ typeArgs) {
+        public static UnboundMethod/*!*/ BingGenericParameters(RubyContext/*!*/ context, UnboundMethod/*!*/ self, [NotNullItems]params object/*!*/[]/*!*/ typeArgs) {
             return new UnboundMethod(self.TargetConstraint, self.Name, MethodOps.BindGenericParameters(context, self.Info, self.Name, typeArgs));
         }
 
         [RubyMethod("overloads")]
-        public static RubyMethod/*!*/ SelectOverload_old(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+        public static RubyMethod/*!*/ SelectOverload_old(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNullItems]params object/*!*/[]/*!*/ parameterTypes) {
             throw RubyExceptions.CreateNameError("UnboundMethod#overloads is an obsolete name, use UnboundMethod#overload.");
         }
         
         [RubyMethod("overload")]
-        public static UnboundMethod/*!*/ SelectOverload(RubyContext/*!*/ context, UnboundMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+        public static UnboundMethod/*!*/ SelectOverload(RubyContext/*!*/ context, UnboundMethod/*!*/ self, [NotNullItems]params object/*!*/[]/*!*/ parameterTypes) {
             return new UnboundMethod(self.TargetConstraint, self.Name, MethodOps.SelectOverload(context, self.Info, self.Name, parameterTypes));
         }
 

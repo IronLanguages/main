@@ -1,9 +1,3 @@
-fails:Kernel#system can run basic things that exist
-fails:Kernel#system returns false when command execution fails
 fails:Kernel#system returns false when the command has a non-zero exit status
-fails:Kernel#system does not write to stderr when it can't find a command
-fails:Kernel#system uses /bin/sh if freaky shit is in the command
-fails:Kernel#system is a private method
-fails:Kernel#system expands shell variables when given a single string argument
-fails:Kernel#system does not expand shell variables when given multiples arguments
-fails:Kernel#system sets $?
+fails:Kernel#system captures stdout
+fails:Kernel#system captures stderr

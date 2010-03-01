@@ -14,9 +14,10 @@
  * ***************************************************************************/
 
 using System;
+using System.Runtime.Remoting;
 using System.Security.Permissions;
-using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Hosting {
     public sealed class ExceptionOperations
@@ -44,6 +45,28 @@ namespace Microsoft.Scripting.Hosting {
         }
 
 #if !SILVERLIGHT
+        public string FormatException(ObjectHandle exception) {
+            var exceptionObj = exception.Unwrap() as Exception;
+            ContractUtils.Requires(exceptionObj != null, "exception", "ObjectHandle must be to Exception object");
+
+            return _context.FormatException(exceptionObj);
+        }
+
+        public void GetExceptionMessage(ObjectHandle exception, out string message, out string errorTypeName) {
+            var exceptionObj = exception.Unwrap() as Exception;
+            ContractUtils.Requires(exceptionObj != null, "exception", "ObjectHandle must be to Exception object");
+
+            _context.GetExceptionMessage(exceptionObj, out message, out errorTypeName);
+        }
+
+        public bool HandleException(ObjectHandle exception) {
+            var exceptionObj = exception.Unwrap() as Exception;
+            ContractUtils.Requires(exceptionObj != null, "exception", "ObjectHandle must be to Exception object");
+
+            ContractUtils.RequiresNotNull(exceptionObj, "exception");
+            return false;
+        }
+
         // TODO: Figure out what is the right lifetime
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService() {

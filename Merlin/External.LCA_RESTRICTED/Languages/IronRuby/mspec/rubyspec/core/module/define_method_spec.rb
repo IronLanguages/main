@@ -26,6 +26,16 @@ describe "Module#define_method when given an UnboundMethod" do
     klass.new.should have_method(:another_test_method)
   end
 
+  it "can add an initializer" do
+    klass = Class.new do
+      attr_reader :args
+      define_method(:initialize) do |*args|
+        @args = args
+      end
+    end
+    klass.new(1,2,3).args.should == [1,2,3]
+  end
+
   ruby_bug "redmine:2117", "1.8.7" do
     it "works for singleton classes too" do
       klass = Class.new

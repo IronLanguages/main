@@ -293,7 +293,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, BigDecimal/*!*/ self) {
-            MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
+            MutableString str = MutableString.CreateMutable(context.GetIdentifierEncoding());
             str.AppendFormat("#<{0}:", context.GetClassOf(self).Name);
             RubyUtils.AppendFormatHexObjectId(str, RubyUtils.GetObjectId(context, self));
             str.AppendFormat(",'{0}',{1}({2})>", 
@@ -543,6 +543,18 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         public static BigDecimal/*!*/ Divide(RubyContext/*!*/ context, BigDecimal/*!*/ self, BigDecimal/*!*/ other) {
             BigDecimal remainder;
             return BigDecimal.Divide(GetConfig(context), self, other, 0, out remainder);
+        }
+
+        [RubyMethod("/")]
+        public static object Divide(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
+            BigDecimal/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "/", self, other);
+        }
+
+        [RubyMethod("quo")]
+        public static object Quotient(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite,
+            BigDecimal/*!*/ self, object other) {
+            return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "quo", self, other);
         }
 
         [RubyMethod("div")]

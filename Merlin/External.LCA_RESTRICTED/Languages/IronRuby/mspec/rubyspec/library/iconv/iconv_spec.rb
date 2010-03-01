@@ -4,7 +4,7 @@ require 'iconv'
 
 # These specs assume the Iconv implementation supports at least
 # the following encodings:
-#   us-ascii, utf-8, utf-16, utf-16be, utf-16le, iso-8859-1
+#   us-ascii, utf-8, utf-16, utf-16be, utf-16le, iso-8859-1, iso-2022-jp
 
 describe "Iconv#iconv" do
   it "raises an ArgumentError when called on a closed converter" do
@@ -151,9 +151,26 @@ describe "The 'utf-16' encoder" do
     end
   end
 
-  it "emits a byte-order mark on first non-empty output" do
+  it "emits a byte-order mark on first output only" do
     Iconv.iconv("utf-16", "us-ascii", "a").should equal_utf16(["\xfe\xff\0a"])
     Iconv.iconv("utf-16", "utf-16", "\x80\x80", "\x81\x81").should equal_utf16(["\xfe\xff\x80\x80", "\x81\x81"])
+  end
+
+  it "emits a byte-order mark on first non-empty output" do
+    Iconv.iconv("utf-16", "us-ascii", "",  "",  "a").should equal_utf16(["", "", "\xfe\xff\0a"])
+    Iconv.iconv("utf-16", "us-ascii", nil, nil, "a").should equal_utf16(["", "", "\xfe\xff\0a"])
+  end
+
+  it "emits empty string for nil input" do
+    Iconv.iconv("utf-16", "us-ascii", nil).should == [""]
+    Iconv.iconv("utf-16", "us-ascii", "").should == [""]
+  end
+  
+  it "resets the decoder on nil input" do
+    Iconv.iconv("utf-16", "us-ascii", "a", nil, "b").should ==
+      Iconv.iconv("utf-16", "us-ascii", "a") +
+      [""] +
+      Iconv.iconv("utf-16", "us-ascii", "b")
   end
 end
 
@@ -176,5 +193,23 @@ describe "The 'utf-16le' decoder" do
   it "treats possible byte-order marks as regular characters" do
     Iconv.iconv("utf-8", "utf-16le", "\xfe\xff\0a").should == ["\xef\xbf\xbe\xe6\x84\x80"]
     Iconv.iconv("utf-8", "utf-16le", "\xff\xfe\0a").should == ["\xef\xbb\xbf\xe6\x84\x80"]
+  end
+end
+
+describe "The iso-2022-jp decoder" do
+  it "includes the result of #close" do
+    Iconv.iconv("iso-2022-jp", "utf-8", "\343\201\262").should == ["\e$B$R", "\e(B"]
+    Iconv.iconv("iso-2022-jp", "utf-8", "\343\201\262", "\343\201\263", "\343\201\264").should == ["\e$B$R", "$S", "$T", "\e(B"]
+  end
+
+  it "resets the decoder on nil input" do
+    Iconv.iconv("iso-2022-jp", "utf-8", "\343\201\262", nil, "\343\201\263").should ==
+      Iconv.iconv("iso-2022-jp", "utf-8", "\343\201\262") + 
+      Iconv.iconv("iso-2022-jp", "utf-8", "\343\201\263")
+  end
+  
+  it "emits empty string for nil or empty input" do
+    Iconv.iconv("iso-2022-jp", "utf-8", "", "a").should == ["", "a"]
+    Iconv.iconv("iso-2022-jp", "utf-8", nil, "a").should == ["", "a"]
   end
 end

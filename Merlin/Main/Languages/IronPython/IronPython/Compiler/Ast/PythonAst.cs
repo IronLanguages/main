@@ -739,6 +739,10 @@ namespace IronPython.Compiler.Ast {
             }
 
             protected override MSAst.Expression VisitExtension(MSAst.Expression node) {
+                if (node == _globalContext) {
+                    return PythonAst._globalContext;
+                }
+
                 // we need to re-write nested scoeps
                 ScopeStatement scope = node as ScopeStatement;
                 if (scope != null) {

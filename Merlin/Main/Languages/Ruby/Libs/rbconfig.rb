@@ -45,7 +45,7 @@ module Config
     CONFIG["bindir"] = TOPDIR
     CONFIG["libdir"] = File.expand_path("../External.LCA_RESTRICTED/Languages/Ruby/redist-libs", ENV["MERLIN_ROOT"])
   else
-    TOPDIR = File.dirname(__FILE__) + '/../../'
+    TOPDIR = File.expand_path("../..", File.dirname(__FILE__))
     CONFIG["bindir"] = TOPDIR + "/bin"
     CONFIG["libdir"] = TOPDIR + "/lib"
   end

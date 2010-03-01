@@ -1,0 +1,23 @@
+HKCR
+{
+	COMTest.SimpleComObject.1 = s 'SimpleComObject Class'
+	{
+		CLSID = s '{78A03F3F-C7D0-43A4-B21E-C82CE9BF3267}'
+	}
+	COMTest.SimpleComObject = s 'SimpleComObject Class'
+	{
+		CLSID = s '{78A03F3F-C7D0-43A4-B21E-C82CE9BF3267}'
+		CurVer = s 'COMTest.SimpleComObject.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {78A03F3F-C7D0-43A4-B21E-C82CE9BF3267} = s 'SimpleComObject Class'
+		{
+			ProgID = s 'COMTest.SimpleComObject.1'
+			VersionIndependentProgID = s 'COMTest.SimpleComObject'
+			ForceRemove 'Programmable'
+			LocalServer32 = s '%MODULE%'
+			'TypeLib' = s '{A5619E05-E89F-4336-A78A-BEEAEBD2B556}'
+		}
+	}
+}

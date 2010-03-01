@@ -47,7 +47,6 @@ namespace IronPython.Modules {
 
         [PythonType("CFuncPtr")]
         public abstract class _CFuncPtr : CData, IDynamicMetaObjectProvider {
-            private readonly IntPtr _addr;
             private readonly Delegate _delegate;
             private object _errcheck, _restype = _noResType;
             private IList<object> _argtypes;
@@ -73,43 +72,49 @@ namespace IronPython.Modules {
                 object dll = args[1];
                 IntPtr intPtrHandle = GetHandleFromObject(dll, "the _handle attribute of the second element must be an integer");
 
+                IntPtr tmpAddr;
                 string funcName = args[0] as string;
                 if (funcName != null) {
-                    _addr = NativeFunctions.LoadFunction(intPtrHandle, funcName);
+                    tmpAddr = NativeFunctions.LoadFunction(intPtrHandle, funcName);
                 } else {
-                    _addr = NativeFunctions.LoadFunction(intPtrHandle, new IntPtr((int)nameOrOrdinal));
+                    tmpAddr = NativeFunctions.LoadFunction(intPtrHandle, new IntPtr((int)nameOrOrdinal));
                 }
 
-                if (_addr == IntPtr.Zero) {
+                if (tmpAddr == IntPtr.Zero) {
                     if (CallingConvention == CallingConvention.StdCall && funcName != null) {
                         // apply std call name mangling - prepend a _, append @bytes where 
                         // bytes is the number of bytes of the argument list.
                         string mangled = "_" + funcName + "@";
-                        for (int i = 0; i < 128 && _addr == IntPtr.Zero; i += 4) {
-                            _addr = NativeFunctions.LoadFunction(intPtrHandle, mangled + i);
+                        
+                        for (int i = 0; i < 128 && tmpAddr == IntPtr.Zero; i += 4) {
+                            tmpAddr = NativeFunctions.LoadFunction(intPtrHandle, mangled + i);
                         }
                     }
 
-                    if (_addr == IntPtr.Zero) {
+                    if (tmpAddr == IntPtr.Zero) {
                         throw PythonOps.AttributeError("function {0} is not defined", args[0]);
                     }
                 }
 
+                _memHolder = new MemoryHolder(IntPtr.Size);
+                addr = tmpAddr;
                 _id = Interlocked.Increment(ref _curId);
             }
 
             public _CFuncPtr() {
                 _id = Interlocked.Increment(ref _curId);
+                _memHolder = new MemoryHolder(IntPtr.Size);
             }
 
             public _CFuncPtr(CodeContext context, object function) {
+                _memHolder = new MemoryHolder(IntPtr.Size);
                 if (function != null) {
                     if (!PythonOps.IsCallable(context, function)) {
                         throw PythonOps.TypeError("argument must be called or address of function");
                     }
 
                     _delegate = ((CFuncPtrType)DynamicHelpers.GetPythonType(this)).MakeReverseDelegate(context, function);
-                    _addr = Marshal.GetFunctionPointerForDelegate(_delegate);
+                    addr = Marshal.GetFunctionPointerForDelegate(_delegate);
 
                     CFuncPtrType myType = (CFuncPtrType)NativeType;
                     PythonType resType = myType._restype;
@@ -129,7 +134,8 @@ namespace IronPython.Modules {
             /// Creates a new CFuncPtr with the specfied address.
             /// </summary>
             public _CFuncPtr(int handle) {
-                _addr = new IntPtr(handle);
+                _memHolder = new MemoryHolder(IntPtr.Size);
+                addr = new IntPtr(handle);
                 _id = Interlocked.Increment(ref _curId);
             }
 
@@ -137,17 +143,19 @@ namespace IronPython.Modules {
             /// Creates a new CFuncPtr with the specfied address.
             /// </summary>
             public _CFuncPtr([NotNull]BigInteger handle) {
-                _addr = new IntPtr(handle.ToInt64());
+                _memHolder = new MemoryHolder(IntPtr.Size);
+                addr = new IntPtr(handle.ToInt64());
                 _id = Interlocked.Increment(ref _curId);
             }
 
             public _CFuncPtr(IntPtr handle) {
-                _addr = handle;
+                _memHolder = new MemoryHolder(IntPtr.Size);
+                addr = handle;
                 _id = Interlocked.Increment(ref _curId);
             }
 
             public bool __nonzero__() {
-                return _addr != IntPtr.Zero;
+                return addr != IntPtr.Zero;
             }
 
             #region Public APIs
@@ -241,7 +249,11 @@ namespace IronPython.Modules {
             public IntPtr addr {
                 [PythonHidden]
                 get {
-                    return _addr;
+                    return _memHolder.ReadIntPtr(0);
+                }
+                [PythonHidden]
+                set {
+                    _memHolder.WriteIntPtr(0, value);
                 }
             }
 

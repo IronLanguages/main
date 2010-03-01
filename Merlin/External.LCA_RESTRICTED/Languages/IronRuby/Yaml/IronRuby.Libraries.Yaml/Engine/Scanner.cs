@@ -18,9 +18,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using IronRuby.Compiler;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
@@ -29,15 +31,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         private class SimpleKey {
             internal readonly int TokenNumber;
             internal readonly bool Required;
-            internal readonly int Index;
-            internal readonly int Line;
             internal readonly int Column;
 
-            internal SimpleKey(int tokenNumber, bool required, int index, int line, int column) {
+            internal SimpleKey(int tokenNumber, bool required, int column) {
                 TokenNumber = tokenNumber;
                 Required = required;
-                Index = index;
-                Line = line;
                 Column = column;
             }
         }
@@ -49,23 +47,61 @@ namespace IronRuby.StandardLibrary.Yaml {
         private bool _allowSimpleKey = true;
         private bool _eof = false;
         private int _column = 0;
+        private int _line = 0;
         private bool _docStart = false;
         private readonly LinkedList<Token> _tokens = new LinkedList<Token>();
         private readonly Stack<int> _indents = new Stack<int>();
-        private Dictionary<int, SimpleKey> _possibleSimpleKeys = new Dictionary<int, SimpleKey>();
-        private readonly TextReader _reader;
+        private readonly Dictionary<int, SimpleKey> _possibleSimpleKeys = new Dictionary<int, SimpleKey>();
+        private readonly TextReader/*!*/ _reader;
+        private readonly Encoding/*!*/ _encoding;
 
         private char[] _buffer = new char[10];
         private int _count = 0;
         private int _pointer = 0;
 
+        public Scanner(TextReader/*!*/ reader, Encoding/*!*/ encoding) {
+            _encoding = encoding;
+            _reader = reader;
+            FetchStreamStart();
+        }
+
+        private void ReportError(string/*!*/ message, params object[]/*!*/ args) {
+            throw new ScannerException(
+                String.Format(CultureInfo.InvariantCulture, message, args) + 
+                String.Format(CultureInfo.InvariantCulture, " (line {0}, column {1})", _line + 1, _column + 1)
+            );
+        }
+
+        private void ReportUnexpectedCharacter(string/*!*/ context, char expected) {
+            ReportUnexpectedCharacter(context, "`" + expected + "'");
+        }
+
+        private void ReportUnexpectedCharacter(string/*!*/ context, string/*!*/ expected) {
+            ReportError("while scanning {0}: expected {1}", context, expected);
+        }
+
+        private void ReportUnexpectedCharacter(string/*!*/ context, char expected, char unexpected) {
+            ReportUnexpectedCharacter(context, "`" + expected + "'", unexpected);
+        }
+
+        private void ReportUnexpectedCharacter(string/*!*/ context, string/*!*/ expected, char unexpected) {
+            ReportError("while scanning {0}: expected {1}, but found `{2}' ({3})", context, expected, unexpected, (int)unexpected);
+        }
+
         private int FlowLevel {
             get { return _collectionTokens.Count; }
         }
 
-        public Scanner(TextReader/*!*/ reader) {
-            _reader = reader;
-            FetchStreamStart();
+        public int Line {
+            get { return _line; }
+        }
+
+        public int Column {
+            get { return _column; }
+        }
+        
+        public Encoding/*!*/ Encoding {
+            get { return _encoding; }
         }
 
         private void Update(int length, bool reset) {
@@ -115,15 +151,6 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        // This function was a no-op because NON_PRINTABLE was not set in the original code
-        //private void checkPrintable(int start, int len) {
-        //    for (int i = start; i < start + len; i++) {
-        //        if (NON_PRINTABLE[_buffer[i]]) {
-        //            throw new YamlException("At " + i + " we found: " + _buffer[i] + ". Special characters are not allowed");
-        //        }
-        //    }
-        //}
-
         private bool Ensure(int len, bool reset) {
             if (_pointer + len >= _count) {
                 Update(len, reset);
@@ -141,28 +168,26 @@ namespace IronRuby.StandardLibrary.Yaml {
             return _buffer[_pointer + index];
         }
 
-        private void Forward() {
-            Ensure(2, true);
-            char ch1 = _buffer[_pointer++];
-            if (ch1 == '\n' || (ch1 == '\r' && _buffer[_pointer] != '\n')) {
+        private void Advance() {
+            char c = _buffer[_pointer++];
+            if (c == '\n' || (c == '\r' && _buffer[_pointer] != '\n')) {
                 _possibleSimpleKeys.Clear();
                 _column = 0;
+                _line++;
             } else {
                 _column++;
             }
         }
 
+        private void Forward() {
+            Ensure(2, true);
+            Advance();
+        }
+
         private void Forward(int length) {
             Ensure(length + 1, true);
             for (int i = 0; i < length; i++) {
-                char ch = _buffer[_pointer];
-                _pointer++;
-                if (ch == '\n' || (ch == '\r' && _buffer[_pointer] != '\n')) {
-                    _possibleSimpleKeys.Clear();
-                    _column = 0;
-                } else {
-                    _column++;
-                }
+                Advance();
             }
         }
 
@@ -178,6 +203,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 _tokensTaken++;
                 Token t = _tokens.First.Value;
                 _tokens.RemoveFirst();
+//                 Console.WriteLine(t);
                 return t;
             }
             return null;
@@ -205,102 +231,135 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private bool IsEnding() {
-            Ensure(4, false);
-            return (_buffer[_pointer]) == '-' &&
-                (_buffer[_pointer + 1]) == '-' &&
-                (_buffer[_pointer + 2]) == '-' &&
-                (_buffer[_pointer + 3] != 0) &&
-                !(_count <= (_pointer + 4) ||
-                  ((_buffer[_pointer + 3] == '\n') &&
-                   (_buffer[_pointer + 4] == 0))) &&
-                (NULL_BL_T_LINEBR(_buffer[_pointer + 3]));
+            return Peek() == '-' && Peek(1) == '-' && Peek(2) == '-' && IsWhitespace(Peek(3));
         }
 
         private bool IsStart() {
-            Ensure(4, false);
-            return (_buffer[_pointer]) == '.' &&
-                (_buffer[_pointer + 1]) == '.' &&
-                (_buffer[_pointer + 2]) == '.' &&
-                (NULL_BL_T_LINEBR(_buffer[_pointer + 3]));
-        }
-
-        private bool IsEndOrStart() {
-            Ensure(4, false);
-            return (((_buffer[_pointer]) == '-' &&
-                     (_buffer[_pointer + 1]) == '-' &&
-                     (_buffer[_pointer + 2]) == '-') ||
-                    ((_buffer[_pointer]) == '.' &&
-                     (_buffer[_pointer + 1]) == '.' &&
-                     (_buffer[_pointer + 2]) == '.')) &&
-                     (NULL_BL_T_LINEBR(_buffer[_pointer + 3]));
+            return Peek() == '.' && Peek(1) == '.' && Peek(2) == '.' && IsWhitespace(Peek(3));
         }
 
         private Token FetchMoreTokens() {
-            ScanToNextToken();
-            UnwindIndent(_column);
-            char ch = Peek();
-            bool colz = _column == 0;
-            switch (ch) {
-                case '\0': return FetchStreamEnd();
-                case '\'': return FetchSingle();
-                case '"': return FetchDouble();
+            while (true) {
+                ScanToNextToken();
+                UnwindIndent(_column);
+                char c = Peek();
+                char d;
+                bool atLineStart = _column == 0;
+                bool whitespaceFollows;
+                string s;
 
-                case '?': 
-                    if (FlowLevel != 0 || NULL_BL_T_LINEBR(Peek(1))) { 
-                        return FetchKey(); 
-                    } 
-                    break;
+                switch (c) {
+                    case '\0': 
+                        return FetchStreamEnd();
 
-                case ':':
-                    if (FlowLevel != 0 || NULL_BL_T_LINEBR(Peek(1))) {
-                        // key: value not allowed in a sequence [...]:
-                        if (FlowLevel == 0 || _collectionTokens.Peek() != FlowSequenceStartToken.Instance) {
-                            return FetchValue();
+                    case '\'': 
+                        return FetchSingle();
+
+                    case '"': 
+                        return FetchDouble();
+
+                    case '?':
+                        whitespaceFollows = IsWhitespace(Peek(1));
+                        if (FlowLevel != 0 || whitespaceFollows) {
+                            return FetchKey();
+                        } else if (!whitespaceFollows) {
+                            return FetchPlain();
                         }
-                    }
-                    break;
+                        break;
 
-                case '%': 
-                    if (colz) { 
-                        return FetchDirective();
-                    } 
-                    break;
+                    case ':':
+                        whitespaceFollows = IsWhitespace(Peek(1));
+                        if (FlowLevel != 0 || whitespaceFollows) {
+                            // key: value not allowed in a sequence [...]:
+                            if (FlowLevel == 0 || _collectionTokens.Peek() != FlowSequenceStartToken.Instance) {
+                                return FetchValue();
+                            }
+                        }
 
-                case '-':
-                    if ((colz || _docStart) && IsEnding()) {
-                        return FetchDocumentStart();
-                    } else if (NULL_BL_T_LINEBR(Peek(1))) {
-                        return FetchBlockEntry();
-                    }
-                    break;
+                        if (!whitespaceFollows) {
+                            return FetchPlain();
+                        }
+                        break;
 
-                case '.':
-                    if (colz && IsStart()) {
-                        return FetchDocumentEnd();
-                    }
-                    break;
+                    case '%': 
+                        if (atLineStart) { 
+                            return FetchDirective();
+                        } 
+                        break;
 
-                case '[': return FetchFlowCollectionStart(FlowSequenceStartToken.Instance);
-                case '{': return FetchFlowCollectionStart(FlowMappingStartToken.Instance);
-                case ']': return FetchFlowCollectionEnd(FlowSequenceEndToken.Instance);
-                case '}': return FetchFlowCollectionEnd(FlowMappingEndToken.Instance);
-                case ',': return FetchFlowEntry();
-                case '*': return FetchAlias();
-                case '&': return FetchAnchor();
-                case '!': return FetchTag();
-                case '|': if (FlowLevel == 0) { return FetchLiteral(); } break;
-                case '>': if (FlowLevel == 0) { return FetchFolded(); } break;
+                    case '-':
+                        if ((atLineStart || _docStart) && IsEnding()) {
+                            return FetchDocumentStart();
+                        } else if (IsWhitespace(Peek(1))) {
+                            return FetchBlockEntry();
+                        } else {
+                            return FetchPlain();
+                        } 
+
+                    case '.':
+                        if (atLineStart && IsStart()) {
+                            return FetchDocumentEnd();
+                        } else {
+                            return FetchPlain();
+                        }
+
+                    case '[': 
+                        return FetchFlowCollectionStart(FlowSequenceStartToken.Instance);
+
+                    case '{': 
+                        return FetchFlowCollectionStart(FlowMappingStartToken.Instance);
+
+                    case ']': 
+                        return FetchFlowCollectionEnd(FlowSequenceEndToken.Instance);
+
+                    case '}': 
+                        return FetchFlowCollectionEnd(FlowMappingEndToken.Instance);
+
+                    case ',':
+                        d = Peek(1);
+                        if (d == ' ' || d == '\n') {
+                            return FetchFlowEntry();
+                        } else {
+                            return FetchPlain();
+                        }
+
+                    case '*':
+                    case '&':
+                        s = PeekIdentifier(1);
+                        return s.Length == 0 ? FetchPlain() : FetchAnchor(s, c == '*');
+
+                    case '!': 
+                        return FetchTag();
+
+                    case '|': 
+                        if (FlowLevel == 0) { 
+                            return FetchLiteral(); 
+                        } 
+                        break;
+
+                    case '>':
+                        if (!IsWhitespace(Peek(1))) {
+                            return FetchPlain();
+                        } else if (FlowLevel == 0) {
+                            return FetchFolded();
+                        }
+                        break;
+
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case '\n':
+                    case '#':
+                        Debug.Assert(false);
+                        break;
+
+                    default:
+                        return FetchPlain();
+                }
+
+                ReportError("unexpected `{0}' ({1})", c, (int)c);
+                Forward();
             }
-
-            //TODO: this is probably incorrect...
-            char c2 = _buffer[_pointer];
-            if (NOT_USEFUL_CHAR(c2) ||
-               (Ensure(1, false) && (c2 == '-' || c2 == '?' || c2 == ':') &&
-                !NULL_BL_T_LINEBR(_buffer[_pointer + 1]))) {
-                return FetchPlain();
-            }
-
-            throw new ScannerException("while scanning for the next token: found character " + ch + " (" + (int)ch + ") that cannot start any token");
         }
 
         private Token FetchStreamStart() {
@@ -311,7 +370,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         private Token FetchStreamEnd() {
             UnwindIndent(-1);
             _allowSimpleKey = false;
-            _possibleSimpleKeys = new Dictionary<int, SimpleKey>();
+            _possibleSimpleKeys.Clear();
             _done = true;
             _docStart = false;
             return AddToken(StreamEndToken.Instance);
@@ -338,21 +397,13 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        private string ScanLineBreak() {
-            // Transforms:
-            //   '\r\n'      :   '\n'
-            //   '\r'        :   '\n'
-            //   '\n'        :   '\n'
-            //   '\x85'      :   '\n'
-            //   default     :   ''
-            char val = Peek();
-            if (FULL_LINEBR(val)) {
-                Ensure(2, false);
-                if (_buffer[_pointer] == '\r' && _buffer[_pointer + 1] == '\n') {
-                    Forward(2);
-                } else {
-                    Forward();
-                }
+        private string/*!*/ ScanLineBreak() {
+            char c = Peek();
+            if (c == '\n') {
+                Forward();
+                return "\n";
+            } else if (c == '\r' && Peek(1) == '\n') {
+                Forward(2);
                 return "\n";
             } else {
                 return "";
@@ -387,7 +438,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             _docStart = false;
             if (FlowLevel == 0) {
                 if (!_allowSimpleKey) {
-                    throw new ScannerException("sequence entries are not allowed here");
+                    ReportError("sequence entries are not allowed here");
                 }
                 if (AddIndent(_column)) {
                     _tokens.AddLast(BlockSequenceStartToken.Instance);
@@ -420,7 +471,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (_possibleSimpleKeys.TryGetValue(FlowLevel, out key)) {
                 _possibleSimpleKeys.Remove(FlowLevel);
                 if (key.Required) {
-                    throw new ScannerException("while scanning a simple key: could not find expected ':'");
+                    ReportUnexpectedCharacter("simple key", ':');
                 }
             }
         }
@@ -428,7 +479,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         private void SavePossibleSimpleKey() {
             if (_allowSimpleKey) {
                 RemovePossibleSimpleKey();
-                _possibleSimpleKeys.Add(FlowLevel, new SimpleKey(_tokensTaken + _tokens.Count, (FlowLevel == 0) && _indent == _column, -1, -1, _column));
+                _possibleSimpleKeys.Add(FlowLevel, new SimpleKey(_tokensTaken + _tokens.Count, (FlowLevel == 0) && _indent == _column, _column));
             }
         }
 
@@ -440,16 +491,16 @@ namespace IronRuby.StandardLibrary.Yaml {
                 Forward(2);
                 suffix = ScanTagUri("tag");
                 if (Peek() != '>') {
-                    throw new ScannerException("while scanning a tag: expected '>', but found " + Peek() + "(" + (int)Peek() + ")");
+                    ReportError("tag", '>', Peek());
                 }
                 Forward();
-            } else if (NULL_BL_T_LINEBR(ch)) {
+            } else if (IsWhitespace(ch)) {
                 suffix = "!";
                 Forward();
             } else {
                 int length = 1;
                 bool useHandle = false;
-                while (!NULL_BL_T_LINEBR(ch)) {
+                while (!IsWhitespace(ch)) {
                     if (ch == '!') {
                         useHandle = true;
                         break;
@@ -466,8 +517,8 @@ namespace IronRuby.StandardLibrary.Yaml {
                 }
                 suffix = ScanTagUri("tag");
             }
-            if (!NULL_BL_LINEBR(Peek())) {
-                throw new ScannerException("while scanning a tag: expected ' ', but found " + Peek() + "(" + (int)Peek() + ")");
+            if (!IsWhitespaceButTab(Peek())) {
+                ReportUnexpectedCharacter("tag", ' ', Peek());
             }
             return new TagToken(handle, suffix);
         }
@@ -494,7 +545,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 Forward(length);
             }
             if (chunks.Length == 0) {
-                throw new ScannerException("while scanning a " + name + ": expected URI, but found " + ch + "(" + (int)ch + ")");
+                ReportUnexpectedCharacter(name, "URI", ch);
             }
             return chunks.ToString();
         }
@@ -502,18 +553,18 @@ namespace IronRuby.StandardLibrary.Yaml {
         private string ScanTagHandle(string name) {
             char ch = Peek();
             if (ch != '!') {
-                throw new ScannerException("while scanning a " + name + ": expected '!', but found " + ch + "(" + (int)ch + ")");
+                ReportUnexpectedCharacter(name, "!", ch);
             }
             int length = 1;
             ch = Peek(length);
             if (ch != ' ') {
-                while (ALPHA(ch)) {
+                while (IsIdentifier(ch)) {
                     length++;
                     ch = Peek(length);
                 }
                 if ('!' != ch) {
                     Forward(length);
-                    throw new ScannerException("while scanning a " + name + ": expected '!', but found " + ch + "(" + ((int)ch) + ")");
+                    ReportUnexpectedCharacter(name, '!', ch);
                 }
                 length++;
             }
@@ -529,8 +580,11 @@ namespace IronRuby.StandardLibrary.Yaml {
                 try {
                     Ensure(2, false);
                     str.Append(int.Parse(new string(_buffer, _pointer, 2), NumberStyles.HexNumber));
-                } catch (FormatException fe) {
-                    throw new ScannerException("while scanning a " + name + ": expected URI escape sequence of 2 hexadecimal numbers, but found " + Peek(1) + "(" + ((int)Peek(1)) + ") and " + Peek(2) + "(" + ((int)Peek(2)) + ")", fe);
+                } catch (FormatException) {
+                    ReportError(
+                        "while scanning a {0}: expected URI escape sequence of 2 hexadecimal numbers, but found `{0}' ({1}) and `{2}' ({3})",
+                        name, Peek(1), Peek(2)
+                    );
                 }
                 Forward(2);
             }
@@ -543,44 +597,18 @@ namespace IronRuby.StandardLibrary.Yaml {
             return AddToken(ScanPlain());
         }
 
-        private delegate bool CharTest(char c);
-
         private Token ScanPlain() {
             StringBuilder chunks = new StringBuilder(7);
             string spaces = "";
             int ind = _indent + 1;
-            bool f_nzero;
-            CharTest r_check, r_check2, r_check3;
-            if (FlowLevel != 0) {
-                f_nzero = true;
-                r_check = R_FLOWNONZERO;
-                r_check2 = ALL_FALSE;
-                r_check3 = ALL_FALSE;
-            } else {
-                f_nzero = false;
-                r_check = NULL_BL_T_LINEBR;
-                r_check2 = R_FLOWZERO1;
-                r_check3 = NULL_BL_T_LINEBR;
-            }
-            while (Peek() != '#') {
-                int length = 0;
-                for (int i = 0; ; i++) {
-                    Ensure(i + 2, false);
-                    if (r_check(_buffer[_pointer + i]) || (r_check2(_buffer[_pointer + i]) && r_check3(_buffer[_pointer + i + 1]))) {
-                        length = i;
-                        char ch = Peek(length);
-                        if (!(f_nzero && ch == ':' && !S4(Peek(length + 1)))) {
-                            break;
-                        }
-                    }
-                }
 
+            while (Peek() != '#') {
+                int length = FindEndOfPlain();
                 if (length == 0) {
                     break;
                 }
                 _allowSimpleKey = false;
                 chunks.Append(spaces);
-                Ensure(length, false);
                 chunks.Append(_buffer, _pointer, length);
                 Forward(length);
                 spaces = ScanPlainSpaces(ind);
@@ -588,7 +616,79 @@ namespace IronRuby.StandardLibrary.Yaml {
                     break;
                 }
             }
-            return new ScalarToken(chunks.ToString(), true);
+            return new ScalarToken(chunks.ToString(), ScalarQuotingStyle.None);
+        }
+
+        private int FindEndOfPlain() {
+            int i = 0;
+            while (true) {
+                switch (Peek(i)) {
+                    case '\t':
+                    case '\0':
+                    case ' ':
+                    case '\n':
+                        return i;
+
+                    case '\r':
+                        if (Peek(i + 1) == '\n') {
+                            return i;
+                        }
+                        break;
+
+                    case '[':
+                    case ']':
+                    case '{':
+                    case '}':
+                    case '?':
+                        if (FlowLevel != 0) {
+                            return i;
+                        }
+                        break;
+
+                    case ',':
+                        if (FlowLevel != 0) {
+                            switch (Peek(i + 1)) {
+                                case '\0':
+                                case ' ':
+                                case '\n':
+                                    return i;
+
+                                case '\r':
+                                    if (Peek(i + 2) == '\n') {
+                                        return i;
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
+
+                    case ':':
+                        switch (Peek(i + 1)) {
+                            case '\0':
+                            case ' ':
+                            case '\n':
+                                return i;
+
+                            case '\r':
+                                if (Peek(i + 2) == '\n') {
+                                    return i;
+                                }
+                                break;
+
+                            case '[':
+                            case ']':
+                            case '{':
+                            case '}':
+                                if (FlowLevel != 0) {
+                                    return i;
+                                }
+                                break;
+                        }
+                        break;
+                }
+
+                i++;
+            }
         }
 
         private int NextPossibleSimpleKey() {
@@ -602,34 +702,45 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private string ScanPlainSpaces(int indent) {
             StringBuilder chunks = new StringBuilder();
+            
             int length = 0;
-            while (Peek(length) == ' ') {
+            char c;
+            while ((c = Peek(length)) == ' ' || c == '\t') {
                 length++;
             }
+
             char[] whitespaces = new char[length];
             for (int i = 0; i < length; i++) {
-                whitespaces[i] = ' ';
+                whitespaces[i] = _buffer[_pointer + i];
             }
             Forward(length);
-            char ch = Peek();
-            if (FULL_LINEBR(ch)) {
-                string lineBreak = ScanLineBreak();
+
+            string lineBreak = ScanLineBreak();
+            if (lineBreak.Length > 0) {
                 _allowSimpleKey = true;
-                if (IsEndOrStart()) {
+                if (IsEnding() || IsStart()) {
                     return "";
                 }
+
                 StringBuilder breaks = new StringBuilder();
-                while (BLANK_OR_LINEBR(Peek())) {
-                    if (' ' == Peek()) {
+                while (true) {
+                    c = Peek();
+                    if (c == ' ' || c == '\t') {
                         Forward();
                     } else {
-                        breaks.Append(ScanLineBreak());
-                        if (IsEndOrStart()) {
+                        var br = ScanLineBreak();
+                        if (br.Length == 0) {
+                            break;
+                        }
+
+                        breaks.Append(br);
+                        if (IsEnding() || IsStart()) {
                             return "";
                         }
                     }
                 }
-                if (!(lineBreak.Length == 1 && lineBreak[0] == '\n')) {
+
+                if (lineBreak.Length != 1 || lineBreak[0] != '\n') {
                     chunks.Append(lineBreak);
                 } else if (breaks.Length == 0) {
                     chunks.Append(" ");
@@ -642,33 +753,32 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private Token FetchSingle() {
-            return FetchFlowScalar('\'');
+            return FetchFlowScalar(ScalarQuotingStyle.Single);
         }
 
         private Token FetchDouble() {
-            return FetchFlowScalar('"');
+            return FetchFlowScalar(ScalarQuotingStyle.Double);
         }
 
-        private Token FetchFlowScalar(char style) {
+        private Token FetchFlowScalar(ScalarQuotingStyle style) {
             _docStart = false;
             SavePossibleSimpleKey();
             _allowSimpleKey = false;
             return AddToken(ScanFlowScalar(style));
         }
 
-        private Token ScanFlowScalar(char style) {
-            bool dbl = style == '"';
+        private Token ScanFlowScalar(ScalarQuotingStyle style) {
             StringBuilder chunks = new StringBuilder();
 
             char quote = Peek();
             Forward();
-            ScanFlowScalarNonSpaces(chunks, dbl);
+            ScanFlowScalarNonSpaces(chunks, style == ScalarQuotingStyle.Double);
             while (Peek() != quote) {
                 ScanFlowScalarSpaces(chunks);
-                ScanFlowScalarNonSpaces(chunks, dbl);
+                ScanFlowScalarNonSpaces(chunks, style == ScalarQuotingStyle.Double);
             }
             Forward();
-            return new ScalarToken(chunks.ToString(), false, style);
+            return new ScalarToken(chunks.ToString(), style);
         }
 
         private char ParseHexChar(int length) {
@@ -679,8 +789,12 @@ namespace IronRuby.StandardLibrary.Yaml {
             char c;
             try {
                 c = (char)uint.Parse(str, NumberStyles.HexNumber);
-            } catch (Exception e) {
-                throw new ScannerException("while scanning a double-quoted scalar: expected escape sequence of " + length + " hexadecimal numbers, but found something else: " + str, e);
+            } catch (Exception) {
+                c = ' ';
+                ReportError(
+                    "while scanning a double-quoted scalar: expected escape sequence of {0} hexadecimal numbers, but found `{1}'",
+                    length, str
+                );
             }
 
             Forward(length);
@@ -738,7 +852,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             Forward(length);
             char ch = Peek();
             if (ch == '\0') {
-                throw new ScannerException("while scanning a quoted scalar: found unexpected end of stream");
+                ReportError("while scanning a quoted scalar: found unexpected end of stream");
             } else if (FULL_LINEBR(ch)) {
                 string lineBreak = ScanLineBreak();
                 string breaks = ScanFlowScalarBreaks();
@@ -757,8 +871,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             StringBuilder chunks = new StringBuilder();
             bool colz = true;
             for (; ; ) {
-                if (colz && IsEndOrStart()) {
-                    throw new ScannerException("while scanning a quoted scalar: found unexpected document separator");
+                if (colz && (IsEnding() || IsStart())) {
+                    ReportError("while scanning a quoted scalar: found unexpected document separator");
                 }
                 while (BLANK_T(Peek())) {
                     Forward();
@@ -781,7 +895,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             SimpleKey key;
             if (!_possibleSimpleKeys.TryGetValue(FlowLevel, out key)) {
                 if (FlowLevel == 0 && !_allowSimpleKey) {
-                    throw new ScannerException("mapping values are not allowed here");
+                    ReportError("mapping values are not allowed here");
                 }
                 _allowSimpleKey = FlowLevel == 0;
                 RemovePossibleSimpleKey();
@@ -836,28 +950,29 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private Token FetchLiteral() {
-            return FetchBlockScalar('|');
+            return FetchBlockScalar(ScalarQuotingStyle.Literal);
         }
 
         private Token FetchFolded() {
-            return FetchBlockScalar('>');
+            return FetchBlockScalar(ScalarQuotingStyle.Folded);
         }
 
-        private Token FetchBlockScalar(char style) {
+        private Token FetchBlockScalar(ScalarQuotingStyle style) {
             _docStart = false;
             _allowSimpleKey = true;
             RemovePossibleSimpleKey();
             return AddToken(ScanBlockScalar(style));
         }
 
-        private Token ScanBlockScalar(char style) {
-            bool folded = style == '>';
+        private Token ScanBlockScalar(ScalarQuotingStyle style) {
+            bool folded = style == ScalarQuotingStyle.Folded;
             StringBuilder chunks = new StringBuilder();
-            Forward();
 
             bool? chomping;
             int increment;
-            ScanBlockScalarIndicators(out chomping, out increment);
+            if (!ScanBlockScalarIndicators(out chomping, out increment)) {
+                return ScanPlain();
+            }
 
             bool sameLine = ScanBlockScalarIgnoredLine();
 
@@ -925,7 +1040,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 chunks.Append(breaks);
             }
 
-            return new ScalarToken(chunks.ToString(), false, style);
+            return new ScalarToken(chunks.ToString(), style);
         }
 
         private string ScanBlockScalarBreaks(int indent) {
@@ -958,37 +1073,42 @@ namespace IronRuby.StandardLibrary.Yaml {
             breaks = chunks.ToString();
         }
 
-        private void ScanBlockScalarIndicators(out bool? chomping, out int increment) {
+        private bool ScanBlockScalarIndicators(out bool? chomping, out int increment) {
             chomping = null;
             increment = -1;
 
-            char ch = Peek();
-            if (ch == '-' || ch == '+') {
-                chomping = ch == '+' ? true : false;
-                Forward();
-                ch = Peek();
-                if (char.IsDigit(ch)) {
-                    increment = ch - '0';
+            int i = 1;
+            char c = Peek(i);
+            if (c == '-' || c == '+') {
+                chomping = c == '+';
+                i++;
+                c = Peek(i);
+                if (Tokenizer.IsDecimalDigit(c)) {
+                    increment = c - '0';
                     if (increment == 0) {
-                        throw new ScannerException("while scanning a block scalar: expected indentation indicator in_ the range 1-9, but found 0");
+                        ReportError("while scanning a block scalar: expected indentation indicator in_ the range 1-9, but found 0");
                     }
-                    Forward();
+                    i++;
                 }
-            } else if (char.IsDigit(ch)) {
-                increment = ch - '0';
+            } else if (Tokenizer.IsDecimalDigit(c)) {
+                increment = c - '0';
                 if (increment == 0) {
-                    throw new ScannerException("while scanning a block scalar: expected indentation indicator in_ the range 1-9, but found 0");
+                    ReportError("while scanning a block scalar: expected indentation indicator in_ the range 1-9, but found 0");
                 }
-                Forward();
-                ch = Peek();
-                if (ch == '-' || ch == '+') {
-                    chomping = ch == '+' ? true : false;
-                    Forward();
+                i++;
+                c = Peek(i);
+                if (c == '-' || c == '+') {
+                    chomping = c == '+';
+                    i++;
                 }
             }
-            if (!NULL_BL_LINEBR(Peek())) {
-                throw new ScannerException("while scanning a block scalar: expected chomping or indentation indicators, but found " + Peek() + "(" + ((int)Peek()) + ")");
+
+            if (!IsWhitespaceButTab(Peek(i))) {
+                return false;
             }
+
+            Forward(i);
+            return true;
         }
 
         private bool ScanBlockScalarIgnoredLine() {
@@ -1020,7 +1140,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         private Token FetchKey() {
             if (FlowLevel == 0) {
                 if (!_allowSimpleKey) {
-                    throw new ScannerException("mapping keys are not allowed here");
+                    ReportError("mapping keys are not allowed here");
                 }
                 if (AddIndent(_column)) {
                     _tokens.AddLast(BlockMappingStartToken.Instance);
@@ -1032,16 +1152,20 @@ namespace IronRuby.StandardLibrary.Yaml {
             return AddToken(KeyToken.Instance);
         }
 
-        private Token FetchAlias() {
+        private Token/*!*/ FetchAnchor(string/*!*/ identifier, bool isAlias) {
             SavePossibleSimpleKey();
             _allowSimpleKey = false;
-            return AddToken(new AliasToken(ScanAnchor()));
+
+            Forward(1 + identifier.Length);
+            return AddToken(isAlias ? (Token)new AliasToken(identifier) : new AnchorToken(identifier));
         }
 
-        private Token FetchAnchor() {
-            SavePossibleSimpleKey();
-            _allowSimpleKey = false;
-            return AddToken(new AnchorToken(ScanAnchor()));
+        private string/*!*/ PeekIdentifier(int offset) {
+            int start = offset;
+            while (IsIdentifier(Peek(offset))) {
+                offset++;
+            }
+            return (offset == start) ? String.Empty : new String(_buffer, _pointer + start, offset - start);
         }
 
         private Token ScanDirective() {
@@ -1065,13 +1189,13 @@ namespace IronRuby.StandardLibrary.Yaml {
             int length = 0;
             char ch = Peek(length);
             bool zlen = true;
-            while (ALPHA(ch)) {
+            while (IsIdentifier(ch)) {
                 zlen = false;
                 length++;
                 ch = Peek(length);
             }
             if (zlen) {
-                throw new ScannerException("while scanning a directive: expected alphabetic or numeric character, but found " + ch + "(" + ((int)ch) + ")");
+                ReportUnexpectedCharacter("directive", "alphabetic or numeric character", ch);
             }
             string value = null;
             try {
@@ -1080,8 +1204,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             } catch (Exception) {
             }
             Forward(length);
-            if (!NULL_BL_LINEBR(Peek())) {
-                throw new ScannerException("while scanning a directive: expected alphabetic or numeric character, but found " + ch + "(" + ((int)ch) + ")");
+            if (!IsWhitespaceButTab(Peek())) {
+                ReportUnexpectedCharacter("directive", "expected alphabetic or numeric character", ch);
             }
             return value;
         }
@@ -1097,33 +1221,9 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
             char ch = Peek();
             if (!NULL_OR_LINEBR(ch)) {
-                throw new ScannerException("while scanning a directive: expected a comment or a line break, but found " + Peek() + "(" + ((int)Peek()) + ")");
+                ReportUnexpectedCharacter("directive", "a comment or a line break", Peek());
             }
             return ScanLineBreak();
-        }
-
-        private string ScanAnchor() {
-            char indicator = Peek();
-            string name = indicator == '*' ? "alias" : "anchor";
-            Forward();
-            int length = 0;
-            while (ALPHA(Peek(length))) {
-                length++;
-            }
-            if (length == 0) {
-                throw new ScannerException("while scanning an " + name + ": expected alphabetic or numeric character, but found something else...");
-            }
-            string value = null;
-            try {
-                Ensure(length, false);
-                value = new string(_buffer, _pointer, length);
-            } catch (Exception) {
-            }
-            Forward(length);
-            if (!NON_ALPHA_OR_NUM(Peek())) {
-                throw new ScannerException("while scanning an " + name + ": expected alphabetic or numeric character, but found " + Peek() + "(" + ((int)Peek()) + ")");
-            }
-            return value;
         }
 
         private string[] ScanYamlDirectiveValue() {
@@ -1132,12 +1232,12 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
             string major = ScanYamlDirectiveNumber();
             if (Peek() != '.') {
-                throw new ScannerException("while scanning a directive: expected a digit or '.', but found " + Peek() + "(" + ((int)Peek()) + ")");
+                ReportUnexpectedCharacter("directive", "a digit or a dot", Peek());
             }
             Forward();
             string minor = ScanYamlDirectiveNumber();
-            if (!NULL_BL_LINEBR(Peek())) {
-                throw new ScannerException("while scanning a directive: expected a digit or ' ', but found " + Peek() + "(" + ((int)Peek()) + ")");
+            if (!IsWhitespaceButTab(Peek())) {
+                ReportUnexpectedCharacter("directive", "a digit or a space", Peek());
             }
             return new string[] { major, minor };
         }
@@ -1145,7 +1245,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         private string ScanYamlDirectiveNumber() {
             char ch = Peek();
             if (!char.IsDigit(ch)) {
-                throw new ScannerException("while scanning a directive: expected a digit, but found " + ch + "(" + ((int)ch) + ")");
+                ReportUnexpectedCharacter("directive", "a digit", ch);
             }
             int length = 0;
             StringBuilder sb = new StringBuilder();
@@ -1172,22 +1272,22 @@ namespace IronRuby.StandardLibrary.Yaml {
         private string ScanTagDirectiveHandle() {
             string value = ScanTagHandle("directive");
             if (Peek() != ' ') {
-                throw new ScannerException("while scanning a directive: expected ' ', but found " + Peek() + "(" + ((int)Peek()) + ")");
+                ReportUnexpectedCharacter("directive", ' ', Peek());
             }
             return value;
         }
 
         private string ScanTagDirectivePrefix() {
             string value = ScanTagUri("directive");
-            if (!NULL_BL_LINEBR(Peek())) {
-                throw new ScannerException("while scanning a directive: expected ' ', but found " + Peek() + "(" + ((int)Peek()) + ")");
+            if (!IsWhitespaceButTab(Peek())) {
+                ReportUnexpectedCharacter("directive", ' ', Peek());
             }
             return value;
         }
 
         #region character classes
 
-        private bool NULL_BL_T_LINEBR(char c) {
+        private bool IsWhitespace(char c) {
             switch (c) {
                 case '\0':
                 case ' ':
@@ -1199,7 +1299,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             return false;
         }
 
-        private bool NULL_BL_LINEBR(char c) {
+        private bool IsWhitespaceButTab(char c) {
             switch (c) {
                 case '\0':
                 case ' ':
@@ -1245,97 +1345,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             return false;
         }
 
-        private bool NON_ALPHA_OR_NUM(char c) {
-            switch (c) {
-                case '\0':
-                case ' ':
-                case '\t':
-                case '\r':
-                case '\n':
-                case '?':
-                case ':':
-                case ',':
-                case ']':
-                case '}':
-                case '%':
-                case '@':
-                case '`':
-                    return true;
-            }
-            return false;
-        }
-
-        private bool NOT_USEFUL_CHAR(char c) {
-            switch (c) {
-                case '\0':
-                case ' ':
-                case '\t':
-                case '\r':
-                case '\n':
-                case '-':
-                case '?':
-                case ':':
-                case '[':
-                case ']':
-                case '{':
-                case '#':
-                case '&':
-                case '*':
-                case '!':
-                case '|':
-                case '\'':
-                case '"':
-                case '@':
-                    return false;
-            }
-            return true;
-        }
-
-        private bool S4(char c) {
-            switch (c) {
-                case '\0':
-                case ' ':
-                case '\t':
-                case '\r':
-                case '\n':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                    return true;
-            }
-            return false;
-        }
-
-        private bool ALL_FALSE(char c) {
-            return false;
-        }
-
-        private bool R_FLOWZERO1(char c) {
-            return c == ':';
-        }
-
-        private bool R_FLOWNONZERO(char c) {
-            switch (c) {
-                case '\0':
-                case ' ':
-                case '\t':
-                case '\r':
-                case '\n':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                case ',':
-                case ':':
-                case '?':
-                    return true;
-            }
-            return false;
-        }
-
-        private bool ALPHA(char c) {
-            return char.IsLetterOrDigit(c) || c == '-' || c == '_';
+        private bool IsIdentifier(char c) {
+            return Tokenizer.IsLetterOrDigit(c) || c == '-' || c == '_';
         }
 
         private bool STRANGE_CHAR(char c) {

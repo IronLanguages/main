@@ -29,7 +29,7 @@ namespace IronRuby.Runtime {
     /// </summary>
     public static class RubyExceptions {
         public static string FormatMessage(string/*!*/ message, params object[] args) {
-            return String.Format(CultureInfo.InvariantCulture, message, args);
+            return args != null && args.Length > 0 ? String.Format(CultureInfo.InvariantCulture, message, args) : message;
         }
 
         #region TypeError (InvalidOperationException)
@@ -99,6 +99,11 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateUndefinedMethodError(RubyModule/*!*/ module, string/*!*/ methodName) {
+            // MRI doesn't display the singleton's name:
+            if (module.IsSingletonClass) {
+                module = ((RubyClass)module).GetNonSingletonClass();
+            }
+
             return CreateNameError("undefined method `{0}' for {2} `{1}'",
                 methodName, module.Name, module.IsClass ? "class" : "module");
         }

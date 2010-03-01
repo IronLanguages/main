@@ -86,6 +86,12 @@ csc <<-EOL
       return sizeof(Decimal);
     }
   }
+  namespace RegressionSpecs {
+    public class B { }
+    public class C : B { }
+    public interface I1 { int f(); }
+    public interface I2 { int g(); }
+  }
 EOL
 
 no_csc do

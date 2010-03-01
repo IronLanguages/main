@@ -68,7 +68,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
         }
 
         [RubyConstructor]
-        public static StringScanner/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ scan) {
+        public static StringScanner/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ scan, [Optional]object ignored) {
             var result = new StringScanner(self);
             result.ScanString = scan;
             result.Reset();
@@ -76,7 +76,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
         }
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static void Reinitialize(StringScanner/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ scan) {
+        public static void Reinitialize(StringScanner/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ scan, [Optional]object ignored) {
             self.ScanString = scan;
             self.Reset();
         }
@@ -475,7 +475,9 @@ namespace IronRuby.StandardLibrary.StringScanner {
                     sb.Append("...");
                 }
                 for (int i = CurrentPosition - len; i < CurrentPosition; i++) {
-                    MutableString.AppendCharRepresentation(sb, scanstr[i], -1, true, true, '"', -1);
+                    MutableString.AppendCharRepresentation(sb, scanstr[i], -1, 
+                        MutableString.Escape.Octal | MutableString.Escape.NonAscii | MutableString.Escape.Special, '"', -1
+                    );
                 }
                 sb.Append('"');
             }
@@ -489,7 +491,9 @@ namespace IronRuby.StandardLibrary.StringScanner {
                 }
                 sb.Append('"');
                 for (int i = CurrentPosition; i < CurrentPosition + len; i++) {
-                    MutableString.AppendCharRepresentation(sb, scanstr[i], -1, true, true, '"', -1);
+                    MutableString.AppendCharRepresentation(sb, scanstr[i], -1, 
+                        MutableString.Escape.Octal | MutableString.Escape.NonAscii | MutableString.Escape.Special, '"', -1
+                    );
                 }
                 if (ellipsis) {
                     sb.Append("...");

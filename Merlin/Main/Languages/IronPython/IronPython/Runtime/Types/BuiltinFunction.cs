@@ -416,13 +416,13 @@ namespace IronPython.Runtime.Types {
             // validate the result
             BindingTarget target = result.Target;
             res = result.MetaObject;
-            
-            if (target.Method != null && target.Method.IsProtected()) {
+
+            if (target.Overload != null && target.Overload.IsProtected) {
                 // report an error when calling a protected member
                 res = new DynamicMetaObject(
                     BindingHelpers.TypeErrorForProtectedMember(
-                        target.Method.DeclaringType,
-                        target.Method.Name
+                        target.Overload.DeclaringType,
+                        target.Overload.Name
                     ),
                     res.Restrictions
                 );
@@ -432,7 +432,7 @@ namespace IronPython.Runtime.Types {
                     Ast.Property(null, typeof(PythonOps), "NotImplemented"),
                     res.Restrictions
                 );
-            } else if (target.Method != null) {
+            } else if (target.Overload != null) {
                 // Add profiling information for this builtin function, if applicable
                 IPythonSite pythonSite = (call as IPythonSite);
                 if (pythonSite != null) {
@@ -441,7 +441,7 @@ namespace IronPython.Runtime.Types {
                     if (po != null && po.EnableProfiler) {
                         Profiler profiler = Profiler.GetProfiler(pc);
                         res = new DynamicMetaObject(
-                            profiler.AddProfiling(res.Expression, target.Method),
+                            profiler.AddProfiling(res.Expression, target.Overload.ReflectionInfo),
                             res.Restrictions
                         );
                     }
@@ -451,7 +451,7 @@ namespace IronPython.Runtime.Types {
             // add any warnings that are applicable for calling this function
             WarningInfo info;
 
-            if (target.Method != null && BindingWarnings.ShouldWarn(PythonContext.GetPythonContext(call), target.Method, out info)) {
+            if (target.Overload != null && BindingWarnings.ShouldWarn(PythonContext.GetPythonContext(call), target.Overload, out info)) {
                 res = info.AddWarning(codeContext, res);
             }            
 
@@ -601,12 +601,14 @@ namespace IronPython.Runtime.Types {
             BindingTarget target = result.Target;
             res = result.Function;
 
-            if (target.Method != null && target.Method.IsProtected()) {
-                MethodBase method = target.Method;
+            if (target.Overload != null && target.Overload.IsProtected) {
+                Type declaringType = target.Overload.DeclaringType;
+                string methodName = target.Overload.Name;
+                
                 // report an error when calling a protected member
                 res = delegate(object[] callArgs, out bool shouldOptimize) { 
                     shouldOptimize = false;
-                    throw PythonOps.TypeErrorForProtectedMember(method.DeclaringType, method.Name);
+                    throw PythonOps.TypeErrorForProtectedMember(declaringType, target.Overload.Name);
                 };
             } else if (result.MetaObject.Expression.NodeType == ExpressionType.Throw) {
                 if (IsBinaryOperator && args.Length == 2) {
@@ -627,7 +629,7 @@ namespace IronPython.Runtime.Types {
             // add any warnings that are applicable for calling this function
             WarningInfo info;
 
-            if (target.Method != null && BindingWarnings.ShouldWarn(PythonContext.GetPythonContext(call), target.Method, out info)) {
+            if (target.Overload != null && BindingWarnings.ShouldWarn(PythonContext.GetPythonContext(call), target.Overload, out info)) {
                 res = info.AddWarning(res);
             }
 
@@ -636,7 +638,7 @@ namespace IronPython.Runtime.Types {
             
             // The function can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
-            var returnType = result.Target.Method.GetReturnType();
+            var returnType = result.Target.Overload.ReturnType;
             if (returnType == typeof(bool)) {
                 var tmp = res;
                 res = delegate(object[] callArgs, out bool shouldOptimize) {
@@ -667,7 +669,7 @@ namespace IronPython.Runtime.Types {
             var po = pc.Options as PythonOptions;
             if (po != null && po.EnableProfiler) {
                 Profiler profiler = Profiler.GetProfiler(pc);
-                res = profiler.AddProfiling(res, target.Method);
+                res = profiler.AddProfiling(res, target.Overload.ReflectionInfo);
             }
             return new KeyValuePair<OptimizingCallDelegate, Type[]>(res, typeRestrictions);
         }

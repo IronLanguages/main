@@ -700,12 +700,12 @@ namespace IronRuby.Tests {
             t.Expect();
         }
 
-        public void Symbols1() {
+        public void ParsingSymbols1() {
             AssertTokens(":''", Tokens.SymbolBegin, Tokens.StringEnd, Tokens.EndOfFile);
             AssertTokens(":do", Tokens.SymbolBegin, Tokens.Do, Tokens.EndOfFile);
             AssertTokens("foo :do", Tokens.Identifier, Tokens.SymbolBegin, Tokens.BlockDo, Tokens.EndOfFile);
         }
-
+    
         private void AssertTokens(string/*!*/ source, params Tokens[] expected) {
             var tokens = new List<Tokens>();
             var parser = new Parser() {

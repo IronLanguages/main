@@ -321,9 +321,6 @@ namespace IronPython.Modules {
         /// stay alive if memory in the resulting address is to be used later.
         /// </summary>
         public static object addressof(CData data) {
-            if (data is _CFuncPtr) {
-                return ((_CFuncPtr)data).addr.ToPython();
-            }
             return data._memHolder.UnsafeAddress.ToPython();
         }
 

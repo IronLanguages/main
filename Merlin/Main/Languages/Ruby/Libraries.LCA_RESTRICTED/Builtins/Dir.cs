@@ -406,6 +406,10 @@ namespace IronRuby.Builtins {
                     break;
             }
 
+            if (ex is UnauthorizedAccessException) {
+                return Errno.CreateEACCES(path, ex);
+            }
+
             // throw anyway
             return RubyExceptions.CreateSystemCallError("unknown scenario - {0}, {1}, {2}", exceptionType, path, op);
         }

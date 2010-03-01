@@ -68,7 +68,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
-        public static Hash/*!*/ CreateSubclass(RubyClass/*!*/ self, [NotNull]params object[]/*!*/ items) {
+        public static Hash/*!*/ CreateSubclass(RubyClass/*!*/ self, params object[]/*!*/ items) {
             Debug.Assert(items.Length > 0);
             if (items.Length % 2 != 0) {
                 throw RubyExceptions.CreateArgumentError("odd number of arguments for Hash");

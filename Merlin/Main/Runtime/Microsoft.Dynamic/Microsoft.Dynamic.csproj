@@ -173,6 +173,7 @@
     <Compile Include="Actions\Calls\MethodCandidate.cs" />
     <Compile Include="Actions\Calls\NarrowingLevel.cs" />
     <Compile Include="Actions\Calls\OutArgBuilder.cs" />
+    <Compile Include="Actions\Calls\OverloadInfo.cs" />
     <Compile Include="Actions\Calls\OverloadResolver.cs" />
     <Compile Include="Actions\Calls\OverloadResolverFactory.cs" />
     <Compile Include="Actions\Calls\ParameterMapping.cs" />
@@ -439,7 +440,6 @@
     <Compile Include="Ast\IfStatementTest.cs" />
     <Compile Include="Generation\CompilerHelpers.cs" />
     <Compile Include="Generation\IExpressionSerializable.cs" />
-    <Compile Include="Generation\ParameterInfoWrapper.cs" />
     <Compile Include="Generation\ToDiskRewriter.cs" />
     <Compile Include="Runtime\AssemblyTypeNames.cs" />
     <Compile Include="Runtime\BaseSymbolDictionary.cs" />
@@ -487,9 +487,12 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
     <Reference Include="System" />
+    <Reference Include="System.Xml" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Numerics" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
     <Reference Include="System.Core" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Remoting" />
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
@@ -503,6 +506,10 @@
     <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Numerics.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -519,10 +526,6 @@
       <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
       <Name>Microsoft.Scripting</Name>
     </ProjectReference>
-    <Reference Include="System.Data" />
-    <Reference Include="System.Runtime.Remoting" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="System.Numerics" Condition="'$(TargetFrameworkVersion)' == 'v4.0'" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.Scripting.txt" />

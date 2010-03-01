@@ -27,9 +27,6 @@ namespace IronRuby.Runtime {
     /// </summary>
     public sealed class BinaryEncoding : Encoding {
         public static readonly Encoding/*!*/ Instance = new BinaryEncoding();
-        
-        // TODO: remove
-        public static readonly Encoding/*!*/ Obsolete = Instance;
 
 #if !SILVERLIGHT
         private BinaryEncoding()

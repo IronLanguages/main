@@ -182,6 +182,42 @@ namespace Microsoft.Scripting.Hosting {
         public ObjectHandle ExecuteAndWrap(string expression) {
             return new ObjectHandle((object)Execute(expression));
         }
+
+        /// <summary>
+        /// Executes the expression in the specified scope and return a result.
+        /// Returns an ObjectHandle wrapping the resulting value of running the code.  
+        /// 
+        /// If an exception is thrown the exception is caught and an ObjectHandle to
+        /// the exception is provided.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        public ObjectHandle ExecuteAndWrap(string expression, ScriptScope scope, out ObjectHandle exception) {
+            exception = null;
+            try {
+                return new ObjectHandle((object)Execute(expression, scope));
+            } catch (Exception e) {
+                exception = new ObjectHandle(e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Executes the code in an empty scope.
+        /// Returns an ObjectHandle wrapping the resulting value of running the code.  
+        /// 
+        /// If an exception is thrown the exception is caught and an ObjectHandle to
+        /// the exception is provided.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        public ObjectHandle ExecuteAndWrap(string expression, out ObjectHandle exception) {
+            exception = null;
+            try {
+                return new ObjectHandle((object)Execute(expression));
+            } catch (Exception e) {
+                exception = new ObjectHandle(e);
+                return null;
+            }
+        }
 #endif
         
         #endregion
@@ -675,15 +711,25 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// It provides a point of extensibility for a language implementation 
         /// to offer more functionality than the standard engine members discussed here.
+        /// 
+        /// Commonly available services include:
+        ///     TokenCategorizer
+        ///         Provides standardized tokenization of source code
+        ///     ExceptionOperations
+        ///         Provides formatting of exception objects.
+        ///     DocumentationProvidera
+        ///         Provides documentation for live object.
         /// </summary>
         public TService GetService<TService>(params object[] args) where TService : class {
             if (typeof(TService) == typeof(TokenCategorizer)) {
                 TokenizerService service = _language.GetService<TokenizerService>(ArrayUtils.Insert((object)_language, args));
                 return (service != null) ? (TService)(object)new TokenCategorizer(service) : null;
-            }
-            if (typeof(TService) == typeof(ExceptionOperations)) {
+            } else if (typeof(TService) == typeof(ExceptionOperations)) {
                 ExceptionOperations service = _language.GetService<ExceptionOperations>();
                 return (service != null) ? (TService)(object)service : (TService)(object)new ExceptionOperations(_language);
+            } else if (typeof(TService) == typeof(DocumentationOperations)) {
+                DocumentationProvider service = _language.GetService<DocumentationProvider>(args);
+                return (service != null) ? (TService)(object)new DocumentationOperations(service) : null;
             }
             return _language.GetService<TService>(args);
         }

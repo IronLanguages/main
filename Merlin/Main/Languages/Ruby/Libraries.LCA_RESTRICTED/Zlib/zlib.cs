@@ -107,6 +107,25 @@ namespace IronRuby.StandardLibrary.Zlib {
      
         #endregion
 
+#if !SILVERLIGHT
+        [RubyMethod("crc32", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static int GetCrc(RubyModule/*!*/ self) {
+            return 0;
+        }
+
+        [RubyMethod("crc32", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static object GetCrc(RubyModule/*!*/ self, [Optional, DefaultProtocol]MutableString str, [Optional]int initialCrc) {
+            byte[] bytes;
+            if (str == null) {
+                bytes = new byte[0];
+            } else {
+                bytes = str.ToByteArray();
+            }
+            uint result = Deflate.ZDeflateStream.UpdateCrc(unchecked((uint)initialCrc), bytes, 0, bytes.Length);
+            return Protocols.Normalize(result);
+        }
+#endif
+
         #region ZStream class
 
         [RubyClass("ZStream")]
@@ -930,11 +949,10 @@ namespace IronRuby.StandardLibrary.Zlib {
 #if !SILVERLIGHT
         [RubyClass("Deflate", BuildConfig="!SILVERLIGHT")]
         public class Deflate : ZStream {
-
             /// <summary>
             /// Adds a 2 byte header, and a 4 byte adler checksum footer.
             /// </summary>
-            class ZDeflateStream : DeflateStream {
+            internal class ZDeflateStream : DeflateStream {
                 private long _size;
                 private uint _crc;
                 private bool _leaveOpen;
@@ -976,7 +994,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 }
 
                 // See RFC1950 for details. http://www.faqs.org/rfcs/rfc1950.html
-                private static uint UpdateCrc(uint crc, byte[] buffer, int offset, int length) {
+                internal static uint UpdateCrc(uint crc, byte[] buffer, int offset, int length) {
                     crc ^= 0xffffffffU;
                     while (--length >= 0) {
                         crc = crcTable[(crc ^ buffer[offset++]) & 0xFF] ^ (crc >> 8);
@@ -1041,7 +1059,24 @@ namespace IronRuby.StandardLibrary.Zlib {
                 };
             }
 
-            public Deflate() {
+            public Deflate()
+                : this(-1, -1, -1, -1) {
+            }
+
+            public Deflate(int level)
+                : this(level, -1, -1, -1) {
+            }
+
+            public Deflate(int level, int windowBits)
+                : this(level, windowBits, -1, -1) {
+            }
+
+            public Deflate(int level, int windowBits, int memlevel)
+                : this(level, windowBits, memlevel, -1) {
+            }
+
+            public Deflate(int level, int windowBits, int memlevel, int strategy) {
+                // TODO: use parameters
             }
 
             [RubyMethod("deflate")]

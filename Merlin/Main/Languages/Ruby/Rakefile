@@ -28,10 +28,3 @@ verbose(false) # default to non-verbose output
 IRONRUBY_COMPILER     = 'ir.exe'
 CS_COMPILER           = mono? ? 'gmcs' : 'csc'
 EXCLUDED_DIRECTORIES  = ['obj', '.', '..']
-
-
-import File.dirname(__FILE__) + '/rake/test.rake'
-import File.dirname(__FILE__) + '/rake/compile.rake'
-import File.dirname(__FILE__) + '/rake/package.rake'
-import File.dirname(__FILE__) + '/rake/misc.rake'
-import File.dirname(__FILE__) + '/rake/git.rake'

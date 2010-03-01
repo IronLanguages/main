@@ -100,9 +100,11 @@ namespace Microsoft.Scripting.Actions {
             //  implicit inst.  T.m(a,b)    Ast.Call(null, [a, b])    Ast.Call(a, [b])   Ast.Call(null, [a, b])   
             //  none            a.m(b)      Ast.Call(null, [b])       Ast.Call(a, [b])   Ast.Call(null, [a, b])
 
-            if (!CompilerHelpers.IsStatic(mapping.Method)) {
-                var type = mapping.Method.DeclaringType;
-                mapping.AddParameter(new ParameterWrapper(null, type, null, true, false, false, _callType == CallTypes.ImplicitInstance));
+            if (!mapping.Overload.IsStatic) {
+                var type = mapping.Overload.DeclaringType;
+                var flags = ParameterBindingFlags.ProhibitNull | (_callType == CallTypes.ImplicitInstance ? ParameterBindingFlags.IsHidden : 0);
+
+                mapping.AddParameter(new ParameterWrapper(null, type, null, flags));
                 mapping.AddInstanceBuilder(new InstanceBuilder(mapping.ArgIndex));
             }
 
@@ -115,9 +117,9 @@ namespace Microsoft.Scripting.Actions {
                 return result;
             }
 
-            if (CompilerHelpers.IsStatic(one.Method.Method) && !CompilerHelpers.IsStatic(two.Method.Method)) {
+            if (one.Method.Overload.IsStatic && !two.Method.Overload.IsStatic) {
                 return _callType == CallTypes.ImplicitInstance ? Candidate.Two : Candidate.One;
-            } else if (!CompilerHelpers.IsStatic(one.Method.Method) && CompilerHelpers.IsStatic(two.Method.Method)) {
+            } else if (!one.Method.Overload.IsStatic && two.Method.Overload.IsStatic) {
                 return _callType == CallTypes.ImplicitInstance ? Candidate.One : Candidate.Two;
             }
 

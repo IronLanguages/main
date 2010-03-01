@@ -39,22 +39,22 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, SymbolId firstAttibuteName,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
+        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, [NotNull]RubySymbol/*!*/ firstAttibuteName,
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
-            return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertSymbolIdToSymbol(firstAttibuteName), attributeNames);
+            return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertSymbolToClrString(firstAttibuteName), attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, [NotNull]string/*!*/ firstAttibuteName,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             return CreateAnonymousWithFirstAttribute(block, self, firstAttibuteName, attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static object NewStruct(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol]MutableString className,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
+            [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             if (className == null) {
                 return Create(block, self, null, attributeNames);
@@ -87,7 +87,7 @@ namespace IronRuby.Builtins {
 
         // Reinitialization. Called only from derived struct's initializer.
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static void Reinitialize(RubyStruct/*!*/ self, [NotNull]params object[]/*!*/ items) {
+        public static void Reinitialize(RubyStruct/*!*/ self, params object[]/*!*/ items) {
             self.SetValues(items);
         }
 
@@ -120,12 +120,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]")]
-        public static object GetValue(RubyStruct/*!*/ self, SymbolId name) {
-            return self[SymbolTable.IdToString(name)];
+        public static object GetValue(RubyStruct/*!*/ self, [NotNull]RubySymbol/*!*/ name) {
+            return self[name.ToString()];
         }
 
         [RubyMethod("[]")]
-        public static object GetValue(RubyStruct/*!*/ self, MutableString/*!*/ name) {
+        public static object GetValue(RubyStruct/*!*/ self, [NotNull]MutableString/*!*/ name) {
             return self[name.ConvertToString()];
         }
 
@@ -140,12 +140,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static object SetValue(RubyStruct/*!*/ self, SymbolId name, object value) {
-            return self[SymbolTable.IdToString(name)] = value;
+        public static object SetValue(RubyStruct/*!*/ self, [NotNull]RubySymbol/*!*/ name, object value) {
+            return self[name.ToString()] = value;
         }
 
         [RubyMethod("[]=")]
-        public static object SetValue(RubyStruct/*!*/ self, MutableString/*!*/ name, object value) {
+        public static object SetValue(RubyStruct/*!*/ self, [NotNull]MutableString/*!*/ name, object value) {
             return self[name.ConvertToString()] = value;
         }
 
@@ -176,9 +176,10 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.NoBlockGiven();
             }
 
+            var context = self.ImmediateClass.Context;
             foreach (KeyValuePair<string, object> entry in self.GetItems()) {
                 object result;
-                if (block.Yield(SymbolTable.StringToId(entry.Key), entry.Value, out result)) {
+                if (block.Yield(context.EncodeIdentifier(entry.Key), entry.Value, out result)) {
                     return result;
                 }
             }
@@ -264,7 +265,7 @@ namespace IronRuby.Builtins {
 
         // equivalent to Array#values_at over the data array
         [RubyMethod("values_at")]
-        public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ fixnumCast, RubyStruct/*!*/ self, [NotNull]params object[] values) {
+        public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ fixnumCast, RubyStruct/*!*/ self, params object[]/*!*/ values) {
             RubyArray result = new RubyArray();
             object[] data = self.Values;
 

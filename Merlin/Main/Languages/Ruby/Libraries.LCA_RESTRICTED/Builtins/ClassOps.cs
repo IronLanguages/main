@@ -13,12 +13,11 @@
  *
  * ***************************************************************************/
 
-using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using System.Reflection;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
 
@@ -70,7 +69,15 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("superclass")]
         public static RubyClass GetSuperclass(RubyClass/*!*/ self) {
-            return self.SuperClass;
+            if (self.IsSingletonClass) {
+                RubyClass result = self.ImmediateClass;
+                Debug.Assert(result.IsSingletonClass);
+
+                // do not return dummy singletons, also do not create a new singleton (MRI does):
+                return result.IsDummySingletonClass ? self : result;
+            } else {
+                return self.SuperClass;
+            }
         }
 
         [RubyMethod("clr_new")]

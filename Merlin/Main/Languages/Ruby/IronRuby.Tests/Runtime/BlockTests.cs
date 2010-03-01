@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
 
@@ -232,7 +233,7 @@ bar
         /// <summary>
         /// Retry in a block.
         /// </summary>
-        public void RubyBlocks10() {
+        public void RubyBlocks10A() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 0
@@ -248,6 +249,17 @@ i = 0
 0
 1
 2
+");
+        }
+
+        /// <summary>
+        /// Retry in a block called via Proc#call.
+        /// </summary>
+        public void RubyBlocks10B() {
+            TestOutput(@"
+proc { retry rescue puts 'not caught here' }.call rescue p $!    # TODO: bug (should not be caught by the inner rescue
+", @"
+not caught here
 ");
         }
 
@@ -312,9 +324,8 @@ foo { |a,b| puts a,b }
         /// <summary>
         /// Nested yielding.
         /// </summary>
-        public void RubyBlocks14() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void RubyBlocks14A() {
+            TestOutputWithEval(@"
 def bar
   yield
   yield  # shouldn't be called
@@ -323,14 +334,58 @@ end
 def foo
   bar {
     print 'x'
-	yield
+    #<yield#>
   } 
 end
 
-foo { 
-  break 
-}");
-            }, @"x");
+foo { break }
+", @"
+x
+");
+        }
+
+        /// <summary>
+        /// Covers RubyOps.YieldBlockBreak.
+        /// </summary>
+        public void RubyBlocks14B() {
+            TestOutput(@"
+def proc_conv(&b)
+  1.times { puts 'yielding'; yield }
+end
+
+def foo
+  proc_conv { puts 'breaking'; break }
+end
+
+foo
+", @"
+yielding
+breaking
+");
+        }
+
+        /// <summary>
+        /// Covers RubyOps.YieldBlockBreak error path.
+        /// </summary>
+        public void RubyBlocks14C() {
+            TestOutputWithEval(@"
+def proc_conv(&b)
+  $x = b
+end
+
+def y
+  1.times { #<yield#> rescue p $! }   # proc-converter is not active any more, hence error
+end
+
+def foo
+  proc_conv { break }
+  y(&$x)
+end
+
+foo
+", @"
+#<LocalJumpError: break from proc-closure>
+");
         }
 
         /// <summary>
@@ -405,12 +460,11 @@ puts x
         /// Retry is propagated to the 'each' call.
         /// </summary>
         public void RubyBlocks17() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutputWithEval(@"
 def foo
     for i in [1, 2, 3]
         puts ""i = #{i}""
-        x = yield
+        x = #<yield#>
     end 
     puts x
 end 
@@ -425,8 +479,8 @@ def bar
     end 
 end 
 
-bar");
-            }, @"
+bar
+", @"
 i = 1
 0
 i = 1
@@ -456,6 +510,209 @@ C.new.foo
 ", @"
 C
 ");
+        }
+
+        /// <summary>
+        /// Block return propagates thru a single library method with a block without throwing unwinding exception.
+        /// </summary>
+        public void BlockReturnOptimization1() {
+            StackUnwinder.InstanceCount = 0;
+            TestOutput(@"
+def foo
+  10.times do
+    return 123
+  end
+end
+
+puts foo
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 0);
+
+            StackUnwinder.InstanceCount = 0;
+            TestOutput(@"
+def foo
+  x = proc do
+    return 123
+  end  
+  eval('10.times(&x)')
+end
+
+puts foo
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 1);
+        }
+
+        /// <summary>
+        /// Block return propagates thru multiple library method calls with a block without throwing unwinding exception.
+        /// </summary>
+        public void BlockReturnOptimization2() {
+            StackUnwinder.InstanceCount = 0;
+            TestOutput(@"
+def foo
+  10.times do
+    10.times do
+      10.times do
+        return 123
+      end
+    end
+  end
+end
+
+puts foo
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 0);
+        }
+
+        /// <summary>
+        /// Block return propagates thru user method calls with a block without throwing unwinding exception.
+        /// </summary>
+        public void BlockReturnOptimization3() {
+            StackUnwinder.InstanceCount = 0;
+            TestOutput(@"
+def f0
+  $b = proc { return 123 }
+  f1 {}
+end
+
+def f1
+  f2 {} 
+end
+
+def f2 
+  f3(&$b)
+end
+
+def f3
+  yield
+end
+
+puts f0
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 0);
+        }
+
+        /// <summary>
+        /// An unwinding exception is thrown if any frame is called w/o a block.
+        /// </summary>
+        public void BlockReturnOptimization4() {
+            StackUnwinder.InstanceCount = 0;
+            TestOutput(@"
+def f0
+  $b = proc { return 123 }
+  f1
+end
+
+def f1
+  f2 {} 
+end
+
+def f2 
+  f3(&$b)
+end
+
+def f3
+  yield
+end
+
+puts f0
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 1);
+        }
+
+        /// <summary>
+        /// Return propagates thru proc/lambda calls.
+        /// </summary>
+        public void BlockReturnOptimization5() {
+            StackUnwinder.InstanceCount = 0;
+            TestOutput(@"
+def foo
+  l = lambda do
+    yield 
+  end
+  l.call
+  puts 'un'
+end
+
+def bar
+  foo { return 123 }
+end
+
+p bar
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 1);
+        }
+
+        /// <summary>
+        /// Return propagates thru proc/lambda calls.
+        /// </summary>
+        public void BlockReturnOptimization6() {
+            StackUnwinder.InstanceCount = 0;
+            TestOutput(@"
+def make_block(&b); b; end
+
+def foo
+  b = make_block { return 123 }
+  l = lambda { b.call }
+  l.call
+
+  'unreachable'
+end
+
+puts foo
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 1);
+        }
+
+        /// <summary>
+        /// Return propagates thru yield in a block.
+        /// </summary>
+        public void BlockReturnOptimization7() {
+            StackUnwinder.InstanceCount = 0;
+            TestOutput(@"
+def f1
+  f2 { return 123 } 
+  puts 'unreachable'
+end
+
+def f2
+  1.times { yield }
+end
+
+p f1
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 0);
+
+            TestOutput(@"
+def f1
+  f2 { return 123 } 
+  puts 'unreachable'
+end
+
+def f2
+  1.times { eval('yield') }
+end
+
+p f1
+", @"
+123
+");
+            Assert(StackUnwinder.InstanceCount == 1);
         }
 
         public void Scenario_RubyBlockArgs1() {
@@ -1110,8 +1367,7 @@ p $x.object_id == y.object_id
         }
 
         public void ProcNew2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class P < Proc
 end
 
@@ -1123,10 +1379,74 @@ y = lambda { puts 'foo' }
 foo(&y)
 p $x.object_id == y.object_id
 p $x.class
-");
-            }, @"
+", @"
 false
 P
+");
+        }
+
+        public void ProcNew3() {
+            TestOutput(@"
+$x = 0
+
+class P < Proc
+  def initialize *args, &b
+    p args, b.class, self.class, block_given?
+    $x += 1
+    retry if $x < 2
+    123
+  end
+end
+
+def arg
+  puts 'arg'
+  []
+end
+
+def foo
+  P.new(*arg) { puts 2 }
+end
+
+foo { puts 1 }
+", @"
+arg
+[]
+Proc
+P
+true
+arg
+[]
+Proc
+P
+true
+");
+        }
+
+        public void ProcNew4() {
+            TestOutput(@"
+class P < Proc
+  def initialize *args, &b
+    p args, b.class, self.class, block_given?
+    123
+  end
+end
+
+def arg
+  puts 'arg'
+  []
+end
+
+def foo
+  P.new(*arg)
+end
+
+foo { puts 1 }
+", @"
+arg
+[]
+NilClass
+P
+false
 ");
         }
 
@@ -1409,7 +1729,21 @@ in 2nd loop
 ");
         }
 
+        /// <summary>
+        /// Break from a block called via Proc#call.
+        /// </summary>
         public void EvalBreak2() {
+            TestOutput(@"
+def f(&b)
+  b.call
+end
+p f { break 123 }
+", @"
+123
+");
+        }
+
+        public void EvalBreak3() {
             AssertOutput(() => CompilerTest(@"
 def foo
   eval('break')
@@ -1711,6 +2045,22 @@ foo
 #<LocalJumpError: unexpected return>
 "
             );
+        }
+
+        public void EvalReturn4() {
+            TestOutput(@"
+def foo
+  eval <<-END
+    10.times do
+      return 123
+    end
+  END
+end
+
+puts foo
+", @"
+123
+");
         }
 
         public void BEGIN1() {

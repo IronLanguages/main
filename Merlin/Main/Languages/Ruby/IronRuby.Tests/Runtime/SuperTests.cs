@@ -620,6 +620,73 @@ B::foo
 B::foo
 ");
         }
+
+        /// <summary>
+        /// MRI 1.8: The self object captured by Kernel#binding is the receiver of the binding call.
+        /// Thus the self used in eval might be different from the one the scope holds on.
+        /// Super call uses the scope's self object.
+        /// </summary>
+        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        public void SuperCallInEvalWithBinding18() {
+            TestOutput(@"
+module Kernel
+  public :binding
+end
+
+class A
+  def m
+    puts 'A::m'
+  end
+end
+
+class D < A
+  def m
+    puts 'D::m'
+    p self.class
+    
+    cb = C.new.binding             # binding captures C.new as self
+    eval('
+        p self.class               # self is different from RubyScope.SelfObject here
+        super                      # super picks up RubyScope.SelfObject
+    ', cb)
+  end
+end
+
+class C
+end
+
+D.new.m", @"
+D::m
+D
+C
+A::m
+");
+        }
+
+        /// <summary>
+        /// MRI 1.9: The self object captured by Kernel#binding is the one captured by the scope, not the receiver of the binding call.
+        /// </summary>
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void SuperCallInEvalWithBinding19() {
+            TestOutput(@"
+class C
+  def foo
+    123
+  end
+end
+
+b = C.new.send(:binding)
+p self
+eval('
+  p self
+  p self.foo rescue p $!
+', b)
+", @"
+main
+main
+#<NoMethodError: undefined method `foo' for main:Object>
+");
+        }
     }
 
 }

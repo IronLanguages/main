@@ -17,18 +17,17 @@
  ***** END LICENSE BLOCK *****/
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
-    public class Serializer : IDisposable {
+    public class Serializer {
         private readonly Emitter/*!*/ _emitter;
         private readonly bool _useExplicitStart;
         private readonly bool _useExplicitEnd;
-        private readonly bool _explicitTypes;
         private readonly Version _useVersion;
-        private readonly bool _useTags;
         private readonly string _anchorTemplate;
 
         private readonly Dictionary<Node, object>/*!*/ _serializedNodes = new Dictionary<Node, object>(ReferenceEqualityComparer<Node>.Instance);
@@ -36,7 +35,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         private int _lastAnchorId;
         private bool _closed;
 
-        public Serializer(Emitter/*!*/ emitter, YamlOptions opts) {
+        public Serializer(TextWriter/*!*/ writer, YamlOptions/*!*/ opts)
+            : this(new Emitter(writer, opts), opts) {
+        }
+
+        public Serializer(Emitter/*!*/ emitter, YamlOptions/*!*/ opts) {
             ContractUtils.RequiresNotNull(emitter, "emitter");
 
             _emitter = emitter;
@@ -45,10 +48,12 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (opts.UseVersion) {
                 _useVersion = opts.Version;
             }
-            _explicitTypes = opts.ExplicitTypes;
-            _useTags = opts.UseHeader;
             _anchorTemplate = opts.AnchorFormat ?? "id{0:000}";
             _emitter.Emit(StreamStartEvent.Instance);
+        }
+
+        public Emitter/*!*/ Emitter {
+            get { return _emitter; }
         }
 
         protected virtual bool IgnoreAnchor(Node node) {
@@ -58,7 +63,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             //return false;
         }
 
-        public void Dispose() {
+        public void Close() {
             if (!_closed) {
                 _emitter.Emit(StreamEndEvent.Instance);
                 _closed = true;
@@ -132,21 +137,36 @@ namespace IronRuby.StandardLibrary.Yaml {
                 MappingNode map;
 
                 if ((scalar = node as ScalarNode) != null) {
-                    string detectedTag = Resolver.Resolve(typeof(ScalarNode), scalar.Value, new bool[] { true, false });
-                    string defaultTag = Resolver.Resolve(typeof(ScalarNode), scalar.Value, new bool[] { false, true });
-                    bool[] @implicit = new bool[] { false, false };
-                    if (!_explicitTypes) {
-                        @implicit[0] = node.Tag == detectedTag || node.Tag.StartsWith(detectedTag);
-                        @implicit[1] = node.Tag == defaultTag;
+                    string tag = node.Tag;
+                    ScalarQuotingStyle style = scalar.Style;
+                    ScalarValueType type;
+                    if (tag == null) {
+                        // quote an untagged sctring scalar that might be parsed as a different scalar type if not quoted:
+                        if (style == ScalarQuotingStyle.None && ResolverScanner.Recognize(scalar.Value) != null) {
+                            style = ScalarQuotingStyle.Double;
+                        }
+                        type = ScalarValueType.String;
+                    } else if (tag == Tags.Str) {
+                        // omit the tag for strings that are not recognizable as other scalars:
+                        if (ResolverScanner.Recognize(scalar.Value) == null) {
+                            tag = null;
+                        }
+                        type = ScalarValueType.String;
+                    } else if (scalar.Value == null) {
+                        tag = null;
+                        type = ScalarValueType.Other;
+                    } else {
+                        // omit the tag for non-string scalars whose type can be recognized from their value:
+                        string detectedTag = ResolverScanner.Recognize(scalar.Value);
+                        if (detectedTag != null && tag.StartsWith(detectedTag, StringComparison.Ordinal)) {
+                            tag = null;
+                        }
+                        type = ScalarValueType.Other;
                     }
-                    _emitter.Emit(new ScalarEvent(tAlias, node.Tag, @implicit, scalar.Value, scalar.Style));
 
+                    _emitter.Emit(new ScalarEvent(tAlias, tag, type, scalar.Value, style));
                 } else if ((seq = node as SequenceNode) != null) {
-
-                    bool @implicit = !_explicitTypes &&
-                        node.Tag == Resolver.Resolve(typeof(SequenceNode), null, new bool[] { true, true });
-
-                    _emitter.Emit(new SequenceStartEvent(tAlias, node.Tag, @implicit, seq.FlowStyle));
+                    _emitter.Emit(new SequenceStartEvent(tAlias, node.Tag, seq.FlowStyle));
                     int ix = 0;
                     foreach (Node n in seq.Nodes) {
                         SerializeNode(n, node, ix++);
@@ -154,11 +174,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     _emitter.Emit(SequenceEndEvent.Instance);
 
                 } else if ((map = node as MappingNode) != null) {
-
-                    bool @implicit = !_explicitTypes &&
-                        node.Tag == Resolver.Resolve(typeof(MappingNode), null, new bool[] { true, true });
-
-                    _emitter.Emit(new MappingStartEvent(tAlias, node.Tag, @implicit, map.FlowStyle));
+                    _emitter.Emit(new MappingStartEvent(tAlias, node.Tag, map.FlowStyle));
                     foreach (KeyValuePair<Node, Node> e in map.Nodes) {
                         SerializeNode(e.Key, node, null);
                         SerializeNode(e.Value, node, e.Key);
