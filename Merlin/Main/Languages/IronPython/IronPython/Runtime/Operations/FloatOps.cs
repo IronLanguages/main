@@ -19,11 +19,17 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -54,7 +60,7 @@ namespace IronPython.Runtime.Operations {
                     return ParseFloat(ScriptingRuntimeHelpers.CharToString((char)x));
                 }
 
-                if (x is Complex64) {
+                if (x is Complex) {
                     throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
                 }
 
@@ -274,7 +280,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             // finally assemble the bits
-            long bits = finalBits.ToInt64();
+            long bits = (long)finalBits;
             bits |= (((long)finalExponent) + 1023) << 52;
             if (isNegative) {
                 bits |= unchecked((long)0x8000000000000000);
@@ -433,7 +439,7 @@ namespace IronPython.Runtime.Operations {
             } else if (double.IsNaN(d)) {
                 throw PythonOps.ValueError("cannot convert float NaN to integer");
             } else {
-                return BigInteger.Create(d);
+                return (BigInteger)d;
             }
         }
 
@@ -475,7 +481,7 @@ namespace IronPython.Runtime.Operations {
                     return d.GetHashCode();
                 }
                 // Big integer
-                BigInteger b = BigInteger.Create(d);
+                BigInteger b = (BigInteger)d;
                 return BigIntegerOps.__hash__(b);
             }
             return d.GetHashCode();
@@ -604,8 +610,10 @@ namespace IronPython.Runtime.Operations {
             // BigInts can hold doubles, but doubles can't hold BigInts, so
             // if we're comparing against a BigInt then we should convert ourself
             // to a long and then compare.
+#if CLR2
             if (object.ReferenceEquals(x, null)) return -1;
-            BigInteger by = BigInteger.Create(y);
+#endif
+            BigInteger by = (BigInteger)y;
             if (by == x) {
                 double mod = y % 1;
                 if (mod == 0) return 0;
@@ -696,7 +704,7 @@ namespace IronPython.Runtime.Operations {
             } else if (double.IsNaN(self)) {
                 throw PythonOps.ValueError("cannot convert float NaN to integer");
             } else {
-                return BigInteger.Create(self);
+                return (BigInteger)self;
             }
         }
 
@@ -1023,7 +1031,7 @@ namespace IronPython.Runtime.Operations {
             double doubleVal;
             if (Converter.TryConvertToDouble(x, out doubleVal)) return (float)doubleVal;
 
-            if (x is Complex64) throw PythonOps.TypeError("can't convert complex to Single; use abs(z)");
+            if (x is Complex) throw PythonOps.TypeError("can't convert complex to Single; use abs(z)");
 
             object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, "__float__"));
             if (d is double) return (float)(double)d;

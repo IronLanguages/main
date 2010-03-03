@@ -16,9 +16,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime.Operations {
 

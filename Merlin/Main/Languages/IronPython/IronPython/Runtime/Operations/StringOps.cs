@@ -24,9 +24,15 @@ using System.Text;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
+
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute; 
 
 namespace IronPython.Runtime.Operations {

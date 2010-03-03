@@ -16,12 +16,17 @@
 using System;
 using System.Diagnostics;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 #if !SILVERLIGHT
 
@@ -181,9 +186,9 @@ namespace IronPython.Modules {
                     BigInteger biVal = (BigInteger)value;
                     ulong bits;
                     if (IsSignedType) {
-                        bits = (ulong)biVal.ToInt64();
+                        bits = (ulong)(long)biVal;
                     } else {
-                        bits = biVal.ToUInt64();
+                        bits = (ulong)biVal;
                     }
 
                     bits = (bits >> _bitsOffset) & validBits;
@@ -193,9 +198,9 @@ namespace IronPython.Modules {
                         if ((bits & (1UL << (_bits - 1))) != 0) {
                             bits |= ulong.MaxValue ^ validBits;
                         }
-                        value = BigInteger.Create((long)bits);
+                        value = (BigInteger)(long)bits;
                     } else {
-                        value = BigInteger.Create(bits);
+                        value = (BigInteger)bits;
                     }
                 }
                 return value;
@@ -211,7 +216,7 @@ namespace IronPython.Modules {
                 if (value is int) {
                     newBits = (ulong)(int)value;
                 } else if (value is BigInteger) {
-                    newBits = (ulong)((BigInteger)value).ToInt64();
+                    newBits = (ulong)(long)(BigInteger)value;
                 } else {
                     throw PythonOps.TypeErrorForTypeMismatch("int or long", value);
                 }
@@ -223,7 +228,7 @@ namespace IronPython.Modules {
                 if (curValue is int) {
                     valueBits = (ulong)(int)curValue;
                 } else {
-                    valueBits = (ulong)((BigInteger)curValue).ToInt64();
+                    valueBits = (ulong)(long)(BigInteger)curValue;
                 }
 
                 // get a mask for the bits this field owns
@@ -238,13 +243,13 @@ namespace IronPython.Modules {
                     if (_fieldType.Size <= 4) {
                         _fieldType.SetValue(address, offset, (int)(long)valueBits);
                     } else {
-                        _fieldType.SetValue(address, offset, BigInteger.Create((long)valueBits));
+                        _fieldType.SetValue(address, offset, (BigInteger)(long)valueBits);
                     }
                 } else {
                     if (_fieldType.Size < 4) {
                         _fieldType.SetValue(address, offset, (int)valueBits);
                     } else {
-                        _fieldType.SetValue(address, offset, BigInteger.Create(valueBits));
+                        _fieldType.SetValue(address, offset, (BigInteger)valueBits);
                     }
                 }
             }

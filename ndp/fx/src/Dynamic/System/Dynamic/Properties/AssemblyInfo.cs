@@ -54,9 +54,9 @@ using System.Security;
 // by using the '*' as shown below:
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
-[assembly: AssemblyVersion("0.9.6.20")]
-[assembly: AssemblyFileVersion("1.0.0.00")]
-[assembly: AssemblyInformationalVersion("1.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.1.00")]
+[assembly: AssemblyInformationalVersion("1.0.1")]
 [assembly: AllowPartiallyTrustedCallers]
 
 #else

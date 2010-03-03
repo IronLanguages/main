@@ -22,13 +22,18 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 #if !SILVERLIGHT
 
@@ -114,7 +119,7 @@ namespace IronPython.Modules {
 
             public _Array from_address(CodeContext/*!*/ context, BigInteger ptr) {
                 _Array res = (_Array)CreateInstance(context);
-                res.SetAddress(new IntPtr(ptr.ToInt64()));
+                res.SetAddress(new IntPtr((long)ptr));
                 return res;
             }
 

@@ -801,11 +801,13 @@ namespace IronRuby.Builtins {
 
         public static bool CapitalizeMutableString(MutableString/*!*/ str) {
             bool changed = false;
-            if (str.Length > 0) {
+            if (!str.IsEmpty) {
+                int strLength = str.GetCharCount();
+
                 if (UpCaseChar(str, 0)) {
                     changed = true;
                 }
-                for (int i = 1; i < str.Length; ++i) {
+                for (int i = 1; i < strLength; ++i) {
                     if (DownCaseChar(str, i)) {
                         changed = true;
                     }
@@ -913,35 +915,40 @@ namespace IronRuby.Builtins {
             [DefaultProtocol]int length,
             [Optional, DefaultProtocol]MutableString padding) {
 
-            if (padding != null && padding.Length == 0) {
+            if (padding != null && padding.IsEmpty) {
                 throw RubyExceptions.CreateArgumentError("zero width padding");
-            }
-
-            if (self.Length >= length) {
-                return self;
             }
 
             if (padding == null) {
                 padding = _DefaultPadding;
+            } else {
+                self.RequireCompatibleEncoding(padding);
             }
+
+            int selfLength = self.GetCharCount();
+            if (selfLength >= length) {
+                return self;
+            }
+
+            int paddingLength = padding.GetCharCount();
 
             char[] charArray = new char[length];
-            int n = (length - self.Length) / 2;
+            int n = (length - selfLength) / 2;
 
             for (int i = 0; i < n; i++) {
-                charArray[i] = padding.GetChar(i % padding.Length);
+                charArray[i] = padding.GetChar(i % paddingLength);
             }
 
-            for (int i = 0; i < self.Length; i++) {
+            for (int i = 0; i < selfLength; i++) {
                 charArray[n + i] = self.GetChar(i);
             }
 
-            int m = length - self.Length - n;
+            int m = length - selfLength - n;
             for (int i = 0; i < m; i++) {
-                charArray[n + self.Length + i] = padding.GetChar(i % padding.Length);
+                charArray[n + selfLength + i] = padding.GetChar(i % paddingLength);
             }
 
-            return self.CreateInstance().Append(new String(charArray)).TaintBy(self).TaintBy(padding); 
+            return self.CreateInstance().Append(charArray).TaintBy(self).TaintBy(padding); 
         }
 
         #endregion
@@ -949,31 +956,8 @@ namespace IronRuby.Builtins {
 
         #region chomp, chomp!, chop, chop!
 
-        private static bool EndsWith(MutableString/*!*/ str, MutableString/*!*/ terminator) {
-            int offset = str.Length - terminator.Length;
-            if (offset < 0) {
-                return false;
-            }
-
-            if (str.IsBinary) {
-                for (int i = 0; i < terminator.Length; i++) {
-                    if (str.GetChar(offset + i) != terminator.GetChar(i)) {
-                        return false;
-                    }
-                }
-            } else {
-                for (int i = 0; i < terminator.Length; i++) {
-                    if (str.GetByte(offset + i) != terminator.GetByte(i)) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
         private static MutableString/*!*/ ChompTrailingCarriageReturns(MutableString/*!*/ str, bool removeCarriageReturnsToo) {
-            int end = str.Length;
+            int end = str.GetCharCount();
             while (true) {
                 if (end > 1) {
                     if (str.GetChar(end - 1) == '\n') {
@@ -1008,15 +992,16 @@ namespace IronRuby.Builtins {
 
             // Remove single trailing CR/LFs
             MutableString result = self.Clone();
-            int length = result.Length;
-            if (separator.Length == 1 && separator.GetChar(0) == '\n') {
+            int length = result.GetCharCount();
+            int separatorLength = separator.GetCharCount();
+            if (separatorLength == 1 && separator.GetChar(0) == '\n') {
                 if (length > 1 && result.GetChar(length - 2) == '\r' && result.GetChar(length - 1) == '\n') {
                     result.Remove(length - 2, 2);
                 } else if (length > 0 && (self.GetChar(length - 1) == '\n' || result.GetChar(length - 1) == '\r')) {
                     result.Remove(length - 1, 1);
                 }
-            } else if (EndsWith(result, separator)) {
-                result.Remove(length - separator.Length, separator.Length);
+            } else if (result.EndsWith(separator)) {
+                result.Remove(length - separatorLength, separatorLength);
             }
 
             return result;
@@ -1051,23 +1036,23 @@ namespace IronRuby.Builtins {
         }
 
         private static MutableString/*!*/ ChopInteral(MutableString/*!*/ self) {
-            if (self.Length == 1 || self.GetChar(self.Length - 2) != '\r' || self.GetChar(self.Length - 1) != '\n') {
-                self.Remove(self.Length - 1, 1);
+            int length = self.GetCharCount();
+            if (length == 1 || self.GetChar(length - 2) != '\r' || self.GetChar(length - 1) != '\n') {
+                self.Remove(length - 1, 1);
             } else {
-                self.Remove(self.Length - 2, 2);
+                self.Remove(length - 2, 2);
             }
             return self;
         }
 
         [RubyMethod("chop!")]
         public static MutableString ChopInPlace(MutableString/*!*/ self) {
-            if (self.Length == 0) return null;
-            return ChopInteral(self);
+            return self.IsEmpty ? null : ChopInteral(self);
         }
 
         [RubyMethod("chop")]
         public static MutableString/*!*/ Chop(MutableString/*!*/ self) {
-            return (self.Length == 0) ? self.CreateInstance().TaintBy(self) : ChopInteral(self.Clone());
+            return self.IsEmpty ? self.CreateInstance().TaintBy(self) : ChopInteral(self.Clone());
         }
 
         #endregion
@@ -1076,7 +1061,7 @@ namespace IronRuby.Builtins {
         #region dump, inspect
 
         public static string/*!*/ GetQuotedStringRepresentation(MutableString/*!*/ self, RubyContext/*!*/ context, bool isDump, char quote) {
-            bool is18 = context.RubyOptions.Compatibility == RubyCompatibility.Ruby18;
+            bool is18 = context.RubyOptions.Compatibility < RubyCompatibility.Ruby19;
             
             return self.AppendRepresentation(
                 new StringBuilder().Append(quote),
@@ -1597,13 +1582,13 @@ namespace IronRuby.Builtins {
         public static object Index(MutableString/*!*/ self, 
             [DefaultProtocol, NotNull]MutableString/*!*/ substring, [DefaultProtocol, Optional]int start) {
 
-            self.SwitchToCharacters();
+            self.PrepareForCharacterRead();
             if (!NormalizeStart(self.GetCharCount(), ref start)) {
                 return null;
             }
 
             self.RequireCompatibleEncoding(substring);
-            substring.SwitchToCharacters();
+            substring.PrepareForCharacterRead();
 
             int result = self.IndexOf(substring, start);
             return (result != -1) ? ScriptingRuntimeHelpers.Int32ToObject(result) : null;
@@ -1631,7 +1616,7 @@ namespace IronRuby.Builtins {
         public static object Index(RubyScope/*!*/ scope, MutableString/*!*/ self, 
             [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol, Optional]int start) {
 
-            MatchData match = regex.Match(scope.RubyContext.KCode, self, start);
+            MatchData match = regex.Match(scope.RubyContext.KCode, self, start, true);
             scope.GetInnerMostClosureScope().CurrentMatch = match;
             return (match != null) ? ScriptingRuntimeHelpers.Int32ToObject(match.Index) : null;
         }
@@ -1641,7 +1626,7 @@ namespace IronRuby.Builtins {
         public static object LastIndexOf(MutableString/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ substring, [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int start) {
 
-            self.SwitchToCharacters();
+            self.PrepareForCharacterRead();
             int charCount = self.GetCharCount();
 
             start = IListOps.NormalizeIndex(charCount, start);
@@ -1654,7 +1639,7 @@ namespace IronRuby.Builtins {
             }
 
             self.RequireCompatibleEncoding(substring);
-            substring.SwitchToCharacters();
+            substring.PrepareForCharacterRead();
             int subCharCount = substring.GetCharCount();
 
             // LastIndexOf has CLR semantics: no characters of the substring are matched beyond start position.
@@ -1715,6 +1700,30 @@ namespace IronRuby.Builtins {
                 return false;
             }
             return true;
+        }
+
+        [RubyMethod("start_with?")]
+        public static bool StartsWith(RubyScope/*!*/ scope, MutableString/*!*/ self,
+            [DefaultProtocol, Optional]MutableString subString) {
+
+            // TODO: Deal with encodings
+
+            if (subString == null || (self.Length < subString.Length)) {
+                return false;
+            }
+            return self.GetSlice(0, subString.Length).Equals(subString);
+        }
+
+        [RubyMethod("end_with?")]
+        public static bool EndsWith(RubyScope/*!*/ scope, MutableString/*!*/ self,
+            [DefaultProtocol, Optional]MutableString subString) {
+
+            // TODO: Deal with encodings
+
+            if (subString == null || self.Length < subString.Length) {
+                return false;
+            }
+            return self.EndsWith(subString.ConvertToString());
         }
 
         #endregion
@@ -2439,8 +2448,8 @@ namespace IronRuby.Builtins {
             // TODO: KCODE
             src.RequireCompatibleEncoding(from);
             dst.RequireCompatibleEncoding(to);
-            from.SwitchToCharacters();
-            to.SwitchToCharacters();
+            from.PrepareForCharacterRead();
+            to.PrepareForCharacterRead();
 
             CharacterMap map = CharacterMap.Create(from, to);
 

@@ -21,12 +21,18 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Modules;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime.Operations {
 
@@ -87,10 +93,10 @@ namespace IronPython.Runtime.Operations {
             if (x is int) return ReturnObject(context, cls, (BigInteger)(int)x);
             if (x is BigInteger) return ReturnObject(context, cls, x);
             
-            if (x is Complex64) throw PythonOps.TypeError("can't convert complex to long; use long(abs(z))");
+            if (x is Complex) throw PythonOps.TypeError("can't convert complex to long; use long(abs(z))");
 
             if (x is decimal) {
-                return ReturnObject(context, cls, BigInteger.Create((decimal)x));
+                return ReturnObject(context, cls, (BigInteger)(decimal)x);
             }
 
             object result;
@@ -151,7 +157,7 @@ namespace IronPython.Runtime.Operations {
             if (y is int) {
                 return Power(x, (int)y, z);
             } else if (y is long) {
-                return Power(x, BigInteger.Create((long)y), z);
+                return Power(x, (BigInteger)(long)y, z);
             } else if (y is BigInteger) {
                 return Power(x, (BigInteger)y, z);
             }
@@ -161,9 +167,9 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object Power(BigInteger x, int y, object z) {
             if (z is int) {
-                return Power(x, y, BigInteger.Create((int)z));
+                return Power(x, y, (BigInteger)(int)z);
             } else if (z is long) {
-                return Power(x, y, BigInteger.Create((long)z));
+                return Power(x, y, (BigInteger)(long)z);
             } else if (z is BigInteger) {
                 return Power(x, y, (BigInteger)z);
             } else if (z == null) {
@@ -175,9 +181,9 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object Power(BigInteger x, BigInteger y, object z) {
             if (z is int) {
-                return Power(x, y, BigInteger.Create((int)z));
+                return Power(x, y, (BigInteger)(int)z);
             } else if (z is long) {
-                return Power(x, y, BigInteger.Create((long)z));
+                return Power(x, y, (BigInteger)(long)z);
             } else if (z is BigInteger) {
                 return Power(x, y, (BigInteger)z);
             } else if (z == null) {
@@ -235,15 +241,12 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object Power([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            if (Object.ReferenceEquals(x, null)) throw PythonOps.TypeError("unsupported operands for __pow__: NoneType and long");
-            if (Object.ReferenceEquals(y, null)) throw PythonOps.TypeError("unsupported operands for __pow__: long and NoneType");
-
             int yl;
             if (y.AsInt32(out yl)) {
                 return Power(x, yl);
             } else {
                 if (x == BigInteger.Zero) {
-                    if (y.IsNegative())
+                    if (y.Sign < 0)
                         throw PythonOps.ZeroDivisionError("0.0 cannot be raised to a negative power");
                     return BigInteger.Zero;
                 } else if (x == BigInteger.One) {
@@ -258,8 +261,10 @@ namespace IronPython.Runtime.Operations {
             BigInteger rr;
             BigInteger qq;
 
+#if CLR2
             if (Object.ReferenceEquals(x, null)) throw PythonOps.TypeError("unsupported operands for div/mod: NoneType and long");
             if (Object.ReferenceEquals(y, null)) throw PythonOps.TypeError("unsupported operands for div/mod: long and NoneType");
+#endif
 
             qq = BigInteger.DivRem(x, y, out rr);
 
@@ -375,12 +380,12 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static BigInteger LeftShift([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return LeftShift(x, y.ToInt32());
+            return LeftShift(x, (int)y);
         }
 
         [SpecialName]
         public static BigInteger RightShift([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return RightShift(x, y.ToInt32());
+            return RightShift(x, (int)y);
         }
         #endregion
 
@@ -444,10 +449,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object __getnewargs__(CodeContext context, BigInteger self) {
+#if CLR2
             if (!Object.ReferenceEquals(self, null)) {
                 return PythonTuple.MakeTuple(BigIntegerOps.__new__(context, TypeCache.BigInteger, self));
             }
             throw PythonOps.TypeErrorForBadInstance("__getnewargs__ requires a 'long' object but received a '{0}'", self);
+#else
+            return PythonTuple.MakeTuple(BigIntegerOps.__new__(context, TypeCache.BigInteger, self));
+#endif
         }
 
         #endregion
@@ -499,9 +508,6 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName, ImplicitConversionMethod]
         public static double ConvertToDouble(BigInteger self) {
-            if (object.ReferenceEquals(self, null)) {
-                throw new ArgumentNullException("self");
-            }
             return self.ToFloat64();
         }
 
@@ -511,6 +517,11 @@ namespace IronPython.Runtime.Operations {
             if (self.AsInt32(out res)) return res;
 
             throw Converter.CannotConvertOverflow("int", self);
+        }
+
+        [SpecialName, ExplicitConversionMethod]
+        public static Complex ConvertToComplex(BigInteger self) {
+            return MathUtils.MakeReal(ConvertToDouble(self));
         }
 
         [SpecialName, ImplicitConversionMethod]
@@ -549,7 +560,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static int Compare(BigInteger x, Extensible<double> y) {
+        public static int Compare(BigInteger x, [NotNull]Extensible<double> y) {
             return -((int)DoubleOps.Compare(y.Value, x));
         }
 

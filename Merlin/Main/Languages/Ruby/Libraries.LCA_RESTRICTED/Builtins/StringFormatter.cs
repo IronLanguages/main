@@ -171,7 +171,7 @@ namespace IronRuby.Builtins {
             MutableString result = MutableString.Create(_buf.ToString(), _encoding);
 
             if (_tainted) {
-                KernelOps.Taint(_context, result);
+                result.IsTainted = true;
             }
 
             return result;

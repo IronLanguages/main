@@ -96,8 +96,27 @@ namespace IronRuby.Tests {
 
             s.GetByteCount();
 
+            // binary -> string:
+            s = MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.UTF8);
+            h1 = s.GetHashCode();
+            Assert(s.GetCharCount() == 1);
+            h2 = s.GetHashCode();
+            Assert(h1 == h2);
+
+            // string -> binary:
+            s = MutableString.Create("Σ", RubyEncoding.UTF8);
+            h1 = s.GetHashCode();
+
+            s.GetByteCount();
+
+#if TODO
+            // hash(binary) == hash(string):
+            s = MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.UTF8);
+            h1 = s.GetHashCode();
+            s = MutableString.Create("Σ", RubyEncoding.UTF8);
             h2 = s.GetHashCode();
             AssertEquals(h1, h2);
+#endif
 
             // same content, different capacities:
             var a = MutableString.CreateMutable(10, RubyEncoding.UTF8).Append("hello");
@@ -133,7 +152,7 @@ namespace IronRuby.Tests {
             b = MutableString.Create("α", RubyEncoding.KCodeSJIS);
             c = MutableString.CreateBinary(Encoding.UTF8.GetBytes("α"), RubyEncoding.Binary);
             Assert(a.GetHashCode() != b.GetHashCode()); // the binary content is different
-            Assert(a.GetHashCode() == c.GetHashCode()); // the binary contant is the same
+            Assert(a.GetHashCode() == c.GetHashCode()); // the binary content is the same
         }
 
         [Options(NoRuntime = true)]
@@ -553,8 +572,8 @@ namespace IronRuby.Tests {
         }
 
         private void Test_Concatenate(byte[]/*!*/ b1, RubyEncoding/*!*/ e1, byte[]/*!*/ b2, RubyEncoding/*!*/ e2, RubyEncoding/*!*/ resultEncoding) {
-            var s1 = MutableString.CreateBinary(b1, e1).SwitchToCharacters();
-            var s2 = MutableString.CreateBinary(b2, e2).SwitchToCharacters();
+            var s1 = MutableString.CreateBinary(b1, e1).PrepareForCharacterRead();
+            var s2 = MutableString.CreateBinary(b2, e2).PrepareForCharacterRead();
 
             var s = MutableStringOps.Concatenate(s1, s2);
             Assert(s.Encoding == resultEncoding);
@@ -615,7 +634,6 @@ namespace IronRuby.Tests {
             var SJIS = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageSJIS);
             var sjis = new byte[] { 0x82, 0xA0 };
             var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 }; // \u{12345} in UTF-8
-
             Test_Translate(
                 Utf8("αβγδ"), RubyEncoding.UTF8,
                 Utf8("α-γ"), RubyEncoding.UTF8, 
@@ -666,8 +684,24 @@ namespace IronRuby.Tests {
                 () => Test_Translate(Utf8("α"), RubyEncoding.UTF8, Sjis("ﾎ"), SJIS, Utf8("-"), SJIS, null, null)
             );
 
-            // TODO: KCODE
+            // correctly switches to char repr and invalidates hashcode:
+            MutableString self, from, to, result;
+            int h0, h1, h2;
 
+            self = MutableString.CreateBinary(Utf8("aAaBa"), RubyEncoding.UTF8);
+            from = MutableString.Create("a", RubyEncoding.UTF8);
+            to = MutableString.Create("α", RubyEncoding.UTF8);
+            result = MutableString.Create("αAαBα", RubyEncoding.UTF8);
+            h0 = self.GetHashCode();
+
+            MutableStringOps.Translate(self, from, to);
+
+            h1 = self.GetHashCode();
+            h2 = result.GetHashCode();
+            Assert(h1 == h2);
+            Assert(self.ToString() == "αAαBα");
+
+            // TODO: KCODE
         }
 
         private void Test_Translate(

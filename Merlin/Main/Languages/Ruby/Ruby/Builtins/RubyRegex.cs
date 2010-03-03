@@ -67,7 +67,7 @@ namespace IronRuby.Builtins {
             if (kcoding != null || pattern.Encoding.IsKCoding) {
                 _pattern = MutableString.CreateBinary(pattern.ToByteArray(), kcoding ?? RubyEncoding.Binary).Freeze();
             } else {
-                _pattern = pattern.SwitchToCharacters().Clone().Freeze();
+                _pattern = pattern.PrepareForCharacterRead().Clone().Freeze();
             }
             
             TransformPattern(kcoding, options & RubyRegexOptions.EncodingMask);
@@ -138,8 +138,8 @@ namespace IronRuby.Builtins {
                 strInput = input.ToString(BinaryEncoding.Instance);
             } else {
                 _pattern.RequireCompatibleEncoding(input);
-                input.SwitchToCharacters();
-                strInput = input.ToString();
+                input.PrepareForCharacterRead();
+                strInput = input.ConvertToString();
             }
 
             return TransformPattern(kcoding, kc);
@@ -296,7 +296,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Start is a number of bytes if kcode is given, otherwise it's a number of characters.
         /// </summary>
-        public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input, int start) {
+        public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input, int start, bool freezeInput) {
             string str;
             Regex regex = Transform(ref kcode, input, start, out str);
 
@@ -316,7 +316,7 @@ namespace IronRuby.Builtins {
                 match = regex.Match(str, start);
             }
 
-            return MatchData.Create(match, input, true, str, kcode, start);
+            return MatchData.Create(match, input, freezeInput, str, kcode, start);
         }
 
         public MatchData LastMatch(RubyEncoding kcode, MutableString/*!*/ input) {
@@ -494,8 +494,8 @@ namespace IronRuby.Builtins {
             return count;
         }
 
-        private static int SkipToUnescapedForwardSlash(MutableString/*!*/ pattern, int i) {
-            while (i < pattern.Length) {
+        private static int SkipToUnescapedForwardSlash(MutableString/*!*/ pattern, int patternLength, int i) {
+            while (i < patternLength) {
                 i = pattern.IndexOf('/', i);
                 if (i <= 0) {
                     return i;
@@ -512,18 +512,19 @@ namespace IronRuby.Builtins {
 
         private static MutableString/*!*/ AppendEscapeForwardSlash(MutableString/*!*/ result, MutableString/*!*/ pattern) {
             int first = 0;
-            int i = SkipToUnescapedForwardSlash(pattern, 0);
+            int patternLength = pattern.GetCharCount();
+            int i = SkipToUnescapedForwardSlash(pattern, patternLength, 0);
             while (i >= 0) {
-                Debug.Assert(i < pattern.Length);
+                Debug.Assert(i < patternLength);
                 Debug.Assert(pattern.GetChar(i) == '/' && (i == 0 || pattern.GetChar(i - 1) != '\\'));
 
                 result.Append(pattern, first, i - first);
                 result.Append('\\');
                 first = i; // include forward slash in the next append
-                i = SkipToUnescapedForwardSlash(pattern, i + 1);
+                i = SkipToUnescapedForwardSlash(pattern, patternLength, i + 1);
             }
 
-            result.Append(pattern, first, pattern.Length - first);
+            result.Append(pattern, first, patternLength - first);
             return result;
         }
 

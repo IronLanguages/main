@@ -626,7 +626,7 @@ B::foo
         /// Thus the self used in eval might be different from the one the scope holds on.
         /// Super call uses the scope's self object.
         /// </summary>
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void SuperCallInEvalWithBinding18() {
             TestOutput(@"
 module Kernel

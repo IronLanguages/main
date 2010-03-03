@@ -15,8 +15,11 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 using System;
@@ -32,7 +35,6 @@ using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -41,7 +43,6 @@ using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
-
 [assembly: ExtensionType(typeof(IronPythonTest.IFooable), typeof(IronPythonTest.FooableExtensions))]
 namespace IronPythonTest {
 #if !SILVERLIGHT
@@ -1180,14 +1181,14 @@ xrange = xrange
                 var dsite = CallSite<Func<CallSite, object, double>>.Create(new MyConvertBinder(typeof(double), 23.0));
                 AreEqual(dsite.Target(dsite, inst), 42.0);
 
-                var csite = CallSite<Func<CallSite, object, Complex64>>.Create(new MyConvertBinder(typeof(Complex64), new Complex64(0, 23)));
-                AreEqual(csite.Target(csite, inst), new Complex64(0, 42));
+                var csite = CallSite<Func<CallSite, object, Complex>>.Create(new MyConvertBinder(typeof(Complex), new Complex(0, 23)));
+                AreEqual(csite.Target(csite, inst), new Complex(0, 42));
 
                 var bsite = CallSite<Func<CallSite, object, bool>>.Create(new MyConvertBinder(typeof(bool), true));
                 AreEqual(bsite.Target(bsite, inst), false);
 
-                var bisite = CallSite<Func<CallSite, object, Microsoft.Scripting.Math.BigInteger>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
-                AreEqual(bisite.Target(bisite, inst), (Microsoft.Scripting.Math.BigInteger)42);
+                var bisite = CallSite<Func<CallSite, object, BigInteger>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
+                AreEqual(bisite.Target(bisite, inst), (BigInteger)42);
 
                 var dlgsite = CallSite<Func<CallSite, object, Func<object, object>>>.Create(new MyConvertBinder(typeof(Func<object, object>), null));
                 VerifyFunction(new[] { "foo" }, new string[0], dlgsite.Target(dlgsite, inst)("foo"));
@@ -1201,8 +1202,10 @@ xrange = xrange
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(string)));
                 AreEqual(site.Target(site, inst), "Converted");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Microsoft.Scripting.Math.BigInteger), (BigInteger)23));
+#if CLR2
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
                 AreEqual(site.Target(site, inst), (BigInteger)23);
+#endif
 
                 // strongly typed return versions
                 var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
@@ -1214,8 +1217,8 @@ xrange = xrange
                 var dsite = CallSite<Func<CallSite, object, double>>.Create(new MyConvertBinder(typeof(double), 23.0));
                 AreEqual(dsite.Target(dsite, inst), 23.0);
 
-                var csite = CallSite<Func<CallSite, object, Complex64>>.Create(new MyConvertBinder(typeof(Complex64), new Complex64(0, 23.0)));
-                AreEqual(csite.Target(csite, inst), new Complex64(0, 23.0));
+                var csite = CallSite<Func<CallSite, object, Complex>>.Create(new MyConvertBinder(typeof(Complex), new Complex(0, 23.0)));
+                AreEqual(csite.Target(csite, inst), new Complex(0, 23.0));
 
                 var bsite = CallSite<Func<CallSite, object, bool>>.Create(new MyConvertBinder(typeof(bool), true));
                 AreEqual(bsite.Target(bsite, inst), true);

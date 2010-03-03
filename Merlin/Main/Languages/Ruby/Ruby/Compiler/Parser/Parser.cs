@@ -518,7 +518,7 @@ namespace IronRuby.Compiler {
         }
 
         private StringConstructor/*!*/ MakeSymbolConstructor(List<Expression>/*!*/ content, SourceSpan location) {
-            if (content.Count == 0 && _tokenizer.Compatibility == RubyCompatibility.Ruby18) {
+            if (content.Count == 0 && _tokenizer.Compatibility < RubyCompatibility.Ruby19) {
                 _tokenizer.ReportError(Errors.EmptySymbolLiteral);
             }
             return new StringConstructor(content, StringKind.Symbol, location);

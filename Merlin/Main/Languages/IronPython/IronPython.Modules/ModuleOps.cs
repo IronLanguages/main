@@ -18,7 +18,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -26,6 +25,12 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 #if !SILVERLIGHT
 namespace IronPython.Modules {
@@ -275,9 +280,8 @@ namespace IronPython.Modules {
                 }
             }
 
-            BigInteger bi = value as BigInteger;
-            if (!Object.ReferenceEquals(bi, null)) {
-                return new IntPtr(bi.ToInt64());
+            if (value is BigInteger) {
+                return new IntPtr((long)(BigInteger)value);
             }
 
             if (value == null) {
@@ -325,9 +329,8 @@ namespace IronPython.Modules {
                 return res.Value;
             }
 
-            BigInteger bi = value as BigInteger;
-            if (!Object.ReferenceEquals(bi, null)) {
-                return bi.ToInt64();
+            if (value is BigInteger) {
+                return (long)(BigInteger)value;
             }
 
             object asParam;
@@ -344,9 +347,8 @@ namespace IronPython.Modules {
                 return res.Value;
             }
 
-            BigInteger bi = value as BigInteger;
-            if (!Object.ReferenceEquals(bi, null)) {
-                return (long)bi.ToUInt64();
+            if (value is BigInteger) {
+                return (long)(ulong)(BigInteger)value;
             }
 
             object asParam;
@@ -522,7 +524,7 @@ namespace IronPython.Modules {
                 return (short)iVal;
             } else if (value is BigInteger) {
                 BigInteger bigInt = (BigInteger)value;
-                return (short)((bigInt & 0xffff).ToInt32());
+                return (short)(int)(bigInt & 0xffff);
             }
 
             object asParam;

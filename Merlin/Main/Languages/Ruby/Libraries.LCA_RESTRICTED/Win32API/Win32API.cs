@@ -189,6 +189,18 @@ namespace IronRuby.StandardLibrary.Win32API {
             return Reinitialize(new Win32API(self), libraryName, functionName, parameterTypes, returnType);
         }
 
+        [RubyConstructor(Compatibility=RubyCompatibility.Ruby19)]
+        public static Win32API/*!*/ Create(RubyClass/*!*/ self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ libraryName,
+            [DefaultProtocol, NotNull]MutableString/*!*/ functionName,
+            [DefaultProtocol, NotNull]MutableString/*!*/ parameterTypes,
+            [DefaultProtocol, NotNull]MutableString/*!*/ returnType,
+            RubySymbol callingConvention) {
+
+            Debug.Assert(callingConvention.ToString() == "stdcall");
+            return Reinitialize(new Win32API(self), libraryName, functionName, parameterTypes, returnType);
+        }
+
         [RubyConstructor]
         public static Win32API/*!*/ Create(
             ConversionStorage<MutableString>/*!*/ toStr, 
@@ -309,7 +321,7 @@ namespace IronRuby.StandardLibrary.Win32API {
                     } 
                     
                     return Methods.GetMutableStringBytes.OpCall(
-                        Ast.Dynamic(ConvertToStrAction.Make(_context), typeof(MutableString), arg.Expression)
+                        AstUtils.LightDynamic(ConvertToStrAction.Make(_context), typeof(MutableString), arg.Expression)
                     );
 
                 case ArgType.Int32:
@@ -319,7 +331,7 @@ namespace IronRuby.StandardLibrary.Win32API {
 
                     return Ast.Convert(
                         Ast.Call(
-                            Ast.Dynamic(ConvertToIntAction.Make(_context), typeof(IntegerValue), arg.Expression), 
+                            AstUtils.LightDynamic(ConvertToIntAction.Make(_context), typeof(IntegerValue), arg.Expression), 
                             Methods.IntegerValue_ToUInt32Unchecked
                         ), 
                         typeof(int)

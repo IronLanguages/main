@@ -261,7 +261,7 @@ SUB
             Assert(a.Equals(b));
         }
         
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         private void Inspect1() {
             const char sq = '\'';
 

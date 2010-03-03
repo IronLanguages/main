@@ -158,12 +158,13 @@ namespace Microsoft.Scripting.Actions.Calls {
             ArgBuilder ab;
             if (pi.ParameterType.IsByRef) {
                 _hasByRef = true;
-                Type refType = typeof(StrongBox<>).MakeGenericType(pi.ParameterType.GetElementType());
+                Type elementType = pi.ParameterType.GetElementType();
+                Type refType = typeof(StrongBox<>).MakeGenericType(elementType);
                 _parameters.Add(new ParameterWrapper(pi, refType, pi.Name, ParameterBindingFlags.ProhibitNull));
-                ab = new ReferenceArgBuilder(pi, refType, indexForArgBuilder);
+                ab = new ReferenceArgBuilder(pi, elementType, refType, indexForArgBuilder);
             } else if (pi.Position == 0 && _overload.IsExtension) {
                 _parameters.Add(new ParameterWrapper(pi, pi.ParameterType, pi.Name, ParameterBindingFlags.IsHidden));
-                ab = new SimpleArgBuilder(pi.ParameterType, indexForArgBuilder, false, false);
+                ab = new SimpleArgBuilder(pi, pi.ParameterType, indexForArgBuilder, false, false);
             } else {
                 ab = AddSimpleParameterMapping(pi, indexForArgBuilder);
             }
@@ -176,10 +177,17 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
+        /// <summary>
+        /// Maps out parameters to return args and ref parameters to ones that don't accept StrongBox.
+        /// </summary>
         private void MapParameterReduceByRef(ParameterInfo pi) {
             Debug.Assert(_returnArgs != null);
 
-            // See KeywordArgBuilder.BuilderExpectsSingleParameter
+            // TODO:
+            // Is this reduction necessary? What if 
+            // 1) we had an implicit conversion StrongBox<T> -> T& and 
+            // 2) all out parameters were treated as optional StrongBox<T> parameters? (if not present we return the result in a return value)
+            
             int indexForArgBuilder = 0;
 
             int nameIndex = -1;

@@ -636,7 +636,7 @@ end
             object misc_object = scope.GetVariable("misc");
 
             object misc_class = MyInvokeMemberBinder.Invoke(misc_object, "class");
-            AreEqual(Engine.Runtime.Globals.GetVariable("Miscellaneous"), misc_class);
+            AreEqual(Engine.Runtime.Globals.GetVariable<object>("Miscellaneous"), misc_class);
 
             // singleton methods are only invokable on the class object, not the instance:
             AreEqual(MyInvokeMemberBinder.Invoke(misc_class, "static_method"), "static_method");
@@ -669,8 +669,8 @@ class C
   end
 end
 ");
-            var classC = Runtime.Globals.GetVariable("C");
-            var c = Engine.Operations.CreateInstance(classC);
+            object classC = Runtime.Globals.GetVariable("C");
+            object c = Engine.Operations.CreateInstance(classC);
 
             AreEqual(MyConvertBinder.Convert<sbyte>(c, 10), (sbyte)1);
             AreEqual(MyConvertBinder.Convert<byte>(c, 10), (byte)1);
@@ -846,6 +846,39 @@ end");
         public void Dlr_Languages() {
             //# Pass in ref/out params
             //# Named arguments
+        }
+
+        public class DynamicObject1 : DynamicObject {
+            public string Test() {
+                return "Hello, Test";
+            }
+
+            public override IEnumerable<string> GetDynamicMemberNames() {
+                return new string[] { "Test2", "Test3" };
+            }
+
+            public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result) {
+                result = "Invoke Member " + binder.Name;
+                return true;
+            }
+
+            public override bool TryInvoke(InvokeBinder binder, object[] args, out object result) {
+                result = "Invoke";
+                return true;
+            }
+        }
+
+        public void Dlr_DynamicObject1() {
+            Context.ObjectClass.SetConstant("C", new DynamicObject1());
+            TestOutput(@"
+p C.Test2
+p C.call
+p C.methods(false)
+", @"
+'Invoke Member Test2'
+'Invoke'
+['test2', 'test3']
+");
         }
     }
 }

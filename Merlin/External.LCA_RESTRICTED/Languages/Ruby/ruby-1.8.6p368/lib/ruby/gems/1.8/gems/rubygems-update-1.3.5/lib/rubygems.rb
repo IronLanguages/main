@@ -860,6 +860,8 @@ module Gem
 
       # escape string in case path to ruby executable contain spaces.
       @ruby.sub!(/.*\s.*/m, '"\&"')
+
+      @ruby = '"' + @ruby + '"' if @ruby.include?(' ')
     end
 
     @ruby

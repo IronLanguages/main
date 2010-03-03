@@ -86,7 +86,10 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
+    [Serializable]
     public class DebugInfo {
+        // TODO: readonly
+
         public int StartLine, EndLine;
         public int Index;
         public string FileName;
@@ -129,6 +132,26 @@ namespace Microsoft.Scripting.Interpreter {
             } else {
                 return String.Format("{0}: [{1}-{2}] '{3}'", Index, StartLine, EndLine, FileName);
             }
+        }
+    }
+
+    // TODO:
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+    [Serializable]
+    public struct InterpretedFrameInfo {
+        public readonly string MethodName;
+        
+        // TODO:
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        public readonly DebugInfo DebugInfo;
+
+        public InterpretedFrameInfo(string methodName, DebugInfo info) {
+            MethodName = methodName;
+            DebugInfo = info;
+        }
+
+        public override string ToString() {
+            return MethodName + (DebugInfo != null ? ": " + DebugInfo.ToString() : null);
         }
     }
 

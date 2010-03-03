@@ -94,12 +94,11 @@ class Object
   def resolve_ruby_exe
     [:env, :engine, :name, :install_name].each do |option|
       next unless cmd = ruby_exe_options(option)
-      exe = cmd.split.first
 
       # It has been reported that File.executable is not reliable
       # on Windows platforms (see commit 56bc555c). So, we check the
       # platform. 
-      if File.exists?(exe) and (SpecGuard.windows? or File.executable?(exe))
+      if File.exists?(cmd) and (SpecGuard.windows? or File.executable?(cmd))
         return cmd
       end
     end

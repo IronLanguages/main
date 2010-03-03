@@ -205,7 +205,6 @@
     <Compile Include="Extensions\IListOps.cs" />
     <Compile Include="Extensions\IronRubyOps.cs" />
     <Compile Include="Extensions\MultiDimensionalArrayOps.cs" />
-    <Compile Include="Extensions\ScopeOps.cs" />
     <Compile Include="Extensions\SingleOps.cs" />
     <Compile Include="Extensions\TypeGroupOps.cs" />
     <Compile Include="Extensions\TypeOps.cs" />

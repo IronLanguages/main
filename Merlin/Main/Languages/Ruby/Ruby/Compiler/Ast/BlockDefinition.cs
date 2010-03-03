@@ -190,7 +190,7 @@ namespace IronRuby.Compiler.Ast {
                 Methods.DefineBlock.OpCall(gen.CurrentScopeVariable, gen.CurrentSelfVariable, dispatcher,
                     BlockDispatcher.CreateLambda(
                         body,
-                        RubyExceptionData.EncodeMethodName(gen.CurrentMethod.MethodName, gen.SourcePath, Location),
+                        RubyStackTraceBuilder.EncodeMethodName(gen.CurrentMethod.MethodName, gen.SourcePath, Location, gen.DebugMode),
                         parameters,
                         parameterCount,
                         attributes

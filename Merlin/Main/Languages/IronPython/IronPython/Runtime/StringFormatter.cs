@@ -21,8 +21,13 @@ using System.Globalization;
 using System.Text;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -705,7 +710,7 @@ namespace IronPython.Runtime {
             bool fPos;
             object intVal = GetIntegerValue(out fPos);
             if (intVal is BigInteger) {
-                AppendBaseBigInt(intVal as BigInteger, format, radix);
+                AppendBaseBigInt((BigInteger)intVal, format, radix);
                 return;
             }
             int origVal = (int)intVal;

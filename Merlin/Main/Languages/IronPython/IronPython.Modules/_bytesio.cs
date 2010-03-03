@@ -24,8 +24,13 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Math;
 using IronPython.Runtime.Exceptions;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("_bytesio", typeof(IronPython.Modules.PythonBytesIOModule))]
 namespace IronPython.Modules {
@@ -305,9 +310,9 @@ namespace IronPython.Modules {
                 } else if (pos is Extensible<int>) {
                     intPos = ((Extensible<int>)pos).Value;
                 } else if (pos is BigInteger) {
-                    intPos = ((BigInteger)pos).ToInt32();
+                    intPos = (int)(BigInteger)pos;
                 } else if (pos is Extensible<BigInteger>) {
-                    intPos = ((Extensible<BigInteger>)pos).Value.ToInt32();
+                    intPos = (int)(((Extensible<BigInteger>)pos).Value);
                 } else if (pos is double || pos is Extensible<double>) {
                     throw PythonOps.TypeError("position argument must be an integer");
                 } else if (PythonContext.GetContext(context).PythonOptions.Python30) {
@@ -321,9 +326,9 @@ namespace IronPython.Modules {
                 } else if (whence is Extensible<int>) {
                     return seek(intPos, ((Extensible<int>)pos).Value);
                 }else if (whence is BigInteger) {
-                    return seek(intPos, ((BigInteger)whence).ToInt32());
+                    return seek(intPos, (int)(BigInteger)whence);
                 } else if (whence is Extensible<BigInteger>) {
-                    return seek(intPos, ((Extensible<BigInteger>)whence).Value.ToInt32());
+                    return seek(intPos, (int)(((Extensible<BigInteger>)whence).Value));
                 } else if (whence is double || whence is Extensible<double>) {
                     if (PythonContext.GetContext(context).PythonOptions.Python30) {
                         throw PythonOps.TypeError("integer argument expected, got float");

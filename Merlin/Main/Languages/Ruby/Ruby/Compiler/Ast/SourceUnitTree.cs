@@ -199,7 +199,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private static string/*!*/ GetEncodedName(AstGenerator/*!*/ gen) {
-            return RubyExceptionData.EncodeMethodName(RubyExceptionData.TopLevelMethodName, gen.SourcePath, SourceSpan.None);
+            return RubyStackTraceBuilder.EncodeMethodName(RubyStackTraceBuilder.TopLevelMethodName, gen.SourcePath, SourceSpan.None, gen.DebugMode);
         }
     }
 }

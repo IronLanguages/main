@@ -21,6 +21,7 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -28,6 +29,7 @@ using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -54,6 +56,13 @@ namespace IronRuby.Runtime.Calls {
         internal protected RubyCallAction(RubyContext context, string/*!*/ methodName, RubyCallSignature signature) 
             : base(context) {
             Assert.NotNull(methodName);
+            
+            // a virtual call cannot be a super call nor interop call:
+            Debug.Assert(!signature.IsVirtualCall || !signature.IsSuperCall && !signature.IsInteropCall);
+
+            // a super call must have implicit self:
+            Debug.Assert(!signature.IsSuperCall || signature.HasImplicitSelf);
+
             _methodName = methodName;
             _signature = signature;
         }
@@ -219,8 +228,14 @@ namespace IronRuby.Runtime.Calls {
                     new[] { methodName, Symbols.MethodMissing }
                 );
 
-                var options = args.Signature.IsVirtualCall ? MethodLookup.Virtual : MethodLookup.Default;
-                method = targetClass.ResolveMethodForSiteNoLock(methodName, visibilityContext, options);
+                if (args.Signature.IsSuperCall) {
+                    Debug.Assert(!args.Signature.IsVirtualCall && args.Signature.HasImplicitSelf);
+                    method = targetClass.ResolveSuperMethodNoLock(methodName, targetClass).InvalidateSitesOnOverride();
+                } else {
+                    var options = args.Signature.IsVirtualCall ? MethodLookup.Virtual : MethodLookup.Default;
+                    method = targetClass.ResolveMethodForSiteNoLock(methodName, visibilityContext, options);
+                }
+
                 if (!method.Found) {
                     methodMissing = targetClass.ResolveMethodMissingForSite(methodName, method.IncompatibleVisibility);
                 } else {
@@ -241,41 +256,75 @@ namespace IronRuby.Runtime.Calls {
             return method;
         }
 
+        // Returns true if the call was bound (with success or failure), false if fallback should be performed.
         internal static bool BuildMethodMissingCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
             RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall, bool defaultFallback) {
 
-            if (BindToMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility, isSuperCall) || defaultFallback) {
-                if (!metaBuilder.Error) {
-                    args.InsertMethodName(methodName);
-                    methodMissing.BuildCall(metaBuilder, args, methodName);
-                }
-                return true;
-            } else {
-                return false;
+            switch (BindToKernelMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility, isSuperCall)) {
+                case MethodMissingBinding.Custom:
+                    Debug.Assert(!metaBuilder.Error);
+                    methodMissing.BuildMethodMissingCall(metaBuilder, args, methodName);
+                    return true;
+
+                case MethodMissingBinding.Error:
+                    // method_missing is defined in Kernel, error has been reported:
+                    return true;
+
+                case MethodMissingBinding.Fallback:
+                    // method_missing is defined in Kernel:
+                    if (defaultFallback) {
+                        metaBuilder.SetError(Methods.MakeMissingMethodError.OpCall(
+                            args.MetaContext.Expression,
+                            AstUtils.Convert(args.TargetExpression, typeof(object)),
+                            Ast.Constant(methodName)
+                        ));
+                        return true;
+                    }
+                    return false;
             }
+            throw Assert.Unreachable;
         }
 
+        // Returns true if the call was bound (with success or failure), false if fallback should be performed.
         internal static bool BuildMethodMissingAccess(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
             RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall, bool defaultFallback) {
 
-            if (BindToMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility, isSuperCall) || defaultFallback) {
-                if (!metaBuilder.Error) {
+            switch (BindToKernelMethodMissing(metaBuilder, args, methodName, methodMissing, incompatibleVisibility, isSuperCall)) {
+                case MethodMissingBinding.Custom:
+                    // we pretend we found the member and return a method that calls method_missing:
+                    Debug.Assert(!metaBuilder.Error);
                     metaBuilder.Result = Methods.CreateBoundMissingMember.OpCall(
-                        AstUtils.Convert(args.TargetExpression, typeof(object)), 
-                        Ast.Constant(methodMissing, typeof(RubyMemberInfo)), 
+                        AstUtils.Convert(args.TargetExpression, typeof(object)),
+                        Ast.Constant(methodMissing, typeof(RubyMemberInfo)),
                         Ast.Constant(methodName)
                     );
-                }
-                return true;
-            } else {
-                return false;
+                    return true;
+
+                case MethodMissingBinding.Error:
+                    // method_missing is defined in Kernel, error has been reported:
+                    return true;
+
+                case MethodMissingBinding.Fallback:
+                    // method_missing is defined in Kernel:
+                    if (defaultFallback) {
+                        metaBuilder.SetError(Methods.MakeMissingMemberError.OpCall(Ast.Constant(methodName)));
+                        return true;
+                    }
+                    return false;
             }
+            throw Assert.Unreachable;
         }
 
-        internal static bool BindToMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
+        private enum MethodMissingBinding {
+            Error,
+            Fallback,
+            Custom
+        }
+
+        private static MethodMissingBinding BindToKernelMethodMissing(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName,
             RubyMemberInfo methodMissing, RubyMethodVisibility incompatibleVisibility, bool isSuperCall) {
 
-            // TODO: better check for builtin method
+            // TODO: better specialization of method_missing methods
             if (methodMissing == null ||
                 methodMissing.DeclaringModule == methodMissing.Context.KernelModule && methodMissing is RubyLibraryMethodInfo) {
 
@@ -290,75 +339,67 @@ namespace IronRuby.Runtime.Calls {
                         AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)), args.TargetExpression, AstUtils.Constant(methodName))
                     );
                 } else {
-                    return false;
+                    return MethodMissingBinding.Fallback;
                 }
+
+                return MethodMissingBinding.Error;
             }
 
-            return true;
+            return MethodMissingBinding.Custom;
         }
 
         protected override DynamicMetaObjectBinder GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args,
             out MethodInfo postConverter) {
 
+            postConverter = null;
+                    
+            ExpressionType op;
+            int opArity = RubyUtils.TryMapOperator(_methodName, out op);
+            if (opArity == 1 + args.Count) {
+                switch (opArity) {
+                    case 1: return context.MetaBinderFactory.InteropUnaryOperation(op);
+                    case 2: return context.MetaBinderFactory.InteropBinaryOperation(op);
+                }
+            }
+       
             switch (_methodName) {
                 case "new":
-                    postConverter = null;
-                    return new InteropBinder.CreateInstance(context, new CallInfo(args.Count));
+                    return context.MetaBinderFactory.InteropCreateInstance(new CallInfo(args.Count));
 
                 case "call":
-                    postConverter = null; 
-                    return new InteropBinder.Invoke(context, "call", new CallInfo(args.Count));
+                    return context.MetaBinderFactory.InteropInvoke(new CallInfo(args.Count));
 
                 case "to_s":
-                    postConverter = Methods.ObjectToMutableString;
-                    return new InteropBinder.InvokeMember(context, "ToString", new CallInfo(args.Count));
+                    if (args.Count == 0) {
+                        postConverter = Methods.ObjectToMutableString;
+                        return context.MetaBinderFactory.InteropInvokeMember("ToString", new CallInfo(0));
+                    }
+                    goto default;
 
                 case "to_str":
-                    postConverter = Methods.StringToMutableString;
-                    return new InteropBinder.Convert(context, typeof(string), false);
+                    if (args.Count == 0) {
+                        postConverter = Methods.StringToMutableString;
+                        return context.MetaBinderFactory.InteropConvert(typeof(string), false);
+                    }
+                    goto default;
 
                 case "[]":
                     // TODO: or invoke?
-                    postConverter = null;
-                    return new InteropBinder.GetIndex(context, new CallInfo(args.Count));
+                    return context.MetaBinderFactory.InteropGetIndex(new CallInfo(args.Count));
 
                 case "[]=":
-                    postConverter = null;
-                    return new InteropBinder.SetIndex(context, new CallInfo(args.Count));
-
-                // BinaryOps:
-                case "+": // ExpressionType.Add
-                case "-": // ExpressionType.Subtract
-                case "/": // ExpressionType.Divide
-                case "*": // ExpressionType.Multiply
-                case "%": // ExpressionType.Modulo
-                case "==": // ExpressionType.Equal
-                case "!=": // ExpressionType.NotEqual
-                case ">": // ExpressionType.GreaterThan
-                case ">=": // ExpressionType.GreaterThanOrEqual
-                case "<":  // ExpressionType.LessThan
-                case "<=": // ExpressionType.LessThanOrEqual
-
-                case "**": // ExpressionType.Power
-                case "<<": // ExpressionType.LeftShift
-                case ">>": // ExpressionType.RightShift
-                case "&": // ExpressionType.And
-                case "|": // ExpressionType.Or
-                case "^": // ExpressionType.ExclusiveOr;
-
-                // UnaryOp:
-                case "-@":
-                case "+@":
-                case "~":
-                    postConverter = null;
-                    return null;
+                    return context.MetaBinderFactory.InteropSetIndex(new CallInfo(args.Count));
 
                 default:
-                    postConverter = null;
-                    if (_methodName.EndsWith("=", StringComparison.Ordinal)) {
-                        return new InteropBinder.SetMember(context, _methodName.Substring(0, _methodName.Length - 1));
+                    if (_methodName.LastCharacter() == '=') {
+                        var baseName = _methodName.Substring(0, _methodName.Length - 1);
+                        if (args.Count == 1) {
+                            return context.MetaBinderFactory.InteropSetMember(baseName);
+                        } else {
+                            return context.MetaBinderFactory.InteropSetIndexedProperty(baseName, new CallInfo(args.Count));
+                        }
                     } else {
-                        return new InteropBinder.InvokeMember(context, _methodName, new CallInfo(args.Count));
+                        return context.MetaBinderFactory.InteropInvokeMember(_methodName, new CallInfo(args.Count));
                     }
             }
         }

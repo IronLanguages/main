@@ -239,7 +239,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("path")]
         public static MutableString GetPath(RubyContext/*!*/ context, RubyDir/*!*/ self) {
-            if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+            if (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
                 self.ThrowIfClosed();
             } else if (self.Closed) {
                 return null;

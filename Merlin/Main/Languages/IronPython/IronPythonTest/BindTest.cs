@@ -978,6 +978,14 @@ namespace IronPythonTest {
         public static PythonType M34<T>(IList<T> x, IList<T> y) {
             return DynamicHelpers.GetPythonTypeFromType(typeof(T));
         }
+
+        public static PythonType M35<T>(IList<T> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(IList<T>));
+        }
+
+        public static PythonType M35<T>(T[] x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T[]));
+        }
     }
 
     public class SelfEnumerable : IEnumerable<SelfEnumerable> {
@@ -1197,6 +1205,14 @@ namespace IronPythonTest {
 
         public PythonType M34<T>(IList<T> x, IList<T> y) {
             return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M35<T>(IList<T> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(IList<T>));
+        }
+
+        public static PythonType M35<T>(T[] x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T[]));
         }
     }
 

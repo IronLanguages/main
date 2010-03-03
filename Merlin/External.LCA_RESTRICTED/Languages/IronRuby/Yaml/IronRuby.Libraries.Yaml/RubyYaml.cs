@@ -371,7 +371,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         internal static Encoding/*!*/ GetEncoding(RubyContext/*!*/ context) {
             // MRI 1.9: UTF8 is used regardless of the string ending
-            return (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18 ? RubyEncoding.Binary : RubyEncoding.UTF8).Encoding;
+            return (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19 ? RubyEncoding.Binary : RubyEncoding.UTF8).Encoding;
         }
 
         private static RubyConstructor/*!*/ MakeConstructor(RubyGlobalScope/*!*/ scope, Stream/*!*/ stream) {

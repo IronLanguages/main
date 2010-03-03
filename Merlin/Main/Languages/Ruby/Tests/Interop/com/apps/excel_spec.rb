@@ -45,16 +45,23 @@ if ENV["THISISSNAP"] || ComHelper.excel_installed?
         @worksheet.Name.should == "Sheet1"
       end
 
-      it "can set cells" do
-        lambda { 
-          (1..10).each do |i| 
-            (1..10).each do |j| 
-              @worksheet.setproperty("Cells", i, j, i * j)
-            end 
-          end 
-        }.should_not raise_error 
+      it "converts Ruby types to COM types" do
+        @worksheet.setproperty("Cells", 1, 1, 1)
+        @worksheet.cells(1, 1).value.should == 1
+
+        @worksheet.setproperty("Cells", 1, 1, 2.0)
+        @worksheet.cells(1, 1).value.should == 2.0
+
+        @worksheet.setproperty("Cells", 1, 1, 1024**3)
+        @worksheet.cells(1, 1).value.should == 1073741824.0
+        
+        @worksheet.setproperty("Cells", 1, 1, "hello")
+        @worksheet.cells(1, 1).value.should == "hello"
+        
+        @worksheet.setproperty("Cells", 1, 1, :rubysym)
+        @worksheet.cells(1, 1).value.should == 'rubysym'
       end
-      
+
       it "can select ranges" do 
         range = @worksheet.Range('A1','B3') 
         range.Count.should == 6 

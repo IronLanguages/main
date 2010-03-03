@@ -15,12 +15,14 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -58,6 +60,14 @@ namespace InteropTests.Generics1 {
         void I<T>.MethodOnI() { }
         void J<T>.MethodOnJ() { }
     }
+
+    public static class Extensions {
+        public static IEnumerable<R> Select<T, R>(this IEnumerable<T> a, Func<T, R> func) {
+            foreach (var item in a) {
+                yield return func(item);
+            }
+        }
+    }
 }
 
 namespace InteropTests.Namespaces2 {
@@ -65,6 +75,8 @@ namespace InteropTests.Namespaces2 {
     namespace N {
         public class D { }
     }
+
+    
 }
 
 namespace IronRuby.Tests {
@@ -435,9 +447,9 @@ Baz(I): 1
             }
 
             // singletons:
-            AssertNoClrNames(Engine.Execute(@"class << self; instance_methods + private_instance_methods; end"), null);
-            AssertNoClrNames(Engine.Execute(@"class << self; class << self; instance_methods + private_instance_methods; end; end"), null);
-            AssertNoClrNames(Engine.Execute(@"class << Class; instance_methods + private_instance_methods; end"), null);
+            AssertNoClrNames(Engine.Execute<object>(@"class << self; instance_methods + private_instance_methods; end"), null);
+            AssertNoClrNames(Engine.Execute<object>(@"class << self; class << self; instance_methods + private_instance_methods; end; end"), null);
+            AssertNoClrNames(Engine.Execute<object>(@"class << Class; instance_methods + private_instance_methods; end"), null);
         }
 
         public void ClrMethodEnumeration2() {
@@ -544,6 +556,78 @@ M2(Fixnum)
 #<ArgumentError: wrong number of generic arguments for `event'>
 "
             );
+        }
+
+        public class Inference1 {
+            public int ByRef<T>(ref T x) {
+                x = (T)(object)((int)(object)x + 1);
+                return 0;
+            }
+
+            public int Array<T>(T[] x) {
+                return 1;
+            }
+
+            public int Multiple<S, R>(IEnumerable<S> source, Func<S, R> selector) {
+                return 2;
+            }
+
+            public int DeepShape<T>(Dictionary<Dictionary<T, string>, Dictionary<int, T>> arg) {
+                return 3;
+            }
+
+            public int Complex<A,B,C>(ref Dictionary<List<Dictionary<Func<A, B[][,,,][], C>[], int>>, Func<Dictionary<int, A>, B, C>>[] arg) {
+                return 4;
+            }
+        }
+
+        public void ClrGenericParametersInference1() {
+            Context.ObjectClass.SetConstant("F", Context.GetClass(typeof(Func<object,string>)));
+            Context.ObjectClass.SetConstant("SB", Context.GetClass(typeof(StrongBox<int>)));
+            Context.ObjectClass.SetConstant("SBx",
+                new StrongBox<Dictionary<List<Dictionary<Func<int, bool[][,,,][], double>[], int>>, Func<Dictionary<int, int>, bool, double>>[]>()
+            );
+            Context.ObjectClass.SetConstant("I", new Inference1());
+            Context.ObjectClass.SetConstant("E", Context.GetClass(typeof(InteropTests.Generics1.Extensions)));
+
+            TestOutput(@"
+p I.Array(System::Array[Fixnum].new(3))
+p I.Multiple([1,2,3], F.new { |x| x.to_s })
+E.Select([1,2], F.new { |x| x.to_s + '!' }).each { |a| puts a }
+E.Select([1,2], lambda { |x| x + 1 }).each { |a| puts a }
+", @"
+1
+2
+1!
+2!
+2
+3
+");
+
+            TestOutput(@"
+p I.ByRef(2)
+sb = SB.new(10)
+p I.ByRef(sb), sb.Value
+", @"
+[0, 3]
+0
+11
+");
+
+            TestOutput(@"
+include System::Collections::Generic
+p I.DeepShape(Dictionary[List[Fixnum], Dictionary[Fixnum, Fixnum]].new) rescue p $!
+p I.DeepShape(Dictionary[Dictionary[Fixnum, System::String], Dictionary[Fixnum, Fixnum]].new)
+", @"
+#<ArgumentError: generic arguments could not be infered for method 'DeepShape'>
+3
+");
+
+            TestOutput(@"
+p I.Complex(SBx)
+", @"
+4
+");
         }
 
         #endregion
@@ -1777,7 +1861,7 @@ end
 ");
             Assert(e.Data is IDictionary);
 
-            var obj = Engine.Execute(@"
+            object obj = Engine.Execute(@"
 class C < Object
   def equals(other); raise; end
   new

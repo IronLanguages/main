@@ -76,6 +76,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AttrInjectorTest.cs" />
+    <Compile Include="MemberOverloadTest.cs" />
     <Compile Include="BinderTest.cs" />
     <Compile Include="BindTest.cs" />
     <Compile Include="ClrType.cs" />
@@ -109,17 +110,26 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" Condition=" '$(Configuration)' == 'V4 Debug' Or '$(Configuration)' == 'V4 Release'"/>
-    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="System.Data" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="mscorlib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Condition=" '$(SilverlightBuild)' == 'true' ">
+    <Reference Include="Microsoft.CSharp" Condition=" '$(Configuration)' == 'V4 Debug' Or '$(Configuration)' == 'V4 Release'" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Numerics" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
+  </ItemGroup>
+  <ItemGroup  Condition=" '$(SilverlightBuild)' == 'true' ">
+    <Reference Include="mscorlib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
-    <Reference Include="System, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Condition=" '$(SilverlightBuild)' == 'true' ">
+    <Reference Include="System, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

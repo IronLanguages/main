@@ -242,6 +242,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetExpressionQualifiedConstant;
         public static MethodInfo/*!*/ GetGlobalMissingConstant { get { return _GetGlobalMissingConstant ?? (_GetGlobalMissingConstant = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Runtime.ConstantSiteCache, System.String, System.Object>(RubyOps.GetGlobalMissingConstant)); } }
         private static MethodInfo _GetGlobalMissingConstant;
+        public static MethodInfo/*!*/ GetGlobalScopeFromScope { get { return _GetGlobalScopeFromScope ?? (_GetGlobalScopeFromScope = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, Microsoft.Scripting.Runtime.Scope>(RubyOps.GetGlobalScopeFromScope)); } }
+        private static MethodInfo _GetGlobalScopeFromScope;
         public static MethodInfo/*!*/ GetGlobalVariable { get { return _GetGlobalVariable ?? (_GetGlobalVariable = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.String, System.Object>(RubyOps.GetGlobalVariable)); } }
         private static MethodInfo _GetGlobalVariable;
         public static MethodInfo/*!*/ GetInstanceData { get { return _GetInstanceData ?? (_GetInstanceData = GetMethod(typeof(RubyOps), "GetInstanceData")); } }
@@ -390,6 +392,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MakeInvalidArgumentTypesError;
         public static MethodInfo/*!*/ MakeMissingDefaultConstructorError { get { return _MakeMissingDefaultConstructorError ?? (_MakeMissingDefaultConstructorError = CallInstruction.CacheFunc<IronRuby.Builtins.RubyClass, System.String, System.Exception>(RubyOps.MakeMissingDefaultConstructorError)); } }
         private static MethodInfo _MakeMissingDefaultConstructorError;
+        public static MethodInfo/*!*/ MakeMissingMemberError { get { return _MakeMissingMemberError ?? (_MakeMissingMemberError = CallInstruction.CacheFunc<System.String, System.Exception>(RubyOps.MakeMissingMemberError)); } }
+        private static MethodInfo _MakeMissingMemberError;
+        public static MethodInfo/*!*/ MakeMissingMethodError { get { return _MakeMissingMethodError ?? (_MakeMissingMethodError = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, System.Object, System.String, System.Exception>(RubyOps.MakeMissingMethodError)); } }
+        private static MethodInfo _MakeMissingMethodError;
         public static MethodInfo/*!*/ MakeMissingSuperException { get { return _MakeMissingSuperException ?? (_MakeMissingSuperException = CallInstruction.CacheFunc<System.String, System.Exception>(RubyOps.MakeMissingSuperException)); } }
         private static MethodInfo _MakeMissingSuperException;
         public static MethodInfo/*!*/ MakeNotClrTypeError { get { return _MakeNotClrTypeError ?? (_MakeNotClrTypeError = CallInstruction.CacheFunc<IronRuby.Builtins.RubyClass, System.Exception>(RubyOps.MakeNotClrTypeError)); } }

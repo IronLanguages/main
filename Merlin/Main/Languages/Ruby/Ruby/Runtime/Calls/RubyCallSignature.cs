@@ -55,8 +55,11 @@ namespace IronRuby.Runtime.Calls {
         // Used in method overrides defined in types emitted for Ruby classes that derive from CLR type.
         IsVirtualCall = 64,
 
+        // CallAction only: Skip the immediate class of the target in method resolution. Lexically unbound super calls.
+        IsSuperCall = 128,
+
         // SuperCallAction only: the super site dynamically loads its parameters from scope.
-        HasImplicitArguments = 128
+        HasImplicitArguments = 128,
     }
         
     /// <summary>
@@ -79,6 +82,7 @@ namespace IronRuby.Runtime.Calls {
         public bool IsInteropCall { get { return (_countAndFlags & (uint)RubyCallFlags.IsInteropCall) != 0; } }
         public bool IsVirtualCall { get { return (_countAndFlags & (uint)RubyCallFlags.IsVirtualCall) != 0; } }
         public bool HasImplicitArguments { get { return (_countAndFlags & (uint)RubyCallFlags.HasImplicitArguments) != 0; } }
+        public bool IsSuperCall { get { return (_countAndFlags & (uint)RubyCallFlags.IsSuperCall) != 0; } }
 
         // defined? ignores arguments hence we can use one argument number (max) to represent resolve only sites:
         public bool ResolveOnly { get { return ArgumentCount == ResolveOnlyArgumentCount; } }
@@ -177,7 +181,7 @@ namespace IronRuby.Runtime.Calls {
         public override string/*!*/ ToString() {
             return "(" +
                 (HasImplicitSelf ? "." : "") +
-                (HasImplicitArguments ? "I" : "") +
+                (HasImplicitArguments ? "^" : "") +
                 (IsVirtualCall ? "V" : "") +
                 (HasScope ? "S" : "C") +
                 (ResolveOnly ? "?" : "," + ArgumentCount.ToString()) + 

@@ -24,9 +24,15 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
+
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 namespace IronPython.Runtime {
@@ -1178,10 +1184,10 @@ namespace IronPython.Runtime {
 
         public virtual object this[BigInteger index] {
             get {
-                return this[index.ToInt32()];
+                return this[(int)index];
             }
             set {
-                this[index.ToInt32()] = value;
+                this[(int)index] = value;
             }
         }
 

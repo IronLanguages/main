@@ -15,6 +15,7 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using BigInt = System.Numerics.BigInteger;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -27,6 +28,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Interpreter;
@@ -841,5 +843,32 @@ namespace Microsoft.Scripting.Generation {
                 return Visit(Reduce(node));
             }
         }
+
+        #region Factories
+#if CLR2
+        [CLSCompliant(false)]
+        public static BigInteger CreateBigInteger(int sign, uint[] data) {
+            return new BigInteger(sign, data);
+        }
+#else
+        public static BigInteger CreateBigInteger(bool isNegative, byte[] data) {
+            return new BigInteger(CreateBigInt(isNegative, data));
+        }
+
+        public static BigInt CreateBigInt(int value) {
+            return (BigInt)value;
+        }
+
+        public static BigInt CreateBigInt(long value) {
+            return (BigInt)value;
+        }
+
+        public static BigInt CreateBigInt(bool isNegative, byte[] data) {
+            BigInt res = new BigInt(data);
+            return isNegative ? -res : res;
+        }
+
+#endif
+        #endregion
     }
 }

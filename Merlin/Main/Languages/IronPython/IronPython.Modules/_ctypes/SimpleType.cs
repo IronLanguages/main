@@ -20,12 +20,17 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 #if !SILVERLIGHT
 
@@ -106,7 +111,7 @@ namespace IronPython.Modules {
             }
 
             public SimpleCData from_address(CodeContext/*!*/ context, BigInteger address) {
-                return from_address(context, new IntPtr(address.ToInt64()));
+                return from_address(context, new IntPtr((long)address));
             }
 
             public SimpleCData from_address(CodeContext/*!*/ context, IntPtr ptr) {
@@ -707,6 +712,9 @@ namespace IronPython.Modules {
                 method.MarkLabel(bigInt);
                 value.Emit(method);
                 method.Emit(OpCodes.Call, typeof(BigInteger).GetMethod("op_Implicit", new[] { value.Type }));
+#if !CLR2
+                method.Emit(OpCodes.Box, typeof(BigInteger));
+#endif
 
                 method.MarkLabel(done);
             }
@@ -722,6 +730,9 @@ namespace IronPython.Modules {
 
                 value.Emit(method);
                 method.Emit(OpCodes.Call, typeof(BigInteger).GetMethod("op_Implicit", new[] { value.Type }));
+#if !CLR2
+                method.Emit(OpCodes.Box, typeof(BigInteger));
+#endif
                 method.Emit(OpCodes.Br, done);
 
                 method.MarkLabel(intVal);

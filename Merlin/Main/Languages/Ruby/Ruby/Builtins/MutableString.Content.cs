@@ -23,6 +23,8 @@ using System.IO;
 
 namespace IronRuby.Builtins {
     public partial class MutableString {
+        // TODO: Add range checks to APIs or change the implementation to be out-of-range tolerant (see GetSlice).
+        // Tha latter is preferred if the semantics is reasonable since it reduces the amounts of content size dependent checks that the user needs to do.
         [Serializable]
         private abstract class Content {
             protected MutableString _owner;
@@ -81,9 +83,7 @@ namespace IronRuby.Builtins {
 
             public abstract char GetChar(int index);
             public abstract byte GetByte(int index);
-            public abstract string/*!*/ GetStringSlice(int start, int count);
-            public abstract byte[]/*!*/ GetBinarySlice(int start, int count);
-
+            
             public abstract IEnumerable<char>/*!*/ GetCharacters();
             public abstract IEnumerable<byte>/*!*/ GetBytes();
 
@@ -94,8 +94,14 @@ namespace IronRuby.Builtins {
             public abstract int ReverseOrdinalCompareTo(CharArrayContent/*!*/ content);
             public abstract int ReverseOrdinalCompareTo(StringContent/*!*/ content);
             
-            // the owner of the result is the current owner:
+            /// <summary>
+            /// Returns a slice of the content. The size of the slice could be less than the requested count if there is not enough data in the content.
+            /// Returns an empty content if start is greater than the size of the content.
+            /// The owner of the result is the current owner.
+            /// </summary>
             public abstract Content/*!*/ GetSlice(int start, int count);
+            public abstract string/*!*/ GetStringSlice(int start, int count);
+            public abstract byte[]/*!*/ GetBinarySlice(int start, int count);
 
             public abstract int IndexOf(char c, int start, int count);
             public abstract int IndexOf(byte b, int start, int count);

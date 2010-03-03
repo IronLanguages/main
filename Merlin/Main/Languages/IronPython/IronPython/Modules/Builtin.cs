@@ -25,7 +25,6 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -35,6 +34,13 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("__builtin__", typeof(IronPython.Modules.Builtin))]
 namespace IronPython.Modules {
@@ -127,9 +133,8 @@ namespace IronPython.Modules {
             if (o is double) return DoubleOps.Abs((double)o);
             if (o is bool) return (((bool)o) ? 1 : 0);
 
-            BigInteger bi = o as BigInteger;
-            if (!Object.ReferenceEquals(bi, null)) return BigIntegerOps.__abs__(bi);
-            if (o is Complex64) return ComplexOps.Abs((Complex64)o);
+            if (o is BigInteger) return BigIntegerOps.__abs__((BigInteger)o);
+            if (o is Complex) return ComplexOps.Abs((Complex)o);
 
             object value;
             if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__abs__", out value)) {
@@ -362,7 +367,7 @@ namespace IronPython.Modules {
 
         public static PythonType complex {
             get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(Complex64));
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Complex));
             }
         }
 

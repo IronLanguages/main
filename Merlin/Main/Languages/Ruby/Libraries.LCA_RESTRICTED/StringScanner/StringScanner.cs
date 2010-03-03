@@ -299,42 +299,40 @@ namespace IronRuby.StandardLibrary.StringScanner {
         }
 
         [RubyMethod("scan")]
-        public static MutableString Scan(StringScanner/*!*/ self, [NotNull]RubyRegex/*!*/ pattern) {
-            return (ScanFull(self, pattern, true, true) as MutableString);
+        public static object/*!*/ Scan(StringScanner/*!*/ self, [NotNull]RubyRegex/*!*/ pattern) {
+            return ScanFull(self, pattern, true, true);
         }
 
         [RubyMethod("scan_full")]
-        public static object ScanFull(StringScanner/*!*/ self, [NotNull]RubyRegex/*!*/ pattern, bool advance_pointer_p, bool return_string_p) {
-            bool match = self.Match(pattern, true, advance_pointer_p);
-            object result = null;
+        public static object ScanFull(StringScanner/*!*/ self, [NotNull]RubyRegex/*!*/ pattern, bool advancePointer, bool returnString) {
+            bool match = self.Match(pattern, true, advancePointer);
             if (match) {
-                if (return_string_p) {
-                    result = MutableString.Create(self.LastMatch);
+                if (returnString) {
+                    return MutableString.Create(self.LastMatch);
                 } else {
-                    result = self.LastMatch.Length;
+                    return ScriptingRuntimeHelpers.Int32ToObject(self.LastMatch.Length);
                 }
             }
-            return result;
+            return null;
         }
 
         [RubyMethod("scan_until")]
-        public static MutableString ScanUntil(StringScanner/*!*/ self, [NotNull]RubyRegex/*!*/ pattern) {
-            return (SearchFull(self, pattern, true, true) as MutableString);
+        public static object ScanUntil(StringScanner/*!*/ self, [NotNull]RubyRegex/*!*/ pattern) {
+            return SearchFull(self, pattern, true, true);
         }
 
         [RubyMethod("search_full")]
-        public static object SearchFull(StringScanner/*!*/ self, [NotNull]RubyRegex/*!*/ pattern, bool advance_pointer_p, bool return_string_p) {
-            bool match = self.Match(pattern, false, advance_pointer_p);
-            object result = null;
+        public static object SearchFull(StringScanner/*!*/ self, [NotNull]RubyRegex/*!*/ pattern, bool advancePointer, bool returnString) {
+            bool match = self.Match(pattern, false, advancePointer);
             if (match) {
                 int length = self.LastMatch.Length + (self.FoundPosition - self.PreviousPosition);
-                if (return_string_p) {
-                    result = self.ScanString.GetSlice(self.PreviousPosition, length);
+                if (returnString) {
+                    return self.ScanString.GetSlice(self.PreviousPosition, length);
                 } else {
-                    result = length;
+                    return ScriptingRuntimeHelpers.Int32ToObject(length);
                 }
             }
-            return result;
+            return null;
         }
 
         [RubyMethod("skip")]
@@ -392,7 +390,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
 
         private bool Match(RubyRegex/*!*/ pattern, bool currentPositionOnly, bool advancePosition) {
             // TODO: KCODE?
-            MatchData match = pattern.Match(null, _scanString, _currentPosition);
+            MatchData match = pattern.Match(null, _scanString, _currentPosition, false);
             _lastMatch = null;
             _lastMatchingGroups = null;
             _foundPosition = 0;

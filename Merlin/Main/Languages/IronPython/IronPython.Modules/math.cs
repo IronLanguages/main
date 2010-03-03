@@ -17,12 +17,18 @@ using System;
 using System.Collections;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("math", typeof(IronPython.Modules.PythonMath))]
 namespace IronPython.Modules {
@@ -98,7 +104,7 @@ namespace IronPython.Modules {
             if (double.IsInfinity(v) || double.IsInfinity(w)) {
                 return double.PositiveInfinity;
             }
-            return Check(v, w, Complex64.Hypot(v, w));
+            return Check(v, w, MathUtils.Hypot(v, w));
         }
 
         public static double pow(double v, double exp) {
@@ -239,9 +245,9 @@ namespace IronPython.Modules {
             }
             // rewrote ln(v0 + sqrt(v0**2 + 1)) for precision
             if (Math.Abs(v0) > 1.0) {
-                return Math.Log(v0) + Math.Log(1.0 + Complex64.Hypot(1.0, 1.0 / v0));
+                return Math.Log(v0) + Math.Log(1.0 + MathUtils.Hypot(1.0, 1.0 / v0));
             } else {
-                return Math.Log(v0 + Complex64.Hypot(1.0, v0));
+                return Math.Log(v0 + MathUtils.Hypot(1.0, v0));
             }
         }
 
@@ -326,7 +332,7 @@ namespace IronPython.Modules {
         }
 
         public static object factorial(double v0) {
-            if ((BigInteger)v0 != v0) {
+            if (v0 % 1.0 != 0.0) {
                 throw PythonOps.ValueError("factorial() only accepts integral values");
             }
             if (v0 < 0.0) {

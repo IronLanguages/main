@@ -21,7 +21,7 @@ using System.Diagnostics;
 namespace IronRuby.Builtins {
     public partial class RubyRegex {
         public sealed partial class Subclass : RubyRegex, IRubyObject {
-            // called by Class#new rule when creating a Ruby subclass of String:
+            // called by Class#new rule when creating a Ruby subclass of Regexp:
             public Subclass(RubyClass/*!*/ rubyClass) {
                 Assert.NotNull(rubyClass);
                 Debug.Assert(!rubyClass.IsSingletonClass);

@@ -16,6 +16,8 @@
 using IronRuby.Builtins;
 using System;
 using System.IO;
+using Microsoft.Scripting.Hosting.Providers;
+using IronRuby.Runtime;
 namespace IronRuby.Tests {
 
     public partial class Tests {
@@ -628,7 +630,7 @@ module C
 end
 C
 ");
-            Ruby.GetExecutionContext(engine2).DefineGlobalVariable("C", c); 
+            ((RubyContext)HostingHelpers.GetLanguageContext(engine2)).DefineGlobalVariable("C", c); 
 
             var m = engine2.Execute(@"
 module M

@@ -860,7 +860,9 @@ namespace IronRuby.Builtins {
         public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator) {
 
             MutableString result = self.ReadLineOrParagraph(separator);
-            KernelOps.Taint(scope.RubyContext, result);
+            if (result != null) {
+                result.IsTainted = true;
+            }
 
             scope.GetInnerMostClosureScope().LastInputLine = result;
             scope.RubyContext.InputProvider.LastInputLineNumber = ++self.LineNumber;
@@ -909,8 +911,7 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.NoBlockGiven();
                 }
 
-                KernelOps.Taint(block.RubyContext, line);
-
+                line.IsTainted = true;
                 context.InputProvider.LastInputLineNumber = ++self.LineNumber;
 
                 object result;

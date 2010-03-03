@@ -102,8 +102,7 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo AmpersandInterpretedAsProcArgument = new ErrorInfo(WarningLevel2 + 3, "`&' interpreted as argument prefix"); // TODO: level 1?
         public static readonly ErrorInfo AmpersandInVoidContext = new ErrorInfo(WarningLevel2 + 4, "Useless use of & in void context"); // TODO: level 1?
         public static readonly ErrorInfo StarInterpretedAsSplatArgument = new ErrorInfo(WarningLevel2 + 5, "`*' interpreted as argument prefix"); // TODO: level 1?
-        public static readonly ErrorInfo InvalidUseOfByteOrderMark = new ErrorInfo(WarningLevel2 + 6, "The source code appears to be encoded (UTF-8 byte-order-mark detected). Run in 1.9 compatibility mode to decode it properly.");
-        
+        public static readonly ErrorInfo ByteOrderMarkIgnored = new ErrorInfo(WarningLevel2 + 6, "UTF-8 byte-order-mark ignored.");
         
         internal static bool IsVerboseWarning(int errorCode) {
             return errorCode >= WarningLevel2;

@@ -101,13 +101,19 @@ namespace Microsoft.Scripting.Interpreter {
         /// interpreted stack traces by aligning interpreted frames to the frames of this method.
         /// Each group of subsequent frames of Run method corresponds to a single interpreted frame.
         /// </remarks>
-        [SpecialName]
+        [SpecialName, MethodImpl(MethodImplOptions.NoInlining)]
         public void Run(InterpretedFrame frame) {
             while (true) {
                 try {
-                    RunInstructions(frame);
+                    var instructions = _instructions.Instructions;
+                    int index = frame.InstructionIndex;
+                    while (index < instructions.Length) {
+                        index += instructions[index].Run(frame);
+                        frame.InstructionIndex = index;
+                    }
                     return;
                 } catch (Exception exception) {
+                    frame.SaveTraceToException(exception);
                     frame.FaultingInstruction = frame.InstructionIndex;
                     ExceptionHandler handler;
                     frame.InstructionIndex += GotoHandler(frame, exception, out handler);
@@ -130,17 +136,9 @@ namespace Microsoft.Scripting.Interpreter {
                         frame.CurrentAbortHandler = handler;
                         Run(frame);
                         return;
-                    } 
+                    }
+                    exception = null;
                 }
-            }
-        }
-
-        private void RunInstructions(InterpretedFrame frame) {
-            var instructions = _instructions.Instructions;
-            int index = frame.InstructionIndex;
-            while (index < instructions.Length) {
-                index += instructions[index].Run(frame);
-                frame.InstructionIndex = index;
             }
         }
 

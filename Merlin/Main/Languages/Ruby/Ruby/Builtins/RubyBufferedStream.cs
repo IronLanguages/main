@@ -18,21 +18,50 @@ using System.Diagnostics;
 using System.IO;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
+    /// <summary>
+    /// Not thread-safe.
+    /// </summary>
     public class RubyBufferedStream : Stream {
-        private const int MaxBufferSize = sizeof(uint);
         private readonly Stream/*!*/ _stream;
 
-        // Read buffer: if bufferSize > 0 then the next byte to read is the first (lowest) byte in the buffer:
-        private uint _buffer;
-        private int _bufferSize;
+        // read buffer [...xxxxxxx...]
+        //                 ^      ^
+        //           read pos     stream pos
+        private byte[] _buffer;
+        private int _defaultBufferSize;
+
+        // the position of the first buffered byte in buffer
+        private int _bufferStart;          
+
+        // the number of buffered bytes
+        private int _bufferCount;
+
+        // the number of bytes pushed back by ungetc:
+        private int _pushedBackCount;
+
+        private bool _pushBackPreservesPosition;
 
         private const byte CR = (byte)'\r';
         private const byte LF = (byte)'\n';
 
-        public RubyBufferedStream(Stream/*!*/ stream) {
+        public RubyBufferedStream(Stream/*!*/ stream)
+            : this(stream, false) {
+        }
+        
+        public RubyBufferedStream(Stream/*!*/ stream, bool pushBackPreservesPosition)
+            : this(stream, pushBackPreservesPosition, 0x1000) {
+        }
+
+        public RubyBufferedStream(Stream/*!*/ stream, bool pushBackPreservesPosition, int bufferSize) {
+            ContractUtils.RequiresNotNull(stream, "stream");
+            ContractUtils.Requires(bufferSize > 0, "bufferSize", "Buffer size must be positive.");
+
             _stream = stream;
+            _defaultBufferSize = bufferSize;
+            _pushBackPreservesPosition = pushBackPreservesPosition;
         }
 
         public Stream/*!*/ BaseStream {
@@ -40,35 +69,52 @@ namespace IronRuby.Builtins {
         }
 
         public bool DataBuffered {
-            get { return _bufferSize > 0; }
+            get { return _bufferCount > 0; }
         }
 
-        private byte PeekBufferByte(int i) {
-            Debug.Assert(i < _bufferSize);
-            return (byte)((_buffer >> (i * 8)) & 0xff);
+        private int LoadBuffer(int count) {
+            Debug.Assert(_bufferCount + count <= (_buffer != null ? _buffer.Length : _defaultBufferSize));
+
+            int bytesRead;
+            if (_buffer == null) {
+                Debug.Assert(_bufferCount == 0 && _bufferStart == 0);
+                _buffer = new byte[_defaultBufferSize];
+            } else if (_bufferStart + _bufferCount + count > _buffer.Length) {
+                // shift left:
+                Buffer.BlockCopy(_buffer, _bufferStart, _buffer, 0, _bufferCount);
+                _bufferStart = 0;
+            }
+
+            bytesRead = _stream.Read(_buffer, _bufferCount, count);
+            _bufferCount += bytesRead;
+            return bytesRead;
         }
 
-        private void LoadBufferByte(byte b) {
-            Debug.Assert(_bufferSize < MaxBufferSize);
-            _buffer |= (uint)b << (_bufferSize * 8);
-            _bufferSize++;
+        private void ConsumeBuffered(int count) {
+            _bufferCount -= count;
+            _pushedBackCount -= Math.Min(_pushedBackCount, count);
+            if (_bufferCount == 0) {
+                _bufferStart = 0;
+            } else {
+                _bufferStart += count;
+            }
         }
-
-        private byte ReadBufferByte() {
-            Debug.Assert(_bufferSize > 0);
-            byte result = (byte)(_buffer & 0xff);
-            _buffer >>= 8;
-            _bufferSize--;
-            return result;
+        
+        private int ReadAheadCount {
+            get { return _bufferCount - _pushedBackCount; }
         }
 
         public void PushBack(byte b) {
-            if (_bufferSize == MaxBufferSize) {
-                throw RubyExceptions.CreateIOError("ungetc failed: not enough space in buffer");
+            if (_bufferStart > 0) {
+                _buffer[--_bufferStart] = b;
+            } else if (_buffer != null) {
+                Utils.InsertAt(ref _buffer, _bufferCount, 0, b, 1);
+            } else {
+                _buffer = new byte[_defaultBufferSize];
+                _buffer[0] = b;
             }
-
-            _buffer = (_buffer << 8) | b;
-            _bufferSize++;
+            _pushedBackCount++;
+            _bufferCount++;
         }
 
         public override long Position {
@@ -76,23 +122,51 @@ namespace IronRuby.Builtins {
                 // TODO: this seems to be bug in MRI: you can read(0); ungetc(x); at the beginning of a stream, yet
                 // you can't do ungetc(x) at the beginning of the stream.
                 // (see http://redmine.ruby-lang.org/issues/show/1909)
-                return Math.Max(_stream.Position - _bufferSize, 0);
+                if (_pushBackPreservesPosition) {
+                    return _stream.Position - ReadAheadCount;
+                } else {
+                    return Math.Max(_stream.Position - _bufferCount, 0);
+                }
             }
             set {
-                // seek clears any buffer content (including ungetc):
-                FlushRead();
-                _stream.Position = value;
+                ContractUtils.Requires(value >= 0, "value", "Value must be positive");
+                Seek(value, SeekOrigin.Begin);
             }
+        }
+
+        public override void Close() {
+            _buffer = null;
+            _bufferCount = _bufferCount = _pushedBackCount = 0;
+            _stream.Close();
         }
 
         public override long Seek(long pos, SeekOrigin origin) {
-            FlushRead();
-            return _stream.Seek(pos, origin);
+            if (origin == SeekOrigin.Current) {
+                if (_pushBackPreservesPosition) {
+                    pos -= ReadAheadCount;
+                } else {
+                    origin = SeekOrigin.Begin;
+                    pos += Position;
+                }
+            }
+
+            // try seek first, it may fail and we shouldn't change the buffer if so:
+            var result = _stream.Seek(pos, origin);
+
+            // TODO: we might keep the buffered data if we seek within the buffered data (but not in pushed back data):
+            // clear any buffer content (including ungetc):
+            _bufferStart = _bufferCount = _pushedBackCount = 0;
+
+            return result;
         }
 
         private void FlushRead() {
-            _buffer = 0;
-            _bufferSize = 0;
+            // unwind cached data:
+            if (ReadAheadCount > 0) {
+                Seek(-ReadAheadCount, SeekOrigin.Current);
+            }
+
+            _bufferStart = _bufferCount = _pushedBackCount = 0;
         }
 
         public override void Write(byte[]/*!*/ buffer, int offset, int count) {
@@ -138,47 +212,54 @@ namespace IronRuby.Builtins {
             }
         }
 
-        public int PeekByte(int i) {
-            Debug.Assert(i < MaxBufferSize);
-            if (i < _bufferSize) {
-                return PeekBufferByte(i);
-            }
-
-            int result;
-            if (_stream.CanSeek) {
-                long oldPos = _stream.Position;
-                _stream.Position = Position + i;
-                result = _stream.ReadByte();
-                _stream.Position = oldPos;
-                return result;
-            }
-
-            while (true) {
-                result = _stream.ReadByte();
-                if (result == -1) {
-                    return result;
-                }
-                LoadBufferByte((byte)result);
-                if (i < _bufferSize) {
-                    return result;
-                }
-            }
+        public int PeekByte() {
+            return PeekByte(0);
         }
 
+        /// <summary>
+        /// Peeks i-th byte. Assumes small <c>i</c>.
+        /// </summary>
+        private int PeekByte(int i) {
+            Debug.Assert(i < (_buffer != null ? _buffer.Length : _defaultBufferSize));
+
+            if (i >= _bufferCount) {
+                LoadBuffer(i + 1 - _bufferCount);
+            }
+
+            // end of stream:
+            if (i >= _bufferCount) {
+                return -1;
+            }
+
+            return _buffer[_bufferStart + i];
+        }
+
+        private byte ReadBufferByte() {
+            Debug.Assert(_bufferCount > 0);
+            var result = _buffer[_bufferStart];
+            ConsumeBuffered(1);
+            return result;
+        }
+
+        // TODO: read in full buffer (underlying FileStream will buffer it anyways)
         public override int ReadByte() {
-            return (_bufferSize > 0) ? ReadBufferByte() : _stream.ReadByte();
+            return (_bufferCount > 0) ? ReadBufferByte() : _stream.ReadByte();
         }
 
         public override int Read(byte[]/*!*/ buffer, int offset, int count) {
-            while (count > 0 && _bufferSize > 0) {
-                buffer[offset++] = ReadBufferByte();
-                count--;
+            int c = Math.Min(_bufferCount, count);
+            if (c > 0) {
+                Buffer.BlockCopy(_buffer, _bufferStart, buffer, offset, c);
+                ConsumeBuffered(c);
             }
-
-            return _stream.Read(buffer, offset, count);
+            return c + _stream.Read(buffer, offset + c, count - c);
         }
 
-        // count == Int32.MaxValue means means no bound
+        /// <summary>
+        /// Reads <paramref name="count"/> bytes from the stream and appends them to the given <paramref name="buffer"/>.
+        /// If <paramref name="count"/> is <c>Int32.MaxValue</c> the stream is read to the end.
+        /// Unless <paramref name="preserveEndOfLines"/> is set the line endings in the appended data are normalized to "\n".
+        /// </summary>
         public int AppendBytes(MutableString/*!*/ buffer, int count, bool preserveEndOfLines) {
             ContractUtils.RequiresNotNull(buffer, "buffer");
             ContractUtils.Requires(count >= 0, "count");
@@ -249,9 +330,11 @@ namespace IronRuby.Builtins {
 
             int remaining = count;
 
-            while (_bufferSize > 0) {
-                buffer.Append(ReadBufferByte());
-                remaining--;
+            if (_bufferCount > 0) {
+                int c = Math.Min(_bufferCount, count);
+                buffer.Append(_buffer, _bufferStart, c);
+                ConsumeBuffered(c);
+                remaining -= c;
             }
 
             if (count == Int32.MaxValue) {
@@ -306,11 +389,81 @@ namespace IronRuby.Builtins {
             if (separator == null) {
                 var result = MutableString.CreateBinary();
                 return AppendBytes(result, Int32.MaxValue, preserveEndOfLines) == 0 ? null : result;
+            } else if (separator.GetLength() == 1 && separator.GetChar(0) == '\n') {
+                return ReadLine(encoding, preserveEndOfLines);
             } else if (separator.IsEmpty) {
                 return ReadParagraph(encoding, preserveEndOfLines);
             } else {
                 return ReadLine(separator, encoding, preserveEndOfLines);
             }
+        }
+
+        public MutableString ReadLine(RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
+            if (_bufferCount == 0) {
+                if (LoadBuffer(_defaultBufferSize) == 0) {
+                    return null;
+                }
+            }
+
+            bool bufferResized = false;
+            int lf = Array.IndexOf(_buffer, LF, _bufferStart, _bufferCount);
+            while (lf < 0) {
+                int s = _bufferCount;
+                LoadBuffer(_buffer.Length - _bufferCount);
+                Debug.Assert(_bufferStart == 0);
+
+                lf = Array.IndexOf(_buffer, LF, s, _bufferCount - s);
+                if (lf >= 0) {
+                    break;
+                }
+
+                // end of stream:
+                if (_bufferCount < _buffer.Length) {
+                    return ConsumeLine(encoding, _bufferCount, _bufferCount, bufferResized);
+                }
+
+                Array.Resize(ref _buffer, _buffer.Length << 1);
+                bufferResized = true;
+                _bufferStart = 0;
+            }
+
+            int lineLength;
+            int consume = lf + 1 - _bufferStart;
+            if (!preserveEndOfLines && lf - 1 >= _bufferStart && _buffer[lf - 1] == CR) {
+                _buffer[lf - 1] = LF;
+                lineLength = consume - 1;
+            } else {
+                lineLength = consume;
+            }
+
+            return ConsumeLine(encoding, lineLength, consume, bufferResized);
+        }
+
+        private MutableString/*!*/ ConsumeLine(RubyEncoding/*!*/ encoding, int lineLength, int consume, bool bufferResized) {
+            Debug.Assert(consume >= lineLength);
+            Debug.Assert(consume <= _bufferCount);
+
+            MutableString line;
+            if (bufferResized || _bufferStart == 0 && !Utils.IsSparse(lineLength, _buffer.Length)) {
+                Debug.Assert(_bufferStart == 0);
+                line = new MutableString(_buffer, lineLength, encoding);
+
+                if (_bufferCount > consume) {
+                    var newBuffer = new byte[Math.Max(_defaultBufferSize, _bufferCount - consume)];
+                    Buffer.BlockCopy(_buffer, consume, newBuffer, 0, _bufferCount - consume);
+                    _buffer = newBuffer;
+                } else {
+                    _buffer = null;
+                }
+
+                // consume as if we kept the same buffer and then adjust start:
+                ConsumeBuffered(consume);
+                _bufferStart = 0;
+            } else {
+                line = MutableString.CreateBinary(encoding).Append(_buffer, _bufferStart, lineLength);
+                ConsumeBuffered(consume);
+            }
+            return line;
         }
 
         public MutableString ReadParagraph(RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
@@ -334,13 +487,14 @@ namespace IronRuby.Builtins {
             }
 
             int separatorOffset = 0;
+            int separatorLength = separator.GetByteCount();
             MutableString result = MutableString.CreateBinary(encoding);
 
             do {
                 result.Append((byte)b);
 
                 if (b == separator.GetByte(separatorOffset)) {
-                    if (separatorOffset == separator.Length - 1) {
+                    if (separatorOffset == separatorLength - 1) {
                         break;
                     }
                     separatorOffset++;
@@ -352,11 +506,6 @@ namespace IronRuby.Builtins {
             } while (b != -1);
 
             return result;
-        }
-
-        public override void Close() {
-            FlushRead();
-            _stream.Close();
         }
 
         public override bool CanRead {

@@ -18,12 +18,17 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 #if !SILVERLIGHT
 
@@ -138,7 +143,7 @@ namespace IronPython.Modules {
                 }  else if (value is int) {
                     address.WriteIntPtr(offset, new IntPtr((int)value));
                 } else if (value is BigInteger) {
-                    address.WriteIntPtr(offset, new IntPtr(((BigInteger)value).ToInt64()));
+                    address.WriteIntPtr(offset, new IntPtr((long)(BigInteger)value));
                 } else if ((ptr = value as Pointer) != null) {
                     address.WriteIntPtr(offset, ptr._memHolder.ReadMemoryHolder(0));
                     return PythonOps.MakeDictFromItems(ptr, "0", ptr._objects, "1");

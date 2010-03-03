@@ -16,12 +16,20 @@
 using System;
 using Microsoft.Scripting.Utils;
 
+#if !CLR2
+using BigInt = System.Numerics.BigInteger;
+#endif
+
 namespace Microsoft.Scripting.Math {
     /// <summary>
     /// Implementation of the complex number data type.
     /// </summary>
     [Serializable]
     public struct Complex64 {
+        public static readonly Complex64 Zero = new Complex64(0.0, 0.0);
+        public static readonly Complex64 One = new Complex64(1.0, 0.0);
+        public static readonly Complex64 ImaginaryOne = new Complex64(0.0, 1.0);
+
         private readonly double real, imag;
 
         public static Complex64 MakeImaginary(double imag) {
@@ -74,6 +82,10 @@ namespace Microsoft.Scripting.Math {
             else return string.Format(System.Globalization.CultureInfo.InvariantCulture.NumberFormat, "({0}+{1}j)", real, imag);
         }
 
+        public static implicit operator Complex64(bool b) {
+            return b ? One : Zero;
+        }
+
         public static implicit operator Complex64(int i) {
             return MakeReal(i);
         }
@@ -124,6 +136,13 @@ namespace Microsoft.Scripting.Math {
             // throws an overflow exception if we can't handle the value.
             return MakeReal((double)i);
         }
+
+#if !CLR2
+        public static implicit operator Complex64(BigInt i) {
+            // throws an overflow exception if we can't handle the value.
+            return MakeReal((double)i);
+        }
+#endif
 
         public static bool operator ==(Complex64 x, Complex64 y) {
             return x.real == y.real && x.imag == y.imag;
@@ -198,33 +217,14 @@ namespace Microsoft.Scripting.Math {
         public static Complex64 operator +(Complex64 x) {
             return x;
         }
-
+        
+        [Obsolete("Deprecated - consider using MS.Scripting.Utils.MathUtils.Hypot")]
         public static double Hypot(double x, double y) {
-            //
-            // sqrt(x*x + y*y) == sqrt(x*x * (1 + (y*y)/(x*x))) ==
-            // sqrt(x*x) * sqrt(1 + (y/x)*(y/x)) ==
-            // abs(x) * sqrt(1 + (y/x)*(y/x))
-            //
-
-            //  First, get abs
-            if (x < 0.0) x = -x;
-            if (y < 0.0) y = -y;
-
-            // Obvious cases
-            if (x == 0.0) return y;
-            if (y == 0.0) return x;
-
-            // Divide smaller number by bigger number to safeguard the (y/x)*(y/x)
-            if (x < y) { double temp = y; y = x; x = temp; }
-
-            y /= x;
-
-            // calculate abs(x) * sqrt(1 + (y/x)*(y/x))
-            return x * System.Math.Sqrt(1 + y * y);
+            return MathUtils.Hypot(x, y);
         }
 
         public double Abs() {
-            return Hypot(real, imag);
+            return MathUtils.Hypot(real, imag);
         }
 
         public Complex64 Power(Complex64 y) {
@@ -233,7 +233,7 @@ namespace Microsoft.Scripting.Math {
             int power = (int)c;
 
             if (power == c && power >= 0 && d == .0) {
-                Complex64 result = new Complex64(1.0);
+                Complex64 result = One;
                 if (power == 0) return result;
                 Complex64 factor = this;
                 while (power != 0) {
@@ -245,7 +245,7 @@ namespace Microsoft.Scripting.Math {
                 }
                 return result;
             } else if (IsZero) {
-                return y.IsZero ? Complex64.MakeReal(1.0) : Complex64.MakeReal(0.0);
+                return y.IsZero ? One : Zero;
             } else {
                 double a = real;
                 double b = imag;

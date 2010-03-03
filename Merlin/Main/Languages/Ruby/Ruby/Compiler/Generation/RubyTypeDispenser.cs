@@ -42,9 +42,11 @@ namespace IronRuby.Compiler.Generation {
             AddBuiltinType(typeof(MutableString), typeof(MutableString.Subclass), true);
             AddBuiltinType(typeof(Proc), typeof(Proc.Subclass), true);
             AddBuiltinType(typeof(RubyRegex), typeof(RubyRegex.Subclass), true);
+            AddBuiltinType(typeof(Range), typeof(Range.Subclass), true);
             AddBuiltinType(typeof(Hash), typeof(Hash.Subclass), true);
             AddBuiltinType(typeof(RubyArray), typeof(RubyArray.Subclass), true);
             AddBuiltinType(typeof(MatchData), typeof(MatchData.Subclass), true);
+            AddBuiltinType(typeof(RubyIO), typeof(RubyIO.Subclass), true);
         }
 
         internal static Type/*!*/ GetOrCreateType(Type/*!*/ baseType, IList<Type/*!*/>/*!*/ interfaces, bool noOverrides) {

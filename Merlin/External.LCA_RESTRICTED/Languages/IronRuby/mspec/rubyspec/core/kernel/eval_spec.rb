@@ -282,8 +282,13 @@ describe "Kernel#eval" do
       x.should == 42
     end
   end
-end
 
+  it "allows any string as a filename" do
+    some_string = "some string\r\n!?"
+    eval("raise 'hi' rescue $!", nil, some_string).backtrace.join("\n").should =~ /#{Regexp.escape(some_string)}/
+  end
+end
+  
 describe "Kernel.eval" do
 #  TODO: This is how MRI 1.9 and JRuby behave. Bug or feature?
 #  it "yields to the block of the method when evaling 'yield' inside it" do

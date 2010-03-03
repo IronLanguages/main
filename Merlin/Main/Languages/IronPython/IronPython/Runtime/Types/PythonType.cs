@@ -15,8 +15,11 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 using System;
@@ -32,7 +35,6 @@ using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -905,7 +907,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         case TypeCode.Object:
                             if (_underlyingSystemType == typeof(BigInteger)) {
                                 return typeof(Extensible<BigInteger>);
-                            } else if (_underlyingSystemType == typeof(Complex64)) {
+                            } else if (_underlyingSystemType == typeof(Complex)) {
                                 return typeof(ExtensibleComplex);
                             }
                             break;

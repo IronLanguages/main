@@ -144,6 +144,7 @@ namespace IronPython.Compiler.Ast {
                             @catch,
                             // restore existing line updated after exception handler completes
                             PopLineUpdated(lineUpdated),
+                            Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
                             AstUtils.Default(body.Type)
                         ),
                         AstUtils.IfThen(runElse,
@@ -170,13 +171,17 @@ namespace IronPython.Compiler.Ast {
                         // restore existing line updated after exception handler completes
                         PopLineUpdated(lineUpdated),
                         Ast.Call(AstMethods.ExceptionHandled, Parent.LocalContext),
+                        Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
                         AstUtils.Default(body.Type)
                     );
             } else {
                 result = body;
             }
 
-            return Ast.Block(GetVariables(noNestedException, lineUpdated, runElse), AddFinally(result, noNestedException));
+            return Ast.Block(
+                GetVariables(noNestedException, lineUpdated, runElse), 
+                AddFinally(result, noNestedException)
+            );
         }
 
         private static ReadOnlyCollectionBuilder<MSAst.ParameterExpression> GetVariables(MSAst.ParameterExpression noNestedException, MSAst.ParameterExpression lineUpdated, MSAst.ParameterExpression runElse) {
@@ -416,6 +421,7 @@ namespace IronPython.Compiler.Ast {
                     )
                 ),
                 body,
+                Ast.Assign(extracted, Ast.Constant(null)),
                 AstUtils.Empty()
             );
         }

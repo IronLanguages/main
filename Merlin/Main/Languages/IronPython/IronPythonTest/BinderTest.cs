@@ -17,7 +17,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+
+#if CLR2
 using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPythonTest.BinderTest {
     public interface I { }

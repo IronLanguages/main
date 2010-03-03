@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using BigInt = System.Numerics.BigInteger;
+#endif
+
 using System;
 using System.Collections.Generic;
+
 using Microsoft.Scripting.Math;
 
 namespace Microsoft.Scripting.Interpreter {
@@ -39,6 +44,9 @@ namespace Microsoft.Scripting.Interpreter {
                     { typeof(double), InstructionFactory<double>.Factory },
                     { typeof(char), InstructionFactory<char>.Factory },
                     { typeof(string), InstructionFactory<string>.Factory },
+#if !CLR2
+                    { typeof(BigInt), InstructionFactory<BigInt>.Factory },
+#endif
                     { typeof(BigInteger), InstructionFactory<BigInteger>.Factory },
                     { typeof(SymbolId), InstructionFactory<SymbolId>.Factory },     
                 };

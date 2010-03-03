@@ -316,7 +316,7 @@ namespace IronRuby.StandardLibrary.Sockets {
 
             MutableString str = MutableString.CreateBinary(received);
             str.Append(buffer, 0, received);
-            fixnumCast.Context.SetObjectTaint(str, true);
+            str.IsTainted = true;
             return str;
         }
 
@@ -360,22 +360,22 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         // TODO: handle other invalid addresses
-        internal static IPHostEntry/*!*/ GetHostEntry(IPAddress/*!*/ address) {
+        internal static IPHostEntry/*!*/ GetHostEntry(IPAddress/*!*/ address, bool doNotReverseLookup) {
             Assert.NotNull(address);
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.Loopback)) {
-                return MakeEntry(address);
+                return MakeEntry(address, doNotReverseLookup);
             } else {
                 return Dns.GetHostEntry(address);
             }
         }
 
         // TODO: handle other invalid addresses
-        internal static IPHostEntry/*!*/ GetHostEntry(string/*!*/ hostNameOrAddress) {
+        internal static IPHostEntry/*!*/ GetHostEntry(string/*!*/ hostNameOrAddress, bool doNotReverseLookup) {
             Assert.NotNull(hostNameOrAddress);
             if (hostNameOrAddress == IPAddress.Any.ToString()) {
-                return MakeEntry(IPAddress.Any);
+                return MakeEntry(IPAddress.Any, doNotReverseLookup);
             } else if (hostNameOrAddress == IPAddress.Loopback.ToString()) {
-                return MakeEntry(IPAddress.Loopback);
+                return MakeEntry(IPAddress.Loopback, doNotReverseLookup);
             } else {
                 return Dns.GetHostEntry(hostNameOrAddress);
             }
@@ -387,37 +387,57 @@ namespace IronRuby.StandardLibrary.Sockets {
                 return address;
             }
             // TODO: map exceptions
-            return Dns.GetHostAddresses(hostNameOrAddress)[0];
+
+            var addresses = Dns.GetHostAddresses(hostNameOrAddress);
+
+            // prefer V4 address:
+            foreach (var hostAddress in addresses) {
+                if (hostAddress.AddressFamily == AddressFamily.InterNetwork) {
+                    return hostAddress;
+                }
+            }
+
+            return addresses[0];
         }
 
-        internal static IPHostEntry/*!*/ MakeEntry(IPAddress/*!*/ address) {
+        internal static IPHostEntry/*!*/ MakeEntry(IPAddress/*!*/ address, bool doNotReverseLookup) {
+            var str = IPAddressToHostName(address, doNotReverseLookup);
             return new IPHostEntry() {
                 AddressList = new[] { address },
-                Aliases = new[] { address.ToString() },
-                HostName = address.ToString()
+                Aliases = new[] { str },
+                HostName = str
             };
         }
 
-        internal static RubyArray/*!*/ GetHostByName(string/*!*/ hostNameOrAddress, bool packIpAddresses) {
-            return CreateHostEntryArray(GetHostEntry(hostNameOrAddress), packIpAddresses);
+        internal static RubyArray/*!*/ GetHostByName(RubyContext/*!*/ context, string/*!*/ hostNameOrAddress, bool packIpAddresses) {
+            return CreateHostEntryArray(context, GetHostEntry(hostNameOrAddress, DoNotReverseLookup(context).Value), packIpAddresses);
         }
 
         internal static RubyArray/*!*/ GetAddressArray(RubyContext/*!*/ context, EndPoint endPoint) {
             RubyArray result = new RubyArray(4);
 
             IPEndPoint ep = (IPEndPoint)endPoint;
-
             result.Add(MutableString.CreateAscii(AddressFamilyToString(ep.AddressFamily)));
             result.Add(ep.Port);
-            if (DoNotReverseLookup(context).Value) {
-                result.Add(MutableString.CreateAscii(ep.Address.ToString()));
-            } else {
-                // TODO: MRI returns localhost rather than the local machine name here
-                // TODO (encoding):
-                result.Add(MutableString.Create(Dns.GetHostEntry(ep.Address).HostName, RubyEncoding.UTF8));
-            }
+            result.Add(HostNameToMutableString(context, IPAddressToHostName(ep.Address, DoNotReverseLookup(context).Value)));
             result.Add(MutableString.CreateAscii(ep.Address.ToString()));
             return result;
+        }
+
+        internal static MutableString/*!*/ HostNameToMutableString(RubyContext/*!*/ context, string/*!*/ str) {
+            if (str.IsAscii()) {
+                return MutableString.CreateAscii(str);
+            } else {
+                return MutableString.Create(str, context.GetPathEncoding());
+            }
+        }
+
+        internal static string/*!*/ IPAddressToHostName(IPAddress/*!*/ address, bool doNotReverseLookup) {
+            if (address.Equals(IPAddress.Any) || doNotReverseLookup) {
+                return address.ToString();
+            } else {
+                return Dns.GetHostEntry(address).HostName;
+            }
         }
 
         private static string AddressFamilyToString(AddressFamily af) {
@@ -614,33 +634,34 @@ namespace IronRuby.StandardLibrary.Sockets {
             return null;
         }
 
-        internal static RubyArray/*!*/ CreateHostEntryArray(IPHostEntry/*!*/ hostEntry, bool packIpAddresses) {
+        internal static RubyArray/*!*/ CreateHostEntryArray(RubyContext/*!*/ context, IPHostEntry/*!*/ hostEntry, bool packIpAddresses) {
             RubyArray result = new RubyArray(4);
-            // Canonical Hostname
-            // TODO (encoding):
-            result.Add(MutableString.Create(hostEntry.HostName, RubyEncoding.UTF8));
+            
+            // host name:
+            result.Add(HostNameToMutableString(context, hostEntry.HostName));
 
-            // Aliases
+            // aliases:
             RubyArray aliases = new RubyArray(hostEntry.Aliases.Length);
             foreach (string alias in hostEntry.Aliases) {
-                // TODO (encoding):
-                aliases.Add(MutableString.Create(alias, RubyEncoding.UTF8));
+                aliases.Add(HostNameToMutableString(context, alias));
             }
             result.Add(aliases);
 
-            // Address Type
-            result.Add((int)hostEntry.AddressList[0].AddressFamily);
-
-            // IP Address
+            // address (the first IPv4):
             foreach (IPAddress address in hostEntry.AddressList) {
-                if (packIpAddresses) {
-                    byte[] bytes = address.GetAddressBytes();
-                    MutableString str = MutableString.CreateBinary();
-                    str.Append(bytes, 0, bytes.Length);
-                    result.Add(str);
-                } else {
-                    result.Add(MutableString.CreateAscii(address.ToString()));
+                if (address.AddressFamily == AddressFamily.InterNetwork) {
+                    result.Add((int)address.AddressFamily);
+                    if (packIpAddresses) {
+                        byte[] bytes = address.GetAddressBytes();
+                        MutableString str = MutableString.CreateBinary();
+                        str.Append(bytes, 0, bytes.Length);
+                        result.Add(str);
+                    } else {
+                        result.Add(MutableString.CreateAscii(address.ToString()));
+                    }
+                    break;
                 }
+                
             }
             return result;
         }

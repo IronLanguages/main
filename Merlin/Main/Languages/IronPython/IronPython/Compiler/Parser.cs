@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.IO;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -27,6 +26,12 @@ using IronPython.Compiler.Ast;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Compiler {
 
@@ -1873,17 +1878,19 @@ namespace IronPython.Compiler {
             if (PeekToken().Kind == TokenKind.Constant) {
                 Token t = PeekToken();
 
-                BigInteger bi = t.Value as BigInteger;
-                uint iVal;
-                if (!Object.ReferenceEquals(bi, null) && bi.AsUInt32(out iVal) && iVal == 0x80000000) {
-                    string tokenString = _tokenizer.GetTokenString(); ;
-                    Debug.Assert(tokenString.Length > 0);
+                if (t.Value is BigInteger) {
+                    BigInteger bi = (BigInteger)t.Value;
+                    uint iVal;
+                    if (bi.AsUInt32(out iVal) && iVal == 0x80000000) {
+                        string tokenString = _tokenizer.GetTokenString(); ;
+                        Debug.Assert(tokenString.Length > 0);
 
-                    if (tokenString[tokenString.Length - 1] != 'L' &&
-                        tokenString[tokenString.Length - 1] != 'l') {
-                        NextToken();
-                        return new ConstantExpression(-2147483648);
+                        if (tokenString[tokenString.Length - 1] != 'L' &&
+                            tokenString[tokenString.Length - 1] != 'l') {
+                            NextToken();
+                            return new ConstantExpression(-2147483648);
 
+                        }
                     }
                 }
             }

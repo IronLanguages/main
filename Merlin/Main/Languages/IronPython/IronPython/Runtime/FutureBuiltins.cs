@@ -24,7 +24,6 @@ using System.Text;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -34,6 +33,12 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("future_builtins", typeof(FutureBuiltins))]
 namespace IronPython.Runtime {
@@ -81,8 +86,8 @@ namespace IronPython.Runtime {
         
         public static string oct(CodeContext context, object number) {
             if (number is int) {
-                number = BigInteger.Create((int)number);
-            } 
+                number = (BigInteger)(int)number;
+            }
             if (number is BigInteger) {
                 BigInteger x = (BigInteger)number;
                 if (x == 0) {

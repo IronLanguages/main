@@ -55,6 +55,11 @@ nil
         /// LambdaExpression gets converted to a wrapper.
         /// </summary>
         public void SimpleCall4() {
+#if !CLR2
+            // TODO: see TFS bug #862483:
+            if (_driver.NoAdaptiveCompilation && IntPtr.Size != 4) return;
+#endif
+
             TestOutput(@"
 def foo a,b,c,d,e,f,g,h,i,j
   puts 123
@@ -888,7 +893,7 @@ foo
 ", OutputFlags.Match);
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void DefineMethodVisibility2A() {
             Test_DefineMethodVisibility2();
         }
@@ -920,7 +925,7 @@ end
 
 p M.public_instance_methods(false).collect { |m| m.to_s }.sort
 p M.private_instance_methods(false).collect { |m| m.to_s }.sort
-", Context.RubyOptions.Compatibility == RubyCompatibility.Ruby18 ? @"
+", Context.RubyOptions.Compatibility < RubyCompatibility.Ruby19 ? @"
 [""c"", ""d""]
 [""a"", ""b""]
 " : @"
@@ -1007,7 +1012,7 @@ puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
             AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode1), "A");
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void MethodDefinitionInDefineMethod1B() {
             AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode1), "B");
         }
@@ -1034,7 +1039,7 @@ puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
         /// <summary>
         /// MRI 1.8 actually prints A. We consider it a bug that we won't copy.
         /// </summary>
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void MethodDefinitionInDefineMethod2B() {
             AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode2), "B");
         }
@@ -1056,7 +1061,7 @@ puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
             AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "A");
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void MethodDefinitionInModuleEval1B() {
             AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "B");
         }

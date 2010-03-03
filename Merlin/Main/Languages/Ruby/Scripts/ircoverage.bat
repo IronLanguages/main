@@ -9,7 +9,8 @@ xcopy /s /y "%SRC%\IronRuby*" "%DST%"
 xcopy /s /y "%SRC%\IronPython*" "%DST%"
 xcopy /s /y "%SRC%\Microsoft.*.dll" "%DST%"
 
-%VSINSTR% "%SRC%\IronRuby.dll"
+rem Instrumenting DetectFileAccessPermissions fails. See TFS bug #380474.
+%VSINSTR% "%SRC%\IronRuby.dll" /EXCLUDE:IronRuby.Runtime.RubyExceptionData::DetectFileAccessPermissions
 %VSINSTR% "%SRC%\IronRuby.Libraries.dll"
 %VSINSTR% "%SRC%\IronRuby.Libraries.Yaml.dll"
 

@@ -22,6 +22,7 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Dynamic;
 using System.Text;
 using Microsoft.Scripting.Generation;
@@ -174,7 +175,7 @@ namespace Microsoft.Scripting.Actions {
 
         public MethodInfo GetMethod(Type type, string name) {
             // declaring type takes precedence
-            MethodInfo mi = type.GetMethod(name);
+            MethodInfo mi = GetSpecialNameMethod(type, name);
             if (mi != null) {
                 return mi;
             }
@@ -184,10 +185,10 @@ namespace Microsoft.Scripting.Actions {
             do {
                 IList<Type> extTypes = GetExtensionTypes(curType);
                 foreach (Type t in extTypes) {
-                    MethodInfo next = t.GetMethod(name);
+                    MethodInfo next = GetSpecialNameMethod(t, name);
                     if (next != null) {
                         if (mi != null) {
-                            throw new AmbiguousMatchException(String.Format("Found multiple members for {0} on type {1}", name, curType));
+                            throw AmbiguousMatch(type, name);
                         }
 
                         mi = next;
@@ -202,7 +203,34 @@ namespace Microsoft.Scripting.Actions {
             } while (curType != null);
 
             return null;
-        }        
+        }
+        
+        private static MethodInfo GetSpecialNameMethod(Type type, string name) {
+            MethodInfo res = null;
+            MemberInfo[] candidates = type.GetMember(
+                name,
+                MemberTypes.Method,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static
+            );
+            
+            foreach (MethodInfo candidate in candidates) {
+                if (candidate.IsSpecialName) {
+                    if (object.ReferenceEquals(res, null)) {
+                        res = candidate;
+                    } else {
+                        throw AmbiguousMatch(type, name);
+                    }
+                }
+            }
+
+            return res;
+        }
+        
+        private static Exception AmbiguousMatch(Type type, string name) {
+            throw new AmbiguousMatchException(
+                string.Format("Found multiple SpecialName methods for {0} on type {1}", name, type)
+            );
+        }
     }
 }
 

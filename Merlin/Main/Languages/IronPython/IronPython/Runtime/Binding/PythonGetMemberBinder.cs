@@ -684,11 +684,7 @@ namespace IronPython.Runtime.Binding {
         #endregion
     }
 
-    class CompatibilityGetMember : GetMemberBinder, IPythonSite
-#if !CLR2 && SILVERLIGHT
-        , IInvokeOnGetBinder
-#endif
-    {
+    class CompatibilityGetMember : GetMemberBinder, IPythonSite, IInvokeOnGetBinder {
         private readonly PythonContext/*!*/ _context;
         private readonly bool _isNoThrow;
 
@@ -734,14 +730,14 @@ namespace IronPython.Runtime.Binding {
             return ob._context.Binder == _context.Binder &&
                 base.Equals(obj);
         }
-#if !CLR2 && SILVERLIGHT
+
         #region IInvokeOnGetBinder Members
 
         public bool InvokeOnGet {
             get { return false; }
         }
+
         #endregion
-#endif
     }
 
     [Flags]

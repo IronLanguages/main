@@ -20,8 +20,15 @@ using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("marshal", typeof(IronPython.Modules.PythonMarshal))]
 namespace IronPython.Modules {
@@ -160,7 +167,7 @@ namespace IronPython.Modules {
                     else if (o.GetType() == typeof(SetCollection)) WriteSet(o);
                     else if (o.GetType() == typeof(FrozenSetCollection)) WriteFrozenSet(o);
                     else if (o is BigInteger) WriteInteger((BigInteger)o);
-                    else if (o is Complex64) WriteComplex((Complex64)o);
+                    else if (o is Complex) WriteComplex((Complex)o);
                     else if (o is PythonBuffer) WriteBuffer((PythonBuffer)o);
                     else if (o == PythonExceptions.StopIteration) WriteStopIteration();
                     else throw PythonOps.ValueError("unmarshallable object");
@@ -199,7 +206,7 @@ namespace IronPython.Modules {
 
             private void WriteInteger(BigInteger val) {
                 _bytes.Add((byte)'l');
-                int bitCount = 0, dir;
+                int wordCount = 0, dir;
                 if (val < BigInteger.Zero) {
                     val *= -1;
                     dir = -1;
@@ -214,10 +221,10 @@ namespace IronPython.Modules {
 
                     bytes.Add((byte)(word & 0xFF));
                     bytes.Add((byte)((word >> 8) & 0xFF));
-                    bitCount += dir;
+                    wordCount += dir;
                 }
 
-                WriteInt32(bitCount);
+                WriteInt32(wordCount);
 
                 _bytes.AddRange(bytes);
             }
@@ -252,10 +259,10 @@ namespace IronPython.Modules {
                 }
             }
 
-            private void WriteComplex(Complex64 val) {
+            private void WriteComplex(Complex val) {
                 _bytes.Add((byte)'x');
                 WriteDoubleString(val.Real);
-                WriteDoubleString(val.Imag);
+                WriteDoubleString(val.Imaginary());
             }
 
             private void WriteStopIteration() {
@@ -660,7 +667,7 @@ namespace IronPython.Modules {
                 double real = ReadFloatStr();
                 double imag = ReadFloatStr();
 
-                return new Complex64(real, imag);
+                return new Complex(real, imag);
             }
 
             private object ReadBuffer() {
@@ -680,6 +687,10 @@ namespace IronPython.Modules {
 
             private object ReadBigInteger() {
                 int encodingSize = ReadInt32();
+                if (encodingSize == 0) {
+                    return BigInteger.Zero;
+                }
+
                 int sign = 1;
                 if (encodingSize < 0) {
                     sign = -1;
@@ -689,6 +700,7 @@ namespace IronPython.Modules {
 
                 byte[] bytes = ReadBytes(len);
 
+#if CLR2
                 // first read the values in shorts so we can work
                 // with them as 15-bit bytes easier...
                 short[] shData = new short[encodingSize];
@@ -732,6 +744,42 @@ namespace IronPython.Modules {
 
                 // and finally pass the data onto the big integer.
                 return new BigInteger(sign, numData);
+#else
+                // re-pack our 15-bit values into bytes
+                byte[] data = new byte[bytes.Length];
+                for (int bytesIndex = 0, dataIndex = 0, shift = 0; bytesIndex < len; bytesIndex++) {
+                    // write 8 bits
+                    if (shift == 0) {
+                        data[dataIndex] = bytes[bytesIndex];
+                    } else {
+                        data[dataIndex] = (byte)((bytes[bytesIndex] >> shift) | (bytes[bytesIndex + 1] << (8 - shift)));
+                    }
+
+                    //done
+                    dataIndex++;
+                    bytesIndex++;
+
+                    if (shift == 7) {
+                        shift = 0;
+                        continue;
+                    }
+
+                    // write 7 bits
+                    if (bytesIndex < len - 1) {
+                        data[dataIndex] = (byte)((bytes[bytesIndex] >> shift) | (bytes[bytesIndex + 1] << (7 - shift)));
+                    } else {
+                        data[dataIndex] = (byte)(bytes[bytesIndex] >> shift);
+                    }
+
+                    //done
+                    dataIndex++;
+                    shift++;
+                }
+
+                // and finally pass the data onto the big integer.
+                BigInteger res = new BigInteger(data);
+                return sign < 0 ? -res : res;
+#endif
             }
         }
 

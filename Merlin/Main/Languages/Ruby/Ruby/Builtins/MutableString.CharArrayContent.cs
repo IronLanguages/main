@@ -31,6 +31,7 @@ namespace IronRuby.Builtins {
         private sealed class CharArrayContent : Content {
             private char[]/*!*/ _data;
             private int _count;
+            private string _immutableSnapshot;
 
             public CharArrayContent(char[]/*!*/ data, MutableString owner)
                 : this(data, data.Length, owner) {
@@ -138,7 +139,7 @@ namespace IronRuby.Builtins {
             }
 
             public override Content/*!*/ Clone() {
-                return new CharArrayContent(Utils.GetSlice(_data, 0, _count), _owner);
+                return new CharArrayContent(_data.GetSlice(0, _count), _owner);
             }
 
             public override void TrimExcess() {
@@ -161,7 +162,11 @@ namespace IronRuby.Builtins {
             #region Conversions (read-only)
 
             public override string/*!*/ ConvertToString() {
-                return GetStringSlice(0, _count);
+                if (_immutableSnapshot == null || _owner.IsFlagSet(MutableString.HasChangedCharArrayToStringFlag)) {
+                    _immutableSnapshot = GetStringSlice(0, _count);
+                    _owner.ClearFlag(MutableString.HasChangedCharArrayToStringFlag);
+                }
+                return _immutableSnapshot;
             }
 
             public override byte[]/*!*/ ConvertToBytes() {
@@ -245,7 +250,7 @@ namespace IronRuby.Builtins {
             }
 
             public override string/*!*/ GetStringSlice(int start, int count) {
-                return new String(_data, start, count);
+                return _data.GetStringSlice(_count, start, count);
             }
 
             public override byte[]/*!*/ GetBinarySlice(int start, int count) {
@@ -253,7 +258,7 @@ namespace IronRuby.Builtins {
             }
 
             public override Content/*!*/ GetSlice(int start, int count) {
-                return new CharArrayContent(_data.GetSlice(start, count), _owner);
+                return new CharArrayContent(_data.GetSlice(_count, start, count), _owner);
             }
 
             public override IEnumerable<char>/*!*/ GetCharacters() {

@@ -25,6 +25,12 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;
 
+#if CLR2
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
+
 namespace IronPython.Runtime.Operations {
 
     /// <summary>
@@ -276,7 +282,7 @@ namespace IronPython.Runtime.Operations {
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(bool)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(int)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(double)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(Complex64)), null);
+                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(Complex)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(string)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonTuple)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(List)), null);

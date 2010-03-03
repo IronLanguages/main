@@ -442,7 +442,7 @@ namespace Microsoft.Scripting.Actions {
         private bool MakeOperatorSetMemberBody(SetOrDeleteMemberInfo memInfo, DynamicMetaObject self, DynamicMetaObject target, Type type, string name) {
             if (self != null) {
                 MethodInfo setMem = GetMethod(type, name);
-                if (setMem != null && setMem.IsSpecialName) {
+                if (setMem != null) {
                     ParameterExpression tmp = Ast.Variable(target.Expression.Type, "setValue");
                     memInfo.Body.AddVariable(tmp);
 

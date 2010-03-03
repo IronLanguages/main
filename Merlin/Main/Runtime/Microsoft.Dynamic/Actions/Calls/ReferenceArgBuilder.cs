@@ -37,14 +37,18 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly Type _elementType;
         private ParameterExpression _tmp;
 
-        public ReferenceArgBuilder(ParameterInfo info, Type parameterType, int index)
-            : base(info, parameterType, index, false, false) {
-            Debug.Assert(parameterType.GetGenericTypeDefinition() == typeof(StrongBox<>));
-            _elementType = parameterType.GetGenericArguments()[0];
+        public ReferenceArgBuilder(ParameterInfo info, Type elementType, Type strongBox, int index)
+            : base(info, strongBox, index, false, false) {
+            _elementType = elementType;
         }
 
         protected override SimpleArgBuilder Copy(int newIndex) {
-            return new ReferenceArgBuilder(ParameterInfo, Type, newIndex);
+            return new ReferenceArgBuilder(ParameterInfo, _elementType, Type, newIndex);
+        }
+
+        public override ArgBuilder Clone(ParameterInfo newType) {
+            Type elementType = newType.ParameterType.GetElementType();
+            return new ReferenceArgBuilder(newType, elementType, typeof(StrongBox<>).MakeGenericType(elementType), Index);
         }
 
         public override int Priority {
@@ -58,7 +62,6 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             Debug.Assert(!hasBeenUsed[Index]);
             hasBeenUsed[Index] = true;
-            Type boxType = typeof(StrongBox<>).MakeGenericType(_elementType);
             Expression arg = args.GetObject(Index).Expression;
 
             return Expression.Condition(
@@ -66,13 +69,17 @@ namespace Microsoft.Scripting.Actions.Calls {
                 Expression.Assign(
                     _tmp,
                     Expression.Field(
-                        AstUtils.Convert(arg, boxType),
-                        boxType.GetField("Value")
+                        AstUtils.Convert(arg, Type),
+                        Type.GetField("Value")
                     )
                 ),
-                Expression.Call(
-                    typeof(RuntimeHelpers).GetMethod("IncorrectBoxType").MakeGenericMethod(_elementType),
-                    AstUtils.Convert(arg, typeof(object))
+                Expression.Throw(
+                    Expression.Call(
+                        new Func<Type, object, Exception>(RuntimeHelpers.MakeIncorrectBoxTypeError).Method,
+                        AstUtils.Constant(_elementType),
+                        AstUtils.Convert(arg, typeof(object))
+                    ),
+                    _elementType
                 )
             );
         }

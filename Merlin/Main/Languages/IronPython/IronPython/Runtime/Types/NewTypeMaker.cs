@@ -222,7 +222,10 @@ namespace IronPython.Runtime.Types {
         /// Is this a type used for instances Python types (and not for the types themselves)?
         /// </summary>
         public static bool IsInstanceType(Type type) {
-            return type.FullName.IndexOf(NewTypeMaker.TypePrefix) == 0;
+            return type.FullName.IndexOf(NewTypeMaker.TypePrefix) == 0 ||
+                // Users can create sub-types of instance-types using __clrtype__ without using 
+                // NewTypeMaker.TypePrefix
+                ((type.BaseType != null) && IsInstanceType(type.BaseType));
         }
 
         #endregion

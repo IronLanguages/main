@@ -53,7 +53,7 @@ hello
         }
 
         [Options(NoRuntime = true)]
-        public void File2() {
+        public void File_AppendBytes1() {
             string s;
             string crlf = "\r\n";
             var stream = new TestStream(false, B(
@@ -64,7 +64,7 @@ hello
             int s_crlf_count = 6;
 
             var io = new RubyBufferedStream(stream);
-            Assert(io.PeekByte(0) == (byte)'a');
+            Assert(io.PeekByte() == (byte)'a');
 
             var buffer = MutableString.CreateBinary(B("foo:"));
             Assert(io.AppendBytes(buffer, 4, false) == 4);
@@ -97,7 +97,7 @@ hello
         }
 
         [Options(NoRuntime = true)]
-        public void File3() {
+        public void File_WriteBytes1() {
             var stream = new MemoryStream();
             var io = new RubyBufferedStream(stream);
 
@@ -116,6 +116,44 @@ hello
             Assert(io.WriteBytes(new byte[] { 0, 1, (byte)'\n', 2 }, 1, 2, false) == 3);
             Assert(stream.ToArray().ValueEquals(new byte[] { 1, (byte)'\r', (byte)'\n' }));
             stream.Seek(0, SeekOrigin.Begin);
+        }
+
+        [Options(NoRuntime = true)]
+        public void File_ReadLine1() {
+            var stream = new TestStream(false, B(
+                "a\r\n\r\nbbbbbbbbbbbbbbbbbbbbb1bbbbbbbbbbbbb2bbbbbbbbbbbbbbbbbbbbb3bbbbbbbbbbbbb4\rc\nd\n\n\n\nef")
+            );
+
+            foreach (int bufferSize in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100 }) {
+                stream.Seek(0, SeekOrigin.Begin);
+                var io = new RubyBufferedStream(stream, false, bufferSize);
+
+                TestReadLine(io, true, "a\r\n");
+                TestReadLine(io, true, "\r\n");
+                TestReadLine(io, true, "bbbbbbbbbbbbbbbbbbbbb1bbbbbbbbbbbbb2bbbbbbbbbbbbbbbbbbbbb3bbbbbbbbbbbbb4\rc\n");
+                TestReadLine(io, true, "d\n");
+                TestReadLine(io, true, "\n");
+                TestReadLine(io, true, "\n");
+                TestReadLine(io, true, "\n");
+                TestReadLine(io, true, "ef");
+                TestReadLine(io, true, null);
+
+                stream.Seek(0, SeekOrigin.Begin);
+                TestReadLine(io, false, "a\n");
+                TestReadLine(io, false, "\n");
+                TestReadLine(io, false, "bbbbbbbbbbbbbbbbbbbbb1bbbbbbbbbbbbb2bbbbbbbbbbbbbbbbbbbbb3bbbbbbbbbbbbb4\rc\n");
+                TestReadLine(io, false, "d\n");
+                TestReadLine(io, false, "\n");
+                TestReadLine(io, false, "\n");
+                TestReadLine(io, false, "\n");
+                TestReadLine(io, false, "ef");
+                TestReadLine(io, false, null);
+            }
+        }
+
+        private void TestReadLine(RubyBufferedStream/*!*/ io, bool preserveEolns, string expected) {
+            var s = io.ReadLine(RubyEncoding.Binary, preserveEolns);
+            Assert(s == null && expected == null || s.ToString() == expected);
         }
 
         public class Pal1 : PlatformAdaptationLayer {

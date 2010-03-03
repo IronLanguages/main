@@ -22,6 +22,18 @@ describe "StringScanner#[]" do
     @s[5].should == nil
     @s[-5].should == nil
   end
+  
+  it "works with the current value of the underlying string" do
+    x = 'hello'
+    s = StringScanner.new(x)
+    s.scan(/(h)(ello)/).should == "hello"
+    s[1].should == "h"
+    s[2].should == "ello"
+    
+    s.string.sub!("ello", "")
+    s[1].should == "h"
+    s[2].should == ""    
+  end
 
   it "calls to_int on the given index" do
     @s.scan(/(\w+) (\w+) (\d+) /)

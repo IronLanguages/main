@@ -45,7 +45,10 @@ class IRTest
         :ActionPack => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat action_pack",
         :ActiveSupport => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_support",
         :ActiveRecord => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_record",
-        :ActiveResource => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_resource"
+        :ActiveResource => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.bat active_resource",
+        
+        :ActionPack3 => "#{ir} -1.8.7 #{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.rb action_pack_3",
+        :ActiveSupport3 => "#{ir} -1.8.7 #{@root}\\Languages\\Ruby\\Tests\\Scripts\\utr.rb active_support_3",
       })
     end
     @start = Time.now

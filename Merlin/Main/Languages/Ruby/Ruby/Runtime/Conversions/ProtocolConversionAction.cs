@@ -397,7 +397,7 @@ namespace IronRuby.Runtime.Conversions {
         protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
             out MethodInfo postConverter) {
             postConverter = Methods.StringToMutableString;
-            return new InteropBinder.Convert(context, typeof(string), true);
+            return context.MetaBinderFactory.InteropConvert(typeof(string), true);
         }
     }
 
@@ -501,7 +501,7 @@ namespace IronRuby.Runtime.Conversions {
 
         protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject>/*!*/ args, out MethodInfo postProcessor) {
             postProcessor = null;
-            return new InteropBinder.Splat(context);
+            return context.MetaBinderFactory.InteropSplat();
         }
     }
 
@@ -552,7 +552,7 @@ namespace IronRuby.Runtime.Conversions {
 
         protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject>/*!*/ args, out MethodInfo postProcessor) {
             postProcessor = null;
-            return new InteropBinder.Splat(context);
+            return context.MetaBinderFactory.InteropSplat();
         }
     }
 

@@ -24,12 +24,16 @@ namespace IronRuby.Builtins {
     /// Dictionary inherits from Object, mixes in Enumerable.
     /// Ruby hash is a Dictionary{object, object}, but it adds default value/proc
     /// </summary>
-    public partial class Hash : Dictionary<object, object>, IDuplicable {
+    public partial class Hash : Dictionary<object, object>, IRubyObjectState, IDuplicable {
 
         // The default value can be a Proc that we should *return*, and that is different
         // from the default value being a Proc that we should *call*, hence two variables
         private Proc _defaultProc;
         private object _defaultValue;
+
+        private uint _flags;
+        private const uint IsFrozenFlag = 1;
+        private const uint IsTaintedFlag = 2;
 
         public Proc DefaultProc { get { return _defaultProc; } set { _defaultProc = value; } }
         public object DefaultValue { get { return _defaultValue; } set { _defaultValue = value; } }
@@ -88,6 +92,41 @@ namespace IronRuby.Builtins {
             var result = CreateInstance();
             context.CopyInstanceData(this, result, copySingletonMembers);
             return result;
+        }
+
+        #endregion
+
+        #region Flags
+
+        public void Mutate() {
+            if ((_flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+        }
+
+        public bool IsTainted {
+            get {
+                return (_flags & IsTaintedFlag) != 0;
+            }
+            set {
+                Mutate();
+                _flags = (_flags & ~IsTaintedFlag) | (value ? IsTaintedFlag : 0);
+            }
+        }
+
+        public bool IsFrozen {
+            get {
+                return (_flags & IsFrozenFlag) != 0;
+            }
+        }
+
+        void IRubyObjectState.Freeze() {
+            Freeze();
+        }
+
+        public Hash/*!*/ Freeze() {
+            _flags |= IsFrozenFlag;
+            return this;
         }
 
         #endregion

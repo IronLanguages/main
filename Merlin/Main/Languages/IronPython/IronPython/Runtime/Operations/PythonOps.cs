@@ -15,8 +15,11 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 using System;
@@ -37,7 +40,6 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -246,7 +248,7 @@ namespace IronPython.Runtime.Operations {
             if (o is int) return o;
             else if (o is double) return o;
             else if (o is BigInteger) return o;
-            else if (o is Complex64) return o;
+            else if (o is Complex) return o;
             else if (o is long) return o;
             else if (o is float) return o;
             else if (o is bool) return ScriptingRuntimeHelpers.Int32ToObject((bool)o ? 1 : 0);
@@ -264,7 +266,7 @@ namespace IronPython.Runtime.Operations {
             else if (o is double) return DoubleOps.Negate((double)o);
             else if (o is long) return Int64Ops.Negate((long)o);
             else if (o is BigInteger) return BigIntegerOps.Negate((BigInteger)o);
-            else if (o is Complex64) return -(Complex64)o;
+            else if (o is Complex) return -(Complex)o;
             else if (o is float) return DoubleOps.Negate((float)o);
             else if (o is bool) return ScriptingRuntimeHelpers.Int32ToObject((bool)o ? -1 : 0);
 
@@ -755,7 +757,7 @@ namespace IronPython.Runtime.Operations {
                 if (ret != NotImplementedType.Value) return ret;
             }
 
-            if (x is Complex64 || y is Complex64 || z is Complex64) {
+            if (x is Complex || y is Complex || z is Complex) {
                 throw PythonOps.ValueError("complex modulo");
             }
 
@@ -2756,7 +2758,7 @@ namespace IronPython.Runtime.Operations {
                     return null;
                 }
 
-                return Converter.ConvertToComplex64(res);
+                return Converter.ConvertToComplex(res);
             }
 
             return null;
@@ -2791,7 +2793,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             double d = (double)value;
-            return new Complex64(d, 0.0);
+            return new Complex(d, 0.0);
         }
 
         internal static bool CheckingConvertToInt(object value) {
@@ -2807,7 +2809,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool CheckingConvertToComplex(object value) {
-            return value is Complex64 || value is Extensible<Complex64> || CheckingConvertToInt(value) || CheckingConvertToFloat(value);
+            return value is Complex || value is Extensible<Complex> || CheckingConvertToInt(value) || CheckingConvertToFloat(value);
         }
 
         internal static bool CheckingConvertToString(object value) {
@@ -3365,16 +3367,16 @@ namespace IronPython.Runtime.Operations {
 
         private static bool IsPrimitiveNumber(object o) {
             return IsNumericObject(o) ||
-                o is Complex64 ||
+                o is Complex ||
                 o is double ||
-                o is Extensible<Complex64> ||
+                o is Extensible<Complex> ||
                 o is Extensible<double>;
         }
 
         public static void WarnDivision(CodeContext/*!*/ context, PythonDivisionOptions options, object self, object other) {
             if (options == PythonDivisionOptions.WarnAll) {
                 if (IsPrimitiveNumber(self) && IsPrimitiveNumber(other)) {
-                    if (self is Complex64 || other is Complex64 || self is Extensible<Complex64> || other is Extensible<Complex64>) {
+                    if (self is Complex || other is Complex || self is Extensible<Complex> || other is Extensible<Complex>) {
                         Warn(context, PythonExceptions.DeprecationWarning, "classic complex division");
                         return;
                     } else if (self is double || other is double || self is Extensible<double> || other is Extensible<double>) {

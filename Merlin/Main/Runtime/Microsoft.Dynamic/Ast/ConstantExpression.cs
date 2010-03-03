@@ -15,13 +15,17 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using BigInt = System.Numerics.BigInteger;
+using Complex = System.Numerics.Complex;
 #else
 using Microsoft.Scripting.Ast;
 #endif
 
 using System;
 using System.Reflection;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Ast {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1724:TypeNamesShouldNotMatchNamespaces")]
@@ -60,8 +64,14 @@ namespace Microsoft.Scripting.Ast {
             BigInteger bi = value as BigInteger;
             if ((object)bi != null) {
                 return BigIntegerConstant(bi);
+#if !CLR2
+            } else if (value is BigInt) {
+                return BigIntConstant((BigInt)value);
+            } else if (value is Complex) {
+                return ComplexConstant((Complex)value);
+#endif
             } else if (value is Complex64) {
-                return ComplexConstant((Complex64)value);
+                return Complex64Constant((Complex64)value);
             } else if (value is Type) {
                 return Expression.Constant(value, typeof(Type));
             } else if (value is ConstructorInfo) {
@@ -106,7 +116,7 @@ namespace Microsoft.Scripting.Ast {
             int ival;
             if (value.AsInt32(out ival)) {
                 return Expression.Call(
-                    typeof(BigInteger).GetMethod("Create", new Type[] { typeof(int) }),
+                    new Func<int, BigInteger>(BigInteger.Create).Method,
                     Constant(ival)
                 );
             }
@@ -114,22 +124,46 @@ namespace Microsoft.Scripting.Ast {
             long lval;
             if (value.AsInt64(out lval)) {
                 return Expression.Call(
-                    typeof(BigInteger).GetMethod("Create", new Type[] { typeof(long) }),
+                    new Func<long, BigInteger>(BigInteger.Create).Method,
                     Constant(lval)
                 );
             }
 
-#if !CLR2
-            return Expression.New(
-                typeof(BigInteger).GetConstructor(new Type[] { typeof(int), typeof(byte[]) }),
-                Constant((int)value.Sign),
-                CreateArray<byte>(value.Abs().ToByteArray())
-            );
-#else
-             return Expression.New(
-                typeof(BigInteger).GetConstructor(new Type[] { typeof(int), typeof(uint[]) }),
+#if CLR2
+            return Expression.Call(
+                new Func<int, uint[], BigInteger>(CompilerHelpers.CreateBigInteger).Method,
                 Constant((int)value.Sign),
                 CreateArray<uint>(value.GetWords())
+            );
+#else
+            return Expression.Call(
+                new Func<bool, byte[], BigInteger>(CompilerHelpers.CreateBigInteger).Method,
+                Constant(value.Sign < 0),
+                CreateArray<byte>(value.Abs().ToByteArray())
+            );
+        }
+
+        private static Expression BigIntConstant(BigInt value) {
+            int ival;
+            if (value.AsInt32(out ival)) {
+                return Expression.Call(
+                    new Func<int, BigInt>(CompilerHelpers.CreateBigInt).Method,
+                    Constant(ival)
+                );
+            }
+
+            long lval;
+            if (value.AsInt64(out lval)) {
+                return Expression.Call(
+                    new Func<long, BigInt>(CompilerHelpers.CreateBigInt).Method,
+                    Constant(lval)
+                );
+            }
+
+            return Expression.Call(
+                new Func<bool, byte[], BigInt>(CompilerHelpers.CreateBigInt).Method,
+                Constant(value.Sign < 0),
+                CreateArray<byte>(value.Abs().ToByteArray())
             );
 #endif
         }
@@ -143,23 +177,47 @@ namespace Microsoft.Scripting.Ast {
             return Expression.NewArrayInit(typeof(T), init);
         }
 
-        private static Expression ComplexConstant(Complex64 value) {
+#if !CLR2
+        private static Expression ComplexConstant(Complex value) {
             if (value.Real != 0.0) {
-                if (value.Imag != 0.0) {
+                if (value.Imaginary() != 0.0) {
                     return Expression.Call(
-                        typeof(Complex64).GetMethod("Make"),
+                        new Func<double, double, Complex>(MathUtils.MakeComplex).Method,
                         Constant(value.Real),
-                        Constant(value.Imag)
+                        Constant(value.Imaginary())
                     );
                 } else {
                     return Expression.Call(
-                        typeof(Complex64).GetMethod("MakeReal"),
+                        new Func<double, Complex>(MathUtils.MakeReal).Method,
                         Constant(value.Real)
                     );
                 }
             } else {
                 return Expression.Call(
-                    typeof(Complex64).GetMethod("MakeImaginary"),
+                    new Func<double, Complex>(MathUtils.MakeImaginary).Method,
+                    Constant(value.Imaginary())
+                );
+            }
+        }
+#endif
+
+        private static Expression Complex64Constant(Complex64 value) {
+            if (value.Real != 0.0) {
+                if (value.Imag != 0.0) {
+                    return Expression.Call(
+                        new Func<double, double, Complex64>(Complex64.Make).Method,
+                        Constant(value.Real),
+                        Constant(value.Imag)
+                    );
+                } else {
+                    return Expression.Call(
+                        new Func<double, Complex64>(Complex64.MakeReal).Method,
+                        Constant(value.Real)
+                    );
+                }
+            } else {
+                return Expression.Call(
+                    new Func<double, Complex64>(Complex64.MakeImaginary).Method,
                     Constant(value.Imag)
                 );
             }

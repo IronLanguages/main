@@ -64,13 +64,13 @@ namespace IronRuby.Runtime.Conversions {
             out MethodInfo postProcessor) {
 
             postProcessor = null;
-            return new InteropBinder.Convert(context, _type, true);
+            return context.MetaBinderFactory.InteropConvert(_type, true);
         }
 
         protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
             // TODO: this is our meta object, should we add IRubyMetaConvertible interface instead of using interop-binder?
             if (args.Target is IDynamicMetaObjectProvider) {
-                metaBuilder.SetMetaResult(args.MetaTarget.BindConvert(new InteropBinder.Convert(args.RubyContext, _type, true)), false);
+                metaBuilder.SetMetaResult(args.MetaTarget.BindConvert(args.RubyContext.MetaBinderFactory.InteropConvert(_type, true)), false);
                 return true;
             }
 

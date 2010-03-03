@@ -348,7 +348,7 @@ namespace Microsoft.Scripting.Actions {
         /// <summary> if a member-injector is defined-on or registered-for this type call it </summary>
         private void MakeOperatorGetMemberBody(GetMemberInfo getMemInfo, DynamicMetaObject instance, Type type, string name) {
             MethodInfo getMem = GetMethod(type, name);
-            if (getMem != null && getMem.IsSpecialName) {
+            if (getMem != null) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "getVal");
                 getMemInfo.Body.AddVariable(tmp);
 

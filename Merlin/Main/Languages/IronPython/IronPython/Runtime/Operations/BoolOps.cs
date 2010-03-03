@@ -18,6 +18,12 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
+#if CLR2
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
+
 namespace IronPython.Runtime.Operations {
 
     public static class BoolOps {
@@ -154,8 +160,8 @@ namespace IronPython.Runtime.Operations {
             return (Double)(x ? 1 : 0);
         }
         [SpecialName, ImplicitConversionMethod]
-        public static Complex64 ConvertToComplex64(Boolean x) {
-            return x ? new Complex64(1) : new Complex64();
+        public static Complex ConvertToComplex(Boolean x) {
+            return x ? Complex.One : Complex.Zero;
         }
         [SpecialName, ImplicitConversionMethod]
         public static decimal ConvertToDecimal(Boolean x) {

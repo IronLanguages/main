@@ -114,7 +114,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal MSA.LambdaExpression/*!*/ TransformBody(AstGenerator/*!*/ gen, RubyScope/*!*/ declaringScope, RubyModule/*!*/ declaringModule) {
-            string encodedName = RubyExceptionData.EncodeMethodName(_name, gen.SourcePath, Location);
+            string encodedName = RubyStackTraceBuilder.EncodeMethodName(_name, gen.SourcePath, Location, gen.DebugMode);
 
             AstParameters parameters;
             ScopeBuilder scope = DefineLocals(out parameters);

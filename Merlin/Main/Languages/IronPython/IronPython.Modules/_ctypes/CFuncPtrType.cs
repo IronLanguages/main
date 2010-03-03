@@ -23,13 +23,18 @@ using System.Runtime.InteropServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 #if !SILVERLIGHT
 
@@ -125,7 +130,7 @@ namespace IronPython.Modules {
                 if (value is int) {
                     address.WriteIntPtr(offset, new IntPtr((int)value));
                 } else if (value is BigInteger) {
-                    address.WriteIntPtr(offset, new IntPtr(((BigInteger)value).ToInt64()));
+                    address.WriteIntPtr(offset, new IntPtr((long)(BigInteger)value));
                 } else if (value is _CFuncPtr) {
                     address.WriteIntPtr(offset, ((_CFuncPtr)value).addr);
                     return value;
@@ -237,6 +242,7 @@ namespace IronPython.Modules {
 
                 // load code context
                 int contextIndex = constantPool.Count;
+                Debug.Assert(pc.SharedContext != null);
                 constantPool.Add(pc.SharedContext);                
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldc_I4, contextIndex);

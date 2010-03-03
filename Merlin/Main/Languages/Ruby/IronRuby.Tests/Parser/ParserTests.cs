@@ -291,23 +291,25 @@ namespace IronRuby.Tests {
             t.Load("def Σ;end", (tok) => tok.AllowNonAsciiIdentifiers = true)
                 [Tokens.Def][Tokens.Identifier][(Tokens)';'][Tokens.End].EOF();
 
-            // BOM can be used as an identifier in 1.8 -KU mode:
+            // we should report a warning if -KU is used and treat BOM as whitespace (MRI 1.8 treats the BOM as identifier):
             t.Load(new byte[] { 
-                0xEF, 0xBB, 0xBF, (byte)'=', (byte)'1' 
+                0xEF, 0xBB, 0xBF, (byte)'x'
             }, (tok) => { 
-                tok.Compatibility = RubyCompatibility.Ruby18; tok.AllowNonAsciiIdentifiers = true; 
+                tok.Compatibility = RubyCompatibility.Ruby186; 
+                tok.Encoding = RubyEncoding.KCodeUTF8;
+                tok.Verbatim = true;
             })
-            [Tokens.Identifier][(Tokens)'='][1].EOF();
+            [Tokens.Whitespace][Tokens.Identifier].Expect(Errors.ByteOrderMarkIgnored);
 
             // we should report a warning if -KCODE is not used and treat BOM as whitespace (MRI 1.8 reports an error):
             t.Load(new byte[] { 
                 0xEF, 0xBB, 0xBF, (byte)'=', (byte)'1' 
             }, (tok) => { 
-                tok.Compatibility = RubyCompatibility.Ruby18; 
+                tok.Compatibility = RubyCompatibility.Ruby186; 
                 tok.AllowNonAsciiIdentifiers = false;
                 tok.Verbatim = true;
             }) 
-            [Tokens.Whitespace][(Tokens)'='][1].Expect(Errors.InvalidUseOfByteOrderMark);
+            [Tokens.Whitespace][(Tokens)'='][1].Expect(Errors.ByteOrderMarkIgnored);
             
             t.Expect();
         }
@@ -667,7 +669,7 @@ namespace IronRuby.Tests {
             t.Expect();
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         private void UnicodeEscapes2() {
             AssertTokenizer t = NewAssertTokenizer();
 
@@ -722,12 +724,12 @@ namespace IronRuby.Tests {
             var sjisEngine = Ruby.CreateEngine((setup) => {
                 setup.Options["KCode"] = RubyEncoding.KCodeSJIS;
             });
-            Assert(sjisEngine.Execute("$KCODE").ToString() == "SJIS");
+            Assert(sjisEngine.Execute<object>("$KCODE").ToString() == "SJIS");
             
             var utf8Engine = Ruby.CreateEngine((setup) => {
                 setup.Options["KCode"] = RubyEncoding.KCodeUTF8;
             });
-            Assert(utf8Engine.Execute("$KCODE").ToString() == "UTF8");
+            Assert(utf8Engine.Execute<object>("$KCODE").ToString() == "UTF8");
 
             // using default encoding (UTF8) for Unicode string source (ignoring KCODE):
             var str = sjisEngine.Execute<MutableString>("Σ = 'Σ'");
@@ -826,7 +828,7 @@ p __ENCODING__
             AssertOutput(() => source2.Execute(), @"#<Encoding:utf-8>");
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         private void Encoding3() {
             AssertExceptionThrown<MissingMethodException>(() =>
                 CompilerTest("__ENCODING__")

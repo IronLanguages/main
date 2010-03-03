@@ -455,7 +455,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("replace")]
         public static Hash/*!*/ Replace(RubyContext/*!*/ context, Hash/*!*/ self, [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ other) {
-            RubyUtils.RequiresNotFrozen(context, self);
+            self.Mutate();
             return IDictionaryOps.ReplaceData(self, other);
         }
 

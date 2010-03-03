@@ -15,24 +15,24 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Math;
 #endif
 
 using System;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Reflection;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using System.Reflection;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -43,7 +43,7 @@ namespace IronPython.Runtime.Binding {
     /// </summary>
     static class BindingHelpers {
         /// <summary>
-        /// Trys to get the BuiltinFunction for the given name on the type of the provided MetaObject.  
+        /// Tries to get the BuiltinFunction for the given name on the type of the provided MetaObject.  
         /// 
         /// Succeeds if the MetaObject is a BuiltinFunction or BuiltinMethodDescriptor.
         /// </summary>

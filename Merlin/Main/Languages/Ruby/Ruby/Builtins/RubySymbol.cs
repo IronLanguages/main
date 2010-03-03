@@ -100,6 +100,10 @@ namespace IronRuby.Builtins {
             return _string.GetCharCount();
         }
 
+        public static explicit operator string(RubySymbol/*!*/ self) {
+            return self._string.ToString();
+        }
+
         #endregion
 
         #region IRubyObjectState Members

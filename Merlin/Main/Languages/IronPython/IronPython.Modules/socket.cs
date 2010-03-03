@@ -27,7 +27,6 @@ using System.Dynamic;
 using System.Text;
 
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Math;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -35,6 +34,12 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 using BaseException = IronPython.Runtime.Exceptions.PythonExceptions.BaseException;
 using PythonArray = IronPython.Modules.ArrayModule.array;
@@ -778,7 +783,7 @@ namespace IronPython.Modules {
             }
 
             public int ioctl(BigInteger cmd, int option) {
-                return _socket.IOControl((IOControlCode)cmd.ToInt64(), BitConverter.GetBytes(option), null);
+                return _socket.IOControl((IOControlCode)(long)cmd, BitConverter.GetBytes(option), null);
             }
 
             public override string ToString() {

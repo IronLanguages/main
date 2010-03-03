@@ -55,7 +55,7 @@ namespace IronPython.Runtime {
     public delegate int HashDelegate(object o, ref HashDelegate dlg);
 
     public sealed partial class PythonContext : LanguageContext {
-        internal const string/*!*/ IronPythonDisplayName = "IronPython 2.6";
+        internal const string/*!*/ IronPythonDisplayName = "IronPython 2.6.1";
         internal const string/*!*/ IronPythonNames = "IronPython;Python;py";
         internal const string/*!*/ IronPythonFileExtensions = ".py";
 
@@ -1871,7 +1871,7 @@ namespace IronPython.Runtime {
             dict["executable"] = _initialExecutable;
             SystemState.__dict__["prefix"] =  _initialPrefix;
             dict["exec_prefix"] = _initialPrefix;
-            SetVersionVariables(dict, 2, 6, 0, "release", _initialVersionString);
+            SetVersionVariables(dict, 2, 6, 1, "release", _initialVersionString);
         }
 
         private static void SetVersionVariables(PythonDictionary dict, byte major, byte minor, byte build, string level, string versionString) {
@@ -2557,7 +2557,7 @@ namespace IronPython.Runtime {
                 public static String ConvertToString(object value) { return _stringSite.Invoke(DefaultContext.Default, value); }
                 public static BigInteger ConvertToBigInteger(object value) { return _bigIntSite.Invoke(DefaultContext.Default, value); }
                 public static Double ConvertToDouble(object value) { return _doubleSite.Invoke(DefaultContext.Default, value); }
-                public static Complex64 ConvertToComplex64(object value) { return _complexSite.Invoke(DefaultContext.Default, value); }
+                public static Complex64 ConvertToComplex(object value) { return _complexSite.Invoke(DefaultContext.Default, value); }
                 public static Boolean ConvertToBoolean(object value) { return _boolSite.Invoke(DefaultContext.Default, value); }
                 public static Int64 ConvertToInt64(object value) { return _int64Site.Invoke(DefaultContext.Default, value); }
                 */

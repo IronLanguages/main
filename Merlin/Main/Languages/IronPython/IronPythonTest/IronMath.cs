@@ -13,12 +13,33 @@
  *
  * ***************************************************************************/
 
+#if CLR2
 using Microsoft.Scripting.Math; 
+#else
+using System.Numerics;
+using Microsoft.Scripting.Utils;
+#endif
 
 namespace IronPythonTest {
     public static class System_Scripting_Math {
         public static BigInteger CreateBigInteger(int sign, params uint[] data) {
+#if CLR2
             return new BigInteger(sign, data);
+#else
+            ContractUtils.RequiresNotNull(data, "data");
+            ContractUtils.Requires(sign != 0, "sign");
+
+            byte[] dataBytes = new byte[data.Length * 4 + 1];
+            for (int i = 0; i < data.Length; i++) {
+                uint datum = data[i];
+                for (int j = 0; j < 4; j++) {
+                    dataBytes[i * 4 + j] = (byte)(datum & 0xff);
+                    datum <<= 8;
+                }
+            }
+            BigInteger res = new BigInteger(dataBytes);
+            return sign < 0 ? -res : res;
+#endif
         }
     }
 }

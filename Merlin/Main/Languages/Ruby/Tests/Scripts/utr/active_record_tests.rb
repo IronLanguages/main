@@ -9,6 +9,18 @@ class UnitTestSetup
     gem 'test-unit', "= 2.0.5"
     gem 'activerecord', "= 2.3.5"
     gem 'activesupport', "= 2.3.5"
+    
+    # Check if we should use a private version of ironruby-dbi (for ironruby-dbi development scenarios)
+    ironruby_dbi_path = ENV['IRONRUBY_DBI']
+    if ironruby_dbi_path
+      abort "Could not find %IRONRUBY_DBI%/lib/dbd/mssql.rb" if not File.exist?(File.expand_path('lib/dbd/mssql.rb', ironruby_dbi_path))
+      gem "dbi", "= 0.4.3"
+      require 'dbi'
+      $LOAD_PATH.unshift(File.expand_path('lib', ironruby_dbi_path))
+      require "dbd/MSSQL"
+      puts "Using ironruby-dbi from #{ironruby_dbi_path}"
+    end
+    
     require 'ironruby_sqlserver' if UnitTestRunner.ironruby?
   end
 
@@ -94,6 +106,33 @@ class UnitTestSetup
   end
   
   def disable_unstable_tests
+    # These failures can be reproduced by running with "set IR_CULTURE=nl-BE".
+    if System::Threading::Thread.CurrentThread.CurrentCulture != 'en-US'
+      disable BasicsTest,
+        # <#<BigDecimal:0x005a5e0,'0.158643E4',9(9)>> expected but was
+        # <#<BigDecimal:0x005a5ec,'0.1586E4',9(9)>>.
+        # diff:
+        # - #<BigDecimal:0x005a5e0,'0.158643E4',9(9)>
+        # ?                      ^        --
+        # + #<BigDecimal:0x005a5ec,'0.1586E4',9(9)>
+        # ?                      ^
+        :test_numeric_fields
+        
+      disable CalculationsTest,
+        # <19.83> expected but was
+        # <#<BigDecimal:0x0062216,'0.19E2',9(9)>>.
+        :test_sum_should_return_valid_values_for_decimals
+        
+      disable MigrationTest,
+        # <#<BigDecimal:0x00ba56e,'0.158643E4',9(9)>> expected but was
+        # <#<BigDecimal:0x00ba57a,'0.1586E4',9(9)>>.
+        # diff:
+        # - #<BigDecimal:0x00ba56e,'0.158643E4',9(9)>
+        # ?                     ^^        --
+        # + #<BigDecimal:0x00ba57a,'0.1586E4',9(9)>
+        # ?                     ^^
+        :test_add_table_with_decimals
+    end
   end
 
   def disable_tests

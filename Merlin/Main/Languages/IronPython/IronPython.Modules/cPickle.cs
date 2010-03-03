@@ -25,9 +25,14 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("cPickle", typeof(IronPython.Modules.PythonPickle))]
 namespace IronPython.Modules {
@@ -1457,7 +1462,7 @@ namespace IronPython.Modules {
             }
 
             private object ReadLong(CodeContext/*!*/ context, int size) {
-                return BigInteger.Create(Read(context, size).MakeByteArray());
+                return new BigInteger(Read(context, size).MakeByteArray());
             }
 
             private char ReadUInt8(CodeContext/*!*/ context) {

@@ -110,6 +110,7 @@
     </Compile>
     <Compile Include="Actions\CallInfo.cs" />
     <Compile Include="Actions\CallSiteOps.cs" />
+    <Compile Include="Actions\IInvokeOnGetBinder.cs" />
     <Compile Include="Actions\InvokeMemberBinder.cs" />
     <Compile Include="Actions\BinaryOperationBinder.cs" />
     <Compile Include="Actions\CallSite.cs" />

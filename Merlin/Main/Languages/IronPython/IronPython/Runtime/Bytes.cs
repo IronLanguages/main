@@ -15,8 +15,10 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Math;
 #endif
 
 using System;
@@ -27,7 +29,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -646,14 +647,10 @@ namespace IronPython.Runtime {
 
             if (value is Extensible<int>) {
                 return IndexOf(((Extensible<int>)value).Value.ToByteChecked()) != -1;
-            }
-
-            BigInteger biVal = value as BigInteger;
-            if (biVal == null && value is Extensible<BigInteger>) {
-                biVal = ((Extensible<BigInteger>)value).Value;
-            }
-            if (biVal != null) {
-                return IndexOf(biVal.ToByteChecked()) != -1;
+            } else if (value is BigInteger) {
+                return IndexOf(((BigInteger)value).ToByteChecked()) != -1;
+            } else if (value is Extensible<BigInteger>) {
+                return IndexOf(((Extensible<BigInteger>)value).Value.ToByteChecked()) != -1;
             }
 
             // 3.0 error message

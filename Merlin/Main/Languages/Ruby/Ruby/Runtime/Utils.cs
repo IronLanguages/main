@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using Microsoft.Scripting.Utils;
 using System.Diagnostics;
@@ -22,6 +28,7 @@ using System.Collections;
 using System.Collections.Generic;
 using IronRuby.Builtins;
 using System.Globalization;
+using System.Dynamic;
 
 namespace IronRuby.Runtime {
     public static class Utils {
@@ -51,7 +58,7 @@ namespace IronRuby.Runtime {
             return -1;
         }
 
-        internal static bool IsAscii(this string/*!*/ str) {
+        public static bool IsAscii(this string/*!*/ str) {
             for (int i = 0; i < str.Length; i++) {
                 if (str[i] > 0x7f) {
                     return false;
@@ -118,9 +125,14 @@ namespace IronRuby.Runtime {
         }
 
         internal static void TrimExcess<T>(ref T[] data, int count) {
-            if ((long)count * 10 < (long)data.Length * 9) {
+            if (IsSparse(count, data.Length)) {
                 Array.Resize(ref data, count);
             }
+        }
+
+        internal static bool IsSparse(int portionSize, int totalSize) {
+            Debug.Assert(portionSize <= totalSize);
+            return (long)portionSize * 10 < (long)totalSize * 9;
         }
 
         internal static void ResizeForInsertion<T>(ref T[]/*!*/ array, int itemCount, int index, int count) {
@@ -229,6 +241,32 @@ namespace IronRuby.Runtime {
             var copy = new T[count];
             Array.Copy(array, start, copy, 0, count);
             return copy;
+        }
+
+        internal static T[]/*!*/ GetSlice<T>(this T[]/*!*/ array, int arrayLength, int start, int count) {
+            if (count > arrayLength - start) {
+                count = start >= arrayLength ? 0 : arrayLength - start;
+            }
+
+            var copy = new T[count];
+            Array.Copy(array, start, copy, 0, count);
+            return copy;
+        }
+
+        internal static string/*!*/ GetSlice(this string/*!*/ str, int start, int count) {
+            if (count > str.Length - start) {
+                count = start >= str.Length ? 0 : str.Length - start;
+            }
+
+            return str.Substring(start, count);
+        }
+
+        internal static string/*!*/ GetStringSlice(this char[]/*!*/ chars, int arrayLength, int start, int count) {
+            if (count > arrayLength - start) {
+                count = start >= arrayLength ? 0 : arrayLength - start;
+            }
+
+            return new String(chars, start, count);
         }
 
         /// <summary>
@@ -482,6 +520,11 @@ namespace IronRuby.Runtime {
             return str.ToLower(CultureInfo.InvariantCulture);
         }
 #endif
+        internal static IEnumerable<Expression/*!*/>/*!*/ ToExpressions(this IEnumerable<DynamicMetaObject>/*!*/ metaObjects) {
+            foreach (var metaObject in metaObjects) {
+                yield return metaObject != null ? metaObject.Expression : null;
+            }
+        }
     }
 }
 

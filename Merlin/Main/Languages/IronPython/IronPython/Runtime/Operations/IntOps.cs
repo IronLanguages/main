@@ -20,12 +20,18 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Modules;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -40,9 +46,8 @@ namespace IronPython.Runtime.Operations {
             if (o is int) return o;
             if (o is bool) return ((bool)o) ? 1 : 0;
             if (o is BigInteger) {
-                BigInteger bi = o as BigInteger;
                 int res;
-                if (bi.AsInt32(out res)) {
+                if (((BigInteger)o).AsInt32(out res)) {
                     return ScriptingRuntimeHelpers.Int32ToObject(res);
                 }
                 return o;
@@ -58,35 +63,35 @@ namespace IronPython.Runtime.Operations {
 
             if (o is float) return DoubleOps.__int__((double)(float)o);
 
-            if (o is Complex64) throw PythonOps.TypeError("can't convert complex to int; use int(abs(z))");
+            if (o is Complex) throw PythonOps.TypeError("can't convert complex to int; use int(abs(z))");
 
             if (o is Int64) {
                 Int64 val = (Int64)o;
                 if (Int32.MinValue <= val && val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
-                    return BigInteger.Create(val);
+                    return (BigInteger)val;
                 }
             } else if (o is UInt32) {
                 UInt32 val = (UInt32)o;
                 if (val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
-                    return BigInteger.Create(val);
+                    return (BigInteger)val;
                 }
             } else if (o is UInt64) {
                 UInt64 val = (UInt64)o;
                 if (val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
-                    return BigInteger.Create(val);
+                    return (BigInteger)val;
                 }
             } else if (o is Decimal) {
                 Decimal val = (Decimal)o;
                 if (Int32.MinValue <= val && val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
-                    return BigInteger.Create(val);
+                    return (BigInteger)val;
                 }
             } else if (o is Enum) {
                 return ((IConvertible)o).ToInt32(null);
@@ -244,7 +249,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object FloorDivide(int x, int y) {
             if (y == -1 && x == Int32.MinValue) {
-                return -BigInteger.Create(Int32.MinValue);
+                return -(BigInteger)Int32.MinValue;
             }
             return ScriptingRuntimeHelpers.Int32ToObject(MathUtils.FloorDivideUnchecked(x, y));
         }
@@ -313,7 +318,7 @@ namespace IronPython.Runtime.Operations {
                     return result;
                 }
             } catch (OverflowException) {
-                return BigIntegerOps.Power(BigInteger.Create(x), savePower);
+                return BigIntegerOps.Power((BigInteger)x, savePower);
             }
         }
 
@@ -371,9 +376,9 @@ namespace IronPython.Runtime.Operations {
             if (x == 0) {
                 return "0";
             } else if (x > 0) {
-                return "0" + BigInteger.Create(x).ToString(8);
+                return "0" + ((BigInteger)x).ToString(8);
             } else {
-                return "-0" + BigInteger.Create(-x).ToString(8);
+                return "-0" + ((BigInteger)(-x)).ToString(8);
             }
         }
 

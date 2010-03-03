@@ -24,13 +24,18 @@ using System.Security;
 using System.Text;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("sys", typeof(IronPython.Modules.SysModule))]
 namespace IronPython.Modules {
@@ -470,7 +475,7 @@ namespace IronPython.Modules {
 
             public object this[BigInteger i] {
                 get {
-                    return this[i.ToInt32()];
+                    return this[(int)i];
                 }
             }
 
@@ -694,13 +699,11 @@ namespace IronPython.Modules {
             }
 
             private static object TryShrinkToInt(object value) {
-                BigInteger bi = value as BigInteger;
-
-                if (Object.ReferenceEquals(bi, null)) {
+                if (!(value is BigInteger)) {
                     return value;
                 }
 
-                return BigIntegerOps.__int__(bi);
+                return BigIntegerOps.__int__((BigInteger)value);
             }
 
             public object epsilon {

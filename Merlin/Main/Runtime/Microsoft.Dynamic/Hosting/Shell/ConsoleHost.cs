@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -429,9 +430,15 @@ namespace Microsoft.Scripting.Hosting.Shell {
             Console.Write(sb.ToString());
         }
 
-        protected  void PrintVersion()
-        {
-            Console.WriteLine("{0} {1} on .NET {2}", Engine.Setup.DisplayName, Engine.LanguageVersion, typeof(String).Assembly.GetName().Version);
+        protected  void PrintVersion() {
+            Console.WriteLine("{0} {1} on {2}", Engine.Setup.DisplayName, Engine.LanguageVersion, GetRuntime());
+        }
+
+        private static string GetRuntime() {
+            Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
+            return mono != null ?
+                (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
+                : String.Format(CultureInfo.InvariantCulture, ".NET {0}", Environment.Version);
         }
 
         protected virtual void UnhandledException(ScriptEngine engine, Exception e) {

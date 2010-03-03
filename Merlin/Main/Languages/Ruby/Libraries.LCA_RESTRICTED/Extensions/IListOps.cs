@@ -233,8 +233,9 @@ namespace IronRuby.Builtins {
             }
 
             IList result = CreateResultArray(allocateStorage, self);
-            if (result is RubyArray) {
-                ((RubyArray)result).AddCapacity(self.Count * repeat);
+            RubyArray array = result as RubyArray;
+            if (array != null) {
+                array.AddCapacity(self.Count * repeat);
             }
             
             for (int i = 0; i < repeat; ++i) {

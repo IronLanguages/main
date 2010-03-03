@@ -21,12 +21,17 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Win32;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 #if !SILVERLIGHT //Registry not available in silverlight.
 
@@ -105,8 +110,7 @@ namespace IronPython.Modules {
             HKEYType rootKey = GetRootKey(key);
 
             //if key is a system key and no subkey is specified return that.
-            BigInteger bi = key as BigInteger;
-            if (!Object.ReferenceEquals(bi, null) && string.IsNullOrEmpty(subKeyName))
+            if (key is BigInteger && string.IsNullOrEmpty(subKeyName))
                 return rootKey;
 
             HKEYType subKey = new HKEYType(rootKey.key.CreateSubKey(subKeyName));
@@ -115,8 +119,7 @@ namespace IronPython.Modules {
 
         public static void DeleteKey(object key, string subKeyName) {
             HKEYType rootKey = GetRootKey(key);
-            BigInteger bi = key as BigInteger;
-            if (!Object.ReferenceEquals(bi, null) && string.IsNullOrEmpty(subKeyName))
+            if (key is BigInteger && string.IsNullOrEmpty(subKeyName))
                 throw new InvalidCastException("DeleteKey() argument 2 must be string, not None");
 
             try {
@@ -302,9 +305,8 @@ namespace IronPython.Modules {
             HKEYType rootKey;
             rootKey = key as HKEYType;
             if (rootKey == null) {
-                BigInteger bi = key as BigInteger;
-                if (!Object.ReferenceEquals(bi, null)) {
-                    rootKey = new HKEYType(RegistryKey.OpenRemoteBaseKey(MapSystemKey(bi), string.Empty));
+                if (key is BigInteger) {
+                    rootKey = new HKEYType(RegistryKey.OpenRemoteBaseKey(MapSystemKey((BigInteger)key), string.Empty));
                 } else {
                     throw new InvalidCastException("The object is not a PyHKEY object");
                 }

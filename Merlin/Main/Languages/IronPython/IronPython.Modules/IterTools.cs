@@ -25,7 +25,12 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
 using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("itertools", typeof(IronPython.Modules.PythonIterTools))]
 namespace IronPython.Modules {
@@ -129,52 +134,35 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class count : IEnumerator, ICodeFormattable {
-            private int _cur, _start;
-            private BigInteger _bigCur, _bigStart;
+            private BigInteger _cur, _start;
 
             public count() {
                 _cur = _start = -1;
             }
 
-            public count(int n) {
-                _cur = _start = checked(n - 1);
-            }
-
             public count([NotNull]BigInteger n) {
-                _bigCur = _bigStart = (n - 1);
-                _cur = Int32.MaxValue;
+                _cur = _start = n - 1;
             }
 
             #region IEnumerator Members
 
             object IEnumerator.Current {
                 get {
-                    if (!Object.ReferenceEquals(_bigCur, null)) {
-                        return _bigCur;
+                    int res;
+                    if (_cur.AsInt32(out res)) {
+                        return ScriptingRuntimeHelpers.Int32ToObject(res);
                     }
-                    return ScriptingRuntimeHelpers.Int32ToObject(_cur); 
+                    return _cur;
                 }
             }
 
             bool IEnumerator.MoveNext() {
-                if (_cur == Int32.MaxValue) {
-                    if (Object.ReferenceEquals(_bigCur, null)) {
-                        _bigCur = (BigInteger)Int32.MaxValue;
-                    }
-                    _bigCur = _bigCur + 1;
-                } else {
-                    _cur++;
-                }
+                _cur += 1;
                 return true;
             }
 
             void IEnumerator.Reset() {
-                _bigCur = _bigStart;
-                if (!Object.ReferenceEquals(_bigCur, null)) {
-                    _cur = Int32.MaxValue;
-                } else {
-                    _cur = _start;
-                }
+                _cur = _start;
             }
 
             public object __iter__() {
@@ -186,10 +174,11 @@ namespace IronPython.Modules {
             #region ICodeFormattable Members
 
             public string/*!*/ __repr__(CodeContext/*!*/ context) {
-                if (!Object.ReferenceEquals(_bigCur, null)) {
-                    return String.Format("{0}({1}L)", PythonOps.GetPythonTypeName(this), _bigCur + 1);
-                } else {
+                int res;
+                if ((_cur + 1).AsInt32(out res)) {
                     return String.Format("{0}({1})", PythonOps.GetPythonTypeName(this), _cur + 1);
+                } else {
+                    return String.Format("{0}({1}L)", PythonOps.GetPythonTypeName(this), _cur + 1);
                 }
             }
 

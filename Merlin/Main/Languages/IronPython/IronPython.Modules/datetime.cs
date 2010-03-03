@@ -21,12 +21,17 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("datetime", typeof(IronPython.Modules.PythonDateTime))]
 namespace IronPython.Modules {
@@ -177,15 +182,15 @@ namespace IronPython.Modules {
             }
 
             public static timedelta operator *(timedelta self, BigInteger other) {
-                return self * other.ToInt32();
+                return self * (int)other;
             }
 
             public static timedelta operator *(BigInteger other, timedelta self) {
-                return other.ToInt32() * self;
+                return (int)other * self;
             }
 
             public static timedelta operator /(timedelta self, BigInteger other) {
-                return self / other.ToInt32();
+                return self / (int)other;
             }
 
             public timedelta __pos__() { return +this; }

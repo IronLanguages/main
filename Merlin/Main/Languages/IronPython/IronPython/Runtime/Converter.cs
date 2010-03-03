@@ -26,9 +26,15 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime {
 
@@ -37,7 +43,7 @@ namespace IronPython.Runtime {
 
         private static readonly CallSite<Func<CallSite, object, int>> _intSite = MakeExplicitConvertSite<int>();
         private static readonly CallSite<Func<CallSite, object, double>> _doubleSite = MakeExplicitConvertSite<double>();
-        private static readonly CallSite<Func<CallSite, object, Complex64>> _complexSite = MakeExplicitConvertSite<Complex64>();
+        private static readonly CallSite<Func<CallSite, object, Complex>> _complexSite = MakeExplicitConvertSite<Complex>();
         private static readonly CallSite<Func<CallSite, object, BigInteger>> _bigIntSite = MakeExplicitConvertSite<BigInteger>();
         private static readonly CallSite<Func<CallSite, object, string>> _stringSite = MakeExplicitConvertSite<string>();
         private static readonly CallSite<Func<CallSite, object, bool>> _boolSite = MakeExplicitConvertSite<bool>();
@@ -68,7 +74,7 @@ namespace IronPython.Runtime {
             _tryDoubleSite     = MakeExplicitTrySite<Double>(),
             _tryCharSite       = MakeExplicitTrySite<Char>(),
             _tryBigIntegerSite = MakeExplicitTrySite<BigInteger>(),
-            _tryComplex64Site  = MakeExplicitTrySite<Complex64>(),
+            _tryComplexSite    = MakeExplicitTrySite<Complex>(),
             _tryStringSite     = MakeExplicitTrySite<String>();
 
         private static CallSite<Func<CallSite, object, T>> MakeImplicitConvertSite<T>() {
@@ -109,7 +115,7 @@ namespace IronPython.Runtime {
         public static String ConvertToString(object value) { return _stringSite.Target(_stringSite, value); }
         public static BigInteger ConvertToBigInteger(object value) { return _bigIntSite.Target(_bigIntSite, value); }
         public static Double ConvertToDouble(object value) { return _doubleSite.Target(_doubleSite, value); }
-        public static Complex64 ConvertToComplex64(object value) { return _complexSite.Target(_complexSite, value); }
+        public static Complex ConvertToComplex(object value) { return _complexSite.Target(_complexSite, value); }
         public static Boolean ConvertToBoolean(object value) { return _boolSite.Target(_boolSite, value); }
         public static Int64 ConvertToInt64(object value) { return _int64Site.Target(_int64Site, value); }
 
@@ -223,13 +229,13 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        internal static bool TryConvertToComplex64(object value, out Complex64 result) {
-            object res = _tryComplex64Site.Target(_tryComplex64Site, value);
+        internal static bool TryConvertToComplex(object value, out Complex result) {
+            object res = _tryComplexSite.Target(_tryComplexSite, value);
             if (res != null) {
-                result = (Complex64)res;
+                result = (Complex)res;
                 return true;
             }
-            result = default(Complex64);
+            result = default(Complex);
             return false;
         }
 
@@ -370,25 +376,26 @@ namespace IronPython.Runtime {
 
         private static int? ConvertToSliceIndexHelper(object value, bool throwOverflowError) {
             if (value is int) return (int)value;
+            if (value is Extensible<int>) return ((Extensible<int>)value).Value;
 
-            BigInteger bi = null;
+            BigInteger bi;
             Extensible<BigInteger> ebi;
-            if (((object)(bi = value as BigInteger)) != null) { // we've stored the value in bi  
-            } else if ((ebi = value as Extensible<BigInteger>) != null) { bi = ebi.Value; 
-            } else if (value is Extensible<int>) return ((Extensible<int>)value).Value;
+            if (value is BigInteger) {
+                bi = (BigInteger)value;
+            } else if ((ebi = value as Extensible<BigInteger>) != null) {
+                bi = ebi.Value;
+            } else {
+                return null;
+            }
+            
+            int res;
+            if (bi.AsInt32(out res)) return res;
 
-            if (!Object.ReferenceEquals(bi, null)) {
-                int res;
-                if (bi.AsInt32(out res)) return res;
-
-                if (throwOverflowError) {
-                    throw PythonOps.OverflowError("can't fit long into index");
-                }
-
-                return bi == BigInteger.Zero ? 0 : bi > 0 ? Int32.MaxValue : Int32.MinValue;
+            if (throwOverflowError) {
+                throw PythonOps.OverflowError("can't fit long into index");
             }
 
-            return null;
+            return bi == BigInteger.Zero ? 0 : bi > 0 ? Int32.MaxValue : Int32.MinValue;
         }
         
         internal static Exception CannotConvertOverflow(string name, object value) {
@@ -414,7 +421,7 @@ namespace IronPython.Runtime {
         private static readonly Type SingleType = typeof(System.Single);
         private static readonly Type BooleanType = typeof(System.Boolean);
         private static readonly Type BigIntegerType = typeof(BigInteger);
-        private static readonly Type Complex64Type = typeof(Complex64);
+        private static readonly Type ComplexType = typeof(Complex);
         private static readonly Type DelegateType = typeof(Delegate);
         private static readonly Type IEnumerableType = typeof(IEnumerable);
         private static readonly Type TypeType = typeof(Type);
@@ -501,7 +508,7 @@ namespace IronPython.Runtime {
             if (typeof(Extensible<double>).IsAssignableFrom(fromType) && CanConvertFrom(DoubleType, toType, allowNarrowing)) {
                 return true;
             }
-            if (typeof(Extensible<Complex64>).IsAssignableFrom(fromType) && CanConvertFrom(Complex64Type, toType, allowNarrowing)) {
+            if (typeof(Extensible<Complex>).IsAssignableFrom(fromType) && CanConvertFrom(ComplexType, toType, allowNarrowing)) {
                 return true;
             }
 
@@ -543,7 +550,7 @@ namespace IronPython.Runtime {
             if (fromType == typeof(BigInteger)) {
                 if (toType == typeof(double)) return true;
                 if (toType == typeof(float)) return true;
-                if (toType == typeof(Complex64)) return true;
+                if (toType == typeof(Complex)) return true;
                 return false;
             }
 
@@ -564,7 +571,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.Byte:
@@ -581,7 +588,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.Int16:
@@ -594,7 +601,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.UInt16:
@@ -609,7 +616,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.Int32:
@@ -621,7 +628,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.UInt32:
@@ -634,7 +641,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.Int64:
@@ -645,7 +652,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.UInt64:
@@ -656,7 +663,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.Char:
@@ -672,7 +679,7 @@ namespace IronPython.Runtime {
                             return true;
                         default:
                             if (toType == BigIntegerType) return true;
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.Single:
@@ -680,13 +687,13 @@ namespace IronPython.Runtime {
                         case TypeCode.Double:
                             return true;
                         default:
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 case TypeCode.Double:
                     switch (Type.GetTypeCode(toType)) {
                         default:
-                            if (toType == Complex64Type) return true;
+                            if (toType == ComplexType) return true;
                             return false;
                     }
                 default:
@@ -760,7 +767,7 @@ namespace IronPython.Runtime {
 
             if (allowNarrowing == PythonNarrowing.IndexOperator) {
                 if (IsNumeric(fromType) && IsNumeric(toType)) {
-                    if (fromType != typeof(float) && fromType != typeof(double) && fromType != typeof(decimal) && fromType != typeof(Complex64)) {
+                    if (fromType != typeof(float) && fromType != typeof(double) && fromType != typeof(decimal) && fromType != typeof(Complex)) {
                         return true;
                     }
                 }
@@ -880,7 +887,7 @@ namespace IronPython.Runtime {
                 case TypeCode.Boolean:
                     return false;
                 case TypeCode.Object:
-                    return t == BigIntegerType || t == Complex64Type;
+                    return t == BigIntegerType || t == ComplexType;
                 default:
                     return true;
             }

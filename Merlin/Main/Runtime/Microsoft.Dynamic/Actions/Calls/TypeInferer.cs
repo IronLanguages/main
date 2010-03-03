@@ -18,7 +18,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
-
+using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -146,8 +147,15 @@ namespace Microsoft.Scripting.Actions.Calls {
                 if (oldWrap.ParameterInfo != null) {
                     pi = newOverload.Parameters[oldWrap.ParameterInfo.Position];
                     ParameterInfo oldParam = oldOverload.Parameters[oldWrap.ParameterInfo.Position];
+
                     if (oldParam.ParameterType == oldWrap.Type) {
                         newType = pi.ParameterType;
+                    } else if (pi.ParameterType.IsByRef) {
+                        newType = pi.ParameterType.GetElementType();
+                        if (oldParam.ParameterType.GetElementType() != oldWrap.Type) {
+                            Debug.Assert(CompilerHelpers.IsStrongBox(oldWrap.Type));
+                            newType = typeof(StrongBox<>).MakeGenericType(newType);
+                        }
                     } else {
                         Debug.Assert(oldParam.ParameterType.GetElementType() == oldWrap.Type);
                         newType = pi.ParameterType.GetElementType();
@@ -235,7 +243,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// parameters.  This is then used to sort the generic parameters so that we can process
         /// the least dependent parameters first.  For example given the method:
         /// 
-        /// void Foo&lt;T0, T1&gt;(T0 x, T1 y) where T0 : T1 
+        /// void Foo{T0, T1}(T0 x, T1 y) where T0 : T1 
         /// 
         /// We need to first infer the type information for T1 before we infer the type information
         /// for T0 so that we can ensure the constraints are correct.
@@ -281,14 +289,17 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Returns a mapping from generic type parameter to the input DMOs which map to it.
         /// </summary>
-        private static Dictionary<Type/*!*/, ArgumentInputs/*!*/>/*!*/ GetArgumentToInputMapping(MethodCandidate/*!*/ wrappers, IList<DynamicMetaObject/*!*/>/*!*/ args) {
+        private static Dictionary<Type/*!*/, ArgumentInputs/*!*/>/*!*/ GetArgumentToInputMapping(MethodCandidate/*!*/ candidate, IList<DynamicMetaObject/*!*/>/*!*/ args) {
             Dictionary<Type, ArgumentInputs> inputs = new Dictionary<Type, ArgumentInputs>();
 
-            for (int curParam = 0; curParam < wrappers.ParameterCount; curParam++) {
-                if (wrappers.GetParameter(curParam).IsParamsArray) {
-                    AddOneInput(inputs, args[curParam], wrappers.GetParameter(curParam).Type.GetElementType());
+            for (int curParam = 0; curParam < candidate.ParameterCount; curParam++) {
+                ParameterWrapper param = candidate.GetParameter(curParam);
+                if (param.IsParamsArray) {
+                    AddOneInput(inputs, args[curParam], param.Type.GetElementType());
+                } else if (param.IsByRef) {
+                    AddOneInput(inputs, args[curParam], param.ParameterInfo.ParameterType);
                 } else {
-                    AddOneInput(inputs, args[curParam], wrappers.GetParameter(curParam).Type);
+                    AddOneInput(inputs, args[curParam], param.Type);
                 }
             }
 
@@ -316,7 +327,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// to by this type.  For example if getting the generic parameters for the x parameter on
         /// the method:
         /// 
-        /// void Foo&lt;T0, T1&gt;(Dictionary&lt;T0, T1&gt; x);
+        /// void Foo{T0, T1}(Dictionary{T0, T1} x);
         /// 
         /// We would add both typeof(T0) and typeof(T1) to the list of generic arguments.
         /// </summary>
@@ -326,9 +337,13 @@ namespace Microsoft.Scripting.Actions.Calls {
                     containedGenArgs.Add(type);
                 }
             } else if (type.ContainsGenericParameters) {
-                Type[] genArgs = type.GetGenericArguments();
-                for (int i = 0; i < genArgs.Length; i++) {
-                    CollectGenericParameters(genArgs[i], containedGenArgs);
+                if (type.IsArray || type.IsByRef) {
+                    CollectGenericParameters(type.GetElementType(), containedGenArgs);
+                } else {
+                    Type[] genArgs = type.GetGenericArguments();
+                    for (int i = 0; i < genArgs.Length; i++) {
+                        CollectGenericParameters(genArgs[i], containedGenArgs);
+                    }
                 }
             }
 
@@ -338,7 +353,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Maps a single type parameter to the possible parameters and DynamicMetaObjects
         /// we can get inference from.  For example for the signature:
         /// 
-        /// void Foo&lt;T0, T1&gt;(T0 x, T1 y, IList&lt;T1&gt; z);
+        /// void Foo{T0, T1}(T0 x, T1 y, IList{T1} z);
         /// 
         /// We would have one ArgumentInput for T0 which holds onto the DMO providing the argument
         /// value for x.  We would also have one ArgumentInput for T1 which holds onto the 2 DMOs
@@ -398,7 +413,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             /// <summary>
             /// The parameter type which inference is happening for.  This is the actual parameter type
-            /// and not the generic parameter.  For example it could be IList&lt;T&gt; or T.
+            /// and not the generic parameter.  For example it could be IList{T} or T.
             /// </summary>
             public Type ParameterType {
                 get {
@@ -410,7 +425,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             /// Checks if the constraints are violated by the given input for the specified generic method parameter.
             /// 
             /// This method must be supplied with a mapping for any dependent generic method type parameters which
-            /// this one can be constrained to.  For example for the signature "void Foo&lt;T0, T1&gt;(T0 x, T1 y) where T0 : T1".
+            /// this one can be constrained to.  For example for the signature "void Foo{T0, T1}(T0 x, T1 y) where T0 : T1".
             /// we cannot know if the constraints are violated unless we know what we have calculated T1 to be.
             /// </summary>
             protected static bool ConstraintsViolated(Type inputType, Type genericMethodParameterType, Dictionary<Type, Type> prevConstraints) {
@@ -470,7 +485,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Provides type inference for a parameter which is typed to be a method type parameter.
         /// 
-        /// For example: M&lt;T&gt;(T x)
+        /// For example: M{T}(T x)
         /// </summary>
         class GenericParameterInferer : ParameterInferer {
             public GenericParameterInferer(Type type)
@@ -493,7 +508,11 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Provides type inference for a parameter which is constructed from a method type parameter.
         /// 
-        /// For example: M&lt;T&gt;(IList&lt;T&gt; x)
+        /// For example: 
+        ///   M{T}(IList{T} x)
+        ///   M{T}(ref T x)
+        ///   M{T}(T[] x)
+        ///   M{T}(ref Dictionary{T,T}[] x)
         /// </summary>
         class ConstructedParameterInferer : ParameterInferer {
             /// <summary>
@@ -511,24 +530,34 @@ namespace Microsoft.Scripting.Actions.Calls {
                 Type inputType = resolver.GetGenericInferenceType(input);
 
                 if (ParameterType.IsInterface) {
-                    // see if we implement this interface exactly once
+                    //
+                    // The argument can implement multiple instantiations of the same generic interface definition, e.g.
+                    // ArgType : I<C<X>>, I<D<Y>>
+                    // ParamType == I<C<T>>
+                    //
+                    // Unless X == Y we can't infer T.
+                    //
                     Type[] interfaces = inputType.GetInterfaces();
-                    Type targetType = null;
+                    Type match = null;
                     Type genTypeDef = ParameterType.GetGenericTypeDefinition();
                     foreach (Type ifaceType in interfaces) {
                         if (ifaceType.IsGenericType && ifaceType.GetGenericTypeDefinition() == genTypeDef) {
-                            if (targetType == null) {
-                                // we may have a match, figure out the type...
-                                targetType = InferGenericType(genericParameter, ifaceType, ParameterType, prevConstraints);
-                            } else {
-                                // multiple interface implementations match
+                            if (!MatchGenericParameter(genericParameter, ifaceType, ParameterType, prevConstraints, ref match)) {
                                 return null;
                             }
                         }
                     }
 
-                    prevConstraints[genericParameter] = targetType;
-                    return targetType;
+                    prevConstraints[genericParameter] = match;
+                    return match;
+                } else if (ParameterType.IsArray) {
+                    return prevConstraints[genericParameter] = MatchGenericParameter(genericParameter, input.LimitType, ParameterType, prevConstraints);
+                } else if (ParameterType.IsByRef) {
+                    Type argType = input.LimitType;
+                    if (CompilerHelpers.IsStrongBox(argType)) {
+                        argType = argType.GetGenericArguments()[0];
+                    }
+                    return prevConstraints[genericParameter] = MatchGenericParameter(genericParameter, argType, ParameterType.GetElementType(), prevConstraints);
                 } else if (ParameterType.IsSubclassOf(typeof(Delegate))) {
                     // see if we have an invokable object which can be used to infer into this delegate
                     IInferableInvokable invokeInfer = input as IInferableInvokable;
@@ -554,15 +583,9 @@ namespace Microsoft.Scripting.Actions.Calls {
                 Type curType = input.LimitType;
                 Type genType = ParameterType.GetGenericTypeDefinition();
                 while (curType != typeof(object)) {
-                    if (curType.IsGenericType) {
-                        if (curType.GetGenericTypeDefinition() == genType) {
-                            // TODO: Merge w/ the interface logic above
-                            Type unboundType = ParameterType;
-
-                            Type res = InferGenericType(genericParameter, curType, unboundType, prevConstraints);
-                            prevConstraints[genericParameter] = res;
-                            return res;
-                        }
+                    if (curType.IsGenericType && curType.GetGenericTypeDefinition() == genType) {
+                        // TODO: Merge w/ the interface logic above
+                        return prevConstraints[genericParameter] = MatchGenericParameter(genericParameter, curType, ParameterType, prevConstraints);
                     }
                     curType = curType.BaseType;
                 }
@@ -571,38 +594,58 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return null;
             }
 
-            /// <summary>
-            /// Performs the actual inference by mapping any generic arguments which map onto method type parameters
-            /// to the available type information for the incoming object.
-            /// </summary>
-            private static Type InferGenericType(Type genericParameter, Type curType, Type unboundType, Dictionary<Type, Type> prevConstraints) {
-                Type[] concreteArgs = curType.GetGenericArguments();
-                Type[] abstractArgs = unboundType.GetGenericArguments();
+            private static Type MatchGenericParameter(Type genericParameter, Type closedType, Type openType, Dictionary<Type, Type> constraints) {
+                Type match = null;
+                return MatchGenericParameter(genericParameter, closedType, openType, constraints, ref match) ? match : null;
+            }
 
-                Type curInferredType = null;
-                for (int i = 0; i < abstractArgs.Length; i++) {
-                    if (abstractArgs[i] == genericParameter) {
-                        if (curInferredType == null) {
-                            curInferredType = concreteArgs[i];
-                        } else if (concreteArgs[i] != curInferredType) {
-                            return null;
-                        }
-                    } else if (abstractArgs[i].ContainsGenericParameters) {
-                        // IList<Func<T>>
-                        Type newType = InferGenericType(genericParameter, concreteArgs[i], abstractArgs[i], prevConstraints);
-                        if (curInferredType == null) {
-                            curInferredType = newType;
-                        } else if (newType != curInferredType) {
-                            return null;
-                        }
+            /// <summary>
+            /// Finds all occurences of <c>genericParameter</c> in <c>openType</c> and the corresponding concrete types in <c>closedType</c>.
+            /// Returns true iff all occurences of the generic parameter in the open type correspond to the same concrete type in the closed type 
+            /// and this type satisfies given <c>constraints</c>. Returns the concrete type in <c>match</c> if so.
+            /// </summary>
+            private static bool MatchGenericParameter(Type genericParameter, Type closedType, Type openType, Dictionary<Type, Type> constraints, ref Type match) {
+                if (openType.IsGenericParameter) {
+                    if (openType == genericParameter) {
+                        if (match != null) {
+                            return match == closedType;
+                        } 
+                        
+                        if (ConstraintsViolated(closedType, genericParameter, constraints)) {
+                            return false;
+                        } 
+                          
+                        match = closedType;
+                    }
+
+                    return true;
+                }
+
+                if (openType.IsArray) {
+                    if (!closedType.IsArray) {
+                        return false;
+                    }
+                    return MatchGenericParameter(genericParameter, closedType.GetElementType(), openType.GetElementType(), constraints, ref match);
+                }
+
+                if (!openType.IsGenericType || !closedType.IsGenericType) {
+                    return openType == closedType;
+                }
+
+                if (openType.GetGenericTypeDefinition() != closedType.GetGenericTypeDefinition()) {
+                    return false;
+                }
+
+                Type[] closedArgs = closedType.GetGenericArguments();
+                Type[] openArgs = openType.GetGenericArguments();
+
+                for (int i = 0; i < openArgs.Length; i++) {
+                    if (!MatchGenericParameter(genericParameter, closedArgs[i], openArgs[i], constraints, ref match)) {
+                        return false;
                     }
                 }
 
-                if (ConstraintsViolated(curInferredType, genericParameter, prevConstraints)) {
-                    return null;
-                }
-
-                return curInferredType;
+                return true;
             }
         }
     }

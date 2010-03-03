@@ -145,8 +145,7 @@ namespace IronRuby.Builtins {
             #region Conversions (read-only)
 
             public override string/*!*/ ConvertToString() {
-                var builder = SwitchToChars();
-                return builder.GetStringSlice(0, builder.DataLength);
+                return SwitchToChars().ConvertToString();
             }
 
             public override byte[]/*!*/ ConvertToBytes() {
@@ -250,11 +249,11 @@ namespace IronRuby.Builtins {
             }
 
             public override byte[]/*!*/ GetBinarySlice(int start, int count) {
-                return _data.GetSlice(start, count);
+                return _data.GetSlice(_count, start, count);
             }
 
             public override Content/*!*/ GetSlice(int start, int count) {
-                return new BinaryContent(_data.GetSlice(start, count), _owner);
+                return new BinaryContent(_data.GetSlice(_count, start, count), _owner);
             }
 
             public override IEnumerable<char>/*!*/ GetCharacters() {

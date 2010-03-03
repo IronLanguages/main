@@ -111,6 +111,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\IronPythonWindow\ipy.ico" />
+  </ItemGroup>
+  <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
       <Visible>False</Visible>
       <ProductName>.NET Framework 2.0 %28x86%29</ProductName>

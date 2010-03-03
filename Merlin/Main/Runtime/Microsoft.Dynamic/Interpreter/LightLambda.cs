@@ -181,6 +181,7 @@ namespace Microsoft.Scripting.Interpreter {
             if (unchecked(_compilationThreshold--) == 0) {
                 if (_interpreter.CompileSynchronously) {
                     _delegateCreator.Compile(null);
+                    return TryGetCompiled();
                 } else {
                     // Kick off the compile on another thread so this one can keep going
                     ThreadPool.QueueUserWorkItem(_delegateCreator.Compile, null);

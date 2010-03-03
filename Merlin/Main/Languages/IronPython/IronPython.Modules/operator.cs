@@ -19,11 +19,17 @@ using System.Runtime.CompilerServices;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Binding;
 using Microsoft.Scripting.Generation;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("operator", typeof(IronPython.Modules.PythonOperator))]
 namespace IronPython.Modules {
@@ -467,7 +473,7 @@ namespace IronPython.Modules {
                 o is ushort ||
                 o is decimal ||
                 o is BigInteger ||
-                o is Complex64 ||
+                o is Complex ||
                 o is byte;
         }
 

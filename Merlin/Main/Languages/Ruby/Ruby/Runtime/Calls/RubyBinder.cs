@@ -29,6 +29,7 @@ using System.Diagnostics;
 using IronRuby.Runtime.Conversions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyBinder : DefaultBinder {
@@ -69,15 +70,6 @@ namespace IronRuby.Runtime.Calls {
         #endregion
 
         #region MetaObjects
-
-        // negative start reserves as many slots at the beginning of the new array:
-        internal static Expression/*!*/[]/*!*/ ToExpressions(DynamicMetaObject/*!*/[]/*!*/ args, int start) {
-            var result = new Expression[args.Length - start];
-            for (int i = Math.Max(0, -start); i < result.Length; i++) {
-                result[i] = args[start + i].Expression;
-            }
-            return result;
-        }
 
         // negative start reserves as many slots at the beginning of the new array:
         internal static object/*!*/[]/*!*/ ToValues(DynamicMetaObject/*!*/[]/*!*/ args, int start) {

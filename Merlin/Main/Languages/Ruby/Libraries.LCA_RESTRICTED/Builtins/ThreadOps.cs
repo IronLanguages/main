@@ -613,7 +613,7 @@ namespace IronRuby.Builtins {
         }
 
         private static void SetCritical(RubyContext/*!*/ context, bool value) {
-            Debug.Assert(context.RubyOptions.Compatibility == RubyCompatibility.Ruby18);
+            Debug.Assert(context.RubyOptions.Compatibility < RubyCompatibility.Ruby19);
             if (value) {
                 bool lockTaken = false;
                 try {
@@ -742,7 +742,7 @@ namespace IronRuby.Builtins {
                 // in monitor.rb explicitly does "Thread.critical=true; other_thread.raise" before exiting, and expects
                 // other_thread to be scheduled immediately.
                 // To deal with such code, we release the critical monitor here if the current thread is holding it
-                if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18 && context.CriticalThread == Thread.CurrentThread) {
+                if (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19 && context.CriticalThread == Thread.CurrentThread) {
                     SetCritical(context, false);
                 }
             }

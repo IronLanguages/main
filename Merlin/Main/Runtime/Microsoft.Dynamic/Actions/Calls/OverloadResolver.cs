@@ -323,6 +323,8 @@ namespace Microsoft.Scripting.Actions.Calls {
                 AddSimpleTarget(defaultCandidate);
             }
 
+            // TODO: We reduce out/ref parameters only for the main overload.
+            // We should rather treat all out params as optional (either a StrongBox is provided or not).
             var byRefReducedCandidate = mapping.CreateByRefReducedCandidate();
             if (byRefReducedCandidate != null) {
                 AddSimpleTarget(byRefReducedCandidate);

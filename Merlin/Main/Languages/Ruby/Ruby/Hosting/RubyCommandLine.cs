@@ -121,7 +121,7 @@ namespace IronRuby.Hosting {
 
         protected override void UnhandledException(Exception e) {
             // Kernel#at_exit can access $!. So we need to publish the uncaught exception
-            Ruby.GetExecutionContext(Engine).CurrentException = e;
+            ((RubyContext)Language).CurrentException = e;
 
             base.UnhandledException(e);
         }

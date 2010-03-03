@@ -106,7 +106,7 @@ namespace Microsoft.Scripting.Actions {
         private bool MakeOperatorDeleteMemberBody(SetOrDeleteMemberInfo delInfo, DynamicMetaObject instance, Type type, string name) {
             MethodInfo delMem = GetMethod(type, name);
 
-            if (delMem != null && delMem.IsSpecialName) {
+            if (delMem != null) {
                 DynamicMetaObject call = MakeCallExpression(delInfo.ResolutionFactory, delMem, instance, new DynamicMetaObject(AstUtils.Constant(delInfo.Name), BindingRestrictions.Empty, delInfo.Name));
 
                 if (delMem.ReturnType == typeof(bool)) {

@@ -38,16 +38,20 @@ namespace Microsoft.Scripting.Actions.Calls {
             : base(info, info.ParameterType.GetElementType(), index, false, false) {
         }
 
+        protected override SimpleArgBuilder Copy(int newIndex) {
+            return new ReturnReferenceArgBuilder(ParameterInfo, newIndex);
+        }
+
+        public override ArgBuilder Clone(ParameterInfo newType) {
+            return new ReturnReferenceArgBuilder(newType, Index);
+        }
+
         internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             if (_tmp == null) {
                 _tmp = resolver.GetTemporary(Type, "outParam");
             }
 
             return Ast.Block(Ast.Assign(_tmp, base.ToExpression(resolver, args, hasBeenUsed)), _tmp);
-        }
-
-        protected override SimpleArgBuilder Copy(int newIndex) {
-            return new ReturnReferenceArgBuilder(ParameterInfo, newIndex);
         }
 
         internal override Expression ToReturnExpression(OverloadResolver resolver) {

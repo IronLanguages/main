@@ -11,11 +11,24 @@ def test_method_name(fault)
   match = 
     / (test.*) # method name
       \(
-      (\w+) # testcase class name
+      (.+) # testcase class name (in parenthesis)
       \)
     /x.match(fault.test_name)
+
   if match and match.size == 3
-    [match[1], match[2]]
+    method_name, class_name = match[1], match[2]
+    if !(class_name =~ /^[\w:]+$/) and defined? ActiveSupport::Testing::Declarative
+      # class_name might be a descriptive string specified with ActiveSupport::Testing::Declarative.describe
+      ObjectSpace.each_object(Class) do |klass|
+        if klass.respond_to? :name
+          if klass.name == class_name
+            class_name = klass.to_s
+            break
+          end
+        end
+      end
+    end
+    [method_name, class_name]
   else
     warn "Could not parse test name : #{fault.test_name}"
     [fault.test_name, "Could not parse test name"] 
@@ -95,7 +108,11 @@ class TagGenerator
         method_name = test_method_name(fault)[0]
         commented_message = fault.message[0..400]
         if fault.respond_to? :exception
-          commented_message += "\n" + fault.exception.backtrace[0..2].join("\n")
+          backtrace = fault.exception.backtrace[0..2].join("\n")
+          # Sometimes backtrace is an Array of size 1, where the first and only 
+          # element is the string for the full backtrace
+          backtrace = backtrace[0..1000]
+          commented_message += "\n" + backtrace
         end
         commented_message = commented_message.gsub(/^(.*)$/, '      # \1')
         output.puts commented_message
@@ -125,8 +142,20 @@ class Test::Unit::UI::Console::TestRunner
 end
 
 if $0 == __FILE__
-  # Dummy example for testing
-  require 'test/unit'  
+  # Dummy examples for testing
+  
+  if RUBY_VERSION == "1.8.7" or RUBY_VERSION =~ /1.9/
+    require 'rubygems'
+    gem 'test-unit', "= 2.0.5"
+    gem 'activesupport', "= 3.0.pre"
+    require 'active_support'
+    require 'active_support/test_case'
+    class TestCaseWithDescription < ActiveSupport::TestCase
+      describe "Hello there @%$"
+      def test_1() assert(false) end
+    end
+  end
+
   class ExampleTest < Test::Unit::TestCase
     def teardown() 
       if @teardown_error

@@ -38,7 +38,7 @@ class StateMachine
                 raise "Invalid target"
             else
                 handler = target.method(newState)
-            end 			
+            end
         end 
     end
 end 
@@ -65,7 +65,7 @@ class LineParser
     end 
 
     def process
-        prepare	
+        prepare
         @stateMachine.run(self, "no effect")
     end 
 end 
@@ -197,7 +197,7 @@ class SnippetShow
         csp.patched_code_handler = proc { |snippet| puts "+" * 50; snippet.each { |l| printf("P |%s", l) } }
         csp.unpatched_code_handler = proc { |snippet| puts "-" * 50; snippet.each { |l| printf("U |%s", l) } }
         csp.process
-    end 	
+    end
 end 
 
 def test_SnippetShow
@@ -411,9 +411,9 @@ class TestRunner
                 raise "Can not find the expected behavior: %s\n" % @generated
             end 
         else
-            expected = h[@name.downcase] 	
+            expected = h[@name.downcase]
         end 
-        if $?.exitstatus == 0 	# success
+        if $?.exitstatus == 0   # success
             if expected != "pass"
                 @failure += 1
                 printf "expected pass, but not. %s\n", @generated
@@ -421,13 +421,13 @@ class TestRunner
                 printf "+"
             end 
         else # fail
-            if output.include?(expected) == false	# but can not find the expected string
+            if output.include?(expected) == false     # but can not find the expected string
                 @failure += 1
                 printf "expected fail, but not. %s\n", @generated
             else
                 printf "-"
             end 
-            end		
+            end
     end 
     
     def test_unpatched_code(snippet)
@@ -471,7 +471,7 @@ ARGV.each do |arg|
     elsif arg =~ /-snap/
     else
         test_files << arg
-    end 	
+    end
 end 
 
 if test_files.empty?
@@ -497,7 +497,7 @@ if ARGV.include? "-snap"
             }
             csp.unpatched_code_handler = proc { |snippet| raise "unexpected" }
             csp.process           
-        end 	
+        end
     end 
 
     gendir = File.join(TestPath::TEST_DIR, "syntax/generated")
@@ -510,7 +510,7 @@ if ARGV.include? "-snap"
         cs.run(f)
     end
     
-    cmd = "#{TestPath::IPYTHON_EXE} parseonly.py #{TestPath::TEST_DIR}/syntax/generated > parsing.log"
+    cmd = "\"#{TestPath::IPYTHON_EXE}\" parseonly.py \"#{TestPath::TEST_DIR}/syntax/generated\" > parsing.log"
     print "\n\nRunning #{cmd} ... \n"
     system(cmd)
     exit($?.exitstatus)

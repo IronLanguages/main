@@ -24,16 +24,18 @@ using System.Collections;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
-using IronRuby.Builtins;
-using IronRuby.Compiler;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Math;
+using IronRuby.Builtins;
+using IronRuby.Compiler;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
+    using AstExpressions = Microsoft.Scripting.Ast.ExpressionCollectionBuilder;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     internal interface IInteropBinder {
         RubyContext Context { get; }
@@ -56,18 +58,7 @@ namespace IronRuby.Runtime.Calls {
             public override DynamicMetaObject/*!*/ FallbackCreateInstance(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args,
                 DynamicMetaObject errorSuggestion) {
 
-                // target is not instantiable meta-object
- 
-                // TODO:
-                // if target.LimitType == System.Type
-                //   new {target}(args)
-                // else 
-
-                // invoke "new" method:
-                return new DynamicMetaObject(
-                    AstUtils.LightDynamic(new InvokeMember(_context, "new", CallInfo), target.Expression),
-                    target.Restrictions.Merge(BindingRestrictions.Combine(args))
-                );
+                return InvokeMember.FallbackInvokeMember(this, "new", CallInfo, target, args, errorSuggestion);                
             }
 
             public override string/*!*/ ToString() {
@@ -120,13 +111,11 @@ namespace IronRuby.Runtime.Calls {
         /// </summary>
         internal sealed class Invoke : InvokeBinder, IInteropBinder {
             private readonly RubyContext/*!*/ _context;
-            private readonly string/*!*/ _fallbackMethod;
 
-            internal Invoke(RubyContext/*!*/ context, string/*!*/ fallbackMethod, CallInfo/*!*/ callInfo)
+            internal Invoke(RubyContext/*!*/ context, CallInfo/*!*/ callInfo)
                 : base(callInfo) {
-                Assert.NotNull(context, fallbackMethod);
+                Assert.NotNull(context);
                 _context = context;
-                _fallbackMethod = fallbackMethod;
             }
 
             public Type/*!*/ ResultType {
@@ -141,22 +130,11 @@ namespace IronRuby.Runtime.Calls {
                 DynamicMetaObject errorSuggestion) {
 #if !SILVERLIGHT
                 DynamicMetaObject result;
-                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindInvoke(this, target, args, out result)) {
+                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindInvoke(this, target, InplaceConvertComArguments(args), out result)) {
                     return result;
                 }
 #endif
-                // target is not a callable meta-object
-                
-                // TODO: target could be a delegate 
-                // if (target.LimitType <: Delegate) then
-                //   invoke delegate
-                // else:
-
-                // invoke the fallback method:
-                return new DynamicMetaObject(
-                    AstUtils.LightDynamic(new InvokeMember(_context, _fallbackMethod, CallInfo), target.Expression),
-                    target.Restrictions.Merge(BindingRestrictions.Combine(args))
-                );
+                return InvokeMember.FallbackInvokeMember(this, "call", CallInfo, target, args, errorSuggestion);
             }
 
             public static DynamicMetaObject/*!*/ Bind(InvokeBinder/*!*/ binder,
@@ -184,17 +162,23 @@ namespace IronRuby.Runtime.Calls {
 
         internal class InvokeMember : InvokeMemberBinder, IInteropBinder {
             private readonly RubyContext/*!*/ _context;
-            private readonly string _mangled;
+            
+            // GetMember on original name is cached on context, the alternative name binder is stored here:
+            private readonly InvokeMember _unmangled;
+            private readonly string _originalName;
 
-            internal InvokeMember(RubyContext/*!*/ context, string/*!*/ name, CallInfo/*!*/ callInfo)
-                : this(context, name, null, callInfo) {
-            }
-
-            private InvokeMember(RubyContext/*!*/ context, string/*!*/ name, string mangled, CallInfo/*!*/ callInfo)
+            internal InvokeMember(RubyContext/*!*/ context, string/*!*/ name, CallInfo/*!*/ callInfo, string originalName)
                 : base(name, false, callInfo) {
                 Assert.NotNull(context);
                 _context = context;
-                _mangled = mangled;
+                _originalName = originalName;
+
+                if (originalName == null) {
+                    string unmangled = RubyUtils.TryUnmangleMethodName(Name);
+                    if (unmangled != null) {
+                        _unmangled = new InvokeMember(_context, unmangled, CallInfo, Name);
+                    }
+                }
             }
 
             public RubyContext Context {
@@ -203,23 +187,19 @@ namespace IronRuby.Runtime.Calls {
 
             #region Ruby -> DLR
 
-            public override DynamicMetaObject/*!*/ FallbackInvokeMember(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args,
-                DynamicMetaObject errorSuggestion) {
+            public override DynamicMetaObject/*!*/ FallbackInvokeMember(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject errorSuggestion) {
+                if (_unmangled != null) {
+                    // TODO: errorSuggestion ?
+                    return _unmangled.Bind(target, args);
+                }
+
 #if !SILVERLIGHT
                 DynamicMetaObject result;
-                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindInvokeMember(this, target, args, out result)) {
+                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindInvokeMember(this, target, InplaceConvertComArguments(args), out result)) {
                     return result;
                 }
 #endif
-
-                if (_mangled == null) {
-                    string unmangled = RubyUtils.TryUnmangleMethodName(Name);
-                    if (unmangled != null) {
-                        return new InvokeMember(_context, unmangled, Name, CallInfo).Bind(target, args);
-                    }
-                }
-
-                return FallbackInvokeMember(this, _mangled ?? Name, CallInfo, target, args, errorSuggestion);
+                return FallbackInvokeMember(this, _originalName ?? Name, CallInfo, target, args, errorSuggestion);
             }
 
             internal static DynamicMetaObject FallbackInvokeMember(IInteropBinder/*!*/ binder, string/*!*/ methodName, CallInfo/*!*/ callInfo,
@@ -240,14 +220,13 @@ namespace IronRuby.Runtime.Calls {
             public override DynamicMetaObject/*!*/ FallbackInvoke(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args,
                 DynamicMetaObject errorSuggestion) {
 
-                var exprs = RubyBinder.ToExpressions(args, -1);
-                exprs[0] = target.Expression;
+                AstExpressions exprs = new AstExpressions();
+                exprs.Add(target.Expression);
+                exprs.Add(args.ToExpressions());
 
                 return new DynamicMetaObject(
-                    Expression.Dynamic(new Return(_context, CallInfo), typeof(object), exprs),
-                    target.Restrictions.Merge(BindingRestrictions.Combine(args)).
-                        // TODO: ???
-                        Merge(BindingRestrictions.GetTypeRestriction(target.Expression, target.GetLimitType()))
+                    AstUtils.LightDynamic(_context.MetaBinderFactory.InteropReturn(CallInfo), typeof(object), exprs),
+                    target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
 
@@ -274,6 +253,7 @@ namespace IronRuby.Runtime.Calls {
                 var metaBuilder = new MetaObjectBuilder(target, args);
 
                 if (!RubyCallAction.BuildCall(metaBuilder, methodName, callArgs, false, false)) {
+                    // TODO: error suggestion?
                     metaBuilder.SetMetaResult(fallback(target, args), false);
                 }
                 return metaBuilder.CreateMetaObject(binder);
@@ -290,46 +270,67 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        internal sealed class GetMember : GetMemberBinder, IInteropBinder {
+        internal sealed class GetMember : GetMemberBinder, IInteropBinder, IInvokeOnGetBinder {
+            private static readonly CallInfo _CallInfo = new CallInfo(0);
             private readonly RubyContext/*!*/ _context;
 
-            internal GetMember(RubyContext/*!*/ context, string/*!*/ name)
+            // GetMember on original name is cached on context, the alternative name binder is stored here:
+            private readonly GetMember _unmangled;
+            private readonly string _originalName;
+
+            internal GetMember(RubyContext/*!*/ context, string/*!*/ name, string originalName)
                 : base(name, false) {
                 Assert.NotNull(context);
                 _context = context;
+                _originalName = originalName;
+
+                if (originalName == null) {
+                    string unmangled = RubyUtils.TryUnmangleMethodName(name);
+                    if (unmangled != null) {
+                        _unmangled = new GetMember(_context, unmangled, originalName);
+                    }
+                }
             }
 
             public RubyContext Context {
                 get { return _context; }
             }
 
+            bool IInvokeOnGetBinder.InvokeOnGet {
+                get { return false; }
+            }
+
             #region Ruby -> DLR
 
             public override DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
+                if (_unmangled != null) {
+                    // TODO: errorSuggestion?
+                    return _unmangled.Bind(target, DynamicMetaObject.EmptyMetaObjects);
+                }
+
 #if !SILVERLIGHT
                 DynamicMetaObject result;
                 if (Microsoft.Scripting.ComInterop.ComBinder.TryBindGetMember(this, target, out result)) {
                     return result;
                 }
 #endif
-                
-                return errorSuggestion ?? new DynamicMetaObject(
-                    Expression.Throw(
-                        Expression.New(
-                            typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
-                            Expression.Constant(String.Format("unknown member: {0}", Name))
-                        ),
-                        typeof(object)
-                    ),
-                    target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
-                );
+
+                var metaBuilder = new MetaObjectBuilder(target);
+                var callArgs = new CallArguments(_context, target, DynamicMetaObject.EmptyMetaObjects, _CallInfo);
+
+                if (!RubyCallAction.BuildAccess(metaBuilder, _originalName ?? Name, callArgs, errorSuggestion == null, true)) {
+                    Debug.Assert(errorSuggestion != null);
+                    metaBuilder.SetMetaResult(errorSuggestion, false);
+                }
+
+                return metaBuilder.CreateMetaObject(this);
             }
 
             #endregion
 
             #region DLR -> Ruby
 
-            public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, GetMemberBinder/*!*/ binder, DynamicMetaObject/*!*/ target, 
+            public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, GetMemberBinder/*!*/ binder, DynamicMetaObject/*!*/ target,
                 Func<DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
                 Debug.Assert(fallback != null);
 
@@ -337,6 +338,7 @@ namespace IronRuby.Runtime.Calls {
                 var metaBuilder = new MetaObjectBuilder(target);
 
                 if (!RubyCallAction.BuildAccess(metaBuilder, binder.Name, callArgs, false, false)) {
+                    // TODO: error suggestion?
                     metaBuilder.SetMetaResult(fallback(target), false);
                 }
 
@@ -353,25 +355,62 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
+        /// <summary>
+        /// GetMember with a fallback that returns OperationFailed singleton.
+        /// No name mangling is performed.
+        /// </summary>
+        internal sealed class TryGetMemberExact : GetMemberBinder, IInvokeOnGetBinder {
+            internal TryGetMemberExact(string/*!*/ name)
+                : base(name, false) {
+            }
+
+            bool IInvokeOnGetBinder.InvokeOnGet {
+                get { return false; }
+            }
+
+            #region Ruby -> DLR
+
+            public override DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
+#if !SILVERLIGHT
+                DynamicMetaObject result;
+                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindGetMember(this, target, out result)) {
+                    return result;
+                }
+#endif
+
+                return new DynamicMetaObject(
+                    Expression.Constant(OperationFailed.Value, typeof(object)),
+                    target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
+                );
+            }
+
+            #endregion
+
+            public override string/*!*/ ToString() {
+                return String.Format("Interop.TryGetMemberExact({0})", Name);
+            }
+        }
+
         internal sealed class SetMember : DynamicMetaObjectBinder, IInteropBinder {
             private readonly RubyContext/*!*/ _context;
-            private readonly ContainsMember/*!*/ _contains;
-            private readonly RealSetMember/*!*/ _setMember;
             private readonly string/*!*/ _name;
-            private readonly RealSetMember _setMemberUnmangled;
-            private readonly ContainsMember/*!*/ _containsUnmangled;
+            private readonly TryGetMemberExact/*!*/ _tryGetMember;
+            private readonly SetMemberExact/*!*/ _setMember;
+            private readonly SetMemberExact _setMemberUnmangled;
+            private readonly TryGetMemberExact/*!*/ _tryGetMemberUnmangled;
 
             internal SetMember(RubyContext/*!*/ context, string/*!*/ name) {
                 Assert.NotNull(context, name);
 
                 _name = name;
                 _context = context;
-                _contains = new ContainsMember(context, name);
-                _setMember = new RealSetMember(name);
-                string unmanagled = RubyUtils.TryUnmangleName(name);
+                _tryGetMember = RubyMetaBinderFactory.InteropTryGetMemberExact(name);
+                _setMember = RubyMetaBinderFactory.InteropSetMemberExact(name);
+
+                string unmanagled = RubyUtils.TryUnmangleMethodName(name);
                 if (unmanagled != null) {
-                    _setMemberUnmangled = new RealSetMember(unmanagled);
-                    _containsUnmangled = new ContainsMember(context, unmanagled);
+                    _setMemberUnmangled = RubyMetaBinderFactory.InteropSetMemberExact(unmanagled);
+                    _tryGetMemberUnmangled = RubyMetaBinderFactory.InteropTryGetMemberExact(unmanagled);
                 }
             }
 
@@ -381,7 +420,9 @@ namespace IronRuby.Runtime.Calls {
 
             #region Ruby -> DLR
 
-            public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
+            public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {
+                Debug.Assert(args.Length == 1);
+
                 if (_setMemberUnmangled == null) {
                     // no unmangled name, just do the set member binding
                     return _setMember.Bind(target, args);
@@ -399,16 +440,16 @@ namespace IronRuby.Runtime.Calls {
                     Expression.Condition(
                         Expression.AndAlso(
                             Expression.Equal(
-                                Expression.Dynamic(_contains, typeof(object), target.Expression),
+                                AstUtils.LightDynamic(_tryGetMember, typeof(object), target.Expression),
                                 Expression.Constant(OperationFailed.Value)
                             ),
                             Expression.NotEqual(
-                                Expression.Dynamic(_containsUnmangled, typeof(object), target.Expression),
+                                AstUtils.LightDynamic(_tryGetMemberUnmangled, typeof(object), target.Expression),
                                 Expression.Constant(OperationFailed.Value)
                             )
                         ),
-                        Expression.Dynamic(_setMemberUnmangled, typeof(object), target.Expression, args[0].Expression),
-                        Expression.Dynamic(_setMember, typeof(object), target.Expression, args[0].Expression)
+                        AstUtils.LightDynamic(_setMemberUnmangled, typeof(object), target.Expression, args[0].Expression),
+                        AstUtils.LightDynamic(_setMember, typeof(object), target.Expression, args[0].Expression)
                     ),
                     target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
                 );
@@ -440,82 +481,38 @@ namespace IronRuby.Runtime.Calls {
                     _name,
                     (_context != null ? " @" + Context.RuntimeId.ToString() : null)
                 );
-            }
-            
-            /// <summary>
-            /// Checks to see if a member is defined - fallback is defined to return OperationFailed.Value
-            /// which we check for.
-            /// </summary>
-            internal sealed class ContainsMember : GetMemberBinder, IInteropBinder {
-                private readonly RubyContext/*!*/ _context;
+            }           
+        }
 
-                internal ContainsMember(RubyContext/*!*/ context, string/*!*/ name)
-                    : base(name, false) {
-                    Assert.NotNull(context);
-                    _context = context;
-                }
-
-                public RubyContext Context {
-                    get { return _context; }
-                }
-
-                #region Ruby -> DLR
-
-                public override DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
-#if !SILVERLIGHT
-                    DynamicMetaObject result;
-                    if (Microsoft.Scripting.ComInterop.ComBinder.TryBindGetMember(this, target, out result)) {
-                        return result;
-                    }
-#endif
-
-                    return errorSuggestion ?? 
-                        new DynamicMetaObject(
-                            Expression.Constant(OperationFailed.Value, typeof(object)), 
-                            target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
-                        );
-                }
-
-                #endregion
-
-                
-                public override string/*!*/ ToString() {
-                    return String.Format("Interop.GetMember({0}){1}",
-                        Name,
-                        (_context != null ? " @" + Context.RuntimeId.ToString() : null)
-                    );
-                }
+        internal sealed class SetMemberExact : SetMemberBinder {
+            internal SetMemberExact(string/*!*/ name)
+                : base(name, false) {
             }
 
-            /// <summary>
-            /// A standard SetMember binder which gets used for the normal and mangled names.
-            /// </summary>
-            sealed class RealSetMember : SetMemberBinder {
-                internal RealSetMember(string/*!*/ name) : base(name, false){
-                }
-
-                public override DynamicMetaObject/*!*/ FallbackSetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ value,
-                    DynamicMetaObject errorSuggestion) {
+            public override DynamicMetaObject/*!*/ FallbackSetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ value,
+                DynamicMetaObject errorSuggestion) {
 
 #if !SILVERLIGHT
-                    DynamicMetaObject result;
-                    if (Microsoft.Scripting.ComInterop.ComBinder.TryBindSetMember(this, target, value, out result)) {
-                        return result;
-                    }
+                DynamicMetaObject result;
+                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindSetMember(this, target, ConvertComArgument(value), out result)) {
+                    return result;
+                }
 #endif
 
-                    return errorSuggestion ?? new DynamicMetaObject(
-                        Expression.Throw(
-                            Expression.New(
-                                typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
-                                Expression.Constant(String.Format("unknown member: {0}", Name))
-                            ),
-                            typeof(object)
+                return errorSuggestion ?? new DynamicMetaObject(
+                    Expression.Throw(
+                        Expression.New(
+                            typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
+                            Expression.Constant(String.Format("unknown member: {0}", Name))
                         ),
-                        target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
-                    );
-                }
+                        typeof(object)
+                    ),
+                    target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
+                );
+            }
 
+            public override string/*!*/ ToString() {
+                return String.Format("Interop.SetMemberExact({0})", Name);
             }
         }
 
@@ -535,13 +532,12 @@ namespace IronRuby.Runtime.Calls {
                 DynamicMetaObject errorSuggestion) {
 #if !SILVERLIGHT
                 DynamicMetaObject result;
-                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindGetIndex(this, target, indexes, out result)) {
+                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindGetIndex(this, target, InplaceConvertComArguments(indexes), out result)) {
                     return result;
                 }
 #endif
-                // TODO: CLR get index
-                // TODO: invoke
-                throw new NotImplementedException("TODO");
+
+                return InvokeMember.FallbackInvokeMember(this, "[]", CallInfo, target, indexes, errorSuggestion);
             }
 
             #endregion
@@ -585,16 +581,17 @@ namespace IronRuby.Runtime.Calls {
 
             #region Ruby -> DLR
 
-            public override DynamicMetaObject/*!*/ FallbackSetIndex(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ indexes, 
+            public override DynamicMetaObject/*!*/ FallbackSetIndex(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ indexes,
                 DynamicMetaObject/*!*/ value, DynamicMetaObject errorSuggestion) {
 
 #if !SILVERLIGHT
                 DynamicMetaObject result;
-                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindSetIndex(this, target, indexes, value, out result)) {
+                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindSetIndex(this, target, InplaceConvertComArguments(indexes), ConvertComArgument(value), out result)) {
                     return result;
                 }
 #endif
-                throw new NotImplementedException("TODO");
+
+                return InvokeMember.FallbackInvokeMember(this, "[]=", CallInfo, target, ArrayUtils.Append(indexes, value), errorSuggestion);
             }
 
             #endregion
@@ -625,6 +622,43 @@ namespace IronRuby.Runtime.Calls {
             public override string/*!*/ ToString() {
                 return String.Format("Interop.SetIndex({0}){1}",
                     CallInfo.ArgumentCount,
+                    (_context != null ? " @" + Context.RuntimeId.ToString() : null)
+                );
+            }
+        }
+
+        internal sealed class SetIndexedProperty : DynamicMetaObjectBinder, IInteropBinder {
+            private readonly RubyContext/*!*/ _context;
+            public RubyContext Context { get { return _context; } }
+
+            private readonly GetMember/*!*/ _getMember;
+            private readonly SetIndex/*!*/ _setIndex;
+
+            internal SetIndexedProperty(RubyContext/*!*/ context, string/*!*/ name, CallInfo/*!*/ callInfo) {
+                Assert.NotNull(context);
+                _context = context;
+                _getMember = context.MetaBinderFactory.InteropGetMember(name);
+                _setIndex = context.MetaBinderFactory.InteropSetIndex(callInfo);
+            }
+
+            #region Ruby -> DLR
+
+            public override DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {
+                Debug.Assert(args.Length > 1);
+
+                var exprs = new AstExpressions();
+                exprs.Add(AstUtils.LightDynamic(_getMember, typeof(object), target.Expression));
+                exprs.Add(args.ToExpressions());
+
+                return new DynamicMetaObject(AstUtils.LightDynamic(_setIndex, typeof(object), exprs), BindingRestrictions.Empty);
+            }
+                
+            #endregion
+
+            public override string/*!*/ ToString() {
+                return String.Format("Interop.SetIndexedProperty({0}, {1}){2}",
+                    _getMember.Name, 
+                    _setIndex.CallInfo.ArgumentCount,
                     (_context != null ? " @" + Context.RuntimeId.ToString() : null)
                 );
             }
@@ -696,7 +730,7 @@ namespace IronRuby.Runtime.Calls {
             private readonly RubyContext/*!*/ _context;
             public RubyContext Context { get { return _context; } }
 
-            public Convert(RubyContext/*!*/ context, Type/*!*/ type, bool isExplicit)
+            internal Convert(RubyContext/*!*/ context, Type/*!*/ type, bool isExplicit)
                 : base(type, isExplicit) {
                 Assert.NotNull(context);
                 _context = context;
@@ -736,7 +770,7 @@ namespace IronRuby.Runtime.Calls {
             private readonly RubyContext/*!*/ _context;
             public RubyContext Context { get { return _context; } }
 
-            public Splat(RubyContext/*!*/ context)
+            internal Splat(RubyContext/*!*/ context)
                 : base(typeof(IList), true) {
                 Assert.NotNull(context);
                 _context = context;
@@ -756,16 +790,7 @@ namespace IronRuby.Runtime.Calls {
                 return "Interop.Splat" + (_context != null ? " @" + Context.RuntimeId.ToString() : null);
             }
         }
-
-        // TODO: remove
-        internal static DynamicMetaObject/*!*/ CreateErrorMetaObject(this DynamicMetaObjectBinder binder, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, 
-            DynamicMetaObject errorSuggestion) {
-            return errorSuggestion ?? new DynamicMetaObject(
-                Expression.Throw(Expression.New(typeof(NotImplementedException)), binder.ReturnType),
-                target.Restrictions.Merge(BindingRestrictions.Combine(args))
-            );
-        }
-
+        
         // TODO: convert binder
         internal static DynamicMetaObject TryBindCovertToDelegate(RubyMetaObject/*!*/ target, ConvertBinder/*!*/ binder, MethodInfo/*!*/ delegateFactory) {
             var metaBuilder = new MetaObjectBuilder(target);
@@ -781,6 +806,34 @@ namespace IronRuby.Runtime.Calls {
             metaBuilder.AddTypeRestriction(type, target.Expression);
             metaBuilder.Result = delegateFactory.OpCall(AstUtils.Constant(delegateType), Ast.Convert(target.Expression, type));
             return true;
+        }
+
+        internal static DynamicMetaObject/*!*/[]/*!*/ InplaceConvertComArguments(DynamicMetaObject/*!*/[]/*!*/ args) {
+            for (int i = 0; i < args.Length; i++) {
+                args[i] = ConvertComArgument(args[i]);
+            }
+            return args;
+        }
+
+        internal static DynamicMetaObject/*!*/ ConvertComArgument(DynamicMetaObject/*!*/ arg) {
+            Expression expr = arg.Expression;
+            BindingRestrictions restrictions;
+            if (arg.Value != null) {
+                Type type = arg.Value.GetType();
+                if (type == typeof(BigInteger)) {
+                    expr = Ast.Convert(AstUtils.Convert(arg.Expression, typeof(BigInteger)), typeof(double));
+                } else if (type == typeof(MutableString)) {
+                    // TODO: encoding?
+                    expr = Ast.Convert(AstUtils.Convert(arg.Expression, typeof(MutableString)), typeof(string));
+                } else if (type == typeof(RubySymbol)) {
+                    // TODO: encoding?
+                    expr = Ast.Convert(AstUtils.Convert(arg.Expression, typeof(RubySymbol)), typeof(string));
+                }
+                restrictions = BindingRestrictions.GetTypeRestriction(arg.Expression, type);
+            } else {
+                restrictions = BindingRestrictions.GetExpressionRestriction(Ast.Equal(arg.Expression, AstUtils.Constant(null)));
+            }
+            return arg.Clone(expr, restrictions);
         }
     }
 }

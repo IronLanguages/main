@@ -19,9 +19,16 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-using Microsoft.Scripting.Math;
-
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Utils;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -424,7 +431,7 @@ namespace IronPython.Runtime {
                 }
 
                 // this is more generous than needed
-                ret += m * BigInteger.Create(uval);
+                ret += m * (BigInteger)uval;
                 if (i >= 0) m = m * (smallMultiplier);
             }
 
@@ -521,13 +528,13 @@ namespace IronPython.Runtime {
             return text;
         }
 
-        // ParseComplex64 helpers
+        // ParseComplex helpers
         private static char[] signs = new char[] { '+', '-' };
         private static Exception ExnMalformed() {
             return PythonOps.ValueError("complex() arg is a malformed string");
         }
 
-        public static Complex64 ParseComplex64(string s) {
+        public static Complex ParseComplex(string s) {
             // remove no-meaning spaces and convert to lowercase
             string text = s.Trim().ToLower();
             if (String.IsNullOrEmpty(text)) {
@@ -560,7 +567,7 @@ namespace IronPython.Runtime {
 
                     // no real component
                     if (signPos < 0) {
-                        return Complex64.MakeImaginary((len == 1) ? 1 : ParseFloatNoCatch(text.Substring(0, len - 1)));
+                        return MathUtils.MakeImaginary((len == 1) ? 1 : ParseFloatNoCatch(text.Substring(0, len - 1)));
                     }
 
                     real = text.Substring(0, signPos);
@@ -574,7 +581,7 @@ namespace IronPython.Runtime {
 
                     // no imaginary component
                     if (splitText.Length == 1) {
-                        return Complex64.MakeReal(ParseFloatNoCatch(text));
+                        return MathUtils.MakeReal(ParseFloatNoCatch(text));
                     }
 
                     // there should only be one j
@@ -590,7 +597,7 @@ namespace IronPython.Runtime {
                     }
                 }
 
-                return new Complex64(String.IsNullOrEmpty(real) ? 0 : ParseFloatNoCatch(real), ParseFloatNoCatch(imag));
+                return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloatNoCatch(real), ParseFloatNoCatch(imag));
             } catch (OverflowException) {
                 throw PythonOps.ValueError("complex() literal too large to convert");
             } catch {
@@ -598,14 +605,14 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static Complex64 ParseImaginary(string text) {
+        public static Complex ParseImaginary(string text) {
             try {
-                return Complex64.MakeImaginary(double.Parse(
+                return MathUtils.MakeImaginary(double.Parse(
                     text.Substring(0, text.Length - 1),
                     System.Globalization.CultureInfo.InvariantCulture.NumberFormat
                     ));
             } catch (OverflowException) {
-                return new Complex64(0, Double.PositiveInfinity);
+                return new Complex(0, Double.PositiveInfinity);
             }
         }
     }

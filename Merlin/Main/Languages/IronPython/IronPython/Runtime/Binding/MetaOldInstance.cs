@@ -26,10 +26,16 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -132,7 +138,7 @@ namespace IronPython.Runtime.Binding {
                     case TypeCode.Object:
                         if (type == typeof(BigInteger)) {
                             return MakeConvertToCommon(binder, type, retType, "__long__");
-                        } else if (type == typeof(Complex64)) {
+                        } else if (type == typeof(Complex)) {
                             return MakeConvertToCommon(binder, type, retType, "__complex__");
                         } else if (type == typeof(IEnumerable)) {
                             return MakeConvertToIEnumerable(binder);

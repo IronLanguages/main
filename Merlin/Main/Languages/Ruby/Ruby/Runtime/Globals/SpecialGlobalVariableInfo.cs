@@ -114,7 +114,7 @@ namespace IronRuby.Runtime {
                     return context.Verbose;
 
                 case GlobalVariableId.KCode:
-                    if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                    if (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
                         var kcode = KCoding.GetKCodeName(context.KCode);
                         Utils.Log("KCODE set to " + kcode, "KCODE");
                         return MutableString.CreateAscii(kcode);
@@ -233,7 +233,7 @@ namespace IronRuby.Runtime {
                     return;
                 
                 case GlobalVariableId.KCode:
-                    if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                    if (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
                         // MRI calls to_str; we don't do that, it's inconsistent with other globals.
                         // If some app depends on this behavior, it will fail gracefully:
                         context.KCode = RubyEncoding.GetKCodingByNameInitial(RequireType<MutableString>(value, name, "String").GetFirstChar());

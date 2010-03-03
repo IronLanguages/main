@@ -552,10 +552,14 @@ Also, a list:
     end
     begin
       require "rbconfig"
-      File.join(
+      
+      path = File.join(
         RbConfig::CONFIG["bindir"],
-	RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
+	    RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
       )
+      path = '"' + path + '"' if path.include?(' ')
+
+      path
     rescue LoadError
       "ruby"
     end

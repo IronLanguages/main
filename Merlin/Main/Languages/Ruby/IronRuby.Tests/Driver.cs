@@ -30,6 +30,7 @@ using System.Reflection;
 using System.Text;
 using System.Globalization;
 using System.Threading;
+using Microsoft.Scripting.Hosting.Providers;
 
 namespace IronRuby.Tests {
     public class TestCase {
@@ -89,7 +90,7 @@ namespace IronRuby.Tests {
 
             _runtime = Ruby.CreateRuntime(runtimeSetup);
             _engine = Ruby.GetEngine(_runtime);
-            _context = Ruby.GetExecutionContext(_engine);
+            _context = (RubyContext)HostingHelpers.GetLanguageContext(_engine);
         }
     }
 
@@ -173,7 +174,8 @@ namespace IronRuby.Tests {
                 Console.WriteLine("Verbose                      : /verbose");
                 Console.WriteLine("Partial trust                : /partial");
                 Console.WriteLine("No adaptive compilation      : /noadaptive");
-                Console.WriteLine("Synchronous compilation      : /sync             (-X:CompilationThreshold 1)");
+                Console.WriteLine("Synchronous compilation      : /sync0            (-X:CompilationThreshold 0)");
+                Console.WriteLine("Synchronous compilation      : /sync1            (-X:CompilationThreshold 1)");
                 Console.WriteLine("Interpret only               : /interpret        (-X:CompilationThreshold Int32.MaxValue)");
                 Console.WriteLine("Save to assemblies           : /save");
                 Console.WriteLine("Debug Mode                   : /debug");
@@ -225,8 +227,13 @@ namespace IronRuby.Tests {
                 _noAdaptiveCompilation = true;
             }
 
-            if (args.Contains("/sync")) {
-                args.Remove("/sync");
+            if (args.Contains("/sync0")) {
+                args.Remove("/sync0");
+                _compilationThreshold = 0;
+            }
+
+            if (args.Contains("/sync1")) {
+                args.Remove("/sync1");
                 _compilationThreshold = 1;
             }
 
@@ -265,7 +272,7 @@ namespace IronRuby.Tests {
             if (args.Contains("/partial")) {
                 Console.WriteLine("Running in partial trust");
 
-                PermissionSet ps = CreatePermissionSetByName();
+                PermissionSet ps = CreatePermissionSet();
                 AppDomainSetup setup = new AppDomainSetup();
                 
                 setup.ApplicationBase = Environment.CurrentDirectory;
@@ -296,7 +303,8 @@ namespace IronRuby.Tests {
             }
         }
 
-        private static PermissionSet/*!*/ CreatePermissionSetByName() {
+        private static PermissionSet/*!*/ CreatePermissionSet() {
+#if CLR2
             string name = "Internet";
             bool foundName = false;
             PermissionSet setIntersection = new PermissionSet(PermissionState.Unrestricted);
@@ -319,6 +327,11 @@ namespace IronRuby.Tests {
             }
 
             return setIntersection;
+#else
+            Evidence e = new Evidence();
+            e.AddHostEvidence(new Zone(SecurityZone.Internet));
+            return SecurityManager.GetStandardSandbox(e);
+#endif
         }       
 
         public static int Run(List<string>/*!*/ args) {
@@ -333,7 +346,7 @@ namespace IronRuby.Tests {
             int status = 0;
 
             if (_runTokenizerDriver) {
-                TokenizerTestDriver driver = new TokenizerTestDriver(Ruby.GetExecutionContext(Ruby.CreateRuntime()));
+                TokenizerTestDriver driver = new TokenizerTestDriver((RubyContext)HostingHelpers.GetLanguageContext(Ruby.CreateEngine()));
                 if (!driver.ParseArgs(args)) {
                     return -3;
                 }

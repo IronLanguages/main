@@ -15,7 +15,12 @@
 
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Math; 
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime.Operations {
     public static class DecimalOps {
@@ -58,8 +63,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static int __cmp__(decimal x, BigInteger y) {
+#if CLR2
             if (object.ReferenceEquals(y, null)) return +1;
-            BigInteger bx = BigInteger.Create(x);
+#endif
+            BigInteger bx = (BigInteger)x;
             if (bx == y) {
                 decimal mod = x % 1;
                 if (mod == 0) return 0;
@@ -68,6 +75,21 @@ namespace IronPython.Runtime.Operations {
             }
             return bx > y ? +1 : -1;
         }
+
+#if !CLR2
+        [return: MaybeNotImplemented]
+        internal static object __cmp__(object x, decimal y) {
+            return __cmp__(y, x);
+        }
+
+        [return: MaybeNotImplemented]
+        internal static object __cmp__(decimal x, object y) {
+            if (object.ReferenceEquals(y, null)) {
+                return ScriptingRuntimeHelpers.Int32ToObject(+1);
+            }
+            return PythonOps.NotImplemented;
+        }
+#endif
 
         public static int __hash__(decimal x) {
             return ((BigInteger)x).GetHashCode();   

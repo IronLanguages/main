@@ -67,7 +67,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             str.Append(buffer, 0, received);
 
             var context = conversionStorage.Context;
-            context.SetObjectTaint(str, true);
+            str.IsTainted = true;
             return RubyOps.MakeArray2(str, GetAddressArray(context, fromEP));
         }
         #endregion

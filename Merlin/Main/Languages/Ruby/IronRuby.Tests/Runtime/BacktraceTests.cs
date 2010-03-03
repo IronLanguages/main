@@ -13,14 +13,20 @@
  *
  * ***************************************************************************/
 
+using System;
+using System.Text;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
-using System;
+using IronRuby.Builtins;
+using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
     public partial class Tests {
         private bool PreciseSinglePassTraces {
-            get { return Runtime.Setup.DebugMode || !_driver.NoAdaptiveCompilation; }
+            get { 
+                // We have precise traces in debug mode and if we interpret the methods. We assume that the tests are not executing any metho
+                return Runtime.Setup.DebugMode || !_driver.NoAdaptiveCompilation && _driver.CompilationThreshold > 0; 
+            }
         }
 
         public void Backtrace1() {
@@ -148,10 +154,6 @@ Backtrace3.rb:0
         }
 
         public void Backtrace4() {
-#if TODO
-            // TODO: need to fix interpreter
-            if (_driver.Interpret) return;
-
             Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClrBacktrace)));
             Context.ObjectClass.SetConstant("A", Context.GetClass(typeof(Action)));
 
@@ -184,7 +186,6 @@ Backtrace4.rb:11:in `foo'
 Backtrace4.rb:10:in `foo'
 Backtrace4.rb:0
 ", OutputFlags.Match);
-#endif
         }
 
         /// <summary>
@@ -228,5 +229,79 @@ rb_2
 ", scope);
         }
 
+        public void Backtrace6() {
+            TestOutput(@"
+def f1
+  f2 
+end
+
+def f2
+  #
+  #
+  #
+  1.times do
+    #
+    #
+    f3
+    #
+    #
+  end
+  #
+  #
+  #
+end
+
+def f3
+  raise
+end
+
+f1 rescue puts $@[0..5]
+", PreciseSinglePassTraces ? @"
+Backtrace6.rb:23:in `f3'
+Backtrace6.rb:13:in `f2'
+Backtrace6.rb:10:in `times'
+Backtrace6.rb:10:in `f2'
+Backtrace6.rb:3:in `f1'
+Backtrace6.rb:26
+" : @"
+Backtrace6.rb:22:in `f3'
+Backtrace6.rb:10:in `f2'
+Backtrace6.rb:6:in `times'
+Backtrace6.rb:6:in `f2'
+Backtrace6.rb:2:in `f1'
+Backtrace6.rb:0
+");
+        }
+        
+        public void Backtrace7() {
+            // TODO: start name by \0 -> bug in reflection?
+            StringBuilder sb = new StringBuilder();
+
+            int maxLength = _driver.IsDebug ? RubyStackTraceBuilder.MaxDebugModePathSize : Char.MaxValue;
+
+            for (int i = 1; i <= maxLength; i++) {
+                sb.Append((char)i);
+            }
+
+            var srcName = sb.ToString();
+
+            var frameInfo = Engine.CreateScriptSourceFromString(@"
+def foo 
+  caller[0]
+end
+
+def bar
+  foo
+end
+
+bar
+", srcName).Execute<string>();
+
+            if (_driver.IsDebug) {
+                Assert(frameInfo.StartsWith(srcName.Substring(0, maxLength)));
+            } else {
+                Assert(frameInfo.StartsWith(srcName + ":"));
+            }
+        }
     }
 }

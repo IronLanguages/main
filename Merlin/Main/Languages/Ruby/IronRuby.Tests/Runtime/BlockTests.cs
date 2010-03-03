@@ -2110,7 +2110,7 @@ puts '7'
 ");
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void BEGIN3() {
             TestOutput(@"
 def f1

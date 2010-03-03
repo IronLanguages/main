@@ -20,6 +20,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
+using IronRuby.Compiler;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -246,8 +247,18 @@ namespace IronRuby.Runtime.Calls {
             throw Assert.Unreachable;
         }
 
+        internal virtual void BuildMethodMissingCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
+            args.InsertMethodName(name);
+            BuildCallNoFlow(metaBuilder, args, Symbols.MethodMissing);
+        }
+
         internal void BuildCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             BuildCallNoFlow(metaBuilder, args, name);
+            metaBuilder.BuildControlFlow(args);
+        }
+
+        internal void BuildMethodMissingCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
+            BuildMethodMissingCallNoFlow(metaBuilder, args, name);
             metaBuilder.BuildControlFlow(args);
         }
 

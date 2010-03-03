@@ -486,7 +486,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region /, div, %, modulo, divmod
+        #region /, div, fdiv, %, modulo, divmod
 
         /// <summary>
         /// Divides self by other, where other is a Fixnum.
@@ -532,6 +532,10 @@ namespace IronRuby.Builtins {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "div", self, other);
         }
 
+        [RubyMethod("fdiv", Compatibility = RubyCompatibility.Ruby19)]
+        public static double FDiv(int self, [DefaultProtocol]int other) {
+            return self / (double)other;
+        }
         /// <summary>
         /// Returns self modulo other, where other is Fixnum.  See <see cref="FloatOps.Divmod"/> for more information.
         /// </summary>

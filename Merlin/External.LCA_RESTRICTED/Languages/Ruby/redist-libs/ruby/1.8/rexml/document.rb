@@ -175,7 +175,7 @@ module REXML
     #   the absolute *value* of the document -- that is, it leaves the value
     #   and number of Text nodes in the document unchanged.
     # ie_hack::
-    #   Internet Explorer is the worst piece of crap to have ever been
+    #   Internet Explorer is the worst piece of #### to have ever been
     #   written, with the possible exception of Windows itself.  Since IE is
     #   unable to parse proper XML, we have to provide a hack to generate XML
     #   that IE's limited abilities can handle.  This hack inserts a space 

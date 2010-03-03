@@ -89,7 +89,7 @@ namespace IronRuby.Builtins {
             _originalString = other._originalString;
         }
 
-        internal static MatchData Create(Match/*!*/ match, MutableString/*!*/ input, bool inputMayMutate, string/*!*/ encodedInput, RubyEncoding kcoding, int kStart) {
+        internal static MatchData Create(Match/*!*/ match, MutableString/*!*/ input, bool freezeInput, string/*!*/ encodedInput, RubyEncoding kcoding, int kStart) {
             if (!match.Success) {
                 return null;
             }
@@ -113,7 +113,7 @@ namespace IronRuby.Builtins {
                 kIndices = null;
             }
 
-            if (inputMayMutate) {
+            if (freezeInput) {
                 input = input.Clone().Freeze();
             }
             return new MatchData(match, input, kIndices);

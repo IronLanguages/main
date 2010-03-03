@@ -21,12 +21,17 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using IronPython.Runtime.Exceptions;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 // TODO: Documentation copied from CPython is inadequate in some places and wrong in others.
 
@@ -291,7 +296,7 @@ namespace IronPython.Modules {
             public BigInteger readinto([NotNull]ArrayModule.array buffer) {
                 EnsureReadable();
 
-                return BigInteger.Create(buffer.FromStream(_readStream, 0, buffer.__len__() * buffer.itemsize));
+                return buffer.FromStream(_readStream, 0, buffer.__len__() * buffer.itemsize);
             }
 
             public BigInteger readinto([NotNull]ByteArray buffer) {
@@ -328,7 +333,7 @@ namespace IronPython.Modules {
             public BigInteger seek(BigInteger offset, [DefaultParameterValue(0)]int whence) {
                 EnsureOpen();
 
-                return BigInteger.Create(_readStream.Seek(offset.ToInt64(), (SeekOrigin)whence));
+                return _readStream.Seek((long)offset, (SeekOrigin)whence);
             }
 
             public BigInteger seek(double offset, [DefaultParameterValue(0)]int whence) {
@@ -348,7 +353,7 @@ namespace IronPython.Modules {
             public BigInteger tell() {
                 EnsureOpen();
 
-                return BigInteger.Create(_readStream.Position);
+                return _readStream.Position;
             }
 
             [Documentation("truncate([size: int]) -> None.  Truncate the file to at most size bytes.\n\n"
@@ -362,7 +367,7 @@ namespace IronPython.Modules {
             public BigInteger truncate(BigInteger size) {
                 EnsureWritable();
 
-                _writeStream.SetLength(size.ToInt64());
+                _writeStream.SetLength((long)size);
                 SeekToEnd();
 
                 return size;
@@ -391,7 +396,7 @@ namespace IronPython.Modules {
                 _writeStream.Write(b, 0, b.Length);
                 SeekToEnd();
 
-                return BigInteger.Create(b.Length);
+                return b.Length;
             }
 
             public BigInteger write([NotNull]Bytes b) {
@@ -407,7 +412,7 @@ namespace IronPython.Modules {
                 _writeStream.Write(bytes, 0, len);
                 SeekToEnd();
 
-                return BigInteger.Create(len);
+                return len;
             }
 
             public BigInteger write([NotNull]string s) {

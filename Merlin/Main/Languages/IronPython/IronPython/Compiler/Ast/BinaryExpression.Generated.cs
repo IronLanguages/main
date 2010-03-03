@@ -17,10 +17,15 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Compiler.Ast {
     public partial class BinaryExpression {

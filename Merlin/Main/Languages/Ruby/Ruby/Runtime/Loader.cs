@@ -411,10 +411,14 @@ namespace IronRuby.Runtime {
 
             internal void HookAssemblyResolve() {
                 try {
-                    AppDomain.CurrentDomain.AssemblyResolve += AssemblyResolveEvent;
+                    HookAssemblyResolveInternal();
                 } catch (System.Security.SecurityException) {
                     // We may not have SecurityPermissionFlag.ControlAppDomain. 
                 }
+            }
+
+            private void HookAssemblyResolveInternal() {
+                AppDomain.CurrentDomain.AssemblyResolve += AssemblyResolveEvent;
             }
 
             private Assembly AssemblyResolveEvent(object sender, ResolveEventArgs args) {

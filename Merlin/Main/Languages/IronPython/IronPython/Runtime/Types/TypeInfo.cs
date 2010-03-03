@@ -24,13 +24,19 @@ using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -332,13 +338,10 @@ namespace IronPython.Runtime.Types {
             public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
                 Assert.NotNull(binder, action, type, name);
 
-                // Do not map IComparable if this is a primitive numeric type.
+                // Do not map IComparable if this is a primitive builtin type.
                 if (_excludePrimitiveTypes) {
-                    if (type == typeof(bool) || type == typeof(int) || type == typeof(double) ||
-                        type == typeof(BigInteger) || type == typeof(string) || type == typeof(char) ||
-                        type == typeof(byte) || type == typeof(float) ||type == typeof(long) ||
-                        type == typeof(decimal) || type == typeof(uint) || type == typeof(sbyte) ||
-                        type == typeof(ulong) || type == typeof(short) || type == typeof(ushort)) {
+                    if (type.IsPrimitive || type == typeof(BigInteger) ||
+                        type == typeof(string) || type == typeof(decimal)) {
                         return MemberGroup.EmptyGroup;
                     }
                 }
@@ -390,6 +393,11 @@ namespace IronPython.Runtime.Types {
                                     opInfo.Operator == PythonOperationKind.Divide)) {
                                     // we override these with our own modulus/power PythonOperationKind which are different from BigInteger.
                                     continue;
+#if !CLR2
+                                } else if (curType == typeof(Complex) && opInfo.Operator == PythonOperationKind.Divide) {
+                                    // we override this with our own division PythonOperationKind which is different from .NET Complex.
+                                    continue;
+#endif
                                 }
 
                                 Debug.Assert(opInfo.Name != "Equals");
@@ -679,7 +687,7 @@ namespace IronPython.Runtime.Types {
             get {
                 if (_ComplexResolver != null) return _ComplexResolver;
                 _ComplexResolver = MakeConversionResolver(new List<Type> {
-                    typeof(Complex64), typeof(ExtensibleComplex), typeof(Extensible<Complex64>),
+                    typeof(Complex), typeof(ExtensibleComplex), typeof(Extensible<Complex>),
                     typeof(double), typeof(Extensible<double>)
                 });
                 return _ComplexResolver;
@@ -763,7 +771,11 @@ namespace IronPython.Runtime.Types {
         /// Provides a resolution for __str__.
         /// </summary>
         private static MemberGroup/*!*/ StringResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (type != typeof(double) && type != typeof(float)) {
+            if (type != typeof(double) && type != typeof(float)
+#if !CLR2
+                && type != typeof(Complex)
+#endif
+            ) {
                 MethodInfo tostr = type.GetMethod("ToString", Type.EmptyTypes);
                 if (tostr != null && tostr.DeclaringType != typeof(object)) {
                     return GetInstanceOpsMethod(type, "ToStringMethod");
@@ -1701,10 +1713,11 @@ namespace IronPython.Runtime.Types {
             if (t == typeof(string) && op == PythonOperationKind.Compare) {
                 // string doesn't define __cmp__, just __lt__ and friends
                 return false;
-            }
+            } 
+
             // numeric types in python don't define equality, just __cmp__
             if (t == typeof(bool) ||
-                (Converter.IsNumeric(t) && t != typeof(Complex64) && t != typeof(double) && t != typeof(float))) {
+                (Converter.IsNumeric(t) && t != typeof(Complex) && t != typeof(double) && t != typeof(float))) {
                 switch (op) {
                     case PythonOperationKind.Equal:
                     case PythonOperationKind.NotEqual:

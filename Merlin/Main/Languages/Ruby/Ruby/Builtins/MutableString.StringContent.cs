@@ -211,7 +211,7 @@ namespace IronRuby.Builtins {
             }
 
             public override string/*!*/ GetStringSlice(int start, int count) {
-                return _data.Substring(start, count);
+                return _data.GetSlice(start, count);
             }
 
             public override byte[]/*!*/ GetBinarySlice(int start, int count) {
@@ -219,7 +219,7 @@ namespace IronRuby.Builtins {
             }
 
             public override Content/*!*/ GetSlice(int start, int count) {
-                return new StringContent(_data.Substring(start, count), _owner);
+                return new StringContent(_data.GetSlice(start, count), _owner);
             }
 
             public override IEnumerable<char>/*!*/ GetCharacters() {

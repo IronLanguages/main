@@ -355,7 +355,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public static Node/*!*/ ToYaml(RubyRegex/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
             return rep.Scalar(
                 rep.GetTagUri(self), 
-                self.Inspect().ToAsciiString(rep.Context.RubyOptions.Compatibility == RubyCompatibility.Ruby18),
+                self.Inspect().ToAsciiString(rep.Context.RubyOptions.Compatibility < RubyCompatibility.Ruby19),
                 ScalarQuotingStyle.None
             );
         }
@@ -417,7 +417,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             return rep.Scalar(
                 // TODO: we should use RubySymbol but that would require ResolverScanner to recognize symbols in order not to emit a tag
                 Tags.Str,
-                SymbolOps.Inspect(rep.Context, self).ToAsciiString(rep.Context.RubyOptions.Compatibility == RubyCompatibility.Ruby18), 
+                SymbolOps.Inspect(rep.Context, self).ToAsciiString(rep.Context.RubyOptions.Compatibility < RubyCompatibility.Ruby19), 
                 ScalarQuotingStyle.None
             );
         }

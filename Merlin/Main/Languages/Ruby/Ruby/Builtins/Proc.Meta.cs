@@ -19,26 +19,26 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
+using System;
+using System.Reflection;
 using System.Dynamic;
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Compiler;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using IronRuby.Compiler;
-using System;
-using System.Reflection;
-
 namespace IronRuby.Builtins {
     using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public partial class Proc : IRubyDynamicMetaObjectProvider {
         public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal sealed class Meta : RubyMetaObject<Proc>, IConvertibleMetaObject {
+        internal sealed class Meta : RubyMetaObject<Proc>, IConvertibleMetaObject, IInferableInvokable {
             public override RubyContext/*!*/ Context {
                 get { return Value.LocalScope.RubyContext; }
             }
@@ -64,6 +64,18 @@ namespace IronRuby.Builtins {
             public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
                 return InteropBinder.Invoke.Bind(binder, this, args, Value.BuildInvoke);
             }
+
+            #region IInvokableInferable Members
+
+            InferenceResult IInferableInvokable.GetInferredType(Type delegateType, Type parameterType) {
+                // a block can be called with any number of parameters, so we don't need to restrict the result:
+                return new InferenceResult(
+                    typeof(object),
+                    BindingRestrictions.GetTypeRestriction(Expression, typeof(Proc))
+                );
+            }
+
+            #endregion
         }
     }
 }

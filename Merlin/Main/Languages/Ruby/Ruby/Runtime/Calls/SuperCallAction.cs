@@ -99,7 +99,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             // If we need to update we return RubyOps.NeedsUpdate instance that will cause the subsequent conditions to fail:
-            metaBuilder.AddCondition(Ast.Block(assignTarget, Ast.Constant(true)));
+            metaBuilder.AddInitialization(assignTarget);
 
             args.SetTarget(targetExpression, target);
 

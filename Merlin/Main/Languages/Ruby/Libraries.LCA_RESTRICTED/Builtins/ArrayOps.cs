@@ -50,7 +50,6 @@ namespace IronRuby.Builtins {
         // Reinitialization. Not called when a factory/non-default ctor is called.
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static RubyArray/*!*/ Reinitialize(RubyContext/*!*/ context, RubyArray/*!*/ self) {
-            RubyUtils.RequiresNotFrozen(context, self);
             self.Clear();
             return self;
         }
@@ -79,7 +78,6 @@ namespace IronRuby.Builtins {
             BlockParam block, RubyArray/*!*/ self, [NotNull]object/*!*/ arrayOrSize) {
 
             var context = toAryToInt.Context;
-            RubyUtils.RequiresNotFrozen(context, self);
 
             var site = toAryToInt.GetSite(CompositeConversionAction.Make(context, CompositeConversion.ToAryToInt));
             var union = site.Target(site, arrayOrSize);
@@ -148,7 +146,6 @@ namespace IronRuby.Builtins {
         // Reinitialization. Not called when a factory/non-default ctor is called.
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static RubyArray/*!*/ ReinitializeByRepeatedValue(RubyContext/*!*/ context, RubyArray/*!*/ self, [DefaultProtocol]int size, object value) {
-            RubyUtils.RequiresNotFrozen(context, self);
             if (size < 0) {
                 throw RubyExceptions.CreateArgumentError("negative array size");
             }
@@ -251,7 +248,6 @@ namespace IronRuby.Builtins {
 
             breakResult = null;
             var context = comparisonStorage.Context;
-            RubyUtils.RequiresNotFrozen(context, self);
 
             // TODO: this does more comparisons (and in a different order) than
             // Ruby's sort. Also, control flow won't work because List<T>.Sort wraps
@@ -298,7 +294,6 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("reverse!")]
         public static RubyArray/*!*/ InPlaceReverse(RubyContext/*!*/ context, RubyArray/*!*/ self) {
-            RubyUtils.RequiresNotFrozen(context, self);
             self.Reverse();
             return self;
         }

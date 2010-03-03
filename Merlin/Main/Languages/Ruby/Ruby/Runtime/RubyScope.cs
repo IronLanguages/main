@@ -1060,61 +1060,6 @@ var closureScope = scope as RubyClosureScope;
             return scope;
         }
 
-        // "method_missing" on main singleton in DLR Scope bound code.
-        // Might be called via a site -> needs to be public in partial trust.
-        public static object TopMethodMissing(RubyScope/*!*/ localScope, BlockParam block, object/*!*/ self, RubySymbol name, params object[]/*!*/ args) {
-            return ScopeMethodMissing(localScope.RubyContext, localScope.GlobalScope.Scope, block, self, name, args);
-        }
-
-        public static object ScopeMethodMissing(RubyContext/*!*/ context, Scope/*!*/ globalScope, BlockParam block, object self, RubySymbol name, object[]/*!*/ args) {
-            Assert.NotNull(context, globalScope);
-
-            // TODO: invoke member:
-
-            string str = name.ToString();
-            if (str.LastCharacter() == '=') {
-                if (args.Length != 1) {
-                    throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 1);
-                }
-
-                // Consider this case:
-                // There is {"Foo" -> 1} in the scope.
-                // x.foo += 1
-                // Without name mangling this would result to {"Foo" -> 1, "foo" -> 2} while the expected result is {"Foo" -> 2}.
-
-                str = str.Substring(0, str.Length - 1);
-
-                if (!RubyOps.ScopeContainsMember(globalScope, str)) {
-                    var unmangled = RubyUtils.TryUnmangleName(str);
-                    if (unmangled != null && RubyOps.ScopeContainsMember(globalScope, unmangled)) {
-                        str = unmangled;
-                    }
-                }
-
-                var value = args[0];
-                RubyOps.ScopeSetMember(globalScope, str, value);
-                return value;
-            } else {
-                object result;
-                if (RubyOps.TryGetGlobalScopeMethod(context, globalScope, str, out result)) {
-                    if (args.Length != 0) {
-                        throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
-                    }
-                    return result;
-                }
-
-                if (self != null && str == "scope") {
-                    if (args.Length != 0) {
-                        throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
-                    }
-                    return self;
-                }
-            }
-
-            // TODO: call super
-            throw RubyExceptions.CreateMethodMissing(context, self, str);
-        }
-
         #endregion
     }
 }

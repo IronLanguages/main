@@ -15,11 +15,17 @@
 
 using System;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Modules;
 using IronPython.Runtime.Exceptions;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime.Types {
     public static class TypeCache {
@@ -49,7 +55,7 @@ namespace IronPython.Runtime.Types {
         private static PythonType singleType;
         private static PythonType doubleType;
         private static PythonType biginteger;
-        private static PythonType complex64;
+        private static PythonType complex;
         private static PythonType super;
         private static PythonType oldclass;
         private static PythonType oldinstance;
@@ -213,10 +219,10 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public static PythonType Complex64 {
+        public static PythonType Complex {
             get {
-                if (complex64 == null) complex64 = DynamicHelpers.GetPythonTypeFromType(typeof(Complex64));
-                return complex64;
+                if (complex == null) complex = DynamicHelpers.GetPythonTypeFromType(typeof(Complex));
+                return complex;
             }
         }
 

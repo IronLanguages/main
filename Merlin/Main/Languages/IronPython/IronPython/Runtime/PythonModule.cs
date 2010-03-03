@@ -292,6 +292,9 @@ namespace IronPython.Runtime {
                 );
             }
 
+            public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
+                return BindingHelpers.GenericInvokeMember(action, null, this, args);
+            }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
                 Debug.Assert(value.Value != Uninitialized.Instance);

@@ -91,7 +91,7 @@ namespace IronRuby.Compiler.Generation {
                     string methodName = counter.Key;
                     string fileName = null;
                     int line = 0;
-                    if (RubyExceptionData.TryParseRubyMethodName(ref methodName, ref fileName, ref line)) {
+                    if (RubyStackTraceBuilder.TryParseRubyMethodName(ref methodName, ref fileName, ref line)) {
                         result.Add(new MethodCounter(methodName, fileName, line, total[counter.Value]));
                     }
                 }

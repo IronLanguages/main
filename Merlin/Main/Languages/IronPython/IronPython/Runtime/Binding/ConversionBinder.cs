@@ -150,7 +150,7 @@ namespace IronPython.Runtime.Binding {
                     ((UnaryExpression)res.Expression).Operand,
                     res.Restrictions
                 );
-            }                
+            }
 
             return res;
         }

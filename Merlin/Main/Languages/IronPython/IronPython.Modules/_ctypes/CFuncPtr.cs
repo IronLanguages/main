@@ -15,6 +15,9 @@
 #if !SILVERLIGHT
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
 #endif
 
 using System;
@@ -30,7 +33,6 @@ using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -144,7 +146,7 @@ namespace IronPython.Modules {
             /// </summary>
             public _CFuncPtr([NotNull]BigInteger handle) {
                 _memHolder = new MemoryHolder(IntPtr.Size);
-                addr = new IntPtr(handle.ToInt64());
+                addr = new IntPtr((long)handle);
                 _id = Interlocked.Increment(ref _curId);
             }
 
@@ -677,6 +679,34 @@ namespace IronPython.Modules {
                 class PrimitiveMarshaller : ArgumentMarshaller {
                     private readonly Type/*!*/ _type;
 
+                    private static MethodInfo _bigIntToInt32;
+                    private static MethodInfo BigIntToInt32 {
+                        get {
+                            if (_bigIntToInt32 == null) {
+#if CLR2
+                                _bigIntToInt32 = typeof(BigInteger).GetMethod("ToInt32", Type.EmptyTypes);
+#else
+                                MemberInfo[] mis = typeof(BigInteger).GetMember(
+                                    "op_Explicit",
+                                    MemberTypes.Method,
+                                    BindingFlags.Public | BindingFlags.Static
+                                );
+
+                                foreach (MethodInfo mi in mis) {
+                                    if (mi.ReturnType == typeof(int)) {
+                                        _bigIntToInt32 = mi;
+                                        break;
+                                    }
+                                }
+
+                                Debug.Assert(_bigIntToInt32 != null);
+#endif
+                            }
+
+                            return _bigIntToInt32;
+                        }
+                    }
+
                     public PrimitiveMarshaller(Expression/*!*/ container, Type/*!*/ type)
                         : base(container) {
                         _type = type;
@@ -713,7 +743,7 @@ namespace IronPython.Modules {
                             generator.Emit(OpCodes.Stloc, lb);
                             generator.Emit(OpCodes.Ldloc, lb);
                         } else if (_type == typeof(BigInteger)) {
-                            generator.Emit(OpCodes.Call, typeof(BigInteger).GetMethod("ToInt32", Type.EmptyTypes));
+                            generator.Emit(OpCodes.Call, BigIntToInt32);
                         } else if (!_type.IsValueType) {
                             generator.Emit(OpCodes.Call, typeof(CTypes).GetMethod("PyObj_ToPtr"));
                         }

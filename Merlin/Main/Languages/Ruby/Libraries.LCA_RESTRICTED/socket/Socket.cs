@@ -59,8 +59,11 @@ namespace IronRuby.StandardLibrary.Sockets {
             [DefaultParameterValue(0)]object protocol,
             [DefaultParameterValue(null)]object flags) {
 
-            IPHostEntry entry = (hostNameOrAddress != null) ? 
-                GetHostEntry(ConvertToHostString(stringCast, hostNameOrAddress)) : MakeEntry(IPAddress.Any);
+            RubyContext context = self.Context;
+
+            IPHostEntry entry = (hostNameOrAddress != null) ?
+                GetHostEntry(ConvertToHostString(stringCast, hostNameOrAddress), DoNotReverseLookup(context).Value) : 
+                MakeEntry(IPAddress.Any, DoNotReverseLookup(context).Value);
 
             int iPort = ConvertToPortNum(stringCast, fixnumCast, port);
 
@@ -76,13 +79,7 @@ namespace IronRuby.StandardLibrary.Sockets {
                 RubyArray result = new RubyArray(9);
                 result.Add(ToAddressFamilyString(address.AddressFamily));
                 result.Add(iPort);
-                if (DoNotReverseLookup(self.Context).Value) {
-                    result.Add(MutableString.CreateAscii(address.ToString()));
-                } else {
-                    IPHostEntry alias = GetHostEntry(address);
-                    // TODO (encoding):
-                    result.Add(MutableString.Create(alias.HostName, RubyEncoding.UTF8));
-                }
+                result.Add(HostNameToMutableString(context, IPAddressToHostName(address, DoNotReverseLookup(context).Value)));
                 result.Add(MutableString.CreateAscii(address.ToString()));
                 result.Add((int)address.AddressFamily);
                 result.Add(socketType);
@@ -101,37 +98,35 @@ namespace IronRuby.StandardLibrary.Sockets {
 
             // TODO: ignore family, the only supported families are InterNetwork and InterNetworkV6
             ConvertToAddressFamily(stringCast, fixnumCast, type);
-            IPHostEntry entry = GetHostEntry(new IPAddress(address.ConvertToBytes()));
+            IPHostEntry entry = GetHostEntry(new IPAddress(address.ConvertToBytes()), DoNotReverseLookup(self.Context).Value);
 
-            return CreateHostEntryArray(entry, true);
+            return CreateHostEntryArray(self.Context, entry, true);
         }
 
         [RubyMethod("gethostbyname", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetHostByName(RubyClass/*!*/ self, int address) {
-            return GetHostByName(ConvertToHostString(address), true);
+            return GetHostByName(self.Context, ConvertToHostString(address), true);
         }
 
         [RubyMethod("gethostbyname", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetHostByName(RubyClass/*!*/ self, [NotNull]BigInteger/*!*/ address) {
-            return GetHostByName(ConvertToHostString(address), true);
+            return GetHostByName(self.Context, ConvertToHostString(address), true);
         }
 
         [RubyMethod("gethostbyname", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetHostByName(RubyClass/*!*/ self, [DefaultProtocol]MutableString name) {
-            return GetHostByName(ConvertToHostString(name), true);
+            return GetHostByName(self.Context, ConvertToHostString(name), true);
         }
 
         [RubyMethod("gethostname", RubyMethodAttributes.PublicSingleton)]
         public static MutableString GetHostname(RubyClass/*!*/ self) {
-            // TODO (encoding):
-            return MutableString.Create(Dns.GetHostName(), RubyEncoding.UTF8);
+            return HostNameToMutableString(self.Context, Dns.GetHostName());
         }
 
         private static readonly MutableString/*!*/ _DefaultProtocol = MutableString.CreateAscii("tcp").Freeze();
 
         [RubyMethod("getservbyname", RubyMethodAttributes.PublicSingleton)]
-        public static int GetServiceByName(RubyClass/*!*/ self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ name, 
+        public static int GetServiceByName(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ name, 
             [DefaultProtocol, Optional]MutableString protocol) {
             
             if (protocol == null) {
@@ -169,6 +164,8 @@ namespace IronRuby.StandardLibrary.Sockets {
                 throw RubyExceptions.CreateArgumentError("First parameter must be a 3 or 4 element array");
             }
 
+            RubyContext context = self.Context;
+
             // We only support AF_INET (IP V4) family
             AddressFamily addressFamily = ConvertToAddressFamily(stringCast, fixnumCast, hostInfo[0]);
             if (addressFamily != AddressFamily.InterNetwork) {
@@ -183,11 +180,10 @@ namespace IronRuby.StandardLibrary.Sockets {
             // if it exists and is not null hostInfo[3] should have an IP address
             // in that case we use that rather than the host name.
             object hostName =  (hostInfo.Count > 3 && hostInfo[3] != null) ? hostInfo[3] : hostInfo[2];
-            IPHostEntry entry = GetHostEntry(ConvertToHostString(stringCast, hostName));
+            IPHostEntry entry = GetHostEntry(ConvertToHostString(stringCast, hostName), false);
 
             RubyArray result = new RubyArray(2);
-            // TODO (encoding):
-            result.Add(MutableString.Create(entry.HostName, RubyEncoding.UTF8));
+            result.Add(HostNameToMutableString(context, entry.HostName));
             if (service != null) {
                 result.Add(MutableString.Create(service.Name));
             } else {
@@ -201,12 +197,11 @@ namespace IronRuby.StandardLibrary.Sockets {
             [DefaultProtocol, NotNull]MutableString/*!*/ address, [Optional]object flags) {
 
             IPEndPoint ep = UnpackSockAddr(address);
-            IPHostEntry entry = GetHostEntry(ep.Address);
+            IPHostEntry entry = GetHostEntry(ep.Address, false);
             ServiceName service = SearchForService(ep.Port);
 
             RubyArray result = new RubyArray(2);
-            // TODO (encoding):
-            result.Add(MutableString.Create(entry.HostName, RubyEncoding.UTF8));
+            result.Add(HostNameToMutableString(self.Context, entry.HostName));
             if (service != null) {
                 result.Add(MutableString.Create(service.Name));
             } else {

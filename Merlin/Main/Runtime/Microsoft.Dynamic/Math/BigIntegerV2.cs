@@ -337,6 +337,8 @@ namespace Microsoft.Scripting.Math {
             this.data = copy.data;
         }
 
+        public BigInteger(byte[] bytes) : this(Create(bytes)) { }
+
         [CLSCompliant(false)]
         public BigInteger(int sign, params uint[] data) {
             ContractUtils.RequiresNotNull(data, "data");

@@ -340,7 +340,7 @@ namespace IronRuby.Builtins {
             // MRI 1.8: uses the current scope's visibility only if the target module is the same as the scope's module (bug?)
             // MFI 1.9: always uses public visibility (bug?)
             RubyMethodVisibility visibility;
-            if (scope.RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+            if (scope.RubyContext.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
                 var attributesScope = scope.GetMethodAttributesDefinitionScope();
                 if (attributesScope.GetInnerMostModuleForMethodLookup() == module) {
                     bool isModuleFunction = (attributesScope.MethodAttributes & RubyMethodAttributes.ModuleFunction) == RubyMethodAttributes.ModuleFunction;

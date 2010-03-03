@@ -15,8 +15,11 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 using System;
@@ -26,7 +29,6 @@ using System.Dynamic;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -189,7 +191,7 @@ namespace IronPython.Runtime.Binding {
             if (!type.IsEnum) {
                 switch (Type.GetTypeCode(type)) {
                     case TypeCode.Object:
-                        if (type == typeof(Complex64)) {
+                        if (type == typeof(Complex)) {
                             return MakeConvertRuleForCall(conversion, type, this, "__complex__", "ConvertToComplex",
                                 (() => MakeConvertRuleForCall(conversion, type, this, "__float__", "ConvertToFloat",
                                     (() => FallbackConvert(conversion)),

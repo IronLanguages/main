@@ -119,8 +119,9 @@ namespace IronRuby.Runtime.Calls {
             var callArgs = new CallArguments(_context, scopeOrContextOrTargetOrArgArray, args, Signature);
             var metaBuilder = new MetaObjectBuilder(this, args);
 
-            if (IsForeignMetaObject(callArgs.MetaTarget)) {
-                return InteropBind(metaBuilder, callArgs);
+            DynamicMetaObject interopBinding;
+            if (IsForeignMetaObject(callArgs.MetaTarget) && (interopBinding = InteropBind(metaBuilder, callArgs)) != null) {
+                return interopBinding;
             }
 
             Build(metaBuilder, callArgs, true);
@@ -134,7 +135,7 @@ namespace IronRuby.Runtime.Calls {
             return null;
         }
 
-        private DynamicMetaObject/*!*/ InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        private DynamicMetaObject InteropBind(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             // TODO: argument count limit depends on the binder!
 
             // TODO: pass block as the last (before RHS arg?) parameter/ignore block if args not accepting block:
@@ -159,10 +160,8 @@ namespace IronRuby.Runtime.Calls {
 
                     return metaBuilder.CreateMetaObject(interopBinder, resultType);
                 } else {
-                    metaBuilder.SetError(Ast.New(
-                       typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
-                       Ast.Constant(String.Format("{0} not supported on foreign meta-objects", this))
-                    ));
+                    // interop protocol not supported for this binder -> ignore IDO and treat it as a CLR object:
+                    return null;
                 }
             }
             return metaBuilder.CreateMetaObject(this);

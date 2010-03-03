@@ -7260,7 +7260,7 @@ module RbReadline
    # Here is C-u doing what Unix does.  You don't *have* to use these
    # key-bindings.  We have a choice of killing the entire line, or
    # killing from where we are to the start of the line.  We choose the
-   # latter, because if you are a Unix weenie, then you haven't backspaced
+   # latter, because if you are a Unix ######, then you haven't backspaced
    # into the line at all, and if you aren't, then you know what you are
    # doing.
    def rl_unix_line_discard(count, key)

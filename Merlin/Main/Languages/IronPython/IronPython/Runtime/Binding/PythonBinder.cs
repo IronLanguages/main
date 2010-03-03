@@ -15,8 +15,11 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 using System;
@@ -31,7 +34,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -141,8 +143,8 @@ namespace IronPython.Runtime.Binding {
                 return typeof(Converter).GetMethod("ConvertToBoolean");
             } else if (toType == typeof(BigInteger)) {
                 return typeof(Converter).GetMethod("ConvertToBigInteger");
-            } else if (toType == typeof(Complex64)) {
-                return typeof(Converter).GetMethod("ConvertToComplex64");
+            } else if (toType == typeof(Complex)) {
+                return typeof(Converter).GetMethod("ConvertToComplex");
             } else if (toType == typeof(IEnumerable)) {
                 return typeof(Converter).GetMethod("ConvertToIEnumerable");
             } else if (toType == typeof(float)) {
@@ -779,7 +781,7 @@ namespace IronPython.Runtime.Binding {
 
             // MS.Math types
             res[typeof(BigInteger)] = new ExtensionTypeInfo(typeof(BigIntegerOps), "long");
-            res[typeof(Complex64)] = new ExtensionTypeInfo(typeof(ComplexOps), "complex");
+            res[typeof(Complex)] = new ExtensionTypeInfo(typeof(ComplexOps), "complex");
 
             // DLR types
             res[typeof(DynamicNull)] = new ExtensionTypeInfo(typeof(NoneTypeOps), "NoneType");

@@ -22,7 +22,12 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Math;
+
+#if CLR2
+using Complex = Microsoft.Scripting.Math.Complex64;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("copy_reg", typeof(IronPython.Modules.PythonCopyReg))]
 namespace IronPython.Modules {
@@ -101,7 +106,7 @@ namespace IronPython.Modules {
             + "Reduction function for pickling complex numbers.")]
         public static PythonTuple pickle_complex(CodeContext context, object complex) {
             return PythonTuple.MakeTuple(
-                DynamicHelpers.GetPythonTypeFromType(typeof(Complex64)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(Complex)),
                 PythonTuple.MakeTuple(
                     PythonOps.GetBoundAttr(context, complex, "real"),
                     PythonOps.GetBoundAttr(context, complex, "imag")
@@ -218,7 +223,7 @@ namespace IronPython.Modules {
             context.PythonReconstructor = (BuiltinFunction)dict["_reconstructor"];
 
             PythonDictionary dispatchTable = new PythonDictionary();
-            dispatchTable[TypeCache.Complex64] = dict["pickle_complex"];
+            dispatchTable[TypeCache.Complex] = dict["pickle_complex"];
 
             context.SetModuleState(_dispatchTableKey, dict["dispatch_table"] = dispatchTable);
             context.SetModuleState(_extensionRegistryKey, dict["_extension_registry"] = new PythonDictionary());

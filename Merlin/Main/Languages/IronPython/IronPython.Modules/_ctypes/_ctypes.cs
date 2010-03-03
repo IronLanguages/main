@@ -25,12 +25,17 @@ using System.Security;
 using System.Security.Permissions;
 using System.Threading;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 #if !SILVERLIGHT
 [assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
@@ -175,7 +180,7 @@ namespace IronPython.Modules {
         }
 
         public static void FreeLibrary(BigInteger handle) {
-            FreeLibrary(new IntPtr(handle.ToInt64()));
+            FreeLibrary(new IntPtr((long)handle));
         }
 
         public static void FreeLibrary(IntPtr handle) {
@@ -357,7 +362,7 @@ namespace IronPython.Modules {
         }
 
         public static object call_cdeclfunction(CodeContext context, BigInteger address, PythonTuple args) {
-            return call_cdeclfunction(context, new IntPtr(address.ToInt64()), args);
+            return call_cdeclfunction(context, new IntPtr((long)address), args);
         }
 
         public static object call_cdeclfunction(CodeContext context, IntPtr address, PythonTuple args) {
@@ -376,7 +381,7 @@ namespace IronPython.Modules {
         }
 
         public static object call_function(CodeContext context, BigInteger address, PythonTuple args) {
-            return call_function(context, new IntPtr(address.ToInt64()), args);
+            return call_function(context, new IntPtr((long)address), args);
         }
 
         public static object call_function(CodeContext context, IntPtr address, PythonTuple args) {
@@ -661,7 +666,7 @@ namespace IronPython.Modules {
             if (!Converter.TryConvertToBigInteger(dllHandle, out intHandle)) {
                 throw PythonOps.TypeError(errorMsg);
             }
-            intPtrHandle = new IntPtr(intHandle.ToInt64());
+            intPtrHandle = new IntPtr((long)intHandle);
             return intPtrHandle;
         }
 

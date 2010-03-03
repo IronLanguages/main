@@ -57,7 +57,7 @@ namespace IronRuby.Runtime.Conversions {
         protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
             out MethodInfo postConverter) {
             postConverter = Methods.StringToMutableString;
-            return new InteropBinder.InvokeMember(context, "ToString", new CallInfo(0));
+            return context.MetaBinderFactory.InteropInvokeMember("ToString", new CallInfo(0));
         }
 
         protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
@@ -93,12 +93,12 @@ namespace IronRuby.Runtime.Conversions {
             // invoke target.to_s and if successful convert the result to string unless it is already:
             if (conversionMethod != null) {
                 conversionMethod.BuildCall(metaBuilder, args, ToS);
-
-                if (metaBuilder.Error) {
-                    return;
-                }
             } else {
                 RubyCallAction.BuildMethodMissingCall(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false, true);
+            }
+
+            if (metaBuilder.Error) {
+                return;
             }
 
             metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(

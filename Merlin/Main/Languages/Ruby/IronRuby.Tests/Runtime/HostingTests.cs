@@ -26,11 +26,11 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Tests {
-    public partial class Tests { 
+    public partial class Tests {
         public void RubyHosting_DelegateConversions() {
-            // TODO: C# bug - this fails if lambda is typed to dynamic
             object lambda = Engine.Execute(@"lambda { |a| a + 1 }");
             var result = Engine.Operations.Invoke(lambda, 5);
             Assert((int)result == 6);
@@ -38,7 +38,7 @@ namespace IronRuby.Tests {
             var func = Engine.Operations.ConvertTo<Func<int, int>>(lambda);
             Assert(func(10) == 11);
 
-            var method = Engine.Execute(@"def foo(a,b); a + b; end; method(:foo)");
+            object method = Engine.Execute(@"def foo(a,b); a + b; end; method(:foo)");
             var func2 = Engine.Operations.ConvertTo<Func<int, int, int>>(method);
             Assert(func2(1, 2) == 3);
 
@@ -154,6 +154,9 @@ py_add
             AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("foo 1,2,3"));
             AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("foo 1,2,3", scope));
             AssertExceptionThrown<ArgumentException>(() => Engine.Execute("bar 1,2,3", scope));
+            AssertExceptionThrown<ArgumentException>(() => Engine.Execute("bar *[1,2,3]", scope));
+            AssertExceptionThrown<ArgumentException>(() => Engine.Execute("scope *[1,2,3]", scope));
+            Assert(Engine.Execute<int>("bar *[]", scope) == 1);
         }
 
         public void RubyHosting1D() {
@@ -169,7 +172,7 @@ py_add
             var scope = Engine.CreateScope();
             Engine.Execute("def bar; 1; end", scope);
             Assert(Context.ObjectClass.GetMethod("bar") == null);
-            Assert(scope.GetVariable("bar") != null);
+            Assert(scope.GetVariable<object>("bar") != null);
             
             // we can invoke the method on a scope:
             Assert((int)Engine.Operations.InvokeMember(scope, "bar") == 1);
@@ -187,6 +190,50 @@ py_add
             Engine.Execute("def baz(a,b); a + b; end");
             Engine.Execute("def baz(a,b); a - b; end");
             Assert(Engine.Execute<int>("baz(1,2)") == -1);
+        }
+
+        /// <summary>
+        /// missing_method on scope forwards to super class if the variable is not defined in scope;
+        /// unmangled name is used if available and the mangled is not found in the scope.
+        /// </summary>
+        public void RubyHosting1E() {
+            var scope = Engine.CreateScope();
+            scope.SetVariable("baz", 1);
+            scope.SetVariable("Baz", 2);
+            scope.SetVariable("Boo", 3);
+
+            AssertOutput(() =>
+                Engine.Execute(@"
+class Object
+  def method_missing *args
+    puts args
+  end
+end
+
+bar(baz, Baz(), boo)
+", scope), @"
+bar
+1
+2
+3
+");
+
+        }
+
+        /// <summary>
+        /// method_missing on main singleton can be invoked directly.
+        /// </summary>
+        public void RubyHosting1F() {
+            var scope = Engine.CreateScope();
+            scope.SetVariable("bar", 1);
+
+            // TODO: this should print the value of :bar
+            AssertOutput(() =>
+                Engine.Execute(@"
+puts method_missing(:bar) rescue p $!
+", scope), @"
+#<NoMethodError: undefined method `bar' for main:Object>
+");
         }
 
         public void RubyHosting2() {
@@ -236,7 +283,7 @@ bar
             var searchPaths = Engine.GetSearchPaths();
             Assert(new List<string>(searchPaths)[searchPaths.Count - 1] == ".");
 
-            bool result = Engine.RequireRubyFile("fcntl");
+            bool result = Engine.RequireFile("fcntl");
             Assert(result == true);
 
             // built-in class:
@@ -274,6 +321,29 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
             object value = scope.foo();
             Assert((int)value == 1);
 #endif
+        }
+
+        [Options(NoRuntime = true)]
+        public void RubyHosting5() {
+            // app-domain creation:
+            if (_driver.PartialTrust) return;
+
+            AppDomain domain = AppDomain.CreateDomain("foo");
+
+            var rs = ScriptRuntimeSetup.ReadConfiguration();
+            LanguageSetup ls = rs.GetRubySetup();
+            Debug.Assert(ls.Names.IndexOf("IronRuby") != -1);
+
+            var newSetup = new ScriptRuntimeSetup();
+            newSetup.AddRubySetup((s) => {
+                s.Options["Compatibility"] = RubyCompatibility.Ruby19;
+                s.Options["LibraryPaths"] = ls.Options["LibraryPaths"];
+            });
+
+            ScriptRuntime runtime = ScriptRuntime.CreateRemote(domain, newSetup);
+            ScriptEngine engine = runtime.GetRubyEngine();
+            Assert(engine.RequireFile("fcntl") == true);
+            Assert(engine.Execute<bool>("Object.constants.include?(:Fcntl)") == true);
         }
 
         public void RubyHosting_Scopes1() {
@@ -402,20 +472,20 @@ end
             var str = Engine.Operations.ConvertTo<string>(MutableString.CreateAscii("foo"));
             Assert(str == "foo");
 
-            str = Engine.Operations.ConvertTo<string>(Engine.Execute("class C; def to_str; 'bar'; end; new; end"));
+            str = Engine.Operations.ConvertTo<string>(Engine.Execute<object>("class C; def to_str; 'bar'; end; new; end"));
             Assert(str == "bar");
 
-            var b = Engine.Operations.ConvertTo<byte>(Engine.Execute("class C; def to_int; 123; end; new; end"));
+            var b = Engine.Operations.ConvertTo<byte>(Engine.Execute<object>("class C; def to_int; 123; end; new; end"));
             Assert(b == 123);
 
-            var lambda = Engine.Operations.ConvertTo<Func<int, int>>(Engine.Execute("lambda { |x| x * 2 }"));
+            var lambda = Engine.Operations.ConvertTo<Func<int, int>>(Engine.Execute<object>("lambda { |x| x * 2 }"));
             Assert(lambda(10) == 20);
 
             Assert((int)Engine.CreateOperations().InvokeMember(null, "to_i") == 0);
         }
 
         public void ObjectOperations2() {
-            var cls = Engine.Execute(@"
+            object cls = Engine.Execute(@"
 class C
   def foo *a
     p a
@@ -431,7 +501,7 @@ end
             Assert(names.Contains("taint"));
             Assert(names.Contains("bar"));
 
-            var obj = Engine.Operations.CreateInstance(cls);
+            object obj = Engine.Operations.CreateInstance(cls);
             names = Engine.Operations.GetMemberNames(obj);
             Assert(names.Contains("foo"));
             Assert(names.Contains("taint"));
@@ -484,7 +554,7 @@ def python():
 ", scope);
 
             Engine.Execute(@"
-def self.ruby
+def ruby
   python.call + ' + Ruby'
 end
 ", scope);
@@ -545,20 +615,229 @@ a.Count
             
         }
 
-        public void PythonInterop6() {
+        /// <summary>
+        /// Python falls back if the member is not defined and Ruby then invokes the member with original casing.
+        /// </summary>
+        public void PythonInterop_InvokeMember_Fallback1() {
             if (!_driver.RunPython) return;
 
             var py = Runtime.GetEngine("python");
+            ScriptScope scope = py.CreateScope();
+            py.Execute(@"class C: pass", scope);
 
-            var scope = py.CreateScope();
-            py.Execute(@"def foo(): pass", scope);
+            XAssertOutput(() => 
+                Engine.Execute(@"
+class Object
+  def Foo 
+    puts 'Object::Foo'
+  end
 
-            // TODO:
-            var s = Engine.Execute("foo.inspect", scope);
+  def bar
+    puts 'Object::bar'
+  end
+end
+
+#c.new.foo rescue p $!
+c.new.bar
+", scope), @"
+
+"
+ );
+        }
+
+        /// <summary>
+        /// Python falls back if the member is not defined and Ruby then invokes the member with original casing.
+        /// </summary>
+        public void PythonInterop_InvokeMember_Fallback2() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+            ScriptScope scope = py.CreateScope();
+            py.Execute(@"class C: pass", scope);
+
+            AssertOutput(() => 
+                Engine.Execute(@"
+module Kernel
+  def foo
+    Kernel.puts 'Kernel::foo'                  # TODO: puts should work w/o specifying the module
+  end
+end
+
+class Object
+  def foo
+    Kernel.puts 'Object::foo'
+    super
+  end
+end
+
+c.new.foo
+", scope), @"
+Object::foo
+Kernel::foo
+");
+        }
+
+        public class ClrIndexable1 {
+            public int Value;
+
+            public int this[int a, int b] {
+                get { return a + b; }
+                set { Value = a + b * value; }
+            }
+        }
+
+        // TODO: this is broken in both Python and Ruby InteropBinder
+        public void PythonInterop_Indexers_Fallback1() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+            ScriptScope scope = py.CreateScope();
+            scope.SetVariable("ClrIndexable", typeof(ClrIndexable1));
+            py.Execute(@"
+import clr
+class C(clr.GetPythonType(ClrIndexable)): pass
+", scope);
+
+            XAssertOutput(() =>
+                Engine.Execute(@"
+clr_indexable.to_class.module_eval do
+  def [](*args)
+    p args
+  end
+
+  def []=(*args)
+    p args
+  end
+end
+
+c = C().new
+p c[1, 2]
+
+c[3, 4] = 5
+p c.Value
+", scope), @"
+3
+23
+");
+        }
+
+        public class ClassWithOperators1 {
+            public static ClassWithOperators1 operator -(ClassWithOperators1 a) { return null; }
+            public static ClassWithOperators1 operator +(ClassWithOperators1 a) { return null; }
+            public static ClassWithOperators1 operator ~(ClassWithOperators1 a) { return null; }
+
+            public static ClassWithOperators1 operator +(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+            public static ClassWithOperators1 operator -(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+            public static ClassWithOperators1 operator /(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+            public static ClassWithOperators1 operator *(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+            public static ClassWithOperators1 operator %(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+
+            public static ClassWithOperators1 operator <<(ClassWithOperators1 a, int b) { return null; }
+            public static ClassWithOperators1 operator >>(ClassWithOperators1 a, int b) { return null; }
+            public static ClassWithOperators1 operator &(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+            public static ClassWithOperators1 operator |(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+            public static ClassWithOperators1 operator ^(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+
+            public static bool operator ==(ClassWithOperators1 a, ClassWithOperators1 b) { return false; }
+            public static bool operator !=(ClassWithOperators1 a, ClassWithOperators1 b) { return false; }
+            public static bool operator >(ClassWithOperators1 a, ClassWithOperators1 b) { return false; }
+            public static bool operator >=(ClassWithOperators1 a, ClassWithOperators1 b) { return false; }
+            public static bool operator <(ClassWithOperators1 a, ClassWithOperators1 b) { return false; }
+            public static bool operator <=(ClassWithOperators1 a, ClassWithOperators1 b) { return false; }
+
+            [SpecialName] 
+            public static ClassWithOperators1 Power(ClassWithOperators1 a, ClassWithOperators1 b) { return null; }
+
+            public override bool Equals(object obj) { return base.Equals(obj); }
+            public override int GetHashCode() { return base.GetHashCode(); }
+        }
+
+        // TODO: bug in IPy
+        public void PythonInterop_Operators_Fallback1() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+            ScriptScope scope = py.CreateScope();
+            scope.SetVariable("ClassWithOperators", typeof(ClassWithOperators1));
+            py.Execute(@"
+import clr
+class C(clr.GetPythonType(ClassWithOperators)): pass
+", scope);
+
+            XAssertOutput(() =>
+                Engine.Execute(@"
+BinaryOperators = [:+, :-, :/, :*, :%, :==, :>, :>=, :<, :<=, :&, :|, :^, :<<, :>>, :**]
+UnaryOperators = [:-@, :+@, :~]
+Operators = BinaryOperators + UnaryOperators
+
+class_with_operators.to_class.module_eval do
+  Operators.each do |op|
+    define_method(op) do
+      Kernel.print op, ' '
+    end
+  end
+end
+
+c = C().new
+p(c + c)
+p(c - c)
+p(c / c)
+p(c * c)
+p(c % c)
+p(c == c)
+p(c > c)
+p(c >= c)
+p(c < c)
+p(c <= c)
+p(c & c)
+p(c | c)
+p(c ^ c)
+p(c << 1)
+p(c >> 1)
+p(c ** c)
+p(-c)
+p(+c)
+p(~c)
+", scope), @"
+");
+        }
+
+        /// <summary>
+        /// We convert a call to a setter with multiple parameters to a GetMember + SetIndex.
+        /// This makes indexed properties on foreign meta-objects work.
+        /// </summary>
+        public void PythonInterop_NamedIndexers1() {
+            if (!_driver.RunPython) return;
+            
+            var py = Runtime.GetEngine("python");
+            ScriptScope scope = py.CreateScope();
+            py.Execute(@"
+class C:
+  def __init__(self):
+    self.Foo = Indexable()
+  
+class Indexable:
+  def __setitem__(self, index, value):
+    print index, value
+", scope);
+
+            AssertOutput(() =>
+                Engine.Execute(@"
+c = C().new
+c.foo[1, 2] = 3
+c.Foo[4, 5] = 6
+c.send(:foo=, 7, 8, 9)
+c.send(:Foo=, 10, 11, 12)
+", scope), @"
+(1, 2) 3
+(4, 5) 6
+(7, 8) 9
+(10, 11) 12
+");
         }
 
         public void CustomTypeDescriptor1() {
-            var cls = Engine.Execute(@"
+            object cls = Engine.Execute(@"
 class C
   attr_accessor :a
   def b
@@ -582,7 +861,7 @@ class C
   self
 end
 ");
-            var obj = Engine.Operations.CreateInstance(cls);
+            object obj = Engine.Operations.CreateInstance(cls);
             Assert(obj != null);
             var ictd = Engine.Operations.CreateInstance(cls) as ICustomTypeDescriptor;
             Assert(ictd != null);
@@ -591,8 +870,8 @@ end
             Assert(props.Count == 2);
             props[0].SetValue(obj, "abc");
             props[1].SetValue(obj, "abc");
-            Assert(Engine.Operations.InvokeMember(obj, "a").Equals("abc"));
-            Assert(Engine.Operations.InvokeMember(obj, "c").Equals(true));
+            Assert((string)Engine.Operations.InvokeMember(obj, "a") == "abc");
+            Assert((bool)Engine.Operations.InvokeMember(obj, "c"));
         }
 
         public void CustomTypeDescriptor2() {

@@ -15,8 +15,10 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Math;
 #endif
 
 using System;
@@ -29,7 +31,6 @@ using System.Runtime.Serialization;
 using System.Security.Permissions;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -737,9 +738,8 @@ namespace IronPython.Runtime.Types {
             object func;
             object ret = InvokeOne(this, "__hash__");
             if (ret != NotImplementedType.Value) {
-                BigInteger bi = ret as BigInteger;
-                if (!Object.ReferenceEquals(bi, null)) {
-                    return BigIntegerOps.__hash__(bi);
+                if (ret is BigInteger) {
+                    return BigIntegerOps.__hash__((BigInteger)ret);
                 } else if (!(ret is int))
                     throw PythonOps.TypeError("expected int from __hash__, got {0}", PythonTypeOps.GetName(ret));
 
@@ -768,9 +768,8 @@ namespace IronPython.Runtime.Types {
                     return (int)ret;
                 }
 
-                BigInteger bi = ret as BigInteger;
-                if (!Object.ReferenceEquals(bi, null)) {
-                    return BigIntegerOps.__hash__(bi);
+                if (ret is BigInteger) {
+                    return BigIntegerOps.__hash__((BigInteger)ret);
                 }
             }
 

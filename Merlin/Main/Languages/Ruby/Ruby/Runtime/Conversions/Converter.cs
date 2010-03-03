@@ -84,11 +84,6 @@ namespace IronRuby.Runtime.Conversions {
                 return true;
             }
 
-            // A COM object could be cast to any interface:
-            if (TypeUtils.IsComObjectType(fromType) && toType.IsInterface) {
-                return true; 
-            }
-
             if (HasImplicitNumericConversion(fromType, toType)) {
                 return true;
             }
@@ -157,6 +152,11 @@ namespace IronRuby.Runtime.Conversions {
                 return true;
             }
 
+            // A COM object can potentially be converted to the given interface, but might also be not so use this only as the last resort:
+            if (TypeUtils.IsComObjectType(fromType) && toType.IsInterface) {
+                return true;
+            }
+
             return false;
         }
 
@@ -171,8 +171,6 @@ namespace IronRuby.Runtime.Conversions {
 
         internal static Expression ImplicitConvert(Expression/*!*/ expr, Type/*!*/ fromType, Type/*!*/ toType) {
             expr = AstUtils.Convert(expr, fromType);
-
-            // TODO: COM to interface?
 
             if (toType.IsAssignableFrom(fromType)) {
                 return AstUtils.Convert(expr, toType);

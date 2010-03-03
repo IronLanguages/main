@@ -564,15 +564,15 @@ namespace IronRuby.Runtime {
                 case "<=": return "op_LessThanOrEqual";
                 case "-@": return "op_UnaryNegation";
                 case "+@": return "op_UnaryPlus";
-
+                case "<<": return "op_LeftShift";
+                case ">>": return "op_RightShift";
+                case "^": return "op_ExclusiveOr";
+                case "~": return "op_OnesComplement";
+                case "&": return "op_BitwiseAnd";
+                case "|": return "op_BitwiseOr";
+                
                 case "**": return "Power";
-                case "<<": return "LeftShift";
-                case ">>": return "RightShift";
-                case "&": return "BitwiseAnd";
-                case "|": return "BitwiseOr";
-                case "^": return "ExclusiveOr";
                 case "<=>": return "Compare";
-                case "~": return "OnesComplement";
 
                 default:
                     return null;
@@ -594,16 +594,16 @@ namespace IronRuby.Runtime {
                 case "op_LessThanOrEqual": return "<=";
                 case "op_UnaryNegation": return "-@";
                 case "op_UnaryPlus": return "+@";
+                case "op_LeftShift": return "<<";
+                case "op_RightShift": return ">>";
+                case "op_BitwiseAnd": return "&";
+                case "op_BitwiseOr": return "|";
+                case "op_ExclusiveOr": return "^";
+                case "op_OnesComplement": return "~";
 
                 case "Power": return "**";
-                case "LeftShift": return "<<";
-                case "RightShift": return ">>";
-                case "BitwiseAnd": return "&";
-                case "BitwiseOr": return "|";
-                case "ExclusiveOr": return "^";
                 case "Compare": return "<=>";
-                case "OnesComplement": return "~";
-
+                
                 default:
                     return null;
             }
@@ -625,33 +625,68 @@ namespace IronRuby.Runtime {
             return false;
         }
 
-        internal static string MapOperator(ExpressionType/*!*/ op) {
+        internal static string MapOperator(ExpressionType op) {
+            string methodName;
+            TryMapOperator(op, out methodName);
+            return methodName;
+        }
+
+        internal static int TryMapOperator(ExpressionType op, out string methodName) {
             switch (op) {
-                case ExpressionType.Add: return "+";
-                case ExpressionType.Subtract: return "-";
-                case ExpressionType.Divide: return "/";
-                case ExpressionType.Multiply: return "*";
-                case ExpressionType.Modulo: return "%";
-                case ExpressionType.Equal: return "==";
-                case ExpressionType.NotEqual: return "!=";
-                case ExpressionType.GreaterThan: return ">";
-                case ExpressionType.GreaterThanOrEqual: return ">=";
-                case ExpressionType.LessThan: return "<";
-                case ExpressionType.LessThanOrEqual: return "<=";
-                case ExpressionType.Negate: return "-@";
-                case ExpressionType.UnaryPlus: return "+@";
+                case ExpressionType.Add: methodName = "+"; return 2;
+                case ExpressionType.Subtract: methodName = "-"; return 2;
+                case ExpressionType.Divide: methodName = "/"; return 2;
+                case ExpressionType.Multiply: methodName = "*"; return 2;
+                case ExpressionType.Modulo: methodName = "%"; return 2;
+                case ExpressionType.Equal: methodName = "=="; return 2;
+                case ExpressionType.NotEqual: methodName = "!="; return 2;
+                case ExpressionType.GreaterThan: methodName = ">"; return 2;
+                case ExpressionType.GreaterThanOrEqual: methodName = ">="; return 2;
+                case ExpressionType.LessThan: methodName = "<"; return 2;
+                case ExpressionType.LessThanOrEqual: methodName = "<="; return 2;
+                case ExpressionType.LeftShift: methodName = "<<"; return 2;
+                case ExpressionType.RightShift: methodName = ">>"; return 2;
+                case ExpressionType.And: methodName = "&"; return 2;
+                case ExpressionType.Or: methodName = "|"; return 2;
+                case ExpressionType.ExclusiveOr: methodName = "^"; return 2;
+                case ExpressionType.Power: methodName = "**"; return 2;
 
-                case ExpressionType.Power: return "**";
-                case ExpressionType.LeftShift: return "<<";
-                case ExpressionType.RightShift: return ">>";
-                case ExpressionType.And: return "&";
-                case ExpressionType.Or: return "|";
-                case ExpressionType.ExclusiveOr: return "^";
-                case ExpressionType.OnesComplement: return "~";
-
-                default:
-                    return null;
+                case ExpressionType.Negate: methodName = "-@"; return 1;
+                case ExpressionType.UnaryPlus: methodName = "+@"; return 1;
+                case ExpressionType.OnesComplement: methodName = "~"; return 1;
             }
+
+            methodName = null;
+            return 0;
+        }
+
+        internal static int TryMapOperator(string/*!*/ methodName, out ExpressionType op) {
+            switch (methodName) {
+                case "+": op = ExpressionType.Add; return 2;
+                case "-": op = ExpressionType.Subtract; return 2;
+                case "/": op = ExpressionType.Divide; return 2;
+                case "*": op = ExpressionType.Multiply; return 2;
+                case "%": op = ExpressionType.Modulo; return 2;
+                case "==": op = ExpressionType.Equal; return 2;
+                case "!=": op = ExpressionType.NotEqual; return 2;
+                case ">": op = ExpressionType.GreaterThan; return 2;
+                case ">=": op = ExpressionType.GreaterThanOrEqual; return 2;
+                case "<": op = ExpressionType.LessThan; return 2;
+                case "<=": op = ExpressionType.LessThanOrEqual; return 2;
+                case "<<": op = ExpressionType.LeftShift; return 2;
+                case ">>": op = ExpressionType.RightShift; return 2;
+                case "&": op = ExpressionType.And; return 2;
+                case "|": op = ExpressionType.Or; return 2;
+                case "^": op = ExpressionType.ExclusiveOr; return 2;
+                case "**": op = ExpressionType.Power; return 2;
+
+                case "-@": op = ExpressionType.Negate; return 1;
+                case "+@": op = ExpressionType.UnaryPlus; return 1;
+                case "~": op = ExpressionType.OnesComplement; return 1;
+            }
+
+            op = default(ExpressionType);
+            return 0;
         }
 
         #endregion
@@ -895,7 +930,7 @@ namespace IronRuby.Runtime {
 
             if (args != null) {
                 result = RubyOps.Yield(args, self, block);
-            } else if (module.Context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+            } else if (module.Context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
                 result = RubyOps.Yield1(self, self, block);
             } else {
                 result = RubyOps.Yield0(self, block);

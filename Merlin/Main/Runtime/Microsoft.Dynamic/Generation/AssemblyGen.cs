@@ -87,7 +87,10 @@ namespace Microsoft.Scripting.Generation {
 
             // mark the assembly transparent so that it works in partial trust:
             CustomAttributeBuilder[] attributes = new CustomAttributeBuilder[] { 
-                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0])
+                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0]),
+#if !CLR2
+                new CustomAttributeBuilder(typeof(SecurityRulesAttribute).GetConstructor(new[] { typeof(SecurityRuleSet) }), new object[] { SecurityRuleSet.Level1 }),
+#endif
             };
 
             if (outDir != null) {

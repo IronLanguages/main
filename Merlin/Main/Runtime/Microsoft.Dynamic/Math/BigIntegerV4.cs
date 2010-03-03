@@ -30,7 +30,7 @@ namespace Microsoft.Scripting.Math {
     /// </summary>
     [Serializable]
     public sealed class BigInteger : IFormattable, IComparable, IEquatable<BigInteger> {
-        private readonly BigInt _value;
+        internal readonly BigInt Value;
 
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BigInteger Zero = new BigInteger((BigInt)0);
@@ -38,7 +38,7 @@ namespace Microsoft.Scripting.Math {
         public static readonly BigInteger One = new BigInteger((BigInt)1);
 
         public BigInteger(BigInt value) {
-            _value = value;
+            Value = value;
         }
 
         [CLSCompliant(false)]
@@ -64,7 +64,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger Create(byte[] v) {
-            return new BigInteger(new BigInt(v));
+            return new BigInteger(v);
         }
 
         public static BigInteger Create(double v) {
@@ -120,78 +120,84 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static explicit operator double(BigInteger self) {
-            return (double)self._value;
+            return (double)self.Value;
         }
 
         public static explicit operator float(BigInteger self) {
-            return (float)self._value;
+            return (float)self.Value;
         }
 
         public static explicit operator decimal(BigInteger self) {
-            return (decimal)self._value;
+            return (decimal)self.Value;
         }
 
         public static explicit operator byte(BigInteger self) {
-            return (byte)self._value;
+            return (byte)self.Value;
         }
 
         [CLSCompliant(false)]
         public static explicit operator sbyte(BigInteger self) {
-            return (sbyte)self._value;
+            return (sbyte)self.Value;
         }
 
         [CLSCompliant(false)]
         public static explicit operator UInt16(BigInteger self) {
-            return (UInt16)self._value;
+            return (UInt16)self.Value;
         }
 
         public static explicit operator Int16(BigInteger self) {
-            return (Int16)self._value;
+            return (Int16)self.Value;
         }
 
         [CLSCompliant(false)]
         public static explicit operator UInt32(BigInteger self) {
-            return (UInt32)self._value;
+            return (UInt32)self.Value;
         }
 
         public static explicit operator Int32(BigInteger self) {
-            return (Int32)self._value;
+            return (Int32)self.Value;
         }
 
         public static explicit operator Int64(BigInteger self) {
-            return (Int64)self._value;
+            return (Int64)self.Value;
         }
 
         [CLSCompliant(false)]
         public static explicit operator UInt64(BigInteger self) {
-            return (UInt64)self._value;
+            return (UInt64)self.Value;
         }
 
         public BigInteger(BigInteger copy) {
             if (object.ReferenceEquals(copy, null)) {
                 throw new ArgumentNullException("copy");
             }
-            _value = copy._value;
+            Value = copy.Value;
+        }
+
+        public BigInteger(byte[] data) {
+            ContractUtils.RequiresNotNull(data, "data");
+
+            Value = new BigInt(data);
         }
 
         public BigInteger(int sign, byte[] data) {
             ContractUtils.RequiresNotNull(data, "data");
             ContractUtils.Requires(sign >= -1 && sign <= +1, "sign");
 
-            _value = new BigInt(data);
+            Value = new BigInt(data);
             if (sign < 0) {
-                _value = -_value;
+                Value = -Value;
             }
         }
         
-        [CLSCompliant(false)]
+        [Obsolete("Deprecated - use a byte array"), CLSCompliant(false)]
         public BigInteger(int sign, uint[] data) {
             ContractUtils.RequiresNotNull(data, "data");
             ContractUtils.Requires(sign >= -1 && sign <= +1, "sign");
             int length = GetLength(data);
             ContractUtils.Requires(length == 0 || sign != 0, "sign");
             if (length == 0) {
-                _value = 0;
+                Value = 0;
                 return;
             }
 
@@ -206,9 +212,9 @@ namespace Microsoft.Scripting.Math {
                 bytes[j++] = (byte)((w >> 24) & 0xff);
             }
 
-            _value = new BigInt(bytes);
+            Value = new BigInt(bytes);
             if (sign < 0) {
-                _value = -_value;
+                Value = -Value;
             }
         }
 
@@ -238,7 +244,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public int GetBitCount() {
-            if (_value.IsZero) {
+            if (Value.IsZero) {
                 return 1;
             }
 
@@ -269,8 +275,8 @@ namespace Microsoft.Scripting.Math {
         }
 
         private byte GetHighestByte(out int index, out byte[] byteArray) {
-            byte[] bytes = BigInt.Abs(_value).ToByteArray();
-            if (_value.IsZero) {
+            byte[] bytes = BigInt.Abs(Value).ToByteArray();
+            if (Value.IsZero) {
                 byteArray = bytes;
                 index = 0;
                 return 1;
@@ -291,13 +297,13 @@ namespace Microsoft.Scripting.Math {
         /// </summary>
         public int Sign {
             get {
-                return _value.Sign;
+                return Value.Sign;
             }
         }
 
         public bool AsInt64(out long ret) {
-            if (_value >= Int64.MinValue && _value <= Int64.MaxValue) {
-                ret = (long)_value;
+            if (Value >= Int64.MinValue && Value <= Int64.MaxValue) {
+                ret = (long)Value;
                 return true;
             }
             ret = 0;
@@ -306,8 +312,8 @@ namespace Microsoft.Scripting.Math {
 
         [CLSCompliant(false)]
         public bool AsUInt32(out uint ret) {
-            if (_value >= UInt32.MinValue && _value <= UInt32.MaxValue) {
-                ret = (UInt32)_value;
+            if (Value >= UInt32.MinValue && Value <= UInt32.MaxValue) {
+                ret = (UInt32)Value;
                 return true;
             }
             ret = 0;
@@ -316,8 +322,8 @@ namespace Microsoft.Scripting.Math {
 
         [CLSCompliant(false)]
         public bool AsUInt64(out ulong ret) {
-            if (_value >= UInt64.MinValue && _value <= UInt64.MaxValue) {
-                ret = (UInt64)_value;
+            if (Value >= UInt64.MinValue && Value <= UInt64.MaxValue) {
+                ret = (UInt64)Value;
                 return true;
             }
             ret = 0;
@@ -325,8 +331,8 @@ namespace Microsoft.Scripting.Math {
         }
 
         public bool AsInt32(out int ret) {
-            if (_value >= Int32.MinValue && _value <= Int32.MaxValue) {
-                ret = (Int32)_value;
+            if (Value >= Int32.MinValue && Value <= Int32.MaxValue) {
+                ret = (Int32)Value;
                 return true;
             }
             ret = 0;
@@ -335,24 +341,24 @@ namespace Microsoft.Scripting.Math {
 
         [CLSCompliant(false)]
         public uint ToUInt32() {
-            return (uint)_value;
+            return (uint)Value;
         }
 
         public int ToInt32() {
-            return (int)_value;
+            return (int)Value;
         }
 
         public decimal ToDecimal() {
-            return (decimal)_value;
+            return (decimal)Value;
         }
 
         [CLSCompliant(false)]
         public ulong ToUInt64() {
-            return (ulong)_value;
+            return (ulong)Value;
         }
 
         public long ToInt64() {
-            return (long)_value;
+            return (long)Value;
         }
 
         private static int GetLength(uint[] data) {
@@ -362,15 +368,15 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static int Compare(BigInteger x, BigInteger y) {
-            return BigInt.Compare(x._value, y._value);
+            return BigInt.Compare(x.Value, y.Value);
         }
 
         public static bool operator ==(BigInteger x, int y) {
-            return x._value == y;
+            return x.Value == y;
         }
 
         public static bool operator !=(BigInteger x, int y) {
-            return x._value != y;
+            return x.Value != y;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
@@ -385,7 +391,7 @@ namespace Microsoft.Scripting.Math {
 
             if ((y % 1) != 0) return false;  // not a whole number, can't be equal
 
-            return x._value == (BigInt)y;
+            return x.Value == (BigInt)y;
         }
 
         public static bool operator ==(double x, BigInteger y) {
@@ -426,7 +432,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator +(BigInteger x, BigInteger y) {
-            return new BigInteger(x._value + y._value);
+            return new BigInteger(x.Value + y.Value);
         }
 
         public static BigInteger Subtract(BigInteger x, BigInteger y) {
@@ -434,7 +440,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator -(BigInteger x, BigInteger y) {
-            return new BigInteger(x._value - y._value);
+            return new BigInteger(x.Value - y.Value);
         }
 
         public static BigInteger Multiply(BigInteger x, BigInteger y) {
@@ -442,7 +448,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator *(BigInteger x, BigInteger y) {
-            return new BigInteger(x._value * y._value);
+            return new BigInteger(x.Value * y.Value);
         }
 
         public static BigInteger Divide(BigInteger x, BigInteger y) {
@@ -466,7 +472,7 @@ namespace Microsoft.Scripting.Math {
 
         public static BigInteger DivRem(BigInteger x, BigInteger y, out BigInteger remainder) {
             BigInt rem;
-            BigInt result = BigInt.DivRem(x._value, y._value, out rem);
+            BigInt result = BigInt.DivRem(x.Value, y.Value, out rem);
             remainder = new BigInteger(rem);
             return new BigInteger(result);
         }
@@ -476,7 +482,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator &(BigInteger x, BigInteger y) {
-            return new BigInteger(x._value & y._value);
+            return new BigInteger(x.Value & y.Value);
         }
 
         public static BigInteger BitwiseOr(BigInteger x, BigInteger y) {
@@ -484,7 +490,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator |(BigInteger x, BigInteger y) {
-            return new BigInteger(x._value | y._value);
+            return new BigInteger(x.Value | y.Value);
         }
 
         public static BigInteger Xor(BigInteger x, BigInteger y) {
@@ -492,7 +498,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator ^(BigInteger x, BigInteger y) {
-            return new BigInteger(x._value ^ y._value);
+            return new BigInteger(x.Value ^ y.Value);
         }
 
         public static BigInteger LeftShift(BigInteger x, int shift) {
@@ -500,7 +506,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator <<(BigInteger x, int shift) {
-            return new BigInteger(x._value << shift);
+            return new BigInteger(x.Value << shift);
         }
 
         public static BigInteger RightShift(BigInteger x, int shift) {
@@ -508,7 +514,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator >>(BigInteger x, int shift) {
-            return new BigInteger(x._value >> shift);
+            return new BigInteger(x.Value >> shift);
         }
 
         public static BigInteger Negate(BigInteger x) {
@@ -516,7 +522,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator -(BigInteger x) {
-            return new BigInteger(-x._value);
+            return new BigInteger(-x.Value);
         }
 
         public BigInteger OnesComplement() {
@@ -524,23 +530,23 @@ namespace Microsoft.Scripting.Math {
         }
 
         public static BigInteger operator ~(BigInteger x) {
-            return new BigInteger(~x._value);
+            return new BigInteger(~x.Value);
         }
 
         public BigInteger Abs() {
-            return new BigInteger(BigInt.Abs(_value));
+            return new BigInteger(BigInt.Abs(Value));
         }
 
         public BigInteger Power(int exp) {
-            return new BigInteger(BigInt.Pow(_value, exp));
+            return new BigInteger(BigInt.Pow(Value, exp));
         }
 
         public BigInteger ModPow(int power, BigInteger mod) {
-            return new BigInteger(BigInt.ModPow(_value, power, mod._value));
+            return new BigInteger(BigInt.ModPow(Value, power, mod.Value));
         }
 
         public BigInteger ModPow(BigInteger power, BigInteger mod) {
-            return new BigInteger(BigInt.ModPow(_value, power._value, mod._value));
+            return new BigInteger(BigInt.ModPow(Value, power.Value, mod.Value));
         }
 
         public BigInteger Square() {
@@ -562,7 +568,7 @@ namespace Microsoft.Scripting.Math {
         }
 
         public override int GetHashCode() {
-            return _value.GetHashCode();
+            return Value.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -575,37 +581,43 @@ namespace Microsoft.Scripting.Math {
         }
 
         public bool IsNegative() {
-            return _value.Sign < 0;
+            return Value.Sign < 0;
         }
 
         public bool IsZero() {
-            return _value.Sign == 0;
+            return Value.Sign == 0;
         }
 
         public bool IsPositive() {
-            return _value.Sign > 0;
+            return Value.Sign > 0;
         }
 
         private bool IsOdd() {
-            return !_value.IsEven;
+            return !Value.IsEven;
+        }
+
+        public bool IsPowerOfTwo {
+            get {
+                return Value.IsPowerOfTwo;
+            }
         }
 
         public double Log(Double newBase) {
-            return BigInt.Log(_value, newBase);
+            return BigInt.Log(Value, newBase);
         }
 
         /// <summary>
         /// Calculates the natural logarithm of the BigInteger.
         /// </summary>
         public double Log() {
-            return BigInt.Log(_value);
+            return BigInt.Log(Value);
         }
 
         /// <summary>
         /// Calculates log base 10 of a BigInteger.
         /// </summary>
         public double Log10() {
-            return BigInt.Log10(_value);
+            return BigInt.Log10(Value);
         }
 
         #region IComparable Members
@@ -629,18 +641,18 @@ namespace Microsoft.Scripting.Math {
         /// return an array of one byte whose element is 0x00.
         /// </summary>
         public byte[] ToByteArray() {
-            return _value.ToByteArray();
+            return Value.ToByteArray();
         }
 
         [Confined]
         public string ToString(IFormatProvider provider) {
-            return _value.ToString(provider);
+            return Value.ToString(provider);
         }
 
         #region IFormattable Members
 
         string IFormattable.ToString(string format, IFormatProvider formatProvider) {
-            return _value.ToString(format, formatProvider);
+            return Value.ToString(format, formatProvider);
         }
 
         #endregion

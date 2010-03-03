@@ -22,7 +22,6 @@ using System.Text;
 using System.Threading;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -31,6 +30,12 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using IronPython.Runtime.Binding;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("_struct", typeof(IronPython.Modules.PythonStruct))]
 namespace IronPython.Modules {
@@ -297,7 +302,7 @@ namespace IronPython.Modules {
                         case FormatType.UnsignedInt:
                         case FormatType.UnsignedLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(BigIntegerOps.__int__(BigInteger.Create(CreateUIntValue(context, ref curIndex, _isLittleEndian, data))));
+                                res.Add(BigIntegerOps.__int__((BigInteger)CreateUIntValue(context, ref curIndex, _isLittleEndian, data)));
                             }
                             break;                        
                         case FormatType.Pointer:
@@ -305,18 +310,18 @@ namespace IronPython.Modules {
                                 if (IntPtr.Size == 4) {
                                     res.Add(CreateIntValue(context, ref curIndex, _isLittleEndian, data));
                                 } else {
-                                    res.Add(BigIntegerOps.__int__(BigInteger.Create(CreateLongValue(context, ref curIndex, _isLittleEndian, data))));
+                                    res.Add(BigIntegerOps.__int__((BigInteger)CreateLongValue(context, ref curIndex, _isLittleEndian, data)));
                                 }
                             }
                             break;
                         case FormatType.LongLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(BigIntegerOps.__int__(BigInteger.Create(CreateLongValue(context, ref curIndex, _isLittleEndian, data))));
+                                res.Add(BigIntegerOps.__int__((BigInteger)CreateLongValue(context, ref curIndex, _isLittleEndian, data)));
                             }
                             break;
                         case FormatType.UnsignedLongLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(BigIntegerOps.__int__(BigInteger.Create(CreateULongValue(context, ref curIndex, _isLittleEndian, data))));
+                                res.Add(BigIntegerOps.__int__((BigInteger)CreateULongValue(context, ref curIndex, _isLittleEndian, data)));
                             }
                             break;
                         case FormatType.Float:

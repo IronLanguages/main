@@ -15,9 +15,6 @@
 
 
 module Config
-  RUBY_VERSION == "1.8.6" or
-    raise "ruby lib version (1.8.6) doesn't match executable version (#{RUBY_VERSION})"
-
   CONFIG = {}
   CONFIG["MAJOR"] = "1"
   CONFIG["MINOR"] = "8"

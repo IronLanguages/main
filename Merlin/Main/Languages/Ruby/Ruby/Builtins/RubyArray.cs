@@ -81,7 +81,10 @@ namespace IronRuby.Builtins {
 
         public RubyArray(RubyArray/*!*/ items, int start, int count)
             : this(count) {
-            AddVector(items._content, start, count);
+            ContractUtils.RequiresNotNull(items, "items");
+            ContractUtils.RequiresArrayRange(items.Count, start, count, "start", "count");
+
+            AddVector(items._content, items._start + start, count);
         }
 
         public RubyArray(IList/*!*/ items)
@@ -133,7 +136,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Versioning, Flags
+        #region Flags
 
         private void Mutate() {
             if ((_flags & IsFrozenFlag) != 0) {

@@ -581,7 +581,7 @@ namespace IronRuby.Builtins {
 
         #region times (deprecated)
 #if !SILVERLIGHT
-        [RubyMethod("times", RubyMethodAttributes.PublicSingleton, Compatibility = RubyCompatibility.Ruby18, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("times", RubyMethodAttributes.PublicSingleton, Compatibility = RubyCompatibility.Ruby186, BuildConfig = "!SILVERLIGHT")]
         public static RubyStruct/*!*/ Times(RubyClass/*!*/ self) {
             return RubyProcess.GetTimes(self);
         }
@@ -779,11 +779,17 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("zone")]
-        public static MutableString/*!*/ GetZone(RubyTime/*!*/ self) {
+        public static MutableString/*!*/ GetZone(RubyContext/*!*/ context, RubyTime/*!*/ self) {
             if (self.Kind == DateTimeKind.Utc) {
                 return MutableString.CreateAscii("UTC");
             } else {
-                return MutableString.Create(RubyTime.GetCurrentZoneName(), RubyEncoding.UTF8);
+                var name = RubyTime.GetCurrentZoneName();
+                if (name.IsAscii()) {
+                    return MutableString.CreateAscii(name);
+                } else {
+                    // TODO: what encoding should we use?
+                    return MutableString.Create(name, context.GetPathEncoding());
+                }
             }
         }
 
@@ -848,7 +854,7 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ format) {
 
             // TODO: allows incomplete characters
-            format.SwitchToCharacters();
+            format.PrepareForCharacterRead();
 
             MutableString result = MutableString.CreateMutable(format.Encoding);
             bool inFormat = false;
@@ -984,7 +990,7 @@ namespace IronRuby.Builtins {
                         break;
 
                     case 'z':
-                        if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby18) {
+                        if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby186) {
                             result.Append(self.FormatUtcOffset());
                         } else {
                             result.Append(RubyTime.GetCurrentZoneName());
@@ -992,7 +998,7 @@ namespace IronRuby.Builtins {
                         break;
 
                     default:
-                        if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby18) {
+                        if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby186) {
                             result.Append(c);
                             break;
                         } 
@@ -1005,7 +1011,7 @@ namespace IronRuby.Builtins {
             }
 
             if (inFormat) {
-                if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby18) {
+                if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby186) {
                     return result.Append('%');
                 }
                 return MutableString.CreateEmpty();
@@ -1050,7 +1056,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(RubyContext/*!*/ context, RubyTime/*!*/ self) {            
             return MutableString.CreateAscii(String.Format(CultureInfo.InvariantCulture, 
-                (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) ? 
+                (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) ? 
                     "{0:ddd MMM dd HH:mm:ss} {1} {0:yyyy}" :
                     "{0:yyyy-dd-MM HH:mm:ss} {1}",
                 self.DateTime,
@@ -1070,7 +1076,7 @@ namespace IronRuby.Builtins {
             result.Add((int)self.DateTime.DayOfWeek);
             result.Add(self.DateTime.DayOfYear);
             result.Add(self.GetCurrentDst(context));
-            result.Add(GetZone(self));
+            result.Add(GetZone(context, self));
             return result;
         }
 

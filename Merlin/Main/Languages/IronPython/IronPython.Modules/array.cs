@@ -24,11 +24,16 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 using System.Reflection;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]
 namespace IronPython.Modules {
@@ -375,7 +380,7 @@ namespace IronPython.Modules {
                         case 'H': return (int)(ushort)val;
                         case 'l': return val;
                         case 'i': return val;
-                        case 'L': return BigInteger.Create((uint)val);
+                        case 'L': return (BigInteger)(uint)val;
                         case 'I':
                             return (BigInteger)(uint)val;
                         case 'f': return (double)(float)val;

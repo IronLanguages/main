@@ -285,8 +285,13 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         // TODO: just emit this in the generated code
+        [Obsolete("use MakeIncorrectBoxTypeError instead")]
         public static T IncorrectBoxType<T>(object received) {
             throw Error.UnexpectedType("StrongBox<" + typeof(T).Name + ">", CompilerHelpers.GetType(received).Name);
+        }
+
+        public static Exception MakeIncorrectBoxTypeError(Type type, object received) {
+            return Error.UnexpectedType("StrongBox<" + type.Name + ">", CompilerHelpers.GetType(received).Name);
         }
         
         public static void InitializeSymbols(Type t) {

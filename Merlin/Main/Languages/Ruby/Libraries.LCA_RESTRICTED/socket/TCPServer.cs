@@ -96,6 +96,8 @@ namespace IronRuby.StandardLibrary.Sockets {
             IPAddress listeningInterface = null;
             if (hostname == null) {
                 listeningInterface = new IPAddress(0);
+            } else if (hostname.IsEmpty) {
+                listeningInterface = IPAddress.Any;
             } else {
                 string hostnameStr = hostname.ConvertToString();
                 if (hostnameStr == IPAddress.Any.ToString()) {
@@ -122,8 +124,17 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.Bind(new IPEndPoint(listeningInterface, ConvertToPortNum(stringCast, fixnumCast, port)));
-            socket.Listen(10);
+            try {
+                socket.Bind(new IPEndPoint(listeningInterface, ConvertToPortNum(stringCast, fixnumCast, port)));
+                socket.Listen(10);            
+            } catch (SocketException e) {
+                switch (e.SocketErrorCode) {
+                    case SocketError.AddressAlreadyInUse:
+                        throw new Errno.AddressInUseError();
+                    default: 
+                        throw;
+                }
+            }
             return socket;
         }
 

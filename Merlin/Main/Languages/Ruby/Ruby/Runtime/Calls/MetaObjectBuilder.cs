@@ -25,12 +25,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public sealed class MetaObjectBuilder {
@@ -40,6 +42,7 @@ namespace IronRuby.Runtime.Calls {
         private Expression _condition;
         private BindingRestrictions/*!*/ _restrictions;
         private Expression _result;
+        private AstExpressions _initializations;
         private List<ParameterExpression> _temps;
         private bool _error;
         private bool _treatRestrictionsAsConditions;
@@ -66,13 +69,25 @@ namespace IronRuby.Runtime.Calls {
             _siteContext = siteContext;
         }
 
+        private void Clear() {
+            _condition = null;
+            _restrictions = BindingRestrictions.Empty;
+            _result = null;
+            _initializations = null;
+            _error = false;
+            _treatRestrictionsAsConditions = false;
+        }
+
         public bool Error {
             get { return _error; }
         }
 
         public Expression Result {
             get { return _result; }
-            set { _result = value; }
+            set { 
+                _result = value;
+                _error = false;
+            }
         }
 
         public ParameterExpression BfcVariable { get; set; }
@@ -95,6 +110,7 @@ namespace IronRuby.Runtime.Calls {
         internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ returnType) {
             Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
 
+            var restrictions = _restrictions;
             var expr = _error ? Ast.Throw(_result, returnType) : AstUtils.Convert(_result, returnType);
 
             if (_condition != null) {
@@ -102,12 +118,18 @@ namespace IronRuby.Runtime.Calls {
                 expr = Ast.Condition(_condition, expr, deferral);
             }
 
-            if (_temps != null) {
-                expr = Ast.Block(_temps, expr);
+            if (_temps != null || _initializations != null) {
+                AddInitialization(expr);
+                if (_temps != null) {
+                    expr = Ast.Block(_temps, _initializations);
+                } else {
+                    expr = Ast.Block(_initializations);
+                }
             }
 
-            RubyBinder.DumpRule(binder, _restrictions, expr);
-            return new DynamicMetaObject(expr, _restrictions);
+            Clear();
+            RubyBinder.DumpRule(binder, restrictions, expr);
+            return new DynamicMetaObject(expr, restrictions);
         }
 
         public ParameterExpression/*!*/ GetTemporary(Type/*!*/ type, string/*!*/ name) {
@@ -121,6 +143,14 @@ namespace IronRuby.Runtime.Calls {
 
             _temps.Add(variable);
             return variable;
+        }
+
+        internal void AddInitialization(Expression/*!*/ expression) {
+            if (_initializations == null) {
+                _initializations = new AstExpressions();
+            }
+
+            _initializations.Add(expression);
         }
 
         public void BuildControlFlow(CallArguments/*!*/ args) {
@@ -152,7 +182,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public void SetMetaResult(DynamicMetaObject/*!*/ metaResult, bool treatRestrictionsAsConditions) {
-            _result = metaResult.Expression;
+            Result = metaResult.Expression;
             if (treatRestrictionsAsConditions || _treatRestrictionsAsConditions) {
                 AddCondition(metaResult.Restrictions.ToExpression());
             } else {

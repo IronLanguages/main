@@ -173,11 +173,14 @@ namespace IronRuby.Hosting {
                     throw new InvalidOptionException(String.Format("Option `{0}' not supported", optionName));
 
                 case "-d":
-                    // TODO: have a separate option
-                    RuntimeSetup.DebugMode = true;          // $DEBUG = true
+                    LanguageSetup.Options["DebugVariable"] = true; // $DEBUG = true
                     break;
 
                 case "--version":
+                    ConsoleOptions.PrintVersion = true;
+                    ConsoleOptions.Exit = true;
+                    break;
+
                 case "-v":
                     ConsoleOptions.DisplayVersion = true;
                     goto case "-W2";
@@ -242,15 +245,19 @@ namespace IronRuby.Hosting {
                     LanguageSetup.Options["Profile"] = ScriptingRuntimeHelpers.True;
                     break;
 
-                case "-18":
-                    LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby18;
+                case "-1.8.6":
+                    LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby186;
                     break;
 
-                case "-19":
+                case "-1.8.7":
+                    LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby187;
+                    break;
+
+                case "-1.9":
                     LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby19;
                     break;
 
-                case "-20":
+                case "-2.0":
                     LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby20;
                     break;
 
@@ -375,16 +382,17 @@ namespace IronRuby.Hosting {
              // { "-T[level]",                   "turn on tainting checks" },
                 { "-v",                          "print version number, then turn on verbose mode" },
                 { "-w",                          "turn warnings on for your script" },
-                { "-W[level]",                   "set warning level; 0=silence, 1=medium, 2=verbose (default)" },
+                { "-W[level]",                   "set warning level; 0=silence, 1=medium (default), 2=verbose" },
              // { "-x[directory]",               "strip off text before #!ruby line and perhaps cd to directory" },
              // { "--copyright",                 "print the copyright" },
                 { "--version",                   "print the version" },
 
                 { "-trace",                      "enable support for set_trace_func" },
                 { "-profile",                    "enable support for 'pi = IronRuby::Clr.profile { block_to_profile }'" },
-                { "-18",                         "Ruby 1.8 mode" },
-                { "-19",                         "Ruby 1.9 mode" },
-                { "-20",                         "Ruby 2.0 mode" },
+                { "-1.8.6",                      "Ruby 1.8.6 mode (default)" },
+                { "-1.8.7",                      "Ruby 1.8.7 mode" },
+                { "-1.9",                        "Ruby 1.9 mode" },
+                { "-2.0",                        "Ruby 2.0 mode" },
 
                 { "-X:ExceptionDetail",          "enable ExceptionDetail mode" },
                 { "-X:NoAdaptiveCompilation",    "disable adaptive compilation - all code will be compiled" },

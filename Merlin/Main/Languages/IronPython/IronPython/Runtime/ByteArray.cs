@@ -19,11 +19,17 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -841,14 +847,10 @@ namespace IronPython.Runtime {
         public bool __contains__(CodeContext/*!*/ context, object value) {
             if (value is Extensible<int>) {
                 return IndexOf(((Extensible<int>)value).Value.ToByteChecked()) != -1;
-            }
-
-            BigInteger biVal = value as BigInteger;
-            if (biVal == null && value is Extensible<BigInteger>) {
-                biVal = ((Extensible<BigInteger>)value).Value;
-            }
-            if (biVal != null) {
-                return IndexOf(biVal.ToByteChecked()) != -1;
+            } else if (value is BigInteger) {
+                return IndexOf(((BigInteger)value).ToByteChecked()) != -1;
+            } else if (value is Extensible<BigInteger>) {
+                return IndexOf(((Extensible<BigInteger>)value).Value.ToByteChecked()) != -1;
             }
 
             throw PythonOps.TypeError("Type {0} doesn't support the buffer API",

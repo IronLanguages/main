@@ -188,7 +188,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region /, div
+        #region /, div, fdiv
 
         /// <summary>
         /// Divides self by other, where other is Bignum or Fixnum
@@ -246,6 +246,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("div")]
         public static object Div(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "div", self, other);
+        }
+
+        [RubyMethod("fdiv", Compatibility = RubyCompatibility.Ruby19)]
+        public static double FDiv(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+            return ((double)self) / ((double)other);
         }
 
         #endregion

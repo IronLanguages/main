@@ -24,6 +24,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -252,6 +253,11 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static RubyScope/*!*/ GetEmptyScope(RubyContext/*!*/ context) {
             return context.EmptyScope;
+        }
+
+        [Emitted]
+        public static Scope/*!*/ GetGlobalScopeFromScope(RubyScope/*!*/ scope) {
+            return scope.GlobalScope.Scope;
         }
 
         #endregion
@@ -1845,6 +1851,16 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static Exception/*!*/ MakeImplicitSuperInBlockMethodError() {
             return RubyExceptions.CreateRuntimeError("implicit argument passing of super from method defined by define_method() is not supported. Specify all arguments explicitly.");
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeMissingMethodError(RubyContext/*!*/ context, object self, string/*!*/ methodName) {
+            return RubyExceptions.CreateMethodMissing(context, self, methodName);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeMissingMemberError(string/*!*/ memberName) {
+            return new MissingMemberException(String.Format(CultureInfo.InvariantCulture, "undefined member: `{0}'", memberName));
         }
 
         #endregion

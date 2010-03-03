@@ -108,8 +108,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("initialize_copy", RubyMethodAttributes.PrivateInstance)]
         public static Hash/*!*/ InitializeCopy(RubyContext/*!*/ context, Hash/*!*/ self, [NotNull]Hash/*!*/ source) {
-            RubyUtils.RequiresNotFrozen(context, self);
-
+            self.Mutate();
             self.DefaultProc = source.DefaultProc;
             self.DefaultValue = source.DefaultValue;
             IDictionaryOps.ReplaceData(self, source);
@@ -146,7 +145,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("default=")]
         public static object SetDefaultValue(RubyContext/*!*/ context, Hash/*!*/ self, object value) {
-            RubyUtils.RequiresNotFrozen(context, self);
+            self.Mutate();
             self.DefaultProc = null;
             return self.DefaultValue = value;
         }
@@ -188,8 +187,8 @@ namespace IronRuby.Builtins {
                 return self;
             }
 
-            RubyUtils.RequiresNotFrozen(context, self);
-
+            self.Mutate();
+            
             Hash otherHash = other as Hash;
             if (otherHash != null) {
                 self.DefaultValue = otherHash.DefaultValue;
@@ -200,8 +199,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("shift")]
         public static object Shift(CallSiteStorage<Func<CallSite, Hash, object, object>>/*!*/ storage, Hash/*!*/ self) {
-            RubyUtils.RequiresNotFrozen(storage.Context, self);
-
+            self.Mutate();
+            
             if (self.Count == 0) {
                 var site = storage.GetCallSite("default", 1);
                 return site.Target(site, self, null);

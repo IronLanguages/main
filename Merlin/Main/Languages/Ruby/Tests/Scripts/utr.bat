@@ -1,1 +1,1 @@
-@"%MERLIN_ROOT%\Test\Scripts\ir.cmd" "%~dpn0.rb" "%*"
+@"%MERLIN_ROOT%\Test\Scripts\ir.cmd" -v "%~dpn0.rb" "%*"

@@ -25,6 +25,16 @@ class UnitTestSetup
     sanity_version('1.3.5', Gem::RubyGemsVersion)
     warn("Some tests are expected to fail with 'ir.exe -D'. Do not use -D...") if $DEBUG
   end
+  
+  # test_gem_stream_ui.rb uses Timeout.timeout which can cause hangs as described in 
+  # http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=4023
+  # Increase the timeout to reduce the chance of this occuring when other processes are
+  # also running (like with "irtests -p")
+  require 'timeout'
+  Timeout.instance_eval do
+    alias :original_timeout :timeout
+    def timeout(sec, klass=nil, &b) original_timeout(((sec == nil) ? sec : sec * 50), klass, &b) end
+  end
 
   def disable_tests
     #Merlin\External.LCA_RESTRICTED\Languages\IronRuby\RubyGems-1_3_1-test\gemutilities.rb has a workaround

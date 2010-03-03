@@ -17,11 +17,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime.Operations {
     public static partial class ByteOps {
@@ -156,14 +161,13 @@ namespace IronPython.Runtime.Operations {
 
         internal static byte GetByte(object o) {
             Extensible<int> ei;
-            BigInteger bi;
             Extensible<BigInteger> ebi;
             Extensible<double> ed;
             int i;
             if (o is int) {
                 return ((int)o).ToByteChecked();
-            } else if (!Object.ReferenceEquals(bi = o as BigInteger, null)) {
-                return bi.ToByteChecked();
+            } else if (o is BigInteger) {
+                return ((BigInteger)o).ToByteChecked();
             } else if (o is double) {
                 return ((double)o).ToByteChecked();
             } else if ((ei = o as Extensible<int>) != null) {
@@ -183,7 +187,7 @@ namespace IronPython.Runtime.Operations {
             } else if (o is ushort) {
                 return ((int)(ushort)o).ToByteChecked();
             } else if (o is uint) {
-                return BigInteger.Create((uint)o).ToByteChecked();
+                return ((BigInteger)(uint)o).ToByteChecked();
             } else if (o is float) {
                 return ((double)(float)o).ToByteChecked();
             } else if (Converter.TryConvertToIndex(o, out i)) {

@@ -306,12 +306,12 @@ namespace IronRuby.Tests {
         }
 
         [DebuggerHiddenAttribute]
-        internal void AssertExceptionThrown<T>(Action f) where T : Exception {
+        public void AssertExceptionThrown<T>(Action f) where T : Exception {
             AssertExceptionThrown<T>(f, null);
         }
 
         [DebuggerHiddenAttribute]
-        internal void AssertExceptionThrown<T>(Action f, Predicate<T> condition) where T : Exception {
+        public void AssertExceptionThrown<T>(Action f, Predicate<T> condition) where T : Exception {
             try {
                 RedirectOutput(TextWriter.Null, f);
             } catch (T e) {
@@ -330,7 +330,7 @@ namespace IronRuby.Tests {
         /// Asserts two values are equal
         /// </summary>
         [DebuggerHiddenAttribute]
-        internal void AreEqual(object x, object y) {
+        public void AreEqual(object x, object y) {
             if (x == null && y == null) return;
 
             Assert(x != null && x.Equals(y), String.Format("values aren't equal: {0} and {1}", x, y));
@@ -340,7 +340,7 @@ namespace IronRuby.Tests {
         /// Asserts an condition it true
         /// </summary>
         [DebuggerHiddenAttribute]
-        internal void Assert(bool condition, string msg) {
+        public void Assert(bool condition, string msg) {
             if (!condition) {
                 AssertBreak();
                 _driver.AssertionFailed(msg);
@@ -348,7 +348,7 @@ namespace IronRuby.Tests {
         }
 
         [DebuggerHiddenAttribute]
-        internal void Assert(bool condition) {
+        public void Assert(bool condition) {
             Assert(condition, "Assertion failed");
         }
 

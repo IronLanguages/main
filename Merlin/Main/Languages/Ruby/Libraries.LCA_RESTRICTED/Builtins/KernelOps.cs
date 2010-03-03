@@ -143,7 +143,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("binding", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("binding", RubyMethodAttributes.PublicSingleton)]
         public static Binding/*!*/ GetLocalScope(RubyScope/*!*/ scope, object self) {
-            if (scope.RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+            if (scope.RubyContext.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
                 return new Binding(scope, self);
             } else {
                 return new Binding(scope);
@@ -436,7 +436,8 @@ namespace IronRuby.Builtins {
         public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self) {
             RubyArray result = new RubyArray();
             result.Add(self);
-            return context.TaintObjectBy(result, self);
+            result.IsTainted |= context.IsObjectTainted(self);
+            return result;
         }
 
         #endregion
@@ -893,6 +894,16 @@ namespace IronRuby.Builtins {
         }
 
         // 1.9: public_send
+
+        [RubyMethod("tap")]
+        public static object Tap(RubyScope/*!*/ scope, [NotNull]BlockParam/*!*/ block, object/*!*/ self) {
+
+            object blockResult;
+            if (block.Yield(self, out blockResult)) {
+                return blockResult;
+            }
+            return self;
+        }
 
         #endregion
 

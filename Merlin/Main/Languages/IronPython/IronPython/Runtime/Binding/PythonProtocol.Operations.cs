@@ -15,6 +15,10 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 using System;
@@ -30,7 +34,6 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -1260,7 +1263,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Constant(0),
                         BindingRestrictions.Combine(types)
                     );
-                } else if (yType.UnderlyingSystemType.IsPrimitive || yType.UnderlyingSystemType == typeof(Microsoft.Scripting.Math.BigInteger)) {
+                } else if (yType.UnderlyingSystemType.IsPrimitive || yType.UnderlyingSystemType == typeof(BigInteger)) {
                     return new DynamicMetaObject(
                         AstUtils.Constant(-1),
                         BindingRestrictions.Combine(types)
@@ -2180,7 +2183,7 @@ namespace IronPython.Runtime.Binding {
                 if (yType == TypeCache.Int32 ||
                     yType == TypeCache.BigInteger ||
                     yType == TypeCache.Double ||
-                    yType == TypeCache.Complex64) {
+                    yType == TypeCache.Complex) {
 
                     // only coerce new style types that define __coerce__ and
                     // only when comparing against built-in types which
@@ -2195,7 +2198,7 @@ namespace IronPython.Runtime.Binding {
                             bmd.DeclaringType != typeof(int) &&
                             bmd.DeclaringType != typeof(BigInteger) &&
                             bmd.DeclaringType != typeof(double) &&
-                            bmd.DeclaringType != typeof(Complex64)) {
+                            bmd.DeclaringType != typeof(Complex)) {
                             return true;
                         }
 

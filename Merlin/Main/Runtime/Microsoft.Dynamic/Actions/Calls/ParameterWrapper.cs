@@ -111,6 +111,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return (_flags & ParameterBindingFlags.IsHidden) != 0; }
         }
 
+        public bool IsByRef {
+            get { return _info != null && _info.ParameterType.IsByRef; }
+        }
+
         /// <summary>
         /// True if the wrapper represents a params-array parameter (false for parameters created by expansion of a params-array).
         /// </summary>
