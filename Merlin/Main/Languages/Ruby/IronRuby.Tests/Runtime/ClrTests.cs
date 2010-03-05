@@ -26,6 +26,9 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+#if !CLR2
+using BigInt = System.Numerics.BigInteger;
+#endif
 
 namespace InteropTests.Generics1 {
     public class C {
@@ -2963,7 +2966,7 @@ p Inst.Foo(a) rescue p $!
 
         #endregion
 
-        #region Misc: Inclusions, Aliases
+        #region Misc: Inclusions, Aliases, Co/contra-variance
 
         /// <summary>
         /// CLR class re-def and inclusions.
@@ -3002,6 +3005,58 @@ a.foo 3
 puts a.count");
             }, "3");
         }
+
+        public class ClassWithTypeVariance1 {
+            public int Foo(IEnumerable<object> e) {
+                int i = 0;
+                foreach (var item in e) {
+                    i++;
+                }
+                return i;
+            }
+        }
+
+        public void ClrTypeVariance1() {
+            Context.ObjectClass.SetConstant("C", new ClassWithTypeVariance1());
+            TestOutput(@"
+include System::Collections::Generic
+
+class E
+  include IEnumerable[System::String]
+  
+  def get_enumerator
+    list = List[System::String].new
+    list.add 'a'    
+    list.add 'b'
+    list.add 'c'
+    list.get_enumerator
+  end
+end
+
+p C.foo(E.new) rescue p $!
+", 
+#if CLR2
+"#<TypeError: can't convert E into System::Collections::Generic::IEnumerable[Object]>"
+#else
+"3"
+#endif
+);
+        }
+
+#if !CLR2
+        public void ClrBigIntegerV4() {
+            Context.ObjectClass.SetConstant("BI", new BigInt(100000000000));
+            TestOutput(@"
+p BI + BI
+p BI + 1000000000000
+p 1000000000000 / BI
+", @"
+200000000000
+1100000000000
+10
+");
+        }
+#endif
 
         #endregion
     }

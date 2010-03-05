@@ -151,13 +151,7 @@ namespace IronPython.Modules {
 
             if (depth < stack.Count) {
                 TraceBackFrame cur = null;
-                TraceThread thread = PythonTracebackListener.GetCurrentThread();
-                List<TraceBackFrame> frames = null;
                 int curTraceFrame = -1;
-                if (thread != null) {
-                    frames = thread.Frames;
-                    curTraceFrame = thread.Frames.Count - stack.Count;
-                }
                 
                 for (int i = 0; i < stack.Count - depth; i++) {
                     var elem = stack[i];
@@ -165,11 +159,6 @@ namespace IronPython.Modules {
                     if (elem.Frame != null) {
                         // we previously handed out a frame here, hand out the same one now
                         cur = elem.Frame;
-                    } else if (frames != null && curTraceFrame >= 0) {
-                        // tracing is enabled and it created a frame
-                        cur = frames[curTraceFrame];
-
-                        stack[i] = new FunctionStack(elem.Context, elem.Code, cur);
                     } else {
                         // create a new frame and save it for future calls
                         cur = new TraceBackFrame(
@@ -271,8 +260,8 @@ namespace IronPython.Modules {
                 // We're following CPython behavior here.
                 // If CurrentPythonFrame is not null then we're currently inside a traceback, and
                 // enabling trace while inside a traceback is only allowed through sys.call_tracing()
-                var pyThread = PythonTracebackListener.GetCurrentThread();
-                if (pyThread == null || !pyThread.InTraceback) {
+                var pyThread = PythonOps.GetFunctionStackNoCreate();
+                if (pyThread == null || !PythonTracebackListener.InTraceBack) {
                     pyContext.PushTracebackHandler(new PythonTracebackListener((PythonContext)context.LanguageContext));
                     pyContext.RegisterTracebackHandler();
                     PythonTracebackListener.SetTrace(o, (TracebackDelegate)Converter.ConvertToDelegate(o, typeof(TracebackDelegate)));

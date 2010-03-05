@@ -215,3 +215,10 @@ describe "Monkeypatching Exception classes" do
     end
   end
 end
+
+describe "RubyGems platform information" do
+  it "sets Gem::Platform correctly" do
+    require "rubygems"
+    (Gem::Platform.local() === Gem::Platform.new("universal-.net")).should be_true
+  end
+end

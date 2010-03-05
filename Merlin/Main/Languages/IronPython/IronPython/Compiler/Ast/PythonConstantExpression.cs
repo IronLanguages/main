@@ -70,6 +70,18 @@ namespace IronPython.Compiler.Ast {
             return _mode.GetConstant(_value);
         }
 
+        public object Value {
+            get {
+                return _value;
+            }
+        }
+
+        public CompilationMode Mode {
+            get {
+                return _mode;
+            }
+        }
+
         #region IInstructionProvider Members
 
         public void AddInstructions(LightCompiler compiler) {
@@ -78,5 +90,4 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
     }
-
 }

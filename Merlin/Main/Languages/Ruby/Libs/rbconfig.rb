@@ -16,9 +16,9 @@
 
 module Config
   CONFIG = {}
-  CONFIG["MAJOR"] = "1"
-  CONFIG["MINOR"] = "8"
-  CONFIG["TEENY"] = "6"
+  version_components = RUBY_VERSION.split('.')
+  abort("Could not parse RUBY_VERSION") unless version_components.size == 3
+  CONFIG["MAJOR"], CONFIG["MINOR"], CONFIG["TEENY"] = version_components
   CONFIG["PATCHLEVEL"] = "0"
   CONFIG["EXEEXT"] = ".exe"
   # This value is used by libraries to spawn new processes to run Ruby scripts. Hence it needs to match the ir.exe name
@@ -73,8 +73,9 @@ module Config
   CONFIG["host_cpu"] = "i686"
   CONFIG["host_vendor"] = "pc"
   CONFIG["host_os"] = "mswin32"
-  CONFIG["target"] = "i386-pc-mswin32"
-  CONFIG["target_alias"] = "i386-mswin32"
+  clr_version = "#{System::Environment.Version.Major}.#{System::Environment.Version.Minor}"
+  CONFIG["target"] = ".net#{clr_version}"
+  CONFIG["target_alias"] = CONFIG["target"]
   CONFIG["target_cpu"] = "i386"
   CONFIG["target_vendor"] = "pc"
   CONFIG["target_os"] = "mswin32"
@@ -139,8 +140,7 @@ module Config
   CONFIG["COMMON_HEADERS"] = "winsock2.h windows.h"
   CONFIG["DISTCLEANFILES"] = "vc*.pdb"
   CONFIG["EXPORT_PREFIX"] = " "
-  CONFIG["arch"] = "i386-mswin32"
-  CONFIG["sitearch"] = "i386-msvcrt"
+  CONFIG["arch"] = "universal-.net#{clr_version}"
   CONFIG["configure_args"] = "--with-make-prog=nmake --enable-shared --with-winsock2"
   CONFIG["ruby_version"] = "$(MAJOR).$(MINOR)"
   CONFIG["archdir"] = "$(rubylibdir)/$(arch)"

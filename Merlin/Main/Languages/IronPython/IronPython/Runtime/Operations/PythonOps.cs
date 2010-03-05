@@ -4177,6 +4177,10 @@ namespace IronPython.Runtime.Operations {
             return _funcStack ?? (_funcStack = new List<FunctionStack>());
         }
 
+        public static List<FunctionStack> GetFunctionStackNoCreate() {
+            return _funcStack;
+        }
+
         public static List<FunctionStack> PushFrame(CodeContext context, FunctionCode function) {
             List<FunctionStack> stack = GetFunctionStack();
             stack.Add(new FunctionStack(context, function));
@@ -4346,6 +4350,12 @@ namespace IronPython.Runtime.Operations {
 
             Context = context;
             Code = code;
+            Frame = frame;
+        }
+
+        internal FunctionStack(TraceBackFrame frame) {
+            Context = frame.Context;
+            Code = frame.f_code;
             Frame = frame;
         }
     }

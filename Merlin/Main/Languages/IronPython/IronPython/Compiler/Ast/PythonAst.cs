@@ -63,9 +63,10 @@ namespace IronPython.Compiler.Ast {
         private Dictionary<PythonVariable, MSAst.Expression> _globalVariables = new Dictionary<PythonVariable, MSAst.Expression>();
         internal readonly Profiler _profiler;                            // captures timing data if profiling
 
-        internal static MSAst.ParameterExpression _functionCode = Ast.Variable(typeof(FunctionCode), "functionCode");
+        internal const string GlobalContextName = "$globalContext";
+        internal static MSAst.ParameterExpression _functionCode = Ast.Variable(typeof(FunctionCode), "$functionCode");
         internal readonly static MSAst.ParameterExpression/*!*/ _globalArray = Ast.Parameter(typeof(PythonGlobal[]), "$globalArray");
-        internal static readonly MSAst.ParameterExpression/*!*/ _globalContext = Ast.Parameter(typeof(CodeContext), "$globalContext");
+        internal static readonly MSAst.ParameterExpression/*!*/ _globalContext = Ast.Parameter(typeof(CodeContext), GlobalContextName);
         internal static readonly ReadOnlyCollection<MSAst.ParameterExpression> _arrayFuncParams = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>(new[] { _globalContext, _functionCode }).ToReadOnlyCollection();
 
         public PythonAst(Statement body, bool isModule, ModuleOptions languageFeatures, bool printExpressions) {
@@ -338,13 +339,26 @@ namespace IronPython.Compiler.Ast {
         internal MSAst.Expression ReduceWorker() {
             ReadOnlyCollectionBuilder<MSAst.Expression> block = new ReadOnlyCollectionBuilder<MSAst.Expression>();
 
-            if (_body is ReturnStatement && (_languageFeatures == ModuleOptions.None || _languageFeatures == ModuleOptions.Interpret)) {
+            if (_body is ReturnStatement && (_languageFeatures == ModuleOptions.None || _languageFeatures == (ModuleOptions.ExecOrEvalCode | ModuleOptions.Interpret))) {
                 // for simple eval's we can construct a simple tree which just
                 // leaves the value on the stack.  Return's can't exist in modules
                 // so this is always safe.
                 Debug.Assert(!_isModule);
 
-                return AstUtils.Convert(((ReturnStatement)_body).Expression.Reduce(), typeof(object));
+                var ret = (ReturnStatement)_body;
+                return Ast.Block(
+                    Ast.DebugInfo(
+                        _document,
+                        ret.Expression.Start.Line,
+                        ret.Expression.Start.Column,
+                        ret.Expression.End.Line,
+                        ret.Expression.End.Column
+                    ),
+                    AstUtils.Convert(
+                        ret.Expression.Reduce(), 
+                        typeof(object)
+                    )
+                );
             }
 
             AddInitialiation(block);

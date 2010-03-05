@@ -167,6 +167,14 @@ namespace Microsoft.Scripting.Math {
             return (UInt64)self.Value;
         }
 
+        public static implicit operator BigInteger(BigInt value) {
+            return new BigInteger(value);
+        }
+
+        public static implicit operator BigInt(BigInteger value) {
+            return value.Value;
+        }
+
         public BigInteger(BigInteger copy) {
             if (object.ReferenceEquals(copy, null)) {
                 throw new ArgumentNullException("copy");

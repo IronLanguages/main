@@ -17,6 +17,7 @@ using Microsoft.Scripting;
 
 #if !CLR2
 using MSAst = System.Linq.Expressions;
+using System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
 #endif
@@ -47,8 +48,8 @@ namespace IronPython.Compiler.Ast {
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
         internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
 
-        internal static MSAst.ParameterExpression FunctionStackVariable = Ast.Variable(typeof(List<FunctionStack>), "funcStack");
-        internal static readonly MSAst.LabelTarget GeneratorLabel = Ast.Label(typeof(object), "generatorLabel");
+        internal static MSAst.ParameterExpression FunctionStackVariable = Ast.Variable(typeof(List<FunctionStack>), "$funcStack");
+        internal static readonly MSAst.LabelTarget GeneratorLabel = Ast.Label(typeof(object), "$generatorLabel");
         private static MSAst.ParameterExpression _lineNumberUpdated = Ast.Variable(typeof(bool), "$lineUpdated");
         private static readonly MSAst.ParameterExpression _lineNoVar = Ast.Parameter(typeof(int), "$lineNo");
 
@@ -302,31 +303,97 @@ namespace IronPython.Compiler.Ast {
         /// Creates a method frame for tracking purposes and enforces recursion
         /// </summary>
         internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body) {
-            body = AstUtils.Try(
-                Ast.Assign(
-                    FunctionStackVariable,
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod("PushFrame"),
-                        localContext,
-                        codeObject
-                    )
-                ),
-                body
-            ).Finally(
-                Ast.Call(
-                    FunctionStackVariable,
-                    typeof(List<FunctionStack>).GetMethod("RemoveAt"),
-                    Ast.Add(
-                        Ast.Property(
-                            FunctionStackVariable,
-                            "Count"
-                        ),
-                        Ast.Constant(-1)
-                    )
-                )
-            );
+            return new FramedCodeExpression(localContext, codeObject, body);
+        }
 
-            return body;
+        /// <summary>
+        /// Removes the frames from generated code for when we're compiling the tracing delegate
+        /// which will track the frames it's self.
+        /// </summary>
+        internal static MSAst.Expression RemoveFrame(MSAst.Expression expression) {
+            return new FramedCodeVisitor().Visit(expression);
+        }
+
+        class FramedCodeVisitor : ExpressionVisitor {
+            public override MSAst.Expression Visit(MSAst.Expression node) {
+                FramedCodeExpression framedCode = node as FramedCodeExpression;
+                if (framedCode != null) {
+                    return framedCode.Body;
+                }
+                return base.Visit(node);
+            }
+        }
+
+        sealed class FramedCodeExpression : MSAst.Expression {
+            private readonly MSAst.Expression _localContext, _codeObject, _body;
+
+            public FramedCodeExpression(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body) {
+                _localContext = localContext;
+                _codeObject = codeObject;
+                _body = body;
+            }
+
+            public override ExpressionType NodeType {
+                get {
+                    return ExpressionType.Extension;
+                }
+            }
+
+            public MSAst.Expression Body {
+                get {
+                    return _body;
+                }
+            }
+
+            public override MSAst.Expression Reduce() {
+                return AstUtils.Try(
+                    Ast.Assign(
+                        FunctionStackVariable,
+                        Ast.Call(
+                            AstMethods.PushFrame,
+                            _localContext,
+                            _codeObject
+                        )
+                    ),
+                    _body
+                ).Finally(
+                    Ast.Call(
+                        FunctionStackVariable,
+                        typeof(List<FunctionStack>).GetMethod("RemoveAt"),
+                        Ast.Add(
+                            Ast.Property(
+                                FunctionStackVariable,
+                                "Count"
+                            ),
+                            Ast.Constant(-1)
+                        )
+                    )
+                );
+            }
+
+            public override Type Type {
+                get {
+                    return _body.Type;
+                }
+            }
+
+            public override bool CanReduce {
+                get {
+                    return true;
+                }
+            }
+
+            protected override MSAst.Expression VisitChildren(ExpressionVisitor visitor) {
+                var localContext = visitor.Visit(_localContext);
+                var codeObject = visitor.Visit(_codeObject);
+                var body = visitor.Visit(_body);
+
+                if (localContext != _localContext || _codeObject != codeObject || body != _body) {
+                    return new FramedCodeExpression(localContext, codeObject, body);
+                }
+
+                return this;
+            }
         }
 
         internal static MSAst.Expression/*!*/ MakeAssignment(MSAst.ParameterExpression/*!*/ variable, MSAst.Expression/*!*/ right) {

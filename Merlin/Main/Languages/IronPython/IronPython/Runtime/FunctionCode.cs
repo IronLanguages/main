@@ -316,6 +316,11 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal bool IsModule {
+            get {
+                return _lambda is Compiler.Ast.PythonAst;
+            }
+        }
 
         #region Public constructors
 
@@ -695,14 +700,14 @@ namespace IronPython.Runtime {
             );
 
             if ((Flags & FunctionAttributes.Generator) == 0) {
-                return context.DebugContext.TransformLambda(_lambda.GetLambda(), debugInfo);
+                return context.DebugContext.TransformLambda((LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda()), debugInfo);
             }
 
             return Expression.Lambda(
                 Code.Type,
                 new GeneratorRewriter(
                     _lambda.Name,
-                    Code.Body
+                    Compiler.Ast.Node.RemoveFrame(Code.Body)
                 ).Reduce(
                     _lambda.ShouldInterpret,
                     _lambda.EmitDebugSymbols,
@@ -715,6 +720,7 @@ namespace IronPython.Runtime {
             );
         }
 
+        
         /// <summary>
         /// Gets the correct final LambdaExpression for this piece of code.
         /// 

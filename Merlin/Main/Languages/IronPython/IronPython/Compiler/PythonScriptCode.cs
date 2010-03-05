@@ -15,8 +15,10 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using MSAst = System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
+using MSAst = Microsoft.Scripting.Ast;
 #endif
 
 using System;
@@ -29,10 +31,12 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
+    
     /// <summary>
     /// Represents a script code which can be dynamically bound to execute against
     /// arbitrary Scope objects.  This is used for code when the user runs against
@@ -115,9 +119,11 @@ namespace IronPython.Compiler {
             Func<CodeContext, FunctionCode, object> func;
             PythonContext pc = (PythonContext)Ast.CompilerContext.SourceUnit.LanguageContext;
 
-            if (lambda.Body is ConstantExpression) {
+            var extractConstant = ExtractConstant(lambda);
+
+            if (extractConstant != null) {
                 // skip compiling for really simple code
-                object value = ((ConstantExpression)lambda.Body).Value;
+                object value = extractConstant.Value;
                 return (codeCtx, functionCode) => value;
             }
 
@@ -128,6 +134,19 @@ namespace IronPython.Compiler {
             }
 
             return func;
+        }
+
+        private static PythonConstantExpression ExtractConstant(Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>> lambda) {
+            var body = lambda.Body as BlockExpression;
+            if (body == null || 
+                body.Expressions.Count != 2 || 
+                !(body.Expressions[0] is DebugInfoExpression) || 
+                body.Expressions[1].NodeType  != ExpressionType.Convert ||
+                !(((MSAst.UnaryExpression)body.Expressions[1]).Operand is PythonConstantExpression)) {
+                return null;
+            }
+
+            return (PythonConstantExpression)((MSAst.UnaryExpression)body.Expressions[1]).Operand;
         }
 
         private void EnsureTarget() {

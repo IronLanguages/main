@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
@@ -118,15 +119,19 @@ namespace IronPython.Runtime.Exceptions {
 
         [SpecialName, PropertyMethod]
         public void Setf_trace(object value) {
-            if (_traceAdapter != null) {
-                _traceObject = value;
-                _trace = (TracebackDelegate)Converter.ConvertToDelegate(value, typeof(TracebackDelegate));
-            }
+            _traceObject = value;
+            _trace = (TracebackDelegate)Converter.ConvertToDelegate(value, typeof(TracebackDelegate));
         }
 
         [SpecialName, PropertyMethod]
         public void Deletef_trace() {
             Setf_trace(null);
+        }
+
+        internal CodeContext Context {
+            get {
+                return _context;
+            }
         }
 
         internal TracebackDelegate TraceDelegate {
@@ -141,8 +146,10 @@ namespace IronPython.Runtime.Exceptions {
 
         public PythonDictionary f_globals {
             get {
-                if (_traceAdapter != null && _scopeCallback != null) {
-                    return new PythonDictionary(new AttributesDictionaryStorage(_scopeCallback()));
+                object context;
+                if (_scopeCallback != null &&
+                    _scopeCallback().TryGetValue(SymbolTable.StringToId(Compiler.Ast.PythonAst.GlobalContextName), out context)) {
+                    return ((CodeContext)context).GlobalDict;
                 } else {
                     return _globals;
                 }
@@ -152,6 +159,11 @@ namespace IronPython.Runtime.Exceptions {
         public object f_locals {
             get {
                 if (_traceAdapter != null && _scopeCallback != null) {
+                    if (_code.IsModule) {
+                        // don't use the scope callback for locals in a module, use our globals dictionary instead
+                        return f_globals;
+                    }
+
                     return new PythonDictionary(new AttributesDictionaryStorage(_scopeCallback()));
                 } else {
                     return _locals;
@@ -219,7 +231,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         private void SetLineNumber(int newLineNum) {
-            var pyThread = PythonTracebackListener.GetCurrentThread();
+            var pyThread = PythonOps.GetFunctionStackNoCreate();
             if (!TracingThisFrame(pyThread)) {
                 throw PythonOps.ValueError("f_lineno can only be set by a trace function");
             }
@@ -283,8 +295,8 @@ namespace IronPython.Runtime.Exceptions {
             throw PythonOps.ValueError("line {0} is invalid jump location ({1} - {2} are valid)", originalNewLine, funcCode.Span.Start.Line, funcCode.Span.End.Line);
         }
 
-        private bool TracingThisFrame(TraceThread pyThread) {
-            return pyThread != null &&  pyThread.Frames.Count != 0 && Type.ReferenceEquals(this, pyThread.Frames[pyThread.Frames.Count - 1]);
+        private bool TracingThisFrame(List<FunctionStack> pyThread) {
+            return pyThread != null &&  pyThread.Count != 0 && Type.ReferenceEquals(this, pyThread[pyThread.Count - 1].Frame);
         }
 
         private static Exception BadForOrFinallyJump(int newLineNum, Dictionary<int, bool> jumpIntoLoopIds) {

@@ -540,20 +540,16 @@ namespace IronRuby.Builtins {
 
             Assert.NotNull(module);
 
-#if !SILVERLIGHT // missing Clone on Delegate
             if (module._namespaceTracker != null && _constants == null) {
-#endif
                 // initialize the module so that we can copy all constants from it:
                 module.InitializeConstantsNoLock();
 
                 // initialize all ancestors of self:
                 InitializeConstantsNoLock();
-#if !SILVERLIGHT
             } else {
-                _constantsInitializer = (module._constantsInitializer != null) ? (Action<RubyModule>)module._constantsInitializer.Clone() : null;
+                _constantsInitializer = Utils.CloneInvocationChain(module._constantsInitializer);
                 _constantsState = module._constantsState;
             }
-#endif
 
             _constants = (module._constants != null) ? new Dictionary<string, ConstantStorage>(module._constants) : null;
 
@@ -565,14 +561,16 @@ namespace IronRuby.Builtins {
                 }
             }
 
-#if SILVERLIGHT
-             module.InitializeMethodsNoLock();
-             InitializeMethodsNoLock();
-#else
-            _methodsInitializer = (module._methodsInitializer != null) ? (Action<RubyModule>)module._methodsInitializer.Clone() : null;
+            _methodsInitializer = Utils.CloneInvocationChain(module._methodsInitializer);
             _methodsState = module._methodsState;
-#endif
-            _methods = (module._methods != null) ? new Dictionary<string, RubyMemberInfo>(module._methods) : null;
+            if (module._methods != null) {
+                _methods = new Dictionary<string, RubyMemberInfo>(module._methods.Count);
+                foreach (var method in module._methods) {
+                    _methods[method.Key] = method.Value.Copy(method.Value.Flags, this);
+                }
+            } else {
+                _methods = null;
+            }
 
             _classVariables = (module._classVariables != null) ? new Dictionary<string, object>(module._classVariables) : null;
             _mixins = ArrayUtils.Copy(module._mixins);
@@ -1283,6 +1281,8 @@ namespace IronRuby.Builtins {
 
         // Module#module_function:
         public void SetModuleFunctionNoEventNoLock(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
+            Debug.Assert(!IsClass);
+
             // CLR members: Detaches the member from its underlying type (by creating a copy).
             // TODO: check for CLR instance members, it should be an error to call module_function on them:
             var singletonClass = GetOrCreateSingletonClass();
@@ -1981,7 +1981,7 @@ namespace IronRuby.Builtins {
             Assert.NotNull(trait);
 
             if (tableState == MemberTableState.Uninitialized) {
-                if (initializer != null) {
+                if (initializer != null && initializer != EmptyInitializer) {
                     initializer += trait;
                 } else {
                     initializer = trait;

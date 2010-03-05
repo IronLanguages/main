@@ -20,15 +20,15 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
-using Microsoft.Scripting.Utils;
+using System.Globalization;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
-using IronRuby.Builtins;
-using System.Globalization;
 using System.Dynamic;
+using Microsoft.Scripting.Utils;
+using IronRuby.Builtins;
 
 namespace IronRuby.Runtime {
     public static class Utils {
@@ -525,6 +525,28 @@ namespace IronRuby.Runtime {
                 yield return metaObject != null ? metaObject.Expression : null;
             }
         }
+
+        internal static Action<RubyModule> CloneInvocationChain(Action<RubyModule> chain) {
+            if (chain == null) {
+                return null;
+            }
+
+            Delegate[] delegates = chain.GetInvocationList();
+            Action<RubyModule> result;
+#if SILVERLIGHT
+            int i = 0;
+            result = (_) => {};
+#else
+            int i = 1;
+            result = (Action<RubyModule>)delegates[0].Clone();
+#endif
+            for (; i < delegates.Length; i++) {
+                result += (Action<RubyModule>)delegates[i];
+            }
+
+            return result;
+        }
+
     }
 }
 

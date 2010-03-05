@@ -70,6 +70,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyCategorizer1,
                 NameMangling1,
                 NameMangling2,
+                DelegateChainClone1,
 
                 Constants1A,
                 Constants1B,
@@ -515,6 +516,7 @@ namespace IronRuby.Tests {
                 ClrHashEqualsToString3,
                 ClrToString1,
                 ClrHashEquals4,
+                ClrTypeVariance1,
                 HostingDefaultOptions1,
                 Interactive1,
                 Interactive2,
@@ -670,6 +672,7 @@ namespace IronRuby.Tests {
                 ClassDuplication5,
                 StructDup1,
                 ClassDuplication6,
+                ClassDuplication7,
                 Clone1,
                 Dup1,
                 Structs1,
@@ -755,6 +758,9 @@ namespace IronRuby.Tests {
                 Dlr_DynamicObject1, 
 
                 Serialization1,
+#if !CLR2
+                ClrBigIntegerV4,
+#endif
             };
         }
     }

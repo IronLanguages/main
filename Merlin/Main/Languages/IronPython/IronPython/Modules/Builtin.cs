@@ -285,7 +285,6 @@ namespace IronPython.Modules {
             if ((cflags & CompileFlags.CO_DONT_IMPLY_DEDENT) != 0) {
                 opts.DontImplyDedent = true;
             }
-            opts.Module |= ModuleOptions.ExecOrEvalCode;
 
             SourceUnit sourceUnit;
             string unitPath = String.IsNullOrEmpty(filename) ? null : filename;
@@ -2084,8 +2083,8 @@ namespace IronPython.Modules {
 
             // The options created this way never creates
             // optimized module (exec, compile)
-            pco.Module &= ~ModuleOptions.Optimized;
-            pco.Module |= ModuleOptions.Interpret;
+            pco.Module &= ~(ModuleOptions.Optimized | ModuleOptions.Initialize);
+            pco.Module |= ModuleOptions.Interpret | ModuleOptions.ExecOrEvalCode;
             pco.CompilationMode = CompilationMode.Lookup;
             return pco;
         }

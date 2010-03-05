@@ -153,6 +153,20 @@ p P.dup.new { 'foo' }[]
             }, output);
         }
 
+        public void ClassDuplication7() {
+            TestOutput(@"
+class C
+  def foo
+  end
+end
+
+D = C.dup
+p D.instance_method(:foo)
+", @"
+#<UnboundMethod: D#foo>
+");
+        }
+
         public void Structs1() {
             AssertOutput(() => CompilerTest(@"
 S = Struct.new(:f,:g)

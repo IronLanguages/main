@@ -21,6 +21,7 @@ using MSAst = Microsoft.Scripting.Ast;
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
@@ -45,7 +46,7 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             if (_statements.Length == 0) {
-                return AstUtils.Empty();
+                return GlobalParent.AddDebugInfoAndVoid(AstUtils.Empty(), Span);
             }
 
             ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();

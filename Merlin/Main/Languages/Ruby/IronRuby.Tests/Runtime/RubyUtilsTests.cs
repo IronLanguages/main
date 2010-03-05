@@ -13,7 +13,11 @@
  *
  * ***************************************************************************/
 
+using System;
 using IronRuby.Runtime;
+using IronRuby.Builtins;
+using System.Collections.Generic;
+using System.Text;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -154,6 +158,28 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryMangleMethodName("Initialize") == null);
             Assert(RubyUtils.TryMangleMethodName("Class") == null);
             Assert(RubyUtils.TryMangleMethodName("Message") == "message"); // we don't special case Exception.Message
+        }
+
+        [Options(NoRuntime = true)]
+        public void DelegateChainClone1() {
+            StringBuilder sb = new StringBuilder();
+            Action<RubyModule> f = (_) => { sb.Append('1'); };
+            f += (_) => { sb.Append('2'); };
+            f += (_) => { sb.Append('3'); };
+
+            f(null);
+            Assert(sb.ToString() == "123");
+            sb.Length = 0;
+
+            Action<RubyModule> g = Utils.CloneInvocationChain(f);
+            g += (_) => { sb.Append('4'); };
+            
+            g(null);
+            Assert(sb.ToString() == "1234");
+            sb.Length = 0;
+
+            f(null);
+            Assert(sb.ToString() == "123");
         }
     }
 }

@@ -265,6 +265,11 @@ namespace IronPython.Runtime {
                 _systemState.__dict__["_getframe"] = getFrame;
             }
 
+            if (_options.Tracing) {
+                EnsureDebugContext();
+                RegisterTracebackHandler();
+            }
+
             List path = new List(_options.SearchPaths);
 #if !SILVERLIGHT
             _resolveHolder = new AssemblyResolveHolder(this);
@@ -1385,6 +1390,21 @@ namespace IronPython.Runtime {
             UnhookAssemblyResolve();
 #endif
 
+            object threadingMod;
+            if (SystemStateModules.TryGetValue("threading", out threadingMod) &&
+                (threadingMod is PythonModule) &&
+                ((PythonModule)threadingMod).__dict__.TryGetValue("_shutdown", out callable)) {
+                try {
+                    PythonCalls.Call(SharedContext, callable);
+                } catch (Exception e) {
+                    PythonOps.PrintWithDest(
+                        SharedContext,
+                        SystemStandardError,
+                        String.Format("Exception {0} ignored", FormatException(e))
+                    );
+                }
+            } 
+            
             try {
                 if (_systemState.__dict__.TryGetValue("exitfunc", out callable)) {
                     PythonCalls.Call(SharedContext, callable);

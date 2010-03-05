@@ -37,7 +37,18 @@ namespace IronRuby.Runtime.Calls {
 
         private readonly RubyMemberFlags _flags;
 
-        // Null for dummy methods.
+        //
+        // A method body can be shared by multiple method definitions, one of them is the primary definition and the others are its copies.
+        // Only three cases of sharing are allowed:
+        // 1) The primary definition's declaring module is a super-class of the copied definition.
+        // 2) The primary definition's declaring module was duplicated and method copies are defined in the duplicate.
+        // 3) The primary definition's declaring module is not a class.
+        // 
+        // We assume these restrictions in the super-call implementation and instance variable storage allocation.
+        // See also: instance_method, method, define_method, module_function, private, protected, public.
+        //
+        // DeclaringModule is null for dummy methods.
+        //
         private readonly RubyModule _declaringModule;
         
         #region Mutable state guarded by ClassHierarchyLock

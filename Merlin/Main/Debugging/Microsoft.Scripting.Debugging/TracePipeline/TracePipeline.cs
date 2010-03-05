@@ -118,8 +118,8 @@ namespace Microsoft.Scripting.Debugging {
                             null, 
                             SourceSpan.None, 
                             null,
-                            payload, 
-                            null
+                            payload,
+                            functionInfo != null ? functionInfo.CustomPayload : null
                         );
                     } else  {
                         DebugFrame leafFrame = thread.GetLeafFrame();
