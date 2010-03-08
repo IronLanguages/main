@@ -722,72 +722,141 @@ namespace IronRuby.Tests {
 
         [Options(NoRuntime = true)]
         public void MutableString_IndexOf1() {
-            MutableString a;
             string s = "12123";
 
-            a = MutableString.CreateBinary(Utils.Concatenate(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
-            a.Remove(s.Length, 2);
-
-            Action<string> test1 = (value) => {
-                Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value)) == s.IndexOf(value));
+            var strs = new[] {
+                MutableString.CreateBinary(Utils.Concatenate(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 })).Remove(s.Length, 2),
+                MutableString.CreateMutable(s + "α", RubyEncoding.KCodeUTF8),
+                MutableString.CreateMutable(s + "α", RubyEncoding.UTF8),
+                MutableString.CreateMutable(s, RubyEncoding.UTF8).Append('α'),
+                MutableString.CreateMutable(s, RubyEncoding.Binary).Append(new byte[] { 0xff }),
+                MutableString.Create(s, RubyEncoding.KCodeUTF8),
+                MutableString.Create(s + "α", RubyEncoding.KCodeUTF8),
+                MutableString.CreateMutable(s, RubyEncoding.KCodeUTF8).Append(new byte[] { 0xff }), // invalid K-UTF8
             };
 
-            Action<string, int> test2 = (value, start) => {
-                Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value), start) == s.IndexOf(value, start));
-            };
+            for (int i = 0; i < strs.Length; i++) {
+                var a = strs[i];
 
-            Action<string, int, int> test3 = (value, start, count) => {
-                Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value), start, count) == s.IndexOf(value, start, count));
-            };
+                Action<string> test1 = (value) => {
+                    Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value)) == s.IndexOf(value));
+                };
 
-            test1("");
-            test1("0");
-            test1("12");
-            test1("3");
-            test2("12", 0);
-            test2("12", 1);
-            test2("12", 2);
-            test2("30", 4);
-            test3("", 2, 0);
-            test3("12", 2, 1);
-            test3("12", 2, 2);
+                Action<string, int> test2 = (value, start) => {
+                    Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value), start) == s.IndexOf(value, start));
+                };
+
+                Action<string, int, int> test3 = (value, start, count) => {
+                    Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value), start, count) == s.IndexOf(value, start, count));
+                };
+
+                test1("");
+                test1("0");
+                test1("12");
+                test1("3");
+                test2("", 4);
+                test2("", 5);
+                test2("12", 0);
+                test2("12", 1);
+                test2("12", 2);
+                test2("30", 4);
+                test3("", 2, 0);
+                test3("12", 2, 1);
+                test3("12", 2, 2);
+
+                Assert(a.IndexOf('3', 100) == -1);
+                Assert(a.IndexOf('2', 2) == s.IndexOf('2', 2));
+                Assert(a.IndexOf('\0') == -1);
+
+                Assert(a.IndexOf((byte)'3', 100) == -1);
+                Assert(a.IndexOf((byte)'2', 2) == s.IndexOf('2', 2));
+                Assert(a.IndexOf(0) == -1);
+
+                Assert(a.IndexOf("123", 100) == -1);
+                Assert(a.IndexOf("123", 1) == s.IndexOf("123", 1));
+            }
+
+            AssertExceptionThrown<ArgumentNullException>(() => strs[0].IndexOf((byte[])null, 1, 2));
+            AssertExceptionThrown<ArgumentNullException>(() => strs[0].IndexOf((string)null, 1, 2));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].IndexOf((byte)6, -1, 2));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].IndexOf((byte)6, 1, -2));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].IndexOf('6', -1, 2));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].IndexOf('6', 1, -2));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].IndexOf(new byte[] { 6 }, -1, 2));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].IndexOf(new byte[] { 6 }, 6, -1));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].IndexOf("6", -1, 2));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].IndexOf("6", 6, -1));
         }
 
         [Options(NoRuntime = true)]
         public void MutableString_LastIndexOf1() {
-            MutableString a;
-            string s = "12123";
+           string s = "12123";
 
-            a = MutableString.CreateBinary(Utils.Concatenate(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
-            a.Remove(s.Length, 2);
-
-            Action<string> test1 = (value) => {
-                Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value)) == s.LastIndexOf(value));
+            var strs = new[] {
+                MutableString.CreateBinary(Utils.Concatenate(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 })).Remove(s.Length, 2),
+                MutableString.CreateMutable(s + "α", RubyEncoding.KCodeUTF8),
+                MutableString.CreateMutable(s + "α", RubyEncoding.UTF8),
+                MutableString.CreateMutable(s, RubyEncoding.UTF8).Append('α'),
+                MutableString.CreateMutable(s, RubyEncoding.Binary).Append(new byte[] { 0xff }),
+                MutableString.Create(s, RubyEncoding.KCodeUTF8),
+                MutableString.Create(s + "α", RubyEncoding.KCodeUTF8),
+                MutableString.CreateMutable(s, RubyEncoding.KCodeUTF8).Append(new byte[] { 0xff }), // invalid K-UTF8
             };
 
-            Action<string, int> test2 = (value, start) => {
-                Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value), start) == s.LastIndexOf(value, start));
-            };
+            for (int i = 0; i < strs.Length; i++) {
+                var a = strs[i];
 
-            Action<string, int, int> test3 = (value, start, count) => {
-                Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value), start, count) == s.LastIndexOf(value, start, count));
-            };
+                a = MutableString.CreateBinary(Utils.Concatenate(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
+                a.Remove(s.Length, 2);
 
-            test1("");
-            test1("0");
-            test1("12");
-            test1("3");
-            test2("12", 0);
-            test2("12", 1);
-            test2("12", 2);
-            test3("12", 4, 2);
-            test3("12", 4, 3);
-            test3("12", 0, 1);
-            test3("12", 0, 0);
-            test3("", 2, 0);
+                Action<string> test1 = (value) => {
+                    Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value)) == s.LastIndexOf(value));
+                };
 
-            AssertExceptionThrown<ArgumentOutOfRangeException>(() => a.LastIndexOf(new byte[] { 6 }, 0, 2));
-            AssertExceptionThrown<ArgumentOutOfRangeException>(() => a.LastIndexOf(new byte[] { 6 }, 6, 2));
+                Action<string, int> test2 = (value, start) => {
+                    Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value), start) == s.LastIndexOf(value, start));
+                };
+
+                Action<string, int, int> test3 = (value, start, count) => {
+                    Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value), start, count) == s.LastIndexOf(value, start, count));
+                };
+
+                test1("");
+                test1("0");
+                test1("12");
+                test1("3");
+                test2("12", 0);
+                test2("12", 1);
+                test2("12", 2);
+                test3("12", 4, 2);
+                test3("12", 4, 3);
+                test3("12", 0, 1);
+                test3("12", 0, 0);
+                test3("", 2, 0);
+
+                Assert(a.LastIndexOf('3', 9, 5) == (s + "-----").LastIndexOf('3', 9, 5));
+                Assert(a.LastIndexOf('2', 2) == s.LastIndexOf('2', 2));
+                Assert(a.LastIndexOf('\0') == -1);
+
+                Assert(a.LastIndexOf((byte)'3', 9, 5) == (s + "-----").LastIndexOf('3', 9, 5));
+                Assert(a.LastIndexOf((byte)'2', 2) == s.LastIndexOf('2', 2));
+                Assert(a.LastIndexOf(0) == -1);
+
+                Assert(a.LastIndexOf("123", 9, 5) == (s + "-----").LastIndexOf("123", 9, 5));
+                Assert(a.LastIndexOf("123", 1) == s.LastIndexOf("123", 1));
+            }
+
+            AssertExceptionThrown<ArgumentNullException>(() => strs[0].LastIndexOf((byte[])null, 1, 2));
+            AssertExceptionThrown<ArgumentNullException>(() => strs[0].LastIndexOf((string)null, 1, 2));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf((byte)6, -1, 0));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf((byte)6, 0, -1));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf((byte)6, 1, 3));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf('6', -1, 0));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf('6', 0, -1));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf(new byte[] { 6 }, -1, 0));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf(new byte[] { 6 }, 0, -1));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf("6", -1, 0));
+            AssertExceptionThrown<ArgumentException>(() => strs[0].LastIndexOf("6", 0, -1));
         }
 
         [Options(NoRuntime = true)]
@@ -933,13 +1002,11 @@ namespace IronRuby.Tests {
             Assert(MutableStringOps.Index(scope, a, r, 0) == null);
 
             // invalid characters:
-            a = MutableString.CreateBinary(new byte[] { 0x82, 0x82, 0xa0, 0xa0, 0x82 }, RubyEncoding.Binary);
-            r = new RubyRegex(MutableString.CreateBinary(new byte[] { 0x82, 0xa0, (byte)'{', (byte)'2', (byte)'}' }, RubyEncoding.Binary));
+            a = MutableString.CreateBinary(new byte[] { 0x82, 0x82, 0xa0, 0xa0, 0x82 }, RubyEncoding.Binary); // invalid
+            r = new RubyRegex(MutableString.CreateBinary(new byte[] { 0x82, 0xa0, (byte)'{', (byte)'2', (byte)'}' }, RubyEncoding.Binary)); // valid
 
-            // TODO:
-            // We throw an exception here since we don't exactly know how MRI handles invalid characters.
             Context.KCode = RubyEncoding.KCodeSJIS;
-            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(scope, a, r, 0));
+            Assert(MutableStringOps.Index(scope, a, r, 0) == null);
 
             Context.KCode = null;
             Assert((int)MutableStringOps.Index(scope, a, r, 0) == 1);

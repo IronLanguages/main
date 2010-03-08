@@ -215,41 +215,14 @@ class UnitTestSetup
     disable ClassExtTest, 
       # <[#<Class:0x00056b6>]> expected but was
       # <[]>.
-      :test_subclasses_of_doesnt_find_anonymous_classes,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/object_and_class_ext_test.rb:101:in `test_subclasses_of_with_multiple_roots'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_subclasses_of_with_multiple_roots
-
-    disable DelegatingAttributesTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/class/delegating_attributes_test.rb:51:in `test_simple_accessor_declaration'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_simple_accessor_declaration,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/class/delegating_attributes_test.rb:59:in `test_simple_accessor_declaration_with_instance_reader_false'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_simple_accessor_declaration_with_instance_reader_false,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/class/delegating_attributes_test.rb:30:in `test_simple_reader_declaration'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_simple_reader_declaration
+      :test_subclasses_of_doesnt_find_anonymous_classes
 
     disable DependenciesTest, 
       # NameError: constant Object::Hello not defined
       # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\ModuleOps.cs:793:in `remove_const'
       # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/dependencies_test.rb:529:in `test_new_constants_in_with_a_single_constant'
       # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/dependencies_test.rb:529:in `test_new_constants_in_with_a_single_constant'
-      :test_new_constants_in_with_a_single_constant,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/dependencies_test.rb:536:in `test_new_constants_in_with_nesting'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/dependencies_test.rb:533:in `test_new_constants_in_with_nesting'
-      # dependencies.rb:506:in `new_constants_in'
-      :test_new_constants_in_with_nesting
+      :test_new_constants_in_with_a_single_constant
 
     disable DurationTest, 
       # <Mon Mar 30 00:00:00 -0700 2009> expected but was
@@ -261,18 +234,6 @@ class UnitTestSetup
       # + Mon Mar 30 01:00:00 -0700 2009
       # ?             ^
       :test_adding_hours_across_dst_boundary
-
-    disable EnumerableTests, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/enumerable_test.rb:26:in `test_group_by'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_group_by,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/enumerable_test.rb:38:in `test_sums'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_sums
 
     disable HashExtTest, 
       # <{0=>1, 1=>2}> expected but was
@@ -300,13 +261,6 @@ class UnitTestSetup
       # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/message_encryptor_test.rb:11:in `test_simple_round_tripping'
       # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
       :test_simple_round_tripping
-
-    disable ModuleTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/module_test.rb:171:in `test_local_constants'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_local_constants
 
     disable MultibyteCharsExtrasTest, 
       # <"Абвг абвг"> expected but was
@@ -458,79 +412,22 @@ class UnitTestSetup
       # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\Enumerable.cs:54:in `<TrueForItems>b__0'
       "test_verify_verifies_UTF-8_strings_are_properly_encoded"
 
-    disable Notifications::InstrumentationTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications/fanout.rb:27:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications.rb:68:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/notifications_test.rb:23:in `drain'
+    disable Notifications::InstrumentationTest,
+      # <2> expected but was
+      # <1>.
       :test_event_is_pushed_even_without_block,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications/fanout.rb:27:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications.rb:68:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/notifications_test.rb:23:in `drain'
-      :test_instrument_publishes_when_exception_is_raised,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications/fanout.rb:27:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications.rb:68:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/notifications_test.rb:23:in `drain'
+      # <2> expected but was
+      # <1>.
       :test_nested_events_can_be_instrumented
 
-    disable Notifications::PubSubTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications/fanout.rb:27:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications.rb:68:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/notifications_test.rb:30:in `test_events_are_published_to_a_listener'
-      :test_events_are_published_to_a_listener,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications/fanout.rb:27:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications.rb:68:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/notifications_test.rb:62:in `test_multiple_subscribers'
-      :test_multiple_subscribers,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications/fanout.rb:27:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications.rb:68:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/notifications_test.rb:41:in `test_subscriber_with_pattern'
-      :test_subscriber_with_pattern,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications/fanout.rb:27:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications.rb:68:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/notifications_test.rb:53:in `test_subscriber_with_pattern_as_regexp'
-      :test_subscriber_with_pattern_as_regexp
-
-    disable ObjectInstanceVariableTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/object/instance_variables.rb:64:in `copy_instance_variables_from'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/object_and_class_ext_test.rb:210:in `test_copy_instance_variables_automatically_excludes_protected_instance_variables'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_copy_instance_variables_automatically_excludes_protected_instance_variables,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/object/instance_variables.rb:64:in `copy_instance_variables_from'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/object_and_class_ext_test.rb:197:in `test_copy_instance_variables_from_with_explicit_excludes'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      :test_copy_instance_variables_from_with_explicit_excludes,
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/object/instance_variables.rb:64:in `copy_instance_variables_from'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/core_ext/object_and_class_ext_test.rb:187:in `test_copy_instance_variables_from_without_explicit_excludes'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      :test_copy_instance_variables_from_without_explicit_excludes
+    disable Notifications::PubSubTest,
+      # <[[:foo]]> expected but was
+      # <[[:foo]]>.
+      :test_events_are_published_to_a_listener
 
     disable OrderedHashTest, 
       # <false> is not true.
       :test_inspect
-
-    disable SetupAndTeardownTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/test_test.rb:105:in `test_inherited_setup_callbacks'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      :test_inherited_setup_callbacks
-
-    disable SubclassSetupAndTeardownTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/test_test.rb:136:in `test_inherited_setup_callbacks'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      :test_inherited_setup_callbacks
 
     disable TestGetTextString, 
       # <KeyError> exception expected but was
@@ -551,7 +448,25 @@ class UnitTestSetup
       # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:812:in `__send__'
       # d:1:in `decode'
       # decoding_
-      "test_json_decodes_{\"matzue\":_\"\346\235\276\346\261\237\",_\"asakusa\":_\"\346\265\205\350\215\211\"}_with_the_Yaml_backend"
+      "test_json_decodes_{\"matzue\":_\"\346\235\276\346\261\237\",_\"asakusa\":_\"\346\265\205\350\215\211\"}_with_the_Yaml_backend",
+      # Exception raised:
+      # Class: <JSON::ParserError>
+      # Message: <"expected ',' or '}' in object at 'sakusa\": \"µ╡àΦìë\"}'!">
+      # ---Backtrace---
+      # :0:in `lambda_method'
+      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.p368/lib/ruby/gems/1.8/gems/json_pure-1.1.7/lib/json/pure/parser.rb:16707566:in`parse_object'
+      # :0:in `lambda_method'
+      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/R
+      "test_json_decodes_{\"matzue\":_\"\346\235\276\346\261\237\",_\"asakusa\"_\"\346\265\205\350\215\211\"}_with_the_JSONGem_backend",
+      # Exception raised:
+      # Class: <JSON::ParserError>
+      # Message: <"expected ',' or '}' in object at 'sakusa\": \"µ╡àΦìë\"}'!">
+      # ---Backtrace---
+      # :0:in `lambda_method'
+      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/json_pure-1.1.7/lib/json/pure/parser.rb:16707566:in`parse_object'
+      # :0:in `lambda_method'
+      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/R
+      "test_json_decodes_{\"matzue\":_\"\346\235\276\346\261\237\",_\"asakusa\":_\"\346\265\205\350\215\211\"}_with_the_JSONGem_backend"
 
     disable TimeExtCalculationsTest, 
       # st-24.hours=>dt.

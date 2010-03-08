@@ -733,6 +733,7 @@ namespace IronRuby.Tests {
                 BEGIN1,
                 BEGIN2,
                 BEGIN3,
+                SymbolToProc1,
 
                 Backtrace1,
                 Backtrace2,

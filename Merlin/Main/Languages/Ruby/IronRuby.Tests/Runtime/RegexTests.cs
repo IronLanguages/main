@@ -220,7 +220,7 @@ puts(/foo/ =~ 'xxxfoo')
 3
 ");
         }
-
+        
         [Options(NoRuntime = true)]
         public void RegexEncoding1() {
             MatchData m;
@@ -233,39 +233,48 @@ puts(/foo/ =~ 'xxxfoo')
 
                 // the k-coding of the string is irrelevant:
                 foreach (var se in new[] { RubyEncoding.KCodeSJIS, RubyEncoding.KCodeUTF8, RubyEncoding.Binary }) {
-                    var s = MutableString.CreateBinary(new byte[] { 0x82, 0xa0, 0xa0 }, se);
-                    var t = MutableString.CreateBinary(new byte[] { 0x82, 0xa0, 0xa0, 0x82, 0xa0, 0xa0 }, se);
+                    var s = MutableString.CreateBinary(new byte[] { 0x82, 0xa0,  0xa0 }, se);
+                    var t = MutableString.CreateBinary(new byte[] { 0x82, 0xa0,  0xa0,  0x82, 0xa0,  0xa0, 0xff }, se);
+                    var u = MutableString.CreateBinary(new byte[] { 0x82, 0xa0,  0x82, 0xa0,  0x82, 0xa0 }, se);
 
                     // /あ{2}/ does not match "あ\xa0"
                     m = r.Match(RubyEncoding.KCodeSJIS, s);
                     Assert(m == null);
 
-                    // /\x82\xa0{2}/ matches "\x82\xa0\xa0"
+                    // /\x82\xa0{2}/ matches "[ \x82\xa0\xa0 ] \x82\xa0\xa0\xff"
                     m = r.Match(null, s);
                     Assert(m != null && m.Index == 0);
 
-                    // /あ{2}/ does not match "あ\xa0", current KCODE is ignored
+                    // /\x82\xa0{2}/ matches "\x82\xa0\xa0 [ \x82\xa0\xa0 ] \xff" starting from byte #1:
+                    m = r.Match(null, t, 1, false);
+                    Assert(m != null && m.Index == 3 && m.Length == 3);
+
+                    // /あ{2}/s does not match "あ\xa0", current KCODE is ignored
                     m = rs.Match(null, s);
                     Assert(m == null);
 
-                    // /あ{2}/ does not match "あ\xa0", current KCODE is ignored
+                    // /あ{2}/s does not match "あ\xa0", current KCODE is ignored
                     m = rs.Match(RubyEncoding.KCodeUTF8, s);
                     Assert(m == null);
+
+                    // /あ{2}/s matches "ああ\xff", current KCODE is ignored
+                    m = rs.Match(RubyEncoding.KCodeUTF8, u, 2, false);
+                    Assert(m != null && m.Index == 2 && m.Length == 4);
 
 
                     // /あ{2}/ does not match "あ\xa0あ\xa0"
                     m = r.LastMatch(RubyEncoding.KCodeSJIS, t);
                     Assert(m == null);
 
-                    // /\x82\xa0{2}/ matches "\x82\xa0\xa0\x82\xa0\xa0"
+                    // /\x82\xa0{2}/ matches "\x82\xa0\xa0 [ \x82\xa0\xa0 ] \xff"
                     m = r.LastMatch(null, t);
                     Assert(m != null && m.Index == 3);
 
-                    // /あ{2}/ does not match "あ\xa0あ\xa0", current KCODE is ignored
+                    // /あ{2}/s does not match "あ\xa0あ\xa0", current KCODE is ignored
                     m = rs.LastMatch(null, t);
                     Assert(m == null);
 
-                    // /あ{2}/ does not match "あ\xa0あ\xa0", current KCODE is ignored
+                    // /あ{2}/s does not match "あ\xa0あ\xa0", current KCODE is ignored
                     m = rs.LastMatch(RubyEncoding.KCodeUTF8, t);
                     Assert(m == null);
                 }

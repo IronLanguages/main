@@ -389,7 +389,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
         #region Helpers
 
         private bool Match(RubyRegex/*!*/ pattern, bool currentPositionOnly, bool advancePosition) {
-            // TODO: KCODE?
+            // TODO: repeated calls on the same ScanString can be optimized:
             MatchData match = pattern.Match(null, _scanString, _currentPosition, false);
             _lastMatch = null;
             _lastMatchingGroups = null;
@@ -455,6 +455,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
             _lastMatchingGroups = null;
         }
 
+        // TODO: encodings
         public override string ToString() {
             // #<StringScanner 0/11 @ "test ...">
             byte[] scanstr = ScanString.ToByteArray();

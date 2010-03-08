@@ -98,26 +98,6 @@ class UnitTestSetup
       # <false> is not true.
       :test_xml_version_of_resource_is_treated_as_different_cache
 
-    disable AssertSelectTest, 
-      # Exception raised:
-      # Class: <TypeError>
-      # Message: <"can't convert Symbol into Proc">
-      # ---Backtrace---
-      # selector.rb:286:in `assert_select'
-      # D:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Extensions\IListOps.cs:807:in `DeleteIf'
-      # D:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Extensions\IListOps.cs:758:in `delete_if'
-      # selector.rb:195:in `assert_select'
-      # d:/vs_langs01_s
-      :test_assert_select_text_match,
-      # Exception raised:
-      # Class: <TypeError>
-      # Message: <"can't convert Symbol into Proc">
-      # ---Backtrace---
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/actionpack/controller/assert_select_test.rb:126:in `test_equality_of_html'
-      # selector.rb:286:in `assert_select'
-      # D:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Extensions\IListOps.cs:807:in `Dele
-      :test_equality_of_html
-
     disable AssetTagHelperTest, 
       # Errno::EACCES: Access to the path 'd:\vs_langs01_s\Merlin\External.LCA_RESTRICTED\Languages\IronRuby\tests\RailsTests-3.0.pre\actionpack\fixtures\public\javascripts\all.js' is denied.
       # mscorlib:0:in `WinIOError'
@@ -207,20 +187,6 @@ class UnitTestSetup
       # <"<select id=\"people_\" multiple=\"multiple\" name=\"people[]\"><option>david</option></select>"> expected to be == to
       # <"<select id=\"people_\" multiple=\"multiple\" name=\"people[][]\"><option>david</option></select>">.
       :test_boolean_options
-
-    disable FragmentCachingTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications/fanout.rb:27:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/notifications.rb:68:in `wait'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/actionpack/controller/caching_test.rb:643:in `test_fragment_for_logging'
-      :test_fragment_for_logging
-
-    disable HelperTest, 
-      # TypeError: can't convert Symbol into Proc
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/actionpack/controller/helper_test.rb:123:in `test_helper_proxy'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      # D:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_helper_proxy
 
     disable LayoutSetInResponseTest, 
       # ActionView::MissingTemplate: Missing layout /d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/actionpack/fixtures/layout_tests/layouts/layout_test.rhtml - {} - partial: false in view path d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/actionpack/fixtures/layout_tests

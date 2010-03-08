@@ -62,6 +62,35 @@ describe "Regexps with encoding modifiers" do
       it 'selects last of multiple encoding specifiers' do
         /foo/ensuensuens.should == /foo/s
       end
+      
+      it 'overrides the current value of $KCODE' do
+        old_kcode, $KCODE = $KCODE, "UTF-8"
+        begin
+          s = "\xe2\x85\x9c"
+          
+          # KCODE is used: dot matches 3 bytes (one character):
+          /(.)/ =~ s
+          $1.should == s
+
+          # KCODE is ignored: dot matches a single byte
+          /(.)/n =~ s
+          $1.should == "\xe2"
+          
+        ensure
+          $KCODE = old_kcode
+        end
+      end
+      
+      it 'matches invalid/incomplete characters' do
+        c = "\xff"
+        /(#{c})/u =~ c
+        $1.should == c
+
+        c = "\xff"
+        /(#{c})/n =~ c
+        $1.should == c
+      end
+      
     end
   end
 

@@ -106,6 +106,16 @@ namespace IronRuby.Tests {
             a = new RubyArray(b, 2, 0);
             Assert(a.Count == 0);
 
+            a = new RubyArray();
+            a.AddRange(b);
+            Assert(a.Count == 2);
+            Assert((int)a[0] == 1 && (int)a[1] == 3);
+
+            a = new RubyArray();
+            a.AddRange(b, 1, 1);
+            Assert(a.Count == 1);
+            Assert((int)a[0] == 3);
+
             a = new RubyArray(new[] { 1, 2, 3 });
             AssertExceptionThrown<ArgumentNullException>(() => new RubyArray(null, 1, 2));
             AssertExceptionThrown<ArgumentOutOfRangeException>(() => new RubyArray(a, -1, 2));

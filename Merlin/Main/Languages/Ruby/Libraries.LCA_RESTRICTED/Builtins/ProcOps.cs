@@ -71,10 +71,12 @@ namespace IronRuby.Builtins {
             var context = self.LocalScope.RubyContext;
 
             var str = RubyUtils.ObjectToMutableStringPrefix(context, self);
-            str.Append('@');
-            str.Append(self.SourcePath ?? "(unknown)");
-            str.Append(':');
-            str.Append(self.SourceLine.ToString(CultureInfo.InvariantCulture));
+            if (self.SourcePath != null || self.SourceLine != 0) {
+                str.Append('@');
+                str.Append(self.SourcePath ?? "(unknown)");
+                str.Append(':');
+                str.Append(self.SourceLine.ToString(CultureInfo.InvariantCulture));
+            }
 
             if (context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19 && self.Kind == ProcKind.Lambda) {
                 str.Append(" (lambda)"); 

@@ -294,7 +294,7 @@ namespace IronRuby.Builtins {
             RubyArray array;
             object[] vector;
             if ((array = items as RubyArray) != null) {
-                AddVector(array._content, start, count);
+                AddVector(array._content, array._start + start, count);
             } else if ((vector = items as object[]) != null) {
                 AddVector(vector, start, count);
             } else {

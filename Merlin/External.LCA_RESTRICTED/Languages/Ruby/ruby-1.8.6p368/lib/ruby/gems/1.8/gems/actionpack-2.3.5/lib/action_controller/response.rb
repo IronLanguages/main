@@ -46,7 +46,7 @@ module ActionController # :nodoc:
       @writer = lambda { |x| @body << x }
       @block = nil
 
-      @body = "",
+      @body = ""
       @session = []
       @assigns = []
     end

@@ -1576,7 +1576,7 @@ p C.new {}
 #<Proc:0x*@*ProcPosition1.rb:9>
 #<Proc:0x*@*ProcPosition1.rb:10 (lambda)>
 #<Proc:0x*@*ProcPosition1.rb:11>
-#<Proc:0x*@(unknown):0>
+#<Proc:0x*>
 #<C:0x*@*ProcPosition1.rb:13>
 ", OutputFlags.Match);
         }
@@ -2151,6 +2151,32 @@ true
 true
 true
 true
+");
+        }
+
+        public void SymbolToProc1() {
+            TestOutput(@"
+class C
+  def bar
+    yield(self) rescue p $!
+  end
+
+  private
+  def foo; 'foo'; end
+  def to_s; 'C'; end
+end
+
+C.new.bar(&:foo)
+
+n = :nil?.to_proc
+p n.call(nil)
+n.call() rescue p $!
+p n.call([1,2])
+", @"
+#<NoMethodError: private method `foo' called for C:C>
+true
+#<ArgumentError: no receiver given>
+false
 ");
         }
     }

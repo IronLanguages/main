@@ -63,14 +63,14 @@ namespace IronRuby.Builtins {
             // It is not a property of the final object. /foo/ should compare equal with /foo/o.
             _options = options & ~RubyRegexOptions.Once;
 
-            RubyEncoding kcoding = RubyEncoding.GetKCoding(options);
-            if (kcoding != null || pattern.Encoding.IsKCoding) {
-                _pattern = MutableString.CreateBinary(pattern.ToByteArray(), kcoding ?? RubyEncoding.Binary).Freeze();
+            RubyEncoding encoding = RubyEncoding.GetRegexEncoding(options);
+            if (encoding != null || pattern.Encoding.IsKCoding) {
+                _pattern = MutableString.CreateBinary(pattern.ToByteArray(), encoding ?? RubyEncoding.Binary).Freeze();
             } else {
                 _pattern = pattern.PrepareForCharacterRead().Clone().Freeze();
             }
             
-            TransformPattern(kcoding, options & RubyRegexOptions.EncodingMask);
+            TransformPattern(encoding, options & RubyRegexOptions.EncodingMask);
         }
 
         /// <summary>
@@ -92,15 +92,15 @@ namespace IronRuby.Builtins {
 
         #region Transformation to CLR Regex
 
-        private Regex/*!*/ Transform(ref RubyEncoding kcoding, MutableString/*!*/ input, int start, out string strInput) {
+        private Regex/*!*/ Transform(ref RubyEncoding encoding, MutableString/*!*/ input, int start, out string strInput) {
             ContractUtils.RequiresNotNull(input, "input");
 
             // K-coding of the current operation (the current KCODE gets preference over the KCODE regex option):
             RubyRegexOptions kc = _options & RubyRegexOptions.EncodingMask;
             if (kc != 0) {
-                kcoding = _pattern.Encoding;
+                encoding = _pattern.Encoding;
             } else {
-                kc = RubyEncoding.ToRegexOption(kcoding);
+                kc = RubyEncoding.ToRegexOption(encoding);
             }
 
             // Convert input to a string. Force k-coding if necessary.
@@ -125,15 +125,11 @@ namespace IronRuby.Builtins {
                 // For now, we just detect if there are any non-ascii character escapes. If so we use a binary encoding accomodating case 3), 
                 // but breaking cases 1 and 2. Otherwise we encode using k-coding to make case 1 match.
                 if (HasEscapedNonAsciiBytes(_pattern)) {
-                    kcoding = RubyEncoding.Binary;
+                    encoding = RubyEncoding.Binary;
                     kc = 0;
                 }
                 
-                try {
-                    strInput = ForceEncoding(input, kcoding.StrictEncoding, start);
-                } catch (DecoderFallbackException) {
-                    throw RubyExceptions.CreateArgumentError(String.Format("invalid {0} character", kcoding.RealEncoding));
-                }
+                strInput = ForceEncoding(input, encoding.Encoding, start);
             } else if (input.Encoding.IsKCoding) {
                 strInput = input.ToString(BinaryEncoding.Instance);
             } else {
@@ -142,7 +138,7 @@ namespace IronRuby.Builtins {
                 strInput = input.ConvertToString();
             }
 
-            return TransformPattern(kcoding, kc);
+            return TransformPattern(encoding, kc);
         }
 
         private Regex/*!*/ TransformPattern(RubyEncoding encoding, RubyRegexOptions kc) {
@@ -153,11 +149,7 @@ namespace IronRuby.Builtins {
 
             string pattern;
             if (kc != 0 || encoding == RubyEncoding.Binary) {
-                try {
-                    pattern = _pattern.ToString(encoding.StrictEncoding);
-                } catch (DecoderFallbackException) {
-                    throw RubyExceptions.CreateArgumentError(String.Format("invalid multi-byte sequence in {0} regex pattern", encoding));
-                }
+                pattern = _pattern.ToString(encoding.Encoding);
             } else {
                 pattern = _pattern.ConvertToString();
             }

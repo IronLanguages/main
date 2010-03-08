@@ -111,14 +111,14 @@ namespace IronRuby.Builtins {
         }
 
         // binary (doesn't make a copy of the array):
-        private MutableString(byte[]/*!*/ bytes, RubyEncoding/*!*/ encoding) 
-            : this(new BinaryContent(bytes, null), encoding) {
+        private MutableString(byte[]/*!*/ bytes, RubyEncoding/*!*/ encoding)
+            : this(encoding.IsKCoding ? new KBinaryContent(bytes, null) : new BinaryContent(bytes, null), encoding) {
         }
 
         // binary (doesn't make a copy of the array):
         // used by RubyBufferedStream:
         internal MutableString(byte[]/*!*/ bytes, int count, RubyEncoding/*!*/ encoding)
-            : this(new BinaryContent(bytes, count, null), encoding) {
+            : this(encoding.IsKCoding ? new KBinaryContent(bytes, count, null) : new BinaryContent(bytes, count, null), encoding) {
         }
 
         // immutable:
@@ -644,7 +644,7 @@ namespace IronRuby.Builtins {
         /// </exception>
         public MutableString/*!*/ SwitchToCharacters() {
             try {
-                _content.SwitchToStringContent();
+                _content = _content.SwitchToStringContent();
             } catch (DecoderFallbackException) {
                 throw RubyExceptions.CreateArgumentError(String.Format("invalid byte sequence in {0}", _encoding));
             }
@@ -958,11 +958,12 @@ namespace IronRuby.Builtins {
         }
 
         public int IndexOf(char value, int start) {
-            return IndexOf(value, start, _content.GetCharCount() - start);
+            return IndexOf(value, start, Int32.MaxValue);
         }
 
         public int IndexOf(char value, int start, int count) {
-            //RequiresArrayRange(start, count);
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0, "count");
             return _content.IndexOf(value, start, count);
         }
 
@@ -971,11 +972,12 @@ namespace IronRuby.Builtins {
         }
 
         public int IndexOf(byte value, int start) {
-            return IndexOf(value, start, _content.GetByteCount() - start);
+            return IndexOf(value, start, Int32.MaxValue);
         }
 
         public int IndexOf(byte value, int start, int count) {
-            //RequiresArrayRange(start, count);
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0, "count");
             return _content.IndexOf(value, start, count);
         }
 
@@ -984,13 +986,14 @@ namespace IronRuby.Builtins {
         }
 
         public int IndexOf(string/*!*/ value, int start) {
-            return IndexOf(value, start, _content.GetCharCount() - start);
+            return IndexOf(value, start, Int32.MaxValue);
         }
 
         public int IndexOf(string/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            //RequiresArrayRange(start, count);
-
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0, "count");
+            
             return _content.IndexOf(value, start, count);
         }
 
@@ -999,13 +1002,14 @@ namespace IronRuby.Builtins {
         }
 
         public int IndexOf(byte[]/*!*/ value, int start) {
-            return IndexOf(value, start, _content.GetByteCount() - start);
+            return IndexOf(value, start, Int32.MaxValue);
         }
 
         public int IndexOf(byte[]/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            //RequiresArrayRange(start, count);
-
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0, "count");
+            
             return _content.IndexOf(value, start, count);
         }
 
@@ -1014,13 +1018,14 @@ namespace IronRuby.Builtins {
         }
 
         public int IndexOf(MutableString/*!*/ value, int start) {
-            return IndexOf(value, start, _content.Count - start);
+            return IndexOf(value, start, Int32.MaxValue);
         }
 
         public int IndexOf(MutableString/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            //RequiresArrayRange(start, count);
-
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0, "count");
+            
             return value._content.IndexIn(_content, start, count);
         }
 
@@ -1029,8 +1034,7 @@ namespace IronRuby.Builtins {
         #region LastIndexOf (read-only)
 
         public int LastIndexOf(char value) {
-            int length = _content.GetCharCount();
-            return LastIndexOf(value, length - 1, length);
+            return LastIndexOf(value, Int32.MaxValue - 1, Int32.MaxValue);
         }
 
         public int LastIndexOf(char value, int start) {
@@ -1038,13 +1042,13 @@ namespace IronRuby.Builtins {
         }
 
         public int LastIndexOf(char value, int start, int count) {
-            //RequiresReverseArrayRange(start, count);
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0 && count - 1 <= start, "count");
             return _content.LastIndexOf(value, start, count);
         }
 
         public int LastIndexOf(byte value) {
-            int length = _content.GetByteCount();
-            return LastIndexOf(value, length - 1, length);
+            return LastIndexOf(value, Int32.MaxValue - 1, Int32.MaxValue);
         }
 
         public int LastIndexOf(byte value, int start) {
@@ -1052,13 +1056,13 @@ namespace IronRuby.Builtins {
         }
 
         public int LastIndexOf(byte value, int start, int count) {
-            //RequiresReverseArrayRange(start, count);
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0 && count - 1 <= start, "count");
             return _content.LastIndexOf(value, start, count);
         }
 
         public int LastIndexOf(string/*!*/ value) {
-            int length = _content.GetCharCount();
-            return LastIndexOf(value, length - 1, length);
+            return LastIndexOf(value, Int32.MaxValue - 1, Int32.MaxValue);
         }
 
         public int LastIndexOf(string/*!*/ value, int start) {
@@ -1067,14 +1071,13 @@ namespace IronRuby.Builtins {
 
         public int LastIndexOf(string/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            //RequiresReverseArrayRange(start, count);
-
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0 && count - 1 <= start, "count");
             return _content.LastIndexOf(value, start, count);
         }
 
         public int LastIndexOf(byte[]/*!*/ value) {
-            int length = _content.GetByteCount();
-            return LastIndexOf(value, length - 1, length);
+            return LastIndexOf(value, Int32.MaxValue - 1, Int32.MaxValue);
         }
 
         public int LastIndexOf(byte[]/*!*/ value, int start) {
@@ -1083,14 +1086,13 @@ namespace IronRuby.Builtins {
 
         public int LastIndexOf(byte[]/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            //RequiresReverseArrayRange(start, count);
-
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0 && count - 1 <= start, "count");
             return _content.LastIndexOf(value, start, count);
         }
 
         public int LastIndexOf(MutableString/*!*/ value) {
-            int length = _content.Count;
-            return LastIndexOf(value, length - 1, length);
+            return LastIndexOf(value, Int32.MaxValue - 1, Int32.MaxValue);
         }
 
         public int LastIndexOf(MutableString/*!*/ value, int start) {
@@ -1099,8 +1101,8 @@ namespace IronRuby.Builtins {
 
         public int LastIndexOf(MutableString/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            //RequiresReverseArrayRange(start, count);
-
+            ContractUtils.Requires(start >= 0, "start");
+            ContractUtils.Requires(count >= 0 && count - 1 <= start, "count");
             return value._content.LastIndexIn(_content, start, count);
         }
 

@@ -42,7 +42,7 @@ namespace IronRuby.Builtins {
             }
 
             protected BinaryContent/*!*/ WrapContent(byte[]/*!*/ bytes, int count) {
-                var result = new BinaryContent(bytes, count, _owner);
+                BinaryContent result = _owner._encoding.IsKCoding ? new KBinaryContent(bytes, count, _owner) : new BinaryContent(bytes, count, _owner);
                 _owner.SetContent(result);
                 return result;
             }
@@ -57,9 +57,9 @@ namespace IronRuby.Builtins {
 
             public abstract string/*!*/ ConvertToString();
             public abstract byte[]/*!*/ ConvertToBytes();
-            public abstract void SwitchToBinaryContent();
-            public abstract void SwitchToStringContent();
-            public abstract void SwitchToMutableContent();
+            public abstract Content/*!*/ SwitchToBinaryContent();
+            public abstract Content/*!*/ SwitchToStringContent();
+            public abstract Content/*!*/ SwitchToMutableContent();
             public abstract void CheckEncoding();
 
             public abstract byte[]/*!*/ ToByteArray();

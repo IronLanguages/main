@@ -141,6 +141,11 @@ namespace IronRuby.Builtins {
             return self.ToString();
         }
 
+        [RubyMethod("to_proc")]
+        public static Proc/*!*/ ToProc(RubyScope/*!*/ scope, RubySymbol/*!*/ self) {
+            return Proc.CreateMethodInvoker(scope, self.ToString());
+        }
+
         #endregion
 
         #region 1.9 Methods
@@ -203,8 +208,6 @@ namespace IronRuby.Builtins {
         // next
         // succ
         // slice
-
-        // to_proc
 
         // swapcase
         // upcase

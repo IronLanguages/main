@@ -39,19 +39,26 @@ namespace IronRuby.Runtime {
             if (throwOnError) {
                 return Create(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
             } else {
-                return Create(codepage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback);
+                return Create(codepage, EncoderFallback.ReplacementFallback, BinaryDecoderFallback.Instance);
             }
 #endif
         }
 
 #if !SILVERLIGHT
         private static Encoding CreateEncoding(int codepage, EncoderFallback/*!*/ encoderFallback, DecoderFallback/*!*/ decoderFallback) {
-            return new KCoding(Encoding.GetEncoding(codepage, encoderFallback, decoderFallback));
+            return Create(Encoding.GetEncoding(codepage, encoderFallback, decoderFallback));
         }
 
         public static KCoding Create(int codepage, EncoderFallback/*!*/ encoderFallback, DecoderFallback/*!*/ decoderFallback) {
             var encoding = CreateEncoding(codepage, encoderFallback, decoderFallback);
-            return encoding != null ? new KCoding(encoding) : null;
+            return encoding != null ? Create(encoding) : null;
+        }
+
+        private static KCoding/*!*/ Create(Encoding/*!*/ encoding) {
+            var result = (KCoding)new KCoding(encoding).Clone();
+            result.DecoderFallback = encoding.DecoderFallback;
+            result.EncoderFallback = encoding.EncoderFallback;
+            return result;
         }
 #endif
 

@@ -265,7 +265,19 @@ namespace IronRuby.Builtins {
         }
 
         internal static DateTime AddSeconds(DateTime dateTime, double seconds) {
-            return dateTime.AddTicks((long)(Math.Round(seconds, 6) * 10000000));
+            bool isLocal = dateTime.Kind == DateTimeKind.Local;
+            if (isLocal) {
+                dateTime = ToUniversalTime(dateTime);
+            }
+
+            // add in UTC to handle DST transitions correctly:
+            dateTime = dateTime.AddTicks((long)(Math.Round(seconds, 6) * 10000000));
+
+            if (isLocal) {
+                dateTime = ToLocalTime(dateTime);
+            }
+
+            return dateTime;
         }
 
         public override string ToString() { 
@@ -281,13 +293,7 @@ namespace IronRuby.Builtins {
         }
 
         public int CompareTo(RubyTime other) {
-            DateTime dtx = _dateTime;
-            DateTime dty = other._dateTime;
-            if (dtx.Kind != dty.Kind) {
-                return ToUniversalTime(dtx).CompareTo(ToUniversalTime(dty));
-            } else {
-                return dtx.CompareTo(dty);
-            }
+            return ToUniversalTime(_dateTime).CompareTo(ToUniversalTime(other._dateTime));
         }
 
         public static bool operator <(RubyTime x, RubyTime y) {
@@ -307,12 +313,7 @@ namespace IronRuby.Builtins {
         }
 
         public static TimeSpan operator -(RubyTime x, DateTime y) {
-            DateTime dtx = x._dateTime;
-            if (dtx.Kind != y.Kind) {
-                return ToUniversalTime(dtx) - ToUniversalTime(y);
-            } else {
-                return dtx - y;
-            }
+            return ToUniversalTime(x._dateTime) - ToUniversalTime(y);
         }
 
         public static TimeSpan operator -(RubyTime x, RubyTime y) {
@@ -666,13 +667,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("succ")]
         public static RubyTime/*!*/ SuccessiveSecond(RubyTime/*!*/ self) {
-            DateTime result;
-            try {
-                result = self.DateTime.AddSeconds(1);
-            } catch (OverflowException) {
-                throw RubyExceptions.CreateRangeError("time + 1 out of Time range");
-            }
-            return new RubyTime(result);
+            return AddSeconds(self, 1.0);
         }
 
         [RubyMethod("+")]

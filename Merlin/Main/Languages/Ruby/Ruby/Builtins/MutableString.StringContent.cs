@@ -23,10 +23,10 @@ using System.IO;
 namespace IronRuby.Builtins {
     public partial class MutableString {
         [Serializable]
-        private class StringContent : Content {
+        private sealed class StringContent : Content {
             private readonly string/*!*/ _data;
 
-            public StringContent(string/*!*/ data, MutableString owner) 
+            internal StringContent(string/*!*/ data, MutableString owner) 
                 : base(owner) {
                 Assert.NotNull(data);
                 _data = data;
@@ -55,7 +55,7 @@ namespace IronRuby.Builtins {
                 return SwitchToMutable();
             }
 
-            protected byte[]/*!*/ DataToBytes() {
+            internal byte[]/*!*/ DataToBytes() {
                 return _data.Length > 0 ? _owner._encoding.StrictEncoding.GetBytes(_data) : Utils.EmptyBytes;
             }
 
@@ -145,16 +145,20 @@ namespace IronRuby.Builtins {
                 return SwitchToBinary().GetByteArray(out count);
             }
 
-            public override void SwitchToBinaryContent() {
-                SwitchToBinary();
+            public override Content/*!*/ SwitchToBinaryContent() {
+                return SwitchToBinary();
             }
 
-            public override void SwitchToStringContent() {
-                // nop
+            public override Content/*!*/ SwitchToStringContent() {
+                if (_owner._encoding.IsKCoding) {
+                    return SwitchToBinary();
+                } else {
+                    return this;
+                }
             }
 
-            public override void SwitchToMutableContent() {
-                SwitchToMutable();
+            public override Content/*!*/ SwitchToMutableContent() {
+                return SwitchToMutable();
             }
 
             public override Content/*!*/ EscapeRegularExpression() {
@@ -239,19 +243,33 @@ namespace IronRuby.Builtins {
             #region IndexOf (read-only)
 
             public override int IndexOf(char c, int start, int count) {
-                return _data.IndexOf(c, start, count);
+                count = Utils.NormalizeCount(_data.Length, start, count);
+                return count > 0 ? _data.IndexOf(c, start, count) : -1;
             }
 
             public override int IndexOf(byte b, int start, int count) {
-                return SwitchToBinary().IndexOf(b, start, count);
+                if (_owner.HasByteCharacters) {
+                    return Utils.IndexOf(_data, b, start, count);
+                } else {
+                    return SwitchToBinary().IndexOf(b, start, count);
+                }
             }
 
             public override int IndexOf(string/*!*/ str, int start, int count) {
-                return _data.IndexOf(str, start, count, StringComparison.Ordinal);
+                if (str.Length == 0) {
+                    return start;
+                }
+
+                count = Utils.NormalizeCount(_data.Length, start, count);
+                return count > 0 ? _data.IndexOf(str, start, count, StringComparison.Ordinal) : -1;
             }
 
             public override int IndexOf(byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().IndexOf(bytes, start, count);
+                if (_owner.HasByteCharacters) {
+                    return Utils.IndexOf(_data, bytes, start, count);
+                } else {
+                    return SwitchToBinary().IndexOf(bytes, start, count);
+                }
             }
 
             public override int IndexIn(Content/*!*/ str, int start, int count) {
@@ -263,19 +281,29 @@ namespace IronRuby.Builtins {
             #region LastIndexOf (read-only)
 
             public override int LastIndexOf(char c, int start, int count) {
+                Utils.NormalizeLastIndexOfIndices(_data.Length, ref start, ref count);
                 return _data.LastIndexOf(c, start, count);
             }
 
             public override int LastIndexOf(byte b, int start, int count) {
-                return SwitchToBinary().LastIndexOf(b, start, count);
+                if (_owner.HasByteCharacters) {
+                    return Utils.LastIndexOf(_data, b, start, count);
+                } else {
+                    return SwitchToBinary().LastIndexOf(b, start, count);
+                }
             }
 
             public override int LastIndexOf(string/*!*/ str, int start, int count) {
+                Utils.NormalizeLastIndexOfIndices(_data.Length, ref start, ref count);
                 return _data.LastIndexOf(str, start, count, StringComparison.Ordinal);
             }
 
             public override int LastIndexOf(byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().LastIndexOf(bytes, start, count);
+                if (_owner.HasByteCharacters) {
+                    return Utils.LastIndexOf(_data, bytes, start, count);
+                } else {
+                    return SwitchToBinary().LastIndexOf(bytes, start, count);
+                }
             }
 
             public override int LastIndexIn(Content/*!*/ str, int start, int count) {

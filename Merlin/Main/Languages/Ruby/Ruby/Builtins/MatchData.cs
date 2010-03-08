@@ -103,8 +103,10 @@ namespace IronRuby.Builtins {
                 for (int i = 0; i < match.Groups.Count; i++) {
                     var group = match.Groups[i];
                     if (group.Success) {
-                        kIndices[i * 2] = encoding.GetByteCount(kCodedChars, 0, group.Index) + kStart;
-                        kIndices[i * 2 + 1] = encoding.GetByteCount(kCodedChars, group.Index, group.Length) + kStart;
+                        // group start index:
+                        kIndices[i * 2] = kStart + encoding.GetByteCount(kCodedChars, 0, group.Index);
+                        // group length:
+                        kIndices[i * 2 + 1] = encoding.GetByteCount(kCodedChars, group.Index, group.Length);
                     } else {
                         kIndices[i * 2] = -1;
                     }

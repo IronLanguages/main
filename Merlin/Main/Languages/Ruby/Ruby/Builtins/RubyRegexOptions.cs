@@ -30,8 +30,6 @@ namespace IronRuby.Builtins {
         SJIS = 64,
         UTF8 = 128,
 
-        EncodingMask = EUC | SJIS | UTF8,
-
-        CompleteEncodingMask = EncodingMask | FIXED
+        EncodingMask = EUC | SJIS | UTF8 | FIXED
     }
 }

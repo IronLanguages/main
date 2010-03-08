@@ -331,6 +331,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
         
         private static void LoadYAML_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
+            DefineLibraryMethod(module, "add_builtin_type", 0x21, 
+                0x00020005U, 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.AddBuiltinType)
+            );
+            
             DefineLibraryMethod(module, "add_domain_type", 0x21, 
                 0x00000000U, 0x00000000U, 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.AddDomainType), 
@@ -348,7 +353,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             );
             
             DefineLibraryMethod(module, "dump_stream", 0x21, 
-                0x80000020U, 
+                0x80000000U, 
                 new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.RubyScope, IronRuby.Builtins.RubyModule, System.Object[], System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.DumpStream)
             );
             

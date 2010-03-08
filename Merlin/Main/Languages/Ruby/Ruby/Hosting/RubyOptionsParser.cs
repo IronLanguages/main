@@ -351,6 +351,10 @@ namespace IronRuby.Hosting {
                 System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(culture, false);
             }
 #endif
+            if (ConsoleOptions.DisplayVersion && ConsoleOptions.Command == null && ConsoleOptions.FileName == null) {
+                ConsoleOptions.PrintVersion = true;
+                ConsoleOptions.Exit = true;
+            }
         }
 
         public override void GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments) {

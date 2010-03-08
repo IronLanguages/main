@@ -120,6 +120,8 @@ class WIN32OLE
 
   def ruby_to_com_interop_type(arg)
     case arg
+    when String
+      arg.to_str
     when Array
       element_type = ruby_to_com_interop_type(arg[0]).class
       converted_elements = ruby_to_com_interop_types arg

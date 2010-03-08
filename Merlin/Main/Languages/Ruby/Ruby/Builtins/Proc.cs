@@ -23,17 +23,17 @@ using System;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronRuby.Builtins {
     using Ast = Expression;
+    using AstFactory = IronRuby.Compiler.Ast.AstFactory;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     using BlockCallTarget0 = Func<BlockParam, object, object>;
     using BlockCallTarget1 = Func<BlockParam, object, object, object>;
@@ -41,6 +41,7 @@ namespace IronRuby.Builtins {
     using BlockCallTarget3 = Func<BlockParam, object, object, object, object, object>;
     using BlockCallTarget4 = Func<BlockParam, object, object, object, object, object, object>;
     using BlockCallTargetN = Func<BlockParam, object, object[], object>;
+    using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
 
     public enum ProcKind {
         Block,
@@ -277,6 +278,44 @@ namespace IronRuby.Builtins {
             return new Proc(ProcKind.Block, null, context.EmptyScope,
                 BlockDispatcher.Create(parameterCount, signatureAttributes, null, 0).SetMethod(clrMethod)
             );
+        }
+
+        /// <summary>
+        /// Creates a proc that invokes a method of given name.
+        /// <code>
+        /// Proc.new do |*args| 
+        ///   raise ArgumentException if args.size == 0
+        ///   obj.methodName(args.delete_at(0), args) 
+        /// end
+        /// </code>
+        /// </summary>
+        public static Proc/*!*/ CreateMethodInvoker(RubyScope/*!*/ scope, string/*!*/ methodName) {
+            ContractUtils.RequiresNotNull(scope, "scope");
+
+            var site = CallSite<Func<CallSite, object, object, object, object>>.Create(
+                RubyCallAction.Make(
+                    scope.RubyContext, methodName,
+                    new RubyCallSignature(0, RubyCallFlags.HasScope | RubyCallFlags.HasSplattedArgument)
+                )
+            );
+
+            var block = new BlockCallTargetUnsplatN((blockParam, self, args, unsplat) => {
+                Debug.Assert(args.Length == 0);
+                if (unsplat.Count == 0) {
+                    throw RubyExceptions.CreateArgumentError("no receiver given");
+                }
+                object target = unsplat[0];
+                unsplat.RemoveAt(0);
+                return site.Target(site, scope, target, unsplat);
+            });
+
+            var procDispatcher = new BlockDispatcherUnsplatN(0,
+                BlockDispatcher.MakeAttributes(BlockSignatureAttributes.HasUnsplatParameter, -1),
+                null, 0
+            );
+
+            procDispatcher.SetMethod(block);
+            return new Proc(ProcKind.Proc, scope.SelfObject, scope, procDispatcher);
         }
 
         #endregion

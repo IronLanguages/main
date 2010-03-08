@@ -33,11 +33,11 @@ namespace IronRuby.Builtins {
             private int _count;
             private string _immutableSnapshot;
 
-            public CharArrayContent(char[]/*!*/ data, MutableString owner)
+            internal CharArrayContent(char[]/*!*/ data, MutableString owner)
                 : this(data, data.Length, owner) {
             }
 
-            public CharArrayContent(char[]/*!*/ data, int count, MutableString owner) 
+            internal CharArrayContent(char[]/*!*/ data, int count, MutableString owner) 
                 : base(owner) {
                 Assert.NotNull(data);
                 Debug.Assert(count >= 0 && count <= data.Length);
@@ -126,16 +126,20 @@ namespace IronRuby.Builtins {
                 return (_owner.HasByteCharacters) ? _count : (_count == 0) ? 0 : SwitchToBinary().GetByteCount();
             }
 
-            public override void SwitchToBinaryContent() {
-                SwitchToBinary();
+            public override Content/*!*/ SwitchToBinaryContent() {
+                return SwitchToBinary();
             }
 
-            public override void SwitchToStringContent() {
-                // nop
+            public override Content/*!*/ SwitchToStringContent() {
+                if (_owner._encoding.IsKCoding) {
+                    return SwitchToBinary();
+                } else {
+                    return this;
+                }
             }
 
-            public override void SwitchToMutableContent() {
-                // nop
+            public override Content/*!*/ SwitchToMutableContent() {
+                return this;
             }
 
             public override Content/*!*/ Clone() {
@@ -287,20 +291,29 @@ namespace IronRuby.Builtins {
             //
 
             public override int IndexOf(char c, int start, int count) {
-                return Array.IndexOf(_data, c, start, count);
+                count = Utils.NormalizeCount(_count, start, count);
+                return count > 0 ? Array.IndexOf(_data, c, start, count) : -1;
             }
 
             public override int IndexOf(byte b, int start, int count) {
-                return SwitchToBinary().IndexOf(b, start, count);
+                if (_owner.HasByteCharacters) {
+                    return Utils.IndexOf(_data, _count, b, start, count);
+                } else {
+                    return SwitchToBinary().IndexOf(b, start, count);
+                }
             }
 
             public override int IndexOf(string/*!*/ str, int start, int count) {
-                // TODO: Unfortunately, BCL doesn't provide IndexOf on char[] (see CompareInfo):
-                return ToString().IndexOf(str, start, count, StringComparison.Ordinal);
+                return Utils.IndexOf(_data, _count, str, start, count);
             }
 
             public override int IndexOf(byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().IndexOf(bytes, start, count);
+                if (_owner.HasByteCharacters) {
+                    return Utils.IndexOf(_data, _count, bytes, start, count);
+                } else {
+                    return SwitchToBinary().IndexOf(bytes, start, count);
+                }
+                
             }
 
             public override int IndexIn(Content/*!*/ str, int start, int count) {
@@ -312,20 +325,28 @@ namespace IronRuby.Builtins {
             #region LastIndexOf (read-only)
 
             public override int LastIndexOf(char c, int start, int count) {
+                Utils.NormalizeLastIndexOfIndices(_count, ref start, ref count);
                 return Array.LastIndexOf(_data, c, start, count);
             }
 
             public override int LastIndexOf(byte b, int start, int count) {
-                return SwitchToBinary().LastIndexOf(b, start, count);
+                if (_owner.HasByteCharacters) {
+                    return Utils.LastIndexOf(_data, _count, b, start, count);
+                } else {
+                    return SwitchToBinary().LastIndexOf(b, start, count);
+                }
             }
 
             public override int LastIndexOf(string/*!*/ str, int start, int count) {
-                // TODO: Unfortunately, BCL doesn't provide IndexOf on char[] (see CompareInfo):
-                return ToString().LastIndexOf(str, start, count, StringComparison.Ordinal);
+                return Utils.LastIndexOf(_data, _count, str, start, count);
             }
 
             public override int LastIndexOf(byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().LastIndexOf(bytes, start, count);
+                if (_owner.HasByteCharacters) {
+                    return Utils.LastIndexOf(_data, _count, bytes, start, count);
+                } else {
+                    return SwitchToBinary().LastIndexOf(bytes, start, count);
+                }
             }
 
             public override int LastIndexIn(Content/*!*/ str, int start, int count) {

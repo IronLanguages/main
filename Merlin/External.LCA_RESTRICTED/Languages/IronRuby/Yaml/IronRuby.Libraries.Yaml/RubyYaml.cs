@@ -45,8 +45,17 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private const string _TaggedClasses = "tagged_classes";
 
+        [RubyMethod("add_builtin_type", RubyMethodAttributes.PublicSingleton)]
+        public static object AddBuiltinType(
+            [NotNull]BlockParam/*!*/ block, 
+            RubyModule/*!*/ self, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ typeTag) {
+            // Add a stub implementation to unblock Rails 3
+            Console.WriteLine("WARNING: YAML.add_builtin_type is not implemented");
+            return null;
+        }
+
         // TODO: missing public singleton methods:
-        //add_builtin_type
         //add_private_type
         //add_ruby_type
         //detect_implicit
