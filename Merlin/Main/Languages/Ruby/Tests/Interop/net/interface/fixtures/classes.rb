@@ -65,7 +65,6 @@ csc <<-EOL
   public interface I3<T> { string M(); }
   public interface I4 { string M(int arg); }
 
-//TODO: Write tests for these cases when Explicit interface methods work.
   public class ClassI1_1 : I1 {
     string I1.M() { return "I1.M"; }
   }
@@ -101,9 +100,37 @@ csc <<-EOL
     string I3<T>.M() { return "I3<T>.M"; }
   }
 
+  public class ClassI3ObjI3Int : I3<object>, I3<int> {
+    string I3<object>.M() { return "I3<object>.M";}
+    string I3<int>.M() { return "I3<int>.M";}
+  }
+
   public class ClassI1I4 : I1, I4 {
     string I1.M() { return "I1.M"; }
     string I4.M(int arg) { return "I4.M"; }
+  }
+
+  public class PublicIPublicInterface : IPublicInterface {
+    public IPublicInterface Hello {
+      get { return this; }
+      set {}
+    }
+
+    public void Foo(IPublicInterface f) {
+    }
+
+    public IPublicInterface RetInterface() {
+      return this;
+    }
+
+    public event PublicDelegateType MyEvent;
+    public IPublicInterface FireEvent(PublicEventArgs args) {
+      return MyEvent(this, args);
+    }
+
+    public PublicEventArgs GetEventArgs() {
+      return new PublicEventArgs();
+    }
   }
 
   public class PublicEventArgs : EventArgs { }
@@ -131,6 +158,30 @@ csc <<-EOL
 
       public PublicEventArgs GetEventArgs() {
           return new PrivateEventArgs();
+      }
+  }
+
+  //Public class
+  public class PublicClass : IPublicInterface {
+      public IPublicInterface Hello {
+          get { return this; }
+          set { }
+      }
+
+      public void Foo(IPublicInterface f) {
+      }
+
+      public IPublicInterface RetInterface() {
+          return this;
+      }
+
+      public event PublicDelegateType MyEvent;
+      public IPublicInterface FireEvent(PublicEventArgs args) {
+          return MyEvent(this, args);
+      }
+
+      public PublicEventArgs GetEventArgs() {
+          return new PublicEventArgs();
       }
   }
 

@@ -262,25 +262,6 @@ class UnitTestSetup
       # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
       :test_simple_round_tripping
 
-    disable MultibyteCharsExtrasTest, 
-      # <"Абвг абвг"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a058 @wrapped_string="Абвг абвг">>.
-      :test_capitalize_should_be_unicode_aware,
-      # <"абвгд\000f"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a0f2 @wrapped_string="абвгд\000f">>.
-      :test_downcase_should_be_unicode_aware,
-      # <"こにちわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a1ac @wrapped_string="こ">>.
-      :test_limit_should_work_on_a_multibyte_string,
-      # ArgumentError: invalid utf-8 character
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:652:in `tidy_bytes'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:649:in `tidy_bytes'
-      :test_tidy_bytes_should_tidy_bytes,
-      # <"АБВГД\000F"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a362 @wrapped_string="АБВГД\000F">>.
-      :test_upcase_should_be_unicode_aware
-
     disable MultibyteCharsUTF8BehaviourTest, 
       # <"こにちわ "> expected but was
       # <#<ActiveSupport::Multibyte::Chars:0x1a564
@@ -291,127 +272,15 @@ class UnitTestSetup
       # + #<ActiveSupport::Multibyte::Chars:0x1a564
       # +  @wrapped_string="こ\343 \201\253ちわ">
       :test_center_should_count_charactes_instead_of_bytes,
-      # ActiveSupport::Multibyte::EncodingError: malformed UTF-8 character
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:203:in `index'
-      # chars.rb:483:in `u_unpack'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/multibyte_chars_test.rb:240:in `test_index_should_return_character_offset'
-      :test_index_should_return_character_offset,
-      # <"こに わ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a650 @wrapped_string="こに わ">>.
-      :test_indexed_insert_accepts_fixnums,
-      # <IndexError> exception expected but was
-      # Class: <TypeError>
-      # Message: <"can't convert Regexp into Fixnum">
-      # ---Backtrace---
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:237:in `[]='
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/mu
-      :test_indexed_insert_should_raise_on_index_overflow,
       # <"こにaわ"> expected but was
       # <#<ActiveSupport::Multibyte::Chars:0x1a740 @wrapped_string="こにaわ">>.
       :test_indexed_insert_should_take_character_offsets,
-      # <"こわにちわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a7cc @wrapped_string="こわにちわ">>.
-      :test_insert_should_be_destructive,
-      # RangeError: Non-negative number required.
+      # RangeError: Non-negative number required.
       # Parameter name: length
       # mscorlib:0:in `Copy'
       # mscorlib:0:in `Copy'
       # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\MutableStringOps.cs:1836:in `insert'
-      :test_ljust_should_count_characters_instead_of_bytes,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: ASCII-8BIT and utf-8
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\MutableStringOps.cs:402:in `+'
-      # output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/multibyte_chars_test.rb:353:in `test_lstrip_strips_whitespace_from_the_left_of_the_string'
-      :test_lstrip_strips_whitespace_from_the_left_of_the_string,
-      # <"Òu"> expected but was
-      # <"Òu">.
-      :test_overridden_bang_methods_change_wrapped_string,
-      # <"わちにこ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a98e @wrapped_string="わちにこ">>.
-      :test_reverse_reverses_characters,
-      # ActiveSupport::Multibyte::EncodingError: malformed UTF-8 character
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:217:in `rindex'
-      # chars.rb:483:in `u_unpack'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/multibyte_chars_test.rb:249:in `test_rindex_should_return_character_offset'
-      :test_rindex_should_return_character_offset,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: utf-8 and ASCII-8BIT
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\MutableStringOps.cs:1836:in `insert'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:688:in `justify'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:270:in `rjust'
-      :test_rjust_should_count_characters_instead_of_bytes,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: utf-8 and ASCII-8BIT
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\MutableStringOps.cs:402:in `+'
-      # output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/multibyte_chars_test.rb:359:in `test_rstrip_strips_whitespace_from_the_right_of_the_string'
-      :test_rstrip_strips_whitespace_from_the_right_of_the_string,
-      # RangeError: Count must be positive and count must refer to a location within the string/array/collection.
-      # Parameter name: count
-      # mscorlib:0:in `IndexOf'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\MutableStringOps.cs:1821:in `include?'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:192:in `include?'
-      :test_should_know_if_one_includes_the_other,
-      # <"こわにちわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1ab32 @wrapped_string="こわにちわ">>.
-      :test_should_use_character_offsets_for_insert_offsets,
-      # <"こわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1abe0 @wrapped_string="こわ">>.
-      :test_slice_bang_removes_the_slice_from_the_receiver,
-      # <"にち"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1ac70 @wrapped_string="にち">>.
-      :test_slice_bang_returns_sliced_out_substring,
-      # <"こ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1ad04 @wrapped_string="こ">>.
-      :test_slice_should_take_character_offsets,
-      # <false> is not true.
-      :test_split_should_return_an_array_of_chars_instances,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: ASCII-8BIT and utf-8
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\MutableStringOps.cs:402:in `+'
-      # output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/multibyte_chars_test.rb:365:in `test_strip_strips_whitespace'
-      :test_strip_strips_whitespace,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: utf-8 and ASCII-8BIT
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\MutableStringOps.cs:402:in `+'
-      # output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/multibyte_chars_test.rb:371:in `test_stripping_whitespace_leaves_whitespace_within_the_string_intact'
-      :test_stripping_whitespace_leaves_whitespace_within_the_string_intact
-
-    disable MultibyteUtilsTest, 
-      # ArgumentError: invalid shift_jis character
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:249:in `==='
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/utils.rb:53:in `clean'
-      "test_clean_cleans_invalid_characters_from_Shift-JIS_encoded_strings",
-      # ArgumentError: invalid utf-8 character
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:249:in `==='
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/utils.rb:53:in `clean'
-      "test_clean_cleans_invalid_characters_from_UTF-8_encoded_strings",
-      # Exception raised:
-      # Class: <ArgumentError>
-      # Message: <"invalid utf-8 character">
-      # ---Backtrace---
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/utils.rb:30:in `verify'
-      # d:\vs_langs01_s\Merlin\M
-      "test_verify!_doesn't_raise_an_exception_when_the_encoding_is_valid",
-      # <ActiveSupport::Multibyte::EncodingError> exception expected but was
-      # Class: <ArgumentError>
-      # Message: <"invalid utf-8 character">
-      # ---Backtrace---
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multiby
-      "test_verify!_raises_an_exception_when_it_finds_an_invalid_character",
-      # ArgumentError: invalid shift_jis character
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/utils.rb:30:in `verify'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\Enumerable.cs:54:in `<TrueForItems>b__0'
-      "test_verify_verifies_Shift-JIS_strings_are_properly_encoded",
-      # ArgumentError: invalid utf-8 character
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\RubyRegexOps.cs:222:in `match'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/utils.rb:30:in `verify'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\Enumerable.cs:54:in `<TrueForItems>b__0'
-      "test_verify_verifies_UTF-8_strings_are_properly_encoded"
-
+      :test_ljust_should_count_characters_instead_of_bytes
     disable Notifications::InstrumentationTest,
       # <2> expected but was
       # <1>.
@@ -438,35 +307,6 @@ class UnitTestSetup
       # d:\vs_langs01_s\ndp\fx\src\Core\Microsoft\Scripting\Actions\CallSiteBinder.cs:121:in `BindCore'
       # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRIC
       :test_sprintf_lack_argument
-
-    disable TestJSONDecoding, 
-      # Exception raised:
-      # Class: <StandardError>
-      # Message: <"Invalid JSON string">
-      # ---Backtrace---
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/json/backends/yaml.rb:17:in `decode'
-      # d:\vs_langs01_s\Merlin\Main\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:812:in `__send__'
-      # d:1:in `decode'
-      # decoding_
-      "test_json_decodes_{\"matzue\":_\"\346\235\276\346\261\237\",_\"asakusa\":_\"\346\265\205\350\215\211\"}_with_the_Yaml_backend",
-      # Exception raised:
-      # Class: <JSON::ParserError>
-      # Message: <"expected ',' or '}' in object at 'sakusa\": \"µ╡àΦìë\"}'!">
-      # ---Backtrace---
-      # :0:in `lambda_method'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.p368/lib/ruby/gems/1.8/gems/json_pure-1.1.7/lib/json/pure/parser.rb:16707566:in`parse_object'
-      # :0:in `lambda_method'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/R
-      "test_json_decodes_{\"matzue\":_\"\346\235\276\346\261\237\",_\"asakusa\"_\"\346\265\205\350\215\211\"}_with_the_JSONGem_backend",
-      # Exception raised:
-      # Class: <JSON::ParserError>
-      # Message: <"expected ',' or '}' in object at 'sakusa\": \"µ╡àΦìë\"}'!">
-      # ---Backtrace---
-      # :0:in `lambda_method'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/json_pure-1.1.7/lib/json/pure/parser.rb:16707566:in`parse_object'
-      # :0:in `lambda_method'
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/R
-      "test_json_decodes_{\"matzue\":_\"\346\235\276\346\261\237\",_\"asakusa\":_\"\346\265\205\350\215\211\"}_with_the_JSONGem_backend"
 
     disable TimeExtCalculationsTest, 
       # st-24.hours=>dt.

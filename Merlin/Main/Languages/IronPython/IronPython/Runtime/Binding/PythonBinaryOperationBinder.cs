@@ -271,7 +271,7 @@ namespace IronPython.Runtime.Binding {
                 } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
                     return (T)(object)new Func<CallSite, string, object, object>(StringAdd);
                 }
-            } else if(t == typeof(List)) {
+            } else if (t == typeof(List)) {
                 if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                     if (Operation == ExpressionType.Add) {
                         return (T)(object)new Func<CallSite, object, object, object>(ListAdd);
@@ -279,12 +279,12 @@ namespace IronPython.Runtime.Binding {
                         return (T)(object)new Func<CallSite, object, object, object>(ListAddAssign);
                     }
                 }
-            } else if(t== typeof(PythonTuple)) {
+            } else if (t == typeof(PythonTuple)) {
                 if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                     return (T)(object)new Func<CallSite, object, object, object>(TupleAdd);
                 }
 
-            }else if (!t.IsEnum) {                
+            } else if (!t.IsEnum) {                
                 switch (Type.GetTypeCode(t)) {
                     case TypeCode.Double:
                         if(typeof(T) == typeof(Func<CallSite, object, object, object>)) {
@@ -359,14 +359,12 @@ namespace IronPython.Runtime.Binding {
                 } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
                     return (T)(object)new Func<CallSite, string, object, object>(StringNotEqual);
                 }
-            }else if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+            } else if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                 switch (Type.GetTypeCode(t)) {
                     case TypeCode.Double:
                         return (T)(object)new Func<CallSite, object, object, object>(DoubleNotEqual);
                     case TypeCode.Int32:
                         return (T)(object)new Func<CallSite, object, object, object>(IntNotEqual);
-                    case TypeCode.String:
-                        return (T)(object)new Func<CallSite, object, object, object>(StringNotEqual);
                 }
             }
             return base.BindDelegate(site, args);

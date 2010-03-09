@@ -27,16 +27,27 @@ namespace IronPythonTest {
             return new BigInteger(sign, data);
 #else
             ContractUtils.RequiresNotNull(data, "data");
-            ContractUtils.Requires(sign != 0, "sign");
+            ContractUtils.Requires(sign >= -1 && sign <= +1, "sign");
+            int length = data.Length - 1;
+            while (length >= 0 && data[length] == 0) length--;
+            length++;
+            ContractUtils.Requires(length == 0 || sign != 0, "sign");
 
-            byte[] dataBytes = new byte[data.Length * 4 + 1];
-            for (int i = 0; i < data.Length; i++) {
-                uint datum = data[i];
-                for (int j = 0; j < 4; j++) {
-                    dataBytes[i * 4 + j] = (byte)(datum & 0xff);
-                    datum <<= 8;
-                }
+            if (length == 0) {
+                return BigInteger.Zero;
             }
+
+            bool highest = (data[length - 1] & 0x80000000) != 0;
+            byte[] dataBytes = new byte[length * 4 + (highest ? 1 : 0)];
+            int j = 0;
+            for (int i = 0; i < length; i++) {
+                ulong w = data[i];
+                dataBytes[j++] = (byte)(w & 0xff);
+                dataBytes[j++] = (byte)((w >> 8) & 0xff);
+                dataBytes[j++] = (byte)((w >> 16) & 0xff);
+                dataBytes[j++] = (byte)((w >> 24) & 0xff);
+            }
+
             BigInteger res = new BigInteger(dataBytes);
             return sign < 0 ? -res : res;
 #endif

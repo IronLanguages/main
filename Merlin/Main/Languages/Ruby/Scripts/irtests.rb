@@ -200,8 +200,8 @@ end
 if $0 == __FILE__
   iroptions = {}
 
-  parser = OptionParser.new do |opts|
-    opts.banner = "Usage: irtests.rb [options]"
+  ARGV.options do |opts|
+    opts.program_name = "irtests.rb"
 
     opts.separator ""
 
@@ -234,8 +234,8 @@ if $0 == __FILE__
     end
   end
   
-  args = parser.parse!
-  abort "Extra arguments: #{args}" if not args.empty?
+  ARGV.order!
+  abort "Extra arguments: #{ARGV}" if not ARGV.empty?
 
   IRTest.new(iroptions).run
 end

@@ -8,6 +8,8 @@ rb      =cd /d %MERLIN_ROOT%\Languages\Ruby
 rt      =cd /d %MERLIN_ROOT%\Runtime
 r       =cd /d %MERLIN_ROOT%
 mspc    =cd /d %MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec
+ipl     =cd /d %MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronPython\26\Lib
+cpl     =cd /d %MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\CPython\26\Lib
 
 irk     =cd /d %MERLIN_ROOT%\Hosts\IronRuby.Rack
 rbs     =cd /d %MERLIN_ROOT%\Languages\Ruby\Samples

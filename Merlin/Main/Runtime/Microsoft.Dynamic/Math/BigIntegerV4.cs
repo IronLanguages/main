@@ -198,7 +198,7 @@ namespace Microsoft.Scripting.Math {
             }
         }
         
-        [Obsolete("Deprecated - use a byte array"), CLSCompliant(false)]
+        [CLSCompliant(false)]
         public BigInteger(int sign, uint[] data) {
             ContractUtils.RequiresNotNull(data, "data");
             ContractUtils.Requires(sign >= -1 && sign <= +1, "sign");
@@ -228,6 +228,10 @@ namespace Microsoft.Scripting.Math {
 
         [CLSCompliant(false)]
         public uint[] GetWords() {
+            if (IsZero()) {
+                return new uint[] { 0 };
+            }
+
             int hi;
             byte[] bytes;
             GetHighestByte(out hi, out bytes);

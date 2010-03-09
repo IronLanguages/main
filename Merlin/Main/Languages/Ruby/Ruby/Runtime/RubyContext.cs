@@ -88,8 +88,8 @@ namespace IronRuby.Runtime {
         }
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.9.4.0";
-        public static readonly Version IronRubyVersion = new Version(0, 9, 4, 0);
+        public const string/*!*/ IronRubyVersionString = "0.9.5.0";
+        public static readonly Version IronRubyVersion = new Version(0, 9, 5, 0);
         internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";
@@ -2180,7 +2180,7 @@ namespace IronRuby.Runtime {
 
         public MutableString TryEncodePath(string/*!*/ path) {
             try {
-                return MutableString.Create(path, GetPathEncoding()).CheckEncoding();
+                return MutableString.Create(path, GetPathEncoding()).CheckEncodingInternal();
             } catch (EncoderFallbackException) {
                 return null;
             }
@@ -2188,7 +2188,7 @@ namespace IronRuby.Runtime {
 
         internal static MutableString/*!*/ EncodePath(string/*!*/ path, RubyEncoding/*!*/ encoding) {
             try {
-                return MutableString.Create(path, encoding).CheckEncoding();
+                return MutableString.Create(path, encoding).CheckEncodingInternal();
             } catch (EncoderFallbackException e) {
                 throw RubyExceptions.CreateEINVAL(
                     e,

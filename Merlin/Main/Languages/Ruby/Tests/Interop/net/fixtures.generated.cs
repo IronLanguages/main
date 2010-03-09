@@ -99,7 +99,7 @@ public partial class Klass {
     public interface I2 { int g(); }
   }
 #line 1 "./class/fixtures/classes.rb"
-#line 5 "./class/fixtures/classes.rb"
+#line 4 "./class/fixtures/classes.rb"
 public class EmptyClass {}
   public abstract class EmptyAbstractClass {}
   public abstract class AbstractClass {public abstract int m();}
@@ -164,6 +164,25 @@ public class EmptyClass {}
 
   public abstract class AbstractHasAnEvent : IHaveAnEvent {
     public abstract event EventHandler MyEvent;
+  }
+
+  public class ExplicitIInterface : IInterface {
+    public int Tracker {get; set;}
+
+    public ExplicitIInterface() {
+      Tracker = 0;
+    }
+
+    public void Reset() {
+      Tracker = 0;
+    }
+    void IInterface.m() {
+      Tracker = 2;
+    }
+
+    public void m() {
+      Tracker = 1;
+    }
   }
 #line 8 "./delegate/fixtures/classes.rb"
 #line 13 "./delegate/fixtures/classes.rb"
@@ -354,7 +373,6 @@ public interface IDoFoo {
   public interface I3<T> { string M(); }
   public interface I4 { string M(int arg); }
 
-//TODO: Write tests for these cases when Explicit interface methods work.
   public class ClassI1_1 : I1 {
     string I1.M() { return "I1.M"; }
   }
@@ -390,9 +408,37 @@ public interface IDoFoo {
     string I3<T>.M() { return "I3<T>.M"; }
   }
 
+  public class ClassI3ObjI3Int : I3<object>, I3<int> {
+    string I3<object>.M() { return "I3<object>.M";}
+    string I3<int>.M() { return "I3<int>.M";}
+  }
+
   public class ClassI1I4 : I1, I4 {
     string I1.M() { return "I1.M"; }
     string I4.M(int arg) { return "I4.M"; }
+  }
+
+  public class PublicIPublicInterface : IPublicInterface {
+    public IPublicInterface Hello {
+      get { return this; }
+      set {}
+    }
+
+    public void Foo(IPublicInterface f) {
+    }
+
+    public IPublicInterface RetInterface() {
+      return this;
+    }
+
+    public event PublicDelegateType MyEvent;
+    public IPublicInterface FireEvent(PublicEventArgs args) {
+      return MyEvent(this, args);
+    }
+
+    public PublicEventArgs GetEventArgs() {
+      return new PublicEventArgs();
+    }
   }
 
   public class PublicEventArgs : EventArgs { }
@@ -420,6 +466,30 @@ public interface IDoFoo {
 
       public PublicEventArgs GetEventArgs() {
           return new PrivateEventArgs();
+      }
+  }
+
+  //Public class
+  public class PublicClass : IPublicInterface {
+      public IPublicInterface Hello {
+          get { return this; }
+          set { }
+      }
+
+      public void Foo(IPublicInterface f) {
+      }
+
+      public IPublicInterface RetInterface() {
+          return this;
+      }
+
+      public event PublicDelegateType MyEvent;
+      public IPublicInterface FireEvent(PublicEventArgs args) {
+          return MyEvent(this, args);
+      }
+
+      public PublicEventArgs GetEventArgs() {
+          return new PublicEventArgs();
       }
   }
 
@@ -1303,6 +1373,10 @@ public class GenericTypeInference {
         return typeof(T).ToString();
     }
 
+    public static string TRefx<T>(ref T x) {
+        x = default(T);
+        return typeof(T).ToString();
+    }
     public static string TxClass<T>(T x) 
         where T : class {
         return typeof(T).ToString();
@@ -1487,6 +1561,11 @@ public class GenericTypeInferenceInstance {
         return typeof(T).ToString();
     }
 
+    public string TRefx<T>(ref T x) {
+        x = default(T);
+        return typeof(T).ToString();
+    }
+
     public string TxClass<T>(T x) 
         where T : class {
         return typeof(T).ToString();
@@ -1648,6 +1727,18 @@ namespace CLRNew {
       }
     }
   }
+  //TODO: This will be used once nil.as(C) is supported
+  public partial class Klass {
+    public string Tracker {get;set;}
+    public bool NullChecker(Klass arg1, ArrayList arg2) {
+      Tracker = "Klass ArrayList";
+      return arg1 == null && arg2 == null;
+    }
+    public bool NullChecker(Type arg1, string arg2) {
+      Tracker = "type string";
+      return arg1 == null && arg2 == null;
+    }
+  }
   public class PublicNameHolder {
     public string a(){return "a";}
     public string A(){return "A";}
@@ -1667,6 +1758,7 @@ namespace CLRNew {
     public string MyIdYA(){return "MyIdYA";}
     public string NaN(){return "NaN";}
     public string NaNa(){return "NaNa";}
+    public string NoOfScenarios(){return "NoOfScenarios";}
     
   }
 
@@ -1689,6 +1781,7 @@ namespace CLRNew {
     public static string MyIdYA(){return "MyIdYA";}
     public static string NaN(){return "NaN";}
     public static string NaNa(){return "NaNa";}
+    public static string NoOfScenarios(){return "NoOfScenarios";}
     
   }
 

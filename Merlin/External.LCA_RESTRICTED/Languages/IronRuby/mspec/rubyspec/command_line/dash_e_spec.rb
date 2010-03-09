@@ -28,5 +28,7 @@ describe "The -e command line option" do
     ruby_exe(nil, :args => %Q{-eputs(ARGV);puts($0) 1 2 3 4}).chomp.should == "1\n2\n3\n4\n-e"
   end
 
-  #needs to test return => LocalJumpError
+  it "throws LocalJumpError when return is called" do
+    ruby_exe("begin;return;rescue LocalJumpError;puts 'pass';end").chomp.should == "pass"
+  end
 end

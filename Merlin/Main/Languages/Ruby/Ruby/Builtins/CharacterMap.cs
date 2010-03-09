@@ -99,7 +99,7 @@ namespace IronRuby.Builtins {
             Debug.Assert(!from.IsEmpty);
 
             int fromLength = from.GetCharCount();
-            bool complemental = from.GetChar(0) == '^' && fromLength > 1;
+            bool complemental = from.StartsWith('^') && fromLength > 1;
 
             // TODO: kcodings
             // TODO: surrogates

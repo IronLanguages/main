@@ -1,8 +1,4 @@
 class Object
-  def metaclass
-    class << self; self; end
-  end
-
   def metaclass_eval(&block)
     metaclass.class_eval(&block)
   end
@@ -38,6 +34,24 @@ end
 class String
   def to_snake_case
     gsub(/(.)([A-Z])/) {|el| "#{$1 == "_" ? "" : $1}_#{$2}"}.downcase
+  end
+end
+
+module SpecHelper
+  def self.create_engine(load_paths = [])
+    load_paths.unshift(File.dirname(__FILE__))
+    e = IronRuby.create_engine    
+    load_paths.each do |path|
+      path.gsub!("\\","/")
+      e.execute("$: << '#{path}'")
+    end
+    e
+  end
+
+  def self.create_scoped_engine(load_paths = [])
+    e = create_engine(load_paths)
+    s = e.create_scope
+    return e,s
   end
 end
 

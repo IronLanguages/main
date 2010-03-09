@@ -1,7 +1,6 @@
 csc <<-EOL
 using System.Runtime.InteropServices;
 EOL
-
 csc <<-EOL
   public class EmptyClass {}
   public abstract class EmptyAbstractClass {}
@@ -67,6 +66,25 @@ csc <<-EOL
 
   public abstract class AbstractHasAnEvent : IHaveAnEvent {
     public abstract event EventHandler MyEvent;
+  }
+
+  public class ExplicitIInterface : IInterface {
+    public int Tracker {get; set;}
+
+    public ExplicitIInterface() {
+      Tracker = 0;
+    }
+
+    public void Reset() {
+      Tracker = 0;
+    }
+    void IInterface.m() {
+      Tracker = 2;
+    }
+
+    public void m() {
+      Tracker = 1;
+    }
   }
 EOL
 

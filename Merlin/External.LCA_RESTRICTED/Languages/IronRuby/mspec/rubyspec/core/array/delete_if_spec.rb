@@ -8,7 +8,6 @@ describe "Array#delete_if" do
   end
 
   it "removes each element for which block returns true" do
-    @a = [ "a", "b", "c" ]
     @a.delete_if { |x| x >= "b" }
     @a.should == ["a"]
   end
@@ -55,5 +54,12 @@ describe "Array#delete_if" do
       @a.delete_if{ true }
       @a.untrusted?.should be_true
     end
+  end
+  
+  #see http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=3314
+  it "doesn't cache deletes incorrectly" do
+    @a.delete_if {|x| x == "b"}
+    @a.should == ["a","c"]
+    Array.new(@a).should == ["a","c"]
   end
 end

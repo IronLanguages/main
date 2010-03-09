@@ -300,4 +300,31 @@ describe "String#split with Regexp" do
       end
     end
   end
+  
+  ruby_version_is ""..."1.9" do 
+    it "splits on multi-byte character boundary" do
+      old_kcode = $KCODE
+      begin
+        utf8_sigma = "\xce\xa3"
+        utf8_invalid = "\xff"
+        
+        str = "#{utf8_sigma}abc#{utf8_sigma}#{utf8_invalid}#{utf8_sigma}\xce"
+        characters = [utf8_sigma, 'a', 'b', 'c', utf8_sigma, utf8_invalid, utf8_sigma, "\xce"]
+        bytes = ["\xce", "\xa3", "a", "b", "c", "\xce", "\xa3", "\xff", "\xce", "\xa3", "\xce"]
+        
+        $KCODE = 'U'
+      
+        str.split("") == characters        
+        str.split(//n) == bytes
+        
+        $KCODE = ""
+        
+        str.split("").should == bytes
+        str.split(//u) == characters
+        
+      ensure
+        $KCODE = old_kcode
+      end
+    end
+  end
 end

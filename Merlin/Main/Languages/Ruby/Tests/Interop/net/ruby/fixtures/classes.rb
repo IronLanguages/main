@@ -21,9 +21,21 @@ csc <<-EOL
       }
     }
   }
+  //TODO: This will be used once nil.as(C) is supported
+  public partial class Klass {
+    public string Tracker {get;set;}
+    public bool NullChecker(Klass arg1, ArrayList arg2) {
+      Tracker = "Klass ArrayList";
+      return arg1 == null && arg2 == null;
+    }
+    public bool NullChecker(Type arg1, string arg2) {
+      Tracker = "type string";
+      return arg1 == null && arg2 == null;
+    }
+  }
   public class PublicNameHolder {
     #{
-      %w{a A Unique snake_case CamelCase Mixed_Snake_case CAPITAL PartialCapitalID PartialCapitalId __LeadingCamelCase __leading_snake_case foNBar fNNBar NNNBar MyUIApp MyIdYA NaN NaNa}.inject("") do |res, name|
+      %w{a A Unique snake_case CamelCase Mixed_Snake_case CAPITAL PartialCapitalID PartialCapitalId __LeadingCamelCase __leading_snake_case foNBar fNNBar NNNBar MyUIApp MyIdYA NaN NaNa NoOfScenarios}.inject("") do |res, name|
         res << Helper.define_clr_method(name)
       end
     }
@@ -31,7 +43,7 @@ csc <<-EOL
 
   public class StaticNameHolder {
     #{
-      %w{a A Unique snake_case CamelCase Mixed_Snake_case CAPITAL PartialCapitalID PartialCapitalId __LeadingCamelCase __leading_snake_case foNBar fNNBar NNNBar MyUIApp MyIdYA NaN NaNa}.inject("") do |res, name|
+      %w{a A Unique snake_case CamelCase Mixed_Snake_case CAPITAL PartialCapitalID PartialCapitalId __LeadingCamelCase __leading_snake_case foNBar fNNBar NNNBar MyUIApp MyIdYA NaN NaNa NoOfScenarios}.inject("") do |res, name|
         res << Helper.define_static_clr_method(name)
       end
     }

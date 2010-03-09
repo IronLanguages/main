@@ -90,14 +90,6 @@ class UnitTestSetup
     sanity_size(85)
   end
 
-  # Work-around for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=3913
-  String.class_eval do
-    alias :old_tr :tr
-    def tr(*args)
-      old_tr(*args).dup # Create a new string which will have the correct hashcode
-    end
-  end
-
   def disable_critical_failures
     # If this test executes, all subsequent tests start failing during setup with an exception
     # saying "The server failed to resume the transaction", presumably because

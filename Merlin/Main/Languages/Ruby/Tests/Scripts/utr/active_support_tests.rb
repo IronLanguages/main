@@ -240,15 +240,6 @@ class UnitTestSetup
       # IndexError: Index was outside the bounds of the array.
       :test_center_should_count_charactes_instead_of_bytes,
       # ActiveSupport::Multibyte::EncodingError: malformed UTF-8 character
-      :test_index_should_return_character_offset,
-      # <IndexError> exception expected but was
-      # Class: <TypeError>
-      # Message: <"can't convert Regexp into Fixnum">
-      # ---Backtrace---
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-2.3.5/lib/active_support/multibyte/chars.rb:235:in `[]='
-      # d:/vs_langs01_s/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/ActiveSupport/test/m
-      :test_indexed_insert_should_raise_on_index_overflow,
-      # IndexError: Index was outside the bounds of the array.
       :test_indexed_insert_should_take_character_offsets,
       # RangeError: Non-negative number required.
 

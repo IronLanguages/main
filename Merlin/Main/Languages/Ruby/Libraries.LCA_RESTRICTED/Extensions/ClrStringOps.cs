@@ -326,22 +326,22 @@ namespace IronRuby.Builtins {
         // TODO: return an array of CLR strings, not mutable strings
 
         [RubyMethod("split")]
-        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, string/*!*/ self) {
-            return MutableStringOps.Split(stringCast, scope, MutableString.Create(self, RubyEncoding.UTF8), (MutableString)null, 0);
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, string/*!*/ self) {
+            return MutableStringOps.Split(stringCast, MutableString.Create(self, RubyEncoding.UTF8), (MutableString)null, 0);
         }
 
         [RubyMethod("split")]
-        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, string/*!*/ self,
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, string/*!*/ self,
             [DefaultProtocol]string separator, [DefaultProtocol, Optional]int limit) {
 
-            return MutableStringOps.Split(stringCast, scope, MutableString.Create(self, RubyEncoding.UTF8), MutableString.Create(separator, RubyEncoding.UTF8), limit);
+            return MutableStringOps.Split(stringCast, MutableString.Create(self, RubyEncoding.UTF8), MutableString.Create(separator, RubyEncoding.UTF8), limit);
         }
 
         [RubyMethod("split")]
-        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, string/*!*/ self, 
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, string/*!*/ self, 
             [NotNull]RubyRegex/*!*/ regexp, [DefaultProtocol, Optional]int limit) {
 
-            return MutableStringOps.Split(stringCast, scope, MutableString.Create(self, RubyEncoding.UTF8), regexp, limit);
+            return MutableStringOps.Split(stringCast, MutableString.Create(self, RubyEncoding.UTF8), regexp, limit);
         }
 
         #endregion

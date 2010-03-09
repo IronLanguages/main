@@ -191,9 +191,9 @@ namespace IronRuby.Builtins {
                 }
 
                 bool negate = false;
-                if (_range.GetChar(0) == '^') {
+                if (_range.StartsWith('^')) {
                     // Special case of ^
-                    if (_range.Length == 1) {
+                    if (_range.GetLength() == 1) {
                         result.Append('^');
                         return result;
                     }
@@ -275,9 +275,9 @@ namespace IronRuby.Builtins {
                 }
 
                 bool negate = false;
-                if (_range.GetChar(0) == '^') {
+                if (_range.StartsWith('^')) {
                     // Special case of ^
-                    if (_range.Length == 1) {
+                    if (_range.GetLength() == 1) {
                         result.Set('^', true);
                         return result;
                     }
@@ -755,14 +755,22 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("[]=")]
         public static MutableString ReplaceSubstring(RubyContext/*!*/ context, MutableString/*!*/ self,
-            [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol, NotNull]MutableString/*!*/ value) {
+            [NotNull]RubyRegex/*!*/ regex, [Optional, DefaultProtocol]int groupIndex, [DefaultProtocol, NotNull]MutableString/*!*/ value) {
 
             MatchData match = regex.Match(context.KCode, self);
             if (match == null) {
                 throw RubyExceptions.CreateIndexError("regexp not matched");
             }
 
-            return ReplaceSubstring(self, match.Index, match.Length, value);
+            if (groupIndex <= -match.GroupCount || groupIndex >= match.GroupCount) {
+                throw RubyExceptions.CreateIndexError("index {0} out of regexp", groupIndex);
+            }
+
+            if (groupIndex < 0) {
+                groupIndex += match.GroupCount;
+            }
+
+            return ReplaceSubstring(self, match.GetGroupStart(groupIndex), match.GetGroupLength(groupIndex), value);
         }
 
         #endregion
@@ -993,14 +1001,14 @@ namespace IronRuby.Builtins {
             // Remove single trailing CR/LFs
             MutableString result = self.Clone();
             int length = result.GetCharCount();
-            int separatorLength = separator.GetCharCount();
-            if (separatorLength == 1 && separator.GetChar(0) == '\n') {
+            if (separator.StartsWith('\n') && separator.GetLength() == 1) {
                 if (length > 1 && result.GetChar(length - 2) == '\r' && result.GetChar(length - 1) == '\n') {
                     result.Remove(length - 2, 2);
                 } else if (length > 0 && (self.GetChar(length - 1) == '\n' || result.GetChar(length - 1) == '\r')) {
                     result.Remove(length - 1, 1);
                 }
             } else if (result.EndsWith(separator)) {
+                int separatorLength = separator.GetCharCount();
                 result.Remove(length - separatorLength, separatorLength);
             }
 
@@ -1803,6 +1811,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("include?")]
         public static bool Include(MutableString/*!*/ str, [DefaultProtocol, NotNull]MutableString/*!*/ subString) {
+            str.RequireCompatibleEncoding(subString);
+            str.PrepareForCharacterRead();
+            subString.PrepareForCharacterRead();
             return str.IndexOf(subString) != -1;
         }
 
@@ -2016,81 +2027,118 @@ namespace IronRuby.Builtins {
             }
             return result;
         }
+        
+        private static char[] _WhiteSpaceSeparators = new char[] { ' ', '\n', '\r', '\t', '\v' };
 
-        // The IndexOf and InternalSplit helper methods are necessary because Ruby semantics of these methods
-        // differ from .NET semantics. IndexOf("") returns the next character, which is reflected in the 
-        // InternalSplit method which also flows taint
+        private static RubyArray/*!*/ WhitespaceSplit(MutableString/*!*/ str, int limit) {
+            int maxComponents = limit <= 0 ? Int32.MaxValue : limit;
 
-        private static int IndexOf(MutableString/*!*/ str, MutableString/*!*/ separator, int index) {
-            if (separator.Length > 0) {
-                return str.IndexOf(separator, index);
-            } else {
-                return index + 1;
-            }
-        }
+            MutableString[] elements = str.Split(_WhiteSpaceSeparators, maxComponents, StringSplitOptions.RemoveEmptyEntries);
 
-        private static RubyArray/*!*/ WhitespaceSplit(MutableString/*!*/ self, int maxComponents) {
-            char[] separators = new char[] { ' ', '\n', '\r', '\t', '\v' };
-            MutableString[] elements = self.Split(separators, (maxComponents < 0) ? Int32.MaxValue : maxComponents, StringSplitOptions.RemoveEmptyEntries);
-
-            RubyArray result = new RubyArray(); 
+            RubyArray result = new RubyArray(elements.Length + (limit < 0 ? 1 : 0)); 
             foreach (MutableString element in elements) {
-                result.Add(self.CreateInstance().Append(element).TaintBy(self));
+                result.Add(str.CreateInstance().Append(element).TaintBy(str));
             }
 
             // Strange behavior to match Ruby semantics
-            if (maxComponents < 0) {
-                result.Add(self.CreateInstance().TaintBy(self));
+            if (limit < 0) {
+                result.Add(str.CreateInstance().TaintBy(str));
             }
 
             return result;
         }
 
-        private static RubyArray/*!*/ InternalSplit(MutableString/*!*/ self, MutableString separator, StringSplitOptions options, int maxComponents) {
-            if (separator == null || separator.Length == 1 && separator.GetChar(0) == ' ') {
-                return WhitespaceSplit(self, maxComponents);
+        private static RubyArray/*!*/ InternalSplit(MutableString/*!*/ str, MutableString separator, int limit, RubyEncoding kcoding) {
+            RubyArray result;
+            if (limit == 1) {
+                // returns an array with original string
+                result = new RubyArray(1);
+                result.Add(str);
+                return result;
             }
 
-            if (maxComponents <= 0) {
-                maxComponents = Int32.MaxValue;
+            if (separator == null || separator.StartsWith(' ') && separator.GetLength() == 1) {
+                return WhitespaceSplit(str, limit);
             }
 
-            RubyArray result = new RubyArray(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);
-            bool keepEmpty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
+            if (separator.IsEmpty) {
+                return CharacterSplit(str, limit, kcoding);
+            }
 
-            int selfLength = self.Length;
+            if (limit <= 0) {
+                result = new RubyArray();
+            } else {
+                result = new RubyArray(limit + 1);
+            }
+
+            // TODO: invalid characters, k-coding?
+            str.PrepareForCharacterRead();
+            separator.PrepareForCharacterRead();
+            str.RequireCompatibleEncoding(separator);
+
+            int selfLength = str.GetCharCount();
+            int separatorLength = separator.GetCharCount();
             int i = 0;
             int next;
-            while (maxComponents > 1 && i < selfLength && (next = IndexOf(self, separator, i)) != -1) {
-                if (next > i || keepEmpty) {
-                    result.Add(self.CreateInstance().Append(self, i, next - i).TaintBy(self));
-                    maxComponents--;
-                }
-
-                i = next + separator.Length;
+            while ((limit <= 0 || result.Count < limit - 1) && (next = str.IndexOf(separator, i)) != -1) {
+                result.Add(str.CreateInstance().Append(str, i, next - i).TaintBy(str));
+                i = next + separatorLength;
             }
 
-            if (i < selfLength || keepEmpty) {
-                result.Add(self.CreateInstance().Append(self, i, selfLength - i).TaintBy(self));
+            result.Add(str.CreateInstance().Append(str, i).TaintBy(str));
+
+            if (limit == 0) {
+                RemoveTrailingEmptyItems(result);
             }
 
             return result;
         }
 
-        [RubyMethod("split")]
-        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, MutableString/*!*/ self) {
-            return Split(stringCast, scope, self, (MutableString)null, 0);
+        private static void RemoveTrailingEmptyItems(RubyArray/*!*/ array) {
+            while (array.Count != 0 && ((MutableString)array[array.Count - 1]).IsEmpty) {
+                array.RemoveAt(array.Count - 1);
+            }
+        }
+
+        private static RubyArray/*!*/ CharacterSplit(MutableString/*!*/ str, int limit, RubyEncoding kcoding) {
+            if (kcoding != null) {
+                str = str.ChangeEncoding(kcoding, false);
+            }
+            
+            RubyArray result = new RubyArray();
+            
+            var charEnum = str.GetCharacters();
+            int i = 0;
+            while (limit <= 0 || result.Count < limit - 1) {
+                if (!charEnum.MoveNext()) {
+                    break;
+                }
+
+                result.Add(str.CreateInstance().Append(charEnum.Current).TaintBy(str));
+                i++;
+            }
+
+            if (charEnum.HasMore || limit < 0) {
+                result.Add(str.CreateInstance().AppendRemaining(charEnum).TaintBy(str));
+            }
+            
+            return result;
         }
 
         [RubyMethod("split")]
-        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, MutableString/*!*/ self, 
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, MutableString/*!*/ self) {
+            return Split(stringCast, self, (MutableString)null, 0);
+        }
+
+        [RubyMethod("split")]
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, MutableString/*!*/ self, 
             [DefaultProtocol]MutableString separator, [DefaultProtocol, Optional]int limit) {
 
             if (separator == null) {
-                object defaultSeparator = scope.RubyContext.StringSeparator;
+                object defaultSeparator = stringCast.Context.StringSeparator;
                 RubyRegex regexSeparator = defaultSeparator as RubyRegex;
                 if (regexSeparator != null) {
-                    return Split(stringCast, scope, self, regexSeparator, limit);
+                    return Split(stringCast, self, regexSeparator, limit);
                 }
                 
                 if (defaultSeparator != null) {
@@ -2104,29 +2152,17 @@ namespace IronRuby.Builtins {
                 return new RubyArray();
             }
 
-            if (limit == 0) {
-                // suppress trailing empty fields
-                RubyArray array = InternalSplit(self, separator, StringSplitOptions.None, Int32.MaxValue);
-                while (array.Count != 0 && ((MutableString)array[array.Count - 1]).Length == 0) {
-                    array.RemoveAt(array.Count - 1);
-                }
-                return array;
-            } else if (limit == 1) {
-                // returns an array with original string
-                RubyArray result = new RubyArray(1);
-                result.Add(self);
-                return result;
-            } else {
-                return InternalSplit(self, separator, StringSplitOptions.None, limit);
-            }
+            return InternalSplit(self, separator, limit, stringCast.Context.KCode);            
         }
 
         [RubyMethod("split")]
-        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, MutableString/*!*/ self, 
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, MutableString/*!*/ self, 
             [NotNull]RubyRegex/*!*/ regexp, [DefaultProtocol, Optional]int limit) {
             
             if (regexp.IsEmpty) {
-                return Split(stringCast, scope, self, MutableString.FrozenEmpty, limit);
+                return InternalSplit(self, MutableString.FrozenEmpty, limit, 
+                    RubyEncoding.GetRegexEncoding(regexp.Options) ?? stringCast.Context.KCode
+                );
             }
 
             if (self.IsEmpty) {

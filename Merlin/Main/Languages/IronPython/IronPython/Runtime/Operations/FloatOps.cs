@@ -491,32 +491,24 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static bool LessThan(double x, double y) {
-            if (Double.IsInfinity(x) && Double.IsNaN(y)) {
-                return false;
-            } else if (Double.IsNaN(x) && Double.IsInfinity(y)) {
-                return false;
-            }
-
-            return x < y;
+            return x < y
+                && !(Double.IsInfinity(x) && Double.IsNaN(y))
+                && !(Double.IsNaN(x) && Double.IsInfinity(y));
         }
+
         [SpecialName]
         public static bool LessThanOrEqual(double x, double y) {
             if (x == y) {
                 return !Double.IsNaN(x);
             }
-
             return x < y;
         }
 
         [SpecialName]
         public static bool GreaterThan(double x, double y) {
-            if (Double.IsInfinity(x) && Double.IsNaN(y)) {
-                return false;
-            } else if (Double.IsNaN(x) && Double.IsInfinity(y)) {
-                return false;
-            }
-
-            return x > y;
+            return x > y
+                && !(Double.IsInfinity(x) && Double.IsNaN(y))
+                && !(Double.IsNaN(x) && Double.IsInfinity(y));
         }
 
         [SpecialName]
@@ -524,7 +516,6 @@ namespace IronPython.Runtime.Operations {
             if (x == y) {
                 return !Double.IsNaN(x);
             }
-
             return x > y;
         }
 
@@ -533,12 +524,15 @@ namespace IronPython.Runtime.Operations {
             if (x == y) {
                 return !Double.IsNaN(x);
             }
-            return x == y;
+            return false;
         }
 
         [SpecialName]
         public static bool NotEquals(double x, double y) {
-            return !Equals(x, y);
+            if (x == y) {
+                return Double.IsNaN(x);
+            }
+            return true;
         }
 
         [SpecialName]
@@ -648,7 +642,6 @@ namespace IronPython.Runtime.Operations {
         public static bool NotEquals(double x, decimal y) {
             return Compare(x, y) != 0;
         }
-
 
         internal static int Compare(double x, decimal y) {
             if (x > (double)decimal.MaxValue) return +1;

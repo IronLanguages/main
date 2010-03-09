@@ -848,17 +848,20 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ FormatTime(RubyContext/*!*/ context, RubyTime/*!*/ self, 
             [DefaultProtocol, NotNull]MutableString/*!*/ format) {
 
-            // TODO: allows incomplete characters
-            format.PrepareForCharacterRead();
-
             MutableString result = MutableString.CreateMutable(format.Encoding);
             bool inFormat = false;
-            foreach (char c in format.GetCharacters()) {
+
+            var charEnum = format.GetCharacters();
+            int i = 0;
+            while (charEnum.MoveNext()) {
+                var character = charEnum.Current;
+                int c = character.IsValid ? character.Value : -1;
+
                 if (!inFormat) {
                     if (c == '%') {
                         inFormat = true;
                     } else {
-                        result.Append(c);
+                        result.Append(character);
                     }
                     continue;
                 } 
@@ -994,7 +997,7 @@ namespace IronRuby.Builtins {
 
                     default:
                         if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby186) {
-                            result.Append(c);
+                            result.Append(character);
                             break;
                         } 
                         return MutableString.CreateEmpty();

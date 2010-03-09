@@ -223,7 +223,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static DynamicMetaObject MakeBinaryOperation(DynamicMetaObjectBinder operation, DynamicMetaObject/*!*/[] args, PythonOperationKind opStr, DynamicMetaObject errorSuggestion) {
-            if (IsComparision(opStr)) {
+            if (IsComparison(opStr)) {
                 return MakeComparisonOperation(args, operation, opStr, errorSuggestion);
             }
 
@@ -2236,7 +2236,7 @@ namespace IronPython.Runtime.Binding {
             return (op & PythonOperationKind.Comparison) != 0;
         }
 
-        private static bool IsComparision(PythonOperationKind op) {
+        private static bool IsComparison(PythonOperationKind op) {
             return IsComparisonOperator(NormalizeOperator(op));
         }
 

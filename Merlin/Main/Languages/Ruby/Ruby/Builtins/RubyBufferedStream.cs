@@ -389,7 +389,7 @@ namespace IronRuby.Builtins {
             if (separator == null) {
                 var result = MutableString.CreateBinary();
                 return AppendBytes(result, Int32.MaxValue, preserveEndOfLines) == 0 ? null : result;
-            } else if (separator.GetLength() == 1 && separator.GetChar(0) == '\n') {
+            } else if (separator.StartsWith('\n') && separator.GetLength() == 1) {
                 return ReadLine(encoding, preserveEndOfLines);
             } else if (separator.IsEmpty) {
                 return ReadParagraph(encoding, preserveEndOfLines);

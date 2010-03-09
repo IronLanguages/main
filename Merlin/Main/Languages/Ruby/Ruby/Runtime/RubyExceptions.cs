@@ -22,6 +22,8 @@ using IronRuby.Builtins;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using System.Globalization;
+using System.Text;
+using IronRuby.Compiler;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -114,6 +116,16 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateArgumentError(string/*!*/ message, params object[] args) {
             return CreateArgumentError(null, message, args);
+        }
+
+        public static Exception/*!*/ CreateArgumentError(EncoderFallbackException/*!*/ e, RubyEncoding/*!*/ encoding) {
+            return RubyExceptions.CreateArgumentError(String.Format("character U+{0:X4} can't be encoded in {1}",
+                e.CharUnknownHigh != '\0' ? Tokenizer.ToCodePoint(e.CharUnknownHigh, e.CharUnknownLow) : (int)e.CharUnknown, encoding));
+        }
+
+        public static Exception/*!*/ CreateArgumentError(DecoderFallbackException/*!*/ e, RubyEncoding/*!*/ encoding) {
+            return RubyExceptions.CreateArgumentError(String.Format("invalid byte sequence {0} in {1}",
+                BitConverter.ToString(e.BytesUnknown), encoding));
         }
 
         public static Exception/*!*/ CreateArgumentError(Exception innerException, string/*!*/ message, params object[] args) {

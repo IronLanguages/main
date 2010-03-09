@@ -226,8 +226,8 @@ namespace IronRuby.Builtins {
                 return new StringContent(_data.GetSlice(start, count), _owner);
             }
 
-            public override IEnumerable<char>/*!*/ GetCharacters() {
-                return _data;
+            public override CharacterEnumerator/*!*/ GetCharacters() {
+                return new MutableString.StringCharacterEnumerator(_owner.Encoding, _data);
             }
 
             public override IEnumerable<byte>/*!*/ GetBytes() {
@@ -236,6 +236,14 @@ namespace IronRuby.Builtins {
                 } else {
                     return SwitchToBinary().GetBytes();
                 }
+            }
+
+            #endregion
+
+            #region StartsWith
+
+            public override bool StartsWith(char c) {
+                return _data.Length != 0 && _data[0] == c;
             }
 
             #endregion

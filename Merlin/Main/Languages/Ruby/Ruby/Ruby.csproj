@@ -450,6 +450,7 @@
     <Compile Include="Runtime\StackUnwinder.cs" />
     <Compile Include="Runtime\Key.cs" />
     <Compile Include="Runtime\BinaryDecoderFallback.cs" />
+    <Compile Include="Runtime\LosslessDecoderFallback.cs" />
     <Compile Include="Runtime\Union.cs" />
     <Compile Include="Runtime\Utils.cs" />
     <Compile Include="Builtins\MatchData.Subclass.cs" />

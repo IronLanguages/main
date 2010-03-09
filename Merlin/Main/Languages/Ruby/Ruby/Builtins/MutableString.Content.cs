@@ -83,8 +83,8 @@ namespace IronRuby.Builtins {
 
             public abstract char GetChar(int index);
             public abstract byte GetByte(int index);
-            
-            public abstract IEnumerable<char>/*!*/ GetCharacters();
+
+            public abstract CharacterEnumerator/*!*/ GetCharacters();
             public abstract IEnumerable<byte>/*!*/ GetBytes();
 
             public abstract int OrdinalCompareTo(string/*!*/ str);
@@ -102,6 +102,8 @@ namespace IronRuby.Builtins {
             public abstract Content/*!*/ GetSlice(int start, int count);
             public abstract string/*!*/ GetStringSlice(int start, int count);
             public abstract byte[]/*!*/ GetBinarySlice(int start, int count);
+
+            public abstract bool StartsWith(char c);
 
             public abstract int IndexOf(char c, int start, int count);
             public abstract int IndexOf(byte b, int start, int count);

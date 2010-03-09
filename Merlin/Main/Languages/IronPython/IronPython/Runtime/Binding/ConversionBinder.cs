@@ -15,6 +15,7 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -293,7 +294,20 @@ namespace IronPython.Runtime.Binding {
                     res = (T)(object)new Func<CallSite, object, bool>(ObjectToBoolConversion);
                 }
             } else if (target != null) {
-                // Special cases - string or bytes to IEnumerable or IEnumerator
+                // Special cases:
+                //  - string or bytes to IEnumerable or IEnumerator
+                //  - CLR 4 only: BigInteger -> Complex
+#if !CLR2
+                if (target is BigInteger) {
+                    if (typeof(T) == typeof(Func<CallSite, BigInteger, Complex>)) {
+                        res = (T)(object)new Func<CallSite, BigInteger, Complex>(BigIntegerToComplexConversion);
+                    } else if (typeof(T) == typeof(Func<CallSite, object, Complex>)) {
+                        res = (T)(object)new Func<CallSite, object, Complex>(BigIntegerObjectToComplexConversion);
+                    } else if (typeof(T) == typeof(Func<CallSite, BigInteger, object>)) {
+                        res = (T)(object)new Func<CallSite, BigInteger, object>(BigIntegerToComplexObjectConversion);
+                    }
+                } else
+#endif
                 if (target is string) {
                     if (typeof(T) == typeof(Func<CallSite, string, IEnumerable>)) {
                         res = (T)(object)new Func<CallSite, string, IEnumerable>(StringToIEnumerableConversion);
@@ -315,7 +329,7 @@ namespace IronPython.Runtime.Binding {
                         res = (T)(object)new Func<CallSite, object, IEnumerator>(ObjectToIEnumeratorConversion);
                     }
                 }
-                
+
                 if (res == null && (target.GetType() == Type || Type.IsAssignableFrom(target.GetType()))) {
                     if (typeof(T) == typeof(Func<CallSite, object, object>)) {
                         // called via a helper call site in the runtime (e.g. Converter.Convert)
@@ -484,6 +498,24 @@ namespace IronPython.Runtime.Binding {
 
             return ((CallSite<Func<CallSite, object, IEnumerator>>)site).Update(site, value);
         }
+
+#if !CLR2
+        public Complex BigIntegerToComplexConversion(CallSite site, BigInteger value) {
+            return BigIntegerOps.ConvertToComplex(value);
+        }
+
+        public Complex BigIntegerObjectToComplexConversion(CallSite site, object value) {
+            if (value is BigInteger) {
+                return BigIntegerOps.ConvertToComplex((BigInteger)value);
+            }
+
+            return ((CallSite<Func<CallSite, object, Complex>>)site).Update(site, value);
+        }
+
+        public object BigIntegerToComplexObjectConversion(CallSite site, BigInteger value) {
+            return (object)BigIntegerOps.ConvertToComplex((BigInteger)value);
+        }
+#endif
 
         class IdentityConversion {
             private readonly Type _type;

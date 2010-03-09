@@ -59,10 +59,6 @@ namespace IronRuby.Builtins {
                 SetByte(index, (byte)c);
             }
 
-            public override IEnumerable<char>/*!*/ GetCharacters() {
-                return Utils.EnumerateAsCharacters(_data, _count);
-            }
-
             public override int OrdinalCompareTo(string/*!*/ str) {
                 return Utils.ValueCompareTo(_data, _count, str);
             }

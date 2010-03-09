@@ -560,6 +560,10 @@ public class GenericTypeInference {
         return typeof(T).ToString();
     }
 
+    public static string TRefx<T>(ref T x) {
+        x = default(T);
+        return typeof(T).ToString();
+    }
     public static string TxClass<T>(T x) 
         where T : class {
         return typeof(T).ToString();
@@ -741,6 +745,11 @@ public class GenericTypeInferenceInstance {
     }
 
     public string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public string TRefx<T>(ref T x) {
+        x = default(T);
         return typeof(T).ToString();
     }
 
@@ -1519,6 +1528,22 @@ no_csc do
   class RubyClassWithMethods < ClassWithMethods; end
   class RubyClassWithNullableMethods < ClassWithNullableMethods; end
   class RubyStaticClassWithNullableMethods < StaticClassWithNullableMethods; end
-  class RubyGenericTypeInference < GenericTypeInference; end
-  class RubyGenericTypeInferenceInstance < GenericTypeInferenceInstance; end
+  class RubyGenericTypeInference < GenericTypeInference
+    def self.call_long_method(meth)
+      method(meth).of(String).call("blah")
+    end
+
+    def self.call_short_method(meth)
+      send(meth, "blah")
+    end
+  end
+  class RubyGenericTypeInferenceInstance < GenericTypeInferenceInstance
+    def call_long_method(meth)
+      method(meth).of(String).call("blah")
+    end
+
+    def call_short_method(meth)
+      send(meth, "blah")
+    end
+  end
 end

@@ -94,7 +94,7 @@ namespace IronRuby.Builtins {
             SetContent(content);
         }
 
-        // creates a copy including the taint flag, not including the version:
+        // creates a copy including the taint flag:
         protected MutableString(MutableString/*!*/ str) 
             : this(str._content.Clone(), str._encoding) {
             IsTainted = str.IsTainted;
@@ -385,6 +385,60 @@ namespace IronRuby.Builtins {
             throw RubyExceptions.CreateEncodingCompatibilityError(_encoding, other.Encoding);
         }
 
+        /// <summary>
+        /// Changes encoding to the specified one. 
+        /// </summary>
+        public MutableString/*!*/ ChangeEncoding(RubyEncoding/*!*/ newEncoding, bool inplace) {
+            ContractUtils.RequiresNotNull(newEncoding, "newEncoding");
+            if (_encoding == newEncoding) {
+                return this;
+            }
+
+            if ((_encoding.IsKCoding || _encoding == RubyEncoding.Binary) &&
+                (newEncoding.IsKCoding || newEncoding == RubyEncoding.Binary)) {
+
+                if (!IsAscii()) {
+                    SwitchToBytes();
+                }
+
+                SetEncoding(newEncoding);
+                return this;
+            }
+
+            MutableString result;
+            if (inplace) {
+                result = this;
+            } else {
+                result = MutableString.Create(this);
+            }
+
+            result.ChangeEncoding(newEncoding);
+            return result;
+        }
+
+        private void ChangeEncoding(RubyEncoding/*!*/ newEncoding) {
+            if (_encoding.RealEncoding == newEncoding.RealEncoding) {
+                Mutate();
+                SetEncoding(newEncoding); 
+                return;
+            }
+
+            // this caches hash-code, which we need to invalidate due to encoding change:
+            bool isAscii = IsAscii();
+            Mutate();
+
+            if (isAscii) {
+                SetEncoding(newEncoding);
+            } else if (newEncoding != RubyEncoding.Binary) {
+                SwitchToCharacters();
+                SetEncoding(newEncoding);
+                CheckEncoding();
+            } else {
+                SwitchToBytes();
+                SetEncoding(newEncoding);
+            }
+        }
+
         public override int GetHashCode() {
             if ((_flags & HashUnknownFlag) != 0) {
                 UpdateHashCode();
@@ -448,17 +502,8 @@ namespace IronRuby.Builtins {
             }
         }
 
-        /// <summary>
-        /// Gets or sets (TODO) encoding.
-        /// </summary>
         public RubyEncoding/*!*/ Encoding {
             get { return _encoding; }
-            //set {
-            //    // TODO: encoding change - needs transcode if not binary ...
-            //    ContractUtils.RequiresNotNull(value, "value");
-            //    Mutate();
-            //    SetEncoding(value);
-            //}
         }
 
         /// <summary>
@@ -466,14 +511,16 @@ namespace IronRuby.Builtins {
         /// </summary>
         public MutableString/*!*/ CheckEncoding() {
             try {
-                _content.CheckEncoding();
-            } catch (EncoderFallbackException) {
-                // TODO: better exception
-                throw;
-            } catch (DecoderFallbackException) {
-                // TODO: better exception
-                throw;
+               return CheckEncodingInternal();
+            } catch (EncoderFallbackException e) {
+                throw RubyExceptions.CreateArgumentError(e, _encoding);
+            } catch (DecoderFallbackException e) {
+                throw RubyExceptions.CreateArgumentError(e, _encoding);
             }
+        }
+
+        internal MutableString/*!*/ CheckEncodingInternal() {
+            _content.CheckEncoding();
             return this;
         }
 
@@ -632,7 +679,11 @@ namespace IronRuby.Builtins {
         }
 
         public MutableString/*!*/ SwitchToBytes() {
-            _content.SwitchToBinaryContent();
+            try {
+                _content = _content.SwitchToBinaryContent();
+            } catch (EncoderFallbackException e) {
+                throw RubyExceptions.CreateArgumentError(e, _encoding);
+            }
             return this;
         }
 
@@ -645,8 +696,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ SwitchToCharacters() {
             try {
                 _content = _content.SwitchToStringContent();
-            } catch (DecoderFallbackException) {
-                throw RubyExceptions.CreateArgumentError(String.Format("invalid byte sequence in {0}", _encoding));
+            } catch (DecoderFallbackException e) {
+                throw RubyExceptions.CreateArgumentError(e, _encoding);
             }
             return this;
         }
@@ -658,10 +709,13 @@ namespace IronRuby.Builtins {
         /// String content is binary and contains byte sequence that doesn't represent a valid character.
         /// </exception>
         public MutableString/*!*/ PrepareForCharacterRead() {
-            // Switch if the content is not already char based or the bytes are the same as the equivalent characters:
+            // Switch if the content is not already char based or the bytes are not the same as the equivalent characters:
             if (IsBinary && !IsBinaryEncoded && !IsAscii()) {
                 SwitchToCharacters();
+            } else if (_encoding.IsKCoding) {
+                SwitchToBytes();
             }
+
             return this;
         }
 
@@ -675,6 +729,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ PrepareForCharacterWrite() {
             if (IsBinary) {
                 SwitchToCharacters();
+            } else if (_encoding.IsKCoding) {
+                SwitchToBytes();
             } else {
                 _content.SwitchToMutableContent();
             }
@@ -825,6 +881,10 @@ namespace IronRuby.Builtins {
 
         #region StartsWith, EndsWith (read-only)
 
+        public bool StartsWith(char value) {
+            return _content.StartsWith(value);
+        }
+
         public bool EndsWith(char value) {
             return GetLastChar() == value;
         }
@@ -871,7 +931,239 @@ namespace IronRuby.Builtins {
 
         #region Enumerations (read-only)
 
-        public IEnumerable<char>/*!*/ GetCharacters() {
+        public struct Character : IEquatable<Character> {
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+            public readonly byte[] Invalid;
+            public readonly char Value;
+
+            public bool IsValid {
+                get { return Invalid == null; }
+            }
+
+            internal Character(byte[]/*!*/ invalid) {
+                Invalid = invalid;
+                Value = '\0';
+            }
+
+            internal Character(char value) {
+                Invalid = null;
+                Value = value;
+            }
+
+            public bool Equals(Character other) {
+                if (IsValid) {
+                    return other.IsValid && Value == other.Value;
+                } else {
+                    return !other.IsValid && Invalid.ValueEquals(other.Invalid);
+                }
+            }
+        }
+
+        public abstract class CharacterEnumerator : IEnumerator<Character> {
+            private readonly RubyEncoding/*!*/ _encoding;
+            internal int _index;
+            internal Character _current;
+
+            internal CharacterEnumerator(RubyEncoding/*!*/ encoding) {
+                Assert.NotNull(encoding);
+                _encoding = encoding;
+                _index = -1;
+            }
+
+            public Character Current {
+                get {
+                    if (_index < 0) {
+                        throw new InvalidOperationException();
+                    }
+                    return _current;
+                }
+            }
+
+            public virtual void Reset() {
+                _index = -1;
+                _current = default(Character);
+            }
+
+            internal void AppendTo(MutableString/*!*/ str) {
+                ContractUtils.Requires(_encoding == str.Encoding);
+                if (_index < 0) {
+                    _index = 0;
+                }
+
+                AppendDataTo(str);
+
+                Reset();
+            }
+
+            internal abstract void AppendDataTo(MutableString/*!*/ str);
+            public abstract bool MoveNext();
+            public abstract bool HasMore { get; }
+            
+            void IDisposable.Dispose() {
+            }
+
+            object System.Collections.IEnumerator.Current {
+                get { return _current; }
+            }
+        }
+
+        internal sealed class StringCharacterEnumerator : CharacterEnumerator {
+            private readonly string/*!*/ _data;
+
+            internal StringCharacterEnumerator(RubyEncoding/*!*/ encoding, string/*!*/ data)
+                : base(encoding) {
+                Assert.NotNull(data);
+                _data = data;
+            }
+
+            public override bool HasMore {
+                get { return _index < _data.Length; }
+            }
+
+            public override bool MoveNext() {
+                if (_index < 0) {
+                    _index = 0;
+                }
+
+                if (!HasMore) {
+                    return false;
+                }
+
+                _current = new Character(_data[_index++]);
+                return true;
+            }
+
+            internal override void AppendDataTo(MutableString/*!*/ str) {
+                str.Append(_data, _index, _data.Length - _index);
+            }
+        }
+
+        internal sealed class BinaryCharacterEnumerator : CharacterEnumerator {
+            private readonly byte[]/*!*/ _data;
+            private readonly int _count;
+
+            internal BinaryCharacterEnumerator(RubyEncoding/*!*/ encoding, byte[]/*!*/ data, int count)
+                : base(encoding) {
+                Assert.NotNull(data);
+                _data = data;
+                _count = count;
+            }
+
+            public override bool HasMore {
+                get { return _index < _count; }
+            }
+
+            public override bool MoveNext() {
+                if (_index < 0) {
+                    _index = 0;
+                } 
+                
+                if (!HasMore) {
+                    return false;
+                }
+
+                _current = new Character((char)_data[_index++]);
+                return true;
+            }
+
+            internal override void AppendDataTo(MutableString/*!*/ str) {
+                str.Append(_data, _index, _count - _index);
+            }
+        }
+
+        internal sealed class CompositeCharacterEnumerator : CharacterEnumerator {
+            private readonly char[]/*!*/ _data;
+            private readonly int _count;
+            private readonly List<byte[]> _invalid;
+            private int _invalidIndex;
+
+            internal CompositeCharacterEnumerator(RubyEncoding/*!*/ encoding, char[]/*!*/ data, int count, List<byte[]> invalid) 
+                : base(encoding) {
+                _data = data;
+                _count = count;
+                _invalid = invalid;
+                _invalidIndex = 0;
+            }
+
+            private int InvalidCount {
+                get { return _invalid != null ? _invalid.Count : 0; }
+            }
+
+            internal override void AppendDataTo(MutableString/*!*/ str) {
+#if !SILVERLIGHT
+                int i;
+                while (_index < _count && _invalidIndex < InvalidCount) {
+                    i = Array.IndexOf(_data, LosslessDecoderFallback.InvalidCharacterPlaceholder, _index);
+                    str.Append(_data, _index, i - _index);
+                    _index = i + 1;
+                    str.Append(_invalid[_invalidIndex++]);
+                }
+#endif
+                str.Append(_data, _index, _count - _index);
+            }
+
+            public override bool HasMore {
+                get { return _index < _count; }
+            }
+
+            public override bool MoveNext() {
+                if (_index < 0) {
+                    _index = 0;
+                }
+
+                if (!HasMore) {
+                    return false;
+                }
+
+                char c = _data[_index++];
+#if SILVERLIGHT
+                _current = new Character(c);
+#else
+                if (c != LosslessDecoderFallback.InvalidCharacterPlaceholder) {
+                    _current = new Character(c);
+                } else if (_invalidIndex < InvalidCount) {
+                    _current = new Character(_invalid[_invalidIndex++]);
+                } else {
+                    // this can only happen if the decoder produces invalid characters \uFFFF, which it should not:
+                    throw new InvalidOperationException("Decoder produced an invalid chracter \uFFFF.");
+                }
+#endif
+                return true;
+            }
+
+            public override void Reset() {
+                base.Reset();
+                _invalidIndex = -1;
+            }
+        }
+
+        internal static CharacterEnumerator/*!*/ EnumerateAsCharacters(byte[]/*!*/ data, int count, RubyEncoding/*!*/ encoding, out char[] allValid) {
+#if SILVERLIGHT
+            char[] chars = encoding.Encoding.GetChars(data, 0, count);
+            allValid = null;
+            return new CompositeCharacterEnumerator(encoding, chars, chars.Length, null);
+#else
+            Decoder decoder = encoding.Encoding.GetDecoder();
+            var fallback = new LosslessDecoderFallback();
+            decoder.Fallback = fallback;
+
+            fallback.Track = true;
+            char[] chars = new char[decoder.GetCharCount(data, 0, count, true)];
+            
+            fallback.Track = false;
+            decoder.GetChars(data, 0, count, chars, 0, true);
+
+            allValid = (fallback.InvalidCharacters == null) ? chars : null;
+            return new CompositeCharacterEnumerator(encoding, chars, chars.Length, fallback.InvalidCharacters);
+#endif
+        }
+
+        /// <summary>
+        /// Enumerates over characters contained in the string. 
+        /// Yields both valid characters and invalid byte sequences.
+        /// Yields characters even for K-coded strings.
+        /// </summary>
+        public CharacterEnumerator/*!*/ GetCharacters() {
             return _content.GetCharacters();
         }
 
@@ -1265,6 +1557,10 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        public MutableString/*!*/ Append(MutableString/*!*/ value, int start) {
+            return Append(value, start, value._content.Count - start);
+        }
+
         /// <summary>
         /// Appends a substring of a given string to this string.
         /// <c>start</c> and <c>count</c> are specified
@@ -1302,6 +1598,20 @@ namespace IronRuby.Builtins {
             Mutate();
 
             _content.AppendFormat(CultureInfo.InvariantCulture, format, args);
+            return this;
+        }
+
+        public MutableString/*!*/ Append(Character character) {
+            if (character.IsValid) {
+                return Append(character.Value);
+            } else {
+                return Append(character.Invalid);
+            }
+        }
+
+        public MutableString/*!*/ AppendRemaining(CharacterEnumerator/*!*/ characters) {
+            ContractUtils.RequiresNotNull(characters, "characters");
+            characters.AppendTo(this);
             return this;
         }
 
@@ -1965,39 +2275,5 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
-
-#if OBSOLETE
-        #region Utils
-
-        /// <summary>
-        /// Requires the range [offset, offset + count] to be a subset of [0, dataLength].
-        /// </summary>
-        /// <exception cref="ArgumentNullException">String is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
-        private void RequiresArrayRange(int start, int count, int dataLength) {
-            if (count < 0) throw new ArgumentOutOfRangeException("count");
-            if (start < 0 || dataLength - start < count) throw new ArgumentOutOfRangeException("start");
-        }
-
-        /// <summary>
-        /// Requires the range [offset - count, offset] to be a subset of [0, dataLength].
-        /// </summary>
-        /// <exception cref="ArgumentNullException">String is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
-        private void //RequiresReverseArrayRange(int start, int count, int dataLength) {
-            if (count < 0) throw new ArgumentOutOfRangeException("count");
-            if (start < count - 1 || start >= dataLength) throw new ArgumentOutOfRangeException("start");
-        }
-
-        /// <summary>
-        /// Requires the specified index to point inside the array or at the end.
-        /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
-        private void RequiresArrayInsertIndex(int index, int dataLength) {
-            if (index < 0 || index > dataLength) throw new ArgumentOutOfRangeException("index");
-        }
-
-        #endregion
-#endif
     }
 }

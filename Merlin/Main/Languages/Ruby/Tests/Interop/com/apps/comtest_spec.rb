@@ -48,4 +48,20 @@ describe "Direct COM interop" do
   it "allows conversion of a COM object to an arbitrary interface and throws if the COM object doesn't implement it" do
     lambda { BindingTester.with_iface(@obj) }.should raise_error(System::InvalidCastException)
   end
+
+  it "can handle super" do
+    begin
+      class Object
+        alias_method :mm, :method_missing
+        def method_missing(meth, *args, &blk)
+          super
+        end
+      end
+      lambda {@obj.not_a_method}.should raise_error NoMethodError
+    ensure
+      class Object
+        alias_method :method_missing, :mm
+      end
+    end
+  end
 end

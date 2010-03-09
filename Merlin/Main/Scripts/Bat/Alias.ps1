@@ -8,6 +8,8 @@ function global:rb { Set-Location "${env:MERLIN_ROOT}\Languages\Ruby" }
 function global:rt { Set-Location "${env:MERLIN_ROOT}\Runtime" }
 function global:r { Set-Location "${env:MERLIN_ROOT}" }
 function global:mspc { Set-Location "${env:MERLIN_ROOT}\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec" }
+function global:ipl { Set-Location "${env:MERLIN_ROOT}\..\External.LCA_RESTRICTED\Languages\IronPython\26\Lib" }
+function global:cpl { Set-Location "${env:MERLIN_ROOT}\..\External.LCA_RESTRICTED\Languages\CPython\26\Lib" }
 
 function global:irk { Set-Location "`"${env:MERLIN_ROOT}\Hosts\IronRuby.Rack\`"" }
 function global:rbs { Set-Location "`"${env:MERLIN_ROOT}\Languages\Ruby\Samples\`"" }

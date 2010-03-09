@@ -40,11 +40,7 @@ namespace IronRuby.Runtime {
             private int _index;
             private byte[] _bytes;
 
-            public Buffer() {
-            }
-
-            public bool HasInvalidCharacters {
-                get { return _bytes != null; }
+            internal Buffer() {
             }
 
             public override bool Fallback(byte[]/*!*/ bytesUnknown, int index) {

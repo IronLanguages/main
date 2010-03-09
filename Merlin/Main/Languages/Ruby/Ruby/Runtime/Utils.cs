@@ -84,12 +84,6 @@ namespace IronRuby.Runtime {
             return str.Length == 0 ? -1 : str[str.Length - 1];
         }
 
-        internal static IEnumerable<char>/*!*/ EnumerateAsCharacters(byte[]/*!*/ data, int count) {
-            for (int i = 0; i < count; i++) {
-                yield return (char)data[i];
-            }
-        }
-
         internal static IEnumerable<byte>/*!*/ EnumerateAsBytes(char[]/*!*/ data, int count) {
             for (int i = 0; i < count; i++) {
                 yield return (byte)data[i];
@@ -175,6 +169,21 @@ namespace IronRuby.Runtime {
 
         internal static T[]/*!*/ Concatenate<T>(T[]/*!*/ array1, T[]/*!*/ array2) {
             return Concatenate(array1, array1.Length, array2, array2.Length);
+        }
+
+        internal static T[]/*!*/ Concatenate<T>(params T[][] arrays) {
+            int length = 0;
+            foreach (var array in arrays) {
+                length += array.Length;
+            }
+
+            T[] result = new T[length];
+            length = 0;
+            foreach (var array in arrays) {
+                Array.Copy(array, 0, result, length, array.Length);
+                length += array.Length;
+            }
+            return result;
         }
 
         internal static T[]/*!*/ Concatenate<T>(T[]/*!*/ array1, int itemCount1, T[]/*!*/ array2, int itemCount2) {

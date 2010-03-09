@@ -3,9 +3,7 @@ require File.dirname(__FILE__) + '/shared/load'
 
 describe "Custom Assembly" do
   before :each do
-    @engine = IronRuby.create_engine
-    str = "$: << '#{File.dirname(__FILE__) + "\\..\\..\\"}'".gsub("\\", "/")
-    @engine.execute(str)
+    @engine = SpecHelper.create_engine
     @assembly = 'fixtures.generated.dll'
   end
 
@@ -52,9 +50,7 @@ end
 
 describe "Custom Assembly with StrongName" do
   before :each do
-    @engine = IronRuby.create_engine
-    str = "$: << '#{File.dirname(__FILE__) + "\\..\\..\\"}'".gsub("\\", "/")
-    @engine.execute(str)
+    @engine = SpecHelper.create_engine
     @assembly = 'fixtures.generated, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'
   end
 
@@ -116,10 +112,8 @@ end
 
 describe "Modifying and reloading custom assembly" do 
   before :each do
-    @engine = IronRuby.create_engine
-    @scope = @engine.create_scope
-    str = "$: << '#{File.dirname(__FILE__) + "\\..\\..\\"}'".gsub("\\", "/")
-    @engine.execute(str, @scope)
+
+    @engine, @scope = SpecHelper.create_scoped_engine
     @engine.execute("require 'fixtures.generated'", @scope)
     str = <<-EOL
       class Klass

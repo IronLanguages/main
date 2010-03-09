@@ -32,7 +32,7 @@ if ENV["THISISSNAP"] || ComHelper.word_installed?
       @doc = nil
       System::GC.Collect
       System::GC.WaitForPendingFinalizers
-      @app.Quit if @app
+      @app.Quit(0) if @app
     end
     
     it "fires for single event" do

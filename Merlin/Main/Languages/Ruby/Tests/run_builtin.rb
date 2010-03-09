@@ -17,9 +17,6 @@ require 'Find'
 
 ARGV.each do |type|
   Find.find "Builtin/#{type}" do |path|
-    if ( /_svn/ =~ path )
-      Find.prune
-    end
     if ( /_spec\.rb/ =~ path ) then
       print path, '(ruby): '
       system("ruby #{path}")

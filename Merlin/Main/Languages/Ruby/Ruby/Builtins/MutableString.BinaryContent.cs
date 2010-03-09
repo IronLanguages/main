@@ -55,18 +55,18 @@ namespace IronRuby.Builtins {
             }
 
             private CharArrayContent/*!*/ SwitchToChars(int additionalCapacity) {
-                var chars = DataToChars(additionalCapacity);
+                char[] chars = DataToChars(additionalCapacity, _owner._encoding.StrictEncoding);
                 return WrapContent(chars, chars.Length - additionalCapacity);
             }
 
-            private char[]/*!*/ DataToChars(int additionalCapacity) {
+            private char[]/*!*/ DataToChars(int additionalCapacity, Encoding/*!*/ encoding) {
                 if (_count == 0) {
                     return (additionalCapacity == 0) ? Utils.EmptyChars : new char[additionalCapacity];
                 } else if (additionalCapacity == 0) {
-                    return _owner._encoding.StrictEncoding.GetChars(_data, 0, _count);
+                    return encoding.GetChars(_data, 0, _count);
                 } else {
-                    var result = new char[_owner._encoding.StrictEncoding.GetCharCount(_data, 0, _count) + additionalCapacity];
-                    _owner._encoding.StrictEncoding.GetChars(_data, 0, _count, result, 0);
+                    var result = new char[encoding.GetCharCount(_data, 0, _count) + additionalCapacity];
+                    encoding.GetChars(_data, 0, _count, result, 0);
                     return result;
                 }
             }
@@ -244,7 +244,16 @@ namespace IronRuby.Builtins {
                         throw new IndexOutOfRangeException();
                     }
                     return (char)_data[index];
+                } else if (index == 0) {
+                    if (index >= _count) {
+                        throw new IndexOutOfRangeException();
+                    }
+                    var result = _data[index];
+                    if (result < 0x80) {
+                        return (char)result;
+                    }
                 }
+
                 return SwitchToChars().DataGetChar(index);
             }
 
@@ -267,16 +276,44 @@ namespace IronRuby.Builtins {
                 return Create(_data.GetSlice(_count, start, count), _owner);
             }
 
-            public override IEnumerable<char>/*!*/ GetCharacters() {
+            public override CharacterEnumerator/*!*/ GetCharacters() {
                 if (_owner.HasByteCharacters) {
-                    return Utils.EnumerateAsCharacters(_data, _count);
-                } else {
-                    return SwitchToChars().GetCharacters();
+                    return new MutableString.BinaryCharacterEnumerator(_owner.Encoding, _data, _count);
+                } 
+
+                char[] allValid;
+                var result = MutableString.EnumerateAsCharacters(_data, _count, _owner.Encoding, out allValid);
+                if (allValid != null) {
+                    // we can witch the content type if all characters are valid:
+                    WrapContent(allValid, allValid.Length);
                 }
+                return result;
             }
 
             public override IEnumerable<byte>/*!*/ GetBytes() {
                 return Utils.Enumerate(_data, _count);
+            }
+
+            #endregion
+
+            #region StartsWith
+
+            public override bool StartsWith(char c) {
+                if (_count == 0) {
+                    return false;
+                }
+
+                if (c < 0x80 || _owner.HasByteCharacters) {
+                    return _data[0] == c;    
+                }
+
+                byte[] bytes = new byte[_owner.Encoding.MaxBytesPerChar];
+                int byteCount = _owner.Encoding.StrictEncoding.GetBytes(new char[] { c }, 0, 1, bytes, 0);
+                if (byteCount > _count) {
+                    return false;
+                }
+
+                return Utils.ValueCompareTo(_data, byteCount, bytes, byteCount) == 0;
             }
 
             #endregion

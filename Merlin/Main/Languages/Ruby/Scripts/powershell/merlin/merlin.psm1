@@ -27,9 +27,9 @@ function set-envvar {
 }
 
 function initialize-merlin {
-  param([string]$path = "C:\vsl\")
+  param([string]$path = "C:\vsl\",[string]$version="9.0")
 
-  initialize-vsvars
+  initialize-vsvars -version $version
 
   set-envvar TERM=
   set-envvar MERLIN_ROOT="$path\Merlin\Main"
@@ -82,7 +82,6 @@ function initialize-vsvars {
     $BatchFile = [System.IO.Path]::Combine($VsToolsDir, "vsvars32.bat")
     Get-Batchfile $BatchFile
     "Visual Studio $version Configured"
-  
 }
 
 function write-command {

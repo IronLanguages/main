@@ -54,6 +54,17 @@ describe "Generic Type inference" do
     it_behaves_like :simple, :TxTyTz
   end
 
+  describe "on TRefx methods" do
+    it_behaves_like :simple, :TRefx
+
+    it "can be called in a Ruby subclass" do
+      [RubyGenericTypeInference, RubyGenericTypeInferenceInstance.new].each do |t|
+        t.call_long_method(:TRefx)[0].should == 'IronRuby.Builtins.MutableString'
+        t.call_short_method(:TRefx)[0].should == 'IronRuby.Builtins.MutableString'
+      end
+    end
+  end
+
   
   describe "on TParamsArrx methods" do
     it "should work on simple methods" do
