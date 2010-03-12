@@ -594,7 +594,7 @@ def retry_on_failure(f, *args, **kwargs):
     1. Wraps execution of the input function, f
     2. If f() fails, it retries invoking it MAX_FAILURE_RETRY times
     '''
-    def t(*args, **kwargs):
+    def t(*args, **kwargs):        
         for i in xrange(MAX_FAILURE_RETRY):
             try:
                 ret_val = f(*args, **kwargs)
@@ -602,8 +602,10 @@ def retry_on_failure(f, *args, **kwargs):
             except Exception, e:
                 print "retry_on_failure(%s): failed on attempt '%d':" % (f.__name__, i+1)
                 print e
+                excp_info = sys.exc_info()
                 continue
-        raise e
+        # raise w/ excep info to preverve the original stack trace
+        raise excp_info[0], excp_info[1], excp_info[2]
                 
     return t
     

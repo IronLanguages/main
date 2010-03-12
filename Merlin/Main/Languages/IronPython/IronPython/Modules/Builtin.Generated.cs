@@ -128,20 +128,12 @@ namespace IronPython.Modules {
         public static PythonType UnicodeError {
             get { return PythonExceptions.UnicodeError; }
         }
-
-#if !SILVERLIGHT
         public static PythonType UnicodeDecodeError {
             get { return PythonExceptions.UnicodeDecodeError; }
         }
-#endif // !SILVERLIGHT
-
-
-#if !SILVERLIGHT
         public static PythonType UnicodeEncodeError {
             get { return PythonExceptions.UnicodeEncodeError; }
         }
-#endif // !SILVERLIGHT
-
         public static PythonType UnicodeTranslateError {
             get { return PythonExceptions.UnicodeTranslateError; }
         }

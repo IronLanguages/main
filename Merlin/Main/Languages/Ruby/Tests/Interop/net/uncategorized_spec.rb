@@ -219,6 +219,6 @@ end
 describe "RubyGems platform information" do
   it "sets Gem::Platform correctly" do
     require "rubygems"
-    (Gem::Platform.local() === Gem::Platform.new("universal-.net")).should be_true
+    (Gem::Platform.local() === Gem::Platform.new("universal-dotnet")).should be_true
   end
 end

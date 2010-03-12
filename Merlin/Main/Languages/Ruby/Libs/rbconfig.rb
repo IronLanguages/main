@@ -63,22 +63,18 @@ module Config
   CONFIG["sitedir"] = "$(libdir)/ruby/site_ruby"
 
   CONFIG["oldincludedir"] = "/usr/include"
-  CONFIG["build"] = "i686-pc-mswin32"
-  CONFIG["build_alias"] = "i686-mswin32"
-  CONFIG["build_cpu"] = "i686"
-  CONFIG["build_vendor"] = "pc"
-  CONFIG["build_os"] = "mswin32"
-  CONFIG["host"] = "i686-pc-mswin32"
-  CONFIG["host_alias"] = "i686-mswin32"
-  CONFIG["host_cpu"] = "i686"
-  CONFIG["host_vendor"] = "pc"
-  CONFIG["host_os"] = "mswin32"
+  cpu_and_os = RUBY_PLATFORM.split('-')
+  abort("Could not parse RUBY_PLATFORM") if cpu_and_os.size != 2
+  CONFIG["host_cpu"] = (cpu_and_os[0] == "i386") ? "i686" : cpu_and_os[0]
+  CONFIG["host_os"] = cpu_and_os[1]
   clr_version = "#{System::Environment.Version.Major}.#{System::Environment.Version.Minor}"
-  CONFIG["target"] = ".net#{clr_version}"
+  CONFIG["target"] = "dotnet#{clr_version}"
+  CONFIG["arch"] = "universal-#{CONFIG["target"]}"
+  CONFIG["build"] = CONFIG["arch"] # Not strictly true. For example, while running a .NET 2.0 version of IronRuby on .NET 4
   CONFIG["target_alias"] = CONFIG["target"]
-  CONFIG["target_cpu"] = "i386"
+  CONFIG["target_cpu"] = cpu_and_os[0]
   CONFIG["target_vendor"] = "pc"
-  CONFIG["target_os"] = "mswin32"
+  CONFIG["target_os"] = CONFIG["host_os"]
   CONFIG["CC"] = "cl -nologo"
   CONFIG["CPP"] = "cl -nologo -E"
   CONFIG["YACC"] = "byacc"
@@ -140,7 +136,6 @@ module Config
   CONFIG["COMMON_HEADERS"] = "winsock2.h windows.h"
   CONFIG["DISTCLEANFILES"] = "vc*.pdb"
   CONFIG["EXPORT_PREFIX"] = " "
-  CONFIG["arch"] = "universal-.net#{clr_version}"
   CONFIG["configure_args"] = "--with-make-prog=nmake --enable-shared --with-winsock2"
   CONFIG["ruby_version"] = "$(MAJOR).$(MINOR)"
   CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
@@ -148,7 +143,7 @@ module Config
   CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
   CONFIG["topdir"] = File.dirname(__FILE__)
   MAKEFILE_CONFIG = {}
-  CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
+  CONFIG.each{|k,v| puts k if v.nil?; MAKEFILE_CONFIG[k] = v.dup}
   def Config::expand(val, config = CONFIG)
     val.gsub!(/\$\$|\$\(([^()]+)\)|\$\{([^{}]+)\}/) do |var|
       if !(v = $1 || $2)

@@ -964,7 +964,9 @@ namespace IronRuby.Builtins {
                 var result = new RubyArray();
                 if (foreignMembers.Count > 0) {
                     foreach (var name in foreignMembers) {
-                        result.Add(new ClrName(name));
+	                    if (Tokenizer.IsMethodName(name, true) || Tokenizer.IsOperatorName(name)) {
+                            result.Add(new ClrName(name));
+                        }
                     }
                 }
                 return result;

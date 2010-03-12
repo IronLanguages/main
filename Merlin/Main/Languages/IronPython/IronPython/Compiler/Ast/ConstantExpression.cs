@@ -40,11 +40,29 @@ namespace IronPython.Compiler.Ast {
             _value = value;
         }
 
+        internal static ConstantExpression MakeUnicode(string value) {
+            return new ConstantExpression(new UnicodeWrapper(value));
+        }
+
         public object Value {
-            get { return _value; }
+            get {
+                UnicodeWrapper wrapper;
+                if ((wrapper = _value as UnicodeWrapper) != null) {
+                    return wrapper.Value;
+                }
+                
+                return _value; 
+            }
+        }
+
+        internal bool IsUnicodeString {
+            get {
+                return _value is UnicodeWrapper;
+            }
         }
 
         public override MSAst.Expression Reduce() {
+            UnicodeWrapper wrapper;
             if (_value == Ellipsis.Value) {
                 return Ast.Property(
                     null,
@@ -56,6 +74,8 @@ namespace IronPython.Compiler.Ast {
                 } else {
                     return Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField("False"));
                 }
+            } else if ((wrapper = _value as UnicodeWrapper) != null) {
+                return GlobalParent.Constant(wrapper.Value);
             }
 
             return GlobalParent.Constant(_value);
@@ -67,7 +87,7 @@ namespace IronPython.Compiler.Ast {
 
         public override Type Type {
             get {
-                return GlobalParent.CompilationMode.GetConstantType(_value);
+                return GlobalParent.CompilationMode.GetConstantType(Value);
             }
         }
 
@@ -94,6 +114,14 @@ namespace IronPython.Compiler.Ast {
         internal override bool CanThrow {
             get {
                 return false;
+            }
+        }
+
+        class UnicodeWrapper {
+            public readonly object Value;
+
+            public UnicodeWrapper(string value) {
+                Value = value;
             }
         }
     }

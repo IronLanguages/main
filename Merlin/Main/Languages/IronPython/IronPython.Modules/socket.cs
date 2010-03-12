@@ -22,18 +22,19 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.Security;
 using System.Runtime.InteropServices;
-using System.Dynamic;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Authentication;
 using System.Text;
 
-using Microsoft.Scripting.Actions;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 #if CLR2
 using Microsoft.Scripting.Math;
@@ -41,13 +42,12 @@ using Microsoft.Scripting.Math;
 using System.Numerics;
 #endif
 
-using BaseException = IronPython.Runtime.Exceptions.PythonExceptions.BaseException;
 using PythonArray = IronPython.Modules.ArrayModule.array;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("socket", typeof(IronPython.Modules.PythonSocket))]
 namespace IronPython.Modules {
-    public static partial class PythonSocket {
+    public static class PythonSocket {
         private static readonly object _defaultTimeoutKey = new object();
         private static readonly object _defaultBufsizeKey = new object();
         private const int DefaultBufferSize = 8192;
@@ -60,11 +60,14 @@ namespace IronPython.Modules {
 
             context.SetModuleState(_defaultBufsizeKey, DefaultBufferSize);
 
-            context.EnsureModuleException("sslerror", dict, "sslerror", "socket");
-            PythonType socketErr = context.EnsureModuleException("socketerror", PythonExceptions.IOError, dict, "error", "socket");
+            PythonType socketErr = GetSocketError(context, dict);
             context.EnsureModuleException("socketherror", socketErr, dict, "herror", "socket");
             context.EnsureModuleException("socketgaierror", socketErr, dict, "gaierror", "socket");
             context.EnsureModuleException("sockettimeout", socketErr, dict, "timeout", "socket");
+        }
+
+        internal static PythonType GetSocketError(PythonContext context, PythonDictionary dict) {
+            return context.EnsureModuleException("socketerror", PythonExceptions.IOError, dict, "error", "socket");
         }
 
         public const string __doc__ = "Implementation module for socket operations.\n\n"
@@ -122,16 +125,21 @@ namespace IronPython.Modules {
             private WeakRefTracker _weakRefTracker = null;
             private int _referenceCount = 1;
             public const string __module__ = "socket";
-            private CodeContext/*!*/ _context;
+            internal CodeContext/*!*/ _context;
+            private int _timeout;
 
             #endregion
 
             #region Public API
 
-            public socket(CodeContext/*!*/ context, [DefaultParameterValue(DefaultAddressFamily)] int addressFamily,
-                [DefaultParameterValue(DefaultSocketType)] int socketType,
-                [DefaultParameterValue(DefaultProtocolType)] int protocolType) {
+            public socket() {
+            }
 
+
+            public void __init__(CodeContext/*!*/ context, [DefaultParameterValue(DefaultAddressFamily)] int addressFamily,
+                [DefaultParameterValue(DefaultSocketType)] int socketType,
+                [DefaultParameterValue(DefaultProtocolType)] int protocolType,
+                [DefaultParameterValue(null)]socket _sock) {
                 System.Net.Sockets.SocketType type = (System.Net.Sockets.SocketType)Enum.ToObject(typeof(System.Net.Sockets.SocketType), socketType);
                 if (!Enum.IsDefined(typeof(System.Net.Sockets.SocketType), type)) {
                     throw MakeException(context, new SocketException((int)SocketError.SocketNotSupported));
@@ -145,36 +153,73 @@ namespace IronPython.Modules {
                     throw MakeException(context, new SocketException((int)SocketError.ProtocolNotSupported));
                 }
 
-                Socket newSocket;
-                try {
-                    newSocket = new Socket(family, type, proto);
-                } catch (SocketException e) {
-                    throw MakeException(context, e);
+                if (_sock == null) {
+                    Socket newSocket;
+                    try {
+                        newSocket = new Socket(family, type, proto);
+                    } catch (SocketException e) {
+                        throw MakeException(context, e);
+                    }
+
+                    Initialize(context, newSocket);
+                } else {
+                    _socket = _sock._socket;
+                    _hostName = _sock._hostName;
+
+                    // we now own the lifetime of the socket
+                    GC.SuppressFinalize(_sock);
+                    Initialize(context, _socket);
                 }
-                Initialize(context, newSocket);
             }
 
             ~socket() {
                 close(true, true);
             }
 
+            public socket _sock {
+                get {
+                    return this;
+                }
+            }
+
+
+            private IAsyncResult _acceptResult;
             [Documentation("accept() -> (conn, address)\n\n"
                 + "Accept a connection. The socket must be bound and listening before calling\n"
                 + "accept(). conn is a new socket object connected to the remote host, and\n"
                 + "address is the remote host's address (e.g. a (host, port) tuple for IPv4).\n"
                 + "\n"
-                + "Difference from CPython: accept() does not support timeouts in blocking mode.\n"
-                + "If a timeout is set and the socket is in blocking mode, accept() will block\n"
-                + "indefinitely until a connection is ready."
                 )]
             public PythonTuple accept() {
                 socket wrappedRemoteSocket;
                 Socket realRemoteSocket;
                 try {
-                    realRemoteSocket = _socket.Accept();
+                    if (_acceptResult != null && _acceptResult.IsCompleted) {
+                        // previous async result has completed
+                        realRemoteSocket = _socket.EndAccept(_acceptResult);
+                    } else {
+                        int timeoutTime = _timeout;
+                        if (timeoutTime != 0) {
+                            // use the existing or create a new async request
+                            var asyncResult = _acceptResult ?? _socket.BeginAccept((x) => { }, null);
+
+                            if (asyncResult.AsyncWaitHandle.WaitOne(timeoutTime)) {
+                                // it's completed, end and throw it away
+                                realRemoteSocket = _socket.EndAccept(asyncResult);
+                                _acceptResult = null;
+                            } else {
+                                // save the async result for later incase it completes
+                                _acceptResult = asyncResult;
+                                throw PythonExceptions.CreateThrowable(timeout(_context), 0, "timeout");
+                            }
+                        } else {
+                            realRemoteSocket = _socket.Accept();
+                        }
+                    }
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
+
                 wrappedRemoteSocket = new socket(_context, realRemoteSocket);
                 return PythonTuple.MakeTuple(wrappedRemoteSocket, wrappedRemoteSocket.getpeername());
             }
@@ -205,12 +250,14 @@ namespace IronPython.Modules {
 
             internal void close(bool finalizing, bool removeAll) {
                 if (finalizing || removeAll || System.Threading.Interlocked.Decrement(ref _referenceCount) == 0) {
-                    lock (_handleToSocket) {
-                        WeakReference weakref;
-                        if (_handleToSocket.TryGetValue(_socket.Handle, out weakref)) {
-                            Socket target = (weakref.Target as Socket);
-                            if (target == _socket || target == null) {
-                                _handleToSocket.Remove(_socket.Handle);
+                    if (_socket != null) {
+                        lock (_handleToSocket) {
+                            WeakReference weakref;
+                            if (_handleToSocket.TryGetValue(_socket.Handle, out weakref)) {
+                                Socket target = (weakref.Target as Socket);
+                                if (target == _socket || target == null) {
+                                    _handleToSocket.Remove(_socket.Handle);
+                                }
                             }
                         }
                     }
@@ -219,11 +266,13 @@ namespace IronPython.Modules {
                         GC.SuppressFinalize(this);
                     }
 
-                    try {
-                        _socket.Close();
-                    } catch (Exception e) {
-                        if (!finalizing) {
-                            throw MakeException(_context, e);
+                    if (_socket != null) {
+                        try {
+                            _socket.Close();
+                        } catch (Exception e) {
+                            if (!finalizing) {
+                                throw MakeException(_context, e);
+                            }
                         }
                     }
                 }
@@ -355,7 +404,7 @@ namespace IronPython.Modules {
                     throw MakeException(_context, e);
                 }
             }
-            
+
             [Documentation("makefile([mode[, bufsize]]) -> file object\n\n"
                 + "Return a regular file object corresponding to the socket.  The mode\n"
                 + "and bufsize arguments are as for the built-in open() function.")]
@@ -416,7 +465,7 @@ namespace IronPython.Modules {
             public int recv_into(PythonArray buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
                 int bytesRead;
                 byte[] byteBuffer = new byte[byteBufferSize("recv_into", nbytes, buffer.__len__(), buffer.itemsize)];
-                
+
                 try {
                     bytesRead = _socket.Receive(byteBuffer, (SocketFlags)flags);
                 } catch (Exception e) {
@@ -426,6 +475,30 @@ namespace IronPython.Modules {
                 buffer.FromStream(new MemoryStream(byteBuffer), 0);
                 return bytesRead;
             }
+
+
+            [Documentation("recv_into(bytearray, [nbytes[, flags]]) -> nbytes_read\n\n"
+                + "A version of recv() that stores its data into a bytearray rather than creating\n"
+                + "a new string.  Receive up to buffersize bytes from the socket.  If buffersize\n"
+                + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
+                + "See recv() for documentation about the flags.\n"
+                )]
+            public int recv_into(ByteArray buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
+                int bytesRead;
+                byte[] byteBuffer = new byte[byteBufferSize("recv_into", nbytes, buffer.Count, 1)];
+
+                try {
+                    bytesRead = _socket.Receive(byteBuffer, (SocketFlags)flags);
+                } catch (Exception e) {
+                    throw MakeException(_context, e);
+                }
+
+                for (int i = 0; i < bytesRead; i++) {
+                    buffer[i] = byteBuffer[i];
+                }
+                return bytesRead;
+            }
+
 
             [Documentation("recvfrom(bufsize[, flags]) -> (string, address)\n\n"
                 + "Receive data from the socket, up to bufsize bytes. string is the data\n"
@@ -477,7 +550,7 @@ namespace IronPython.Modules {
                 byte[] byteBuffer = new byte[byteBufferSize("recvfrom_into", nbytes, buffer.__len__(), buffer.itemsize)];
                 IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
                 EndPoint remoteEP = remoteIPEP;
-                
+
                 try {
                     bytesRead = _socket.ReceiveFrom(byteBuffer, (SocketFlags)flags, ref remoteEP);
                 } catch (Exception e) {
@@ -695,6 +768,7 @@ namespace IronPython.Modules {
                         }
                         _socket.Blocking = seconds > 0; // 0 timeout means non-blocking mode
                         _socket.SendTimeout = (int)(seconds * MillisecondsPerSecond);
+                        _timeout = (int)(seconds * MillisecondsPerSecond);
                     }
                 } finally {
                     _socket.ReceiveTimeout = _socket.SendTimeout;
@@ -788,8 +862,8 @@ namespace IronPython.Modules {
 
             public override string ToString() {
                 try {
-                    
-                    return String.Format("<socket object, fd={0}, family={1}, type={2}, protocol={3}>", 
+
+                    return String.Format("<socket object, fd={0}, family={1}, type={2}, protocol={3}>",
                         fileno(), family, type, proto);
                 } catch {
                     return "<socket object, fd=?, family=?, type=, protocol=>";
@@ -853,7 +927,7 @@ namespace IronPython.Modules {
                 } else {
                     settimeout((double)defaultTimeout / MillisecondsPerSecond);
                 }
-                _hostName = null;
+
                 lock (_handleToSocket) {
                     _handleToSocket[socket.Handle] = new WeakReference(socket);
                 }
@@ -914,7 +988,8 @@ namespace IronPython.Modules {
                 PythonTuple sockaddress = (PythonTuple)current[4];
                 socket socket = null;
                 try {
-                    socket = new socket(context, family, socktype, proto);
+                    socket = new socket();
+                    socket.__init__(context, family, socktype, proto, null);
                     if (timeout != _GLOBAL_DEFAULT_TIMEOUT) {
                         socket.settimeout(timeout);
                     }
@@ -945,7 +1020,7 @@ namespace IronPython.Modules {
             [DefaultParameterValue((int)SocketFlags.None)] int flags
         ) {
             int numericPort;
-            
+
             if (port == null) {
                 numericPort = 0;
             } else if (port is int) {
@@ -1266,7 +1341,7 @@ namespace IronPython.Modules {
         [Documentation("ntohl(x) -> integer\n\nConvert a 32-bit integer from network byte order to host byte order.")]
         public static object ntohl(object x) {
             int res = IPAddress.NetworkToHostOrder(SignInsensitiveToInt32(x));
-            
+
             if (res < 0) {
                 return (BigInteger)(uint)res;
             } else {
@@ -1304,7 +1379,7 @@ namespace IronPython.Modules {
         /// </summary>
         private static int SignInsensitiveToInt32(object x) {
             BigInteger bigValue = Converter.ConvertToBigInteger(x);
-            
+
             if (bigValue < 0) {
                 throw PythonOps.OverflowError("can't convert negative number to unsigned long");
             } else if (bigValue <= int.MaxValue) {
@@ -1710,7 +1785,7 @@ namespace IronPython.Modules {
                         }
                     }
                     // Incorrect family will raise exception below
-                } else {                    
+                } else {
                     IPHostEntry hostEntry = Dns.GetHostEntry(host);
                     List<IPAddress> addrs = new List<IPAddress>();
                     foreach (IPAddress ip in hostEntry.AddressList) {
@@ -1888,7 +1963,7 @@ namespace IronPython.Modules {
                 _dataSize += strData.Length;
                 if (_dataSize > _bufSize) {
                     Flush();
-                }                               
+                }
             }
 
             protected override void Dispose(bool disposing) {
@@ -1912,8 +1987,9 @@ namespace IronPython.Modules {
                 _close = close;
 
                 Stream stream;
-                socket s = (socket as socket);
-                if (s != null && s._socket.Connected) {
+                // subtypes of socket need to go through the user defined methods
+                if (socket != null && socket.GetType() == typeof(socket) && ((socket)socket)._socket.Connected) {
+                    socket s = (socket as socket);
                     _socket = s;
                     stream = new NetworkStream(s._socket);
                 } else {
@@ -1970,9 +2046,331 @@ namespace IronPython.Modules {
         private static PythonType herror(CodeContext/*!*/ context) {
             return (PythonType)PythonContext.GetContext(context).GetModuleState("socketherror");
         }
-        
+
         private static PythonType timeout(CodeContext/*!*/ context) {
             return (PythonType)PythonContext.GetContext(context).GetModuleState("sockettimeout");
+        }
+
+        public class ssl {
+            private readonly SslStream _sslStream;
+            private socket _socket;
+            private readonly X509Certificate2Collection _certCollection;
+            private readonly X509Certificate _cert;
+            private readonly int _protocol, _certsMode;
+            private readonly bool _validate, _serverSide;
+            private readonly CodeContext _context;
+            private Exception _validationFailure;
+
+            public ssl(CodeContext context, PythonSocket.socket sock, [DefaultParameterValue(null)] string keyfile, [DefaultParameterValue(null)] string certfile) {
+                _context = context;
+                _sslStream = new SslStream(new NetworkStream(sock._socket, false), true, CertValidationCallback);
+                _socket = sock;
+                _certCollection = new X509Certificate2Collection();
+                _protocol = -1;
+                _validate = false;
+            }
+
+            internal ssl(CodeContext context,
+               PythonSocket.socket sock,
+               bool server_side,
+               [DefaultParameterValue(null)] string keyfile,
+               [DefaultParameterValue(null)] string certfile,
+               [DefaultParameterValue(PythonSsl.CERT_NONE)]int certs_mode,
+               [DefaultParameterValue(-1)]int protocol,
+               string cacertsfile) {
+                if (sock == null) {
+                    throw PythonOps.TypeError("expected socket object, got None");
+                }
+                if ((keyfile == null) != (certfile == null)) {
+                    throw PythonExceptions.CreateThrowable(
+                        PythonSsl.SSLError(context),
+                        "When key or certificate is provided both must be provided"
+                    );                    
+                }
+
+                _serverSide = server_side;
+                bool validate;
+                _certsMode = certs_mode;
+
+                RemoteCertificateValidationCallback callback;
+                switch (certs_mode) {
+                    case PythonSsl.CERT_NONE:
+                        validate = false;
+                        callback = CertValidationCallback;
+                        break;
+                    case PythonSsl.CERT_OPTIONAL:
+                        validate = true;
+                        callback = CertValidationCallbackOptional;
+                        break;
+                    case PythonSsl.CERT_REQUIRED:
+                        validate = true;
+                        callback = CertValidationCallbackRequired;
+                        break;
+                    default:
+                        throw new InvalidOperationException(String.Format("bad certs_mode: {0}", certs_mode));
+                }
+
+                if (certfile != null) {
+                    _cert = PythonSsl.ReadCertificate(context, certfile);
+                }
+
+                if (server_side) {
+                    _sslStream = new SslStream(
+                        new NetworkStream(sock._socket, false),
+                        true,
+                        callback
+                    );
+                } else {
+                    _sslStream = new SslStream(
+                        new NetworkStream(sock._socket, false),
+                        true,
+                        callback,
+                        CertSelectLocal
+                    );
+                }
+
+                _socket = sock;
+                _certCollection = cacertsfile != null ?
+                    new X509Certificate2Collection(new[] { PythonSsl.ReadCertificate(context, cacertsfile) }) :
+                    new X509Certificate2Collection();
+                _protocol = protocol;
+                _validate = validate;
+                _context = context;
+            }
+
+            internal bool CertValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+                return true;
+            }
+
+            internal bool CertValidationCallbackOptional(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+                if (!_serverSide) {
+                    if (certificate != null && sslPolicyErrors != SslPolicyErrors.None) {
+                        ValidateCertificate(certificate, chain, sslPolicyErrors);
+                    }
+                }
+
+                return true;
+            }
+
+            internal X509Certificate CertSelectLocal(object sender, string targetHost, X509CertificateCollection collection, X509Certificate remoteCertificate, string[] acceptableIssuers) {
+                if (collection.Count > 0) {
+                    return collection[0];
+                }
+                return null;
+            }
+
+            internal bool CertValidationCallbackRequired(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+                if (!_serverSide) {
+                    // client check
+                    if (certificate == null) {
+                        ValidationError(SslPolicyErrors.None);
+                    } else if (sslPolicyErrors != SslPolicyErrors.None) {
+                        ValidateCertificate(certificate, chain, sslPolicyErrors);
+                    }
+                }
+
+                return true;
+            }
+
+            private void ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+                chain = new X509Chain();
+                chain.ChainPolicy.ExtraStore.AddRange(_certCollection);
+                chain.Build((X509Certificate2)certificate);
+                if (chain.ChainStatus.Length > 0) {
+                    foreach (var elem in chain.ChainStatus) {
+                        if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
+                            bool isOk = false;
+                            foreach (var cert in _certCollection) {
+                                if (certificate.Issuer == cert.Subject) {
+                                    isOk = true;
+                                }
+                            }
+
+                            if (isOk) {
+                                continue;
+                            }
+                        }
+
+                        ValidationError(sslPolicyErrors);
+                        break;
+                    }
+                }
+            }
+
+            private void ValidationError(object reason) {
+                _validationFailure = PythonExceptions.CreateThrowable(PythonSsl.SSLError(_context), "errors while validating certificate chain: ", reason.ToString());
+            }
+
+            public void do_handshake() {
+                try {
+                    // make sure the remote side hasn't shutdown before authenticating so we don't
+                    // hang if we're in blocking mode.
+                    int available = _socket._socket.Available;
+                } catch (SocketException) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.IOError, "socket closed before handshake");
+                }
+
+                try {
+                    if (_serverSide) {
+                        _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, GetProtocolTypeServer(_protocol), false);
+                    } else {
+
+                        var collection = new X509CertificateCollection();
+
+                        if (_cert != null) {
+                            collection.Add(_cert);
+                        }
+                        _sslStream.AuthenticateAsClient(_socket._hostName, collection, GetProtocolTypeClient(_protocol), false);
+                    }
+                } catch (AuthenticationException e) {
+                    _socket._socket.Close();
+                    throw PythonExceptions.CreateThrowable(PythonSsl.SSLError(_context), "errors while performing handshake: ", e.ToString());
+                }
+
+                if (_validationFailure != null) {
+                    throw _validationFailure;
+                }
+            }
+
+            public socket shutdown() {
+                _sslStream.Close();
+                return _socket;
+            }
+
+            /* supported communication based upon what the client & server specify
+             * as per the CPython docs:
+             * client / server SSLv2 SSLv3 SSLv23 TLSv1 
+                         SSLv2 yes      no   yes*    no 
+                         SSLv3 yes     yes   yes     no 
+                        SSLv23 yes      no   yes     no 
+                         TLSv1 no       no   yes    yes 
+             */
+
+            private static SslProtocols GetProtocolTypeServer(int type) {
+                switch (type) {
+                    case PythonSsl.PROTOCOL_SSLv2: return SslProtocols.Ssl2;
+                    case PythonSsl.PROTOCOL_SSLv3: return SslProtocols.Ssl3;
+                    case -1:
+                    case PythonSsl.PROTOCOL_SSLv23: return SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls;
+                    case PythonSsl.PROTOCOL_TLSv1: return SslProtocols.Tls;
+                    default:
+                        throw new InvalidOperationException("bad ssl protocol type: " + type);
+                }
+            }
+
+            private static SslProtocols GetProtocolTypeClient(int type) {
+                switch (type) {
+                    case PythonSsl.PROTOCOL_SSLv2: return SslProtocols.Ssl2;
+                    case -1:
+                    case PythonSsl.PROTOCOL_SSLv3: return SslProtocols.Ssl3;
+                    case PythonSsl.PROTOCOL_SSLv23: return SslProtocols.Ssl3 | SslProtocols.Ssl2;
+                    case PythonSsl.PROTOCOL_TLSv1: return SslProtocols.Tls;
+                    default:
+                        throw new InvalidOperationException("bad ssl protocol type: " + type);
+                }
+            }
+
+            public PythonTuple cipher() {
+                if (_sslStream.IsAuthenticated) {
+                    return PythonTuple.MakeTuple(
+                        _sslStream.CipherAlgorithm.ToString(),
+                        ProtocolToPython(),
+                        _sslStream.CipherStrength
+                    );
+                }
+                return null;
+            }
+
+            private string ProtocolToPython() {
+                switch (_sslStream.SslProtocol) {
+                    case SslProtocols.Ssl2: return "SSLv2";
+                    case SslProtocols.Ssl3: return "TLSv1/SSLv3";
+                    case SslProtocols.Tls: return "TLSv1";
+                    default: return _sslStream.SslProtocol.ToString();
+                }
+            }
+
+            public object peer_certificate(bool binary_form) {
+                var peerCert = _sslStream.RemoteCertificate;
+
+                if (peerCert != null) {
+                    if (binary_form) {
+                        return peerCert.GetRawCertData().MakeString();
+                    } else if (_validate) {
+                        return PythonSsl.CertificateToPython(_context, peerCert, true);
+                    }
+                }
+                return null;
+            }
+
+            public int pending() {
+                return _socket._socket.Available;
+            }
+
+            [Documentation("issuer() -> issuer_certificate\n\n"
+                + "Returns a string that describes the issuer of the server's certificate. Only useful for debugging purposes."
+                )]
+            public string issuer() {
+                if (_sslStream.IsAuthenticated) {
+                    X509Certificate remoteCertificate = _sslStream.RemoteCertificate;
+                    if (remoteCertificate != null) {
+                        return remoteCertificate.Issuer;
+                    } else {
+                        return String.Empty;
+                    }
+                }
+                return String.Empty;
+            }
+
+            [Documentation("read([n]) -> buffer_read\n\n"
+                + "If n is present, reads up to n bytes from the SSL connection. Otherwise, reads to EOF."
+                )]
+            public string read(CodeContext/*!*/ context, [DefaultParameterValue(Int32.MaxValue)] int n) {
+                try {
+                    byte[] buffer = new byte[2048];
+                    MemoryStream result = new MemoryStream(n);
+                    while (true) {
+                        int readLength = (n < buffer.Length) ? n : buffer.Length;
+                        int bytes = _sslStream.Read(buffer, 0, readLength);
+                        if (bytes > 0) {
+                            result.Write(buffer, 0, bytes);
+                            n -= bytes;
+                        }
+                        if (bytes == 0 || n == 0 || bytes < readLength) {
+                            return result.ToArray().MakeString();
+                        }
+                    }
+
+                } catch (Exception e) {
+                    throw PythonSocket.MakeException(context, e);
+                }
+            }
+
+            [Documentation("server() -> server_certificate\n\n"
+                + "Returns a string that describes the server's certificate. Only useful for debugging purposes."
+                )]
+            public string server() {
+                if (_sslStream.IsAuthenticated) {
+                    X509Certificate remoteCertificate = _sslStream.RemoteCertificate;
+                    if (remoteCertificate != null) {
+                        return remoteCertificate.Subject;
+                    }
+                }
+                return String.Empty;
+            }
+
+            [Documentation("write(s) -> bytes_sent\n\n"
+                + "Writes the string s through the SSL connection."
+                )]
+            public int write(CodeContext/*!*/ context, string data) {
+                byte[] buffer = data.MakeByteArray();
+                try {
+                    _sslStream.Write(buffer);
+                    return buffer.Length;
+                } catch (Exception e) {
+                    throw PythonSocket.MakeException(context, e);
+                }
+            }
         }
     }
 }

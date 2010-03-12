@@ -37,6 +37,7 @@ namespace IronPython.Runtime {
         const int UnspecifiedPrecision = -1; // Use the default precision
 
         private readonly CodeContext/*!*/ _context;
+        private readonly bool _isUnicodeString; // true if the LHS is Unicode and we should call __unicode__ for formatting objects on the RHS
         private object _data;
         private int _dataIndex;
 
@@ -71,11 +72,18 @@ namespace IronPython.Runtime {
         }
 
         #region Constructors
-        public StringFormatter(CodeContext/*!*/ context, string str, object data) {
+        
+        public StringFormatter(CodeContext/*!*/ context, string str, object data)
+            : this(context, str, data, false) {
+        }
+
+        public StringFormatter(CodeContext/*!*/ context, string str, object data, bool isUnicode) {
             _str = str;
             _data = data;
             _context = context;
+            _isUnicodeString = isUnicode;
         }
+
         #endregion
 
         #region Public API Surface
@@ -869,7 +877,17 @@ namespace IronPython.Runtime {
         }
 
         private void AppendString() {
-            string s = PythonOps.ToString(_opts.Value);
+            string s;
+            if (!_isUnicodeString) {
+                s = PythonOps.ToString(_context, _opts.Value);
+            } else {
+                object o = StringOps.FastNewUnicode(_context, _opts.Value);
+                s = o as string;
+                if (s == null) {
+                    s = ((Extensible<string>)o).Value;
+                }
+            }
+
             if (s == null) s = "None";
             AppendString(s);
         }

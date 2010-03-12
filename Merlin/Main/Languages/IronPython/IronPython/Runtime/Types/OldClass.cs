@@ -67,7 +67,7 @@ namespace IronPython.Runtime.Types {
 
         [NonSerialized]
         private List<OldClass> _bases;
-        private PythonType _type = null;
+        private PythonType _type;
 
         internal PythonDictionary _dict;
         private int _attrs;  // actually OldClassAttributes - losing type safety for thread safety
@@ -229,8 +229,12 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        internal bool TryLookupOneSlot(string name, out object ret) {
-            return _dict._storage.TryGetValue(name, out ret);
+        internal bool TryLookupOneSlot(PythonType lookingType, string name, out object ret) {
+            if (_dict._storage.TryGetValue(name, out ret)) {
+                ret = GetOldStyleDescriptor(TypeObject.Context.SharedContext, ret, null, lookingType);
+                return true;
+            }
+            return false;
         }
 
         internal string FullName {
@@ -248,6 +252,16 @@ namespace IronPython.Runtime.Types {
             PythonTypeSlot dts = self as PythonTypeSlot;
             object callable;
             if (dts != null && dts.TryGetValue(context, instance, TypeObject, out callable)) {
+                return callable;
+            }
+
+            return PythonOps.GetUserDescriptor(self, instance, type);
+        }
+
+        internal static object GetOldStyleDescriptor(CodeContext context, object self, object instance, PythonType type) {
+            PythonTypeSlot dts = self as PythonTypeSlot;
+            object callable;
+            if (dts != null && dts.TryGetValue(context, instance, type, out callable)) {
                 return callable;
             }
 

@@ -272,5 +272,12 @@ namespace IronPython.Runtime.Types {
         // *** END GENERATED CODE ***
 
         #endregion
+
+        [Obsolete("use Complex instead")]
+        public static PythonType Complex64 {
+            get {
+                return Complex;
+            }
+        }
     }
 }

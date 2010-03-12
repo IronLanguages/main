@@ -604,11 +604,12 @@ namespace IronPython.Runtime.Types {
             if (target.Overload != null && target.Overload.IsProtected) {
                 Type declaringType = target.Overload.DeclaringType;
                 string methodName = target.Overload.Name;
-                
+
+                string name = target.Overload.Name;
                 // report an error when calling a protected member
                 res = delegate(object[] callArgs, out bool shouldOptimize) { 
                     shouldOptimize = false;
-                    throw PythonOps.TypeErrorForProtectedMember(declaringType, target.Overload.Name);
+                    throw PythonOps.TypeErrorForProtectedMember(declaringType, name);
                 };
             } else if (result.MetaObject.Expression.NodeType == ExpressionType.Throw) {
                 if (IsBinaryOperator && args.Length == 2) {

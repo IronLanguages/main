@@ -589,22 +589,6 @@ namespace Microsoft.Scripting.Utils {
             return BigInt.ModPow(self, power, mod);
         }
 
-        public static int GetBitCount(this BigInt self) {
-            if (self.IsZero) {
-                return 1;
-            }
-            byte[] bytes = BigInt.Abs(self).ToByteArray();
-
-            int index = bytes.Length;
-            while (bytes[--index] == 0) ;
-
-            int count = index * 8;
-            for (int hiByte = bytes[index]; hiByte > 0; hiByte >>= 1) {
-                count++;
-            }
-            return count;
-        }
-
         public static string ToString(this BigInt self, int radix) {
             const string symbols = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -638,6 +622,94 @@ namespace Microsoft.Scripting.Utils {
             }
             return ret.ToString();
         }
+#endif
+        #endregion
+
+        #region Exposing underlying data
+#if !CLR2
+
+        [CLSCompliant(false)]
+        public static uint[] GetWords(this BigInt self) {
+            if (self.IsZero) {
+                return new uint[] { 0 };
+            }
+
+            int hi;
+            byte[] bytes;
+            GetHighestByte(self, out hi, out bytes);
+
+            uint[] result = new uint[(hi + 1 + 3) / 4];
+            int i = 0;
+            int j = 0;
+            uint u = 0;
+            int shift = 0;
+            while (i < bytes.Length) {
+                u |= (uint)bytes[i++] << shift;
+                if (i % 4 == 0) {
+                    result[j++] = u;
+                    u = 0;
+                }
+                shift += 8;
+            }
+            if (u != 0) {
+                result[j] = u;
+            }
+            return result;
+        }
+
+        [CLSCompliant(false)]
+        public static uint GetWord(this BigInt self, int index) {
+            return GetWords(self)[index];
+        }
+
+        public static int GetWordCount(this BigInt self) {
+            int index;
+            byte[] bytes;
+            GetHighestByte(self, out index, out bytes);
+            return index / 4 + 1; // return (index + 1 + 3) / 4;
+        }
+
+        public static int GetByteCount(this BigInt self) {
+            int index;
+            byte[] bytes;
+            GetHighestByte(self, out index, out bytes);
+            return index + 1;
+        }
+
+        public static int GetBitCount(this BigInt self) {
+            if (self.IsZero) {
+                return 1;
+            }
+            byte[] bytes = BigInt.Abs(self).ToByteArray();
+
+            int index = bytes.Length;
+            while (bytes[--index] == 0) ;
+
+            int count = index * 8;
+            for (int hiByte = bytes[index]; hiByte > 0; hiByte >>= 1) {
+                count++;
+            }
+            return count;
+        }
+
+        private static byte GetHighestByte(BigInt self, out int index, out byte[] byteArray) {
+            byte[] bytes = BigInt.Abs(self).ToByteArray();
+            if (self.IsZero) {
+                byteArray = bytes;
+                index = 0;
+                return 1;
+            }
+
+            int hi = bytes.Length;
+            byte b;
+            do {
+                b = bytes[--hi];
+            } while (b == 0);
+            index = hi;
+            byteArray = bytes;
+            return b;
+        }
+
 #endif
         #endregion
 

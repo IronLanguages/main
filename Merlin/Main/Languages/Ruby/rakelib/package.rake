@@ -17,6 +17,7 @@ MERLIN_ROOT           = (ENV['MERLIN_ROOT'] || File.expand_path(File.dirname(__F
 PACKAGE_DIR           = mono? ? "#{MERLIN_ROOT}/../../dist/ironruby#{"-debug" if ENV['configuration'] == "debug"}" : 'c:/ironruby'  # directory that binary package is created in
 PYTHON_PACKAGE_DIR    = mono? ? "#{MERLIN_ROOT}/../../python-dist/ironpython#{"-debug" if ENV['configuration'] == "debug"}" : 'c:/ironpython'  # directory that binary package is created in
 BUILD_BIN             = "#{MERLIN_ROOT}/Bin/#{'mono_' if mono?}#{ENV['configuration'] || "release"}"
+SL_BUILD_BIN             = mono? ? nil : "#{MERLIN_ROOT}/Bin/Silverlight #{ENV['configuration'] || "release"}"
 DIST_DIR              = mono? ? "#{MERLIN_ROOT}/../../pkg" : "C:/"        
 IRONRUBY_VERSION      = `git rev-parse HEAD`[0..6] # replace to version for a release "0.9"
 
@@ -28,37 +29,55 @@ namespace :package do
   desc "Generate an IronRuby binary redist package from the layout"
   task :ironruby do
     # Directory layouts
-    FileUtils.remove_dir(PACKAGE_DIR, true) if File.exist? PACKAGE_DIR
-    FileUtils.mkdir_p "#{PACKAGE_DIR}/bin"
+    rm_rf(PACKAGE_DIR) if File.exist? PACKAGE_DIR
+    mkdir_p "#{PACKAGE_DIR}/bin"
 
     # Copy Licenses
-    FileUtils.cp Dir.glob("#{MERLIN_ROOT}/Languages/Ruby/Licenses/*"), PACKAGE_DIR
+    cp_r Dir.glob("#{MERLIN_ROOT}/Languages/Ruby/Public/*"), PACKAGE_DIR
 
     # Copy binaries    
     # %w(ir ipy ipyw).each { |cmd| FileUtils.cp "#{BUILD_BIN}/#{cmd}.exe", "#{PACKAGE_DIR}/bin/" }
-    %w(ir ir64).each { |cmd| FileUtils.cp "#{BUILD_BIN}/#{cmd}.exe", "#{PACKAGE_DIR}/bin/" }
+    %w(ir ir64).each { |cmd| cp "#{BUILD_BIN}/#{cmd}.exe", "#{PACKAGE_DIR}/bin/" }
 
-    FileUtils.cp Dir.glob("#{BUILD_BIN}/IronRuby*.dll"), "#{PACKAGE_DIR}/bin"   
+    cp Dir.glob("#{BUILD_BIN}/IronRuby*.dll"), "#{PACKAGE_DIR}/bin"   
 #    FileUtils.cp Dir.glob("#{BUILD_BIN}/IronPython*.dll"), "#{PACKAGE_DIR}/bin"
-    FileUtils.cp Dir.glob("#{BUILD_BIN}/Microsoft.Scripting*.dll"), "#{PACKAGE_DIR}/bin"
-    FileUtils.cp "#{BUILD_BIN}/Microsoft.Dynamic.dll", "#{PACKAGE_DIR}/bin"
+    ms = FileList["#{BUILD_BIN}/Microsoft.Scripting*.dll"].exclude("*Helper*")
+    cp ms, "#{PACKAGE_DIR}/bin"
+    cp "#{BUILD_BIN}/Microsoft.Dynamic.dll", "#{PACKAGE_DIR}/bin"
 
-    FileUtils.cp Dir.glob("#{MERLIN_ROOT}/Languages/Ruby/Scripts/bin/*"), "#{PACKAGE_DIR}/bin" 
+    cp Dir.glob("#{MERLIN_ROOT}/Languages/Ruby/Scripts/bin/*"), "#{PACKAGE_DIR}/bin" 
 #    FileUtils.cp Dir.glob("#{MERLIN_ROOT}/Languages/IronPython/Scripts/*"), "#{PACKAGE_DIR}/bin"
 
     # Generate ir.exe.config
     IronRubyCompiler.transform_config_file((mono? ? 'MonoRL' : 'Binary'), project_root + "Config/#{mono? ? "Unsigned" : "Signed"}/App.config", "#{PACKAGE_DIR}/bin/ir.exe.config")
 
-    FileUtils.cp "#{PACKAGE_DIR}/bin/ir.exe.config", "#{PACKAGE_DIR}/bin/ir64.exe.config"
+    cp "#{PACKAGE_DIR}/bin/ir.exe.config", "#{PACKAGE_DIR}/bin/ir64.exe.config"
 
     # Copy standard library
-    FileUtils.mkdir_p "#{PACKAGE_DIR}/lib" unless File.exist? "#{PACKAGE_DIR}/lib"
-    FileUtils.cp_r "#{MERLIN_ROOT}/../External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby", "#{PACKAGE_DIR}/lib/ruby"
-    FileUtils.cp_r "#{MERLIN_ROOT}/Languages/Ruby/Libs", "#{PACKAGE_DIR}/lib/ironruby"
+    mkdir_p "#{PACKAGE_DIR}/lib" unless File.exist? "#{PACKAGE_DIR}/lib"
+    cp_r "#{MERLIN_ROOT}/../External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby", "#{PACKAGE_DIR}/lib/ruby"
+    cp_r "#{MERLIN_ROOT}/Languages/Ruby/Libs", "#{PACKAGE_DIR}/lib/ironruby"
 
-    FileUtils.cp_r "#{MERLIN_ROOT}/Languages/Ruby/Samples", "#{PACKAGE_DIR}/samples"    
+    cp_r "#{MERLIN_ROOT}/Languages/Ruby/Samples", "#{PACKAGE_DIR}/samples"    
 
-    %w(igem iirb irackup irails irake irdoc iri ir).each { |exs| FileUtils.chmod 0755, "#{PACKAGE_DIR}/bin/#{exs}" } if mono?
+    %w(igem iirb irackup irails irake irdoc iri ir).each { |exs| chmod 0755, "#{PACKAGE_DIR}/bin/#{exs}" } if mono?
+    unless mono?
+      mkdir_p "#{PACKAGE_DIR}/silverlight/bin"
+      %w{Chiron.exe
+      Chiron.exe.config
+      IronPython.dll
+      IronPython.Modules.dll
+      IronRuby.dll
+      IronRuby.Libraries.dll
+      Microsoft.Dynamic.dll
+      Microsoft.Scripting.Core.dll
+      Microsoft.Scripting.Debugging.dll
+      Microsoft.Scripting.dll
+      Microsoft.Scripting.ExtensionAttribute.dll
+      Microsoft.Scripting.Silverlight.dll}.each do |file|
+        cp "#{SL_BUILD_BIN}/#{file}", "#{PACKAGE_DIR}/silverlight/bin" 
+      end
+    end
 
     # Generate compressed package
     if ENV['ZIP']

@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+
+<head>
+  <title>Ruby Silverlight example - Clock</title>
+
+  <style type="text/css">
+    html, body {
+      height: 100%;
+      overflow: auto;
+    }
+    body {
+      padding: 0;
+      margin: 0;
+    }
+    #silverlightControlHost {
+	    position: absolute;
+	    left: 100px;
+	    top: 50px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="silverlightControlHost">
+    
+    <object data="data:application/x-silverlight," type="application/x-silverlight-2" width="320" height="320">
+      <param name="source" value="app.xap"/>
+      <param name="background" value="#00000000" />
+      <param name="windowless" value="true" />
+      <param name="initParams" value="reportErrors=errorLocation" />
+
+      <a href="http://go.microsoft.com/fwlink/?LinkID=124807" style="text-decoration: none;">
+          <img src="http://go.microsoft.com/fwlink/?LinkId=108181" alt="Get Microsoft Silverlight" style="border-style: none"/>
+      </a>
+    </object>
+    <iframe style='visibility:hidden;height:0;width:0;border:0px'></iframe>
+     
+  </div>
+
+</body>
+
+</html>

@@ -1161,7 +1161,7 @@ namespace IronPython.Runtime {
             return CompilePythonCode(sourceCode, compilerOptions, ThrowingErrorSink.Default);
         }
 
-        internal object GetBuiltinModule(string name) {
+        internal PythonModule GetBuiltinModule(string name) {
             lock (this) {
                 PythonModule mod = CreateBuiltinModule(name);
                 if (mod != null) {

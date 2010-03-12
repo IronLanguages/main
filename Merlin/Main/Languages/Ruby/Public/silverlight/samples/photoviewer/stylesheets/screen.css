@@ -1,0 +1,86 @@
+html, body {
+  height: 100%;
+  overflow: auto;
+}
+body {
+  padding: 0;
+  margin: 0;
+}
+#errorLocation {
+  font-size: small;
+  color: Gray;
+}
+
+body {
+  font-family: "Trebuchet MS" Verdana sans-serif;
+  border: 0px; padding: 0px; margin: 0px;
+}
+
+div.clear {
+  clear: both;
+}
+
+/* main search box */
+.search {
+  padding: 20px;
+  margin: 20px;
+  border: 10px solid gray;
+  background-color: #ccc;
+}
+
+form#search #images_loading {
+  width: 18px; 
+  height: 15px;
+  display: none;
+}
+
+
+/* search results */
+#search_results {
+  display: none;
+}
+
+/* search images */
+#search_images {
+  padding-top: 10px;
+}
+#search_images .image, .image a, .image a img {
+  float: left; 
+  padding: 0px; 
+  margin: 0px; 
+  border: 0px;
+}
+#search_images .image a:link, 
+#search_images .image a:visited {
+  background-color: white;
+  padding: 5px;
+  margin: 5px;
+  background-color: white;
+  border: 1px solid gray;
+}
+#search_images .image a:hover {
+  background-color: #ff9966;
+}
+
+/* search links */
+#search_links {
+  clear: both;
+  padding-top: 10px;
+}
+#search_links a {
+  border: 1px solid #003344;
+  margin: 2px;
+  padding: 0px 5px;
+  color: #003344;
+  background-color: white;
+  text-decoration: none;
+}
+#search_links a:hover,
+#search_links a.active {
+  color: white;
+  background-color: #003344;
+  border: 1px solid white;
+}
+#search_links a.active {
+  cursor: default;
+}

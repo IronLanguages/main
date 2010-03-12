@@ -112,6 +112,12 @@ namespace IronPython.Compiler {
         }
     }
 
+    sealed class UnicodeStringToken : ConstantValueToken {
+        public UnicodeStringToken(object value)
+            : base(value) {
+        }
+    }
+
     public class IncompleteStringToken : ConstantValueToken {
         private readonly bool _quote;
         private readonly bool _isRaw;

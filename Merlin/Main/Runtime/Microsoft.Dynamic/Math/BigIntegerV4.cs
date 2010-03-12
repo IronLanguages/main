@@ -228,80 +228,19 @@ namespace Microsoft.Scripting.Math {
 
         [CLSCompliant(false)]
         public uint[] GetWords() {
-            if (IsZero()) {
-                return new uint[] { 0 };
-            }
-
-            int hi;
-            byte[] bytes;
-            GetHighestByte(out hi, out bytes);
-
-            uint[] result = new uint[(hi + 1 + 3) / 4];
-            int i = 0;
-            int j = 0;
-            uint u = 0;
-            int shift = 0;
-            while (i < bytes.Length) {
-                u |= (uint)bytes[i++] << shift;
-                if (i % 4 == 0) {
-                    result[j++] = u;
-                    u = 0;
-                }
-                shift += 8;
-            }
-            if (u != 0) {
-                result[j] = u;
-            }
-            return result;
+            return Value.GetWords();
         }
 
         public int GetBitCount() {
-            if (Value.IsZero) {
-                return 1;
-            }
-
-            int hi;
-            byte[] bytes;
-            int b = GetHighestByte(out hi, out bytes);
-            int result = hi * 8;
-            do {
-                b >>= 1;
-                result++;
-            } while (b > 0);
-
-            return result;
+            return Value.GetBitCount();
         }
 
         public int GetWordCount() {
-            int index;
-            byte[] bytes;
-            GetHighestByte(out index, out bytes);
-            return (index + 1 + 3) / 4;
+            return Value.GetWordCount();
         }
 
         public int GetByteCount() {
-            int index;
-            byte[] bytes;
-            GetHighestByte(out index, out bytes);
-            return index + 1;
-        }
-
-        private byte GetHighestByte(out int index, out byte[] byteArray) {
-            byte[] bytes = BigInt.Abs(Value).ToByteArray();
-            if (Value.IsZero) {
-                byteArray = bytes;
-                index = 0;
-                return 1;
-            }
-
-            int hi = bytes.Length;
-            byte b;
-            do {
-                b = bytes[--hi];
-            } while (b == 0);
-            index = hi;
-            byteArray = bytes;
-            return b;
+            return Value.GetByteCount();
         }
 
         /// <summary>

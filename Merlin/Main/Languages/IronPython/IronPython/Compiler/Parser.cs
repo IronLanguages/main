@@ -1958,7 +1958,11 @@ namespace IronPython.Compiler {
                         }
                     }
 
-                    ret = new ConstantExpression(cv);
+                    if (t is UnicodeStringToken) {
+                        ret = ConstantExpression.MakeUnicode((string)cv);
+                    } else {
+                        ret = new ConstantExpression(cv);
+                    }
                     ret.SetLoc(start, GetEnd());
                     return ret;
                 default:
@@ -2025,11 +2029,13 @@ namespace IronPython.Compiler {
 
                             NextToken();
                             Arg[] args = FinishArgListOrGenExpr();
-                            if (args == null) {
-                                return new CallExpression(ret, new Arg[0]);
+                            CallExpression call;
+                            if (args != null) {
+                                call = FinishCallExpr(ret, args);
+                            } else {
+                                call = new CallExpression(ret, new Arg[0]);
                             }
 
-                            CallExpression call = FinishCallExpr(ret, args);
                             call.SetLoc(ret.Start, GetEnd());
                             ret = call;
                             break;

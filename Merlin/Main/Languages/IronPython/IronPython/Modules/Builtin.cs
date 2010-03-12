@@ -96,7 +96,10 @@ namespace IronPython.Modules {
 
         [Documentation("__import__(name, globals, locals, fromlist, level) -> module\n\nImport a module.")]
         public static object __import__(CodeContext/*!*/ context, string name, [DefaultParameterValue(null)]object globals, [DefaultParameterValue(null)]object locals, [DefaultParameterValue(null)]object fromlist, [DefaultParameterValue(-1)]int level) {
-            //!!! remove suppress in GlobalSuppressions.cs when CodePlex 2704 is fixed.
+            if (fromlist is string || fromlist is Extensible<string>) {
+                fromlist = new List<object> { fromlist };
+            }
+
             IList from = fromlist as IList;
             PythonContext pc = PythonContext.GetContext(context);
 

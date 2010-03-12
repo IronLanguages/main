@@ -750,7 +750,9 @@ namespace IronRuby.Builtins {
                     }
 
                     if (!visited.ContainsKey(name)) {
-                        result.Add(self.Context.StringifyIdentifier(name));
+                        if (Tokenizer.IsConstantName(name, true)) {
+                            result.Add(self.Context.StringifyIdentifier(name));
+                        }
                         visited.Add(name, true);
                     }
                     return false;
@@ -885,10 +887,12 @@ namespace IronRuby.Builtins {
             var result = new RubyArray();
             using (self.Context.ClassHierarchyLocker()) {
                 self.ForEachMember(inherited, attributes, foreignMembers, (name, module, member) => {
-                    if (member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMapping) == 0 && RubyUtils.HasMangledName(name)) {
-                        result.Add(new ClrName(name));
-                    } else {
-                        result.Add(self.Context.StringifyIdentifier(name));
+                    if (Tokenizer.IsMethodName(name, true) || Tokenizer.IsOperatorName(name)) {
+                        if (member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMapping) == 0 && RubyUtils.HasMangledName(name)) {
+                            result.Add(new ClrName(name));
+                        } else {
+                            result.Add(self.Context.StringifyIdentifier(name));
+                        }
                     }
                 });
             }

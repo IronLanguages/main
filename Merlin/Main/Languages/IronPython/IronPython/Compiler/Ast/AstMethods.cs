@@ -92,6 +92,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo GetClosureTupleFromContext = GetMethod((Func<CodeContext, MutableTuple>)PythonOps.GetClosureTupleFromContext);
         public static readonly MethodInfo IsUnicode = GetMethod((Func<object, bool>)PythonOps.IsUnicode);
         public static readonly MethodInfo PushFrame = GetMethod((Func<CodeContext, FunctionCode, List<FunctionStack>>)PythonOps.PushFrame);
+        public static readonly MethodInfo FormatUnicode = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatUnicode);
+        public static readonly MethodInfo FormatString = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatString);
         
         private static MethodInfo GetMethod(Delegate x) {
             return x.Method;

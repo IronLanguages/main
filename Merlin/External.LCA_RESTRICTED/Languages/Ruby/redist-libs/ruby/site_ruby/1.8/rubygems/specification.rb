@@ -305,13 +305,13 @@ class Gem::Specification
       raise TypeError, "invalid Gem::Specification format #{array.inspect}"
     end
 
-    if array[8] == "universal-.net"
+    if array[8] == "universal-dotnet"
       # When installing gems from a remote server that is using MRI, the gem information that is
       # sent down to the local machine is incorrect since MRI is not able to parse the platform
       # string of "universal-.net" until a patch is applied to RubyGems in Gem::Platform#initialize,
       # similar to the way other platforms are handled in that method. IronRuby does include
       # this patch. For now, we work around the problem.
-      array[16] = Gem::Platform.new(["universal", ".net"]) if array[16] == Gem::Platform.new(["universal", "unknown"])
+      array[16] = Gem::Platform.new(["universal", "dotnet"]) if array[16] == Gem::Platform.new(["universal", "unknown"])
     end
     
     spec.instance_variable_set :@rubygems_version,          array[0]

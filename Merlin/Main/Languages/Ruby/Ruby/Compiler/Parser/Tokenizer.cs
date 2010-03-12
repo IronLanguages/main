@@ -3765,6 +3765,40 @@ namespace IronRuby.Compiler {
             return true;
         }
 
+        public static bool IsOperatorName(string/*!*/ name) {
+            if (name.Length <= 3) {
+                switch (name) {
+                    case "|":
+                    case "^":
+                    case "&":
+                    case "<=>":
+                    case "==":
+                    case "===":
+                    case "=~":
+                    case ">":
+                    case ">=":
+                    case "<":
+                    case "<=":
+                    case "<<":
+                    case ">>":
+                    case "+":
+                    case "-":
+                    case "*":
+                    case "/":
+                    case "%":
+                    case "**":
+                    case "~":
+                    case "+@":
+                    case "-@":
+                    case "[]":
+                    case "[]=":
+                    case "`":
+                        return true;
+                }
+            }
+            return false;
+        }
+
         #endregion
 
         #endregion

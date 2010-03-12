@@ -907,10 +907,7 @@ namespace IronPython.Runtime.Operations {
 
         [PythonHidden]
         public static int GetByteCount(BigInteger self) {
-            int index;
-            byte[] bytes;
-            GetHighestByte(self, out index, out bytes);
-            return index + 1;
+            return self.GetByteCount();
         }
 
         #region 'Create' Methods
@@ -956,59 +953,17 @@ namespace IronPython.Runtime.Operations {
 
         [CLSCompliant(false), PythonHidden]
         public static uint[] GetWords(BigInteger self) {
-            if (self.IsZero) {
-                return new uint[] { 0 };
-            }
-
-            int hi;
-            byte[] bytes;
-            GetHighestByte(self, out hi, out bytes);
-
-            uint[] result = new uint[(hi + 1 + 3) / 4];
-            int i = 0;
-            int j = 0;
-            uint u = 0;
-            int shift = 0;
-            while (i < bytes.Length) {
-                u |= (uint)bytes[i++] << shift;
-                if (i % 4 == 0) {
-                    result[j++] = u;
-                    u = 0;
-                }
-                shift += 8;
-            }
-            if (u != 0) {
-                result[j] = u;
-            }
-            return result;
+            return self.GetWords();
         }
 
         [CLSCompliant(false), PythonHidden]
         public static uint GetWord(BigInteger self, int index) {
-            return GetWords(self)[index];
+            return self.GetWord(index);
         }
 
         [PythonHidden]
         public static int GetWordCount(BigInteger self) {
-            return GetWords(self).Length;
-        }
-
-        private static byte GetHighestByte(BigInteger self, out int index, out byte[] byteArray) {
-            byte[] bytes = BigInteger.Abs(self).ToByteArray();
-            if (self.IsZero) {
-                byteArray = bytes;
-                index = 0;
-                return 1;
-            }
-
-            int hi = bytes.Length;
-            byte b;
-            do {
-                b = bytes[--hi];
-            } while (b == 0);
-            index = hi;
-            byteArray = bytes;
-            return b;
+            return self.GetWordCount();
         }
 
         #endregion

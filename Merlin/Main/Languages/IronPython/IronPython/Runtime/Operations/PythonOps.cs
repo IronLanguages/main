@@ -239,7 +239,16 @@ namespace IronPython.Runtime.Operations {
 
                 ret = es.Value;
             }
+            
             return ret;
+        }
+
+        public static string FormatString(CodeContext context, string str, object data) {
+            return new StringFormatter(context, str, data).Format();
+        }
+
+        public static string FormatUnicode(CodeContext context, string str, object data) {
+            return new StringFormatter(context, str, data, true).Format();
         }
 
         public static object Plus(object o) {
@@ -3254,8 +3263,8 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
-        public static bool OldClassTryLookupOneSlot(OldClass self, string name, out object value) {
-            return self.TryLookupOneSlot(name, out value);
+        public static bool OldClassTryLookupOneSlot(PythonType type, OldClass self, string name, out object value) {
+            return self.TryLookupOneSlot(type, name, out value);
         }
 
         public static bool OldInstanceTryGetBoundCustomMember(CodeContext context, OldInstance self, string name, out object value) {
@@ -3846,19 +3855,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception UnicodeDecodeError(string format, params object[] args) {
-#if SILVERLIGHT // EncoderFallbackException and DecoderFallbackException
-            throw new NotImplementedException();
-#else
             return new System.Text.DecoderFallbackException(string.Format(format, args));
-#endif
         }
 
         public static Exception UnicodeEncodeError(string format, params object[] args) {
-#if SILVERLIGHT // EncoderFallbackException and DecoderFallbackException
-            throw new NotImplementedException();
-#else
             return new System.Text.EncoderFallbackException(string.Format(format, args));
-#endif
         }
 
         public static Exception IOError(Exception inner) {

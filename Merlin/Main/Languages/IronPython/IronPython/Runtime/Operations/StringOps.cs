@@ -214,7 +214,7 @@ namespace IronPython.Runtime.Operations {
         }
 
 
-        internal static object FastNewUnicode(CodeContext context, object value, object encoding, object errors) {
+        internal static string FastNewUnicode(CodeContext context, object value, object encoding, object errors) {
             string strErrors = errors as string;
             if (strErrors == null) {
                 throw PythonOps.TypeError("unicode() argument 3 must be string, not {0}", PythonTypeOps.GetName(errors));

@@ -160,7 +160,7 @@ namespace IronPython.Runtime {
                 OldClass dt = pt.OldClass;
 
                 if (PythonOps.TryGetBoundAttr(context, dt, name, out value)) {
-                    value = dt.GetOldStyleDescriptor(context, value, self, DescriptorContext);
+                    value = OldClass.GetOldStyleDescriptor(context, value, self, DescriptorContext);
                     return true;
                 }
             }

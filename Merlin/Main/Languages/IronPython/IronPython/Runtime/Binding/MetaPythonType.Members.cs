@@ -314,6 +314,7 @@ namespace IronPython.Runtime.Binding {
                 _cb.AddCondition(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("OldClassTryLookupOneSlot"),
+                        AstUtils.Constant(pt),
                         AstUtils.Constant(pt.OldClass),
                         AstUtils.Constant(_symName),
                         _tmp
@@ -548,20 +549,21 @@ namespace IronPython.Runtime.Binding {
             }
 
             protected override void AddOldClassAccess(PythonType pt) {
-                _gets.Add(new OldClassDelegate(pt, _binder.Name).Target);
+                _gets.Add(new OldClassDelegate(Value, pt, _binder.Name).Target);
             }
 
             class OldClassDelegate {
-                private readonly WeakReference _type;
+                private readonly WeakReference _type, _declType;
                 private readonly string _name;
 
-                public OldClassDelegate(PythonType oldClass, string name) {
+                public OldClassDelegate(PythonType declType, PythonType oldClass, string name) {
                     _type = oldClass.GetSharedWeakReference();
+                    _declType = declType.GetSharedWeakReference();
                     _name = name;
                 }
 
                 public bool Target(CodeContext context, object self, out object result) {
-                    return PythonOps.OldClassTryLookupOneSlot(((PythonType)_type.Target).OldClass, _name, out result);
+                    return PythonOps.OldClassTryLookupOneSlot((PythonType)_declType.Target, ((PythonType)_type.Target).OldClass, _name, out result);
                 }
             }
 

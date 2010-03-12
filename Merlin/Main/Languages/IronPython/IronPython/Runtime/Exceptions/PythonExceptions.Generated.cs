@@ -605,8 +605,6 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-
-#if !SILVERLIGHT
         [MultiRuntimeAware]
         private static PythonType UnicodeDecodeErrorStorage;
         public static PythonType UnicodeDecodeError {
@@ -678,10 +676,6 @@ namespace IronPython.Runtime.Exceptions {
 
         }
 
-#endif // !SILVERLIGHT
-
-
-#if !SILVERLIGHT
         [MultiRuntimeAware]
         private static PythonType UnicodeEncodeErrorStorage;
         public static PythonType UnicodeEncodeError {
@@ -752,8 +746,6 @@ namespace IronPython.Runtime.Exceptions {
             }
 
         }
-
-#endif // !SILVERLIGHT
 
         [MultiRuntimeAware]
         private static PythonType UnicodeTranslateErrorStorage;
@@ -952,14 +944,10 @@ namespace IronPython.Runtime.Exceptions {
 
         private static BaseException/*!*/ ToPythonHelper(System.Exception clrException) {
             if (clrException is BytesWarningException) return new BaseException(BytesWarning);
-            #if !SILVERLIGHT
             if (clrException is DecoderFallbackException) return new _UnicodeDecodeError();
-            #endif
             if (clrException is DeprecationWarningException) return new BaseException(DeprecationWarning);
             if (clrException is DivideByZeroException) return new BaseException(ZeroDivisionError);
-            #if !SILVERLIGHT
             if (clrException is EncoderFallbackException) return new _UnicodeEncodeError();
-            #endif
             if (clrException is EndOfStreamException) return new BaseException(EOFError);
             if (clrException is FutureWarningException) return new BaseException(FutureWarning);
             if (clrException is ImportWarningException) return new BaseException(ImportWarning);
@@ -1006,14 +994,10 @@ namespace IronPython.Runtime.Exceptions {
         }
         private static System.Exception/*!*/ ToClrHelper(PythonType/*!*/ type, string message) {
             if (type == BytesWarning) return new BytesWarningException(message);
-            #if !SILVERLIGHT
             if (type == UnicodeDecodeError) return new DecoderFallbackException(message);
-            #endif
             if (type == DeprecationWarning) return new DeprecationWarningException(message);
             if (type == ZeroDivisionError) return new DivideByZeroException(message);
-            #if !SILVERLIGHT
             if (type == UnicodeEncodeError) return new EncoderFallbackException(message);
-            #endif
             if (type == EOFError) return new EndOfStreamException(message);
             if (type == FutureWarning) return new FutureWarningException(message);
             if (type == ImportWarning) return new ImportWarningException(message);

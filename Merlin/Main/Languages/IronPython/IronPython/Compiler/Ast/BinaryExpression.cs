@@ -145,12 +145,34 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
+            ConstantExpression leftConst;
             if (!CanEmitWarning(_op)) {
                 var folded = ConstantFold();
                 if (folded != null) {
                     folded.Parent = Parent;
                     return AstUtils.Convert(folded.Reduce(), typeof(object));
                 }
+            } 
+            
+            if (_op == PythonOperator.Mod && 
+                (leftConst = _left as ConstantExpression) != null && 
+                leftConst.Value is string) {
+                MethodInfo method;
+                if (leftConst.IsUnicodeString) {
+                    // u'foo' % ...
+                    // we want this to perform unicode string formatting.
+                    method = AstMethods.FormatUnicode;
+                } else {
+                    // inline string formatting
+                    method = AstMethods.FormatString;
+                }
+
+                return Expression.Call(
+                    method,
+                    Parent.LocalContext,
+                    _left,
+                    _right
+                );
             }
 
             if (NeedComparisonTransformation()) {

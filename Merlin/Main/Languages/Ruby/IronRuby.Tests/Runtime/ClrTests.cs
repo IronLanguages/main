@@ -479,6 +479,54 @@ method called: compare_to
 ");
         }
 
+        public class ClassWithGeneratedMembers1 : I1 {
+            private class OK {
+            }
+
+            // C# generates display class, anonymous type, anonymos methods and a static field:
+            private IEnumerable<int> GetInts() {
+                var t = new { a = 1, b = 2 };
+                Func<int> f = () => 1;
+                yield return f();
+                yield return t.a;
+                yield return Field;
+            }
+
+            private static int Field = 3;
+
+            int I1.f() { return 0; }
+        }
+
+        [Options(PrivateBinding = true)]
+        public void ClrMethodEnumeration_InvalidNames1() {
+            Context.ObjectClass.SetConstant("Foo", Context.GetClass(typeof(ClassWithGeneratedMembers1)));
+            TestOutput(@"
+class Foo
+  def <=>; end
+  def <<; end
+  def &; end
+  def f?; end
+  def f!; end
+  def f=; end
+end
+
+puts Foo.constants
+puts Foo.singleton_methods(false).sort
+puts Foo.instance_methods(false).sort
+", @"
+OK
+field
+field=
+&
+<<
+<=>
+f!
+f=
+f?
+get_ints
+");
+        }
+
         private void AssertNoClrNames(object/*!*/ methods, string moduleName) {
             var array = (RubyArray)methods;
             int idx = array.FindIndex((name) => name is ClrName);

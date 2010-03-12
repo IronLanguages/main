@@ -23,12 +23,15 @@ using IronPython.Runtime.Operations;
 
 #if CLR2
 using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #else
 using System.Numerics;
 #endif
 
 namespace IronPython.Compiler.Ast {
     public partial class BinaryExpression {
+        const int MaximumInlineStringLength = 1024 * 1024;
+
         internal override ConstantExpression ConstantFold() {
             Expression left = _left.ConstantFold();
             Expression right = _right.ConstantFold();
@@ -108,6 +111,16 @@ namespace IronPython.Compiler.Ast {
                             case PythonOperator.NotEquals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(BigIntegerOps.Compare((BigInteger)constLeft.Value, (BigInteger)constRight.Value) != 0));
                         }
                     }
+                    if (constLeft.Value.GetType() == typeof(Complex)) {
+                        switch (_op) {
+                            case PythonOperator.Add: return new ConstantExpression(ComplexOps.Add((Complex)constLeft.Value, (Complex)constRight.Value));
+                            case PythonOperator.Subtract: return new ConstantExpression(ComplexOps.Subtract((Complex)constLeft.Value, (Complex)constRight.Value));
+                            case PythonOperator.Power: return new ConstantExpression(ComplexOps.Power((Complex)constLeft.Value, (Complex)constRight.Value));
+                            case PythonOperator.Multiply: return new ConstantExpression(ComplexOps.Multiply((Complex)constLeft.Value, (Complex)constRight.Value));
+                            case PythonOperator.Divide: return new ConstantExpression(ComplexOps.Divide((Complex)constLeft.Value, (Complex)constRight.Value));
+                            case PythonOperator.TrueDivide: return new ConstantExpression(ComplexOps.TrueDivide((Complex)constLeft.Value, (Complex)constRight.Value));
+                        }
+                    }
 
                     // *** END GENERATED CODE ***
 
@@ -117,10 +130,18 @@ namespace IronPython.Compiler.Ast {
                         return new ConstantExpression((string)constLeft.Value + (string)constRight.Value);
                     }
                 } else if (_op == PythonOperator.Multiply && constLeft != null && constRight != null) {
+                    // 10000 check is to avoid creating massive strings in IL - there's a limit to the number of
+                    // bytes of strings we get to have so we don't want to use them all up.
                     if (constLeft.Value.GetType() == typeof(string) && constRight.Value.GetType() == typeof(int)) {
-                        return new ConstantExpression(StringOps.Multiply((string)constLeft.Value, (int)constRight.Value));
-                    } else if(constLeft.Value.GetType() == typeof(int) && constRight.Value.GetType() == typeof(string)) {
-                        return new ConstantExpression(StringOps.Multiply((string)constRight.Value, (int)constLeft.Value));
+                        var res = StringOps.Multiply((string)constLeft.Value, (int)constRight.Value);
+                        if (res.Length < MaximumInlineStringLength) {
+                            return new ConstantExpression(res);
+                        }
+                    } else if (constLeft.Value.GetType() == typeof(int) && constRight.Value.GetType() == typeof(string)) {
+                        var res = StringOps.Multiply((string)constRight.Value, (int)constLeft.Value);
+                        if (res.Length < MaximumInlineStringLength) {
+                            return new ConstantExpression(res);
+                        }
                     }
                 }   
             } catch (ArithmeticException) {

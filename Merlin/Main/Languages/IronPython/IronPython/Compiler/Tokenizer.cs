@@ -722,6 +722,9 @@ namespace IronPython.Compiler {
             if (!isBytes) {
                 contents = LiteralParser.ParseString(contents, isRaw, isUnicode || UnicodeLiterals, complete);
                 if (complete) {
+                    if (isUnicode) {
+                        return new UnicodeStringToken(contents);
+                    }
                     return new ConstantValueToken(contents);
                 } else {
                     _state.IncompleteString = new IncompleteStringToken(contents, quote == '\'', isRaw, isUnicode, isTriple);

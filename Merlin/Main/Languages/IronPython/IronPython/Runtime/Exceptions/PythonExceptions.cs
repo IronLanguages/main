@@ -833,7 +833,6 @@ for k, v in toError.iteritems():
 
             internal const int ERROR_INVALID_NAME = 123;
         }
-#if !SILVERLIGHT
 
         public partial class _UnicodeDecodeError : BaseException {
             [PythonHidden]
@@ -864,7 +863,6 @@ for k, v in toError.iteritems():
                 }
             }
         }
-#endif
 
         public partial class _SystemExit : BaseException {
             public override void __init__(params object[] args) {
