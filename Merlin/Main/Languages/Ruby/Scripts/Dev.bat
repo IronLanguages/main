@@ -9,7 +9,7 @@ set PROGRAM_FILES_64=%ProgramFiles%
 set PROGRAM_FILES_x86=%ProgramFiles(x86)%
 
 REM ruby.exe needs to be on the path
-set RUBY18_BIN=
+set RUBY18_BIN=C:\Ruby\bin
 set RUBY18_EXE=ruby.exe
 set RUBY19_EXE=c:\ruby19\bin\ruby.exe
 set RUBYOPT=
