@@ -692,7 +692,7 @@ i = int
                     Result = new [] { 
                         new [] { 
                             new { ParamName="sender", ParamAttrs = ParameterFlags.None}, 
-                            new { ParamName="args", ParamAttrs = ParameterFlags.None},
+                            new { ParamName="e", ParamAttrs = ParameterFlags.None},
                         } 
                     }
                 },
@@ -743,7 +743,6 @@ i = int
                 for (int i = 0; i < result.Count; i++) {
                     var received = result[i]; ;
                     var expected = test.Result[i];
-
                     AreEqual(received.Parameters.Count, expected.Length);
                     var recvParams = new List<ParameterDoc>(received.Parameters);
 

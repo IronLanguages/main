@@ -18,11 +18,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using System.Text;
+using System.Threading;
 using System.Xml;
 using System.Xml.XPath;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -179,25 +180,26 @@ namespace IronPython.Runtime.Types {
             return summary;
         }
 
-        private static string CreateAutoDoc(MethodBase info, string name, int endParamSkip) {
+        public static OverloadDoc GetOverloadDoc(MethodBase info, string name, int endParamSkip) {
+            return GetOverloadDoc(info, name, endParamSkip, true);
+        }
+
+        /// <summary>
+        /// Creates a DLR OverloadDoc object which describes information about this overload.
+        /// </summary>
+        /// <param name="info">The method to document</param>
+        /// <param name="name">The name of the method if it should override the name in the MethodBase</param>
+        /// <param name="endParamSkip">Parameters to skip at the end - used for removing the value on a setter method</param>
+        /// <param name="includeSelf">true to include self on instance methods</param>
+        public static OverloadDoc GetOverloadDoc(MethodBase info, string name, int endParamSkip, bool includeSelf) {
             string summary = null, returns = null;
             List<KeyValuePair<string, string>> parameters = null;
 
 #if !SILVERLIGHT // XML doc
             GetXmlDoc(info, out summary, out returns, out parameters);
-
-            int lineWidth;
-            try {
-                lineWidth = Console.WindowWidth - 30;
-            } catch {
-                // console output has been redirected.
-                lineWidth = 80;
-            }
-#else
-            int lineWidth = 80;
 #endif
+
             StringBuilder retType = new StringBuilder();
-            StringBuilder ret = new StringBuilder();
 
             int returnCount = 0;
             MethodInfo mi = info as MethodInfo;
@@ -227,11 +229,16 @@ namespace IronPython.Runtime.Types {
                     }
                 }
 
-                if (name != null) ret.Append(name);
-                else if (mi.Name.IndexOf('#') == -1) ret.Append(mi.Name);
-                else ret.Append(mi.Name, 0, mi.Name.IndexOf('#'));
-            } else {
-                ret.Append("__new__");
+                if (name == null) {
+                    var hashIndex = mi.Name.IndexOf('#');
+                    if (hashIndex == -1) {
+                        name = mi.Name;
+                    } else {
+                        name = mi.Name.Substring(0, hashIndex);
+                    }
+                }
+            } else if(name == null) {
+                name = "__new__";
             }
 
             // For generic methods display either type parameters (for unbound methods) or
@@ -239,36 +246,37 @@ namespace IronPython.Runtime.Types {
             if (mi != null && mi.IsGenericMethod) {
                 Type[] typePars = mi.GetGenericArguments();
                 bool unbound = mi.ContainsGenericParameters;
-                ret.Append("[");
+                StringBuilder tmp = new StringBuilder();
+                tmp.Append(name);
+                tmp.Append("[");
                 if (typePars.Length > 1)
-                    ret.Append("(");
+                    tmp.Append("(");
 
                 bool insertComma = false;
                 foreach (Type t in typePars) {
                     if (insertComma)
-                        ret.Append(", ");
+                        tmp.Append(", ");
                     if (unbound)
-                        ret.Append(t.Name);
+                        tmp.Append(t.Name);
                     else
-                        ret.Append(GetPythonTypeName(t));
+                        tmp.Append(GetPythonTypeName(t));
                     insertComma = true;
                 }
 
                 if (typePars.Length > 1)
-                    ret.Append(")");
-                ret.Append("]");
+                    tmp.Append(")");
+                tmp.Append("]");
+                name = tmp.ToString();
             }
 
-            ret.Append("(");
-            bool needComma = false;
-
+            List<ParameterDoc> paramDoc = new List<ParameterDoc>();
             if (mi == null) {
-                // constructor, auto-insert cls
-                ret.Append("cls");
-                needComma = true;
-            } else if (!mi.IsStatic) {
-                ret.Append("self");
-                needComma = true;
+                if (name == "__new__") {
+                    // constructor, auto-insert cls
+                    paramDoc.Add(new ParameterDoc("cls", "type"));
+                }
+            } else if (!mi.IsStatic && includeSelf) {
+                paramDoc.Add(new ParameterDoc("self", GetPythonTypeName(mi.DeclaringType)));
             }
 
             ParameterInfo[] pis = info.GetParameters();
@@ -293,48 +301,109 @@ namespace IronPython.Runtime.Types {
                     if ((pi.Attributes & ParameterAttributes.Out) == ParameterAttributes.Out) continue;
                 }
 
-                if (needComma) ret.Append(", ");
-                ret.Append(GetPythonTypeName(pi.ParameterType));
-                ret.Append(" ");
-                ret.Append(pi.Name);
-                needComma = true;
-            }
-            ret.Append(")");
+                ParameterFlags flags = ParameterFlags.None;
+                if (pi.IsDefined(typeof(ParamArrayAttribute), false)) {
+                    flags |= ParameterFlags.ParamsArray;
+                } else if (pi.IsDefined(typeof(ParamDictionaryAttribute), false)) {
+                    flags |= ParameterFlags.ParamsDict;
+                }
 
-            if (returnCount > 1) {
-                retType.Append(')');
-            }
-
-            if (retType.Length != 0) {
-                ret.Append(" -> ");
-                ret.Append(retType);
-            }
-
-            // Append XML Doc Info if available
-            if (summary != null) {
-                ret.AppendLine(); ret.AppendLine();
-                ret.AppendLine(StringUtils.SplitWords(summary, true, lineWidth));
-            }
-
-            if (parameters != null && parameters.Count > 0) {
-                // always output parameters in order
-                for (int j = 0; j < pis.Length; j++) {
-                    for (int i = 0; i < parameters.Count; i++) {
-                        if (pis[j].Name == parameters[i].Key) {
-                            ret.Append("    ");
-                            ret.Append(parameters[i].Key);
-                            ret.Append(": ");
-                            ret.AppendLine(StringUtils.SplitWords(parameters[i].Value, false, lineWidth));
+                string paramDocString = null;
+                if (parameters != null) {
+                    foreach (var paramXmlDoc in parameters) {
+                        if (paramXmlDoc.Key == pi.Name) {
+                            paramDocString = paramXmlDoc.Value;
                             break;
                         }
                     }
                 }
+
+                paramDoc.Add(
+                    new ParameterDoc(
+                        pi.Name ?? "",  // manufactured methods, such as string[].ctor(int) can have no parameter names.
+                        GetPythonTypeName(pi.ParameterType),
+                        paramDocString,
+                        flags
+                    )
+                );
+            }
+            
+            if (returnCount > 1) {
+                retType.Append(')');
+            }
+            
+            ParameterDoc retDoc = new ParameterDoc(String.Empty, retType.ToString(), returns);
+
+            return new OverloadDoc(
+                name,
+                summary,
+                paramDoc,
+                retDoc
+            );
+        }
+
+        internal static string CreateAutoDoc(MethodBase info, string name, int endParamSkip) {
+#if !SILVERLIGHT // Console
+            int lineWidth;
+            try {
+                lineWidth = Console.WindowWidth - 30;
+            } catch {
+                // console output has been redirected.
+                lineWidth = 80;
+            }
+#else
+            int lineWidth = 80;
+#endif
+            var docInfo = GetOverloadDoc(info, name, endParamSkip);
+            StringBuilder ret = new StringBuilder();
+
+            ret.Append(docInfo.Name);
+            ret.Append("(");
+            string comma = "";
+            foreach (var param in docInfo.Parameters) {
+                ret.Append(comma);
+                if ((param.Flags & ParameterFlags.ParamsArray) != 0) {
+                    ret.Append('*');
+                } else if ((param.Flags & ParameterFlags.ParamsDict) != 0) {
+                    ret.Append("**");
+                }
+                ret.Append(param.Name);
+                if (!String.IsNullOrEmpty(param.TypeName)) {
+                    ret.Append(": ");
+                    ret.Append(param.TypeName);
+                }
+                comma = ", ";
+            }
+            ret.Append(")");
+
+            if (!String.IsNullOrEmpty(docInfo.ReturnParameter.TypeName)) {
+                ret.Append(" -> ");
+                ret.AppendLine(docInfo.ReturnParameter.TypeName);
             }
 
-            if (returns != null) {
+            // Append XML Doc Info if available
+            if (!String.IsNullOrEmpty(docInfo.Documentation)) {
                 ret.AppendLine();
+                ret.AppendLine(StringUtils.SplitWords(docInfo.Documentation, true, lineWidth));
+            }
+
+            bool emittedParamDoc = false;
+            foreach (var param in docInfo.Parameters) {
+                if (!String.IsNullOrEmpty(param.Documentation)) {
+                    if (!emittedParamDoc) {
+                        ret.AppendLine();
+                        emittedParamDoc = true;
+                    }
+                    ret.Append("    ");
+                    ret.Append(param.Name);
+                    ret.Append(": ");
+                    ret.AppendLine(StringUtils.SplitWords(param.Documentation, false, lineWidth));
+                }
+            }
+
+            if (!String.IsNullOrEmpty(docInfo.ReturnParameter.Documentation)) {
                 ret.Append("    Returns: ");
-                ret.AppendLine(StringUtils.SplitWords(returns, false, lineWidth));
+                ret.AppendLine(StringUtils.SplitWords(docInfo.ReturnParameter.Documentation, false, lineWidth));
             }
 
             return ret.ToString();
@@ -558,7 +627,7 @@ namespace IronPython.Runtime.Types {
                                 parameters = new List<KeyValuePair<string, string>>();
                             }
 
-                            parameters.Add(new KeyValuePair<string, string>(name, paramText));
+                            parameters.Add(new KeyValuePair<string, string>(name, paramText.Trim()));
                         }
                         break;
                     case "exception":
@@ -664,7 +733,7 @@ namespace IronPython.Runtime.Types {
                     if (!xr.Read()) break;
                 }
             }
-            return text.ToString();
+            return text.ToString().Trim();
         }
 #endif
     }

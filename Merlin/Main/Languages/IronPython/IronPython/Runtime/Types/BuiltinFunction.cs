@@ -802,9 +802,10 @@ namespace IronPython.Runtime.Types {
             get {
                 StringBuilder sb = new StringBuilder();
                 IList<MethodBase> targets = Targets;
-                bool needNewLine = false;
                 for (int i = 0; i < targets.Count; i++) {
-                    if (targets[i] != null) AddDocumentation(sb, ref needNewLine, targets[i]);
+                    if (targets[i] != null) {
+                        sb.Append(DocBuilder.DocOneInfo(targets[i], Name));
+                    }
                 }
                 return sb.ToString();
             }
@@ -834,14 +835,6 @@ namespace IronPython.Runtime.Types {
         #endregion
 
         #region Private members
-
-        private void AddDocumentation(StringBuilder sb, ref bool nl, MethodBase mb) {
-            if (nl) {
-                sb.Append(System.Environment.NewLine);
-            }
-            sb.Append(DocBuilder.DocOneInfo(mb, Name));
-            nl = true;
-        }
 
         private BinderType BinderType {
             get {

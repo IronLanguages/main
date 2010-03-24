@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !SILVERLIGHT
 
 using System;
 using System.Runtime.InteropServices;
@@ -23,3 +24,5 @@ namespace Microsoft.Scripting.Utils {
         internal static extern bool SetEnvironmentVariable(string name, string value);
     }
 }
+
+#endif

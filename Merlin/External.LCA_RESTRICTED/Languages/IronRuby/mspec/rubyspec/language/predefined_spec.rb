@@ -1,4 +1,5 @@
 require File.dirname(__FILE__) + '/../spec_helper'
+require File.dirname(__FILE__) + '/fixtures/classes'
 require 'stringio'
 
 # The following tables are excerpted from Programming Ruby: The Pragmatic Programmer's Guide'
@@ -565,5 +566,126 @@ describe "The predefined global constants" do
 
   it "includes TOPLEVEL_BINDING" do
     Object.const_defined?(:TOPLEVEL_BINDING).should == true
+  end
+end
+
+describe "SCRIPT_LINES__" do
+  it "can be set" do
+    LanguageSpecs.preserving_script_lines do
+      SCRIPT_LINES__ = {}
+      Object.constants.include?(LanguageSpecs::SCRIPT_LINES_NAME).should be_true      
+    end
+  end
+  
+  it "records file name" do
+    filename = LanguageSpecs.script_lines_target_file
+    LanguageSpecs.get_script_lines(filename).keys[0].should == filename
+  end
+  
+  it "records the contents of the file" do
+    filename = LanguageSpecs.script_lines_target_file
+    script_lines = LanguageSpecs.get_script_lines filename
+    script_lines.values[0].class.should == Array
+    script_lines.values[0][0].should == File.open(filename) {|f| f.readline }
+  end
+
+  ruby_version_is "" ... "1.9" do
+    it "records reloads" do
+      LanguageSpecs.preserving_script_lines do
+        SCRIPT_LINES__ = {}
+        filename = LanguageSpecs.script_lines_target_file
+        load filename
+        SCRIPT_LINES__.clear
+        load filename
+        SCRIPT_LINES__.size.should == 1
+      end
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "does not record reloads" do
+      LanguageSpecs.preserving_script_lines do
+        SCRIPT_LINES__ = {}
+        filename = LanguageSpecs.script_lines_target_file
+        load filename
+        SCRIPT_LINES__.clear
+        load filename
+        SCRIPT_LINES__.size.should == 0
+      end
+    end
+  end
+
+  ruby_version_is "" ... "1.9" do
+    it "records the module load even if the module load fails" do
+      LanguageSpecs.preserving_script_lines do
+        SCRIPT_LINES__ = {}
+        lambda { load fixture(__FILE__, 'raise.rb') }.should raise_error
+        SCRIPT_LINES__.size.should == 1
+      end
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "does not record the module load if the module load fails" do
+      LanguageSpecs.preserving_script_lines do
+        SCRIPT_LINES__ = {}
+        lambda { load fixture(__FILE__, 'raise.rb') }.should raise_error
+        SCRIPT_LINES__.size.should == 0
+      end
+    end
+  end
+
+  it "can be set on a module mixed in to Object" do
+    defined?(SCRIPT_LINES__).should be_nil
+    begin
+      Kernel.const_set :SCRIPT_LINES__, {}
+      load LanguageSpecs.script_lines_target_file
+      Kernel.const_get(:SCRIPT_LINES__).size.should > 0
+    ensure
+      Kernel.module_eval { remove_const :SCRIPT_LINES__ if Kernel.constants.include? LanguageSpecs::SCRIPT_LINES_NAME }
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "is not honored as an autoload constant" do
+      begin
+        ScratchPad.clear
+        Object.autoload :SCRIPT_LINES__, fixture(__FILE__, 'autoload_script_lines.rb')
+        ScratchPad.recorded.should be_nil
+        load LanguageSpecs.script_lines_target_file
+        ScratchPad.recorded.should be_nil
+        SCRIPT_LINES__.size.should == 0
+      ensure
+        Object.class_eval { remove_const :SCRIPT_LINES__ }
+      end
+    end
+  end
+  
+  ruby_version_is "" ... "1.9" do
+    it "can be set to a Hash subclass" do
+      LanguageSpecs.preserving_script_lines do
+        SCRIPT_LINES__ = LanguageSpecs::MyHash.new
+        load LanguageSpecs.script_lines_target_file
+        SCRIPT_LINES__.size.should == 1
+      end
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "cannot be set to a Hash subclass" do
+      LanguageSpecs.preserving_script_lines do
+        SCRIPT_LINES__ = LanguageSpecs::MyHash.new
+        load LanguageSpecs.script_lines_target_file
+        SCRIPT_LINES__.size.should == 0
+      end
+    end
+  end
+
+  it "can be set to any type" do
+    LanguageSpecs.preserving_script_lines do
+      SCRIPT_LINES__ = mock("mock")
+      load LanguageSpecs.script_lines_target_file
+      SCRIPT_LINES__.class.should == MockObject
+    end
   end
 end

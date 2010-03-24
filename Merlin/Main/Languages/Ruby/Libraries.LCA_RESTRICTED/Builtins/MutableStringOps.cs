@@ -2076,7 +2076,6 @@ namespace IronRuby.Builtins {
             separator.PrepareForCharacterRead();
             str.RequireCompatibleEncoding(separator);
 
-            int selfLength = str.GetCharCount();
             int separatorLength = separator.GetCharCount();
             int i = 0;
             int next;

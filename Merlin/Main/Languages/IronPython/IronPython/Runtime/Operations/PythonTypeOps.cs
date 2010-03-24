@@ -741,7 +741,7 @@ namespace IronPython.Runtime.Operations {
             // Simple generated helpbased on ctor, if available.
             ConstructorInfo[] cis = type.GetConstructors();
             foreach (ConstructorInfo ci in cis) {
-                autoDoc += FixCtorDoc(type, DocBuilder.CreateAutoDoc(ci)) + Environment.NewLine;
+                autoDoc += FixCtorDoc(type, DocBuilder.CreateAutoDoc(ci, DynamicHelpers.GetPythonTypeFromType(type).Name, 0)) + Environment.NewLine;
             }
 
             return autoDoc;

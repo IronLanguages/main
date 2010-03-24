@@ -20,21 +20,16 @@ using System.IO;
 using System.Reflection;
 using System.Security;
 using System.Security.Permissions;
+using System.Text;
 using System.Threading;
+using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Interpreter;
-using System.Text;
 
 namespace IronRuby.Runtime {
     internal sealed class RubyStackTraceBuilder {
         internal const string TopLevelMethodName = "#";
-
-#if SILVERLIGHT
-        internal static readonly bool ExceptionDebugInfoAvailable = false;
-#else
-        internal static readonly bool ExceptionDebugInfoAvailable = true;
-#endif
 
         private readonly RubyArray/*!*/ _trace;
         private readonly bool _hasFileAccessPermission;
@@ -55,7 +50,7 @@ namespace IronRuby.Runtime {
             : this(context) {
 
             // Compiled trace: contains frames starting with the throw site up to the first filter/catch that the exception was caught by:
-            StackTrace throwSiteTrace = ExceptionDebugInfoAvailable ? new StackTrace(exception, true) : new StackTrace(exception);
+            StackTrace throwSiteTrace = GetClrStackTrace(exception);
             _interpretedFrames = InterpretedFrame.GetExceptionStackTrace(exception);
 
             AddBacktrace(throwSiteTrace.GetFrames(), 0, false);
@@ -70,13 +65,32 @@ namespace IronRuby.Runtime {
 
         internal RubyStackTraceBuilder(RubyContext/*!*/ context, int skipFrames)
             : this(context) {
-            var trace = ExceptionDebugInfoAvailable ? new StackTrace(true) : new StackTrace();
+            var trace = GetClrStackTrace(null);
 
             _interpretedFrames = InterpretedFrame.CurrentFrame.Value != null ?
                 new List<InterpretedFrameInfo>(InterpretedFrame.CurrentFrame.Value.GetStackTraceDebugInfo()) :
                 null;
 
             AddBacktrace(trace.GetFrames(), skipFrames, false);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // CF
+        internal static StackTrace GetClrStackTrace(Exception exception) {
+#if SILVERLIGHT
+            return exception != null ? new StackTrace(exception) : new StackTrace();
+#else
+            return exception != null ? new StackTrace(exception, true) : new StackTrace(true);
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // CF
+        private static string GetFileName(StackFrame/*!*/ frame) {
+            return frame.GetFileName();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // CF
+        private static string/*!*/ GetAssemblyName(Assembly/*!*/ assembly) {
+            return assembly.GetName().Name;
         }
 
         private void InitializeInterpretedFrames() {
@@ -156,8 +170,8 @@ namespace IronRuby.Runtime {
             MethodBase method = frame.GetMethod();
             methodName = method.Name;
 
-            fileName = (_hasFileAccessPermission) ? frame.GetFileName() : null;
-            var sourceLine = line = frame.GetFileLineNumber();
+            fileName = (_hasFileAccessPermission) ? GetFileName(frame) : null;
+            var sourceLine = line = PlatformAdaptationLayer.IsCompactFramework ? 0 : frame.GetFileLineNumber();
 
             if (TryParseRubyMethodName(ref methodName, ref fileName, ref line)) {
                 if (sourceLine == 0) {
@@ -193,7 +207,7 @@ namespace IronRuby.Runtime {
                     // Visible CLR method:
                     if (String.IsNullOrEmpty(fileName)) {
                         if (method.DeclaringType != null) {
-                            fileName = (_hasFileAccessPermission) ? method.DeclaringType.Assembly.GetName().Name : null;
+                            fileName = (_hasFileAccessPermission) ? GetAssemblyName(method.DeclaringType.Assembly) : null;
                             line = 0;
                         }
                     }

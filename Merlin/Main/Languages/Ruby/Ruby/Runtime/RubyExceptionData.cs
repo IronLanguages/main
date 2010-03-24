@@ -50,10 +50,13 @@ namespace IronRuby.Runtime {
         // For asynchronous exceptions (Thread#raise), the user-visible exception (accessible via _visibleException)
         // is wrapped in a TheadAbortException (accessible via _exception)
         private Exception/*!*/ _visibleException;
+
 #if DEBUG
+#pragma warning disable 414 // msc: unused field
         // For asynchronous exceptions, this is useful to figure out which thread raised the exception
         [NonSerialized]
         private Thread/*!*/ _throwingThread;
+#pragma warning restore 414
 #endif
 
         // if this is set to null we need to initialize it
@@ -84,7 +87,7 @@ namespace IronRuby.Runtime {
         /// </summary>
         internal void CaptureExceptionTrace(RubyScope/*!*/ scope) {
             if (_backtrace == null) {
-                StackTrace catchSiteTrace = RubyStackTraceBuilder.ExceptionDebugInfoAvailable ? new StackTrace(true) : new StackTrace();
+                StackTrace catchSiteTrace = RubyStackTraceBuilder.GetClrStackTrace(null);
                 _backtrace = new RubyStackTraceBuilder(scope.RubyContext, _exception, catchSiteTrace, scope.InterpretedFrame != null).RubyTrace;
                 DynamicSetBacktrace(scope.RubyContext, _backtrace);
             }

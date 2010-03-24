@@ -55,10 +55,21 @@ module Timeout
     exception = klass || Class.new(ExitException)
     begin
       x = Thread.current
-      y = Thread.start {
-        sleep sec
-        x.raise exception, "execution expired" if x.alive?
-      }
+      
+      if defined?(RUBY_ENGINE) and RUBY_ENGINE == "ironruby"
+        # Creating a thread is expensive. So we use a timer instead
+        include System::Threading
+        callback = TimerCallback.new {
+          x.raise exception, "execution expired" if x.alive?
+        }
+        timer = Timer.new(callback, nil, System::Int64.new(sec * 1000), Timeout.Infinite)
+      else        
+        y = Thread.start {
+          sleep sec
+          x.raise exception, "execution expired" if x.alive?
+        }
+      end
+            
       yield sec
       #    return true
     rescue exception => e
@@ -73,6 +84,7 @@ module Timeout
                                 # would be expected outside.
       raise Error, e.message, e.backtrace
     ensure
+      timer.dispose if timer
       y.kill if y and y.alive?
     end
   end

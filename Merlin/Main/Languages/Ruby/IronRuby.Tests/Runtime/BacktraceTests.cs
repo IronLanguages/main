@@ -19,6 +19,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -148,6 +149,7 @@ Backtrace3.rb:0
         }
 
         public class ClrBacktrace {
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public void Bar(Action d) {
                 d();
             }

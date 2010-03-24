@@ -51,7 +51,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+            RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
             if (!metaBuilder.Error) {
                 metaBuilder.Result = Methods.GetInstanceVariable.OpCall(
                     AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),

@@ -27,7 +27,7 @@ describe "Timeout.timeout" do
     rescue Timeout::Error
       (Time.now - before_time).should < 1.2
     else
-      1.should == 0  # I can't think of a better way to say "shouldn't get here"
+      flunk
     end
   end
 
@@ -40,7 +40,7 @@ describe "Timeout.timeout" do
     rescue Timeout::Error
       (Time.now - before_time).should > 1.9
     else
-      1.should == 0  # I can't think of a better way to say "shouldn't get here"
+      flunk
     end
   end
 
@@ -49,4 +49,12 @@ describe "Timeout.timeout" do
       42
     end.should == 42
   end
+  
+  it "cancels the timeout if an exception is raised" do
+    lambda { Timeout::timeout(2) { 1/0 } }.should raise_error(ZeroDivisionError)
+  end
+  
+  it "accepts Float arguments" do
+    Timeout::timeout(123.456) { 42 }.should == 42
+  end  
 end

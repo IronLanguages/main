@@ -14,12 +14,14 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using IronRuby.Builtins;
@@ -541,6 +543,8 @@ namespace IronRuby.Runtime {
                 _unfinishedFiles.Push(pathWithExtension.ToString());
 
                 if (file.SourceUnit != null) {
+                    AddScriptLines(file.SourceUnit);
+
                     ScriptCode compiledCode;
                     if (file.SourceUnit.LanguageContext == _context) {
                         compiledCode = CompileRubySource(file.SourceUnit, flags);
@@ -809,6 +813,46 @@ namespace IronRuby.Runtime {
         private void AddLoadedFile(MutableString/*!*/ path) {
             lock (_loadedFiles) {
                 _loadedFiles.Add(path);
+            }
+        }
+
+        /// <summary>
+        /// If the SCRIPT_LINES__ constant is set, we need to publish the file being loaded,
+        /// along with the contents of the file
+        /// </summary>
+        private void AddScriptLines(SourceUnit file) {            
+            ConstantStorage storage;
+            if (!_context.ObjectClass.TryResolveConstant(null, "SCRIPT_LINES__", out storage)) {
+                return;
+            }
+
+            IDictionary scriptLines = storage.Value as IDictionary;
+            if (scriptLines == null) {
+                return;
+            }
+
+            lock (scriptLines) {
+                // Read in the contents of the file
+
+                RubyArray lines = new RubyArray();
+                SourceCodeReader reader = file.GetReader();
+                RubyEncoding encoding = RubyEncoding.GetRubyEncoding(reader.Encoding);
+                using (reader) {
+                    reader.SeekLine(1);
+                    while (true) {
+                        string lineStr = reader.ReadLine();
+                        if (lineStr == null) {
+                            break;
+                        }
+                        MutableString line = MutableString.CreateMutable(lineStr.Length + 1, encoding);
+                        line.Append(lineStr).Append('\n');
+                        lines.Add(line);
+                    }
+                }
+
+                // Publish the contents of the file, keyed by the file name
+                MutableString path = MutableString.Create(file.Document.FileName, _context.GetPathEncoding());
+                scriptLines[path] = lines;
             }
         }
 

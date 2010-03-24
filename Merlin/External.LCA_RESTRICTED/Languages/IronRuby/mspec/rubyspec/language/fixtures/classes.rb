@@ -17,6 +17,42 @@ module LanguageSpecs
     undef :to_s
   end
   
+  ruby_version_is("" ... "1.9") { SCRIPT_LINES_NAME = 'SCRIPT_LINES__' }
+  ruby_version_is("1.9") { SCRIPT_LINES_NAME = :SCRIPT_LINES__ }
+  
+  def self.script_lines_target_file
+    File.dirname(__FILE__) + '/empty.rb'
+  end
+  
+  def self.preserving_script_lines()
+    old_script_lines = if Object.constants.include? SCRIPT_LINES_NAME
+      Object.const_get SCRIPT_LINES_NAME
+    else
+      :undefined
+    end
+    
+    begin
+      yield
+    ensure
+      if old_script_lines == :undefined
+        Object.class_eval { remove_const SCRIPT_LINES_NAME if Object.constants.include? SCRIPT_LINES_NAME }
+      else
+        Object.const_set SCRIPT_LINES_NAME, old_script_lines
+      end
+    end
+  end
+  
+  def self.get_script_lines(filename)
+    preserving_script_lines do
+      Object.const_set :SCRIPT_LINES__, {}
+      load filename
+      SCRIPT_LINES__
+    end
+  end
+  
+  class MyHash < Hash
+  end
+  
   #############################################################################
   # Regexp support
   #############################################################################

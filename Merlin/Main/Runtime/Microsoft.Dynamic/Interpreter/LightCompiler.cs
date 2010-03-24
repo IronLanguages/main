@@ -1264,7 +1264,21 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             // TODO: do not create a new Call Expression
-            CompileMethodCallExpression(Expression.Call(node.Expression, node.Expression.Type.GetMethod("Invoke"), node.Arguments));
+            if (PlatformAdaptationLayer.IsCompactFramework) {
+                // Workaround for a bug in Compact Framework
+                Compile(
+                    AstUtils.Convert(
+                        Expression.Call(
+                            node.Expression,
+                            node.Expression.Type.GetMethod("DynamicInvoke"),
+                            Expression.NewArrayInit(typeof(object), node.Arguments.Map((e) => AstUtils.Convert(e, typeof(object))))
+                        ),
+                        node.Type
+                    )
+                );
+            } else {
+                CompileMethodCallExpression(Expression.Call(node.Expression, node.Expression.Type.GetMethod("Invoke"), node.Arguments));
+            }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]

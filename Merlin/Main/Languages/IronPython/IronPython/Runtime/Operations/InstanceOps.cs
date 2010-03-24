@@ -381,6 +381,20 @@ namespace IronPython.Runtime.Operations {
             return !x.Equals(y);
         }
 
+#if CLR2
+        public static bool TypeNotEqualsMethod(Type x, object y) {
+            ContractUtils.RequiresNotNull(x, "x");
+
+            PythonType pythonType = y as PythonType;
+            if (pythonType != null) {
+                return !x.Equals((Type)pythonType);
+            }
+
+            Type type = y as Type;
+            return y == null || !x.Equals(type);
+        }
+#endif
+
         // Structural Equality and Hashing Helpers
 
         public static int StructuralHashMethod(CodeContext/*!*/ context, IStructuralEquatable x) {
