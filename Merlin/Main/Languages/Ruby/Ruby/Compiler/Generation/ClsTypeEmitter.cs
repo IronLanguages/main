@@ -372,7 +372,6 @@ namespace IronRuby.Compiler.Generation {
         }
 
         private MethodBuilder CreateVTableMethodOverride(MethodInfo mi, string name) {
-            ParameterInfo[] parameters = mi.GetParameters();
             MethodBuilder impl;
             ILGen il = DefineMethodOverride(MethodAttributes.Public, mi, out impl);
             EmitVirtualSiteCall(il, mi, name);

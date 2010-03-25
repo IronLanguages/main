@@ -22,27 +22,32 @@ namespace Microsoft.Scripting.Hosting {
     /// </summary>
     [Serializable]
     public class ParameterDoc {
-        private readonly string _name, _typeName;
+        private readonly string _name, _typeName, _doc;
         private readonly ParameterFlags _flags;
 
         public ParameterDoc(string name)
-            : this(name, ParameterFlags.None) {
+            : this(name, null, null, ParameterFlags.None) {
         }
 
         public ParameterDoc(string name, ParameterFlags paramFlags)
-            : this(name, null, paramFlags) {
+            : this(name, null, null, paramFlags) {
         }
 
         public ParameterDoc(string name, string typeName)
-            : this(name, typeName, ParameterFlags.None) {
+            : this(name, typeName, null, ParameterFlags.None) {
         }
 
-        public ParameterDoc(string name, string typeName, ParameterFlags paramFlags) {
+        public ParameterDoc(string name, string typeName, string documentation)
+            : this(name, typeName, documentation, ParameterFlags.None) {
+        }
+
+        public ParameterDoc(string name, string typeName, string documentation, ParameterFlags paramFlags) {
             ContractUtils.RequiresNotNull(name, "name");
 
             _name = name;
             _flags = paramFlags;
             _typeName = typeName;
+            _doc = documentation;
         }
 
         /// <summary>
@@ -69,6 +74,15 @@ namespace Microsoft.Scripting.Hosting {
         public ParameterFlags Flags {
             get {
                 return _flags;
+            }
+        }
+
+        /// <summary>
+        /// Gets the documentation string for this parameter or null if no documentation is available.
+        /// </summary>
+        public string Documentation {
+            get {
+                return _doc;
             }
         }
     }

@@ -847,6 +847,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int Length(object o) {
+            string s = o as string;
+            if (s != null) {
+                return s.Length;
+            }
+
+            object[] os = o as object[];
+            if (os != null) {
+                return os.Length;
+            }
+
             object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, "len() of unsized object");
 
             int res;

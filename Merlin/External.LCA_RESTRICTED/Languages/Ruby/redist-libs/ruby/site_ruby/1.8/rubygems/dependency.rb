@@ -116,10 +116,12 @@ class Gem::Dependency
               Gem::Dependency.new other.name, other.version
             end
 
-    pattern = @name
-    pattern = /\A#{Regexp.escape @name}\Z/ unless Regexp === pattern
+    if not @pattern
+      @pattern = @name
+      @pattern = /\A#{Regexp.escape @name}\Z/ unless Regexp === @pattern
+    end
 
-    return false unless pattern =~ other.name
+    return false unless @pattern =~ other.name
 
     reqs = other.version_requirements.requirements
 

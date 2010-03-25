@@ -63,7 +63,6 @@ namespace IronRuby.Compiler.Ast {
             Assert.NotNull(context, options, encoding);
             _context = context;
             _compilerOptions = options;
-            _debugCompiler = Snippets.Shared.SaveSnippets;
             _debugMode = context.DomainManager.Configuration.DebugMode;
             _traceEnabled = context.RubyOptions.EnableTracing;
             _document = document;
@@ -73,6 +72,9 @@ namespace IronRuby.Compiler.Ast {
             _profiler = context.RubyOptions.Profile ? Profiler.Instance : null;
             _savingToDisk = context.RubyOptions.SavePath != null;
             _printInteractiveResult = printInteractiveResult;
+#if !SILVERLIGHT
+            _debugCompiler = Snippets.Shared.SaveSnippets;
+#endif
         }
 
         public RubyCompilerOptions/*!*/ CompilerOptions { 

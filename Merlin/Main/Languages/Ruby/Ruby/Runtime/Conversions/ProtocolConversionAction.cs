@@ -253,7 +253,6 @@ namespace IronRuby.Runtime.Conversions {
             // slow path: invoke respond_to?, to_xxx and result validation:
             for (int i = conversions.Length - 1; i >= 0; i--) {
                 string toMethodName = conversions[i].ToMethodName;
-                MethodInfo validator = conversions[i].ConversionResultValidator;
                 
                 var conversionCallSite = AstUtils.LightDynamic(
                     RubyCallAction.Make(args.RubyContext, toMethodName, RubyCallSignature.WithImplicitSelf(0)),
@@ -631,8 +630,6 @@ namespace IronRuby.Runtime.Conversions {
         protected override string/*!*/ TargetTypeName { get { return "Integer"; } }
 
         internal protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            object target = args.Target;
-
             if (args.Target == null) {
                 metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(AstUtils.Constant("nil"), AstUtils.Constant(TargetTypeName)));
                 return true;
@@ -674,8 +671,6 @@ namespace IronRuby.Runtime.Conversions {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToF; } }
 
         internal protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            object target = args.Target;
-
             if (args.Target == null) {
                 metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(AstUtils.Constant("nil"), AstUtils.Constant(TargetTypeName)));
                 return true;

@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic;
+using System.IO.IsolatedStorage;
 using System.Reflection;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
@@ -321,9 +322,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             Type declType = mi.GetBaseDefinition().DeclaringType;
-            if (declType != null &&
-                declType.Assembly == typeof(string).Assembly &&
-                declType.IsSubclassOf(typeof(MemberInfo))) {
+            if (IsRestrictedType(declType)) {
                 // members of reflection are off limits via reflection in partial trust
                 return null;
             }
@@ -350,6 +349,12 @@ namespace Microsoft.Scripting.Actions.Calls {
             } else {
                 return new Caller(mi, builders, null).Call;
             }
+        }
+
+        private static bool IsRestrictedType(Type declType) {
+            return declType != null &&
+                            declType.Assembly == typeof(string).Assembly &&
+                            (declType.IsSubclassOf(typeof(MemberInfo)) || declType == typeof(IsolatedStorageFile));
         }
 
         private sealed class Caller {

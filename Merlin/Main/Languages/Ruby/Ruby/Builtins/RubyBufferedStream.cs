@@ -136,7 +136,7 @@ namespace IronRuby.Builtins {
 
         public override void Close() {
             _buffer = null;
-            _bufferCount = _bufferCount = _pushedBackCount = 0;
+            _bufferCount = _bufferStart = _pushedBackCount = 0;
             _stream.Close();
         }
 

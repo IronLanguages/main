@@ -121,16 +121,7 @@ namespace IronRuby.Runtime {
             int compilationThreshold) {
 
             if (debugMode) {
-                // try to use PDBs and fallback to CustomGenerator if not allowed to:
-                if (_HasPdbPermissions) {
-                    try {
-                        return CompilerHelpers.CompileToMethod(lambda, DebugInfoGenerator.CreatePdbGenerator(), true);
-                    } catch (SecurityException) {
-                        // do not attempt next time in this app-domain:
-                        _HasPdbPermissions = false;
-                    }
-                }
-                return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
+                return CompileDebug(lambda);
             } else if (noAdaptiveCompilation) {
                 Delegate result = lambda.Compile();
                 // DLR closures should not be used:
@@ -139,6 +130,21 @@ namespace IronRuby.Runtime {
             } else {
                 return lambda.LightCompile(compilationThreshold);
             }
+        }
+
+        // Avoid loading Ref.Emit types (Compact Framework):
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Delegate/*!*/ CompileDebug(LambdaExpression/*!*/ lambda) {
+            // try to use PDBs and fallback to CustomGenerator if not allowed to:
+            if (_HasPdbPermissions) {
+                try {
+                    return CompilerHelpers.CompileToMethod(lambda, DebugInfoGenerator.CreatePdbGenerator(), true);
+                } catch (SecurityException) {
+                    // do not attempt next time in this app-domain:
+                    _HasPdbPermissions = false;
+                }
+            }
+            return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
         }
     }
 }

@@ -113,19 +113,19 @@ namespace IronPython.Runtime.Exceptions {
                 _type = type;
             }
 
-            public static object __new__(PythonType/*!*/ cls, params object[] args) {
+            public static object __new__(PythonType/*!*/ cls, params object[] args\u00F8) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public static object __new__(PythonType/*!*/ cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+            public static object __new__(PythonType/*!*/ cls, [ParamDictionary]IDictionary<object, object> kwArgs\u00F8, params object[] args\u00F8) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
             /// <summary>
             /// Initializes the Exception object with an unlimited number of arguments
             /// </summary>
-            public virtual void __init__(params object[] args) {
-                _args = PythonTuple.MakeTuple(args ?? new object[] { null });
+            public virtual void __init__(params object[] args\u00F8) {
+                _args = PythonTuple.MakeTuple(args\u00F8 ?? new object[] { null });
                 if (_args.__len__() == 1) {
                     _message = _args[0];
                 } 

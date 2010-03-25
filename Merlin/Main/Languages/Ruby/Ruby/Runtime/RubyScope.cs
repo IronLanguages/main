@@ -538,6 +538,7 @@ namespace IronRuby.Runtime {
         #endregion
 
         #region Debug View
+#pragma warning disable 414 // msc: unused field
 
 #if DEBUG
         private string _debugName;
@@ -630,6 +631,8 @@ namespace IronRuby.Runtime {
                 }
             }
         }
+
+#pragma warning restore 414 // msc: unused field
         #endregion
     }
 

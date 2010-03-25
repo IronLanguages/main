@@ -277,7 +277,7 @@ namespace Microsoft.Scripting.Actions {
                 ErrorInfo.FromException(
                     Ast.New(
                         typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                        AstUtils.Constant(type.Name + " is not callable")
+                        AstUtils.Constant(GetTypeName(type) + " is not callable")
                     )
                 ),
                 self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),

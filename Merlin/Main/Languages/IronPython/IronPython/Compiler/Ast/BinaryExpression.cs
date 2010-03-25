@@ -171,7 +171,7 @@ namespace IronPython.Compiler.Ast {
                     method,
                     Parent.LocalContext,
                     _left,
-                    _right
+                    AstUtils.Convert(_right, typeof(object))
                 );
             }
 

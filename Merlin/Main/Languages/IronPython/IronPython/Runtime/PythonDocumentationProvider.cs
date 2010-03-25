@@ -18,11 +18,11 @@ using System.Collections.Generic;
 using System.Reflection;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime {
     class PythonDocumentationProvider : DocumentationProvider {
@@ -184,7 +184,7 @@ namespace IronPython.Runtime {
 
             Delegate dlg = value as Delegate;
             if (dlg != null) {
-                return new[] { GetOverloadDoc(dlg.Method.Name, dlg.Method) };
+                return new[] { DocBuilder.GetOverloadDoc(dlg.GetType().GetMethod("Invoke"), dlg.GetType().Name, 0, false) };
             }
 
             return new OverloadDoc[0];
@@ -218,27 +218,7 @@ namespace IronPython.Runtime {
         }
 
         private static OverloadDoc GetOverloadDoc(string name, MethodBase method) {
-            ParameterInfo[] prms = method.GetParameters();
-            List<ParameterDoc> docs = new List<ParameterDoc>();
-
-            foreach (var param in prms) {
-                if (param.ParameterType == typeof(CodeContext) || typeof(SiteLocalStorage).IsAssignableFrom(param.ParameterType)) {
-                    continue;
-                }
-                ParameterFlags flags = ParameterFlags.None;
-                if (param.IsDefined(typeof(ParamArrayAttribute), false)) {
-                    flags |= ParameterFlags.ParamsArray;
-                } else if (param.IsDefined(typeof(ParamDictionaryAttribute), false)) {
-                    flags |= ParameterFlags.ParamsDict;
-                }
-                docs.Add(new ParameterDoc(param.Name, flags));
-            }
-
-            return new OverloadDoc(
-                name,
-                DocBuilder.CreateAutoDoc(method),
-                docs.ToArray()
-            );
+            return DocBuilder.GetOverloadDoc(method, name, 0);
         }
     }
 }

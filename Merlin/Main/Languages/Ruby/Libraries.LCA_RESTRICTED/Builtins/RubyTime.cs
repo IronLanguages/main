@@ -852,7 +852,6 @@ namespace IronRuby.Builtins {
             bool inFormat = false;
 
             var charEnum = format.GetCharacters();
-            int i = 0;
             while (charEnum.MoveNext()) {
                 var character = charEnum.Current;
                 int c = character.IsValid ? character.Value : -1;

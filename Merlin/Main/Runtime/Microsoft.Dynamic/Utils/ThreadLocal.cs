@@ -101,6 +101,30 @@ namespace Microsoft.Scripting.Utils {
 
         #region Storage implementation
 
+#if SILVERLIGHT
+        private static int _cfThreadIdDispenser = 1;
+
+        [ThreadStatic]
+        private static int _cfThreadId;
+
+        private static int GetCurrentThreadId() {
+            if (PlatformAdaptationLayer.IsCompactFramework) {
+                // CF doesn't index threads by small integers, so we need to do the indexing ourselves:
+                int id = _cfThreadId;
+                if (id == 0) {
+                    _cfThreadId = id = Interlocked.Increment(ref _cfThreadIdDispenser);
+                }
+                return id;
+            } else {
+                return Thread.CurrentThread.ManagedThreadId;
+            }
+        }
+#else
+        private static int GetCurrentThreadId() {
+            return Thread.CurrentThread.ManagedThreadId;
+        }
+#endif
+
         /// <summary>
         /// Gets the StorageInfo for the current thread.
         /// </summary>
@@ -109,7 +133,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         private StorageInfo GetStorageInfo(StorageInfo[] curStorage) {
-            int threadId = Thread.CurrentThread.ManagedThreadId;
+            int threadId = GetCurrentThreadId();
 
             // fast path if we already have a value in the array
             if (curStorage != null && curStorage.Length > threadId) {
@@ -139,7 +163,7 @@ namespace Microsoft.Scripting.Utils {
                 return GetStorageInfo(curStorage);
             }
 
-            // we need to mutator the StorageInfo[] array or create a new StorageInfo
+            // we need to mutate the StorageInfo[] array or create a new StorageInfo
             return CreateStorageInfo();
         }
 
@@ -153,7 +177,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
             StorageInfo[] curStorage = Updating;
             try {
-                int threadId = Thread.CurrentThread.ManagedThreadId;
+                int threadId = GetCurrentThreadId();
                 StorageInfo newInfo = new StorageInfo(Thread.CurrentThread);
 
                 // set to updating while potentially resizing/mutating, then we'll

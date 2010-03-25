@@ -1,0 +1,1 @@
+raise "raise.rb raising exception"

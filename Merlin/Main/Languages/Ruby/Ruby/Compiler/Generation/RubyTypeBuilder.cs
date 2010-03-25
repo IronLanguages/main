@@ -127,8 +127,7 @@ namespace IronRuby.Compiler.Generation {
 
         private void DefineConstructors() {
             BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
-            ConstructorInfo defaultBaseCtor = _tb.BaseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null);
-
+            
             var ctors = new List<ConstructorBuilderInfo>();
 
             foreach (var baseCtor in _tb.BaseType.GetConstructors(bindingFlags)) {

@@ -76,6 +76,7 @@ namespace IronPython.Runtime {
             _normalDelegate = code;
             _lambda = scope;
             _argCount = CalculateArgumentCount();
+            _initialDoc = documentation;
 
             // need to take this lock to ensure sys.settrace/sys.setprofile is not actively changing
             lock (_CodeCreateAndUpdateDelegateLock) {

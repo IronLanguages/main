@@ -61,15 +61,21 @@ namespace Microsoft.Scripting.Runtime {
                 Type type = assembly.GetType(_providerName.TypeName);
                 if (type == null) {
                     throw new InvalidOperationException(
-                        string.Format(
+                        String.Format(
                             "Failed to load language '{0}': assembly '{1}' does not contain type '{2}'",
-                            _displayName, assembly.Location, _providerName.TypeName
+                            _displayName, 
+#if SILVERLIGHT // Assembly.Location not available on CF
+                            assembly.FullName,
+#else
+                            assembly.Location,
+#endif
+                            _providerName.TypeName
                     ));
                 }
 
                 if (!type.IsSubclassOf(typeof(LanguageContext))) {
                     throw new InvalidOperationException(
-                        string.Format(
+                        String.Format(
                             "Failed to load language '{0}': type '{1}' is not a valid language provider because it does not inherit from LanguageContext",
                             _displayName, type
                     )); 
