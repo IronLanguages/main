@@ -91,7 +91,7 @@
   * Removed as many token_buffer.split(//)'s as possible. 1 to go.
   * Removed begins from compstmts
   * Removed buffer arg for tokadd_string.
-  * Removed crufty (?) solo '@' token... wtf was that anyhow?
+  * Removed crufty (?) solo '@' token...  was that anyhow?
   * Removed most jruby/stringio cruft from StringScanner.
   * Removed one unread_many... 2 to go. They're harder.
   * Removed store_comment, now done directly.
@@ -100,7 +100,7 @@
   * Renamed *qwords to *awords.
   * Renamed StringScanner to RPStringScanner (a subclass) to fix namespace trashing.
   * Renamed parse to process and aliased to parse.
-  * Renamed token_buffer to string_buffer since that arcane shit still needs it.
+  * Renamed token_buffer to string_buffer since that arcane stuff still needs it.
   * Resolved the rest of the lexing issues I brought up w/ ruby-core.
   * Revamped tokadd_escape.
   * Rewrote Keyword and KWtable.

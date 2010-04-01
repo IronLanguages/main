@@ -32,6 +32,14 @@ class ReplBufferStream
   def print (*args)
     args.each {|arg| write_to_repl arg.to_s }
   end
+
+  def warn *args
+    puts *args
+  end
+
+  def write(*args)
+    print *args
+  end
 end
 
 # minitest uses Signal.list, which does not exist in Silverlight. So fake it
@@ -45,7 +53,11 @@ def run_tests()
   require "minitest/spec"
   MiniTest::Unit.output = ReplBufferStream.new
   require "test/test_console"
+  orig_stdout, orig_stderr = $stdout, $stderr
+  $stdout = ReplBufferStream.new
+  $stderr = ReplBufferStream.new
   MiniTest::Unit.new.run(ARGV)
+  $stdout, $stderr = orig_stdout, orig_stderr
 end
 
 Thread.new { run_tests }

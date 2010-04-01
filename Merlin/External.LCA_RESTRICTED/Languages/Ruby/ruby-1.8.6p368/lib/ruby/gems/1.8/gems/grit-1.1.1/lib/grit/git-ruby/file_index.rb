@@ -46,7 +46,7 @@ module Grit
     end
     
     # returns count of all commits reachable from SHA
-    # note: originally did this recursively, but ruby gets pissed about that on 
+    # note: originally did this recursively, but ruby gets upset about that on 
     # really big repos where the stack level gets 'too deep' (thats what she said)
     def count(commit_sha)
       commits_from(commit_sha).size
@@ -156,7 +156,7 @@ module Grit
 end
 
 
-# benchmark testing on big-ass repos
+# benchmark testing on big repos
 
 if __FILE__ == $0
   

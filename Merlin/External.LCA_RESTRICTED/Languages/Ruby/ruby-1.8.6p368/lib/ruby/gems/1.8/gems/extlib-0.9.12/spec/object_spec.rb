@@ -66,7 +66,7 @@ describe Object do
     end
 
     it 'returns false if duck is a Symbol and receiver DOES NOT respond to it' do
-      SymbolicDuck.new.quacks_like?(:wtf).should be_false
+      SymbolicDuck.new.quacks_like?(:woof).should be_false
     end
 
     it 'returns true if duck is a class and receiver is its instance' do

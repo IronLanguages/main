@@ -3,7 +3,7 @@ require File.dirname(__FILE__) + '/fixtures/classes.rb'
 
 describe "String#gsub with pattern and replacement" do
 
-  it "doesn't freak out when replacing ^" do
+  it "correctly replaces ^" do
     "Text\n".gsub(/^/, ' ').should == " Text\n"
     "Text\nFoo".gsub(/^/, ' ').should == " Text\n Foo"
   end

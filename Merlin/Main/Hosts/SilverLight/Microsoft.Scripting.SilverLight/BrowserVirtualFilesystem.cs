@@ -454,7 +454,8 @@ function OnXmlHttpRequest_ReadyStateChange(file) {
                 }
             } catch (Exception e) {
                 // This catch-all is necessary since any unhandled exceptions
-                ErrorFormatter.DisplayError(Settings.ErrorTargetID, e);
+                if (Settings.ReportUnhandledErrors)
+                    ErrorFormatter.DisplayError(Settings.ErrorTargetID, e);
             }
         }
         #endregion

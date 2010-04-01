@@ -62,9 +62,9 @@ class HelpersTest < ActiveSupport::TestCase # :nodoc:
       end
     end
 
-    should "not contain 'wtf'" do
-      assert_raises(Test::Unit::AssertionFailedError) {assert_contains @a, 'wtf'}
-      assert_does_not_contain @a, 'wtf'
+    should "not contain 'not'" do
+      assert_raises(Test::Unit::AssertionFailedError) {assert_contains @a, 'not'}
+      assert_does_not_contain @a, 'not'
     end
 
     should "be the same as another array, ordered differently" do

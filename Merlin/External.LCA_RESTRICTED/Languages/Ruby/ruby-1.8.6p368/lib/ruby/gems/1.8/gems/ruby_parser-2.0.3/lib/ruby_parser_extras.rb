@@ -30,7 +30,7 @@ class RPStringScanner < StringScanner
 #     end
 #   end
 
-  def current_line # HAHA fuck you (HACK)
+  def current_line # HAHA (HACK)
     string[0..pos][/\A.*__LINE__/m].split(/\n/).size
   end
 
@@ -120,7 +120,7 @@ class RubyParser < Racc::Parser
   attr_accessor :lexer, :in_def, :in_single, :file
   attr_reader :env, :comments
 
-  def append_to_block head, tail # FIX: wtf is this?!? switch to block_append
+  def append_to_block head, tail # FIX: what is this?!? switch to block_append
     return head if tail.nil?
     return tail if head.nil?
 
@@ -129,7 +129,7 @@ class RubyParser < Racc::Parser
     head
   end
 
-  def arg_add(node1, node2) # TODO: nuke
+  def arg_add(node1, node2) # TODO: drop
     return s(:arglist, node2) unless node1
 
     node1[0] = :arglist if node1[0] == :array
@@ -138,13 +138,13 @@ class RubyParser < Racc::Parser
     return s(:arglist, node1, node2)
   end
 
-  def arg_blk_pass node1, node2 # TODO: nuke
+  def arg_blk_pass node1, node2 # TODO: drop
     node1 = s(:arglist, node1) unless [:arglist, :array].include? node1.first
     node1 << node2 if node2
     node1
   end
 
-  def arg_concat node1, node2 # TODO: nuke
+  def arg_concat node1, node2 # TODO: drop
     raise "huh" unless node2
     node1 << s(:splat, node2).compact
     node1
@@ -345,13 +345,13 @@ class RubyParser < Racc::Parser
     self.reset
   end
 
-  def list_append list, item # TODO: nuke me *sigh*
+  def list_append list, item # TODO: change me *sigh*
     return s(:array, item) unless list
     list = s(:array, list) unless Sexp === list && list.first == :array
     list << item
   end
 
-  def list_prepend item, list # TODO: nuke me *sigh*
+  def list_prepend item, list # TODO: change me *sigh*
     list = s(:array, list) unless Sexp === list && list[0] == :array
     list.insert 1, item
     list

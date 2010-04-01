@@ -26,7 +26,7 @@
 
 * 1 bug fix:
 
-  * Don't freak out and die if passed a c function defn. stupid rails.
+  * Don't out and die if passed a c function defn. stupid rails.
 
 === 1.2.0 / 2008-10-22
 
@@ -59,7 +59,7 @@
 * 6 minor enhancements:
 
   * Added super awesome .autotest file. YAY!
-  * Removed nil.method_missing... too many ppl bitching about it.
+  * Removed nil.method_missing... too many ppl whining about it.
   * Renamed RubyToRuby (the class name) to Ruby2Ruby.
   * Restructured self-translation tests so they were friendlier when dying.
   * Strings are now always one line long only.

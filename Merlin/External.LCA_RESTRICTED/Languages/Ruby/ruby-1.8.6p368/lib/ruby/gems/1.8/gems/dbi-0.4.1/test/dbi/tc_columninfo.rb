@@ -49,9 +49,9 @@ class TC_DBI_ColumnInfo < Test::Unit::TestCase
            @keys.each do |x|
                assert_equal(@colinfo[x], @colinfo[x.to_sym])
                assert_equal(@colinfo.send(x.to_sym), @colinfo[x.to_sym])
-               @colinfo[x] = "poop"
-               assert_equal("poop", @colinfo[x])
-               assert_equal("poop", @colinfo[x.to_sym])
+               @colinfo[x] = "stuff"
+               assert_equal("stuff", @colinfo[x])
+               assert_equal("stuff", @colinfo[x.to_sym])
            end
        end
    end

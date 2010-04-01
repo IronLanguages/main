@@ -327,6 +327,7 @@
     <Compile Include="Generation\KeyedQueue.cs" />
     <Compile Include="Generation\Snippets.cs" />
     <Compile Include="Generation\TypeGen.cs" />
+    <Compile Include="Actions\BinderHelpers.cs" />
     <Compile Include="Actions\ComboActionRewriter.cs" />
     <Compile Include="Actions\ComboBinder.cs" />
     <Compile Include="Actions\ConditionalBuilder.cs" />

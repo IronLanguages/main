@@ -53,7 +53,7 @@ describe "File.umask" do
       File.umask.should == 0000200
     end
 
-    # FIXME: wtf?
+    # FIXME: what is happening?
     it "raises an exception if the arguments are wrong type or are the incorect number of arguments " do
       File.umask(0006)
       File.umask.should == 0

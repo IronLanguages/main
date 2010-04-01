@@ -28,7 +28,7 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
 
     <!-- Properties -->
     <Property Id="ARPHELPLINK" Value="http://rubyforge.org/mailman/listinfo/ironruby-core" />
-    <Property Id="ARPURLINFOABOUT" Value="http://www.ironruby.com" />
+    <Property Id="ARPURLINFOABOUT" Value="http://www.ironruby.net" />
     <Property Id="ARPURLUPDATEINFO" Value="http://ironruby.codeplex.com" />
     <Property Id="ApplicationFolderName" Value="$(var.ProductShortName) $(var.ProductVersionText)" />
     <Property Id="ALLUSERS" Value="1" />

@@ -7,4 +7,4 @@ if defined MERLIN_ROOT (
   set IR_CMD="%MERLIN_ROOT%\bin\Debug\ir.exe"
 )
 
-%IR_CMD% "%~dpn0" %*
+%IR_CMD% "%~dp0gem" %*

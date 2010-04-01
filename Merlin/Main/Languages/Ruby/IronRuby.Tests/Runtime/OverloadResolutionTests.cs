@@ -141,9 +141,9 @@ namespace IronRuby.Tests {
             public void J3([DefaultProtocol]IntegerValue a) { }
 
             // This is rather useless overload combination:
-            // If DP parameter behaved exaclty like object it would be ambiguous.
+            // If DefaultProtocol parameter behaved exaclty like object it would be ambiguous.
             // Since we try implicit conversions first, all types but numerics assignable to integer prefer K1.
-            // Therefore [DP] is irrelevant here.
+            // Therefore [DefaultProtocol] is irrelevant here.
             public void K1(object a) { }
             public void K2([DefaultProtocol]int a) { }
 

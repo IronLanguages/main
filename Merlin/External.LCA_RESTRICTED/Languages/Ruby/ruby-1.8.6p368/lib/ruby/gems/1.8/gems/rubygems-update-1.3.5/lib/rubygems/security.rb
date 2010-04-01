@@ -100,7 +100,7 @@ require 'rubygems/gem_openssl'
 #   Unfortunately, MediumSecurity still isn't totally secure -- a
 #   malicious user can still unpack the gem, strip the signatures, and
 #   distribute the gem unsigned.
-# * HighSecurity - Here's the bugger that got us into this mess.
+# * HighSecurity - Here's the ###### that got us into this mess.
 #   The HighSecurity policy is identical to the MediumSecurity policy,
 #   except that it does not allow unsigned gems.  A malicious user
 #   doesn't have a whole lot of options here; he can't modify the

@@ -4,7 +4,7 @@ param(
     [switch]$get
     )
 
-$dir = "C:\vsl\rubysync"
+$dir = "C:\vsl_ip26\rubysync"
 
 if (-not (Test-Path $dir)) { 
     New-Item -Path $dir -ItemType directory | Out-Null

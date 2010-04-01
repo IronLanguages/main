@@ -46,7 +46,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                 var member = module.GetMethod(methodName);
 
-                // TODO: aliases, module_functions, define_methods, method witch changed visibility:
+                // TODO: aliases, module_functions, define_methods, method with changed visibility:
                 var method = member as RubyMethodInfo;
                 if (method == null) {
                     return RubyArray.Create(null);

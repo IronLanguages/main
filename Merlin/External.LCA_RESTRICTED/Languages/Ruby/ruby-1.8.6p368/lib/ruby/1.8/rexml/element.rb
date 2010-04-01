@@ -662,7 +662,7 @@ module REXML
     #   pretty-printed in such a way that the added whitespace does not affect
     #   the parse tree of the document
     # ie_hack::
-    #   Internet Explorer is the worst piece of crap to have ever been
+    #   Internet Explorer is the worst piece of #### to have ever been
     #   written, with the possible exception of Windows itself.  Since IE is
     #   unable to parse proper XML, we have to provide a hack to generate XML
     #   that IE's limited abilities can handle.  This hack inserts a space 

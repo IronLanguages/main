@@ -4,7 +4,7 @@ dir = File.expand_path "~/.ruby_inline"
 if test ?d, dir then
   require 'fileutils'
   puts "nuking #{dir}"
-  # force removal, Windoze is bitching at me, something to hunt later...
+  # force removal, Windoze is complaining at me, something to hunt later...
   FileUtils.rm_r dir, :force => true
 end
 
@@ -220,7 +220,7 @@ class TestRawParseTree < ParseTreeTestCase
   def test_whole_class
     assert_equal([@@__all],
                  @processor.parse_tree(Something),
-                 "Must return a lot of shit")
+                 "Must return a lot of data")
   end
 end
 

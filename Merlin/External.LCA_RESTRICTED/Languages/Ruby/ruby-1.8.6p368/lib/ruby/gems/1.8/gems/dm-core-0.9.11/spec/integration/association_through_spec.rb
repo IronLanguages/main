@@ -83,21 +83,21 @@ if ADAPTER
         post = Post.create(:title => "Entry")
         another_post = Post.create(:title => "Another")
 
-        crappy = Tagging.new
-        post.taggings << crappy
+        messy = Tagging.new
+        post.taggings << messy
         post.save
 
-        crap = Tag.create(:title => "crap")
-        crap.taggings << crappy
-        crap.save
+        mess = Tag.create(:title => "mess")
+        mess.taggings << messy
+        mess.save
 
-        crappier = Tagging.new
-        post.taggings << crappier
+        messier = Tagging.new
+        post.taggings << messier
         post.save
 
-        crapz = Tag.create(:title => "crapz", :voided => true)
-        crapz.taggings << crappier
-        crapz.save
+        messz = Tag.create(:title => "messz", :voided => true)
+        messz.taggings << messier
+        messz.save
 
         goody = Tagging.new
         another_post.taggings << goody
@@ -114,7 +114,7 @@ if ADAPTER
 
       it 'should return the right children for has n => belongs_to relationships' do
         Post.first.tags.select do |tag|
-          tag.title == 'crap'
+          tag.title == 'mess'
         end.size.should == 1
       end
 

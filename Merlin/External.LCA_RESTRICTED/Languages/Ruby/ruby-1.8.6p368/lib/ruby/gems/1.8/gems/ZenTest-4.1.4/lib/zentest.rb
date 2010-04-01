@@ -124,7 +124,7 @@ class ZenTest
   def get_methods_for(klass, full=false)
     klass = self.get_class(klass) if klass.kind_of? String
 
-    # WTF? public_instance_methods: default vs true vs false = 3 answers
+    # what? public_instance_methods: default vs true vs false = 3 answers
     # to_s on all results if ruby >= 1.9
     public_methods = klass.public_instance_methods(false)
     public_methods -= Kernel.methods unless full

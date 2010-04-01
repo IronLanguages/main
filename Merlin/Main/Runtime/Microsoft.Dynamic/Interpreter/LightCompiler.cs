@@ -38,7 +38,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         public bool IsFault { get { return ExceptionType == null; } }
 
-        internal ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, Type exceptionType) {
+        public ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, Type exceptionType) {
             StartIndex = start;
             EndIndex = end;
             LabelIndex = labelIndex;

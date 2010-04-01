@@ -145,7 +145,7 @@
   * Fixed for ruby 1.9 and rubinius.
   * No longer exits 0 if exception in code PRE-test run causes early exit.
   * Removed implementors method list from mini/test.rb - too stale.
-  * assert_nothing_raised takes a class as an arg. wtf? STUPID
+  * assert_nothing_raised takes a class as an arg.  STUPID
   * ".EF" output is now unbuffered.
   * Bunch of changes to get working with rails... UGH.
     * Added stupid hacks to deal with rails not requiring their dependencies.

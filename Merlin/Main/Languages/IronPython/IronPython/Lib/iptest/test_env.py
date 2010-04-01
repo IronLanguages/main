@@ -77,8 +77,12 @@ if is_cli:
 
 #--Are we using peverify to check that all IL generated is valid?
 is_peverify_run = False
+is_saveassemblies = False
+is_lightweightscopes = False
 if is_cli:    
-    is_peverify_run = is_debug and "-X:SaveAssemblies" in System.Environment.CommandLine    
+    is_saveassemblies = "-X:SaveAssemblies" in System.Environment.CommandLine
+    is_peverify_run = is_debug and is_saveassemblies
+    is_lightweightscopes = "-X:LightweightScopes" in System.Environment.CommandLine
 
 
 #--Internal checkin system used for IronPython
