@@ -18,12 +18,9 @@
 }
 .assembly System.Dynamic
 {
-	.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 	.custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = { bool(true) }
 	.custom instance void [mscorlib]System.Runtime.CompilerServices.InternalsVisibleToAttribute::.ctor(string) = { string('Microsoft.CSharp, PublicKey =002400000480000094000000060200000024000052534131000400000100010007d1fa57c4aed9f0a32e84aa0faefd0de9e8fd6aec8f87fb03766c834c99921eb23be79ad9d5dcc1dd9ad236132102900b723cf980957fc4e177108fc607774f29e8320e92ea05ece4e821c0a5efe8f1645c4c0c93c1ab99285d622caa652c1dfad63d745d6f2de5f17e5eaf0fc4963d261c8a12436518206dc093344d5ad293') }
 	.custom instance void [mscorlib]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) = { bool(false) }
-	.custom instance void [mscorlib]System.Security.AllowPartiallyTrustedCallersAttribute::.ctor() = { }
-	.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = { uint8(2) property bool SkipVerificationInFullTrust = bool(true) }
 	.permissionset reqmin = (2E 01 80 84 53 79 73 74 65 6D 2E 53 65 63 75 72 69 74 79 2E 50 65 72 6D 69 73 73 69 6F 6E 73 2E 53 65 63 75 72 69 74 79 50 65 72 6D 69 73 73 69 6F 6E 41 74 74 72 69 62 75 74 65 2C 20 6D 73 63 6F 72 6C 69 62 2C 20 56 65 72 73 69 6F 6E 3D 34 2E 30 2E 30 2E 30 2C 20 43 75 6C 74 75 72 65 3D 6E 65 75 74 72 61 6C 2C 20 50 75 62 6C 69 63 4B 65 79 54 6F 6B 65 6E 3D 62 37 37 61 35 63 35 36 31 39 33 34 65 30 38 39 15 01 54 02 10 53 6B 69 70 56 65 72 69 66 69 63 61 74 69 6F 6E 01)
 	.publickey = SYSTEM_DYNAMIC_ASSEMBLY_PUBLIC_KEY_IL
 	.hash algorithm 0x00008004
@@ -105,10 +102,10 @@
 	extends [mscorlib]System.Object
 {
 	.field static assembly literal string Copyright = bytearray(A9 00 20 00 4D 00 69 00 63 00 72 00 6F 00 73 00 6F 00 66 00 74 00 20 00 43 00 6F 00 72 00 70 00 6F 00 72 00 61 00 74 00 69 00 6F 00 6E 00 2E 00 20 00 20 00 41 00 6C 00 6C 00 20 00 72 00 69 00 67 00 68 00 74 00 73 00 20 00 72 00 65 00 73 00 65 00 72 00 76 00 65 00 64 00 2E 00)
-	.field static assembly literal int32 DailyBuildNumber = int32(0x000051AF)
+	.field static assembly literal int32 DailyBuildNumber = int32(0x000050E2)
 	.field static assembly literal string DefaultAlias = "System.Dynamic.dll"
 	.field static assembly literal string Description = "System.Dynamic.dll"
-	.field static assembly literal string InformationalVersion = "4.0.20911.0"
+	.field static assembly literal string InformationalVersion = "4.0.20706.0"
 	.field static assembly literal string Title = "System.Dynamic.dll"
 	.field static assembly literal string Version = "4.0.0.0"
 }
@@ -234,29 +231,24 @@
 	.class private abstract sealed CollectionExtensions
 		extends [mscorlib]System.Object
 	{
-		.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 		.method assembly static hidebysig 
 			!!0[] RemoveFirst<'T'>(!!0[] 'array')
 		{
-			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			!!0[] AddFirst<'T'>(class [mscorlib]'System.Collections.Generic.IList`1'<!!0> list, !!0 item)
 		{
-			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			!!0[] ToArray<'T'>(class [mscorlib]'System.Collections.Generic.IList`1'<!!0> list)
 		{
-			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			!!0[] AddLast<'T'>(class [mscorlib]'System.Collections.Generic.IList`1'<!!0> list, !!0 item)
 		{
-			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 	}
@@ -296,7 +288,6 @@
 		.method public static hidebysig 
 			bool TryBindGetMember(class [System.Core]System.Dynamic.GetMemberBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject 'instance', [out] class [System.Core]System.Dynamic.DynamicMetaObject& result, bool delayInvocation)
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
@@ -307,55 +298,46 @@
 		.method public static hidebysig 
 			bool TryBindSetMember(class [System.Core]System.Dynamic.SetMemberBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject 'instance', class [System.Core]System.Dynamic.DynamicMetaObject 'value', [out] class [System.Core]System.Dynamic.DynamicMetaObject& result)
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			bool TryBindInvoke(class [System.Core]System.Dynamic.InvokeBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject 'instance', class [System.Core]System.Dynamic.DynamicMetaObject[] args, [out] class [System.Core]System.Dynamic.DynamicMetaObject& result)
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			bool TryBindInvokeMember(class [System.Core]System.Dynamic.InvokeMemberBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject 'instance', class [System.Core]System.Dynamic.DynamicMetaObject[] args, [out] class [System.Core]System.Dynamic.DynamicMetaObject& result)
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			bool TryBindGetIndex(class [System.Core]System.Dynamic.GetIndexBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject 'instance', class [System.Core]System.Dynamic.DynamicMetaObject[] args, [out] class [System.Core]System.Dynamic.DynamicMetaObject& result)
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			bool TryBindSetIndex(class [System.Core]System.Dynamic.SetIndexBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject 'instance', class [System.Core]System.Dynamic.DynamicMetaObject[] args, class [System.Core]System.Dynamic.DynamicMetaObject 'value', [out] class [System.Core]System.Dynamic.DynamicMetaObject& result)
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			bool TryConvert(class [System.Core]System.Dynamic.ConvertBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject 'instance', [out] class [System.Core]System.Dynamic.DynamicMetaObject& result)
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			class [mscorlib]'System.Collections.Generic.IEnumerable`1'<string> GetDynamicMemberNames(object 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			class [mscorlib]'System.Collections.Generic.IList`1'<string> GetDynamicDataMemberNames(object 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			class [mscorlib]'System.Collections.Generic.IList`1'<valuetype [mscorlib]'System.Collections.Generic.KeyValuePair`2'<string,object>> GetDynamicDataMembers(object 'value', class [mscorlib]'System.Collections.Generic.IEnumerable`1'<string> names)
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 	}
@@ -413,7 +395,6 @@
 		.method public static hidebysig 
 			class System.Dynamic.ComEventSink FromRuntimeCallableWrapper(object rcw, valuetype [mscorlib]System.Guid sourceIid, bool createIfNotFound)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig 
@@ -424,7 +405,6 @@
 		.method public hidebysig 
 			instance void RemoveHandler(int32 dispid, object func)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig 
@@ -495,13 +475,11 @@
 		.method public final virtual hidebysig newslot 
 			instance void Dispose()
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method family virtual hidebysig 
 			instance void Finalize()
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.property instance class [mscorlib]System.Type UnderlyingSystemType()
@@ -512,23 +490,19 @@
 	.class private sealed ComEventSinkProxy
 		extends [mscorlib]System.Runtime.Remoting.Proxies.RealProxy
 	{
-		.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 		.method public hidebysig specialname 
 			instance void .ctor(class System.Dynamic.ComEventSink sink, valuetype [mscorlib]System.Guid sinkIid)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public virtual hidebysig 
 			instance native int SupportsInterface(valuetype [mscorlib]System.Guid& iid)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public virtual hidebysig 
 			instance class [mscorlib]System.Runtime.Remoting.Messaging.IMessage Invoke(class [mscorlib]System.Runtime.Remoting.Messaging.IMessage msg)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 	}
@@ -539,19 +513,16 @@
 		.method public static hidebysig 
 			class System.Dynamic.ComEventSinksContainer FromRuntimeCallableWrapper(object rcw, bool createIfNotFound)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public final virtual hidebysig newslot 
 			instance void Dispose()
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method family virtual hidebysig 
 			instance void Finalize()
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 	}
@@ -799,7 +770,6 @@
 		.method public static hidebysig 
 			class System.Dynamic.ComObject ObjectToComObject(object rcw)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
@@ -844,7 +814,6 @@
 		.method public static hidebysig 
 			void CheckThrowException(int32 'hresult', valuetype System.Dynamic.ExcepInfo& excepInfo, uint32 argErr, string message)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
@@ -870,19 +839,16 @@
 		.method assembly static hidebysig 
 			class [mscorlib]System.Runtime.InteropServices.ComTypes.ITypeInfo GetITypeInfoFromIDispatch(class System.Dynamic.IDispatch dispatch, bool throwIfMissingExpectedTypeInfo)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			valuetype [mscorlib]'System.Runtime.InteropServices.ComTypes.TYPEATTR' GetTypeAttrForTypeInfo(class [mscorlib]System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			valuetype [mscorlib]'System.Runtime.InteropServices.ComTypes.TYPELIBATTR' GetTypeAttrForTypeLib(class [mscorlib]System.Runtime.InteropServices.ComTypes.ITypeLib typeLib)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
@@ -902,7 +868,6 @@
 		.method assembly hidebysig specialname 
 			instance void .ctor(class [mscorlib]System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly hidebysig 
@@ -922,7 +887,6 @@
 		.method assembly static hidebysig 
 			class System.Dynamic.ComTypeDesc FromITypeInfo(class [mscorlib]System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo, valuetype [mscorlib]'System.Runtime.InteropServices.ComTypes.TYPEATTR' typeAttr)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
@@ -1105,7 +1069,6 @@
 		.method assembly static hidebysig 
 			class System.Dynamic.ComTypeLibDesc GetFromTypeLib(class [mscorlib]System.Runtime.InteropServices.ComTypes.ITypeLib typeLib)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly hidebysig 
@@ -1329,7 +1292,6 @@
 		.method public virtual hidebysig 
 			instance class [System.Core]System.Dynamic.DynamicMetaObject BindSetIndex(class [System.Core]System.Dynamic.SetIndexBinder binder, class [System.Core]System.Dynamic.DynamicMetaObject[] indexes, class [System.Core]System.Dynamic.DynamicMetaObject 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecuritySafeCriticalAttribute::.ctor() = { }
 			ret
 		}
 	}
@@ -1501,7 +1463,6 @@
 		.method assembly hidebysig 
 			instance class [mscorlib]System.Exception GetException()
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 
@@ -2053,7 +2014,6 @@
 	.class private abstract sealed TypeUtils
 		extends [mscorlib]System.Object
 	{
-		.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 		.method assembly static hidebysig 
 			class [mscorlib]System.Type GetNonNullableType(class [mscorlib]System.Type 'type')
 		{
@@ -2062,7 +2022,6 @@
 		.method assembly static hidebysig 
 			bool IsNullableType(class [mscorlib]System.Type 'type')
 		{
-			.custom instance void [System.Core]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
@@ -2127,104 +2086,87 @@
 		.method assembly static hidebysig 
 			native int ConvertSByteByrefToPtr(int8& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertInt16ByrefToPtr(int16& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			native int ConvertInt32ByrefToPtr(int32& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertInt64ByrefToPtr(int64& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertByteByrefToPtr(uint8& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertUInt16ByrefToPtr(uint16& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertUInt32ByrefToPtr(uint32& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertUInt64ByrefToPtr(uint64& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertIntPtrByrefToPtr(native int& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertUIntPtrByrefToPtr(native uint& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertSingleByrefToPtr(float32& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertDoubleByrefToPtr(float64& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			native int ConvertDecimalByrefToPtr(valuetype [mscorlib]System.Decimal& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			native int ConvertVariantByrefToPtr(valuetype System.Dynamic.Variant& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			valuetype System.Dynamic.Variant GetVariantForObject(object obj)
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 
 			void InitVariantForObject(object obj, valuetype System.Dynamic.Variant& 'variant')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			object GetObjectForVariant(valuetype System.Dynamic.Variant 'variant')
 		{
 			.custom instance void [mscorlib]System.ObsoleteAttribute::.ctor(string, bool) = { string('do not use this method') bool(true) }
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
@@ -2243,14 +2185,12 @@
 			int32 IDispatchInvoke(native int dispatchPointer, int32 memberDispId, valuetype [mscorlib]'System.Runtime.InteropServices.ComTypes.INVOKEKIND' 'flags', valuetype [mscorlib]'System.Runtime.InteropServices.ComTypes.DISPPARAMS'& dispParams, [out] valuetype System.Dynamic.Variant& result, [out] valuetype System.Dynamic.ExcepInfo& excepInfo, [out] uint32& argErr)
 		{
 			.custom instance void [mscorlib]System.ObsoleteAttribute::.ctor(string, bool) = { string('do not use this method') bool(true) }
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public static hidebysig 
 			native int GetIdsOfNamedParameters(class System.Dynamic.IDispatch dispatch, string[] names, int32 methodDispId, [out] valuetype [mscorlib]System.Runtime.InteropServices.GCHandle& pinningHandle)
 		{
 			.custom instance void [mscorlib]System.ObsoleteAttribute::.ctor(string, bool) = { string('do not use this method') bool(true) }
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig specialname 
@@ -2303,13 +2243,11 @@
 		.method public hidebysig 
 			instance object ToObject()
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig 
 			instance void Clear()
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2335,7 +2273,6 @@
 		.method public hidebysig 
 			instance void SetAsIConvertible(class [mscorlib]System.IConvertible 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2351,7 +2288,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefI1(int8& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2367,7 +2303,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefI2(int16& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2383,7 +2318,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefI4(int32& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2399,7 +2333,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefI8(int64& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2415,7 +2348,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefUi1(uint8& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2431,7 +2363,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefUi2(uint16& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2447,7 +2378,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefUi4(uint32& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2463,7 +2393,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefUi8(uint64& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2479,7 +2408,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefInt(native int& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2495,7 +2423,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefUint(native uint& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2511,7 +2438,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefBool(int16& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2527,7 +2453,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefError(int32& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2543,7 +2468,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefR4(float32& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2559,7 +2483,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefR8(float64& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2575,7 +2498,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefDecimal(valuetype [mscorlib]System.Decimal& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2591,7 +2513,6 @@
 		.method public hidebysig 
 			instance void SetAsByrefCy(int64& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
@@ -2607,85 +2528,71 @@
 		.method public hidebysig 
 			instance void SetAsByrefDate(float64& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
 			instance string get_AsBstr()
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
 			instance void set_AsBstr(string 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig 
 			instance void SetAsByrefBstr(native int& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
 			instance object get_AsUnknown()
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
 			instance void set_AsUnknown(object 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig 
 			instance void SetAsByrefUnknown(native int& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
 			instance object get_AsDispatch()
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
 			instance void set_AsDispatch(object 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig 
 			instance void SetAsByrefDispatch(native int& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
 			instance object get_AsVariant()
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig specialname 
 			instance void set_AsVariant(object 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig 
 			instance void SetAsByrefVariant(valuetype System.Dynamic.Variant& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method public hidebysig 
 			instance void SetAsByrefVariantIndirect(valuetype System.Dynamic.Variant& 'value')
 		{
-			.custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = { }
 			ret
 		}
 		.method assembly static hidebysig 

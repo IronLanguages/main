@@ -831,7 +831,7 @@ Tables used to define more examples after a scenario must now be prefixed. In En
 
   Feature: Addition
     In order to avoid silly mistakes
-    As a math idiot
+    As a math illiterate 
     I want to be told the sum of two numbers
 
     Scenario: Add two numbers

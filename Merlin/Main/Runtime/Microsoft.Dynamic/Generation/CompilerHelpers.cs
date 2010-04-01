@@ -48,6 +48,82 @@ namespace Microsoft.Scripting.Generation {
 
         private static int _Counter; // for generating unique names for lambda methods
 
+        public static bool IsDynamicMethod(this MethodInfo method) {
+            return method.GetType() != _CreateInstanceMethod.GetType();
+        }
+
+        public static string[] GetArgumentNames(ParameterInfo[] parameterInfos) {
+            string[] ret = new string[parameterInfos.Length];
+            for (int i = 0; i < parameterInfos.Length; i++) ret[i] = parameterInfos[i].Name;
+            return ret;
+        }
+
+        public static Type[] GetTypesWithThis(MethodBase mi) {
+            Type[] types = ReflectionUtils.GetParameterTypes(mi.GetParameters());
+            if (IsStatic(mi)) {
+                return types;
+            }
+
+            // TODO (Spec#): do not specify <Type> type arg
+            return ArrayUtils.Insert<Type>(mi.DeclaringType, types);
+        }
+
+
+        public static Type GetReturnType(MethodBase mi) {
+            if (mi.IsConstructor) return mi.DeclaringType;
+            else return ((MethodInfo)mi).ReturnType;
+        }
+
+        public static int GetStaticNumberOfArgs(MethodBase method) {
+            if (IsStatic(method)) return method.GetParameters().Length;
+
+            return method.GetParameters().Length + 1;
+        }
+
+        public static bool IsParamArray(ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(ParamArrayAttribute), false);
+        }
+
+        public static bool IsOutParameter(ParameterInfo pi) {
+            // not using IsIn/IsOut properties as they are not available in Silverlight:
+            return (pi.Attributes & (ParameterAttributes.Out | ParameterAttributes.In)) == ParameterAttributes.Out;
+        }
+
+        public static int GetOutAndByRefParameterCount(MethodBase method) {
+            int res = 0;
+            ParameterInfo[] pis = method.GetParameters();
+            for (int i = 0; i < pis.Length; i++) {
+                if (IsByRefParameter(pis[i])) res++;
+            }
+            return res;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the specified parameter is mandatory, i.e. is not optional and doesn't have a default value.
+        /// </summary>
+        public static bool IsMandatoryParameter(ParameterInfo pi) {
+            return (pi.Attributes & (ParameterAttributes.Optional | ParameterAttributes.HasDefault)) == 0;
+        }
+
+        public static bool HasDefaultValue(ParameterInfo pi) {
+            return (pi.Attributes & ParameterAttributes.HasDefault) != 0;
+        }
+
+        public static bool IsByRefParameter(ParameterInfo pi) {
+            // not using IsIn/IsOut properties as they are not available in Silverlight:
+            if (pi.ParameterType.IsByRef) return true;
+
+            return (pi.Attributes & (ParameterAttributes.Out)) == ParameterAttributes.Out;
+        }
+
+        public static bool ProhibitsNull(ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(NotNullAttribute), false);
+        }
+
+        public static bool ProhibitsNullItems(ParameterInfo parameter) {
+            return parameter.IsDefined(typeof(NotNullItemsAttribute), false);
+        }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static object GetMissingValue(Type type) {
             ContractUtils.RequiresNotNull(type, "type");
@@ -95,6 +171,10 @@ namespace Microsoft.Scripting.Generation {
             return mi.IsConstructor || mi.IsStatic;
         }
 
+        public static bool IsExtension(MemberInfo memberInfo) {
+            return memberInfo.IsDefined(typeof(ExtensionAttribute), false);
+        }
+
         /// <summary>
         /// True if the MethodBase is method which is going to construct an object
         /// </summary>
@@ -119,7 +199,17 @@ namespace Microsoft.Scripting.Generation {
             for (int i = 0; i < count; i++) ret[i] = item;
             return ret;
         }
-        
+
+        /// <summary>
+        /// A helper routine to check if a type can be treated as sealed - i.e. there
+        /// can never be a subtype of this given type.  This corresponds to a type
+        /// that is either declared "Sealed" or is a ValueType and thus unable to be
+        /// extended.
+        /// </summary>
+        public static bool IsSealed(Type type) {
+            return type.IsSealed || type.IsValueType;
+        }
+
         public static bool IsComparisonOperator(ExpressionType op) {
             switch (op) {
                 case ExpressionType.LessThan: return true;
@@ -618,6 +708,11 @@ namespace Microsoft.Scripting.Generation {
             return res;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+        public static Type GetReturnType(LambdaExpression lambda) {
+            return lambda.Type.GetMethod("Invoke").ReturnType;
+        }
+
         public static Type MakeCallSiteType(params Type[] types) {
             return typeof(CallSite<>).MakeGenericType(DelegateHelpers.MakeDelegate(types));
         }
@@ -632,6 +727,17 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="lambda">The lambda to compile.</param>
         /// <returns>A delegate which can interpret the lambda.</returns>
         public static Delegate LightCompile(this LambdaExpression lambda) {
+            return new LightCompiler(-1).CompileTop(lambda).CreateDelegate();
+        }
+
+        /// <summary>
+        /// Creates an interpreted delegate for the lambda.
+        /// </summary>
+        /// <param name="lambda">The lambda to compile.</param>
+        /// <param name="compileLoops">true if the presence of loops should result in a compiled delegate</param>
+        /// <returns>A delegate which can interpret the lambda.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "compileLoops")]
+        public static Delegate LightCompile(this LambdaExpression lambda, bool compileLoops) {
             return new LightCompiler(-1).CompileTop(lambda).CreateDelegate();
         }
 
@@ -655,6 +761,19 @@ namespace Microsoft.Scripting.Generation {
         public static T LightCompile<T>(this Expression<T> lambda) {
             return (T)(object)LightCompile((LambdaExpression)lambda);
         }
+
+    /// <summary>
+        /// Creates an interpreted delegate for the lambda.
+        /// </summary>
+        /// <typeparam name="T">The lambda's delegate type.</typeparam>
+        /// <param name="lambda">The lambda to compile.</param>
+        /// <param name="compileLoops">true if the presence of loops should result in a compiled delegate</param>
+        /// <returns>A delegate which can interpret the lambda.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "compileLoops"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+        public static T LightCompile<T>(this Expression<T> lambda, bool compileLoops) {
+            return (T)(object)LightCompile((LambdaExpression)lambda, -1);
+        }
+
 
         /// <summary>
         /// Creates an interpreted delegate for the lambda.

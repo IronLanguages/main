@@ -50,7 +50,7 @@ namespace Microsoft.Scripting.Hosting {
         private readonly Scope _scope;
         private readonly ScriptEngine _engine;
 
-        internal ScriptScope(ScriptEngine engine, Scope scope) {
+        public ScriptScope(ScriptEngine engine, Scope scope) {
             Assert.NotNull(engine, scope);
             _scope = scope;
             _engine = engine;

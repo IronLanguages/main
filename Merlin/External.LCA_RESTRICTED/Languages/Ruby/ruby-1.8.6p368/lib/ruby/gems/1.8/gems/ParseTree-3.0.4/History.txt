@@ -183,7 +183,7 @@
   * Added 1.8.4 compatibility fix.
   * Added args lifting in :defs in UnifiedRuby.
   * Fixed unifying argscat, splat, and a couple other oddities.
-  * Added process_call to UnifiedRuby *sigh* I'm a tard.
+  * Added process_call to UnifiedRuby *sigh* I'm 
 
 === 2.0.0 / 2007-08-01
 
@@ -310,7 +310,7 @@
   * parse_tree_show -f output is much cleaner now.
   * ParseTree does a much more elegant job of handling different versions.
   * ParseTree now has all node names in ParseTree::NODE_NAMES.
-  * ParseTree now raises exceptions instead of freakin'.
+  * ParseTree now raises exceptions instead of failin'.
 * 3 bug fixes:
   * Used multiruby to test against 1.8.2-4, 1.8 cvs, and 1.9 cvs.
   * Fixed incompatibilites introduced in ruby 1.8.4.

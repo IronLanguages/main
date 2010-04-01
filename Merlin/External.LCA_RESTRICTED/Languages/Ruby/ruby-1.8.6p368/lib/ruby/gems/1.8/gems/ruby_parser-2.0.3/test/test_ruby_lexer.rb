@@ -338,7 +338,7 @@ class TestRubyLexer < MiniTest::Unit::TestCase
   end
 
   def test_yylex_dollar
-    util_lex_token("$", "$", "$") # FIX: wtf is this?!?
+    util_lex_token("$", "$", "$") # FIX: ? is this?!?
   end
 
   def test_yylex_dot # HINT message sends

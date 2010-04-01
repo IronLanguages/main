@@ -1,5 +1,233 @@
 CHANGELOG
 =========
+ironruby-1.0.0.0 2010-03-31
+-------------------------------
+        There were no Git commits for this release.
+
+	The following commit messages are for all the commits that were made in
+	TFS:
+	-----------------------------------------------------------------------------------------------------------------------
+	Changeset: 1707542
+	User: jdeville
+	Date: Wednesday, March 31, 2010 1:30:22 PM
+
+	Comment:
+	  clean up line endings for gem
+
+	Items:
+	  edit $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/gem
+
+	Check-in Notes:
+	  Code Reviewer:
+	    na
+	  Performance Reviewer:
+	  Security Reviewer:
+
+	-----------------------------------------------------------------------------------------------------------------------
+	Changeset: 1707406
+	User: jdeville
+	Date: Wednesday, March 31, 2010 11:39:09 AM
+
+	Comment:
+	  Cleanup needed for binscope. No test impact
+
+	Items:
+	  edit   $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/Rakefile
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/wpf/SplashScreen.dll;X13119851
+
+	Check-in Notes:
+	  Code Reviewer:
+	    na
+	  Performance Reviewer:
+	  Security Reviewer:
+
+	-----------------------------------------------------------------------------------------------------------------------
+	Changeset: 1706804
+	User: jimmysch
+	Checked in by: merllab
+	Date: Tuesday, March 30, 2010 10:39:45 PM
+
+	Comment:
+	  Integrate i-scripts and irtutorial-1.0 shelvesets to servicing branch.
+	  Also make a one-line fix to Microsoft.Scripting.Silverlight.dll to not have the tutorial throw and error.
+	  
+	  (Shelveset: ir-scripts-tutorial;REDMOND\jimmysch | SNAP CheckinId: 10613)
+
+	Items:
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/build.bat;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/clean.bat;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/deploy.bat;X13119812
+	  add    $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/dlr.js
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/js;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/Libs;X13119812
+	  add    $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/Rakefile
+	  edit   $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/sl_tutorial.html
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/test.bat;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/Tutorials;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/tutorial-sl.bat;X13119812
+	  add    $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/app.rb
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/minitest-1.4.2;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/minitest-1.4.2/lib;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/minitest-1.4.2/test;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/minitest-1.4.2/lib/minitest;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/dot;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/generators;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/markup;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/parsers;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/ri;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/generators/template;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/generators/template/chm;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/generators/template/html;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/generators/template/xml;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/markup/sample;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/markup/simple_markup;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/app/Libs/rdoc/markup/test;X13119812
+	  edit   $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/test/silverlight.rb
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/Tutorials/hosting_files;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Samples/Tutorial/Tutorials/ironruby_files;X13119812
+	  add    $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/gem
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/igem;X13119812
+	  edit   $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/igem.bat
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/iirb;X13119812
+	  edit   $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/iirb.bat
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irackup;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irackup.bat;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irails;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irails.bat;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irake;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irake.bat;X13119812
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irake.cmd;X13119812
+	  add    $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irb
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irdoc;X13119812
+	  edit   $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/irdoc.bat
+	  delete $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/iri;X13119812
+	  edit   $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/iri.bat
+	  add    $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/rdoc
+	  add    $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/ri
+	  edit   $/Merlin/servicing/IronPython_2_6/Merlin/Main/Languages/Ruby/Scripts/bin/tutorial.bat
+
+	Check-in Notes:
+	  Code Reviewer:
+	  Performance Reviewer:
+	  Security Reviewer:
+
+ironruby-1.0.0 (RC4) 2010-03-20
+-------------------------------
+        There were no Git commits for this release.
+
+	The following commit messages are for all the commits that were made in
+	TFS:
+	-----------------------------------------------------------------------------------------------------------------------
+	Changeset: 1686349
+	User: tomat
+	Checked in by: merllab
+	Date: Thursday, March 18, 2010 1:14:07 PM
+
+	Comment:
+	  Compact Framework workarounds.
+	  
+	  (Shelveset: CFFixes2;REDMOND\tomat | SNAP CheckinId: 10547)
+
+	Items:
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Compiler/AstGenerator.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Runtime/RubyExceptionData.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Runtime/RubyScriptCode.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Runtime/RubyStackTraceBuilder.cs
+
+	Check-in Notes:
+	  Code Reviewer:
+	  Performance Reviewer:
+	  Security Reviewer:
+
+	-----------------------------------------------------------------------------------------------------------------------
+	Changeset: 1682538
+	User: tomat
+	Checked in by: merllab
+	Date: Tuesday, March 16, 2010 4:30:53 PM
+
+	Comment:
+	  Fixes unit test that was failing in release mode.
+	  
+	  (Shelveset: ReleaseBacktraceFix;REDMOND\tomat | SNAP CheckinId: m11402)
+
+	Items:
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/IronRuby.Tests/Runtime/BacktraceTests.cs
+
+	Check-in Notes:
+	  Code Reviewer:
+	  Performance Reviewer:
+	  Security Reviewer:
+
+	-----------------------------------------------------------------------------------------------------------------------
+	Changeset: 1682534
+	User: tomat
+	Checked in by: merllab
+	Date: Tuesday, March 16, 2010 4:28:42 PM
+
+	Comment:
+	  Removes unused local variables.
+	  
+	  (Shelveset: UnusedVars;REDMOND\tomat | SNAP CheckinId: m11402)
+
+	Items:
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Libraries.LCA_RESTRICTED/Builtins/MutableStringOps.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Libraries.LCA_RESTRICTED/Builtins/RubyTime.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Builtins/LibraryInitializer.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Builtins/RubyBufferedStream.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Compiler/Generation/ClsTypeEmitter.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Compiler/Generation/RubyTypeBuilder.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Runtime/RubyExceptionData.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Runtime/RubyScope.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Runtime/Calls/RubyAccessorInfo.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Runtime/Conversions/ProtocolConversionAction.cs
+
+	Check-in Notes:
+	  Code Reviewer:
+	  Performance Reviewer:
+	  Security Reviewer:
+
+	-----------------------------------------------------------------------------------------------------------------------
+	Changeset: 1682458
+	User: sborde
+	Checked in by: merllab
+	Date: Tuesday, March 16, 2010 3:25:58 PM
+
+	Comment:
+	  Adds support for SCRIPT_LINES__. If the constant is set, Ruby adds all loaded file into it mapped to the contents of those files. This gets RCov working (in a slow mode)
+	  Updated irtests so that it honors ROWAN_BIN if it is set. This can be used to run all the tests against a given set of prebuilt binaries for releases
+	  
+	  (Shelveset: scl;REDMOND\sborde | SNAP CheckinId: m11398)
+
+	Items:
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Ruby/Runtime/Loader.cs
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Scripts/irtests.rb
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Tests/Interop/net/spec_helper.rb
+
+	Check-in Notes:
+	  Code Reviewer:
+	  Performance Reviewer:
+	  Security Reviewer:
+
+	-----------------------------------------------------------------------------------------------------------------------
+	Changeset: 1679345
+	User: jdeville
+	Date: Monday, March 15, 2010 12:53:02 PM
+
+	Comment:
+	    FYI: version fixes for msi and changelog. These will be going in directly.
+
+	Items:
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Public/CHANGELOG.txt
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Scripts/powershell/update-version.ps1
+	  edit $/Dev10/feature/vs_langs01_s/Merlin/Main/Languages/Ruby/Scripts/Wix/config.wxi
+
+	Check-in Notes:
+	  Code Reviewer:
+	  Performance Reviewer:
+	  Security Reviewer:
+
 ironruby-0.9.5 (RC3) 2010-03-12
 -------------------------------
 	Here are all the commits for this release:

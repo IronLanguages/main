@@ -72,8 +72,7 @@
 # the Islamic Calendar, or the French Revolutionary Calendar
 # are not supported by the Date class; nor are calendars that
 # are based on an Era different from the Common Era, such as
-# the Japanese Imperial Calendar or the Republic of China
-# Calendar.
+# the Japanese Imperial Calendar 
 #
 # === Calendar Reform
 #

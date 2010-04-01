@@ -187,8 +187,8 @@ class TC_DBI_TypeUtil < Test::Unit::TestCase
     end
 
     def test_default_binary_casts
-        assert_kind_of(DBI::Binary, cast(DBI::Binary.new("poop")))
-        obj = DBI::Binary.new("poop")
+        assert_kind_of(DBI::Binary, cast(DBI::Binary.new("stuff")))
+        obj = DBI::Binary.new("stuff")
         assert_equal(obj.object_id, cast(obj).object_id)
     end
 end

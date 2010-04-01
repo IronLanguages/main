@@ -31,7 +31,7 @@
     @sth = @dbh.prepare("insert into precision_test (text_field, integer_field, decimal_field, numeric_field) values (@text_field, @integer_field, @decimal_field, @numeric_field)")
     assert(@sth.convert_types)
     1.step(5) do |x|
-      @sth.execute(:text_field => "poop#{x}", :integer_field => x, :decimal_field => x + 0.123, :numeric_field => x + 0.234)
+      @sth.execute(:text_field => "text#{x}", :integer_field => x, :decimal_field => x + 0.123, :numeric_field => x + 0.234)
     end
 
     @sth.finish

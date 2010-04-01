@@ -176,7 +176,7 @@ gems:
     end
   end
 
-  def util_fuck_with_fetcher data, blow = false
+  def util_mess_with_fetcher data, blow = false
     fetcher = Gem::RemoteFetcher.fetcher
     fetcher.instance_variable_set :@test_data, data
 
@@ -187,7 +187,6 @@ gems:
       end
     else
       def fetcher.fetch_path arg
-        # OMG I'm such an ass
         class << self; remove_method :fetch_path; end
         def self.fetch_path arg
           @test_arg = arg
@@ -207,7 +206,7 @@ gems:
       a1_data = fp.read
     end
 
-    fetcher = util_fuck_with_fetcher a1_data
+    fetcher = util_mess_with_fetcher a1_data
 
     a1_cache_gem = File.join(@gemhome, 'cache', "#{@a1.full_name}.gem")
     assert_equal a1_cache_gem, fetcher.download(@a1, 'http://gems.example.com')
@@ -259,7 +258,7 @@ gems:
       a1_data = fp.read
     end
 
-    fetcher = util_fuck_with_fetcher a1_data
+    fetcher = util_mess_with_fetcher a1_data
 
     install_dir = File.join @tempdir, 'more_gems'
 
@@ -295,7 +294,7 @@ gems:
       File.chmod 0555, File.join(@gemhome, 'cache')
       File.chmod 0555, File.join(@gemhome)
 
-      fetcher = util_fuck_with_fetcher File.read(@a1_gem)
+      fetcher = util_mess_with_fetcher File.read(@a1_gem)
       fetcher.download(@a1, 'http://gems.example.com')
       assert File.exist?(File.join(Gem.user_dir, 'cache',
                                    "#{@a1.full_name}.gem"))
@@ -318,7 +317,7 @@ gems:
       e1_data = fp.read
     end
 
-    fetcher = util_fuck_with_fetcher e1_data, :blow_chunks
+    fetcher = util_mess_with_fetcher e1_data, :blow_chunks
 
     e1_cache_gem = File.join(@gemhome, 'cache', "#{e1.full_name}.gem")
 

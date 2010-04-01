@@ -115,21 +115,14 @@ IronRuby core runtime components
 
       <Directory Id="Dir_Bin" Name="bin">
         <Component Id="Comp_Scripts" DiskId="1" Guid="44002AC5-4165-4710-A41A-72B371FF6B24">
-          <File Id="File_igem" Name="igem" />
+          <File Id="File_gem" Name="gem" />
           <File Id="File_igem.bat" Name="igem.bat" />
-          <File Id="File_iirb" Name="iirb" />
+          <File Id="File_irb" Name="irb" />
           <File Id="File_iirb.bat" Name="iirb.bat" />
           <File Id="File_ir.exe.config" Name="ir.exe.config" />
-          <File Id="File_irackup" Name="irackup" />
-          <File Id="File_irackup.bat" Name="irackup.bat" />
-          <File Id="File_irails" Name="irails"/>
-          <File Id="File_irails.bat" Name="irails.bat" />
-          <File Id="File_irake" Name="irake" />
-          <File Id="File_irake.bat" Name="irake.bat" />
-          <File Id="File_irake.cmd" Name="irake.cmd" />
-          <File Id="File_irdoc" Name="irdoc" />
+          <File Id="File_rdoc" Name="rdoc" />
           <File Id="File_irdoc.bat" Name="irdoc.bat" />
-          <File Id="File_iri" Name="iri" />
+          <File Id="File_ri" Name="ri" />
           <File Id="File_iri.bat" Name="iri.bat" />
           <File Id="File_tutorial.bat" Name="tutorial.bat" />
           <RemoveFile Id='ExtraBins' On='uninstall' Name='*' />

@@ -72,7 +72,7 @@ context "Rack::Lint" do
       message.should.equal("session [] must respond to store and []=")
 
     lambda {
-      Rack::Lint.new(nil).call(env("REQUEST_METHOD" => "FUCKUP?"))
+      Rack::Lint.new(nil).call(env("REQUEST_METHOD" => "NOTAMETHOD?"))
     }.should.raise(Rack::Lint::LintError).
       message.should.match(/REQUEST_METHOD/)
 

@@ -14,7 +14,7 @@ class TestPatternFormatter < TestCase
     Outputter['test'].formatter = f
     l.debug "And this?"
     l.info "How's this?"
-    l.error "and a really freaking huge line which we hope will be trimmed?"
+    l.error "and a really long and huge line which we hope will be trimmed?"
     e = ArgumentError.new("something barfed")
     e.set_backtrace Array.new(5, "trace junk at thisfile.rb 154")
     l.fatal e

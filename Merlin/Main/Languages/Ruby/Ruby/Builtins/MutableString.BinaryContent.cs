@@ -284,7 +284,7 @@ namespace IronRuby.Builtins {
                 char[] allValid;
                 var result = MutableString.EnumerateAsCharacters(_data, _count, _owner.Encoding, out allValid);
                 if (allValid != null) {
-                    // we can witch the content type if all characters are valid:
+                    // we can switch the content type if all characters are valid:
                     WrapContent(allValid, allValid.Length);
                 }
                 return result;

@@ -1118,7 +1118,7 @@ class ParseTreeTestCase < MiniTest::Unit::TestCase
             "RawParseTree" => [:case, [:vcall, :a],
                                [:when,
                                 [:array,
-                                 [:lit, :b], [:when, [:vcall, :c], nil]], # wtf?
+                                 [:lit, :b], [:when, [:vcall, :c], nil]], # ?
                                 [:vcall, :d]],
                                [:vcall, :e]],
             "ParseTree"    => s(:case, s(:call, nil, :a, s(:arglist)),
@@ -1127,7 +1127,7 @@ class ParseTreeTestCase < MiniTest::Unit::TestCase
                                     s(:lit, :b),
                                     s(:when,
                                       s(:call, nil, :c, s(:arglist)),
-                                      nil)), # wtf?
+                                      nil)), # ?
                                   s(:call, nil, :d, s(:arglist))),
                                 s(:call, nil, :e, s(:arglist))))
 
@@ -3800,7 +3800,7 @@ class ParseTreeTestCase < MiniTest::Unit::TestCase
 
   add_tests("splat_lit_1",
             "Ruby"         => "[*1]",
-            "RawParseTree" => [:splat, [:lit, 1]], # UGH - damn MRI
+            "RawParseTree" => [:splat, [:lit, 1]], # UGH -  MRI
             "ParseTree"    => s(:array, s(:splat, s(:lit, 1))))
 
   add_tests("splat_lit_n",

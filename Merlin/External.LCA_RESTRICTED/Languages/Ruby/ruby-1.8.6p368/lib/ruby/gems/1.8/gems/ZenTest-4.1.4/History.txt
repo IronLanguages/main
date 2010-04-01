@@ -41,7 +41,7 @@
 
 * 4 minor enhancements:
 
-  * Added #blur to focus.rb to nuke all other test classes
+  * Added #blur to focus.rb to get rid of all other test classes
   * Clear RUBYOPT before installs (balatero)
   * Removed test/unit include in zentest so we can focus on miniunit
   * sort versions for builds. (Jens Wille)
@@ -427,7 +427,7 @@
     - Fixed @libs for windoze.
     - Fixed inner class/test identification in autotest.
     - Namespaced all plugins... eric is anal.
-    - No longer freak out if rubygems tarball not in multiruby/versions.
+    - No longer go crazy if rubygems tarball not in multiruby/versions.
 
 === 3.3.0 / 2006-07-28
 

@@ -33,7 +33,7 @@ namespace Microsoft.Scripting.Interpreter {
         public static readonly ThreadLocal<InterpretedFrame> CurrentFrame = new ThreadLocal<InterpretedFrame>();
 
         internal readonly Interpreter Interpreter;
-        internal InterpretedFrame _parent;
+        public InterpretedFrame Parent;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         private int[] _continuations;
@@ -122,10 +122,6 @@ namespace Microsoft.Scripting.Interpreter {
 
         #region Stack Trace
 
-        public InterpretedFrame Parent {
-            get { return _parent; }
-        }
-
         public static bool IsInterpretedFrame(MethodBase method) {
             ContractUtils.RequiresNotNull(method, "method");
             return method.DeclaringType == typeof(Interpreter) && method.Name == "Run";
@@ -182,9 +178,16 @@ namespace Microsoft.Scripting.Interpreter {
         }
 #endif
 
+        internal ThreadLocal<InterpretedFrame>.StorageInfo Enter0() {
+            var currentFrame = InterpretedFrame.CurrentFrame.GetStorageInfo();
+            Parent = currentFrame.Value;
+            currentFrame.Value = this;
+            return currentFrame;
+        }
+
         internal ThreadLocal<InterpretedFrame>.StorageInfo Enter() {
             var currentFrame = InterpretedFrame.CurrentFrame.GetStorageInfo();
-            _parent = currentFrame.Value;
+            Parent = currentFrame.Value;
             currentFrame.Value = this;
             if (Interpreter._boxedLocals != null) {
                 BoxLocals();
@@ -193,7 +196,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         internal void Leave(ThreadLocal<InterpretedFrame>.StorageInfo currentFrame) {
-            currentFrame.Value = _parent;
+            currentFrame.Value = Parent;
         }
 
         #endregion

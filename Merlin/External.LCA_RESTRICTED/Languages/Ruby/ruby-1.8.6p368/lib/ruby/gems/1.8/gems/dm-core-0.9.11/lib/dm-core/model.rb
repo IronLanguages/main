@@ -144,7 +144,7 @@ module DataMapper
     # defines a property on the resource
     #
     # @param <Symbol> name the name for which to call this property
-    # @param <Type> type the type to define this property ass
+    # @param <Type> type the type to define this property as
     # @param <Hash(Symbol => String)> options a hash of available options
     # @see DataMapper::Property
     def property(name, type, options = {})

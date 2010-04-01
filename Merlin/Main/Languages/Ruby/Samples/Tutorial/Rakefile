@@ -1,0 +1,108 @@
+require 'fileutils'
+include FileUtils
+
+task :default => 'tutorial:test'
+
+desc '"rake run" runs the tutorial as a desktop app'
+task :run => 'tutorial:run'
+
+cwd = File.dirname(__FILE__)
+
+if ENV["MERLIN_ROOT"]
+  root = ENV['MERLIN_ROOT']
+  # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
+  BIN = "#{root}/Languages/Ruby/Scripts/bin"
+  RUBY_STDLIBS = "#{root}/../External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby/1.8"
+  IRONRUBY_LIBS = "#{root}/Languages/Ruby/Libs"
+  GEMS = "#{root}/../External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems"
+
+  chiron = "#{root}/Bin/Silverlight Debug/Chiron.exe"
+  chiron = "#{root}/Bin/Silverlight Release/Chiron.exe" unless File.exist?(chiron)
+  raise "Could not find Chiron.exe. Do you have a build of Silverlight? If not, type 'bsd'" unless File.exist?(chiron)
+  CHIRON = chiron
+
+  ir = "#{root}/Bin/Release/ir.exe"
+  ir = "#{root}/Bin/Debug/ir.exe" unless File.exist? ir
+  raise "Could not find ir.exe" unless File.exist? ir
+  IR = ir
+
+else
+  BIN = "#{cwd}/../../bin"
+  RUBY_STDLIBS = "#{cwd}/../../lib/ruby/1.8"
+  IRONRUBY_LIBS = RUBY_STDLIBS
+  GEMS = "#{cwd}/../../lib/IronRuby/gems/1.8/gems"
+  CHIRON = "#{cwd}/../../silverlight/bin/Chiron.exe"
+  IR = "#{cwd}/../../bin/ir.exe"
+  if File.exist?("#{GEMS}/minitest-1.4.2")
+    `#{BIN}/igem install minitest --version 1.4.2 --no-rdoc --no-ri`
+  end
+end
+
+namespace 'tutorial' do
+
+  desc 'Cleans tutorial of any generated or copied files'
+  task :clean do
+    cd cwd do
+      rm 'app.xap' if File.exists? 'app.xap'
+      rm_r 'deploy' if File.exists? 'deploy'
+      rm_r 'app/Libs' if File.exists? 'app/Libs'
+      Dir['app/Tutorials/*_tutorial.generated.html'].each { |i| rm i }
+    end
+  end
+
+  desc 'Copy any required Ruby libraries to a subfolder for use in the tutorial'
+  task :build => :clean do
+    cd cwd do
+      mkdir 'app/Libs' unless File.exist?('app/Libs')
+      cp "#{RUBY_STDLIBS}/erb.rb", "app/Libs"
+      %w(stringio.rb bigdecimal.rb).each{|i| cp "#{IRONRUBY_LIBS}/#{i}", 'app/Libs' }
+      cp_r "#{RUBY_STDLIBS}/rdoc", "app/Libs"
+      cp_r "#{GEMS}/minitest-1.4.2", "app/Libs"
+    end
+  end
+
+  desc 'Preparing tutorial for deploying to ironruby.net/tutorial'
+  task :deploy => [:build, :generate_html] do
+    cd cwd do
+      `#{CHIRON} /s /d:app /z:app.xap`
+      rm_r 'deploy' if File.exist? 'deploy'
+      mkdir 'deploy'
+      %w(app.xap sl_tutorial.html console_tutorial.rb).each{|i| cp i, 'deploy'}
+      %w(test app).each{|i| cp_r i, 'deploy'}
+      Dir['app/Tutorials/*generated.html'].each{|i| cp i, 'deploy'}
+    end
+    puts "Deployment finished: see the 'deploy' directory"
+  end
+
+  desc 'Test the tutorial'
+  task :test => :build do
+    cd "#{cwd}/test" do
+      puts `#{IR} test_console.rb`
+    end
+    `#{CHIRON} /n /b:sl_tutorial.html?test`
+  end
+
+  desc 'Generate HTML for tutorial'
+  task :generate_html => :clean do
+    cd(cwd){ `#{IR} html_tutorial.rb` }
+  end
+
+  desc 'Run the tutorial (desktop is default)'
+  task :run => :desktop
+
+  desc 'Run the tutorial as a desktop application'
+  task :desktop do
+     cd "#{cwd}/wpf" do
+       `#{ENV['FrameworkDIR32']}\\v3.5\\csc.exe /t:library /r:WindowsBase.dll SplashScreen.cs`
+       `#{IR} -e "require 'SplashScreen.dll'; SplashScreen::SplashScreen.write_image_resource 'SplashScreen.png', 'SplashScreen.g.resources'"`
+       `#{ENV['FrameworkDIR32']}\\v3.5\\csc.exe /t:library /r:WindowsBase.dll /resource:SplashScreen.g.resources SplashScreen.cs`
+     end
+     cd(cwd){ `#{IR} wpf_tutorial.rb` }
+  end
+
+  desc 'Run the tutorial in the web browser'
+  task :silverlight => :build do
+     cd(cwd){ `#{CHIRON} /n /b:sl_tutorial.html` }
+  end
+
+end
