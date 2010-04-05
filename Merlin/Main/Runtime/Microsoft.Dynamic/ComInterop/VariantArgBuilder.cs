@@ -24,7 +24,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Dynamic.Utils;
 using System.Reflection;
 
 namespace Microsoft.Scripting.ComInterop {

@@ -22,7 +22,6 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Diagnostics;
 
 using Microsoft.Scripting.Utils;

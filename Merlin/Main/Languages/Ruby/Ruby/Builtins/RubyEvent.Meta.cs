@@ -22,7 +22,6 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Dynamic.Utils;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;

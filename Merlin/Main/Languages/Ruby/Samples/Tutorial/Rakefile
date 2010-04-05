@@ -1,5 +1,4 @@
-require 'fileutils'
-include FileUtils
+require 'rake/clean'
 
 task :default => 'tutorial:test'
 
@@ -25,7 +24,7 @@ if ENV["MERLIN_ROOT"]
   ir = "#{root}/Bin/Debug/ir.exe" unless File.exist? ir
   raise "Could not find ir.exe" unless File.exist? ir
   IR = ir
-
+  CSC="csc"
 else
   BIN = "#{cwd}/../../bin"
   RUBY_STDLIBS = "#{cwd}/../../lib/ruby/1.8"
@@ -36,22 +35,16 @@ else
   if File.exist?("#{GEMS}/minitest-1.4.2")
     `#{BIN}/igem install minitest --version 1.4.2 --no-rdoc --no-ri`
   end
+  CSC="#{ENV['FrameworkDIR32']}\\v3.5\\csc.exe"
 end
 
+CLEAN.include("app.xap", "deploy","app/Libs","app/Tutorials/*_tutorial.generated.html")
+CLOBBER.include("**/SplashScreen.dll","**/SplashScreen.g.resources","**/TutorialSamples.dll")
+
 namespace 'tutorial' do
-
-  desc 'Cleans tutorial of any generated or copied files'
-  task :clean do
-    cd cwd do
-      rm 'app.xap' if File.exists? 'app.xap'
-      rm_r 'deploy' if File.exists? 'deploy'
-      rm_r 'app/Libs' if File.exists? 'app/Libs'
-      Dir['app/Tutorials/*_tutorial.generated.html'].each { |i| rm i }
-    end
-  end
-
+  
   desc 'Copy any required Ruby libraries to a subfolder for use in the tutorial'
-  task :build => :clean do
+  task :build => [:clean, "wpf/Splashscreen.dll","app/Tutorials/ironruby_files/TutorialSamples.dll"] do
     cd cwd do
       mkdir 'app/Libs' unless File.exist?('app/Libs')
       cp "#{RUBY_STDLIBS}/erb.rb", "app/Libs"
@@ -89,14 +82,24 @@ namespace 'tutorial' do
 
   desc 'Run the tutorial (desktop is default)'
   task :run => :desktop
-
-  desc 'Run the tutorial as a desktop application'
-  task :desktop do
-     cd "#{cwd}/wpf" do
-       `#{ENV['FrameworkDIR32']}\\v3.5\\csc.exe /t:library /r:WindowsBase.dll SplashScreen.cs`
+  
+  file "wpf/Splashscreen.dll" => "wpf/SplashScreen.cs" do
+    cd "#{cwd}/wpf" do
+       `#{CSC} /t:library /r:WindowsBase.dll SplashScreen.cs`
        `#{IR} -e "require 'SplashScreen.dll'; SplashScreen::SplashScreen.write_image_resource 'SplashScreen.png', 'SplashScreen.g.resources'"`
-       `#{ENV['FrameworkDIR32']}\\v3.5\\csc.exe /t:library /r:WindowsBase.dll /resource:SplashScreen.g.resources SplashScreen.cs`
-     end
+       `#{CSC} /t:library /r:WindowsBase.dll /resource:SplashScreen.g.resources SplashScreen.cs`
+    end
+  end
+
+  file "app/Tutorials/ironruby_files/TutorialSamples.dll" => "app/Tutorials/ironruby_files/Prime.cs" do
+    cd "#{cwd}/app/Tutorials/ironruby_files" do
+       `#{CSC} /t:library Prime.cs`
+       mv "Prime.dll","TutorialSamples.dll"
+    end
+  end
+  
+  desc 'Run the tutorial as a desktop application'
+  task :desktop  => ["wpf/Splashscreen.dll","app/Tutorials/ironruby_files/TutorialSamples.dll"] do
      cd(cwd){ `#{IR} wpf_tutorial.rb` }
   end
 

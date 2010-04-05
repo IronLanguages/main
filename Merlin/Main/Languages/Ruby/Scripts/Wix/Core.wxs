@@ -5,7 +5,9 @@ IronRuby core runtime components
 2009-09-16 JDeville Created
 2010-01-31 JDeville modified to not force elevation
 -->
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
+  xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension" 
+  xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include $(sys.CURRENTDIR)\config.wxi?>
   <Fragment>
     <ComponentGroup Id="CG_CoreNGen">
@@ -46,19 +48,39 @@ IronRuby core runtime components
     <DirectoryRef Id="Dir_StartMenu">
       <Component Id="Comp_Core_Shortcut" DiskId="1" Guid="4718d9bb-de0c-4ed7-bdb3-00226fec023d">
         <CreateFolder />
-        <Shortcut Id="Shortcut_Readme" Name="IronRuby Readme" Target="[#File_Readme.txt]" />
-        <RegistryValue Root="HKMU"
-          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
-          Type='string'
-          Value ='[Dir_StartMenu]'
-          KeyPath='yes' />
+        <Shortcut Id="Shortcut_Readme" 
+          Name="$(var.ProductShortName) Readme" 
+          Target="[#File_Readme.txt]" />
+        <util:InternetShortcut Id="Shortcut_ReportBugs" 
+          Name="Report bugs" 
+          Type="url"
+          Target="[ReportBugs]" />
+        <util:InternetShortcut Id="Shortcut_LearnMore"
+          Name="Learn More"
+          Type="url"
+          Target="[LearnMore]" />
+        <Shortcut Id="Shortcut_Uninstall" 
+          Name= "Uninstall $(var.ProductShortName)"
+          Description="Uninstalls IronRuby"
+          Target="[System64Folder]msiexec.exe"
+          Arguments="/x [ProductCode]" />
+        <RegistryKey Root="HKMU"
+          Key="[ApplicationRegKey]"
+          Action="createAndRemoveOnUninstall">
+          <RegistryValue Type="string"
+            Value='[Dir_StartMenu]'
+            KeyPath='yes' />
+          <RegistryValue Type='string'
+            Name='InstallPath'
+            Value='[APPLICATIONFOLDER]' />
+        </RegistryKey>
         <RemoveFolder Id="Dir_StartMenu" On='uninstall' />
       </Component>
       <Component Id="Comp_SCNGEN" DiskId="1" Guid="9A663596-2F2A-475F-AD5E-71E143EDAA45">
         <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
         <Shortcut Id="NGENShortcut_Console" Name="IronRuby Console" Target="[#NGENFile_ir.exe]" />
         <RegistryValue Root="HKMU"
-          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Key='[ApplicationRegKey]'
           Type='string'
           Value ='[Dir_StartMenu]'
           KeyPath='yes' />
@@ -67,7 +89,7 @@ IronRuby core runtime components
         <Condition><![CDATA[((ALLUSERS = 1) AND VersionNT64)]]></Condition>
         <Shortcut Id="NGEN6464Shortcut_Console" Name="IronRuby 64-bit Console" Target="[#NGENFile_ir64.exe]"  />
         <RegistryValue Root="HKMU"
-          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Key='[ApplicationRegKey]'
           Type='string'
           Value ='[Dir_StartMenu]'
           KeyPath='yes' />
@@ -76,7 +98,7 @@ IronRuby core runtime components
         <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
         <Shortcut Id="Shortcut_Console" Name="IronRuby Console" Target="[#File_ir.exe]"  />
         <RegistryValue Root="HKMU"
-          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Key='[ApplicationRegKey]'
           Type='string'
           Value ='[Dir_StartMenu]'
           KeyPath='yes' />
@@ -85,7 +107,7 @@ IronRuby core runtime components
         <Condition><![CDATA[((WixAppFolder = "WixPerFolder") AND VersionNT64)]]></Condition>
         <Shortcut Id="Shortcut64_Console64" Name="IronRuby 64-bit Console" Target="[#File_ir64.exe]" />
         <RegistryValue Root="HKMU"
-          Key='SOFTWARE\Microsoft\"$(var.ProductShortName) $(var.ProductVersionText)"'
+          Key='[ApplicationRegKey]'
           Type='string'
           Value ='[Dir_StartMenu]'
           KeyPath='yes' />
@@ -102,13 +124,31 @@ IronRuby core runtime components
       </Component>
       <Component Id="Comp_path" DiskId="1" Guid="BC955F96-6C4E-4CC1-8CE8-A3F996D193DE">
         <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
-        <Environment Id='UpdatePath' Name='PATH' Action='set' System='yes' Part='last' Value='[APPLICATIONFOLDER]bin' />
+        <Environment Id='UpdatePath' 
+          Name='PATH' 
+          Action='set' 
+          System='yes' 
+          Part='last' 
+          Value='[APPLICATIONFOLDER]bin' />
+        <Environment Id="InstallLocation" 
+          Name="$(var.EnvVariableName)"
+          Action='set' 
+          System='yes' 
+          Value='[APPLICATIONFOLDER]' />
         <CreateFolder />
       </Component>
 
       <Component Id="Comp_path_local" DiskId="1" Guid="87d7a513-968a-42d7-991c-957641d19e49">
         <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
-        <Environment Id='UpdatePathLocal' Name='PATH' Action='set' System='no' Part='last' Value='[APPLICATIONFOLDER]bin' />
+        <Environment Id='UpdatePathLocal' 
+          Name='PATH' 
+          Action='set' 
+          Part='last' 
+          Value='[APPLICATIONFOLDER]bin' />
+        <Environment Id="InstallLocationLocal" 
+          Name="$(var.EnvVariableName)"
+          Action='set' 
+          Value='[APPLICATIONFOLDER]' />
         <CreateFolder />
       </Component>
 

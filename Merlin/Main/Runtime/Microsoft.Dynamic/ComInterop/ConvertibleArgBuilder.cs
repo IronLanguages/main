@@ -23,7 +23,6 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Globalization;
-using System.Dynamic.Utils;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.ComInterop {

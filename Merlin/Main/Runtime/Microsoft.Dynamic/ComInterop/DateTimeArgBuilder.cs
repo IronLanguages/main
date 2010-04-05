@@ -26,7 +26,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Dynamic.Utils;
 
 namespace Microsoft.Scripting.ComInterop {
     internal sealed class DateTimeArgBuilder : SimpleArgBuilder {

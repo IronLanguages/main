@@ -17,7 +17,6 @@ using System;
 using System.IO;
 using System.Text;
 using IronRuby.Builtins;
-using System.Dynamic.Utils;
 
 namespace IronRuby.StandardLibrary.Yaml {
     internal class RubyIOReader : TextReader {

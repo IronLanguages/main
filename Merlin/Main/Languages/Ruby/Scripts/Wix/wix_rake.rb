@@ -1,3 +1,4 @@
+require 'rake/tasklib'
 class Object
   def heat(name, &blk)
     WixRake::HeatTask.new(name, &blk)
