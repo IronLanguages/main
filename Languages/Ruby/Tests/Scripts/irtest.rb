@@ -12,14 +12,23 @@ end
 
 flags = ["", "/partial", "/noadaptive", "/partial /noadaptive", "/sync0", "/sync1", "/debug", "/partial /debug"]
 
-ENV['DLR_BIN'] ||= "#{ENV['DLR_ROOT']}\\bin\\debug"
+# TODO: Check OS and set the debug folder name and cmd prefix appropriately.
+if RUBY_PLATFORM =~ /(mswin|mingw|bccwin|wince)/i then
+  debug_folder = 'debug'
+  cmd_prefix = ''
+else
+  debug_folder = 'mono_debug'
+  cmd_prefix = 'mono'
+end
+
+ENV['DLR_BIN'] ||= File.join("#{ENV['DLR_ROOT']}",'Bin',debug_folder)
 
 flags.each do |flag|  
-  cmd = "#{ENV['ROWAN_RUNTIME']} IronRuby.Tests.exe #{flag}"
+  cmd = cmd_prefix + "#{ENV['ROWAN_RUNTIME']} IronRuby.Tests.exe #{flag}"
   banner cmd
   Dir.chdir(ENV['DLR_BIN']) do
     exit 1 unless system cmd
   end
 end
 
-puts "OK"
+puts 'OK'

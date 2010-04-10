@@ -14,16 +14,21 @@ if engine == 'ironruby'
   $" << "resolv.rb"
 end
 class MSpecScript
+  if RUBY_PLATFORM =~ /(mswin|mingw|bccwin|wince)/i
+    ir_cmd = 'ir.cmd'
+  else
+    ir_cmd = 'ir.sh'
+  end
   # The default implementation to run the specs.
-  set :target, "#{ENV['DLR_ROOT']}\\Test\\Scripts\\ir.cmd"
+  set :target, File.join(ENV['DLR_ROOT'], "Test","Scripts","ir.cmd")
   # config[:prefix] must be set before filtered is used
-  set :prefix, "#{ENV['DLR_ROOT']}\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\rubyspec"
+  set :prefix, File.join(ENV['DLR_ROOT'], "External.LCA_RESTRICTED","Languages","IronRuby","mspec","rubyspec")
   
   set :core1sub1,filtered("core","[ac-i]")
   set :core1sub2,[ #want to keep basicobject out of the 1.8 list
-    "core\\bignum",
-    "core\\binding",
-    "core\\builtin_constants"
+    File.join("core","bignum"),
+    File.join("core","binding"),
+    File.join("core","builtin_constants")
   ]
   set :core2, filtered("core", "[j-z]").reject{|el| el =~ /thread/i}
   set :lang, [
@@ -36,20 +41,20 @@ class MSpecScript
   set :lib2, filtered("library", "[p-z]").reject {|el| el =~ /prime/}
   #.NET interop
   set :netinterop, [
-    "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\net"
+    File.join("..","..","..","..","..","Main","Languages","Ruby","Tests","Interop","net")
     ]
   
   set :netcli, [
-    "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\cli"
+    File.join("..","..","..","..","..","Main","Languages","Ruby","Tests","Interop","cli")
     ]
 
   set :cominterop, [
-    "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\com"
+    File.join("..","..","..","..","..","Main","Languages","Ruby","Tests","Interop","com")
     ]
   
   set :thread, [
-    "core\\thread",
-    "core\\threadgroup"
+    File.join("core","thread"),
+    File.join("core","threadgroup")
     ]
 
   #combination tasks
