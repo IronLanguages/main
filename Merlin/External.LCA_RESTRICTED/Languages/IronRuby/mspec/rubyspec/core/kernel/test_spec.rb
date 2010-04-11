@@ -49,6 +49,10 @@ describe "Kernel#test" do
     Kernel.test(?G, @file).should == false
   end
 
+  it "returns true when passed ?k if the argument has the sticky bit set" do
+    Kernel.test(?k, @file).should == nil
+  end
+
   ruby_version_is "1.9" do
     it "calls #to_path on second argument when passed ?f and a filename" do
       p = mock('path')
