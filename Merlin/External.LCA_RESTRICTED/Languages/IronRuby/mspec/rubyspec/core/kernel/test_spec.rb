@@ -23,6 +23,11 @@ describe "Kernel#test" do
     Kernel.test(?d, @dir).should == true
   end
 
+  it "returns an object of type Time if the argument is a directory or file" do
+    Kernel.test(?A, @file).kind_of?(Time).should == true
+    Kernel.test(?A, @dir).kind_of?(Time).should == true
+  end
+
   ruby_version_is "1.9" do
     it "calls #to_path on second argument when passed ?f and a filename" do
       p = mock('path')

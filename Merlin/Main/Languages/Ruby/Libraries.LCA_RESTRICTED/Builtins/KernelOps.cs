@@ -1134,7 +1134,9 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ file1) {
             cmd &= 0xFF;
             switch (cmd) {
-                case 'A': throw new NotImplementedException();
+                case 'A':
+                    return RubyFileOps.RubyStatOps.AccessTime(RubyFileOps.RubyStatOps.Create(context, file1));
+
                 case 'b': throw new NotImplementedException();
                 case 'C': throw new NotImplementedException();
                 case 'c': throw new NotImplementedException();
