@@ -1162,7 +1162,9 @@ namespace IronRuby.Builtins {
                 case 'k':
                     return RubyFileOps.RubyStatOps.IsSticky(RubyFileOps.RubyStatOps.Create(context, file1));
 
-                case 'l': throw new NotImplementedException();
+                case 'l':
+                    return RubyFileOps.RubyStatOps.IsSymLink(RubyFileOps.RubyStatOps.Create(context, file1));
+
                 case 'M': throw new NotImplementedException();
                 case 'O': throw new NotImplementedException();
                 case 'o': throw new NotImplementedException();
