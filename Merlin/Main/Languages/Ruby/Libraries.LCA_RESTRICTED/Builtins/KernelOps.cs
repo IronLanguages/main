@@ -1156,7 +1156,9 @@ namespace IronRuby.Builtins {
                 case 'g':
                     return RubyFileOps.RubyStatOps.IsSetGid(RubyFileOps.RubyStatOps.Create(context, file1));
 
-                case 'G': throw new NotImplementedException();
+                case 'G':
+                    return RubyFileOps.RubyStatOps.IsGroupOwned(RubyFileOps.RubyStatOps.Create(context, file1));
+
                 case 'k': throw new NotImplementedException();
                 case 'l': throw new NotImplementedException();
                 case 'M': throw new NotImplementedException();

@@ -45,6 +45,10 @@ describe "Kernel#test" do
     Kernel.test(?g, @file).should == false
   end
 
+  it "returns true when passed ?G if the argument exists and has a group ownership equal to the caller's group" do
+    Kernel.test(?G, @file).should == false
+  end
+
   ruby_version_is "1.9" do
     it "calls #to_path on second argument when passed ?f and a filename" do
       p = mock('path')
