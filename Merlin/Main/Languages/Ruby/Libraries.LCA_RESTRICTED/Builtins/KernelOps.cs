@@ -1140,7 +1140,9 @@ namespace IronRuby.Builtins {
                 case 'b':
                     return RubyFileOps.RubyStatOps.IsBlockDevice(RubyFileOps.RubyStatOps.Create(context, file1));
 
-                case 'C': throw new NotImplementedException();
+                case 'C':
+                    return RubyFileOps.RubyStatOps.CreateTime(RubyFileOps.RubyStatOps.Create(context, file1));
+
                 case 'c': throw new NotImplementedException();
 
                 case 'd':
