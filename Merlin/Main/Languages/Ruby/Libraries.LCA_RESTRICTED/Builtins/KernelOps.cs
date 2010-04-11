@@ -1143,7 +1143,8 @@ namespace IronRuby.Builtins {
                 case 'C':
                     return RubyFileOps.RubyStatOps.CreateTime(RubyFileOps.RubyStatOps.Create(context, file1));
 
-                case 'c': throw new NotImplementedException();
+                case 'c':
+                    return RubyFileOps.RubyStatOps.IsCharDevice(RubyFileOps.RubyStatOps.Create(context, file1));
 
                 case 'd':
                     return RubyFileOps.DirectoryExists(context, file1);
