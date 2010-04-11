@@ -1153,7 +1153,9 @@ namespace IronRuby.Builtins {
                 case 'f':
                     return RubyFileOps.FileExists(context, file1);
 
-                case 'g': throw new NotImplementedException();
+                case 'g':
+                    return RubyFileOps.RubyStatOps.IsSetGid(RubyFileOps.RubyStatOps.Create(context, file1));
+
                 case 'G': throw new NotImplementedException();
                 case 'k': throw new NotImplementedException();
                 case 'l': throw new NotImplementedException();

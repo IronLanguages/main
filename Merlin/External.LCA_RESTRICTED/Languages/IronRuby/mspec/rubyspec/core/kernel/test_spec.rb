@@ -41,6 +41,10 @@ describe "Kernel#test" do
     Kernel.test(?c, @file).should == false
   end
 
+  it "returns true when passed ?g if the argument has the GID set (false on NT and thus, .NET)" do
+    Kernel.test(?g, @file).should == false
+  end
+
   ruby_version_is "1.9" do
     it "calls #to_path on second argument when passed ?f and a filename" do
       p = mock('path')
