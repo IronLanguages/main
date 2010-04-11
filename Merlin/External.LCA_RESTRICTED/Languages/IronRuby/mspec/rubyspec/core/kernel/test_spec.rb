@@ -28,6 +28,10 @@ describe "Kernel#test" do
     Kernel.test(?A, @dir).kind_of?(Time).should == true
   end
 
+  it "returns true when passed ?b if the argument is a block device" do
+    Kernel.test(?b, @file).should == false
+  end
+
   ruby_version_is "1.9" do
     it "calls #to_path on second argument when passed ?f and a filename" do
       p = mock('path')
