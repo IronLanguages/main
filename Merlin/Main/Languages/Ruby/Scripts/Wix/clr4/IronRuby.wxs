@@ -15,7 +15,8 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
 
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <?include $(sys.CURRENTDIR)\config.wxi?>
+  <?include $(sys.SOURCEFILEDIR)\config4.wxi?>
+  <?include $(sys.SOURCEFILEDIR)\config_common.wxi?>
   <Product Id="*" UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)">
     <Package Id="*" Compressed="yes" Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" InstallerVersion="300" ShortNames="no" Manufacturer="$(var.Manufacturer)" />
     <Media Id="1" Cabinet="IronRb.cab" EmbedCab="yes" />
@@ -33,15 +34,16 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
     <Property Id="ReportBugs" Value="http://ironruby.codeplex.com/WorkItem/Create.aspx" />
     <Property Id="LearnMore" Value="http://ironruby.net/Documentation" />
     <Property Id="ApplicationFolderName" Value="$(var.ProductShortName) $(var.ProductVersionText)" />
-    <Property Id="ApplicationRegKey" Value="SOFTWARE\Microsoft\$(var.ProductShortName)\$(var.ProductVersionText)" />
+    <Property Id="ApplicationRegKey" Value="$(var.RegKey)" />
     <Property Id="ALLUSERS" Value="1" />
 
     <!-- Launch conditions -->
     <Condition Message="A later version of [ProductName] is already installed."> 
       <![CDATA[NOT NEWERVERSIONDETECTED]]>
    </Condition>
-   <Condition Message="[ProductName] requires .NET Framework 2.0 SP1 or later.">
-     <![CDATA[Installed OR MsiNetAssemblySupport >= "2.0.50727.1433"]]> </Condition>
+   <Condition Message="[ProductName] requires .NET Framework 4.0">
+     <![CDATA[Installed OR MsiNetAssemblySupport >= "2.0.50727.1433"]]>
+  </Condition>
 
     <!-- Root directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
@@ -82,10 +84,6 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
       </Feature>
       <Feature Id="Feature_Samples" AllowAdvertise="no" Level="1" Title="Samples" Description="Samples showing IronRuby working with various .NET apps and a Tutorial application">
         <ComponentGroupRef Id="CG_Samples" />
-      </Feature>
-      <Feature Id="Feature_Silverlight" AllowAdvertise="no" Level="1"
-        Title="Silverlight binaries" Description="Binaries and scripts to do Silverlight development with IronRuby">
-        <ComponentGroupRef Id="CG_Silverlight" />
       </Feature>
     </Feature>
 

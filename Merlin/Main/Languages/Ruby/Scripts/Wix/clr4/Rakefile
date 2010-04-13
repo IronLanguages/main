@@ -8,7 +8,7 @@ CLEAN.include("Feature_*.wxs","*.wixobj","*.wixpdb", "*.log")
 CLOBBER.include("*.msi")
 ROOT_DIR = ENV['ROOT_DIR'] || "C:\\ironruby"
 WIX_BIN = ENV['WIX_BIN'] || "#{ENV['MERLIN_ROOT']}\\External\\Wix3"
-WIXOBJ = FileList["Core.wixobj", "IronRuby.wixobj", "Feature_Lib.wixobj", "Feature_Samples.wixobj", "Feature_Silverlight.wixobj"]
+WIXOBJ = FileList["Core.wixobj", "IronRuby.wixobj", "Feature_Lib.wixobj", "Feature_Samples.wixobj"]
 
 WixRake::Task.wix = WIX_BIN
 WixRake::CandleTask.global_ext = ["WixNetFxExtension", "WixUtilExtension"]
@@ -28,10 +28,6 @@ candle("Feature_Lib") do |c|
 end
 
 candle("Feature_Samples") do |c|
-  c.vars = {"IRLib" => "#{ROOT_DIR}\\Lib", "IRSamples" => "#{ROOT_DIR}\\Samples", "IRSilverlight" => "#{ROOT_DIR}\\Silverlight"}
-end
-
-candle("Feature_Silverlight") do |c|
   c.vars = {"IRLib" => "#{ROOT_DIR}\\Lib", "IRSamples" => "#{ROOT_DIR}\\Samples", "IRSilverlight" => "#{ROOT_DIR}\\Silverlight"}
 end
 
