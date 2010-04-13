@@ -35,7 +35,14 @@ else
   if File.exist?("#{GEMS}/minitest-1.4.2")
     `#{BIN}/igem install minitest --version 1.4.2 --no-rdoc --no-ri`
   end
-  CSC="#{ENV['FrameworkDIR32']}\\v3.5\\csc.exe"
+  
+  csc="#{ENV['SystemRoot']}\\Microsoft.NET\\Framework\\v3.5\\csc.exe"
+  unless File.exists? csc
+    puts "Can't guarantee location of csc.exe. Assuming it is in the path, but this may fail."
+    csc="csc"
+  end
+  puts "csc = #{csc}" if $DEBUG
+  CSC=csc  
 end
 
 CLEAN.include("app.xap", "deploy","app/Libs","app/Tutorials/*_tutorial.generated.html")
@@ -85,15 +92,15 @@ namespace 'tutorial' do
   
   file "wpf/Splashscreen.dll" => "wpf/SplashScreen.cs" do
     cd "#{cwd}/wpf" do
-       `#{CSC} /t:library /r:WindowsBase.dll SplashScreen.cs`
-       `#{IR} -e "require 'SplashScreen.dll'; SplashScreen::SplashScreen.write_image_resource 'SplashScreen.png', 'SplashScreen.g.resources'"`
-       `#{CSC} /t:library /r:WindowsBase.dll /resource:SplashScreen.g.resources SplashScreen.cs`
+       system "#{CSC} /t:library /r:WindowsBase.dll SplashScreen.cs"
+       system "#{IR} -e \"require 'SplashScreen.dll'; SplashScreen::SplashScreen.write_image_resource 'SplashScreen.png', 'SplashScreen.g.resources'\""
+       system "#{CSC} /t:library /r:WindowsBase.dll /resource:SplashScreen.g.resources SplashScreen.cs"
     end
   end
 
   file "app/Tutorials/ironruby_files/TutorialSamples.dll" => "app/Tutorials/ironruby_files/Prime.cs" do
     cd "#{cwd}/app/Tutorials/ironruby_files" do
-       `#{CSC} /t:library Prime.cs`
+       system "#{CSC} /t:library Prime.cs"
        mv "Prime.dll","TutorialSamples.dll"
     end
   end
