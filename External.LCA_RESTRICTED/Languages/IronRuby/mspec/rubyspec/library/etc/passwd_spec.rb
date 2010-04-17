@@ -2,10 +2,14 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/shared/windows'
 require 'etc'
 
-describe "Etc.passwd" do
-  if RUBY_PLATFORM =~ /(mswin|mingw|bccwin|wince)/i then
+platform_is :windows do
+  describe "Etc.passwd" do
     it_behaves_like(:etc_on_windows, :passwd)
-  else
+  end
+end
+
+platform_is_not :windows do
+  describe "Etc.passwd" do
 
     before(:all) do
       @etc_passwd = `cat /etc/passwd`.chomp.split("\n").
@@ -18,26 +22,27 @@ describe "Etc.passwd" do
     end
 
     it "should return an instance of Struct::Passwd" do
-      Etc.passwd.should be_an_instance_of(Struct::Passwd)
+      pw = Etc.passwd
+      pw.is_a?(Struct::Passwd).should == true
     end
 
     it "should return the first entry from /etc/passwd on the first call without a passed block" do
       expected = @etc_passwd.first
-      actual = Etc.passwd
-      actual.uid.should == expected.uid
+      pw = Etc.passwd
+      pw.uid.should == expected.uid
     end
 
     it "should return the second entry from /etc/passwd on the second call without a passed block" do
       expected = @etc_passwd.at(1)
       Etc.passwd
-      actual = Etc.passwd
-      actual.uid.should == expected.uid
+      pw = Etc.passwd
+      pw.uid.should == expected.uid
     end
 
     it "should return nil once all entries are retrieved without a passed block" do
       (1..@etc_passwd.length).each { Etc.passwd }
-      actual = Etc.passwd
-      actual.should be_nil
+      pw = Etc.passwd
+      pw.should be_nil
     end
 
     it "should loop through all the entries when a block is passed" do

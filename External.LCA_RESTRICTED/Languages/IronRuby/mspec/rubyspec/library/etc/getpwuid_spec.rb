@@ -34,6 +34,10 @@ platform_is_not :windows do
       end
     end
 
+    it "raises if the passwd entry does not exist" do
+      lambda { Etc.getpwuid(9876)}.should raise_error(ArgumentError)
+    end
+
     it "only accepts integers as argument" do
       lambda {
         Etc.getpwuid("foo")

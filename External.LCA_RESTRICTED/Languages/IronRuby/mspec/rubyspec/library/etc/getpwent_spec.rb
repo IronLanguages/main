@@ -2,10 +2,14 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/shared/windows'
 require 'etc'
 
-describe "Etc.getpwent" do
-  if RUBY_PLATFORM =~ /(mswin|mingw|bccwin|wince)/i then
+platform_is :windows do
+  describe "Etc.getpwent" do
     it_behaves_like(:etc_on_windows, :getpwent)
-  else
+  end
+end
+
+platform_is_not :windows do
+  describe "Etc.getpwent" do
 
     before(:all) do
       @etc_passwd = `cat /etc/passwd`.chomp.split("\n").
