@@ -25,7 +25,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Dynamic;
-using System.Dynamic.Utils;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Scripting.ComInterop {

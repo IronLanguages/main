@@ -513,7 +513,7 @@ namespace IronRuby.Runtime.Calls {
                 }
 
                 // Do not throw an exception here to allow generic type parameters to be used with D.P. attribute.
-                // The semantics should be to use DP if available for the current instantiation and ignore it otherwise.
+                // The semantics should be to use Default protocol if available for the current instantiation and ignore it otherwise.
             }
 
             if (restrictedType != null) {

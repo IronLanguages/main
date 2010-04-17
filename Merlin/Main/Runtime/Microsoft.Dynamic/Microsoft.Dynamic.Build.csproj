@@ -61,6 +61,7 @@
       <Compile Include="Actions\ActionBinder.cs" />
       <Compile Include="Actions\Argument.cs" />
       <Compile Include="Actions\ArgumentType.cs" />
+      <Compile Include="Actions\BinderHelpers.cs" />
       <Compile Include="Actions\BoundMemberTracker.cs" />
       <Compile Include="Actions\CallSignature.cs" />
       <Compile Include="Actions\ComboActionRewriter.cs" />

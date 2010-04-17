@@ -17,7 +17,7 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <?include $(sys.CURRENTDIR)\config.wxi?>
   <Product Id="*" UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)">
-    <Package Id="*" Compressed="yes" Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" InstallerVersion="400" ShortNames="no" Manufacturer="$(var.Manufacturer)" />
+    <Package Id="*" Compressed="yes" Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" InstallerVersion="300" ShortNames="no" Manufacturer="$(var.Manufacturer)" />
     <Media Id="1" Cabinet="IronRb.cab" EmbedCab="yes" />
     
       <!-- Major upgrade -->
@@ -28,25 +28,32 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
 
     <!-- Properties -->
     <Property Id="ARPHELPLINK" Value="http://rubyforge.org/mailman/listinfo/ironruby-core" />
-    <Property Id="ARPURLINFOABOUT" Value="http://www.ironruby.com" />
+    <Property Id="ARPURLINFOABOUT" Value="http://www.ironruby.net" />
     <Property Id="ARPURLUPDATEINFO" Value="http://ironruby.codeplex.com" />
+    <Property Id="ReportBugs" Value="http://ironruby.codeplex.com/WorkItem/Create.aspx" />
+    <Property Id="LearnMore" Value="http://ironruby.net/Documentation" />
     <Property Id="ApplicationFolderName" Value="$(var.ProductShortName) $(var.ProductVersionText)" />
+    <Property Id="ApplicationRegKey" Value="SOFTWARE\Microsoft\$(var.ProductShortName)\$(var.ProductVersionText)" />
     <Property Id="ALLUSERS" Value="1" />
 
     <!-- Launch conditions -->
-    <Condition Message="A later version of [ProductName] is already installed."> NOT NEWERVERSIONDETECTED </Condition>
-    <Condition Message="[ProductName] requires .NET Framework 2.0 SP1 or later.">  Installed OR MsiNetAssemblySupport >= "2.0.50727.1433" </Condition>
+    <Condition Message="A later version of [ProductName] is already installed."> 
+      <![CDATA[NOT NEWERVERSIONDETECTED]]>
+   </Condition>
+   <Condition Message="[ProductName] requires .NET Framework 2.0 SP1 or later.">
+     <![CDATA[Installed OR MsiNetAssemblySupport >= "2.0.50727.1433"]]> </Condition>
 
     <!-- Root directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
 
       <Directory Id="ProgramMenuFolder" Name="PMENU">
-        <Directory Id="Dir_StartMenu" Name="$(var.ProductShortName) $(var.ProductVersionText)" />
+        <Directory Id="Dir_StartMenu" 
+          Name="$(var.ProductShortName) $(var.ProductVersionText)" />
       </Directory>
 
       <Directory Id="ProgramFilesFolder" Name="PFILES">
-        <Directory Id="APPLICATIONFOLDER" Name= "$(var.ProductShortName) $(var.ProductVersionText)"
- />
+        <Directory Id="APPLICATIONFOLDER" 
+          Name="$(var.ProductShortName) $(var.ProductVersionText)" />
       </Directory>
       
     </Directory>

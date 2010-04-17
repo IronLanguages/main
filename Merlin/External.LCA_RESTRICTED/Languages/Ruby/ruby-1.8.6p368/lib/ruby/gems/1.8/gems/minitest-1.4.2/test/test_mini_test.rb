@@ -952,7 +952,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
     @tc.refute_same 1, 2
   end
 
-  # TODO: "with id <id>" crap from assertions.rb
+  # TODO: "with id <id>" #### from assertions.rb
   def test_refute_same_triggered
     util_assert_triggered 'Expected 1 to not be the same as 1.' do
       @tc.refute_same 1, 1

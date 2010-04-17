@@ -555,7 +555,7 @@ the <code>IOOutputter</code> changes its level to <code>OFF</code>
 <h4 ><a href="#toc">Performance</a></h4>
 
 Profiling has revealed that log4r is typically an order of magnitude or
-two slower than log4j. However, this is still damn fast! In particular,
+two slower than log4j. However, this is still really fast! In particular,
 if a logger is set to <code>OFF</code>, the overhead of checking to
 see if a log event should be logged nearly vanishes. This was accomplished by
 dynamically redefining the unloggable logging methods to do nothing.

@@ -508,6 +508,20 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into long");
         }
 
+        public bool TryToFloat64(out double result) {
+            return StringUtils.TryParseDouble(ToString(10),
+                System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture.NumberFormat,
+                out result);
+        }
+
+        public double ToFloat64() {
+            return double.Parse(
+                ToString(10),
+                System.Globalization.CultureInfo.InvariantCulture.NumberFormat
+                );
+        }
+
         public int GetWordCount() {
             if (IsZero()) {
                 return 1;

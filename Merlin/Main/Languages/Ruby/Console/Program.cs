@@ -20,7 +20,6 @@ using Microsoft.Scripting.Hosting.Shell;
 using IronRuby;
 using IronRuby.Hosting;
 using IronRuby.Runtime;
-using System.Dynamic.Utils;
 
 internal sealed class RubyConsoleHost : ConsoleHost {
 

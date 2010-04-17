@@ -513,43 +513,43 @@ namespace IronRuby.Tests {
             const string CR = "\r";
             const string LF = "\n";
             const string Q = "\"";
-            const string BS = "\\";
+            const string BSpace = "\\";
 
             // string:
 
-            t.Load(Q + BS + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, ""][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + LF + Q)[Tokens.StringBegin][Tokens.StringContent, ""][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, ""][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + LF + Q)[Tokens.StringBegin][Tokens.StringContent, ""][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
 
-            t.Load(Q + BS + "M-" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008A"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "M-" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008A"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "M-" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008D"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "M-" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008A"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "M-" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008A"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "M-" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008D"][Tokens.StringEnd].EOF();
 
-            t.Load(Q + BS + "C-" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "C-" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "C-" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "C-" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "C-" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "C-" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
 
-            t.Load(Q + BS + "c" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "c" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "c" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "c" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "c" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
+            t.Load(Q + BSpace + "c" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
 
             // regex:
 
-            t.Load("/" + BS + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, ""][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, ""][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + CR][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, ""][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, ""][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + CR][Tokens.RegexpEnd].EOF();
 
-            t.Load("/" + BS + "M-" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "M-\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "M-" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "M-\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "M-" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "M-\r"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "M-" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "M-\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "M-" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "M-\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "M-" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "M-\r"][Tokens.RegexpEnd].EOF();
 
-            t.Load("/" + BS + "C-" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "C-\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "C-" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "C-\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "C-" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "C-\r"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "C-" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "C-\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "C-" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "C-\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "C-" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "C-\r"][Tokens.RegexpEnd].EOF();
 
-            t.Load("/" + BS + "c" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "c\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "c" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "c\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "c" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "c\r"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "c" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "c\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "c" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "c\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BSpace + "c" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BSpace + "c\r"][Tokens.RegexpEnd].EOF();
 
             t.Expect();
         }

@@ -123,7 +123,7 @@ class RawParseTree
         code << r
       end
 
-      klass.modules.each do |mod| # TODO: add a test for this damnit
+      klass.modules.each do |mod| # TODO: add a test for this 
         mod.instance_methods.each do |m|
           r = parse_tree_for_method(mod, m.to_sym)
           code << r
@@ -970,7 +970,7 @@ again:
     rb_ary_push(current, INT2FIX(nd_line(node)));
     rb_ary_push(current, rb_str_new2(node->nd_file));
     if (! RTEST(rb_iv_get(self, "\@include_newlines"))) {
-      rb_ary_pop(ary); /* nuke it */
+      rb_ary_pop(ary); /* get rid of it */
       node = node->nd_next;
       goto again;
     } else {

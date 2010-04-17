@@ -1184,37 +1184,37 @@ namespace IronRuby.Tests {
 
         [Options(NoRuntime = true)]
         public void MutableString_Bytes1() {
-            List<byte> bs;
+            List<byte> bytes;
 
-            bs = new List<byte>();
+            bytes = new List<byte>();
             foreach (byte b in MS("αβ", RubyEncoding.UTF8).GetBytes()) {
-                bs.Add(b);
+                bytes.Add(b);
             }
-            Assert(bs.ToArray().ValueEquals(Encoding.UTF8.GetBytes("αβ")));
+            Assert(bytes.ToArray().ValueEquals(Encoding.UTF8.GetBytes("αβ")));
 
-            bs = new List<byte>();
+            bytes = new List<byte>();
             foreach (byte b in MS(Encoding.UTF8.GetBytes("αβ"), RubyEncoding.UTF8).GetBytes()) {
-                bs.Add(b);
+                bytes.Add(b);
             }
-            Assert(bs.ToArray().ValueEquals(Encoding.UTF8.GetBytes("αβ")));
+            Assert(bytes.ToArray().ValueEquals(Encoding.UTF8.GetBytes("αβ")));
 
-            bs = new List<byte>();
+            bytes = new List<byte>();
             foreach (byte b in MS("α", RubyEncoding.UTF8).Append('β').GetBytes()) {
-                bs.Add(b);
+                bytes.Add(b);
             }
-            Assert(bs.ToArray().ValueEquals(Encoding.UTF8.GetBytes("αβ")));
+            Assert(bytes.ToArray().ValueEquals(Encoding.UTF8.GetBytes("αβ")));
 
-            bs = new List<byte>();
+            bytes = new List<byte>();
             foreach (byte b in MS(Encoding.UTF8.GetBytes("ab"), RubyEncoding.UTF8).GetBytes()) {
-                bs.Add(b);
+                bytes.Add(b);
             }
-            Assert(bs.ToArray().ValueEquals(new byte[] { (byte)'a', (byte)'b' }));
+            Assert(bytes.ToArray().ValueEquals(new byte[] { (byte)'a', (byte)'b' }));
 
-            bs = new List<byte>();
+            bytes = new List<byte>();
             foreach (byte b in MS(Encoding.UTF8.GetBytes("ab"), RubyEncoding.Binary).GetBytes()) {
-                bs.Add(b);
+                bytes.Add(b);
             }
-            Assert(bs.ToArray().ValueEquals(new byte[] { (byte)'a', (byte)'b' }));
+            Assert(bytes.ToArray().ValueEquals(new byte[] { (byte)'a', (byte)'b' }));
         }
 
         [Options(NoRuntime = true)]

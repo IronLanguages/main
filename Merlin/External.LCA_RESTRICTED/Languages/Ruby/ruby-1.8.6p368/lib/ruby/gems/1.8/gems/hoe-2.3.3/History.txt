@@ -418,7 +418,7 @@
 
 * 1 Bug Fix:
 
-  * Damnit... I messed up. There is no rubygems gem to be dependent upon. Duh.
+  * ######... I messed up. There is no rubygems gem to be dependent upon. Duh.
 
 === 1.0.3 / 2006-09-23
 

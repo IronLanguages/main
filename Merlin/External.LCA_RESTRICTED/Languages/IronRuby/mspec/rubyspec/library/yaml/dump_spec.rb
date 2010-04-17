@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/common'
 
-# TODO: WTF is this using a global?
+# TODO: why is this using a global?
 describe "YAML.dump" do
   after :each do
     rm_r $test_file

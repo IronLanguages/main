@@ -39,7 +39,7 @@ describe "Kernel#system" do
     lambda {system("sad")}.should output_to_fd("") # nothing in stderr
   end  
 
-  it "uses /bin/sh if freaky shit is in the command" do
+  it "uses /bin/sh if odd elements are in the command" do
     begin
       result = false
 

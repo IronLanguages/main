@@ -22,7 +22,6 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Collections.Generic;
 
 using Microsoft.Scripting.Utils;

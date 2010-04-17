@@ -462,7 +462,7 @@ tutorial "IronRuby tutorial" do
                  ) 
 				
             task(:body => %{
-                    Now with the loaded assmebly, we can now create an instance of Prime, and call the methods in Ruby code.
+                    Now with the loaded assembly, we can now create an instance of Prime, and call the methods in Ruby code.
                 },
 				
                 :code => [

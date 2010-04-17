@@ -213,7 +213,7 @@ if HAS_SQLITE3
           ShortStory.create(
             :title => "The Science of Happiness",
             :isbn => "129038",
-            :moral => "Bullshit might get you to the top, but it won't keep you there.")
+            :moral => "Lieing might get you to the top, but it won't keep you there.")
         end
       end
 
@@ -236,7 +236,7 @@ if HAS_SQLITE3
             :title => "The Science of Happiness",
             :isbn => "129038",
             :content => 'This doesn\'t feel like a normal academic conference. True, the three-day Positive Psychology Summit i',
-            :moral => "Bullshit might get you to the top, but it won't keep you there."
+            :moral => "Lieing might get you to the top, but it won't keep you there."
           )
 
           ShortStory.create(

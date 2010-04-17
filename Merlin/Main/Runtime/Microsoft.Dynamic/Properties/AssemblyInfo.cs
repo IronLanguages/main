@@ -1,4 +1,4 @@
-/* ****************************************************************************
+ï»¿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -28,7 +28,7 @@ using System.Security.Permissions;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("Microsoft.Scripting")]
-[assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCopyright("ï¿½ Microsoft Corporation.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
