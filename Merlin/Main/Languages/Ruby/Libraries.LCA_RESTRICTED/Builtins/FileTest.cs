@@ -114,7 +114,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sticky?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSticky(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+        public static object IsSticky(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyFileOps.RubyStatOps.IsSticky(RubyFileOps.RubyStatOps.Create(self.Context, path));
         }
 
