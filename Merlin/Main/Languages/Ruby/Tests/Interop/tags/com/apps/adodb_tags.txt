@@ -1,2 +1,0 @@
-fails:ADODB COM interop allows assignment and reading with name mangling
-fails:ADODB COM interop allows assignment and reading without name mangling

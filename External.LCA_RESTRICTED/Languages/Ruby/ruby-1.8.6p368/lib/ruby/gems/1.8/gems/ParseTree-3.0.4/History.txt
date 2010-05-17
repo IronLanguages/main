@@ -1,0 +1,436 @@
+=== 3.0.4 / 2009-06-23
+
+* 4 minor enhancements:
+
+  * Pulled unique.rb from ParseTree to sexp_processor.
+  * Switched to minitest
+  * UnifiedRuby strips flip2 back down to expected values
+  * Updated Rakefile for new hoe
+
+* 2 bug fixes:
+
+  * 1.8.6p287 & 1.8.7 changed flip2 with fixnum start. fixed
+  * 1.8.6p287 & 1.8.7 removed the begin node. fixed.
+
+=== 3.0.3 / 2009-01-20
+
+* 4 bug fixes:
+
+  * Added gauntlet_parsetree.rb. Bug finding/fixing much faster & easier now.
+  * Fixed alias tests for r2r. Added masgn and heredoc tests.
+  * Fixed conflicting flags (-u vs -r).
+  * Unwrap RHS from array IF it is only a splat node.
+
+=== 3.0.2 / 2008-11-04
+
+* 1 minor enhancement:
+
+  * parse_tree_show now defaults to unified, added -U to UNunify output.
+
+* 4 bug fixes:
+
+  * UnifiedRuby#rewrite_defn kinda sorta deals with cfunc now. Stupid rails.
+  * Fixed ambiguities in splatted nodes in a bunch of contexts.
+  * Fixed 1 arg form of parse_tree_for_proc
+  * KNOWN ISSUE: 0 arg form (||) of parse_tree_for_proc segfaults.
+
+=== 3.0.1 / 2008-10-23
+
+* 1 bug fix:
+
+  * Fixed the dependency on sexp_processor (accidentally camelcased). thanks ez!
+
+=== 3.0.0 / 2008-10-22
+
+* 3 major enhancements:
+
+  * Split out sexp_processor project.
+  * ParseTree#process outputs a UnifiedRuby parse tree.
+    * Switched all ParseTree tests to RawParseTree tests.
+    * Added ParseTree tests.
+  * Added UnifiedRuby#process.
+
+* 28 minor enhancements:
+
+  * PTTC: Added a comprehensive suite of tests for every combo of defn args.
+  * PTTC: Added a ton of new tests.
+  * PTTC: Added extra tests for mri verbose flag testing (horrid horrid bug imhfo)
+  * PTTC: Don't generate tests if class has "TestCase" in the class name.
+  * PTTC: Made self.previous more overridable.
+  * PTTC: Now all tests that have "mri_verbose_flag" activate $VERBOSE
+  * PTTC: Officially added clone_same phase to generate_tests
+  * PTTC: Refactored test generation to make subclasses more flexible.
+  * PTTC: Refactored to use new add_tests. Much much cleaner.
+  * PTTC: Removed Unique from PTTC... subclasses need to deal with this
+  * PTTC: Removed some stupid tests.
+  * PTTC: Renamed a bunch of tests to be more uniform.
+  * UR: Added rewrite_attrasgn to normalize arg array into arglist.
+  * UR: Added rewrite_op_asgn1 to ensure the arglist is an arglist.
+  * UR: Flattened resbodies in rescue node.
+  * UR: Flattened super and yield args yet, deal with array arg properly.
+  * UR: Handle yield(*ary) properly.
+  * UR: Nuked argspush.
+  * UR: Removed begin node from unified sexps.
+  * UR: Removed block from rewritten resbody if only 1 element.
+  * UR: Removed dasgn, dasgn_curr, and dvar nodes.
+  * UR: Removed s(:block_arg, :block) in favor of :"&block"
+  * UR: Rewrote argscat to be a splat inside an array.
+  * UR: Rewrote block_pass into arglist of inner call/super.
+  * UR: Rewrote call to ALWAYS have an argslist (no more splat as arglist).
+  * UR: Rewrote rewrite_resbody from scratch... MUUCH cleaner.
+  * UR: zarray -> array
+  * Used Hoe#add_include_dirs to clean up rakefile.
+  * Moved PT dependent code from ruby2ruby to here (eg Proc#to_sexp & friends).
+
+* 2 bug fixes:
+
+  * UR: Fixed a bug with resbody that starts with an lasgn.
+  * UR: Fixed args for attrset
+  * Fixed export of symbols to work across platforms.
+
+=== 2.2.0 / 2008-06-09
+
+* 18 minor enhancements:
+
+  * Added 1.9 and rubinius to multiruby skip list.
+  * Added 1.9 fixes for SexpProcessor.
+  * Added compatibility changes for regexp option values.
+  * Added custom compact since Array#compact is hostile to subclasses.
+  * Added some tests for wonky index edge cases. some commented out.
+  * Added test changes for 1.9 and r2r changes. Esp fixed regexp differences.
+  * Added tests for dasgn, proc arities, 
+  * Added/updated some tests for ruby_parser.
+  * Changed tests to default to nil for verbose.
+  * Fixed all assertions deprecated in miniunit.
+  * Raises LoadError if incompatible ruby, allows fallback to ruby_parser.
+  * Removed Unified's rewrite_fbody and moved up into defn... not sure about that.
+  * Removed argscat rewriter from unified_ruby.rb
+  * Renamed shadowed variable name.
+  * Reworked parse_tree_for_(method|string) to take optional verbose arg.
+  * Started removing ending newlines from pt_testcase.rb.
+  * Uncommented all commented out tests. ruby_parser must not be a pansy.
+  * Updated rakefile for new hoe abilities.
+
+* 3 bug fixes:
+
+  * Fixed 1.8.[45] wrt dasgn_curr declaration removal.
+  * Fixed pt_testcase bug.
+  * Fixes for colon2/3 in class/module/cdecls.
+
+=== 2.1.1 / 2007-12-22
+
+* 1 bug fix:
+
+  * _sigh_ apparently I've been running w/o all my anal compiler flags on.
+
+=== 2.1.0 / 2007-12-21
+
+* 13 minor enhancements:
+
+  * Added (partial) regexp flag support, currently numerical. ugh.
+  * Added -a flag to parse_tree_show to turn on newline (all) nodes.
+  * Added -r to parse_tree_show for raw arrays instead of sexps.
+  * Added Unifier (SexpProcessor) class to unified_ruby.rb.
+  * Added a ton of tests while working on ruby_parser.
+  * Added ability to tell proc {} (nil arg slot) from proc {||} (0 arg slot)
+  * Added context tracking to rewriting phase... slightly broken.
+  * Added evstr support. (I hate evan)
+  * Added usage for parse_tree_show.
+  * Changed verbose to be true all the time in parse_tree_for_string.
+  * Removed process_level from SexpProcessor... just look at context size instead.
+  * Revamped ParseTree. No more passing around newline. Pass around self instead.
+  * I'm starting to dislike ruby's AST. It is REALLY inconsistent.
+
+* 6 bug fix:
+
+  * SexpProcessor#assert_type now a bit safer with bad values.
+  * Uncovered a bug in ruby (AST changes when -v used), added handler code.
+  * Fixed NODE_BLOCK and massively simplified in the process.
+  * Fixed rewrite_defs to deal with non-block asts.
+  * Fixed test/unit hack so it does not die under miniunit.
+  * Found a bug in PT where parse_tree_for_string had some shadowed variables.
+
+=== 2.0.2 / 2007-09-20
+
+* 2 minor enhancements:
+
+  * Deactivated gcc-specific compiler flags unless ENV['ANAL'] or on my domain.
+  * Minor code cleanup - happier with -pedantic and the like.
+
+* 1 bug fix:
+
+  * FINALLY conquered the splat args bug on certain platforms/versions.
+    Special Thanks to Jonas Pfenniger for debugging this and providing
+    a patch.
+
+=== 2.0.1 / 2007-08-21
+
+* 1 major enhancement:
+
+  * Rewrote parse_tree_show to use parse_tree_for_string.
+    * parse_tree_show adds -n=node filtering -u unifying, and -s structure-only.
+    * parse_tree_show no longer needs -f
+
+* 4 minor enhancements:
+
+  * Added context stack to SexpProcessor! YAY!!!
+  * Enforce type to be symbol in SexpProcessor... just makes life easier.
+  * Processing style change mode to UnifiedRuby. Prefer no rescues.
+  * Sexp#structure is no longer destructive.
+
+* 4 bug fixes:
+
+  * Added 1.8.4 compatibility fix.
+  * Added args lifting in :defs in UnifiedRuby.
+  * Fixed unifying argscat, splat, and a couple other oddities.
+  * Added process_call to UnifiedRuby *sigh* I'm a tard.
+
+=== 2.0.0 / 2007-08-01
+
+* 2 major enhancements:
+
+  * Rewrite methods completely rewritten. Rewriters:
+    * are no longer recursive.
+    * are no longer required to empty the sexp coming in.
+    * are depth first, so rewriter gets passed everything already normalized.
+    * keep rewriting until type doesn't change.
+    * are magical goodness.
+  * Added UnifiedRuby module to aid others in writing clean SexpProcessors:
+    * bmethod/dmethod/fbody unified with defn
+    * fcall/vcall unified with call
+    * resbody unified with itself (lots of different forms)
+
+* 5 minor enhancements:
+
+  * Add #modules to Module.
+  * Add Sexp::for shortcut for Sexp.from_array ParseTree.translate(...).
+  * Add parens for :block nodes as appropriate. May be overzealous.
+  * Made add_to_parse_tree global for reuse by other C extensions.
+  * Made test_ruby2ruby MUCH more rigorous with circular testing.
+
+* 6 bug fixes:
+
+  * Added $TESTING = true to pt_testcase.rb. OOPS!
+  * Fixed some circular bugs, mostly by hacking them out, wrt operator precidence.
+  * Fixed splat arg processing when arg has no name.
+  * Fixed trinary operator.
+  * Fixed BMETHOD with no arguments.
+  * Removed hacky "self." thing for defs at top level PT use.
+
+=== 1.7.1 / 2007-06-05
+
+* 3 minor enhancements:
+  * Added begin/rescue/ensure test.
+  * Added block_pass_args_and_splat.
+  * Allow methods to be pulled from unparsed files.
+* 1 bug fix:
+  * Compatibility fixed across 1.8.
+
+=== 1.7.0 / 2007-02-13
+
+* 2 major enhancements:
+  * rewrite extracted and intended to be run before (or in front of) process.
+  * rewrite is now recursive as well, so children rewritings should be
+    done independently of their parents. This should make complex
+    rewriting layers much cleaner and allow me to eventually collect
+    and publish a single "standard" rewriting layer.
+* 1 minor enhancement:
+  * Iters are now {} if short and one line. YAY!
+* 1 bug fix:
+  * Added test cases brought out by ruby2ruby/heckle.
+
+=== 1.6.4 / 2007-01-15
+
+* 1 minor enhancement:
+  * Switched short if/unless to 1 line expressions.
+* 2 bug fixes:
+  * Fixed the nested case/when bug. YAY!
+  * Added dasgn_curr and defn_rescue test cases.
+
+=== 1.6.3 / 2006-12-20
+
+* 1 bug fix:
+  * ParseTree::translate was trying to translate inherited class methods.
+
+=== 1.6.2 / 2006-12-19
+
+* 2 minor enhancements:
+  * ParseTree::translate can now take :"self.method".
+  * Improved PT tests for [], []=
+* 1 bug fixes:
+  * Fixed a bug in ParseTree where cases w/o exprs were malformed.
+
+=== 1.6.1 / 2006-11-11
+
+* 2 minor enhancements:
+  * Have been going insane on the tests, expect more soon.
+  * Cleaned up using named nodes, now do: args = exp.scope.block.args(:delete).
+* 2 bug fixes:
+  * Fixed #parse_tree to return superclass in :const node.
+  * Fixed while/until with no bodies (now nil).
+
+=== 1.6.0 / 2006-10-11
+
+* 2 major enhancements:
+  * PTTC just got a major enema. 2k lines o' diff.
+  * All in all, removed 829 lines of code and made it a lot more solid.
+* 6 minor enhancements:
+  * Added sort rake task.
+  * Added a basic front-end method to ParseTree: translate, takes
+    string or Class and optional method name.
+  * Class now has nil for unspecified superclass. No way to tell if it
+    is being reopened.
+  * SexpProcessor's unsupported array now defaults to all the internal nodes.
+  * Added Unique from ruby2c project.
+  * something.rb got slimmed down to near nothing. About to be retired.
+* 3 bug fixes:
+  * Added changeset to Hoe spec.
+  * Fixed up description to use paragraphs_of.
+  * Fixed op_asgn1, alias, undef, dsym, match.
+
+=== 1.5.0 / 2006-09-24
+
+* 5 minor enhancements:
+  * Added parse_tree_audit.
+  * Added reporting of unsupported nodes that have processors.
+  * YAY! class method support! generated as :"self.blah"
+  * Add parse_tree_for_string.
+  * Converted Rakefile+gemspec to Hoe-based Rakefile.
+* 6 bug fixes:
+  * Did some preliminary work on 1.9 compatibility.
+  * Fixed tests for some changes/clarifications.
+  * Fixed resbody: should have nil exceptions list when no exception rescued.
+  * Fixed op_asgn1 and op_asgn2.
+  * Fixed incompatibility with new inline changes.
+  * Fixed VALUE decl in parse_tree.rb
+
+=== 1.4.1 / 2006-04-10
+
+* 4 minor enhancements:
+  * parse_tree_show -f output is much cleaner now.
+  * ParseTree does a much more elegant job of handling different versions.
+  * ParseTree now has all node names in ParseTree::NODE_NAMES.
+  * ParseTree now raises exceptions instead of freakin'.
+* 3 bug fixes:
+  * Used multiruby to test against 1.8.2-4, 1.8 cvs, and 1.9 cvs.
+  * Fixed incompatibilites introduced in ruby 1.8.4.
+  * Fixed some incompatibilites introduced in ruby 1.9.x.
+
+=== 1.4.0 / 2005-10-15
+
+* 5 minor enhancements
+  * Improved Makefile's install rule, uninstall, and added FILTER to all.
+  * Fixed minor issues w/ Makefile.
+  * Added -I=loadpath to parse_tree_abc.
+  * Added *args support for methods.
+  * Split out sexp to its own file.
+* 2 bug fixes
+  * Fixed weird bug in parse_tree_deps where sort was failing on deps.
+  * ! Fixed fatal bug in parse_tree.rb caused by safe_level fix in ruby 1.8.3.
+
+=== 1.3.8 / 2005-09-27
+
+* 1 bug fix:
+  * Our private version of struct METHOD went out of sync w/ latest ruby.
+  * Only use this if you are on 1.8.3+.
+
+=== 1.3.7 / 2005-07-13
+
+* 3 bug fixes:
+  * Fixed rubygem requires for non-gem systems.
+  * Renamed on to on_error_in to make more clear.
+  * Moved exceptions to their own tree to make catching cleaner.
+
+=== 1.3.6 / 2005-05-19
+
+* 2 minor enhancements:
+  * Improved debugging capability when $DEBUG.
+  * Allowed for selective debugging output by node type.
+* 3 bug fixes:
+  * Minor fixes to Makefile and parse_tree_show.
+  * Improved error messages in parse_tree when newlines are included.
+  * Improved method coverage for parse_tree.
+
+=== 1.3.5 / 2005-04-19
+
+* 2 minor enhancement
+  * Added dynamic exception handling on a per node-type basis (BIG).
+  * Added -c=classname to parse_tree_show to help w/ core classes.
+* 1 bug fix
+  * Fixed dependency specification error in gemspec.
+
+=== 1.3.4 / 2005-02-09
+
+* 2 bug fixes
+  * bug:1459: Cleaned up and corrected superclass naming code.
+  * bug:1458: Fixed while to support post-conditional while/until nodes.
+
+=== 1.3.3 / 2005-02-01
+
+* 3 minor enhancement
+  * Cleaned up parse_tree_abc output
+  * Patched up null class names (delegate classes are weird!)
+  * Added UnknownNodeError and switched SyntaxError over to it.
+* 2 bug fixes
+  * Fixed BEGIN node handling to recurse instead of going flat.
+  * FINALLY fixed the weird compiler errors seen on some versions of
+    gcc 3.4.x related to type punned pointers.
+
+=== 1.3.2 / 2005-01-04
+
+* 1 minor enhancement
+  * Added total line to end of ABC metric report.
+* 1 bug fix
+  * Updates for ruby 1.8.2 parse tree changes.
+
+=== 1.3.1 / 2004-12-09
+
+* 1 minor enhancement
+  * Added rewrite_<type> processing.
+* 2 bug fixes
+  * Renamed SexpProcessor's #exclude to #unsupported.
+  * Fixed a bus error when an attrasgn uses self.
+  * Added support for cfunc now that we found a repro.
+
+=== 1.3.0 / 2004-12-06
+
+* 3 minor enhancements
+  * Finished supporting pretty much all nodes (that we can figger out).
+  * If $DEBUG, or true passed to new, then we now output the :newline nodes.
+  * We output much better extra debugging info if $DEBUG.
+* 1 bug fixes
+  * Fixed README for new output style.
+
+=== 1.2.0 / 2004-11-29
+
+* 9 minor enhancements
+  * ParseTree now returns symbols for all data except in :str and :lit.
+      * This WILL break existing code! (as if any exists)
+  * ParseTree.parse_tree now takes a list of classes, no optional method.
+  * ParseTree.parse_tree_for_method(klass, method) added.
+  * ParseTree.parse_tree now returns a list of :class/:module nodes.
+  * Added -f to parse_tree_show for uber fast demos.
+  * Added -q to parse_tree_show to NOT use pp so it is mucho faster.
+  * running with $DEBUG will trace the methods and nodes as processed.
+  * Added rdoc to everything.
+  * Gemified
+* 4 bug fixes
+  * Bus error in iter/for nodes where arg list is empty now fixed.
+  * Bus error when handling 'def method(*)' is now fixed.
+  * Unnamed classes and superclasses (ugh) are now handled.
+  * parse_tree_abc now enumerates actual types rather than every token.
+
+=== 1.1.0 / 2004-11-12
+
+* 2 minor enhancement
+  * Added SexpProcessor and CompositeSexpProcessor
+  * Allowed show.rb to read from standard input.
+* 3 bug fixes
+  * Fixed makefile issues for BSD's make - so dumb.
+  * Added super as a call in abc.rb's metrics
+  * Commented out a compiler flag to work with GCC 2.95.
+
+=== 1.0.0 / 2004-11-06
+
+* 1 major enhancement
+  * Birthday!

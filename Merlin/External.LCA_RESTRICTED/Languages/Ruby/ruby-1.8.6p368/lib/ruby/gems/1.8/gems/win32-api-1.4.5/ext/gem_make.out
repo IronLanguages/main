@@ -1,7 +1,0 @@
-C:/vsl/m1/Merlin/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/bin/ruby.exe extconf.rb
-checking for strncpy_s()... no
-creating Makefile
-
-make
-'make' is not recognized as an internal or external command,
-operable program or batch file.
