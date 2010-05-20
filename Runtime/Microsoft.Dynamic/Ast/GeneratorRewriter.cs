@@ -733,12 +733,14 @@ namespace Microsoft.Scripting.Ast {
                 switch (left.NodeType) {
                     case ExpressionType.MemberAccess:
                         var member = (MemberExpression)node.Left;
-                        left = member.Update(ToTemp(block, member.Expression));
+                        if (member.Expression != null) {
+                            left = member.Update(ToTemp(block, member.Expression));
+                        }
                         break;
 
                     case ExpressionType.Index:
                         var index = (IndexExpression)node.Left;
-                        left = index.Update(ToTemp(block, index.Object), ToTemp(block, index.Arguments));
+                        left = index.Update((index.Object != null ? ToTemp(block, index.Object) : null), ToTemp(block, index.Arguments));
                         break;
 
                     case ExpressionType.Parameter:
