@@ -201,6 +201,10 @@ namespace System.Linq.Expressions {
         }
 
         private void VisitExpressions<T>(char open, IList<T> expressions, char close) where T : Expression {
+            VisitExpressions(open, expressions, close, ", ");
+        }
+
+        private void VisitExpressions<T>(char open, IList<T> expressions, char close, string seperator) where T : Expression {
             Out(open);
             if (expressions != null) {
                 bool isFirst = true;
@@ -208,7 +212,7 @@ namespace System.Linq.Expressions {
                     if (isFirst) {
                         isFirst = false;
                     } else {
-                        Out(", ");
+                        Out(seperator);
                     }
                     Visit(e);
                 }
@@ -232,11 +236,30 @@ namespace System.Linq.Expressions {
             } else {
                 string op;
                 switch (node.NodeType) {
+                    // AndAlso and OrElse were unintentionally changed in
+                    // CLR 4. We changed them to "AndAlso" and "OrElse" to
+                    // be 3.5 compatible, but it turns out 3.5 shipped with
+                    // "&&" and "||". Oops.
+                    case ExpressionType.AndAlso:
+                        op = "AndAlso";
+#if SILVERLIGHT
+                        if (Expression.SilverlightQuirks) op = "&&";
+#endif
+                        break;
+                    case ExpressionType.OrElse:
+                        op = "OrElse";
+#if SILVERLIGHT
+                        if (Expression.SilverlightQuirks) op = "||";
+#endif
+                        break;
                     case ExpressionType.Assign: op = "="; break;
-                    case ExpressionType.Equal: op = "=="; break;
+                    case ExpressionType.Equal:
+						op = "==";
+#if SILVERLIGHT
+                        if (Expression.SilverlightQuirks) op = "=";
+#endif
+						break;
                     case ExpressionType.NotEqual: op = "!="; break;
-                    case ExpressionType.AndAlso: op = "AndAlso"; break;
-                    case ExpressionType.OrElse: op = "OrElse"; break;
                     case ExpressionType.GreaterThan: op = ">"; break;
                     case ExpressionType.LessThan: op = "<"; break;
                     case ExpressionType.GreaterThanOrEqual: op = ">="; break;
@@ -311,11 +334,17 @@ namespace System.Linq.Expressions {
             if (node.IsByRef) {
                 Out("ref ");
             }
-            if (String.IsNullOrEmpty(node.Name)) {
-                int id = GetParamId(node);
-                Out("Param_" + id);
+            string name = node.Name;
+            if (String.IsNullOrEmpty(name)) {
+#if SILVERLIGHT
+                if (Expression.SilverlightQuirks) {
+                    Out(name ?? "<param>");
+                    return node;
+                }
+#endif
+                Out("Param_" + GetParamId(node));
             } else {
-                Out(node.Name);
+                Out(name);
             }
             return node;
         }
@@ -467,15 +496,23 @@ namespace System.Linq.Expressions {
 
         protected override ElementInit VisitElementInit(ElementInit initializer) {
             Out(initializer.AddMethod.ToString());
-            VisitExpressions('(', initializer.Arguments, ')');
+            string sep = ", ";
+#if SILVERLIGHT
+            if (Expression.SilverlightQuirks) sep = ",";
+#endif
+            VisitExpressions('(', initializer.Arguments, ')', sep);
             return initializer;
         }
 
         protected internal override Expression VisitInvocation(InvocationExpression node) {
             Out("Invoke(");
             Visit(node.Expression);
+            string sep = ", ";
+#if SILVERLIGHT
+            if (Expression.SilverlightQuirks) sep = ",";
+#endif
             for (int i = 0, n = node.Arguments.Count; i < n; i++) {
-                Out(", ");
+                Out(sep);
                 Visit(node.Arguments[i]);
             }
             Out(")");
@@ -522,15 +559,46 @@ namespace System.Linq.Expressions {
             return node;
         }
 
+#if SILVERLIGHT
+        private static PropertyInfo GetPropertyNoThrow(MethodInfo method) {
+            if (method == null)
+                return null;
+            Type type = method.DeclaringType;
+            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
+            flags |= (method.IsStatic) ? BindingFlags.Static : BindingFlags.Instance;
+            PropertyInfo[] props = type.GetProperties(flags);
+            foreach (PropertyInfo pi in props) {
+                if (pi.CanRead && method == pi.GetGetMethod(true)) {
+                    return pi;
+                }
+                if (pi.CanWrite && method == pi.GetSetMethod(true)) {
+                    return pi;
+                }
+            }
+            return null;
+        }
+#endif
+
         protected internal override Expression VisitNew(NewExpression node) {
             Out("new " + node.Type.Name);
             Out("(");
+            var members = node.Members;
             for (int i = 0; i < node.Arguments.Count; i++) {
                 if (i > 0) {
                     Out(", ");
                 }
-                if (node.Members != null) {
-                    Out(node.Members[i].Name);
+                if (members != null) {
+                    string name = members[i].Name;                    
+#if SILVERLIGHT
+                    // Members can be the get/set methods rather than the fields/properties
+                    PropertyInfo pi = null;
+                    if (Expression.SilverlightQuirks &&
+                        members[i].MemberType == MemberTypes.Method &&
+                        (pi = GetPropertyNoThrow((MethodInfo)members[i])) != null) {
+                        name = pi.Name;
+                    }
+#endif
+                    Out(name);
                     Out(" = ");
                 }
                 Visit(node.Arguments[i]);

@@ -553,9 +553,7 @@ namespace System.Linq.Expressions {
                 throw Error.IncorrectNumberOfLambdaDeclarationParameters();
             }
             if (mi.ReturnType != typeof(void) && !TypeUtils.AreReferenceAssignable(mi.ReturnType, body.Type)) {
-                if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), mi.ReturnType) && mi.ReturnType.IsAssignableFrom(body.GetType())) {
-                    body = Expression.Quote(body);
-                } else {
+                if (!TryQuote(mi.ReturnType, ref body)) {
                     throw Error.ExpressionTypeDoesNotMatchReturn(body.Type, mi.ReturnType);
                 }
             }

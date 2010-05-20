@@ -24,20 +24,6 @@ namespace System.Dynamic.Utils {
     internal static class TypeExtensions {
 
         /// <summary>
-        /// Creates an open delegate for the given (dynamic)method.
-        /// </summary>
-        internal static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType) {
-            Debug.Assert(methodInfo != null && delegateType != null);
-
-            var dm = methodInfo as DynamicMethod;
-            if (dm != null) {
-                return dm.CreateDelegate(delegateType);
-            } else {
-                return Delegate.CreateDelegate(delegateType, methodInfo);
-            }
-        }
-
-        /// <summary>
         /// Creates a closed delegate for the given (dynamic)method.
         /// </summary>
         internal static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target) {

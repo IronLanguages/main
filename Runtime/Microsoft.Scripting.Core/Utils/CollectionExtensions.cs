@@ -15,8 +15,10 @@
 
 #if CLR2
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Ast;
 #else
 using System.Diagnostics.Contracts;
+using System.Linq.Expressions;
 #endif
 
 using System.Collections.Generic;
@@ -40,6 +42,17 @@ namespace System.Dynamic.Utils {
             if (enumerable == null) {
                 return EmptyReadOnlyCollection<T>.Instance;
             }
+
+#if SILVERLIGHT
+            if (Expression.SilverlightQuirks) {
+                // Allow any ReadOnlyCollection to be stored directly
+                // (even though this is not safe)
+                var r = enumerable as ReadOnlyCollection<T>;
+                if (r != null) {
+                    return r;
+                }
+            }
+#endif
 
             var troc = enumerable as TrueReadOnlyCollection<T>;
             if (troc != null) {

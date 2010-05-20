@@ -326,6 +326,16 @@ namespace System.Linq.Expressions {
             return ((ReadOnlyCollection<T>)collectionOrT)[0];
         }
 
+#if SILVERLIGHT
+#if !CLR2
+        // Quirks mode for Expression Trees as they existed in Silverlight 2 and 3
+        internal readonly static bool SilverlightQuirks =
+            AppDomain.CurrentDomain.IsCompatibilitySwitchSet("APP_EARLIER_THAN_SL4.0").GetValueOrDefault();
+#else
+        internal readonly static bool SilverlightQuirks = true;
+#endif
+#endif
+
         private static void RequiresCanRead(Expression expression, string paramName) {
             if (expression == null) {
                 throw new ArgumentNullException(paramName);

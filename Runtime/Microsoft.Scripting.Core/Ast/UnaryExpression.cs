@@ -787,7 +787,11 @@ namespace System.Linq.Expressions {
         ///<paramref name="expression" /> is null.</exception>
         public static UnaryExpression Quote(Expression expression) {
             RequiresCanRead(expression, "expression");
-            if (!(expression is LambdaExpression)) throw Error.QuotedExpressionMustBeLambda();
+            bool validQuote = expression is LambdaExpression;
+#if SILVERLIGHT
+            validQuote |= SilverlightQuirks;
+#endif
+            if (!validQuote) throw Error.QuotedExpressionMustBeLambda();
             return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
         }
 

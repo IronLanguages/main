@@ -366,11 +366,9 @@ namespace System.Linq.Expressions {
             if (expectedType != typeof(void)) {
                 if (!TypeUtils.AreReferenceAssignable(expectedType, value.Type)) {
                     // C# autoquotes return values, so we'll do that here
-                    if (TypeUtils.IsSameOrSubclass(typeof(LambdaExpression), expectedType) &&
-                        expectedType.IsAssignableFrom(value.GetType())) {
-                        value = Expression.Quote(value);
+                    if (!TryQuote(expectedType, ref value)) {
+                        throw Error.ExpressionTypeDoesNotMatchLabel(value.Type, expectedType);
                     }
-                    throw Error.ExpressionTypeDoesNotMatchLabel(value.Type, expectedType);
                 }
             }
         }

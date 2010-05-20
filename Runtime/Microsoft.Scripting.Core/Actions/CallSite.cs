@@ -279,8 +279,8 @@ namespace System.Runtime.CompilerServices {
                     }
                 }
                 if (method != null) {
-                    _CachedNoMatch = (T)(object)noMatchMethod.MakeGenericMethod(args).CreateDelegate(target);
-                    return (T)(object)method.MakeGenericMethod(args).CreateDelegate(target);
+                    _CachedNoMatch = (T)(object)CreateDelegateHelper(target, noMatchMethod.MakeGenericMethod(args));
+                    return (T)(object)CreateDelegateHelper(target, method.MakeGenericMethod(args));
                 }
             }
 
@@ -288,6 +288,28 @@ namespace System.Runtime.CompilerServices {
             return CreateCustomUpdateDelegate(invoke);
         }
 
+        // NEEDS SECURITY REVIEW:
+        //
+        // This needs to be SafeCritical on Silverlight to allow access to
+        // internal types from user code as generic parameters.
+        //
+        // It's safe for a few reasons:
+        //   1. The internal types are coming from a lower trust level (app code)
+        //   2. We got the internal types from our own generic parameter: T
+        //   3. The UpdateAndExecute methods don't do anything with the types,
+        //      we just want the CallSite args to be strongly typed to avoid
+        //      casting.
+        //   4. Works on desktop CLR with AppDomain that has only Execute
+        //      permission. In theory it might require RestrictedMemberAccess,
+        //      but it's unclear because we have tests passing without RMA.
+        //
+        // When Silverlight gets RMA we may be able to remove this.
+#if SILVERLIGHT
+        [System.Security.SecuritySafeCritical]
+#endif
+        private static Delegate CreateDelegateHelper(Type delegateType, MethodInfo method) {
+            return Delegate.CreateDelegate(delegateType, method);
+        }
 
         private static bool IsSimpleSignature(MethodInfo invoke, out Type[] sig) {
             ParameterInfo[] pis = invoke.GetParametersCached();
