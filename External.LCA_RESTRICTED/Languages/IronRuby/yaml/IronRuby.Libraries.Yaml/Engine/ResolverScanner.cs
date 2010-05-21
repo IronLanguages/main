@@ -19,6 +19,7 @@
 // line 1 "src/org/jvyamlb/resolver_scanner.rl"
 
 using System.Diagnostics;
+using System.Globalization;
 namespace IronRuby.StandardLibrary.Yaml {
 
     public static class ResolverScanner {
@@ -320,7 +321,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         internal static string Recognize(string/*!*/ str) {
             // TODO: scanner should be char based
-            byte[] data = System.Text.Encoding.ASCII.GetBytes(str);
+            byte[] data = System.Text.Encoding.UTF8.GetBytes(str);
             string tag = null;
             int cs;
             int p = 0;
@@ -463,7 +464,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         // TODO: thsi should be distinguished by the parser:
         internal static bool? ToBool(string value) {
-            switch (value.ToUpperInvariant()) {
+            switch (value.ToUpper(CultureInfo.InvariantCulture)) {
                 case "YES":
                 case "TRUE":
                 case "ON":

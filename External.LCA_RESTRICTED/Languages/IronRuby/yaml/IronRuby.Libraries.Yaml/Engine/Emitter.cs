@@ -532,7 +532,9 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
             return " " + version.Major + "." + version.Minor;
         }
-        private static Regex HANDLE_FORMAT = new Regex("^![-\\w]*!$", RegexOptions.Compiled);
+
+        private static Regex HANDLE_FORMAT = YamlUtils.CompiledRegex("^![-\\w]*!$");
+
         static string prepareTagHandle(string handle) {
             if (string.IsNullOrEmpty(handle)) {
                 throw new EmitterException("tag handle must not be empty");
@@ -607,7 +609,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
         }
 
-        private static Regex DOC_INDIC = new Regex("^(---|\\.\\.\\.)", RegexOptions.Compiled);
+        private static Regex DOC_INDIC = YamlUtils.CompiledRegex("^(---|\\.\\.\\.)");
         private static string NULL_BL_T_LINEBR = "\0 \t\r\n";
         private static string SPECIAL_INDIC = "#,[]{}#&*!|>'\"%@";
         private static string FLOW_INDIC = ",?[]{}";
@@ -909,7 +911,10 @@ namespace IronRuby.StandardLibrary.Yaml {
                     }
 
                     if (null != ev.Tags) {
-                        foreach(KeyValuePair<string, string> tags in new SortedList<string, string>(ev.Tags)) {
+                        var entries = new List<KeyValuePair<string, string>>(ev.Tags);
+                        entries.Sort((x, y) => StringComparer.Ordinal.Compare(x.Key, y.Key));
+
+                        foreach (KeyValuePair<string, string> tags in entries) {
                             string handle = tags.Key;
                             string prefix = tags.Value;
                             _tagPrefixes.Add(prefix, handle);

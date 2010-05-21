@@ -46,11 +46,6 @@ namespace Microsoft.Scripting.Actions {
         public DefaultBinder() {
         }
 
-        [Obsolete("ScriptDomainManager is no longer required by ActionBinder and will go away, you should call the default constructor instead.  You should also override PrivateBinding which is the only thing which previously used the ScriptDomainManager.")]
-        protected DefaultBinder(ScriptDomainManager manager)
-            : base(manager) {
-        }
-
         public override bool CanConvertFrom(Type fromType, Type toType, bool toNotNullable, NarrowingLevel level) {
             return toType.IsAssignableFrom(fromType);
         }

@@ -46,6 +46,15 @@ describe "Enumerable#each_slice" do
     cnt.each_slice(2) {|g| break 42 if g[0] == :stop }.should == 42
     cnt.times_yielded.should == 4
   end
+  
+  it "terminates on return" do
+    c = Class.new do
+      def foo
+        [1,2,3,4].each_slice(2) { |a,b| return 123 }
+      end
+    end
+    c.new.foo.should == 123
+  end
 
   ruby_version_is '1.8.7' do
     it "returns an enumerator if no block" do 

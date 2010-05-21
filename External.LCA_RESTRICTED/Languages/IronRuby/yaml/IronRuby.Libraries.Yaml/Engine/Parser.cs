@@ -545,7 +545,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             return null;
         }
 
-        private static Regex ONLY_WORD = new Regex("^\\w+$", RegexOptions.Compiled);       
+        private static Regex ONLY_WORD = YamlUtils.CompiledRegex("^\\w+$");       
 
         private string GetTag(TagToken tagToken) {
             if (tagToken == null) { // check against "!"?

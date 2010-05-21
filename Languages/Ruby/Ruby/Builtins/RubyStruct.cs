@@ -97,7 +97,6 @@ namespace IronRuby.Builtins {
             // TODO: deserialize _data
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public override void GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
             base.GetObjectData(info, context);
             // TODO: serialize _data

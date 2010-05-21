@@ -129,6 +129,8 @@ namespace IronRuby.StandardLibrary.Enumerator {
 
             RubyArray slice = null;
 
+            object result = null;
+
             EnumerableModule.Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
                 if (slice == null) {
                     slice = new RubyArray(sliceSize);
@@ -146,7 +148,8 @@ namespace IronRuby.StandardLibrary.Enumerator {
 
                     object blockResult;
                     if (block.Yield(completeSlice, out blockResult)) {
-                        return blockResult;
+                        result = blockResult;
+                        return selfBlock.PropagateFlow(block, blockResult);
                     }
                 }
 
@@ -164,7 +167,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
                 }
             }
 
-            return null;
+            return result;
         }
 
         #endregion

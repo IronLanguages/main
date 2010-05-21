@@ -1628,11 +1628,21 @@ namespace IronRuby.Builtins {
             scope.GetInnerMostClosureScope().CurrentMatch = match;
             return (match != null) ? ScriptingRuntimeHelpers.Int32ToObject(match.Index) : null;
         }
+        
+        // encoding aware
+        [RubyMethod("rindex")]
+        public static object LastIndexOf(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ substring) {
+            if (substring.IsEmpty) {
+                self.PrepareForCharacterRead();
+                return ScriptingRuntimeHelpers.Int32ToObject(self.GetCharCount());
+            }
+            return LastIndexOf(self, substring, -1);
+        }
 
         // encoding aware
         [RubyMethod("rindex")]
         public static object LastIndexOf(MutableString/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ substring, [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int start) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ substring, [DefaultProtocol]int start) {
 
             self.PrepareForCharacterRead();
             int charCount = self.GetCharCount();

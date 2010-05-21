@@ -721,7 +721,7 @@ namespace IronRuby.Builtins {
             // Note: We don't cache results as this API is not used so frequently (e.g. for regular method dispatch).
             
             if (asType != null && !asType.IsAssignableFrom(type)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' does not inherit from `{0}'", cls.Name, Context.GetTypeName(asType, true)));
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' does not inherit from `{1}'", cls.Name, Context.GetTypeName(asType, true)));
             }
 
             // TODO: should declaring module of the resulting method rather be the base class?

@@ -46,6 +46,15 @@ describe "Enumerable#each_cons" do
     cnt.each_cons(2) {|g| break 42 if g[-1] == :stop }.should == 42
     cnt.times_yielded.should == 3
   end
+  
+  it "terminates on return" do
+    c = Class.new do
+      def foo
+        [1,2,3,4].each_cons(2) { |a,b| return 123 }
+      end
+    end
+    c.new.foo.should == 123
+  end
 
   ruby_version_is '1.8.7' do
     it "returns an enumerator if no block" do 

@@ -104,6 +104,7 @@ namespace Microsoft.Scripting {
 
         protected override void Dispose(bool disposing) {
             _textReader.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

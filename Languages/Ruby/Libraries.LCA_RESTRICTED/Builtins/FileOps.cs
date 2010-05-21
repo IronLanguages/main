@@ -385,14 +385,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("extname", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetExtension(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string pathStr = path.ConvertToString();
-            string extension = Path.GetExtension(pathStr);
-            string filename = Path.GetFileName(pathStr);
-            if (extension == filename) {
-                // File.extname(".foo") should be "", but Path.GetExtension(".foo") returns ".foo"
-                extension = String.Empty;
-            }
-            return MutableString.Create(extension, path.Encoding).TaintBy(path);
+            return MutableString.Create(RubyUtils.GetExtension(path.ConvertToString()), path.Encoding).TaintBy(path);
         }
 
         #region fnmatch

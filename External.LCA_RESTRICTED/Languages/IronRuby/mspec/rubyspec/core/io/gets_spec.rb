@@ -184,16 +184,23 @@ describe "IO#gets" do
   end
 
   it "accepts a separator" do
-    f = File.open(tmp("gets_specs"), "w")
-    f.print("A\n\n\nB\n")
-    f.close
-    f = File.new(tmp("gets_specs"), "r")
-    f.gets("\n\n")
-    b = f.gets("\n\n")
-    f.gets("\n\n")
-    f.close
-    b.should == "\nB\n"
-    File.unlink(tmp("gets_specs"))
+    path = tmp("gets_specs")
+    begin
+      File.open(path, "w") do |f| 
+        f.print("A1\nA2\n\nB\nC;D\n")
+      end
+
+      File.open(path, "r") do |f|
+        f.gets("\n\n").should == "A1\nA2\n\n"
+        f.gets.should == "B\n"
+        f.gets(";").should == "C;"
+        f.gets.should == "D\n"
+        f.gets.should == nil
+      end
+
+    ensure
+      File.unlink(path)
+    end
   end
 end
 

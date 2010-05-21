@@ -18,6 +18,7 @@ using System.Runtime.Serialization;
 using System.Dynamic;
 using System.Security.Permissions;
 using Microsoft.Scripting.Utils;
+using System.Security;
 
 namespace Microsoft.Scripting {
 
@@ -82,7 +83,8 @@ namespace Microsoft.Scripting {
             _errorCode = info.GetInt32("ErrorCode");
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
+        [SecurityCritical]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2140:TransparentMethodsMustNotReferenceCriticalCodeFxCopRule")]
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             ContractUtils.RequiresNotNull(info, "info");
 

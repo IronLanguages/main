@@ -168,13 +168,24 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("glob", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray/*!*/ Glob(RubyClass/*!*/ self, 
+        public static object Glob(RubyClass/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ pattern, [DefaultProtocol, Optional]int flags) {
-            
+
             RubyArray result = new RubyArray();
             foreach (var fileName in IronRuby.Builtins.Glob.GetMatches(self.Context, pattern, flags)) {
                 result.Add(fileName);
+            }
+
+            return result;
+        }
+
+        [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray/*!*/ Glob(RubyClass/*!*/ self, [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ patterns) {
+            RubyArray result = new RubyArray();
+            foreach (var pattern in patterns) {
+                foreach (var fileName in IronRuby.Builtins.Glob.GetMatches(self.Context, pattern, 0)) {
+                    result.Add(fileName);
+                }
             }
 
             return result;

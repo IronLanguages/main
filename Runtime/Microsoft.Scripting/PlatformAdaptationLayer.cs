@@ -26,6 +26,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
 using Microsoft.Scripting.Utils;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Scripting {
 
@@ -396,13 +397,7 @@ namespace Microsoft.Scripting {
         public virtual void SetEnvironmentVariable(string key, string value) {
 #if !SILVERLIGHT
             if (value != null && value.Length == 0) {
-                // System.Environment.SetEnvironmentVariable interprets an empty value string as 
-                // deleting the environment variable. So we use the native SetEnvironmentVariable 
-                // function here which allows setting of the value to an empty string.
-                // This will require high trust and will fail in sandboxed environments
-                if (!Utils.NativeMethods.SetEnvironmentVariable(key, value)) {
-                    throw new ExternalException("SetEnvironmentVariable failed", Marshal.GetLastWin32Error());
-                }
+                SetEmptyEnvironmentVariable(key);
             } else {
                 Environment.SetEnvironmentVariable(key, value);
             }
@@ -410,6 +405,22 @@ namespace Microsoft.Scripting {
             throw new NotImplementedException();
 #endif
         }
+
+#if !SILVERLIGHT
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2149:TransparentMethodsMustNotCallNativeCodeFxCopRule")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2140:TransparentMethodsMustNotReferenceCriticalCodeFxCopRule")]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SetEmptyEnvironmentVariable(string key) {
+            // System.Environment.SetEnvironmentVariable interprets an empty value string as 
+            // deleting the environment variable. So we use the native SetEnvironmentVariable 
+            // function here which allows setting of the value to an empty string.
+            // This will require high trust and will fail in sandboxed environments
+            if (!NativeMethods.SetEnvironmentVariable(key, String.Empty)) {
+                throw new ExternalException("SetEnvironmentVariable failed", Marshal.GetLastWin32Error());
+            }
+        }
+#endif
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public virtual System.Collections.IDictionary GetEnvironmentVariables() {

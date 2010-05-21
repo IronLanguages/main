@@ -86,7 +86,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         public static void AddMultiConstructor(string tagPrefix, YamlMultiConstructor ctor) {
             _yamlMultiConstructors.Add(tagPrefix,ctor);
-            _yamlMultiRegexps.Add(tagPrefix, new Regex("^" + tagPrefix, RegexOptions.Compiled));
+            _yamlMultiRegexps.Add(tagPrefix, YamlUtils.CompiledRegex("^" + tagPrefix));
         }
 
         public bool CheckData() {
@@ -661,7 +661,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     name = "" + name[0].ToUpperInvariant() + name.Substring(1);
                     PropertyInfo prop = type.GetProperty(name);
 
-                    prop.SetValue(result, Convert.ChangeType(e.Value, prop.PropertyType), null);
+                    prop.SetValue(result, Convert.ChangeType(e.Value, prop.PropertyType, CultureInfo.InvariantCulture), null);
                 }
                 return result;
 

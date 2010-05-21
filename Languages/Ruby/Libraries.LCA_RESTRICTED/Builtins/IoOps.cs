@@ -139,7 +139,6 @@ namespace IronRuby.Builtins {
             using (io) {
                 object result;
                 block.Yield(io, out result);
-                io.Close();
                 return result;
             }
         }
@@ -797,7 +796,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("readline")]
         public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator) {
             // no dynamic call, modifies $_ scope variable:
-            MutableString result = Gets(scope, self);
+            MutableString result = Gets(scope, self, separator);
             if (result == null) {
                 throw new EOFError("end of file reached");
             }

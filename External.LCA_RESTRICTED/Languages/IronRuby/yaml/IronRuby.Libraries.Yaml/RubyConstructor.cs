@@ -36,7 +36,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         private readonly static Dictionary<string, RubyYamlConstructor> _yamlConstructors = new Dictionary<string, RubyYamlConstructor>();
         private readonly static Dictionary<string, RubyYamlMultiConstructor> _yamlMultiConstructors = new Dictionary<string, RubyYamlMultiConstructor>();
         private readonly static Dictionary<string, Regex> _yamlMultiRegexps = new Dictionary<string, Regex>();                
-        private readonly static Regex _regexPattern = new Regex("^/(?<expr>.+)/(?<opts>[eimnosux]*)$", RegexOptions.Compiled);
+        private readonly static Regex _regexPattern = YamlUtils.CompiledRegex("^/(?<expr>.+)/(?<opts>[eimnosux]*)$");
 
         private readonly CallSite<Func<CallSite, RubyModule, object, object, object, object>> _newSite;
         private readonly CallSite<Func<CallSite, object, object, Hash, object>> _yamlInitializeSite;
@@ -112,7 +112,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public static void AddMultiConstructor(string tagPrefix, RubyYamlMultiConstructor ctor) {
             if (!_yamlMultiConstructors.ContainsKey(tagPrefix)) {
                 _yamlMultiConstructors.Add(tagPrefix, ctor);
-                _yamlMultiRegexps.Add(tagPrefix, new Regex("^" + tagPrefix, RegexOptions.Compiled));
+                _yamlMultiRegexps.Add(tagPrefix, YamlUtils.CompiledRegex("^" + tagPrefix));
             }
         }
 
@@ -143,7 +143,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public static void AddExternalMultiConstructor(string regex, BlockParam block) {
             if (!_yamlMultiConstructors.ContainsKey(regex)) {
                 _yamlMultiConstructors.Add(regex, new ExternalConstructor(block).Construct);
-                _yamlMultiRegexps.Add(regex, new Regex(regex, RegexOptions.Compiled));
+                _yamlMultiRegexps.Add(regex, YamlUtils.CompiledRegex(regex));
             }
         }
 

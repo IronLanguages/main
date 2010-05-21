@@ -72,7 +72,9 @@ namespace IronRuby.Compiler.Ast {
             _profiler = context.RubyOptions.Profile ? Profiler.Instance : null;
             _savingToDisk = context.RubyOptions.SavePath != null;
             _printInteractiveResult = printInteractiveResult;
-#if !SILVERLIGHT
+#if SILVERLIGHT
+            _debugCompiler = false;
+#else
             _debugCompiler = Snippets.Shared.SaveSnippets;
 #endif
         }

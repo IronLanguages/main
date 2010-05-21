@@ -276,20 +276,20 @@ namespace IronRuby.Runtime {
             string strPath = path.ConvertToString();
             if (TryParseAssemblyName(strPath, out typeName, out assemblyName)) {
 
-                if (AlreadyLoaded(path, flags)) {
+                if (AlreadyLoaded(strPath, flags)) {
                     loaded = ((flags & LoadFlags.ResolveLoaded) != 0) ? GetAssembly(assemblyName, true, false) : null;
                     return false;
                 }
 
                 Assembly assembly = LoadAssembly(assemblyName, typeName, false, false);
                 if (assembly != null) {
-                    FileLoaded(path, flags);
+                    FileLoaded(path.Clone(), flags);
                     loaded = assembly;
                     return true;
                 }
             }
 
-            return LoadFromPath(globalScope, self, strPath, flags, out loaded);
+            return LoadFromPath(globalScope, self, strPath, path.Encoding, flags, out loaded);
         }
 
         #region Assemblies
@@ -500,8 +500,8 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, LoadFlags flags, out object loaded) {
-            Assert.NotNull(path);
+        private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, RubyEncoding/*!*/ pathEncoding, LoadFlags flags, out object loaded) {
+            Assert.NotNull(pathEncoding, path);
 
             string[] sourceFileExtensions;
             if ((flags & LoadFlags.AnyLanguage) != 0) {
@@ -512,15 +512,20 @@ namespace IronRuby.Runtime {
 
             ResolvedFile file = FindFile(path, (flags & LoadFlags.AppendExtensions) != 0, sourceFileExtensions);
             if (file == null) {
+                // MRI: doesn't trow an exception if the path is in $" (performs resolution first though):
+                if (AlreadyLoaded(path, flags, sourceFileExtensions)) {
+                    loaded = null;
+                    return false;
+                }
                 throw RubyExceptions.CreateLoadError(String.Format("no such file to load -- {0}", path));
             }
 
-            MutableString pathWithExtension = _context.EncodePath(path);
+            string pathWithExtension = path;
             if (file.AppendedExtension != null) {
-                pathWithExtension.Append(file.AppendedExtension);
+                pathWithExtension += file.AppendedExtension;
             }
 
-            if (AlreadyLoaded(pathWithExtension, flags) || _unfinishedFiles.Contains(pathWithExtension.ToString())) {
+            if (AlreadyLoaded(pathWithExtension, flags) || _unfinishedFiles.Contains(pathWithExtension)) {
                 if ((flags & LoadFlags.ResolveLoaded) != 0) {
                     var fullPath = Platform.GetFullPath(file.Path);
                     if (file.SourceUnit != null) {
@@ -540,7 +545,7 @@ namespace IronRuby.Runtime {
 
             try {
                 // save path as is, no canonicalization nor combination with an extension or directory:
-                _unfinishedFiles.Push(pathWithExtension.ToString());
+                _unfinishedFiles.Push(pathWithExtension);
 
                 if (file.SourceUnit != null) {
                     AddScriptLines(file.SourceUnit);
@@ -563,7 +568,7 @@ namespace IronRuby.Runtime {
                     }
                 }
 
-                FileLoaded(pathWithExtension, flags);
+                FileLoaded(MutableString.Create(pathWithExtension, pathEncoding), flags);
             } finally {
                 _unfinishedFiles.Pop();
             }
@@ -641,7 +646,7 @@ namespace IronRuby.Runtime {
                 }
                 
                 isAbsolutePath = Platform.IsAbsolutePath(path);
-                extension = Path.GetExtension(path);
+                extension = RubyUtils.GetExtension(path);
             } catch (ArgumentException e) {
                 throw RubyExceptions.CreateLoadError(e);
             }            
@@ -696,7 +701,7 @@ namespace IronRuby.Runtime {
         }
 
         private ResolvedFile ResolveFile(string/*!*/ path, string/*!*/ extension, bool appendExtensions, string[]/*!*/ knownExtensions) {
-            Debug.Assert(Path.GetExtension(path) == extension);
+            Debug.Assert(RubyUtils.GetExtension(path) == extension);
 
             // MRI doesn't load file w/o .rb extension:
             if (IsKnownExtension(extension, knownExtensions)) {
@@ -862,8 +867,15 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private bool AlreadyLoaded(MutableString/*!*/ path, LoadFlags flags) {
-            return (flags & LoadFlags.LoadOnce) != 0 && IsFileLoaded(path);
+        private bool AlreadyLoaded(string/*!*/ path, LoadFlags flags) {
+            return (flags & LoadFlags.LoadOnce) != 0 && IsFileLoaded(path, null);
+        }
+
+        private bool AlreadyLoaded(string/*!*/ path, LoadFlags flags, string[]/*!*/ sourceFileExtensions) {
+            IEnumerable<string> appendExtensions = (flags & LoadFlags.AppendExtensions) != 0 && RubyUtils.GetExtension(path).Length == 0 ? 
+                sourceFileExtensions.Concat(_LibraryExtensions) : null;
+
+            return (flags & LoadFlags.LoadOnce) != 0 && IsFileLoaded(path, appendExtensions);
         }
 
         private void FileLoaded(MutableString/*!*/ path, LoadFlags flags) {
@@ -872,17 +884,27 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private bool IsFileLoaded(MutableString/*!*/ path) {
+        private bool IsFileLoaded(string/*!*/ path, IEnumerable<string> appendExtensions) {
             var toStr = _toStrStorage.GetSite(ConvertToStrAction.Make(_context));
+            var encodedPath = _context.EncodePath(path);
 
             foreach (object file in GetLoadedFiles()) {
                 if (file == null) {
                     throw RubyExceptions.CreateTypeConversionError("nil", "String");
                 }
 
-                // case sensitive comparison:
-                if (path.Equals(toStr.Target(toStr, file))) {
+                // use case sensitive comparison
+                MutableString loadedFile = toStr.Target(toStr, file);
+                if (loadedFile.Equals(encodedPath)) {
                     return true;
+                }
+
+                if (appendExtensions != null) {
+                    foreach (var extension in appendExtensions) {
+                        if (loadedFile.Equals(_context.EncodePath(path + extension))) {
+                            return true;
+                        }
+                    }
                 }
             }
 

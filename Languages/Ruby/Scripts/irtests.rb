@@ -121,9 +121,9 @@ class IRTest
     
     sln = @options[:clr4] ? "4.sln" : ".sln"
     
-    msbuild "Languages\\Ruby\\Ruby" + sln
-    msbuild "Languages\\IronPython\\IronPython" + sln
-    msbuild "Languages\\Ruby\\Ruby" + sln, "FxCop"
+    msbuild "Solutions\\Ruby" + sln
+    msbuild "Solutions\\IronPython" + sln
+    msbuild "Solutions\\Ruby" + sln, "FxCop"
 
     if File.exists?(file = "#{@root}\\Scripts\\Python\\GenerateSystemCoreCsproj.py")
       cmd = "#{@root}\\Bin\\#{@config}\\ipy.exe #{file}"

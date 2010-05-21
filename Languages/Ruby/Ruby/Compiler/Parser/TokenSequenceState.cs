@@ -287,7 +287,7 @@ namespace IronRuby.Compiler {
         }
 
         public override string ToString() {
-            return String.Format("Heredoc({0},'{1}',{2},'{2}')", Properties, Label, _resumePosition, new String(_resumeLine));
+            return String.Format("Heredoc({0},'{1}',{2},'{3}')", Properties, Label, _resumePosition, new String(_resumeLine));
         }
     }
 

@@ -43,7 +43,6 @@ namespace IronRuby.Builtins {
             _initialized = true;
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public void GetObjectData(SerializationInfo info, StreamingContext context) {
             info.AddValue("begin", _begin);
             info.AddValue("end", _end);

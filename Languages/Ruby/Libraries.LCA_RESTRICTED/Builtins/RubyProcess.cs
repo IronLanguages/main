@@ -189,7 +189,7 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            string extension = Path.GetExtension(path);
+            string extension = RubyUtils.GetExtension(path);
             bool hasExtension = !String.IsNullOrEmpty(extension);
             bool isExecutable = hasExtension && Array.IndexOf(_ExecutableExtensions, extension.ToLowerInvariant()) >= 0;
 

@@ -43,7 +43,8 @@ internal sealed class RubyConsoleHost : ConsoleHost {
         return Ruby.CreateRubySetup();
     }
 
-    private static void OnCancelKey(object sender, ConsoleCancelEventArgs ev, RubyContext context, Thread mainThread) {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+    private static void OnCancelKey(ConsoleCancelEventArgs ev, RubyContext context, Thread mainThread) {
         if (ev.SpecialKey == ConsoleSpecialKey.ControlC) {
             ev.Cancel = true;
             Action handler = context.InterruptSignalHandler;
@@ -65,7 +66,7 @@ internal sealed class RubyConsoleHost : ConsoleHost {
         RubyContext context = (RubyContext)HostingHelpers.GetLanguageContext(engine);
         context.InterruptSignalHandler = delegate() { RubyUtils.RaiseAsyncException(mainThread, new Interrupt()); };
         ((BasicConsole)console).ConsoleCancelEventHandler = delegate(object sender, ConsoleCancelEventArgs e) {
-            OnCancelKey(sender, e, context, mainThread); 
+            OnCancelKey(e, context, mainThread); 
         };
 
         return console;

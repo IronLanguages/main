@@ -1399,6 +1399,34 @@ namespace IronRuby.Runtime {
             }
         }
 
+        /// <summary>
+        /// Returns the extension of given path.
+        /// Equivalent to <see cref="Path.GetExtension"/> but it doesn't check for an invalid path and 
+        /// it considers ".foo" to be a file name with no extension rather than an extension with an empty file name.
+        /// </summary>
+        /// <returns>Null iff path is null. Empty string if the path doesn't have any extension.</returns>
+        public static string GetExtension(string path) {
+            if (path == null) {
+                return null;
+            }
+
+            int length = path.Length;
+            int i = length;
+            while (--i >= 0) {
+                char c = path[i];
+                if (c == '.') {
+                    if (i != length - 1 && i > 0) {
+                        return path.Substring(i, length - i);
+                    }
+                    return String.Empty;
+                }
+                if (c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar || c == Path.VolumeSeparatorChar) {
+                    break;
+                }
+            }
+            return String.Empty;
+        }
+
         #endregion
 
         #endregion

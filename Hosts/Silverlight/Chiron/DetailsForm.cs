@@ -23,15 +23,5 @@ namespace Chiron {
         private void ShowDetails(object sender, EventArgs e) {
             Show();
         }
-
-        protected override void OnClosed(EventArgs e) {
-            var closed = Closed;
-            if (closed != null) {
-                closed(this, e);
-            }
-            base.OnClosed(e);
-        }
-
-        public event EventHandler<EventArgs> Closed;
     }
 }

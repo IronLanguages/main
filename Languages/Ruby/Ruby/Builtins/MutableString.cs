@@ -1075,14 +1075,15 @@ namespace IronRuby.Builtins {
             private readonly char[]/*!*/ _data;
             private readonly int _count;
             private readonly List<byte[]> _invalid;
+#if !SILVERLIGHT
             private int _invalidIndex;
+#endif
 
             internal CompositeCharacterEnumerator(RubyEncoding/*!*/ encoding, char[]/*!*/ data, int count, List<byte[]> invalid) 
                 : base(encoding) {
                 _data = data;
                 _count = count;
                 _invalid = invalid;
-                _invalidIndex = 0;
             }
 
             private int InvalidCount {
@@ -1133,7 +1134,9 @@ namespace IronRuby.Builtins {
 
             public override void Reset() {
                 base.Reset();
+#if !SILVERLIGHT
                 _invalidIndex = -1;
+#endif
             }
         }
 

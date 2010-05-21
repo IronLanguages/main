@@ -23,21 +23,13 @@ using IronRuby.Runtime;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("a1c8b506-e79a-4013-ae17-2e31618b5baf")]
 
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Build and Revision Numbers 
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
+[assembly: SecurityTransparent]
+
+#if !SILVERLIGHT
 [assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]
 [assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
 [assembly: AllowPartiallyTrustedCallers]
-[assembly: SecurityTransparent]
-
 #if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
+#endif
 #endif

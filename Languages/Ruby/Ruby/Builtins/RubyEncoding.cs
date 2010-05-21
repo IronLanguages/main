@@ -156,7 +156,6 @@ namespace IronRuby.Builtins {
             }
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         void ISerializable.GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
             info.AddValue("CodePage", _encoding.CodePage);
             info.AddValue("IsKCoding", IsKCoding);

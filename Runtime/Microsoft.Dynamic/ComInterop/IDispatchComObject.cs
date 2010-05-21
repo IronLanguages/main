@@ -251,7 +251,7 @@ namespace Microsoft.Scripting.ComInterop {
                 method = null;
                 return false;
             } else {
-                throw Error.CouldNotGetDispId(name, string.Format(CultureInfo.InvariantCulture, "0x{1:X})", hresult));
+                throw Error.CouldNotGetDispId(name, String.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
             }
         }
 
@@ -280,7 +280,7 @@ namespace Microsoft.Scripting.ComInterop {
                 method = null;
                 return false;
             } else {
-                throw Error.CouldNotGetDispId(name, string.Format(CultureInfo.InvariantCulture, "0x{1:X})", hresult));
+                throw Error.CouldNotGetDispId(name, String.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
             }
         }
 

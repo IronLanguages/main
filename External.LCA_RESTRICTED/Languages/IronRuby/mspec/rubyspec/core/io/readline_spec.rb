@@ -49,4 +49,25 @@ describe "IO#readline" do
       end
     end
   end
+
+  it "accepts a separator" do
+    path = tmp("readline_specs")
+    begin
+      File.open(path, "w") do |f| 
+        f.print("A1\nA2\n\nB\nC;D\n")
+      end
+
+      File.open(path, "r") do |f|
+        f.readline("\n\n").should == "A1\nA2\n\n"
+        f.readline.should == "B\n"
+        f.readline(";").should == "C;"
+        f.readline.should == "D\n"
+        lambda { f.readline }.should raise_error(EOFError)
+      end
+
+    ensure
+      File.unlink(path)
+    end
+  end
+  
 end

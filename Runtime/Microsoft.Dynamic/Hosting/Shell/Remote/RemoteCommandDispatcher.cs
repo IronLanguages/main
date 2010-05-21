@@ -86,7 +86,6 @@ namespace Microsoft.Scripting.Hosting.Shell.Remote {
 
 #if !SILVERLIGHT
         // TODO: Figure out what is the right lifetime
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService() {
             return null;
         }

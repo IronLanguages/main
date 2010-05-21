@@ -155,7 +155,6 @@ namespace IronRuby.Builtins {
             RubyOps.DeserializeObject(out _instanceData, out _immediateClass, info);
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public virtual void GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
             RubyOps.SerializeObject(_instanceData, _immediateClass, info);
         }

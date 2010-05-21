@@ -76,7 +76,6 @@ namespace IronRuby.Hosting {
         }
 
 #if !SILVERLIGHT
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService() {
             // track the engines lifetime
             return _engine.InitializeLifetimeService();

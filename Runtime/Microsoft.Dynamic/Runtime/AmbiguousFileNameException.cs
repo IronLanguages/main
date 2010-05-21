@@ -56,7 +56,6 @@ namespace Microsoft.Scripting {
             : base(info, context) {
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             info.AddValue("firstPath", _firstPath);
             info.AddValue("secondPath", _secondPath);

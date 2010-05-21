@@ -146,7 +146,6 @@ namespace Microsoft.Scripting {
             _id = SymbolTable.StringToId(info.GetString("symbolName"))._id;
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public void GetObjectData(SerializationInfo info, StreamingContext context) {
             ContractUtils.RequiresNotNull(info, "info");
 

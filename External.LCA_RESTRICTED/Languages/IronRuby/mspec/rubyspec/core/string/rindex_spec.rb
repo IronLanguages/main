@@ -158,6 +158,7 @@ describe "String#rindex with String" do
   end
 
   it "returns the index of the last occurrence of the given substring" do
+    "".rindex("").should == 0
     "blablabla".rindex("").should == 9
     "blablabla".rindex("a").should == 8
     "blablabla".rindex("la").should == 7
@@ -240,6 +241,9 @@ describe "String#rindex with String" do
     "blablabla".rindex("", 8).should == 8
     "blablabla".rindex("", 9).should == 9
     "blablabla".rindex("", 10).should == 9
+    
+    "".rindex("", -1).should == nil
+    "aaa".rindex("", -1).should == 2
   end
   
   it "starts the search at offset + self.length if offset is negative" do
