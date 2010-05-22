@@ -100,7 +100,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         internal void FixupBranch(InstructionList instructions, int branchIndex) {
             Debug.Assert(_targetIndex != UnknownIndex);
-            instructions.FixupBranch(branchIndex, _targetIndex - branchIndex, _continuationStackDepth, _stackDepth);
+            instructions.FixupBranch(branchIndex, _targetIndex - branchIndex);
         }
     }
 

@@ -15,6 +15,7 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using Microsoft.Scripting.Ast;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -157,14 +158,6 @@ namespace Microsoft.Scripting.Interpreter {
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public sealed class LightCompiler {        
-        private static readonly MethodInfo _RunMethod = typeof(Interpreter).GetMethod("Run");
-        private static readonly MethodInfo _GetCurrentMethod = typeof(MethodBase).GetMethod("GetCurrentMethod");
-
-#if DEBUG
-        static LightCompiler() {
-            Debug.Assert(_GetCurrentMethod != null && _RunMethod != null);
-        }
-#endif
         // zero: sync compilation
         private readonly int _compilationThreshold;
 
@@ -174,9 +167,7 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly List<ExceptionHandler> _handlers = new List<ExceptionHandler>();
         
         private readonly List<DebugInfo> _debugInfos = new List<DebugInfo>();
-        private readonly List<UpdateStackTraceInstruction> _stackTraceUpdates = new List<UpdateStackTraceInstruction>();
-
-        private readonly Dictionary<LabelTarget, LabelInfo> _treeLabels = new Dictionary<LabelTarget, LabelInfo>();
+        private readonly HybridReferenceDictionary<LabelTarget, LabelInfo> _treeLabels = new HybridReferenceDictionary<LabelTarget, LabelInfo>();
         private LabelScopeInfo _labelBlock = new LabelScopeInfo(null, LabelScopeKind.Lambda);
 
         private readonly Stack<ParameterExpression> _exceptionForRethrowStack = new Stack<ParameterExpression>();
@@ -188,6 +179,8 @@ namespace Microsoft.Scripting.Interpreter {
         private bool _forceCompile;
 
         private readonly LightCompiler _parent;
+
+        private static LocalDefinition[] EmptyLocals = new LocalDefinition[0];
 
         internal LightCompiler(int compilationThreshold) {
             _instructions = new InstructionList();
@@ -226,22 +219,38 @@ namespace Microsoft.Scripting.Interpreter {
 
             Debug.Assert(_instructions.CurrentStackDepth == (node.ReturnType != typeof(void) ? 1 : 0));
 
-            return new LightDelegateCreator(MakeInterpreter(node), node);
+            return new LightDelegateCreator(MakeInterpreter(node.Name), node);
         }
 
-        private Interpreter MakeInterpreter(LambdaExpression lambda) {
+        internal LightDelegateCreator CompileTop(LightLambdaExpression node) {
+            foreach (var p in node.Parameters) {
+                var local = _locals.DefineLocal(p, 0);
+                _instructions.EmitInitializeParameter(local.Index);
+            }
+
+            Compile(node.Body);
+
+            // pop the result of the last expression:
+            if (node.Body.Type != typeof(void) && node.ReturnType == typeof(void)) {
+                _instructions.EmitPop();
+            }
+
+            Debug.Assert(_instructions.CurrentStackDepth == (node.ReturnType != typeof(void) ? 1 : 0));
+
+            return new LightDelegateCreator(MakeInterpreter(node.Name), node);
+        }
+
+        private Interpreter MakeInterpreter(string lambdaName) {
             if (_forceCompile) {
                 return null;
             }
 
             var handlers = _handlers.ToArray();
             var debugInfos = _debugInfos.ToArray();
-            foreach (var stackTraceUpdate in _stackTraceUpdates) {
-                stackTraceUpdate._debugInfos = debugInfos;
-            }
-         
-            return new Interpreter(lambda, _locals, GetBranchMapping(), _instructions.ToArray(), handlers, debugInfos, _compilationThreshold);
+
+            return new Interpreter(lambdaName, _locals, GetBranchMapping(), _instructions.ToArray(), handlers, debugInfos, _compilationThreshold);
         }
+
 
         private void CompileConstantExpression(Expression expr) {
             var node = (ConstantExpression)expr;
@@ -349,7 +358,7 @@ namespace Microsoft.Scripting.Interpreter {
             _instructions.SetDebugCookie(variable.Name);
         }
 
-        private void CompileParameterExpression(Expression expr) {
+        public void CompileParameterExpression(Expression expr) {
             var node = (ParameterExpression)expr;
             CompileGetVariable(node);
         }
@@ -359,28 +368,29 @@ namespace Microsoft.Scripting.Interpreter {
             var end = CompileBlockStart(node);
 
             var lastExpression = node.Expressions[node.Expressions.Count - 1];
-            if (asVoid) {
-                CompileAsVoid(lastExpression);
-            } else {
-                Compile(lastExpression, asVoid);
-            }
+            Compile(lastExpression, asVoid);
             CompileBlockEnd(end);
         }
 
         private LocalDefinition[] CompileBlockStart(BlockExpression node) {
             var start = _instructions.Count;
+            
+            LocalDefinition[] locals;
+            var variables = node.Variables;
+            if (variables.Count != 0) {
+                // TODO: basic flow analysis so we don't have to initialize all
+                // variables.
+                locals = new LocalDefinition[variables.Count];
+                int localCnt = 0;
+                foreach (var variable in variables) {
+                    var local = _locals.DefineLocal(variable, start);
+                    locals[localCnt++] = local;
 
-            // TODO: pop these off a stack when exiting
-            // TODO: basic flow analysis so we don't have to initialize all
-            // variables.
-            LocalDefinition[] locals = new LocalDefinition[node.Variables.Count];
-            int localCnt = 0;
-            foreach (var variable in node.Variables) {
-                var local = _locals.DefineLocal(variable, start);
-                locals[localCnt++] = local;
-
-                _instructions.EmitInitializeLocal(local.Index, variable.Type);
-                _instructions.SetDebugCookie(variable.Name);
+                    _instructions.EmitInitializeLocal(local.Index, variable.Type);
+                    _instructions.SetDebugCookie(variable.Name);
+                }
+            } else {
+                locals = EmptyLocals;
             }
 
             for (int i = 0; i < node.Expressions.Count - 1; i++) {
@@ -866,12 +876,16 @@ namespace Microsoft.Scripting.Interpreter {
             _instructions.EmitGoto(labelInfo.GetLabel(this), node.Type != typeof(void), node.Value != null && node.Value.Type != typeof(void));
         }
 
-        private void PushLabelBlock(LabelScopeKind type) {
+        public BranchLabel GetBranchLabel(LabelTarget target) {
+            return ReferenceLabel(target).GetLabel(this);
+        }
+
+        public void PushLabelBlock(LabelScopeKind type) {
             _labelBlock = new LabelScopeInfo(_labelBlock, type);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
-        private void PopLabelBlock(LabelScopeKind kind) {
+        public void PopLabelBlock(LabelScopeKind kind) {
             Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
             _labelBlock = _labelBlock.Parent;
         }
@@ -879,7 +893,7 @@ namespace Microsoft.Scripting.Interpreter {
         private LabelInfo EnsureLabel(LabelTarget node) {
             LabelInfo result;
             if (!_treeLabels.TryGetValue(node, out result)) {
-                _treeLabels.Add(node, result = new LabelInfo(node));
+                _treeLabels[node] = result = new LabelInfo(node);
             }
             return result;
         }
@@ -890,7 +904,7 @@ namespace Microsoft.Scripting.Interpreter {
             return result;
         }
 
-        private LabelInfo DefineLabel(LabelTarget node) {
+        internal LabelInfo DefineLabel(LabelTarget node) {
             if (node == null) {
                 return new LabelInfo(null);
             }
@@ -971,6 +985,7 @@ namespace Microsoft.Scripting.Interpreter {
             if (block == null) {
                 return;
             }
+
             for (int i = 0, n = block.Expressions.Count; i < n; i++) {
                 Expression e = block.Expressions[i];
 
@@ -981,8 +996,8 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        private Dictionary<LabelTarget, BranchLabel> GetBranchMapping() {
-            var newLabelMapping = new Dictionary<LabelTarget, BranchLabel>(_treeLabels.Count);
+        private HybridReferenceDictionary<LabelTarget, BranchLabel> GetBranchMapping() {
+            var newLabelMapping = new HybridReferenceDictionary<LabelTarget, BranchLabel>(_treeLabels.Count);
             foreach (var kvp in _treeLabels) {
                 newLabelMapping[kvp.Key] = kvp.Value.GetLabel(this);
             }
@@ -1174,15 +1189,6 @@ namespace Microsoft.Scripting.Interpreter {
         private void CompileMethodCallExpression(Expression expr) {
             var node = (MethodCallExpression)expr;
             
-            if (node.Method == _GetCurrentMethod && node.Object == null && node.Arguments.Count == 0) {
-                // If we call GetCurrentMethod, it will expose details of the
-                // interpreter's CallInstruction. Instead, we use
-                // Interpreter.Run, which logically represents the running
-                // method, and will appear in the stack trace of an exception.
-                _instructions.EmitLoad(_RunMethod);
-                return;
-            }
-
             var parameters = node.Method.GetParameters();
 
             // TODO:
@@ -1277,74 +1283,6 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        class ParameterVisitor : ExpressionVisitor {
-            private readonly LightCompiler _compiler;
-
-            /// <summary>
-            /// A stack of variables that are defined in nested scopes. We search
-            /// this first when resolving a variable in case a nested scope shadows
-            /// one of our variable instances.
-            /// </summary>
-            private readonly Stack<HashSet<ParameterExpression>> _shadowedVars = new Stack<HashSet<ParameterExpression>>();
-
-            public ParameterVisitor(LightCompiler compiler) {
-                _compiler = compiler;
-            }
-
-            protected override Expression VisitLambda<T>(Expression<T> node) {
-                _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
-                try {
-                    Visit(node.Body);
-                    return node;
-                } finally {
-                    _shadowedVars.Pop();
-                }
-            }
-
-            protected override Expression VisitBlock(BlockExpression node) {
-                if (node.Variables.Count > 0) {
-                    _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
-                }
-                try {
-                    Visit(node.Expressions);
-                    return node;
-                } finally {
-                    if (node.Variables.Count > 0) {
-                        _shadowedVars.Pop();
-                    }
-                }
-            }
-
-            protected override CatchBlock VisitCatchBlock(CatchBlock node) {
-                if (node.Variable != null) {
-                    _shadowedVars.Push(new HashSet<ParameterExpression>(new[] { node.Variable }));
-                }
-                try {
-                    Visit(node.Filter);
-                    Visit(node.Body);
-                    return node;
-                } finally {
-                    if (node.Variable != null) {
-                        _shadowedVars.Pop();
-                    }
-                }
-            }
-
-            protected override Expression VisitParameter(ParameterExpression node) {
-                // Skip variables that are shadowed by a nested scope/lambda
-                foreach (HashSet<ParameterExpression> hidden in _shadowedVars) {
-                    if (hidden.Contains(node)) {
-                        return node;
-                    }
-                }
-
-                // If we didn't find it, it must exist at a higher level scope
-                _compiler.EnsureVariable(node);
-                return node;
-            }
-
-        }
-
         private void CompileExtensionExpression(Expression expr) {
             var instructionProvider = expr as IInstructionProvider;
             if (instructionProvider != null) {
@@ -1352,23 +1290,9 @@ namespace Microsoft.Scripting.Interpreter {
                 return;
             }
 
-            var skip = expr as Ast.SkipInterpretExpression;
-            if (skip != null) {
-                new ParameterVisitor(this).Visit(skip);
-                return;
-            }
-
             var node = expr as Microsoft.Scripting.Ast.SymbolConstantExpression;
             if (node != null) {
                 _instructions.EmitLoad(node.Value);
-                return;
-            }
-
-            var updateStack = expr as LastFaultingLineExpression;
-            if (updateStack != null) {
-                var updateStackInstr = new UpdateStackTraceInstruction();
-                _instructions.Emit(updateStackInstr);
-                _stackTraceUpdates.Add(updateStackInstr);
                 return;
             }
 
@@ -1526,6 +1450,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         internal void CompileAsVoid(Expression expr) {
+            bool pushLabelBlock = TryPushLabelBlock(expr);
             int startingStackDepth = _instructions.CurrentStackDepth;
             switch (expr.NodeType) {
                 case ExpressionType.Assign:
@@ -1547,18 +1472,20 @@ namespace Microsoft.Scripting.Interpreter {
                     break;
 
                 default:
-                    Compile(expr);
+                    CompileNoLabelPush(expr);
                     if (expr.Type != typeof(void)) {
                         _instructions.EmitPop();
                     }
                     break;
             }
             Debug.Assert(_instructions.CurrentStackDepth == startingStackDepth);
+            if (pushLabelBlock) {
+                PopLabelBlock(_labelBlock.Kind);
+            }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        public void Compile(Expression expr) {
-            bool pushLabelBlock = TryPushLabelBlock(expr);
+        private void CompileNoLabelPush(Expression expr) {
             int startingStackDepth = _instructions.CurrentStackDepth;
             switch (expr.NodeType) {
                 case ExpressionType.Add: CompileBinaryExpression(expr); break;
@@ -1649,11 +1576,16 @@ namespace Microsoft.Scripting.Interpreter {
                     CompileReducibleExpression(expr); break;
                 default: throw Assert.Unreachable;
             };
+            Debug.Assert(_instructions.CurrentStackDepth == startingStackDepth + (expr.Type == typeof(void) ? 0 : 1));
+        }
 
+        public void Compile(Expression expr) {
+            bool pushLabelBlock = TryPushLabelBlock(expr);
+            CompileNoLabelPush(expr);
             if (pushLabelBlock) {
                 PopLabelBlock(_labelBlock.Kind);
             }
-            Debug.Assert(_instructions.CurrentStackDepth == startingStackDepth + (expr.Type == typeof(void) ? 0 : 1));
         }
+
     }
 }

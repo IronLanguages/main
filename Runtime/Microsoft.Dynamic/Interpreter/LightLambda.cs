@@ -21,13 +21,15 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Security;
+using System.Threading;
 
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Threading;
 
 namespace Microsoft.Scripting.Interpreter {
 
@@ -61,21 +63,21 @@ namespace Microsoft.Scripting.Interpreter {
             _compilationThreshold = compilationThreshold;
         }
 
-        private static MethodInfo GetRunMethodOrFastCtor(Type delegateType, out Func<LightLambda, Delegate> fastCtor) {
+        private static Func<LightLambda, Delegate> GetRunDelegateCtor(Type delegateType) {
             lock (_runCache) {
+                Func<LightLambda, Delegate> fastCtor;
                 if (_runCache.TryGetValue(delegateType, out fastCtor)) {
-                    return null;
+                    return fastCtor;
                 }
-                return MakeRunMethodOrFastCtor(delegateType, out fastCtor);
+                return MakeRunDelegateCtor(delegateType);
             }
         }
 
-        private static MethodInfo MakeRunMethodOrFastCtor(Type delegateType, out Func<LightLambda, Delegate> fastCtor) {
+        private static Func<LightLambda, Delegate> MakeRunDelegateCtor(Type delegateType) {
             var method = delegateType.GetMethod("Invoke");
             var paramInfos = method.GetParameters();
             Type[] paramTypes;
             string name = "Run";
-            fastCtor = null;
 
             if (paramInfos.Length >= MaxParameters) {
                 return null;
@@ -97,7 +99,7 @@ namespace Microsoft.Scripting.Interpreter {
                 paramTypes[0] = paramInfos[0].ParameterType.GetElementType();
                 paramTypes[1] = paramInfos[1].ParameterType.GetElementType();
             } else if (method.ReturnType == typeof(void) && paramTypes.Length == 0) {
-                return typeof(LightLambda).GetMethod("RunVoid0", BindingFlags.NonPublic | BindingFlags.Instance);
+                runMethod = typeof(LightLambda).GetMethod("RunVoid0", BindingFlags.NonPublic | BindingFlags.Instance);
             } else {
                 for (int i = 0; i < paramInfos.Length; i++) {
                     paramTypes[i] = paramInfos[i].ParameterType;
@@ -110,16 +112,30 @@ namespace Microsoft.Scripting.Interpreter {
                     name = "Make" + name + paramInfos.Length;
                     
                     MethodInfo ctorMethod = typeof(LightLambda).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static).MakeGenericMethod(paramTypes);
-                    _runCache[delegateType] = fastCtor = (Func<LightLambda, Delegate>)Delegate.CreateDelegate(typeof(Func<LightLambda, Delegate>), ctorMethod);
-                    return null;
+                    return _runCache[delegateType] = (Func<LightLambda, Delegate>)Delegate.CreateDelegate(typeof(Func<LightLambda, Delegate>), ctorMethod);
                 }
 
                 runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length, BindingFlags.NonPublic | BindingFlags.Instance);
             }
 
-            return runMethod.MakeGenericMethod(paramTypes);
-        }
+#if !SILVERLIGHT
+            try {
+                DynamicMethod dm = new DynamicMethod("FastCtor", typeof(Delegate), new[] { typeof(LightLambda) }, typeof(LightLambda), true);
+                var ilgen = dm.GetILGenerator();
+                ilgen.Emit(OpCodes.Ldarg_0);
+                ilgen.Emit(OpCodes.Ldftn, runMethod.IsGenericMethodDefinition ? runMethod.MakeGenericMethod(paramTypes) : runMethod);
+                ilgen.Emit(OpCodes.Newobj, delegateType.GetConstructor(new[] { typeof(object), typeof(IntPtr) }));
+                ilgen.Emit(OpCodes.Ret);
+                return _runCache[delegateType] = (Func<LightLambda, Delegate>)dm.CreateDelegate(typeof(Func<LightLambda, Delegate>));
+            } catch (SecurityException) {
+            }
+#endif
 
+            // we don't have permission for restricted skip visibility dynamic methods, use the slower Delegate.CreateDelegate.
+            var targetMethod = runMethod.IsGenericMethodDefinition ? runMethod.MakeGenericMethod(paramTypes) : runMethod;
+            return _runCache[delegateType] = lambda => Delegate.CreateDelegate(delegateType, lambda, targetMethod);
+        }
+    
         //TODO enable sharing of these custom delegates
         private Delegate CreateCustomDelegate(Type delegateType) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Synchronously compiling a custom delegate");
@@ -143,14 +159,12 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         internal Delegate MakeDelegate(Type delegateType) {            
-            Func<LightLambda, Delegate> fastCtor;
-            var method = GetRunMethodOrFastCtor(delegateType, out fastCtor);
+            Func<LightLambda, Delegate> fastCtor = GetRunDelegateCtor(delegateType);
             if (fastCtor != null) {
                 return fastCtor(this);
-            } else if (method == null) {
+            } else {
                 return CreateCustomDelegate(delegateType);
             }
-            return Delegate.CreateDelegate(delegateType, this, method);
         }
 
         private bool TryGetCompiled() {

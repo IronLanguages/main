@@ -108,8 +108,7 @@ namespace Microsoft.Scripting.Interpreter {
                     // found it, jump is valid!
                     return;
                 }
-                if (j.Kind == LabelScopeKind.Finally ||
-                    j.Kind == LabelScopeKind.Filter) {
+                if (j.Kind == LabelScopeKind.Filter) {
                     break;
                 }
             }
@@ -135,7 +134,6 @@ namespace Microsoft.Scripting.Interpreter {
             for (LabelScopeInfo j = def; j != common; j = j.Parent) {
                 if (!j.CanJumpInto) {
                     if (j.Kind == LabelScopeKind.Expression) {
-                        Debug.Assert(false);
                         throw new InvalidOperationException("Control cannot enter an expression");
                     } else {
                         throw new InvalidOperationException("Control cannot enter try");
@@ -219,7 +217,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    internal enum LabelScopeKind {
+    public enum LabelScopeKind {
         // any "statement like" node that can be jumped into
         Statement,
 
@@ -252,7 +250,7 @@ namespace Microsoft.Scripting.Interpreter {
     // "Kind" property indicates what kind of scope this is.
     //
     internal sealed class LabelScopeInfo {
-        private Dictionary<LabelTarget, LabelInfo> Labels; // lazily allocated, we typically use this only once every 6th-7th block
+        private HybridReferenceDictionary<LabelTarget, LabelInfo> Labels; // lazily allocated, we typically use this only once every 6th-7th block
         internal readonly LabelScopeKind Kind;
         internal readonly LabelScopeInfo Parent;
 
@@ -299,10 +297,10 @@ namespace Microsoft.Scripting.Interpreter {
             Debug.Assert(CanJumpInto);
 
             if (Labels == null) {
-                Labels = new Dictionary<LabelTarget, LabelInfo>();
+                Labels = new HybridReferenceDictionary<LabelTarget, LabelInfo>();
             }
 
-            Labels.Add(target, info);
+            Labels[target] = info;
         }
     }
 }

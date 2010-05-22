@@ -33,6 +33,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
     using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
+    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Wraps the arguments of a dynamic call site
@@ -178,7 +179,7 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-        internal AstExpressions/*!*/ GetCallSiteArguments(Expression/*!*/ targetExpression) {
+        internal ReadOnlyCollection<Expression>/*!*/ GetCallSiteArguments(Expression/*!*/ targetExpression) {
             // context, target, arguments:
             var result = new AstExpressions(CallSiteArgumentCount);
 
@@ -191,7 +192,7 @@ namespace IronRuby.Runtime.Calls {
                 result.Add(_args[j].Expression);
             }
 
-            return result;
+            return result.ToReadOnlyCollection();
         }
 
         private int GetSimpleArgumentIndex(int i) {

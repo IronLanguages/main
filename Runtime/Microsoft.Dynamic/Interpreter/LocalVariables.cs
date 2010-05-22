@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
     public sealed class LocalVariable {
@@ -66,18 +67,54 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    struct LocalDefinition {
-        public int Index;
-        public ParameterExpression Parameter;
+    public struct LocalDefinition {
+        private readonly int _index;
+        private readonly ParameterExpression _parameter;
 
-        public LocalDefinition(int localIndex, ParameterExpression parameter) {
-            Index = localIndex;
-            Parameter = parameter;
+        internal LocalDefinition(int localIndex, ParameterExpression parameter) {
+            _index = localIndex;
+            _parameter = parameter;
+        }
+
+        public int Index {
+            get {
+                return _index;
+            }
+        }
+
+        public ParameterExpression Parameter {
+            get {
+                return _parameter;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (obj is LocalDefinition) {
+                LocalDefinition other = (LocalDefinition)obj;
+                return other.Index == Index && other.Parameter == Parameter;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() {
+            if (_parameter == null) {
+                return 0;
+            }
+            return _parameter.GetHashCode() ^ _index.GetHashCode();
+        }
+
+        public static bool operator ==(LocalDefinition self, LocalDefinition other) {
+            return self.Index == other.Index && self.Parameter == other.Parameter;
+        }
+
+        public static bool operator !=(LocalDefinition self, LocalDefinition other) {
+            return self.Index != other.Index || self.Parameter != other.Parameter;
         }
     }
-        
+
     public sealed class LocalVariables {
-        private readonly Dictionary<ParameterExpression, VariableScope> _variables = new Dictionary<ParameterExpression, VariableScope>();
+        private readonly HybridReferenceDictionary<ParameterExpression, VariableScope> _variables = new HybridReferenceDictionary<ParameterExpression, VariableScope>();
         private Dictionary<ParameterExpression, LocalVariable> _closureVariables;
 
         private int _localCount, _maxLocalCount;
@@ -85,7 +122,10 @@ namespace Microsoft.Scripting.Interpreter {
         internal LocalVariables() {
         }
 
-        internal LocalDefinition DefineLocal(ParameterExpression variable, int start) {
+        public LocalDefinition DefineLocal(ParameterExpression variable, int start) {
+            ContractUtils.RequiresNotNull(variable, "variable");
+            ContractUtils.Requires(start >= 0, "start", "start must be positive");
+
             LocalVariable result = new LocalVariable(_localCount++, false, false);
             _maxLocalCount = System.Math.Max(_localCount, _maxLocalCount);
 
@@ -104,7 +144,7 @@ namespace Microsoft.Scripting.Interpreter {
             return new LocalDefinition(result.Index, variable);
         }
 
-        internal void UndefineLocal(LocalDefinition definition, int end) {
+        public void UndefineLocal(LocalDefinition definition, int end) {
             var scope = _variables[definition.Parameter];
             scope.Stop = end;
             if (scope.Parent != null) {
@@ -140,6 +180,14 @@ namespace Microsoft.Scripting.Interpreter {
 
         public int LocalCount {
             get { return _maxLocalCount; }
+        }
+
+        public int GetOrDefineLocal(ParameterExpression var) {
+            int index = GetLocalIndex(var);
+            if (index == -1) {
+                return DefineLocal(var, 0).Index;
+            }
+            return index;
         }
 
         public int GetLocalIndex(ParameterExpression var) {

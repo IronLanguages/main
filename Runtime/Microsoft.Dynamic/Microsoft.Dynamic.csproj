@@ -186,8 +186,16 @@
     <Compile Include="Ast\ExpressionCollectionBuilder.cs" />
     <Compile Include="Ast\FinallyFlowControlExpression.cs" />
     <Compile Include="Ast\FlowControlRewriter.cs" />
+    <Compile Include="Ast\ILightExceptionAwareExpression.cs" />
+    <Compile Include="Actions\ILightExceptionBinder.cs" />
+    <Compile Include="Ast\LightCheckAndThrowExpression.cs" />
+    <Compile Include="Ast\LightExceptionConvertingExpression.cs" />
+    <Compile Include="Ast\LightLambdaExpression.cs" />
+    <Compile Include="Ast\LightThrowExpression.cs" />
+    <Compile Include="Runtime\LightThrowingAttribute.cs" />
+    <Compile Include="Ast\LightExceptionRewriter.cs" />
+    <Compile Include="Runtime\LightExceptions.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />
-    <Compile Include="Ast\SkipInterpretExpression.cs" />
     <Compile Include="Ast\LightDynamicExpression.cs" />
     <Compile Include="Ast\Utils.cs" />
     <Compile Include="Ast\VariableDictionaryExpression.cs" />
@@ -293,7 +301,6 @@
     <Compile Include="Interpreter\LoopCompiler.cs" />
     <Compile Include="Interpreter\RuntimeVariables.cs" />
     <Compile Include="Interpreter\InterpretedFrame.cs" />
-    <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
     <Compile Include="Math\BigIntegerV2.cs" />
     <Compile Include="Math\BigIntegerV4.cs" />
     <Compile Include="Runtime\ArgumentArray.cs" />
@@ -382,6 +389,7 @@
     <Compile Include="Utils\CopyOnWriteList.cs" />
     <Compile Include="Utils\DynamicUtils.cs" />
     <Compile Include="Utils\EnumUtils.cs" />
+    <Compile Include="Utils\HybridReferenceDictionary.cs" />
     <Compile Include="Utils\ListEqualityComparer.cs" />
     <Compile Include="Utils\MathUtils.cs" />
     <Compile Include="Utils\MonitorUtils.cs" />

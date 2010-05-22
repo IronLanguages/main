@@ -16,14 +16,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Permissions;
 using System.Text;
 using System.Threading;
-using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
+using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Interpreter;
 
@@ -48,7 +48,6 @@ namespace IronRuby.Runtime {
         
         internal RubyStackTraceBuilder(RubyContext/*!*/ context, Exception/*!*/ exception, StackTrace catchSiteTrace, bool isCatchSiteInterpreted) 
             : this(context) {
-
             // Compiled trace: contains frames starting with the throw site up to the first filter/catch that the exception was caught by:
             StackTrace throwSiteTrace = GetClrStackTrace(exception);
             _interpretedFrames = InterpretedFrame.GetExceptionStackTrace(exception);
@@ -108,7 +107,7 @@ namespace IronRuby.Runtime {
                     string methodName, file;
                     int line;
 
-                    if (_interpretedFrames != null && _interpretedFrameIndex < _interpretedFrames.Count 
+                    if (_interpretedFrames != null && _interpretedFrameIndex < _interpretedFrames.Count
                         && InterpretedFrame.IsInterpretedFrame(frame.GetMethod())) {
 
                         if (skipInterpreterRunMethod) {
@@ -127,7 +126,11 @@ namespace IronRuby.Runtime {
                         }
                         methodName = info.MethodName;
 
-                        if (!TryParseRubyMethodName(ref methodName, ref file, ref line)) {
+                        // TODO: We need some more general way to recognize and parse non-Ruby interpreted frames
+                        TryParseRubyMethodName(ref methodName, ref file, ref line);
+
+                        if (methodName == InterpretedDispatcher.InterpretedCallSiteName) {
+                            // ignore ruby interpreted call sites
                             continue;
                         }
                     } else if (TryGetStackFrameInfo(frame, out methodName, out file, out line)) {

@@ -20,13 +20,14 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using System.Reflection;
-using Microsoft.Scripting.Interpreter;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
+using Microsoft.Scripting.Interpreter;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Actions;
 
 namespace Microsoft.Scripting.Ast {
     public abstract class LightDynamicExpression : Expression, IInstructionProvider {
@@ -55,7 +56,7 @@ namespace Microsoft.Scripting.Ast {
 
         #region IInstructionProvider Members
 
-        public void AddInstructions(LightCompiler compiler) {
+        public virtual void AddInstructions(LightCompiler compiler) {
             Instruction instr = DynamicInstructionN.CreateUntypedInstruction(_binder, ArgumentCount);
             if (instr == null) {
                 var lightBinder = _binder as ILightCallSiteBinder;
@@ -80,12 +81,20 @@ namespace Microsoft.Scripting.Ast {
         public abstract override Expression Reduce();
         protected abstract int ArgumentCount { get; }
         protected abstract Expression GetArgument(int index);
+
+        protected CallSiteBinder GetLightBinder() {
+            ILightExceptionBinder binder = _binder as ILightExceptionBinder;
+            if (binder != null) {
+                return binder.GetLightExceptionBinder();
+            }
+            return _binder;
+        }
     }
 
     #region Specialized Subclasses
 
-    public class LightDynamicExpression1 : LightDynamicExpression {
-        private readonly Expression _arg0;
+    public class LightDynamicExpression1 : LightDynamicExpression, ILightExceptionAwareExpression {
+        internal readonly Expression _arg0;
 
         internal protected LightDynamicExpression1(CallSiteBinder binder, Expression arg0) 
             : base(binder) {
@@ -111,9 +120,36 @@ namespace Microsoft.Scripting.Ast {
                 default: throw Assert.Unreachable;
             }
         }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            var arg0 = visitor.Visit(_arg0);
+            if (arg0 == _arg0) {
+                return this;
+            }
+            return Rewrite(Binder, arg0);
+        }
+
+        protected virtual Expression Rewrite(CallSiteBinder binder, Expression arg0) {
+            return new LightDynamicExpression1(binder, arg0);
+        }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _arg0
+                );
+            }
+            return this;
+        }
+
+        #endregion
     }
 
-    public class LightTypedDynamicExpression1 : LightDynamicExpression1 {
+    public class LightTypedDynamicExpression1 : LightDynamicExpression1, ILightExceptionAwareExpression {
         private readonly Type _returnType;
 
         internal protected LightTypedDynamicExpression1(CallSiteBinder binder, Type returnType, Expression arg0)
@@ -125,10 +161,30 @@ namespace Microsoft.Scripting.Ast {
         public sealed override Type Type {
             get { return _returnType; }
         }
+
+        protected override Expression Rewrite(CallSiteBinder binder, Expression arg0) {
+            return new LightTypedDynamicExpression1(binder, _returnType, arg0);
+        }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _arg0
+                );
+            }
+            return this;
+        }
+
+        #endregion
+
     }
 
-    public class LightDynamicExpression2 : LightDynamicExpression {
-        private readonly Expression _arg0, _arg1;
+    public class LightDynamicExpression2 : LightDynamicExpression, ILightExceptionAwareExpression {
+        internal readonly Expression _arg0, _arg1;
 
         internal protected LightDynamicExpression2(CallSiteBinder binder, Expression arg0, Expression arg1)
             : base(binder) {
@@ -161,9 +217,38 @@ namespace Microsoft.Scripting.Ast {
                 default: throw Assert.Unreachable;
             }
         }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            var arg0 = visitor.Visit(_arg0);
+            var arg1 = visitor.Visit(_arg1);
+            if (arg0 == _arg0 && _arg1 == arg1) {
+                return this;
+            }
+            return Rewrite(Binder, arg0, arg1);
+        }
+
+        protected virtual Expression Rewrite(CallSiteBinder binder, Expression arg0, Expression arg1) {
+            return new LightDynamicExpression2(binder, arg0, arg1);
+        }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _arg0,
+                    _arg1
+                );
+            }
+            return this;
+        }
+
+        #endregion
     }
 
-    public class LightTypedDynamicExpression2 : LightDynamicExpression2 {
+    public class LightTypedDynamicExpression2 : LightDynamicExpression2, ILightExceptionAwareExpression {
         private readonly Type _returnType;
 
         internal protected LightTypedDynamicExpression2(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1)
@@ -175,10 +260,30 @@ namespace Microsoft.Scripting.Ast {
         public sealed override Type Type {
             get { return _returnType; }
         }
+
+        protected override Expression Rewrite(CallSiteBinder binder, Expression arg0, Expression arg1) {
+            return new LightTypedDynamicExpression2(binder, _returnType, arg0, arg1);
+        }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _arg0,
+                    _arg1
+                );
+            }
+            return this;
+        }
+
+        #endregion
     }
 
-    public class LightDynamicExpression3 : LightDynamicExpression {
-        private readonly Expression _arg0, _arg1, _arg2;
+    public class LightDynamicExpression3 : LightDynamicExpression, ILightExceptionAwareExpression {
+        internal readonly Expression _arg0, _arg1, _arg2;
 
         internal protected LightDynamicExpression3(CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2)
             : base(binder) {
@@ -218,9 +323,40 @@ namespace Microsoft.Scripting.Ast {
                 default: throw Assert.Unreachable;
             }
         }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            var arg0 = visitor.Visit(_arg0);
+            var arg1 = visitor.Visit(_arg1);
+            var arg2 = visitor.Visit(_arg2);
+            if (arg0 == _arg0 && _arg1 == arg1 && _arg2 == arg2) {
+                return this;
+            }
+            return Rewrite(Binder, arg0, arg1, arg2);
+        }
+
+        protected virtual Expression Rewrite(CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2) {
+            return new LightDynamicExpression3(binder, arg0, arg1, arg2);
+        }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _arg0,
+                    _arg1,
+                    _arg2
+                );
+            }
+            return this;
+        }
+
+        #endregion
     }
 
-    internal class LightTypedDynamicExpression3 : LightDynamicExpression3 {
+    internal class LightTypedDynamicExpression3 : LightDynamicExpression3, ILightExceptionAwareExpression {
         private readonly Type _returnType;
 
         internal protected LightTypedDynamicExpression3(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2)
@@ -232,10 +368,31 @@ namespace Microsoft.Scripting.Ast {
         public sealed override Type Type {
             get { return _returnType; }
         }
+
+        protected override Expression Rewrite(CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2) {
+            return new LightTypedDynamicExpression3(binder, _returnType, arg0, arg1, arg2);
+        }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _arg0,
+                    _arg1,
+                    _arg2
+                );
+            }
+            return this;
+        }
+
+        #endregion
     }
 
-    public class LightDynamicExpression4 : LightDynamicExpression {
-        private readonly Expression _arg0, _arg1, _arg2, _arg3;
+    public class LightDynamicExpression4 : LightDynamicExpression, ILightExceptionAwareExpression {
+        internal readonly Expression _arg0, _arg1, _arg2, _arg3;
 
         internal protected LightDynamicExpression4(CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
             : base(binder) {
@@ -282,9 +439,42 @@ namespace Microsoft.Scripting.Ast {
                 default: throw Assert.Unreachable;
             }
         }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            var arg0 = visitor.Visit(_arg0);
+            var arg1 = visitor.Visit(_arg1);
+            var arg2 = visitor.Visit(_arg2);
+            var arg3 = visitor.Visit(_arg3);
+            if (arg0 == _arg0 && _arg1 == arg1 && _arg2 == arg2 && _arg3 == arg3) {
+                return this;
+            }
+            return Rewrite(Binder, arg0, arg1, arg2, arg3);
+        }
+
+        protected virtual Expression Rewrite(CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3) {
+            return new LightDynamicExpression4(binder, arg0, arg1, arg2, arg3);
+        }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _arg0,
+                    _arg1,
+                    _arg2,
+                    _arg3
+                );
+            }
+            return this;
+        }
+
+        #endregion
     }
 
-    public class LightTypedDynamicExpression4 : LightDynamicExpression4 {
+    public class LightTypedDynamicExpression4 : LightDynamicExpression4, ILightExceptionAwareExpression {
         private readonly Type _returnType;
 
         internal LightTypedDynamicExpression4(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
@@ -293,25 +483,50 @@ namespace Microsoft.Scripting.Ast {
             _returnType = returnType;
         }
 
+        protected override Expression Rewrite(CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3) {
+            return new LightTypedDynamicExpression4(binder, _returnType, arg0, arg1, arg2, arg3);
+        }
+
         public sealed override Type Type {
             get { return _returnType; }
         }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _arg0,
+                    _arg1,
+                    _arg2,
+                    _arg3
+                );
+            }
+            return this;
+        }
+
+        #endregion
     }
 
-    public class LightTypedDynamicExpressionN : LightDynamicExpression {
+    public class LightTypedDynamicExpressionN : LightDynamicExpression, ILightExceptionAwareExpression {
         private readonly IList<Expression> _args;
         private readonly Type _returnType;
 
         internal protected LightTypedDynamicExpressionN(CallSiteBinder binder, Type returnType, IList<Expression> args) 
             : base(binder) {
+                Debug.Assert(args.Count > 0);
             ContractUtils.RequiresNotNull(returnType, "returnType");
             ContractUtils.RequiresNotEmpty(args, "args");
+            
             _args = args;
             _returnType = returnType;
         }
 
         public override Expression Reduce() {
-            return Expression.Dynamic(Binder, Type, _args);
+            Debug.Assert(_args.Count > 0);
+            return Expression.Dynamic(Binder, Type, _args.ToReadOnly());
         }
 
         protected sealed override int ArgumentCount {
@@ -326,9 +541,50 @@ namespace Microsoft.Scripting.Ast {
             get { return _args; }
         }
 
+        protected virtual Expression Rewrite(CallSiteBinder binder, IList<Expression> args) {
+            return new LightTypedDynamicExpressionN(binder, _returnType, args);
+        }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            Expression[] newArgs = null;
+            for (int i = 0; i < _args.Count; i++) {
+                var newNode = visitor.Visit(_args[i]);
+                if (newNode != _args[i]) {
+                    if (newArgs == null) {
+                        newArgs = new Expression[_args.Count];
+                        for (int j = 0; j < i; j++) {
+                            newArgs[j] = _args[j];
+                        }
+                    }
+                    newArgs[i] = newNode;
+                } else if (newArgs != null) {
+                    newArgs[i] = newNode;
+                }
+            }
+            if (newArgs != null) {
+                return Rewrite(Binder, newArgs);
+            }
+            return this;
+        }
+        
         protected sealed override Expression GetArgument(int index) {
             return _args[index];
         }
+
+        #region ILightExceptionAwareExpression Members
+
+        Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
+            CallSiteBinder lightBinder = GetLightBinder();
+            if (lightBinder != Binder) {
+                return Rewrite(
+                    lightBinder,
+                    _args
+                );
+            }
+            return this;
+        }
+
+        #endregion
     }
 
     #endregion
@@ -374,13 +630,13 @@ namespace Microsoft.Scripting.Ast {
                 (LightDynamicExpression)new LightTypedDynamicExpression4(binder, returnType, arg0, arg1, arg2, arg3);
         }
 
-        public static LightDynamicExpression LightDynamic(CallSiteBinder binder, ReadOnlyCollectionBuilder<Expression> arguments) {
+        public static LightDynamicExpression LightDynamic(CallSiteBinder binder, IList<Expression> arguments) {
             return LightDynamic(binder, typeof(object), arguments);
         }
 
-        public static LightDynamicExpression LightDynamic(CallSiteBinder binder, Type returnType, ReadOnlyCollectionBuilder<Expression> arguments) {
+        public static LightDynamicExpression LightDynamic(CallSiteBinder binder, Type returnType, IList<Expression> arguments) {
             ContractUtils.RequiresNotNull(arguments, "arguments");
-            return new LightTypedDynamicExpressionN(binder, returnType, arguments.ToReadOnlyCollection());
+            return new LightTypedDynamicExpressionN(binder, returnType, arguments);
         }
 
         public static LightDynamicExpression LightDynamic(CallSiteBinder binder, ExpressionCollectionBuilder<Expression> arguments) {

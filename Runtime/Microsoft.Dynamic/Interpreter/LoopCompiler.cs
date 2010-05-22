@@ -57,13 +57,13 @@ namespace Microsoft.Scripting.Interpreter {
         // tracks variables that flow in and flow out for initialization and 
         private readonly Dictionary<ParameterExpression, LoopVariable> _loopVariables;
         // variables which are defined and used within the loop
-        private HashSet<ParameterExpression> _loopLocals;  
+        private HashSet<ParameterExpression> _loopLocals;
 
-        private readonly Dictionary<LabelTarget, BranchLabel> _labelMapping;
+        private readonly HybridReferenceDictionary<LabelTarget, BranchLabel> _labelMapping;
         private readonly int _loopStartInstructionIndex;
         private readonly int _loopEndInstructionIndex;
 
-        internal LoopCompiler(LoopExpression loop, Dictionary<LabelTarget, BranchLabel> labelMapping, Dictionary<ParameterExpression, LocalVariable> locals,
+        internal LoopCompiler(LoopExpression loop, HybridReferenceDictionary<LabelTarget, BranchLabel> labelMapping, Dictionary<ParameterExpression, LocalVariable> locals,
             Dictionary<ParameterExpression, LocalVariable> closureVariables, int loopStartInstructionIndex, int loopEndInstructionIndex) {
             _loop = loop;
             _outerVariables = locals;

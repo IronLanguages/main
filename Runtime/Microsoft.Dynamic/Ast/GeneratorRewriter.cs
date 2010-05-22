@@ -200,14 +200,82 @@ namespace Microsoft.Scripting.Ast {
                     return MakeAssignBlock(variable, value);
                 case ExpressionType.Conditional:
                     return MakeAssignConditional(variable, value);
+                case ExpressionType.Label:
+                    return MakeAssignLabel(variable, (LabelExpression)value);
             }
             return Expression.Assign(variable, value);
+        }
+
+        struct GotoRewriteInfo {
+            public readonly ParameterExpression Variable;
+            public readonly LabelTarget VoidTarget;
+
+            public GotoRewriteInfo(ParameterExpression variable, LabelTarget voidTarget) {
+                Variable = variable;
+                VoidTarget = voidTarget;
+            }
+        }
+
+        private Expression MakeAssignLabel(ParameterExpression variable, LabelExpression value) {
+            GotoRewriteInfo curVariable = new GotoRewriteInfo(variable, Expression.Label(value.Target.Name + "_voided"));
+
+            var defaultValue = new GotoRewriter(this, curVariable, value.Target).Visit(value.DefaultValue);
+
+            return MakeAssignLabel(variable, curVariable, defaultValue);
+        }
+
+        private Expression MakeAssignLabel(ParameterExpression variable, GotoRewriteInfo curVariable, Expression defaultValue) {
+            return Expression.Label(
+                curVariable.VoidTarget,
+                MakeAssign(variable, defaultValue)
+            );
+        }
+
+        class GotoRewriter : ExpressionVisitor {
+            private readonly GotoRewriteInfo _gotoInfo;
+            private readonly LabelTarget _target;
+            private readonly GeneratorRewriter _rewriter;
+
+            public GotoRewriter(GeneratorRewriter rewriter, GotoRewriteInfo gotoInfo, LabelTarget target) {
+                _gotoInfo = gotoInfo;
+                _target = target;
+                _rewriter = rewriter;
+            }
+
+            protected override Expression VisitGoto(GotoExpression node) {
+                if (node.Target == _target) {
+                    return Expression.Goto(
+                        _gotoInfo.VoidTarget,
+                        Expression.Block(
+                            _rewriter.MakeAssign(_gotoInfo.Variable, node.Value),
+                            Expression.Default(typeof(void))
+                        ),
+                        node.Type
+                    );
+                }
+                return base.VisitGoto(node);
+            }
         }
 
         private Expression MakeAssignBlock(ParameterExpression variable, Expression value) {
             var node = (BlockExpression)value;
             var newBlock = new ReadOnlyCollectionBuilder<Expression>(node.Expressions);
-            newBlock[newBlock.Count - 1] = MakeAssign(variable, newBlock[newBlock.Count - 1]);
+
+            Expression blockRhs = newBlock[newBlock.Count - 1];
+            if (blockRhs.NodeType == ExpressionType.Label) {
+                var label = (LabelExpression)blockRhs;
+                GotoRewriteInfo curVariable = new GotoRewriteInfo(variable, Expression.Label(label.Target.Name + "_voided"));
+
+                var rewriter = new GotoRewriter(this, curVariable, label.Target);
+                for (int i = 0; i < newBlock.Count - 1; i++) {
+                    newBlock[i] = rewriter.Visit(newBlock[i]);
+                }
+
+                newBlock[newBlock.Count - 1] = MakeAssignLabel(variable, curVariable, rewriter.Visit(label.DefaultValue));
+            } else {
+                newBlock[newBlock.Count - 1] = MakeAssign(variable, newBlock[newBlock.Count - 1]);
+            }
+            
             return Expression.Block(node.Variables, newBlock);
         }
 
@@ -263,14 +331,14 @@ namespace Microsoft.Scripting.Ast {
             // dispatches to the yield labels
             var tryStart = Expression.Label();
             if (tryYields != startYields) {
-                @try = Expression.Block(MakeYieldRouter(startYields, tryYields, tryStart), @try);
+                @try = Expression.Block(MakeYieldRouter(node.Body.Type, startYields, tryYields, tryStart), @try);
             }
 
             // Transform catches with yield to deferred handlers
             if (catchYields != tryYields) {
                 var block = new List<Expression>();
 
-                block.Add(MakeYieldRouter(tryYields, catchYields, tryStart));
+                block.Add(MakeYieldRouter(node.Body.Type, tryYields, catchYields, tryStart));
                 block.Add(null); // empty slot to fill in later
 
                 for (int i = 0, n = handlers.Count; i < n; i++) {
@@ -306,7 +374,10 @@ namespace Microsoft.Scripting.Ast {
                     // }
                     handlers[i] = Expression.Catch(
                         exceptionVar,
-                        Utils.Void(Expression.Assign(deferredVar, exceptionVar)),
+                        Expression.Block(
+                            Expression.Assign(deferredVar, exceptionVar), 
+                            Expression.Default(node.Body.Type)
+                        ),
                         filter
                     );
 
@@ -317,9 +388,10 @@ namespace Microsoft.Scripting.Ast {
                     //     ... catch body ...
                     // }
                     block.Add(
-                        Expression.IfThen(
+                        Expression.Condition(
                             Expression.NotEqual(deferredVar, AstUtils.Constant(null, deferredVar.Type)),
-                            catchBody
+                            catchBody,
+                            Expression.Default(node.Body.Type)
                         )
                     );
                 }
@@ -354,8 +426,8 @@ namespace Microsoft.Scripting.Ast {
                 // The first call changes the labels to all point at "tryEnd",
                 // so the second router will jump to "tryEnd"
                 var tryEnd = Expression.Label();
-                Expression inFinallyRouter = MakeYieldRouter(catchYields, finallyYields, tryEnd);
-                Expression inTryRouter = MakeYieldRouter(catchYields, finallyYields, tryStart);
+                Expression inFinallyRouter = MakeYieldRouter(node.Body.Type, catchYields, finallyYields, tryEnd);
+                Expression inTryRouter = MakeYieldRouter(node.Body.Type, catchYields, finallyYields, tryStart);
 
                 var all = Expression.Variable(typeof(Exception), "e");
                 var saved = Expression.Variable(typeof(Exception), "$saved$" + _temps.Count);
@@ -457,17 +529,17 @@ namespace Microsoft.Scripting.Ast {
 
         #endregion
 
-        private SwitchExpression MakeYieldRouter(int start, int end, LabelTarget newTarget) {
+        private SwitchExpression MakeYieldRouter(Type type, int start, int end, LabelTarget newTarget) {
             Debug.Assert(end > start);
             var cases = new SwitchCase[end - start];
             for (int i = start; i < end; i++) {
                 YieldMarker y = _yields[i];
-                cases[i - start] = Expression.SwitchCase(Expression.Goto(y.Label), AstUtils.Constant(y.State));
+                cases[i - start] = Expression.SwitchCase(Expression.Goto(y.Label, type), AstUtils.Constant(y.State));
                 // Any jumps from outer switch statements should go to the this
                 // router, not the original label (which they cannot legally jump to)
                 y.Label = newTarget;
             }
-            return Expression.Switch(_gotoRouter, cases);
+            return Expression.Switch(_gotoRouter, Expression.Default(type), cases);
         }
 
         protected override Expression VisitExtension(Expression node) {

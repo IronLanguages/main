@@ -38,7 +38,7 @@ namespace Microsoft.Scripting.Interpreter {
         public int Offset { get { return _offset; } }
         public abstract Instruction[] Cache { get; }
 
-        public virtual Instruction Fixup(int offset, int targetContinuationDepth, int targetStackDepth) {
+        public Instruction Fixup(int offset) {
             Debug.Assert(_offset == Unknown && offset != Unknown);
             _offset = offset;
 

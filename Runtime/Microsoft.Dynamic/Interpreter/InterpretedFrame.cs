@@ -50,9 +50,6 @@ namespace Microsoft.Scripting.Interpreter {
         public int StackIndex;
         public int InstructionIndex;
 
-        // TODO: remove
-        public int FaultingInstruction;  // the last instruction to cause a fault
-
         // When a ThreadAbortException is raised from interpreted code this is the first frame that caught it.
         // No handlers within this handler re-abort the current thread when left.
         public ExceptionHandler CurrentAbortHandler;
@@ -74,8 +71,8 @@ namespace Microsoft.Scripting.Interpreter {
             return DebugInfo.GetMatchingDebugInfo(Interpreter._debugInfos, instructionIndex);
         }
 
-        public LambdaExpression Lambda {
-            get { return Interpreter._lambda; }
+        public string Name {
+            get { return Interpreter._name; }
         }
 
         #region Data Stack Operations
@@ -145,7 +142,7 @@ namespace Microsoft.Scripting.Interpreter {
         public IEnumerable<InterpretedFrameInfo> GetStackTraceDebugInfo() {
             var frame = this;
             do {
-                yield return new InterpretedFrameInfo(frame.Lambda.Name, frame.GetDebugInfo(frame.InstructionIndex));
+                yield return new InterpretedFrameInfo(frame.Name, frame.GetDebugInfo(frame.InstructionIndex));
                 frame = frame.Parent;
             } while (frame != null);
         }
@@ -166,7 +163,7 @@ namespace Microsoft.Scripting.Interpreter {
                 var trace = new List<string>();
                 var frame = this;
                 do {
-                    trace.Add(frame.Lambda.Name);
+                    trace.Add(frame.Name);
                     frame = frame.Parent;
                 } while (frame != null);
                 return trace.ToArray();

@@ -15,6 +15,7 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using Microsoft.Scripting.Ast;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -36,7 +37,7 @@ namespace Microsoft.Scripting.Interpreter {
     internal sealed class LightDelegateCreator {
         // null if we are forced to compile
         private readonly Interpreter _interpreter;
-        private readonly LambdaExpression _lambda;
+        private readonly Expression _lambda;
 
         // Adaptive compilation support:
         private Type _compiledDelegateType;
@@ -44,6 +45,12 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly object _compileLock = new object();
 
         internal LightDelegateCreator(Interpreter interpreter, LambdaExpression lambda) {
+            Assert.NotNull(lambda);
+            _interpreter = interpreter;
+            _lambda = lambda;
+        }
+
+        internal LightDelegateCreator(Interpreter interpreter, LightLambdaExpression lambda) {
             Assert.NotNull(lambda);
             _interpreter = interpreter;
             _lambda = lambda;
@@ -66,7 +73,7 @@ namespace Microsoft.Scripting.Interpreter {
         /// false if the type was changed for interpretation.
         /// </summary>
         internal bool SameDelegateType {
-            get { return _compiledDelegateType == _lambda.Type; }
+            get { return _compiledDelegateType == DelegateType; }
         }
 
         internal Delegate CreateDelegate() {
@@ -92,12 +99,23 @@ namespace Microsoft.Scripting.Interpreter {
                 // We can't interpret, so force a compile
                 Compile(null);
                 Delegate compiled = CreateCompiledDelegate(closure);
-                Debug.Assert(compiled.GetType() == _lambda.Type);
+                Debug.Assert(compiled.GetType() == DelegateType);
                 return compiled;
             }
 
             // Otherwise, we'll create an interpreted LightLambda
-            return new LightLambda(this, closure, _interpreter._compilationThreshold).MakeDelegate(_lambda.Type);
+            return new LightLambda(this, closure, _interpreter._compilationThreshold).MakeDelegate(DelegateType);
+        }
+
+        private Type DelegateType {
+            get {
+                LambdaExpression le = _lambda as LambdaExpression;
+                if (le != null) {
+                    return le.Type;
+                }
+
+                return ((LightLambdaExpression)_lambda).Type;
+            }
         }
 
         /// <summary>
@@ -136,7 +154,7 @@ namespace Microsoft.Scripting.Interpreter {
                 // So change the lambda's delegate type to Func<...> or
                 // Action<...> so it can be called from the LightLambda.Run
                 // methods.
-                LambdaExpression lambda = _lambda;
+                LambdaExpression lambda = (_lambda as LambdaExpression) ?? (LambdaExpression)((LightLambdaExpression)_lambda).Reduce();
                 if (_interpreter != null) {
                     _compiledDelegateType = GetFuncOrAction(lambda);
                     lambda = Expression.Lambda(_compiledDelegateType, lambda.Body, lambda.Name, lambda.Parameters);

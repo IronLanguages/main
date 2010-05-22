@@ -48,24 +48,24 @@ namespace Microsoft.Scripting.Interpreter {
         internal readonly int _compilationThreshold;
 
         private readonly int _localCount;
-        private readonly Dictionary<LabelTarget, BranchLabel> _labelMapping;
+        private readonly HybridReferenceDictionary<LabelTarget, BranchLabel> _labelMapping;
         private readonly Dictionary<ParameterExpression, LocalVariable> _closureVariables;
 
         private readonly InstructionArray _instructions;
         internal readonly object[] _objects;
         internal readonly RuntimeLabel[] _labels;
 
-        internal readonly LambdaExpression _lambda;
+        internal readonly string _name;
         private readonly ExceptionHandler[] _handlers;
         internal readonly DebugInfo[] _debugInfos;
 
-        internal Interpreter(LambdaExpression lambda, LocalVariables locals, Dictionary<LabelTarget, BranchLabel> labelMapping,
+        internal Interpreter(string name, LocalVariables locals, HybridReferenceDictionary<LabelTarget, BranchLabel> labelMapping,
             InstructionArray instructions, ExceptionHandler[] handlers, DebugInfo[] debugInfos, int compilationThreshold) {
 
-            _lambda = lambda;
+            _name = name;
             _localCount = locals.LocalCount;
             _closureVariables = locals.ClosureVariables;
-                
+
             _instructions = instructions;
             _objects = instructions.Objects;
             _labels = instructions.Labels;
@@ -103,7 +103,7 @@ namespace Microsoft.Scripting.Interpreter {
             get { return _closureVariables; } 
         }
 
-        internal Dictionary<LabelTarget, BranchLabel> LabelMapping {
+        internal HybridReferenceDictionary<LabelTarget, BranchLabel> LabelMapping {
             get { return _labelMapping; }
         }
 
@@ -139,7 +139,6 @@ namespace Microsoft.Scripting.Interpreter {
 
         private ExceptionHandlingResult HandleException(InterpretedFrame frame, Exception exception) {
             frame.SaveTraceToException(exception);
-            frame.FaultingInstruction = frame.InstructionIndex;
             ExceptionHandler handler;
             frame.InstructionIndex += GotoHandler(frame, exception, out handler);
 

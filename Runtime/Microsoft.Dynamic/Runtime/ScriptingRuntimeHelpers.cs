@@ -63,6 +63,12 @@ namespace Microsoft.Scripting.Runtime {
             return result;
         }
 
+#if DEBUG
+        public static void NoteException(Exception e) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Exceptions, "LightEH Missed: " + e.GetType());
+        }
+#endif
+
         /// <summary>
         /// Gets a singleton boxed value for the given integer if possible, otherwise boxes the integer.
         /// </summary>

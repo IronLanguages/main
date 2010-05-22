@@ -16,6 +16,7 @@
 #if !CLR2
 using System.Linq.Expressions;
 using BigInt = System.Numerics.BigInteger;
+using Microsoft.Scripting.Ast;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -719,7 +720,7 @@ namespace Microsoft.Scripting.Generation {
             string methodName = String.IsNullOrEmpty(lambda.Name) ? GetUniqueMethodName() : lambda.Name;
 
             var type = Snippets.Shared.DefineType(methodName, typeof(object), false, emitDebugSymbols).TypeBuilder;
-            var rewriter = new BoundConstantsRewriter(type);
+            var rewriter = new DebuggableCodeRewriter(type);
             lambda = (LambdaExpression)rewriter.Visit(lambda);
 
             //Create a unique method name when the lambda doesn't have a name or the name is empty.
@@ -803,11 +804,12 @@ namespace Microsoft.Scripting.Generation {
         /// <summary>
         /// Removes all live objects and places them in static fields of a type.
         /// </summary>
-        private sealed class BoundConstantsRewriter : ExpressionVisitor {
+        private sealed class DebuggableCodeRewriter : ExpressionVisitor {
             private readonly Dictionary<object, FieldBuilder> _fields = new Dictionary<object, FieldBuilder>(ReferenceEqualityComparer<object>.Instance);
             private readonly TypeBuilder _type;
+            private readonly HashSet<string> _methodNames = new HashSet<string>();
 
-            internal BoundConstantsRewriter(TypeBuilder type) {
+            internal DebuggableCodeRewriter(TypeBuilder type) {
                 _type = type;
             }
 
@@ -815,6 +817,39 @@ namespace Microsoft.Scripting.Generation {
                 foreach (var pair in _fields) {
                     type.GetField(pair.Value.Name).SetValue(null, pair.Key);
                 }
+            }
+
+            protected override Expression VisitLambda<T>(Expression<T> node) {
+                if (_methodNames.Contains(node.Name)) {
+                    int count = _methodNames.Count;
+
+                    string newName;
+                    do {
+                        newName = node.Name + "$" + count++;
+                    } while (_methodNames.Contains(newName));
+
+                    _methodNames.Add(newName);
+                    return Expression.Lambda<T>(
+                        base.Visit(node.Body),
+                        newName,
+                        node.TailCall,
+                        node.Parameters
+                    );
+                } else {
+                    _methodNames.Add(node.Name);
+                    return base.VisitLambda<T>(node);
+                }
+            }
+
+            protected override Expression VisitExtension(Expression node) {
+                // LightDynamicExpressions override Visit but we want to really reduce them
+                // because they reduce to DynamicExpressions.
+                LightDynamicExpression lightDyn = node as LightDynamicExpression;
+                if (lightDyn != null) {
+                    return Visit(lightDyn.Reduce());
+                }
+
+                return Visit(node.Reduce());
             }
 
             protected override Expression VisitConstant(ConstantExpression node) {

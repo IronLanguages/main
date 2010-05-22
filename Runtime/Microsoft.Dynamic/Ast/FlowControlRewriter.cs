@@ -317,7 +317,7 @@ namespace Microsoft.Scripting.Ast {
                     LabelInfo info = EnsureLabelInfo(node.Target);
 
                     var assignFlow = Expression.Assign(_flowVariable, AstUtils.Constant(info.FlowState));
-                    var gotoFlow = Expression.Goto(block.FlowLabel);
+                    var gotoFlow = Expression.Goto(block.FlowLabel, node.Type);
                     Expression value;
                     if (info.Variable == null) {
                         value = node.Value ?? Utils.Empty();
@@ -337,6 +337,39 @@ namespace Microsoft.Scripting.Ast {
                 var label = e as LabelExpression;
                 if (label != null) {
                     VisitLabelTarget(label.Target);
+
+                    // TODO: Support this.
+                    // The check for BlockExpression is a hack to support the exact kind of 
+                    // cross-block jump that the light exception rewriter produces.  Really we 
+                    // should be aware of cross-block jumps and not produce a jump out of the finally
+                    // and then back in, currently this fails:
+                    //
+                    // var label = Expression.Label("foo");
+                    // var label2 = Expression.Label("foo2");
+                    // var l = Expression.Lambda<Action>(
+                    //    Expression.Block(
+                    //        Utils.Try(
+                    //            Expression.Block(
+                    //                Expression.Goto(label2)
+                    //            ),
+                    //            Expression.Block(
+                    //                Expression.Label(label2, Expression.Goto(label))
+                    //            )
+                    //        ).FinallyWithJumps(
+                    //            Expression.Goto(label)
+                    //        ),
+                    //        Expression.Label(label, Expression.Empty())
+                    //    )
+                    // );
+                    // l.Compile()();
+
+                    
+                    BlockExpression defaultValue = label.DefaultValue as BlockExpression;
+                    if (defaultValue != null) {
+                        VisitBlock(defaultValue);
+                    }
+
+
                 }
             }
             return base.VisitBlock(node);

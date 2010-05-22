@@ -149,12 +149,13 @@ namespace IronRuby.Runtime.Calls {
 
             return Expression.Lambda<T>(
                 body,
-                "CallSite.Target",
+                InterpretedCallSiteName,
                 true, // always compile the rules with tail call optimization
                 @params
             );
         }
 
+        internal const string InterpretedCallSiteName = "CallSite.Target";
         internal abstract ReadOnlyCollection<ParameterExpression> Parameters { get; }
         internal abstract LabelTarget ReturnLabel { get; }
         internal abstract object/*!*/ GetInterpretingDelegate();
