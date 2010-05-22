@@ -109,23 +109,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return res;
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            string[] names = _names;
-            int[] indexes = GetParameters(hasBeenUsed);
-
-            Type dictType = ParameterInfo.ParameterType;
-
-            Func<string[], object[], object> func = GetCreationDelegate(dictType);
-
-            return (actualArgs) => {
-                object[] values = new object[indexes.Length];
-                for (int i = 0; i < indexes.Length; i++) {
-                    values[i] = actualArgs[indexes[i] + 1];
-                }
-                return func(names, values);
-            };
-        }
-
         private Func<string[], object[], object> GetCreationDelegate(Type dictType) {
             Func<string[], object[], object> func = null;
 

@@ -81,10 +81,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return _builder.ToExpression(resolver, MakeRestrictedArg(args, index), new bool[1]);
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            return null;
-        }
-
         public override Type Type {
             get {
                 return _builder.Type;

@@ -60,21 +60,6 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// </summary>
         internal protected abstract Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed);
 
-        internal protected virtual Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            return null;
-        }
-
-        /// <summary>
-        /// Function for accessing an argument from a given index.  When returned from
-        /// ToDelegate closed over the value will enable delegate invocations for argument
-        /// gets to be optimized away.
-        /// 
-        /// This function is referenced via reflection and if renamed needs CALLERS UPDATED.
-        /// </summary>
-        public static object ArgumentRead(object value, object[] args) {
-            return args[(int)value];
-        }
-
         /// <summary>
         /// Returns the type required for the argument or null if the ArgBuilder
         /// does not consume a type.

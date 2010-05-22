@@ -29,6 +29,9 @@ using Microsoft.Scripting.Interpreter;
 
 namespace Microsoft.Scripting.Utils {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using Microsoft.Scripting.Runtime;
+    using System.Diagnostics;
+    using System.Threading;
 
     public static class DynamicUtils {
         /// <summary>
@@ -63,139 +66,217 @@ namespace Microsoft.Scripting.Utils {
             }
         }
 
-        public static T LightBind<T>(this DynamicMetaObjectBinder binder, CallSite<T> site, object[] args, int compilationThreshold) where T : class {
-            Delegate d = Bind<T>(binder, args).LightCompile(compilationThreshold);
-            T result = (T)(object)d;
+        /// <summary>
+        /// Produces an interpreted binding using the given binder which falls over to a compiled
+        /// binding after hitCount tries.
+        /// 
+        /// This method should be called whenever an interpreted binding is required.  Sometimes it will
+        /// return a compiled binding if a previous binding was produced and it's hit count was exhausted.
+        /// In this case the binder will not be called back for a new binding - the previous one will
+        /// be used.
+        /// </summary>
+        /// <typeparam name="T">The delegate type being used for the call site</typeparam>
+        /// <param name="binder">The binder used for the call site</param>
+        /// <param name="compilationThreshold">The number of calls before the binder should switch to a compiled mode.</param>
+        /// <param name="args">The arguments that are passed for the binding (as received in a BindDelegate call)</param>
+        /// <returns>A delegate which represents the interpreted binding.</returns>
+        public static T/*!*/ LightBind<T>(this DynamicMetaObjectBinder/*!*/ binder, object[]/*!*/ args, int compilationThreshold) where T : class {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            ContractUtils.RequiresNotNull(args, "args");
 
-            LightLambda lambda = d.Target as LightLambda;
-            if (lambda != null) {
-                lambda.Compile += (_, e) => {
-                    // If the rule is still used in the site.Target we can replace it by the compiled delegate.
-                    // site.Target can be updated by another thread before we write the compiled delegate. 
-                    // In such case we run the compiled rule, detect that it is not applicable and replace it from rule cache.
-                    // TODO: replace the interpreted delegates in L1 and L2 caches as well?
-                    if (site.Target == result) {
-                        site.Target = (T)(object)e.Compiled;
+            return GenericInterpretedBinder<T>.Instance.Bind(binder, compilationThreshold, args);
+        }
+
+        private class GenericInterpretedBinder<T> where T : class {
+            public static GenericInterpretedBinder<T>/*!*/ Instance = new GenericInterpretedBinder<T>();
+            private readonly ReadOnlyCollection<ParameterExpression>/*!*/ _parameters;
+            private readonly Expression/*!*/ _updateExpression;
+
+            private GenericInterpretedBinder() {
+                var invokeMethod = typeof(T).GetMethod("Invoke");
+                var methodParams = invokeMethod.GetParameters();
+
+                ReadOnlyCollectionBuilder<ParameterExpression> prms = new ReadOnlyCollectionBuilder<ParameterExpression>(methodParams.Length);
+                ReadOnlyCollectionBuilder<Expression> invokePrms = new ReadOnlyCollectionBuilder<Expression>(methodParams.Length);
+                for (int i = 0; i < methodParams.Length; i++) {
+                    var param = Expression.Parameter(methodParams[i].ParameterType);
+                    if (i == 0) {
+                        invokePrms.Add(Expression.Convert(param, typeof(CallSite<T>)));
+                    } else {
+                        invokePrms.Add(param);
                     }
-                };
-            } else {
-                PerfTrack.NoteEvent(PerfTrack.Categories.Rules, "Rule not interpreted");
-            }
-            return result;
-        }
+                    prms.Add(param);
+                }
 
-        public static LambdaExpression/*!*/ Bind<T>(this DynamicMetaObjectBinder binder, object[] args) where T : class {
-            var signature = LambdaSignature<T>.Instance;
+                _parameters = prms.ToReadOnlyCollection();
 
-            LabelTarget returnLabel;
-            if (signature.ReturnLabel.Type == typeof(object) && binder.ReturnType != typeof(void) && binder.ReturnType != typeof(object)) {
-                returnLabel = Expression.Label(binder.ReturnType);
-            } else {
-                returnLabel = signature.ReturnLabel;
-            }
-
-            Expression binding = binder.Bind(args, signature.Parameters, returnLabel);
-            if (binding == null) {
-                throw new InvalidOperationException("CallSiteBinder.Bind must return non-null meta-object");
-            }
-
-            return Stitch<T>(binding, signature, returnLabel);
-        }
-
-        // TODO: This should be merged into CallSiteBinder.
-        private static LambdaExpression/*!*/ Stitch<T>(Expression binding, LambdaSignature<T> signature, LabelTarget returnLabel) where T : class {
-            Expression updLabel = Expression.Label(CallSiteBinder.UpdateLabel);
-
-            var site = Expression.Parameter(typeof(CallSite), "$site");
-            var @params = ArrayUtils.Insert(site, signature.Parameters);
-            
-            Expression body;
-            if (returnLabel != signature.ReturnLabel) {
-                // TODO:
-                // This allows the binder to produce a strongly typed binding expression that gets boxed 
-                // if the call site's return value is of type object. 
-                // The current implementation of CallSiteBinder is too strict as it requires the two types to be reference-assignable.
-                
-                var tmp = Expression.Parameter(typeof(object));
-                body = Expression.Convert(
-                    Expression.Block(new[] { tmp },
-                        binding,
-                        updLabel,
-                        Expression.Label(
-                            returnLabel,
-                            Expression.Condition(
-                                Expression.NotEqual(
-                                    Expression.Assign(
-                                        tmp, 
-                                        Expression.Invoke(
-                                            Expression.Property(
-                                                Expression.Convert(site, typeof(CallSite<T>)),
-                                                typeof(CallSite<T>).GetProperty("Update")
-                                            ),
-                                            @params
-                                        )
-                                    ),
-                                    AstUtils.Constant(null)
-                                ),
-                                Expression.Convert(tmp, returnLabel.Type),
-                                Expression.Default(returnLabel.Type)
-                            )
-                        )
-                    ),
-                    typeof(object)
-                );
-            } else {
-                body = Expression.Block(
-                    binding,
-                    updLabel,
-                    Expression.Label(
-                        returnLabel, 
-                        Expression.Invoke(
-                            Expression.Property(
-                                Expression.Convert(site, typeof(CallSite<T>)),
-                                typeof(CallSite<T>).GetProperty("Update")
-                            ),
-                            @params
-                        )
+                _updateExpression = Expression.Block(
+                    Expression.Label(CallSiteBinder.UpdateLabel),
+                    Expression.Invoke(
+                        Expression.Property(
+                            invokePrms[0],
+                            typeof(CallSite<T>).GetProperty("Update")
+                        ),
+                        invokePrms.ToReadOnlyCollection()
                     )
                 );
             }
 
-            return Expression.Lambda<T>(
-                body,
-                "CallSite.Target",
-                true, // always compile the rules with tail call optimization
-                @params
-            );
+            public T/*!*/ Bind(DynamicMetaObjectBinder/*!*/ binder, int countDown, object[] args) {
+                if (CachedBindingInfo<T>.LastInterpretedFailure != null && CachedBindingInfo<T>.LastInterpretedFailure.Binder == binder) {
+                    // we failed the rule because we have a compiled target available, return the compiled target
+                    Debug.Assert(CachedBindingInfo<T>.LastInterpretedFailure.CompiledTarget != null);
+                    var res = CachedBindingInfo<T>.LastInterpretedFailure.CompiledTarget;
+                    CachedBindingInfo<T>.LastInterpretedFailure = null;
+                    return res;
+                }
+
+                // we haven't produced a rule yet....
+                var bindingInfo = new CachedBindingInfo<T>(binder, countDown);
+
+                var targetMO = DynamicMetaObject.Create(args[0], _parameters[1]); // 1 is skipping CallSite
+                DynamicMetaObject[] argsMO = new DynamicMetaObject[args.Length - 1];
+                for (int i = 0; i < argsMO.Length; i++) {
+                    argsMO[i] = DynamicMetaObject.Create(args[i + 1], _parameters[i + 2]);
+                }
+                var binding = binder.Bind(targetMO, argsMO);
+
+                return CreateDelegate(binding, bindingInfo);
+            }
+
+            private T/*!*/ CreateDelegate(DynamicMetaObject/*!*/ binding, CachedBindingInfo<T>/*!*/ bindingInfo) {
+                return Compile(binding, bindingInfo).LightCompile(Int32.MaxValue);
+            }
+
+            private Expression<T>/*!*/ Compile(DynamicMetaObject/*!*/ obj, CachedBindingInfo<T>/*!*/ bindingInfo) {
+                var restrictions = obj.Restrictions.ToExpression();
+
+                var body = Expression.Condition(
+                    new InterpretedRuleHitCheckExpression(restrictions, bindingInfo),
+                    AstUtils.Convert(obj.Expression, _updateExpression.Type),
+                    _updateExpression
+                );
+
+                var res = Expression.Lambda<T>(
+                    body,
+                    "CallSite.Target",
+                    true, // always compile the rules with tail call optimization
+                    _parameters
+                );
+
+                bindingInfo.Target = res;
+                return res;
+            }
+
+            /// <summary>
+            /// Expression which reduces to the normal test but under the interpreter adds a count down
+            /// check which enables compiling when the count down is reached.
+            /// </summary>
+            class InterpretedRuleHitCheckExpression : Expression, IInstructionProvider {
+                private readonly Expression/*!*/ _test;
+                private readonly CachedBindingInfo/*!*/ _bindingInfo;
+
+                private static readonly MethodInfo InterpretedCallSiteTest = typeof(ScriptingRuntimeHelpers).GetMethod("InterpretedCallSiteTest");
+                public InterpretedRuleHitCheckExpression(Expression/*!*/ test, CachedBindingInfo/*!*/ bindingInfo) {
+                    Assert.NotNull(test, bindingInfo);
+
+                    _test = test;
+                    _bindingInfo = bindingInfo;
+                }
+
+                public override Expression Reduce() {
+                    return _test;
+                }
+
+                protected override Expression VisitChildren(ExpressionVisitor visitor) {
+                    var test = visitor.Visit(_test);
+                    if (test != _test) {
+                        return new InterpretedRuleHitCheckExpression(test, _bindingInfo);
+                    }
+                    return this;
+                }
+
+                public override bool CanReduce {
+                    get { return true; }
+                }
+
+                public override ExpressionType NodeType {
+                    get { return ExpressionType.Extension; }
+                }
+
+                public override Type Type {
+                    get { return typeof(bool); }
+                }
+
+                #region IInstructionProvider Members
+
+                public void AddInstructions(LightCompiler compiler) {
+                    compiler.Compile(_test);
+                    compiler.Instructions.EmitLoad(_bindingInfo);
+                    compiler.Instructions.EmitCall(InterpretedCallSiteTest);
+                }
+
+                #endregion
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// Base class for storing information about the binding that a specific rule is applicable for.
+    /// 
+    /// We have a derived generic class but this class enables us to refer to it w/o having the
+    /// generic type information around.
+    /// 
+    /// This class tracks both the count down to when we should compile.  When we compile we
+    /// take the Expression[T] that was used before and compile it.  While this is happening
+    /// we continue to allow the interpreted code to run.  When the compilation is complete we
+    /// store a thread static which tells us what binding failed and the current rule is no
+    /// longer functional.  Finally the language binder will call us again and we'll retrieve
+    /// and return the compiled overload.
+    /// </summary>
+    abstract class CachedBindingInfo {
+        public readonly DynamicMetaObjectBinder/*!*/ Binder;
+        public int CountDown;
+
+        public CachedBindingInfo(DynamicMetaObjectBinder binder, int countDown) {
+            Binder = binder;
+            CountDown = countDown;
         }
 
-        // TODO: This should be merged into CallSiteBinder.
-        private sealed class LambdaSignature<T> where T : class {
-            internal static readonly LambdaSignature<T> Instance = new LambdaSignature<T>();
+        public abstract bool CheckCompiled();
+    }
 
-            internal readonly ReadOnlyCollection<ParameterExpression> Parameters;
-            internal readonly LabelTarget ReturnLabel;
+    class CachedBindingInfo<T> : CachedBindingInfo where T : class {
+        public T CompiledTarget;
+        public Expression<T> Target;
 
-            private LambdaSignature() {
-                Type target = typeof(T);
-                if (!typeof(Delegate).IsAssignableFrom(target)) {
-                    throw new InvalidOperationException();
+        [ThreadStatic]
+        public static CachedBindingInfo<T> LastInterpretedFailure;
+
+        public CachedBindingInfo(DynamicMetaObjectBinder binder, int countDown)
+            : base(binder, countDown) {
+        }
+
+        public override bool CheckCompiled() {
+            if (Target != null) {
+                // start compiling the target if no one else has
+                var lambda = Interlocked.Exchange(ref Target, null);
+                if (lambda != null) {
+                    ThreadPool.QueueUserWorkItem(
+                        (x) => {
+                            CompiledTarget = lambda.Compile();
+                        }
+                    );
                 }
-
-                MethodInfo invoke = target.GetMethod("Invoke");
-                ParameterInfo[] pis = invoke.GetParameters();
-                if (pis[0].ParameterType != typeof(CallSite)) {
-                    throw new InvalidOperationException();
-                }
-
-                var @params = new ReadOnlyCollectionBuilder<ParameterExpression>(pis.Length - 1);
-                for (int i = 0; i < pis.Length - 1; i++) {
-                    @params.Add(Expression.Parameter(pis[i + 1].ParameterType, "$arg" + i));
-                }
-
-                Parameters = @params.ToReadOnlyCollection();
-                ReturnLabel = Expression.Label(invoke.GetReturnType());
             }
+
+            if (CompiledTarget != null) {
+                LastInterpretedFailure = this;
+                return false;
+            }
+
+            return true;
         }
     }
 }

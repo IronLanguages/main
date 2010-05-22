@@ -60,21 +60,5 @@ namespace Microsoft.Scripting.Actions.Calls {
             var metaValue = new DynamicMetaObject(AstUtils.Constant(value), BindingRestrictions.Empty, value);
             return resolver.Convert(metaValue, CompilerHelpers.GetType(value), ParameterInfo, ParameterInfo.ParameterType);
         }
-
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            if (ParameterInfo.ParameterType.IsByRef) {
-                return null;
-            } else if (ParameterInfo.DefaultValue is Missing && CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType) is Missing) {
-                // reflection throws when we do this
-                return null;
-            }
-            
-            object val = ParameterInfo.DefaultValue;
-            if (val is Missing) {
-                val = CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType);
-            }
-            Debug.Assert(val != Missing.Value);
-            return (_) => val;
-        }
     }
 }

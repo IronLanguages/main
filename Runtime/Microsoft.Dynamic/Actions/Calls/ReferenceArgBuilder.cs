@@ -84,10 +84,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             );
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            return null;
-        }
-
         internal override Expression UpdateFromReturn(OverloadResolver resolver, RestrictedArguments args) {
             return Expression.Assign(
                 Expression.Field(

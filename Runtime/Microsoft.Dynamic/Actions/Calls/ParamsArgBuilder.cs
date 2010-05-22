@@ -123,54 +123,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return Ast.Block(result);
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            if (resolver.GetActualArguments().CollapsedCount > 0) {
-                return null;
-            }
-            
-            var indexes = new List<Func<object[], object>>(_expandedCount);
-
-            for (int i = _start; i < _start + _expandedCount; i++) {
-                if (!hasBeenUsed[i]) {
-                    indexes.Add(resolver.GetConvertor(i + 1, args.GetObject(i), ParameterInfo, _elementType));
-                    hasBeenUsed[i] = true;
-                }
-            }
-
-            if (_elementType == typeof(object)) {
-                return new ParamArrayDelegate<object>(indexes.ToArray(), _start).MakeParamsArray;
-            }
-
-            Type genType = typeof(ParamArrayDelegate<>).MakeGenericType(_elementType);
-            return (Func<object[], object>)Delegate.CreateDelegate(
-                typeof(Func<object[], object>), 
-                Activator.CreateInstance(genType, indexes.ToArray(), _start),
-                genType.GetMethod("MakeParamsArray"));
-        }
-
-        class ParamArrayDelegate<T> {
-            private readonly Func<object[], object>[] _indexes;
-            private readonly int _start;
-
-            public ParamArrayDelegate(Func<object[], object>[] indexes, int start) {
-                _indexes = indexes;
-                _start = start;
-            }
-
-            public T[] MakeParamsArray(object[] args) {
-                T[] res = new T[_indexes.Length];
-                for (int i = 0; i < _indexes.Length; i++) {
-                    if (_indexes[i] == null) {
-                        res[i] = (T)args[_start + i + 1];
-                    } else {
-                        res[i] = (T)_indexes[i](args);
-                    }
-                }
-
-                return res;
-            }
-        }
-
         public override Type Type {
             get {
                 return _elementType.MakeArrayType();

@@ -1195,8 +1195,11 @@ namespace Microsoft.Scripting.Interpreter {
             // Support pass by reference.
             // Note that LoopCompiler needs to be updated too.
 
-            // force compilation for now:
-            if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef)) {
+            // force compilation for now for ref types
+            // also could be a mutable value type, Delegate.CreateDelegate and MethodInfo.Invoke both can't handle this, we
+            // need to generate code.
+            if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef) ||
+                (!node.Method.IsStatic && node.Method.DeclaringType.IsValueType && !node.Method.DeclaringType.IsPrimitive)) {
                 _forceCompile = true;
             }
 

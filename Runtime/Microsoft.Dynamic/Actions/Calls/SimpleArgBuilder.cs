@@ -102,18 +102,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return resolver.Convert(args.GetObject(_index), args.GetType(_index), ParameterInfo, _parameterType);
         }
 
-        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            Func<object[], object> conv = resolver.GetConvertor(_index + 1, args.GetObject(_index), ParameterInfo, _parameterType);
-            if (conv != null) {
-                return conv;
-            }
-
-            return (Func<object[], object>)Delegate.CreateDelegate(
-                typeof(Func<object[], object>), 
-                _index + 1, 
-                typeof(ArgBuilder).GetMethod("ArgumentRead"));
-        }
-
         public int Index {
             get {
                 return _index;

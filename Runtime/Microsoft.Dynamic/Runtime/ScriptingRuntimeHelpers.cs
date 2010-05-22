@@ -242,5 +242,22 @@ namespace Microsoft.Scripting.Runtime {
                 }
             }
         }
+
+        /// <summary>
+        /// Provides the test to see if an interpreted call site should switch over to being compiled.
+        /// </summary>
+        public static bool InterpretedCallSiteTest(bool restrictionResult, object bindingInfo) {
+            if (restrictionResult) {
+                CachedBindingInfo bindInfo = (CachedBindingInfo)bindingInfo;
+                if (bindInfo.CountDown >= 0) {
+                    // still interpreting...
+                    bindInfo.CountDown--;
+                    return true;
+                }
+
+                return bindInfo.CheckCompiled();
+            }
+            return false;
+        }
     }
 }

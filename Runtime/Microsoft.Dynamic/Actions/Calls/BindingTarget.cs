@@ -29,8 +29,6 @@ using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
-    public delegate object OptimizingCallDelegate(object[] args, out bool shouldOptimize);
-
     /// <summary>
     /// Encapsulates the result of an attempt to bind to one or methods using the OverloadResolver.
     /// 
@@ -123,16 +121,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             return _candidate.MakeExpression(_restrictedArgs);
-        }
-
-        public OptimizingCallDelegate MakeDelegate() {
-            if (_candidate == null) {
-                throw new InvalidOperationException("An expression cannot be produced because the method binding was unsuccessful.");
-            } else if (_restrictedArgs == null) {
-                throw new InvalidOperationException("An expression cannot be produced because the method binding was done with Expressions, not MetaObject's");
-            }
-
-            return _candidate.MakeDelegate(_restrictedArgs);
         }
 
         /// <summary>

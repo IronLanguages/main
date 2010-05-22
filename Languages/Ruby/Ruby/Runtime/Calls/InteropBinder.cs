@@ -61,7 +61,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -98,7 +98,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -152,7 +152,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -221,7 +221,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -346,7 +346,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -428,7 +428,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -488,7 +488,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -573,7 +573,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -620,7 +620,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -683,7 +683,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -755,7 +755,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -799,7 +799,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -841,7 +841,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -880,7 +880,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
@@ -930,7 +930,7 @@ namespace IronRuby.Runtime.Calls {
                     return null;
                 }
 
-                var result = this.LightBind(site, args, _context.Options.CompilationThreshold);
+                var result = this.LightBind<T>(args, _context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }
