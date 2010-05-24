@@ -14,8 +14,7 @@
  * ***************************************************************************/
 
 using System;
-using System.Dynamic;
-using Microsoft.Contracts; 
+using Microsoft.Contracts;
 
 namespace Microsoft.Scripting {
 
@@ -55,5 +54,9 @@ namespace Microsoft.Scripting {
         }
 
         #endregion
+
+        public override string ToString() {
+            return String.Format("TokenInfo: {0}, {1}, {2}", _span, _category, _trigger);
+        }
     }
 }

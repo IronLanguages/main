@@ -162,6 +162,12 @@ namespace Microsoft.Scripting {
             return line;
         }
 
+        public bool HasLineMapping {
+            get {
+                return _lineMap != null;
+            }
+        }
+
         private static int BinarySearch<T>(KeyValuePair<int, T>[] array, int line) {
             int match = Array.BinarySearch(array, new KeyValuePair<int, T>(line, default(T)), new KeyComparer<T>());
             if (match < 0) {

@@ -158,6 +158,7 @@
     <Compile Include="Hosting\OverloadDoc.cs" />
     <Compile Include="Hosting\ParameterDoc.cs" />
     <Compile Include="Hosting\ParameterFlags.cs" />
+    <Compile Include="IndexSpan.cs" />
     <Compile Include="Runtime\DocumentationProvider.cs" />
     <Compile Include="Runtime\DynamicStackFrame.cs" />
     <Compile Include="Stubs.cs" />
