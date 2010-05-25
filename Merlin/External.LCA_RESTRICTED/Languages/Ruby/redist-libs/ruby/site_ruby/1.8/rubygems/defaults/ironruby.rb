@@ -13,9 +13,9 @@ module Gem
   def self.platforms
     [
       Gem::Platform::RUBY,
-      'universal-dotnet',
-      Gem::Platform.local.to_s,
-      'universal-unknown'
+      Gem::Platform.new('universal-dotnet'),
+      Gem::Platform.local,
+      Gem::Platforom.new('universal-unknown')
     ]
   end
 end
