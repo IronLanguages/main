@@ -9,13 +9,4 @@ module Gem
 
     exec_format
   end
-
-  def self.platforms
-    [
-      Gem::Platform::RUBY,
-      Gem::Platform.new('universal-dotnet'),
-      Gem::Platform.local
-    ]
-  end
-
 end
