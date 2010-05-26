@@ -12,12 +12,12 @@ end
 
 flags = ["", "/partial", "/noadaptive", "/partial /noadaptive", "/sync0", "/sync1", "/debug", "/partial /debug"]
 
-ENV['ROWAN_BIN'] ||= "#{ENV['DLR_ROOT']}\\bin\\debug"
+ENV['DLR_BIN'] ||= "#{ENV['DLR_ROOT']}\\bin\\debug"
 
 flags.each do |flag|  
   cmd = "#{ENV['ROWAN_RUNTIME']} IronRuby.Tests.exe #{flag}"
   banner cmd
-  Dir.chdir(ENV['ROWAN_BIN']) do
+  Dir.chdir(ENV['DLR_BIN']) do
     exit 1 unless system cmd
   end
 end

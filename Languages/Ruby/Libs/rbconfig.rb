@@ -38,7 +38,7 @@ module Config
   # Set up paths
   if ENV["DLR_ROOT"] then
     # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
-    TOPDIR = ENV["ROWAN_BIN"] || File.expand_path("bin/Debug", ENV["DLR_ROOT"])
+    TOPDIR = ENV["DLR_BIN"] || File.expand_path("bin/Debug", ENV["DLR_ROOT"])
     CONFIG["bindir"] = TOPDIR
     CONFIG["libdir"] = File.expand_path("External.LCA_RESTRICTED/Languages/Ruby/redist-libs", ENV["DLR_ROOT"])
   else

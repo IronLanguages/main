@@ -15,12 +15,12 @@ class IRTest
     
     explicit_config = options[:clr4] or options[:release]
     requires_compile = !options[:nocompile]
-    abort "Using ROWAN_BIN requires using --nocompile" if ENV["ROWAN_BIN"] and requires_compile and not explicit_config
-    # Set ROWAN_BIN if the user asked for a specific configuration, or if it is not already set.
+    abort "Using DLR_BIN requires using --nocompile" if ENV["DLR_BIN"] and requires_compile and not explicit_config
+    # Set DLR_BIN if the user asked for a specific configuration, or if it is not already set.
     # If it is already set, we will use it (unless the user overrides with an explict configuration request)
-    # All the test command lines we execute will (or should) honor ROWAN_BIN
-    if explicit_config or not ENV["ROWAN_BIN"]
-      ENV["ROWAN_BIN"] = "#{@root}\\bin\\#{@config}"
+    # All the test command lines we execute will (or should) honor DLR_BIN
+    if explicit_config or not ENV["DLR_BIN"]
+      ENV["DLR_BIN"] = "#{@root}\\bin\\#{@config}"
     end    
        
     ir = "\"#{@root}\\Test\\Scripts\\ir.cmd\" -v"

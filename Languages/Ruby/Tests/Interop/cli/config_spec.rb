@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/../spec_helper'
 
 describe "ir.exe without ir.exe.config" do
   before(:all) do
-    bin = ENV['ROWAN_BIN'] || File.join(ENV['DLR_ROOT'], "bin", "debug")
+    bin = ENV['DLR_BIN'] || File.join(ENV['DLR_ROOT'], "bin", "debug")
     temp_bin = tmp("bin")
     Dir.foreach(bin) do |file|
       FileUtils.cp(File.join(bin, file), temp_bin) if file =~ /^(IronRuby|ir|Microsoft)/

@@ -51,7 +51,7 @@ class FileCreator:
         from datetime import datetime
         now = datetime.now()
         import nt
-        if not nt.environ.has_key("ROWAN_BIN"):
+        if not nt.environ.has_key("DLR_BIN"):
             self.directory = prefix
         else:
             self.directory = "%s_%02d%02d_%02d%02d_%d" % (prefix, now.month, now.day, now.hour, now.minute, now.microsecond)

@@ -32,12 +32,12 @@ module TestPath
     CORECLR_ROOT  = DLR_ROOT + "/Util/Internal/Silverlight/x86ret"
     CRUBY_EXE     = get_environment_variable('RUBY18_EXE')
     
-    ROWAN_BIN     = get_environment_variable('ROWAN_BIN')
+    DLR_BIN     = get_environment_variable('DLR_BIN')
 
     # assume we are running inside snap
-    if ROWAN_BIN
+    if DLR_BIN
       IRUBY_EXE     = DLR_ROOT + "/Test/Scripts/ir.cmd"
-      IPYTHON_EXE   = ROWAN_BIN + "/ipy.exe"
+      IPYTHON_EXE   = DLR_BIN + "/ipy.exe"
     else
       ir_cmd      = DLR_ROOT + "/Test/Scripts/ir.cmd"
       if File.exists? ir_cmd

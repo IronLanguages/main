@@ -196,7 +196,7 @@ ironruby-1.0.0 (RC4) 2010-03-20
 
 	Comment:
 	  Adds support for SCRIPT_LINES__. If the constant is set, Ruby adds all loaded file into it mapped to the contents of those files. This gets RCov working (in a slow mode)
-	  Updated irtests so that it honors ROWAN_BIN if it is set. This can be used to run all the tests against a given set of prebuilt binaries for releases
+	  Updated irtests so that it honors DLR_BIN if it is set. This can be used to run all the tests against a given set of prebuilt binaries for releases
 	  
 	  (Shelveset: scl;REDMOND\sborde | SNAP CheckinId: m11398)
 
@@ -2906,7 +2906,7 @@ ironruby-0.9.1.0 - 2009-09-28
 
 	Fixes IronPython\Test\run.py to correctly handle paths with spaces.
 	Fixes Ruby library initializer generator to use short names for Action delegates.
-	Changes Ruby\Libs\rbconfig.rb to use ROWAN_BIN environment variable if available.
+	Changes Ruby\Libs\rbconfig.rb to use DLR_BIN environment variable if available.
 
 	-------------------------------------------------------------------------------
 	User: jdeville
@@ -4539,9 +4539,9 @@ ironruby-0.6.0.0 - 2009-07-01
 		I’ve fixed generic_spec nad overload_spec and commented out a block in 
 		protected_spec – all the cases there need to be changed to negative cases
 		(all should fail).
-		Removed ROWAN_BIN check in 
+		Removed DLR_BIN check in 
 		External.LCA_RESTRICTED\Languages\IronRuby\mspec\default.mspec 
-		so that mspec picks up IR_OPTIONS even if ROWAN_BIN is not set.
+		so that mspec picks up IR_OPTIONS even if DLR_BIN is not set.
 
 	22-05 (jdevillle)
 		(jdeville) Regressions tests for the following CP bugs. 
