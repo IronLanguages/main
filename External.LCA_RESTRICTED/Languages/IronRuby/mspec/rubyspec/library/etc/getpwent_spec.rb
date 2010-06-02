@@ -8,9 +8,9 @@ describe "Etc.getpwent" do
   else
 
     before(:all) do
-      @etc_passwd = `cat /etc/passwd`.chomp.split('\n')
-        .map { |s| s.split(':') }
-        .map { |e| Struct::Passwd.new(e[0],e[1],e[2],e[3],e[4],e[5],e[6]) }
+      @etc_passwd = `cat /etc/passwd`.chomp.split("\n").
+        map { |s| s.split(':') }.
+        map { |e| Struct::Passwd.new(e[0],e[1],e[2].to_i,e[3].to_i,e[4],e[5],e[6]) }
     end
 
     before(:each) do
