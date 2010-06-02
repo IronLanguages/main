@@ -1662,7 +1662,7 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "sticky?", 0x51, 
                 0x00000000U, 
-                new Func<System.IO.FileSystemInfo, System.Boolean>(IronRuby.Builtins.RubyFileOps.RubyStatOps.IsSticky)
+                new Func<System.IO.FileSystemInfo, System.Object>(IronRuby.Builtins.RubyFileOps.RubyStatOps.IsSticky)
             );
             
             DefineLibraryMethod(module, "symlink?", 0x51, 
@@ -1786,7 +1786,7 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "sticky?", 0x61, 
                 0x00010002U, 
-                new Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.FileTest.IsSticky)
+                new Func<IronRuby.Builtins.RubyModule, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.FileTest.IsSticky)
             );
             
             #if !SILVERLIGHT
