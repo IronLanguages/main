@@ -107,19 +107,19 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
-                return Restrict(binder.Bind(StorageMetaObject, DynamicMetaObject.EmptyMetaObjects));
+                return Restrict(StorageMetaObject.BindGetMember(binder));
             }
 
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
-                return Restrict(binder.Bind(StorageMetaObject, args));
+                return Restrict(StorageMetaObject.BindInvokeMember(binder, args));
             }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {                
-                return Restrict(binder.Bind(StorageMetaObject, new DynamicMetaObject[] { value }));
+                return Restrict(StorageMetaObject.BindSetMember(binder, value));
             }
 
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder) {
-                return Restrict(binder.Bind(StorageMetaObject, DynamicMetaObject.EmptyMetaObjects));
+                return Restrict(StorageMetaObject.BindDeleteMember(binder));
             }
 
             private DynamicMetaObject Restrict(DynamicMetaObject result) {

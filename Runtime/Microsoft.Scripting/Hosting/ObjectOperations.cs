@@ -544,11 +544,17 @@ namespace Microsoft.Scripting.Hosting {
             return new ObjectHandle((object)Invoke(GetLocalObject(obj), parameters));
         }
 
-        public ObjectHandle Create([NotNull]ObjectHandle obj, [NotNull]params ObjectHandle[] parameters) {
+        /// <summary>
+        /// Creates a new remote instance from the provided remote object using the given parameters, and returns the result.
+        /// </summary>
+        public ObjectHandle CreateInstance([NotNull]ObjectHandle obj, [NotNull]params ObjectHandle[] parameters) {
             return new ObjectHandle((object)CreateInstance(GetLocalObject(obj), GetLocalObjects(parameters)));
         }
 
-        public ObjectHandle Create([NotNull]ObjectHandle obj, params object[] parameters) {
+        /// <summary>
+        /// Creates a new remote instance from the provided remote object using the given parameters, and returns the result.
+        /// </summary>
+        public ObjectHandle CreateInstance([NotNull]ObjectHandle obj, params object[] parameters) {
             return new ObjectHandle((object)CreateInstance(GetLocalObject(obj), parameters));
         }
 

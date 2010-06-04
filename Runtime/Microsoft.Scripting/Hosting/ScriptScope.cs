@@ -197,7 +197,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Gets an array of variable names and their values stored in the scope.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        public IEnumerable<KeyValuePair<string, object>> GetItems() {
+        public IEnumerable<KeyValuePair<string, dynamic>> GetItems() {
             // Remoting: we eagerly enumerate all variables to avoid cross domain calls for each item.
             var result = new List<KeyValuePair<string, object>>();
             

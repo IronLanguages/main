@@ -44,7 +44,6 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
-    <DocumentationFile>..\..\Bin\Debug\Microsoft.Scripting.xml</DocumentationFile>
     <DefineConstants>DEBUG;TRACE;CLR2;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -55,7 +54,6 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
-    <DocumentationFile>..\..\Bin\Release\Microsoft.Scripting.xml</DocumentationFile>
     <DefineConstants>TRACE;CLR2;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -71,7 +69,6 @@
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <ErrorReport>prompt</ErrorReport>
     <NoStdLib>true</NoStdLib>
-    <DocumentationFile>..\..\Bin\Silverlight Debug\Microsoft.Scripting.xml</DocumentationFile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <SilverlightBuild>true</SilverlightBuild>
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
@@ -80,7 +77,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>$(SolutionDir)..\bin\Silverlight Release</OutputPath>
     <DefineConstants>TRACE;SILVERLIGHT;CLR2;$(SignedSym)</DefineConstants>
-    <DocumentationFile>..\..\Bin\Silverlight Release\Microsoft.Scripting.xml</DocumentationFile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <NoStdLib>true</NoStdLib>
     <DebugType>pdbonly</DebugType>
@@ -95,7 +91,6 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>$(SolutionDir)..\bin\V4 Debug</OutputPath>
-    <DocumentationFile>..\..\Bin\V4 Debug\Microsoft.Scripting.xml</DocumentationFile>
     <DefineConstants>DEBUG;TRACE;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -106,7 +101,6 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>$(SolutionDir)..\bin\V4 Release</OutputPath>
-    <DocumentationFile>..\..\Bin\V4 Release\Microsoft.Scripting.xml</DocumentationFile>
     <DefineConstants>TRACE;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -118,7 +112,6 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>$(SolutionDir)..\bin\Silverlight 4 Debug</OutputPath>
-    <DocumentationFile>..\..\Bin\Silverlight 4 Debug\Microsoft.Scripting.xml</DocumentationFile>
     <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -137,7 +130,6 @@
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputPath>$(SolutionDir)..\bin\Silverlight 4 Release</OutputPath>
-    <DocumentationFile>..\..\Bin\Silverlight 4 Release\Microsoft.Scripting.xml</DocumentationFile>
     <DefineConstants>TRACE;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
