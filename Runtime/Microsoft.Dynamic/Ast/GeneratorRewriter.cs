@@ -795,41 +795,43 @@ namespace Microsoft.Scripting.Ast {
 
             var block = new ReadOnlyCollectionBuilder<Expression>();
 
-            // We need to make sure that LHS is evaluated before RHS. For example,
-            //
-            // {expr0}[{expr1},..,{exprN}] = {rhs} 
-            // ->
-            // { l0 = {expr0}; l1 = {expr1}; ..; lN = {exprN}; r = {rhs}; l0[l1,..,lN] = r } 
-            //
-            if (left == node.Left) {
-                switch (left.NodeType) {
-                    case ExpressionType.MemberAccess:
-                        var member = (MemberExpression)node.Left;
-                        if (member.Expression != null) {
-                            left = member.Update(ToTemp(block, member.Expression));
-                        }
-                        break;
+            if (_generator.RewriteAssignments) {
+                // We need to make sure that LHS is evaluated before RHS. For example,
+                //
+                // {expr0}[{expr1},..,{exprN}] = {rhs} 
+                // ->
+                // { l0 = {expr0}; l1 = {expr1}; ..; lN = {exprN}; r = {rhs}; l0[l1,..,lN] = r } 
+                //
+                if (left == node.Left) {
+                    switch (left.NodeType) {
+                        case ExpressionType.MemberAccess:
+                            var member = (MemberExpression)node.Left;
+                            if (member.Expression != null) {
+                                left = member.Update(ToTemp(block, member.Expression));
+                            }
+                            break;
 
-                    case ExpressionType.Index:
-                        var index = (IndexExpression)node.Left;
-                        left = index.Update((index.Object != null ? ToTemp(block, index.Object) : null), ToTemp(block, index.Arguments));
-                        break;
+                        case ExpressionType.Index:
+                            var index = (IndexExpression)node.Left;
+                            left = index.Update((index.Object != null ? ToTemp(block, index.Object) : null), ToTemp(block, index.Arguments));
+                            break;
 
-                    case ExpressionType.Parameter:
-                        // no action needed
-                        break;
+                        case ExpressionType.Parameter:
+                            // no action needed
+                            break;
 
-                    default:
-                        // Extension should've been reduced by Visit above,
-                        // and returned a different node
-                        throw Assert.Unreachable;
+                        default:
+                            // Extension should've been reduced by Visit above,
+                            // and returned a different node
+                            throw Assert.Unreachable;
+                    }
+                } else {
+                    // Get the last expression of the rewritten left side
+                    var leftBlock = (BlockExpression)left;
+                    block.AddRange(leftBlock.Expressions);
+                    block.RemoveAt(block.Count - 1);
+                    left = leftBlock.Expressions[leftBlock.Expressions.Count - 1];
                 }
-            } else {
-                // Get the last expression of the rewritten left side
-                var leftBlock = (BlockExpression)left;
-                block.AddRange(leftBlock.Expressions);
-                block.RemoveAt(block.Count - 1);
-                left = leftBlock.Expressions[leftBlock.Expressions.Count - 1];
             }
 
             if (right != node.Right) {

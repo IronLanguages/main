@@ -39,12 +39,14 @@ namespace Microsoft.Scripting.Ast {
         private Expression _reduced;
         private readonly Type _type;
         private readonly string _name;
+        private readonly bool _rewriteAssignments;
 
-        internal GeneratorExpression(string name, Type type, LabelTarget label, Expression body) {
+        internal GeneratorExpression(string name, Type type, LabelTarget label, Expression body, bool rewriteAssignments) {
             _target = label;
             _body = body;
             _type = type;
             _name = name;
+            _rewriteAssignments = rewriteAssignments;
         }
 
         public override bool CanReduce {
@@ -79,6 +81,14 @@ namespace Microsoft.Scripting.Ast {
             get { return _body; }
         }
 
+        /// <summary>
+        /// Indicates whether the lhs instances are preserved when assignments
+        /// are made to expressions containing yields.
+        /// </summary>
+        public bool RewriteAssignments {
+            get { return _rewriteAssignments; }
+        }
+
         public override Expression Reduce() {
             if (_reduced == null) {
                 _reduced = new GeneratorRewriter(this).Reduce();
@@ -108,7 +118,7 @@ namespace Microsoft.Scripting.Ast {
             ContractUtils.RequiresNotNull(body, "body");
             ContractUtils.Requires(label.Type != typeof(void), "label", "label must have a non-void type");
 
-            return new GeneratorExpression("generator", typeof(IEnumerable<>).MakeGenericType(label.Type), label, body);
+            return new GeneratorExpression("generator", typeof(IEnumerable<>).MakeGenericType(label.Type), label, body, true);
         }
 
         public static GeneratorExpression Generator(LabelTarget label, Expression body, Type type) {
@@ -116,6 +126,10 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public static GeneratorExpression Generator(string name, LabelTarget label, Expression body, Type type) {
+            return Generator(name, label, body, type, true);
+        }
+
+        public static GeneratorExpression Generator(string name, LabelTarget label, Expression body, Type type, bool rewriteAssignments) {
             ContractUtils.RequiresNotNull(type, "type");
             ContractUtils.RequiresNotNull(body, "body");
             ContractUtils.RequiresNotNull(label, "label");
@@ -136,7 +150,7 @@ namespace Microsoft.Scripting.Ast {
 
             ContractUtils.RequiresNotNull(body, "body");
 
-            return new GeneratorExpression(name, type, label, body);
+            return new GeneratorExpression(name, type, label, body, rewriteAssignments);
         }
 
         private static ArgumentException GeneratorTypeMustBeEnumerableOfT(Type type) {
@@ -170,6 +184,10 @@ namespace Microsoft.Scripting.Ast {
             return GeneratorLambda(delegateType, label, body, name, (IEnumerable<ParameterExpression>)parameters);
         }
 
+        public static LambdaExpression GeneratorLambda(Type delegateType, LabelTarget label, Expression body, string name, IEnumerable<ParameterExpression> parameters) {
+            return GeneratorLambda(delegateType, label, body, name, true, (IEnumerable<ParameterExpression>)parameters);
+        }
+
         // Creates a GeneratorLambda as a lambda containing a parameterless
         // generator. In the case where we return an IEnumerator, it's a very
         // simple, constant-time construction. However, if the result is
@@ -181,6 +199,7 @@ namespace Microsoft.Scripting.Ast {
             LabelTarget label,
             Expression body,
             string name,
+            bool rewriteAssignments,
             IEnumerable<ParameterExpression> parameters)
         {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
@@ -195,7 +214,7 @@ namespace Microsoft.Scripting.Ast {
 
             return Expression.Lambda(
                  delegateType,
-                 Utils.Generator(name, label, body, generatorType),
+                 Utils.Generator(name, label, body, generatorType, rewriteAssignments),
                  name,
                  paramList
              );
