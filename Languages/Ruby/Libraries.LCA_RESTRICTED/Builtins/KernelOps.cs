@@ -1134,10 +1134,17 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ file1) {
             cmd &= 0xFF;
             switch (cmd) {
-                case 'A': throw new NotImplementedException();
-                case 'b': throw new NotImplementedException();
-                case 'C': throw new NotImplementedException();
-                case 'c': throw new NotImplementedException();
+                case 'A':
+                    return RubyFileOps.RubyStatOps.AccessTime(RubyFileOps.RubyStatOps.Create(context, file1));
+
+                case 'b':
+                    return RubyFileOps.RubyStatOps.IsBlockDevice(RubyFileOps.RubyStatOps.Create(context, file1));
+
+                case 'C':
+                    return RubyFileOps.RubyStatOps.CreateTime(RubyFileOps.RubyStatOps.Create(context, file1));
+
+                case 'c':
+                    return RubyFileOps.RubyStatOps.IsCharDevice(RubyFileOps.RubyStatOps.Create(context, file1));
 
                 case 'd':
                     return RubyFileOps.DirectoryExists(context, file1);
@@ -1146,10 +1153,18 @@ namespace IronRuby.Builtins {
                 case 'f':
                     return RubyFileOps.FileExists(context, file1);
 
-                case 'g': throw new NotImplementedException();
-                case 'G': throw new NotImplementedException();
-                case 'k': throw new NotImplementedException();
-                case 'l': throw new NotImplementedException();
+                case 'g':
+                    return RubyFileOps.RubyStatOps.IsSetGid(RubyFileOps.RubyStatOps.Create(context, file1));
+
+                case 'G':
+                    return RubyFileOps.RubyStatOps.IsGroupOwned(RubyFileOps.RubyStatOps.Create(context, file1));
+
+                case 'k':
+                    return RubyFileOps.RubyStatOps.IsSticky(RubyFileOps.RubyStatOps.Create(context, file1));
+
+                case 'l':
+                    return RubyFileOps.RubyStatOps.IsSymLink(RubyFileOps.RubyStatOps.Create(context, file1));
+
                 case 'M': throw new NotImplementedException();
                 case 'O': throw new NotImplementedException();
                 case 'o': throw new NotImplementedException();

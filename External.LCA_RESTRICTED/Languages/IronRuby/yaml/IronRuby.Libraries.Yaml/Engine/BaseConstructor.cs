@@ -13,7 +13,7 @@
  *
  * Copyright (C) 2007 Ola Bini <ola@ologix.com>
  * Copyright (c) Microsoft Corporation.
- * 
+ *
  ***** END LICENSE BLOCK *****/
 
 using System;
@@ -38,8 +38,8 @@ namespace IronRuby.StandardLibrary.Yaml {
     public class BaseConstructor : IEnumerable<object> {
         private readonly static Dictionary<string, YamlConstructor> _yamlConstructors = new Dictionary<string, YamlConstructor>();
         private readonly static Dictionary<string, YamlMultiConstructor> _yamlMultiConstructors = new Dictionary<string, YamlMultiConstructor>();
-        private readonly static Dictionary<string, Regex> _yamlMultiRegexps = new Dictionary<string, Regex>();        
-        
+        private readonly static Dictionary<string, Regex> _yamlMultiRegexps = new Dictionary<string, Regex>();
+
         private readonly Dictionary<Node, List<RecursiveFixer>>/*!*/ _recursiveObjects = new Dictionary<Node, List<RecursiveFixer>>();
         private readonly NodeProvider/*!*/ _nodeProvider;
         private readonly RubyGlobalScope/*!*/ _globalScope;
@@ -168,7 +168,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (node is ScalarNode) {
                 return ConstructScalar(node);
             } else if (node is SequenceNode) {
-                return ConstructSequence(node);            
+                return ConstructSequence(node);
             } else if (node is MappingNode) {
                 return ConstructMapping(node);
             } else {
@@ -193,7 +193,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 throw new ConstructorException("expected a scalar or mapping node, but found: " + node);
             }
             return scalar.Value;
-        }        
+        }
 
         public object/*!*/ ConstructPrivateType(Node node) {
             object val = null;
@@ -206,7 +206,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 val = ConstructSequence(node);
             } else {
                 throw new ConstructorException("unexpected node type: " + node);
-            }            
+            }
             return new PrivateType(node.Tag,val);
         }
 
@@ -282,7 +282,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (null != merge) {
                 merge.AddLast(mapping);
                 mapping = new Hash(_globalScope.Context);
-                foreach (Hash m in merge) {                    
+                foreach (Hash m in merge) {
                     foreach (KeyValuePair<object, object> e in m) {
                         IDictionaryOps.SetElement(_globalScope.Context, mapping, e.Key, e.Value);
                     }
@@ -403,14 +403,14 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         private static Regex _timestampRegexp;
-        
-        private static Regex TimestampRegex { 
-            get { 
+
+        private static Regex TimestampRegex {
+            get {
                 return _timestampRegexp ?? (_timestampRegexp = new Regex(@"
                     ^[ \t]*
 
                     (                               # Year
-                        -? 
+                        -?
                         [0-9][0-9][0-9][0-9]
                     )
                     -
@@ -424,7 +424,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                             |
                             [ \t]+
                         )
-                    
+
                         ([0-9][0-9]?)               # Hour
                         :
                         ([0-9][0-9])                # Minute
@@ -449,16 +449,16 @@ namespace IronRuby.StandardLibrary.Yaml {
                         )
                     )?
 
-                    [ \t]*$", 
+                    [ \t]*$",
                     RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant));
             }
         }
 
         private static Regex _ymdRegex;
-        
+
         internal static Regex YmdRegex {
             get {
-                return _ymdRegex ?? (_ymdRegex = 
+                return _ymdRegex ?? (_ymdRegex =
                     new Regex("^(-?[0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)$", RegexOptions.CultureInvariant)
                 );
             }
@@ -658,7 +658,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
                 foreach (KeyValuePair<object, object> e in ctor.ConstructMapping(node)) {
                     string name = e.Key.ToString();
-                    name = "" + name[0].ToUpperInvariant() + name.Substring(1);
+                    name = "" + name[0].ToString().ToUpperInvariant() + name.Substring(1);
                     PropertyInfo prop = type.GetProperty(name);
 
                     prop.SetValue(result, Convert.ChangeType(e.Value, prop.PropertyType, CultureInfo.InvariantCulture), null);
@@ -673,3 +673,4 @@ namespace IronRuby.StandardLibrary.Yaml {
         #endregion
     }
 }
+

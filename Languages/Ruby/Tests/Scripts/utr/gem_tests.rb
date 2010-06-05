@@ -5,6 +5,9 @@ class UnitTestSetup
   end
   
   def require_files
+    #HACK: this is loading up our defaults file which causes tests to fail.
+    #the global is to stop that loading
+    $utr_runner=true
     require 'rubygems'
   end
 

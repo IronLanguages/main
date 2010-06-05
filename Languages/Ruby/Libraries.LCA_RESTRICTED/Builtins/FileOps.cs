@@ -938,8 +938,8 @@ namespace IronRuby.Builtins {
             }
 
             [RubyMethod("sticky?")]
-            public static bool IsSticky(FileSystemInfo/*!*/ self) {
-                return false;
+            public static object IsSticky(FileSystemInfo/*!*/ self) {
+                return null;
             }
 
             [RubyMethod("symlink?")]
