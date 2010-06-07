@@ -112,7 +112,7 @@ ARGV.each do |option|
         p "Invalid option: #{option}"
     end
 end
-applicable_drivers = [ Test::CRuby, Test::Iron_m1 ] if applicable_drivers.empty?
+applicable_drivers = [ Test::Iron_m2, Test::Iron_m3, Test::CRuby ] if applicable_drivers.empty?
 applicable_drivers.uniq!
 
 test_files = TestListFile::load 

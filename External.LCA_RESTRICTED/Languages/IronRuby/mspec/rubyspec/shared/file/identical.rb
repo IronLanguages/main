@@ -37,6 +37,12 @@ describe :file_identical, :shared => true do
     @object.send(@method, @file1, @file1).should == true
     @object.send(@method, @file1, @file2).should == false
   end
+  
+  it "return false if one of the file doesn't exist" do
+    @object.send(@method, @file1, "file that doesn't exist").should == false
+    @object.send(@method, "file that doesn't exist", @file2).should == false
+    @object.send(@method, "file that doesn't exist", "file that doesn't exist").should == false
+  end
 
   platform_is_not :windows do
     it "returns true if one is a symlink and they are identical" do

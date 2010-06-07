@@ -12,8 +12,9 @@ at_exit do
     STDERR.puts <<-EOM
 
 -----------------------------------------------------
-The rubyspec temp directory is not empty. Ensure that
-all specs are cleaning up temporary files.
+The rubyspec temp directory is not empty. 
+Ensure that all specs are cleaning up temporary files.
+Drectory: #{SPEC_TEMP_DIR} 
 -----------------------------------------------------
 
     EOM

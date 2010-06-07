@@ -812,6 +812,12 @@ namespace IronRuby.Builtins {
                 return self.Extension.Equals(".exe", StringComparison.OrdinalIgnoreCase);
             }
 
+            [RubyMethod("identical?")]
+            public static bool AreIdentical(RubyContext/*!*/ context, FileSystemInfo/*!*/ self, [NotNull]FileSystemInfo/*!*/ other) {
+                // TODO: links
+                return self.Exists && other.Exists && context.Platform.PathComparer.Compare(self.FullName, other.FullName) == 0;
+            }
+
             [RubyMethod("file?")]
             public static bool IsFile(FileSystemInfo/*!*/ self) {
                 return self is FileInfo;

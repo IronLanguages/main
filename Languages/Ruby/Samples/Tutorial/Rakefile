@@ -7,8 +7,10 @@ task :run => 'tutorial:run'
 
 cwd = File.dirname(__FILE__)
 
-if ENV["MERLIN_ROOT"]
-  root = ENV['MERLIN_ROOT']
+# TODO: Mono support
+
+if ENV["DLR_ROOT"]
+  root = ENV['DLR_ROOT']
   # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
   BIN = "#{root}/Languages/Ruby/Scripts/bin"
   RUBY_STDLIBS = "#{root}/../External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby/1.8"

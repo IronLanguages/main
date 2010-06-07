@@ -100,6 +100,7 @@ namespace IronRuby.Runtime {
         }
 
         private const int NextFrameLine = Int32.MinValue;
+        internal const string InterpretedCallSiteName = "CallSite.Target";
 
         private void AddBacktrace(IEnumerable<StackFrame> stackTrace, int skipFrames, bool skipInterpreterRunMethod) {
             if (stackTrace != null) {
@@ -129,7 +130,7 @@ namespace IronRuby.Runtime {
                         // TODO: We need some more general way to recognize and parse non-Ruby interpreted frames
                         TryParseRubyMethodName(ref methodName, ref file, ref line);
 
-                        if (methodName == InterpretedDispatcher.InterpretedCallSiteName) {
+                        if (methodName == InterpretedCallSiteName) {
                             // ignore ruby interpreted call sites
                             continue;
                         }

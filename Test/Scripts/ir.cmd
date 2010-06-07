@@ -10,10 +10,10 @@ if "%DLR_BIN%" == "" (
 set HOME=%USERPROFILE%
 set RUBY_EXE=%TEMP_IR_PATH%\ir.exe
 
-if "%ROWAN_RUNTIME%" == "" (
+if "%DLR_VM%" == "" (
     set _EXE="%RUBY_EXE%"
 ) else (
-    set _EXE=%ROWAN_RUNTIME% "%RUBY_EXE%"
+    set _EXE=%DLR_VM% "%RUBY_EXE%"
 )
 if "%THISISSNAP%" == "1" (
   if exist "%DLR_ROOT%\Languages\Ruby\Tests\interop\com\ComTest.exe" (

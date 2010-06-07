@@ -274,8 +274,8 @@ namespace IronRuby.Tests {
 
                 PermissionSet ps = CreatePermissionSet();
                 AppDomainSetup setup = new AppDomainSetup();
-                
-                setup.ApplicationBase = Environment.CurrentDirectory;
+
+                setup.ApplicationBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 AppDomain domain = AppDomain.CreateDomain("Tests", null, setup, ps);
 
                 Loader loader = new Loader(args);
