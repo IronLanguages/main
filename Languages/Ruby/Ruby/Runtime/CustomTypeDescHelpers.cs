@@ -164,22 +164,6 @@ namespace IronRuby.Runtime {
             return result.ToArray();
         }
 
-        private static bool ShouldIncludeInstanceMember(string memberName, Attribute[] attributes) {
-            bool include = true;
-            foreach (Attribute attr in attributes) {
-                if (attr.GetType() == typeof(BrowsableAttribute)) {
-                    if (memberName.StartsWith("__", StringComparison.Ordinal) && memberName.EndsWith("__", StringComparison.Ordinal)) {
-                        include = false;
-                    }
-                } else {
-                    // unknown attribute, Python doesn't support attributes, so we
-                    // say this doesn't have that attribute.
-                    include = false;
-                }
-            }
-            return include;
-        }
-
         [Emitted]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "pd")]
         public static object GetPropertyOwner(object self, PropertyDescriptor pd) {

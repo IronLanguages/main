@@ -87,11 +87,5 @@ namespace IronRuby.Runtime.Calls {
                 metaBuilder.SetError(Methods.MakeWrongNumberOfArgumentsError.OpCall(Ast.Constant(args.Signature.ArgumentCount), Ast.Constant(0)));
             }
         }
-
-        private static void ReadAll(IList<ParameterExpression> variables, IList<Expression> expressions, int start) {
-            for (int i = 0, j = start; i < variables.Count; i++, j++) {
-                expressions[j] = variables[i];
-            }
-        }
     }
 }

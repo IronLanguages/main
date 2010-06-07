@@ -72,50 +72,7 @@ namespace IronRuby.Compiler.Generation {
         
         protected abstract Type/*!*/[]/*!*/ MakeSiteSignature(int nargs);
         protected abstract Type/*!*/ ContextType { get; }
-
-        /// <summary>
-        /// Gets the position for the parameter which we are overriding.
-        /// </summary>
-        /// <param name="pis"></param>
-        /// <param name="overrideParams"></param>
-        /// <param name="i"></param>
-        /// <returns></returns>
-        private int GetOriginalIndex(ParameterInfo/*!*/[]/*!*/ pis, ParameterInfo/*!*/[]/*!*/ overrideParams, int i) {
-            if (pis.Length == 0 || pis[0].ParameterType != ContextType) {
-                return i - (overrideParams.Length - pis.Length);
-            }
-
-            // context & cls are swapped, context comes first.
-            if (i == 1) return -1;
-            if (i == 0) return 0;
-
-            return i - (overrideParams.Length - pis.Length);
-        }
-
-        private void CallBaseConstructor(ConstructorInfo parentConstructor, ParameterInfo[] pis, ParameterInfo[] overrideParams, ILGen il) {
-            il.EmitLoadArg(0);
-#if DEBUG
-            int lastIndex = -1;
-#endif
-            for (int i = 0; i < overrideParams.Length; i++) {
-                int index = GetOriginalIndex(pis, overrideParams, i);
-
-#if DEBUG
-                // we insert a new parameter (the class) but the parameters should
-                // still remain in the same order after the extra parameter is removed.
-                if (index >= 0) {
-                    Debug.Assert(index > lastIndex);
-                    lastIndex = index;
-                }
-#endif
-                if (index >= 0) {
-                    il.EmitLoadArg(i + 1);
-                }
-            }
-            il.Emit(OpCodes.Call, parentConstructor);
-            il.Emit(OpCodes.Ret);
-        }
-
+        
         protected ILGen GetCCtor() {
             if (_cctor == null) {
                 ConstructorBuilder cctor = _tb.DefineTypeInitializer();
@@ -126,84 +83,6 @@ namespace IronRuby.Compiler.Generation {
 
         protected Type BaseType {
             get { return _baseType; }
-        }
-
-        private void ImplementProtectedFieldAccessors() {
-            // For protected fields to be accessible from the derived type in Silverlight,
-            // we need to create public helper methods that expose them. These methods are
-            // used by the IOldDynamicObject implementation (in UserTypeOps.GetRuleHelper)
-
-            FieldInfo[] fields = _baseType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-            foreach (FieldInfo fi in fields) {
-                if (!CompilerHelpers.IsProtected(fi)) {
-                    continue;
-                }
-
-                List<string> fieldAccessorNames = new List<string>();
-
-                PropertyBuilder pb = _tb.DefineProperty(fi.Name, PropertyAttributes.None, fi.FieldType, Type.EmptyTypes);
-                MethodAttributes methodAttrs = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName;
-                if (fi.IsStatic) {
-                    methodAttrs |= MethodAttributes.Static;
-                }
-
-                MethodBuilder method;
-                method = _tb.DefineMethod(FieldGetterPrefix + fi.Name, methodAttrs,
-                                          fi.FieldType, Type.EmptyTypes);
-                ILGen il = CreateILGen(method.GetILGenerator());
-                if (!fi.IsStatic) {
-                    il.EmitLoadArg(0);
-                }
-
-                if (fi.IsLiteral) {
-                    // literal fields need to be inlined directly in here... We use GetRawConstant
-                    // which will work even in partial trust if the constant is protected.
-                    object value = fi.GetRawConstantValue();
-                    switch (Type.GetTypeCode(fi.FieldType)) {
-                        case TypeCode.Boolean:
-                            if ((bool)value) {
-                                il.Emit(OpCodes.Ldc_I4_1);
-                            } else {
-                                il.Emit(OpCodes.Ldc_I4_0);
-                            }
-                            break;
-                        case TypeCode.Byte: il.Emit(OpCodes.Ldc_I4, (byte)value); break;
-                        case TypeCode.Char: il.Emit(OpCodes.Ldc_I4, (char)value); break;
-                        case TypeCode.Double: il.Emit(OpCodes.Ldc_R8, (double)value); break;
-                        case TypeCode.Int16: il.Emit(OpCodes.Ldc_I4, (short)value); break;
-                        case TypeCode.Int32: il.Emit(OpCodes.Ldc_I4, (int)value); break;
-                        case TypeCode.Int64: il.Emit(OpCodes.Ldc_I8, (long)value); break;
-                        case TypeCode.SByte: il.Emit(OpCodes.Ldc_I4, (sbyte)value); break;
-                        case TypeCode.Single: il.Emit(OpCodes.Ldc_R4, (float)value); break;
-                        case TypeCode.String: il.Emit(OpCodes.Ldstr, (string)value); break;
-                        case TypeCode.UInt16: il.Emit(OpCodes.Ldc_I4, (ushort)value); break;
-                        case TypeCode.UInt32: il.Emit(OpCodes.Ldc_I4, (uint)value); break;
-                        case TypeCode.UInt64: il.Emit(OpCodes.Ldc_I8, (ulong)value); break;
-                    }
-                } else {
-                    il.EmitFieldGet(fi);
-                }
-                il.Emit(OpCodes.Ret);
-
-                pb.SetGetMethod(method);
-                fieldAccessorNames.Add(method.Name);
-
-                if (!fi.IsLiteral && !fi.IsInitOnly) {
-                    method = _tb.DefineMethod(FieldSetterPrefix + fi.Name, methodAttrs,
-                                              null, new Type[] { fi.FieldType });
-                    method.DefineParameter(1, ParameterAttributes.None, "value");
-                    il = CreateILGen(method.GetILGenerator());
-                    il.EmitLoadArg(0);
-                    if (!fi.IsStatic) {
-                        il.EmitLoadArg(1);
-                    }
-                    il.EmitFieldSet(fi);
-                    il.Emit(OpCodes.Ret);
-                    pb.SetSetMethod(method);
-
-                    fieldAccessorNames.Add(method.Name);
-                }
-            }
         }
 
         /// <summary>
@@ -298,16 +177,6 @@ namespace IronRuby.Compiler.Generation {
                 il.EmitCall(MissingInvokeMethodException());
                 il.Emit(OpCodes.Throw);
             }
-        }
-
-        private MethodBuilder CreateVTableGetterOverride(MethodInfo mi, string name) {
-            MethodBuilder impl;
-            ILGen il = DefineMethodOverride(MethodAttributes.Public, mi, out impl);
-
-            EmitVirtualSiteCall(il, mi, name);
-
-            _tb.DefineMethodOverride(impl, mi);
-            return impl;
         }
 
         public FieldInfo AllocateDynamicSite(Type[] signature, Func<FieldInfo, Expression> factory) {
@@ -447,35 +316,8 @@ namespace IronRuby.Compiler.Generation {
             return new ILGen(il);
         }
 
-        private ILGen DefineExplicitInterfaceImplementation(MethodInfo baseMethod, out MethodBuilder builder) {
-            MethodAttributes attrs = baseMethod.Attributes & ~(MethodAttributes.Abstract | MethodAttributes.Public);
-            attrs |= MethodAttributes.NewSlot | MethodAttributes.Final;
-
-            Type[] baseSignature = ReflectionUtils.GetParameterTypes(baseMethod.GetParameters());
-            builder = _tb.DefineMethod(
-                baseMethod.DeclaringType.Name + "." + baseMethod.Name,
-                attrs,
-                baseMethod.ReturnType,
-                baseSignature
-            );
-            return CreateILGen(builder.GetILGenerator());
-        }
-
         protected const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
-
-        protected ILGen DefineMethodOverride(Type type, string name, out MethodInfo decl, out MethodBuilder impl) {
-            return DefineMethodOverride(MethodAttributes.PrivateScope, type, name, out decl, out impl);
-        }
-
-        protected ILGen DefineMethodOverride(MethodAttributes extra, Type type, string name, out MethodInfo decl, out MethodBuilder impl) {
-            decl = type.GetMethod(name);
-            return DefineMethodOverride(extra, decl, out impl);
-        }
-
-        protected ILGen DefineMethodOverride(MethodInfo decl, out MethodBuilder impl) {
-            return DefineMethodOverride(MethodAttributes.PrivateScope, decl, out impl);
-        }
-
+        
         protected ILGen DefineMethodOverride(MethodAttributes extra, MethodInfo decl, out MethodBuilder impl) {
             impl = ReflectionUtils.DefineMethodOverride(_tb, extra, decl);
             return CreateILGen(impl.GetILGenerator());
@@ -483,12 +325,6 @@ namespace IronRuby.Compiler.Generation {
 
         // TODO: use in Python's OverrideConstructor:
         public static ParameterBuilder DefineParameterCopy(ConstructorBuilder builder, int paramIndex, ParameterInfo info) {
-            var result = builder.DefineParameter(1 + paramIndex, info.Attributes, info.Name);
-            CopyParameterAttributes(info, result);
-            return result;
-        }
-
-        public static ParameterBuilder DefineParameterCopy(MethodBuilder builder, int paramIndex, ParameterInfo info) {
             var result = builder.DefineParameter(1 + paramIndex, info.Attributes, info.Name);
             CopyParameterAttributes(info, result);
             return result;

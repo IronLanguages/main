@@ -1302,18 +1302,6 @@ namespace IronRuby.Runtime {
 
         #region DLR Scopes
 
-        internal static bool TryGetGlobalScopeMethod(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
-            string unmangled;
-            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
-            if (scopeStorage != null) {
-                return scopeStorage.TryGetValue(name, false, out value)
-                    || (unmangled = RubyUtils.TryUnmangleMethodName(name)) != null && scopeStorage.TryGetValue(unmangled, false, out value);
-            } else {
-                return context.Operations.TryGetMember(scope, name, out value)
-                    || (unmangled = RubyUtils.TryUnmangleMethodName(name)) != null && context.Operations.TryGetMember(scope, unmangled, out value);
-            }
-        }
-
         internal static bool TryGetGlobalScopeConstant(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
             string mangled;
             ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;

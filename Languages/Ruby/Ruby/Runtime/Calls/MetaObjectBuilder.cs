@@ -240,45 +240,6 @@ namespace IronRuby.Runtime.Calls {
             _condition = (_condition != null) ? Ast.AndAlso(_condition, condition) : condition;
         }
 
-        public static Expression/*!*/ GetObjectTypeTestExpression(object value, Expression/*!*/ expression) {
-            if (value == null) {
-                return Ast.Equal(expression, AstUtils.Constant(null));
-            } else {
-                return MakeTypeTestExpression(value.GetType(), expression);
-            }
-        }
-
-        public static Expression MakeTypeTestExpression(Type t, Expression expr) {
-            // we must always check for non-sealed types explicitly - otherwise we end up
-            // doing fast-path behavior on a subtype which overrides behavior that wasn't
-            // present for the base type.
-            //TODO there's a question about nulls here
-            if (t.IsSealed && t == expr.Type) {
-                if (t.IsValueType) {
-                    return AstUtils.Constant(true);
-                }
-                return Ast.NotEqual(expr, AstUtils.Constant(null));
-            }
-
-            return Ast.AndAlso(
-                Ast.NotEqual(
-                    expr,
-                    AstUtils.Constant(null)),
-                Ast.Equal(
-                    Ast.Call(
-                        AstUtils.Convert(expr, typeof(object)),
-                        typeof(object).GetMethod("GetType")
-                    ),
-                    AstUtils.Constant(t)
-                )
-            );
-        }
-
-
-        public void AddObjectTypeCondition(object value, Expression/*!*/ expression) {
-            AddCondition(GetObjectTypeTestExpression(value, expression));
-        }
-
         #endregion
 
         #region Tests
