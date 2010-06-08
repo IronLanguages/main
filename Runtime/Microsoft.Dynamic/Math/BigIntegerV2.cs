@@ -384,10 +384,30 @@ namespace Microsoft.Scripting.Math {
             uint b = data[w];
             Debug.Assert(b > 0);
             int result = w * 32;
-            do {
+
+            if (b >= 1u << 16) {
+                b >>= 16;
+                result += 16;
+            }
+            if (b >= 1u << 8) {
+                b >>= 8;
+                result += 8;
+            }
+            if (b >= 1u << 4) {
+                b >>= 4;
+                result += 4;
+            }
+            if (b >= 1u << 2) {
+                b >>= 2;
+                result += 2;
+            }
+            if (b >= 1u << 1) {
                 b >>= 1;
                 result++;
-            } while (b > 0);
+            }
+            if (b > 0) {
+                result++;
+            }
 
             return result;
         }

@@ -508,6 +508,119 @@ namespace Microsoft.Scripting.Utils {
             );
         }
 
+        // Like GetBitCount(Abs(x)), except 0 maps to 0
+        public static int BitLength(BigInteger x) {
+            if (x.IsZero()) {
+                return 0;
+            }
+
+            return x.Abs().GetBitCount();
+        }
+
+#if !CLR2
+        public static int BitLength(BigInt x) {
+            if (x.IsZero) {
+                return 0;
+            }
+
+            byte[] bytes = BigInt.Abs(x).ToByteArray();
+            int index = bytes.Length;
+            while (bytes[--index] == 0) ;
+
+            return index * 8 + BitLength((int)bytes[index]);
+        }
+#endif
+
+        // Like GetBitCount(Abs(x)), except 0 maps to 0
+        public static int BitLength(long x) {
+            if (x == 0) {
+                return 0;
+            }
+            if (x == Int64.MinValue) {
+                return 64;
+            }
+
+            x = Math.Abs(x);
+            int res = 1;
+            if (x >= 1L << 32) {
+                x >>= 32;
+                res += 32;
+            }
+            if (x >= 1L << 16) {
+                x >>= 16;
+                res += 16;
+            }
+            if (x >= 1L << 8) {
+                x >>= 8;
+                res += 8;
+            }
+            if (x >= 1L << 4) {
+                x >>= 4;
+                res += 4;
+            }
+            if (x >= 1L << 2) {
+                x >>= 2;
+                res += 2;
+            }
+            if (x >= 1L << 1) {
+                res += 1;
+            }
+
+            return res;
+        }
+
+        // Like GetBitCount(Abs(x)), except 0 maps to 0
+        [CLSCompliant(false)]
+        public static int BitLengthUnsigned(ulong x) {
+            if (x >= 1uL << 63) {
+                return 64;
+            }
+            return BitLength((long)x);
+        }
+
+        // Like GetBitCount(Abs(x)), except 0 maps to 0
+        public static int BitLength(int x) {
+            if (x == 0) {
+                return 0;
+            }
+            if (x == Int32.MinValue) {
+                return 32;
+            }
+
+            x = Math.Abs(x);
+            int res = 1;
+            if (x >= 1 << 16) {
+                x >>= 16;
+                res += 16;
+            }
+            if (x >= 1 << 8) {
+                x >>= 8;
+                res += 8;
+            }
+            if (x >= 1 << 4) {
+                x >>= 4;
+                res += 4;
+            }
+            if (x >= 1 << 2) {
+                x >>= 2;
+                res += 2;
+            }
+            if (x >= 1 << 1) {
+                res += 1;
+            }
+
+            return res;
+        }
+
+        // Like GetBitCount(Abs(x)), except 0 maps to 0
+        [CLSCompliant(false)]
+        public static int BitLengthUnsigned(uint x) {
+            if (x >= 1u << 31) {
+                return 32;
+            }
+            return BitLength((int)x);
+        }
+
         #region Extending BigInt with BigInteger API
 #if !CLR2
 
