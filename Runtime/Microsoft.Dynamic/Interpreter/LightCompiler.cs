@@ -157,7 +157,9 @@ namespace Microsoft.Scripting.Interpreter {
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
-    public sealed class LightCompiler {        
+    public sealed class LightCompiler {
+        internal const int DefaultCompilationThreshold = 32;
+
         // zero: sync compilation
         private readonly int _compilationThreshold;
 
@@ -184,7 +186,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         internal LightCompiler(int compilationThreshold) {
             _instructions = new InstructionList();
-            _compilationThreshold = compilationThreshold < 0 ? 32 : compilationThreshold;
+            _compilationThreshold = compilationThreshold < 0 ? DefaultCompilationThreshold : compilationThreshold;
         }
 
         private LightCompiler(LightCompiler parent)

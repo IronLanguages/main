@@ -50,6 +50,20 @@ namespace IronRuby.Runtime.Calls {
             : base(flags, declaringModule, variableName) {
         }
 
+        internal override MemberDispatcher GetDispatcher(Type/*!*/ delegateType, RubyCallSignature signature, object target, int version) {
+            if (!(target is IRubyObject)) {
+                return null;
+            } 
+            
+            if (signature.ArgumentCount != 0 || signature.HasRhsArgument || signature.HasBlock || !signature.HasScope) {
+                return null;
+            }
+
+            var dispatcher = new RubyObjectAttributeReaderDispatcherWithScope();
+            dispatcher.Initialize(InstanceVariableName, version);
+            return dispatcher;
+        }
+
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
             if (!metaBuilder.Error) {
@@ -73,6 +87,18 @@ namespace IronRuby.Runtime.Calls {
     public sealed class RubyAttributeWriterInfo : RubyAttributeAccessorInfo {
         public RubyAttributeWriterInfo(RubyMemberFlags flags, RubyModule/*!*/ declaringModule, string/*!*/ name)
             : base(flags, declaringModule, name) {
+        }
+
+        internal override MemberDispatcher GetDispatcher(Type/*!*/ delegateType, RubyCallSignature signature, object target, int version) {
+            if (!(target is IRubyObject)) {
+                return null;
+            } 
+            
+            if (signature.ArgumentCount + (signature.HasRhsArgument ? 1 : 0) != 1 || signature.HasBlock) {
+                return null;
+            }
+
+            return AttributeDispatcher.CreateRubyObjectWriterDispatcher(delegateType, InstanceVariableName, version);
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {

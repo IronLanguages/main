@@ -94,10 +94,11 @@ namespace IronRuby.Runtime.Calls {
 	            }
 
                 Utils.Log(String.Format(
-                    "{0}: {1}; {2}",
+                    "{0}: {1}; {2} <: {3}",
                     this,
                     sb,
-                    args.Length > 1 ? context.GetClassOf(args[1]).DebugName : null
+                    args.Length > 1 ? context.GetImmediateClassOf(args[1]).DebugName : null,
+                    args.Length > 1 ? context.GetImmediateClassOf(args[1]).SuperClass.DebugName : null
                 ), "BIND");
             }
 #endif

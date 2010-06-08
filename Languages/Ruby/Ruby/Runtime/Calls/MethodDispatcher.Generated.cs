@@ -27,7 +27,7 @@ using IronRuby.Builtins;
 using System.Collections.Generic;
 
 namespace IronRuby.Runtime.Calls {
-    public abstract partial class MethodDispatcher {
+    public abstract partial class MemberDispatcher {
         internal const int /*$$*/MaxPrecompiledArity = 5;
         internal const int /*$$*/MaxInterpretedArity = 15;
         internal const int /*$$*/MaxRubyMethodArity = 14;
@@ -61,7 +61,7 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        private static readonly Type[] RubyObjectMethodDispatchers = new[] {
+        internal static readonly Type[] RubyObjectMethodDispatchers = new[] {
 #if GENERATOR
             def generate; add_generic_types($MaxPrecompiledArity); end
 #else
@@ -77,7 +77,7 @@ namespace IronRuby.Runtime.Calls {
 #endregion
         };
 
-        private static readonly Type[] RubyObjectMethodDispatchersWithBlock = new[] {
+        internal static readonly Type[] RubyObjectMethodDispatchersWithBlock = new[] {
 #if GENERATOR
             def generate; add_generic_types($MaxPrecompiledArity); end
 #else
@@ -93,7 +93,7 @@ namespace IronRuby.Runtime.Calls {
 #endregion
         };
 
-        private static readonly Type[] RubyObjectMethodDispatchersWithScope = new[] {
+        internal static readonly Type[] RubyObjectMethodDispatchersWithScope = new[] {
 #if GENERATOR
             def generate; add_generic_types($MaxPrecompiledArity); end
 #else
@@ -109,7 +109,7 @@ namespace IronRuby.Runtime.Calls {
 #endregion
         };
 
-        private static readonly Type[] RubyObjectMethodDispatchersWithScopeAndBlock = new[] {
+        internal static readonly Type[] RubyObjectMethodDispatchersWithScopeAndBlock = new[] {
 #if GENERATOR
             def generate; add_generic_types($MaxPrecompiledArity); end
 #else
@@ -123,6 +123,10 @@ namespace IronRuby.Runtime.Calls {
             typeof(RubyObjectMethodDispatcherWithScopeAndBlock<,,,,>),
 
 #endregion
+        };
+
+        internal static readonly Type[] RubyObjectAttributeWriterDispatchersWithScope = new[] {
+            typeof(RubyObjectAttributeWriterDispatcherWithScope<>)
         };
 
         // TODO: an array, if all interpreted sites were untyped

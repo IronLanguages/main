@@ -109,7 +109,7 @@ namespace IronRuby.Runtime.Calls {
         protected override object BindPrecompiled(Type/*!*/ delegateType, object[]/*!*/ args) {
             if (Context == null || 
                 Signature.ResolveOnly ||
-                (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope | RubyCallFlags.HasBlock)) != 0) {
+                (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope | RubyCallFlags.HasBlock | RubyCallFlags.HasRhsArgument)) != 0) {
                 return null;
             }
 

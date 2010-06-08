@@ -102,7 +102,7 @@ namespace IronRuby.Runtime.Calls {
             return new RubyLibraryMethodInfo(this, methods);
         }
 
-        internal override MethodDispatcher GetDispatcher(Type/*!*/ delegateType, RubyCallSignature signature, object target, int version) {
+        internal override MemberDispatcher GetDispatcher(Type/*!*/ delegateType, RubyCallSignature signature, object target, int version) {
             if (!(target is IRubyObject)) {
                 return null;
             }

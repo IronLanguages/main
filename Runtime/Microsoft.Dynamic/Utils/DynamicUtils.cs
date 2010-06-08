@@ -84,7 +84,7 @@ namespace Microsoft.Scripting.Utils {
             ContractUtils.RequiresNotNull(binder, "binder");
             ContractUtils.RequiresNotNull(args, "args");
 
-            return GenericInterpretedBinder<T>.Instance.Bind(binder, compilationThreshold, args);
+            return GenericInterpretedBinder<T>.Instance.Bind(binder, compilationThreshold < 0 ? LightCompiler.DefaultCompilationThreshold : compilationThreshold, args);
         }
 
         private class GenericInterpretedBinder<T> where T : class {

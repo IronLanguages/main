@@ -94,7 +94,7 @@ namespace IronRuby.Runtime.Calls {
 #endif
 
         [Conditional("DEBUG")]
-        internal static void DumpPrecompiledRule(CallSiteBinder/*!*/ binder, MethodDispatcher/*!*/ dispatcher) {
+        internal static void DumpPrecompiledRule(CallSiteBinder/*!*/ binder, MemberDispatcher/*!*/ dispatcher) {
 #if DEBUG && !SILVERLIGHT
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
