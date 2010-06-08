@@ -7,7 +7,7 @@
   <ItemGroup Condition=" '$(BuildExePhase)' == '' ">
     <ProjectFile Include="Ruby\Ruby.Build.csproj" />
     <ProjectFile Include="Libraries.LCA_RESTRICTED\IronRuby.Libraries.Build.csproj" />
-    <ProjectFile Include="Console\Ruby.Console.Build.csproj" />
+    <ProjectFile Include="Console\Ruby.ConsoleAny.Build.csproj" />
   </ItemGroup>
   
   <!--Import the targets-->
