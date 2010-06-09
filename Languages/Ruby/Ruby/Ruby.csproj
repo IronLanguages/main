@@ -60,9 +60,9 @@
     <WarningLevel>4</WarningLevel>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight Debug\</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight3Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR2;$(SignedSym)</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -72,8 +72,8 @@
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
-    <OutputPath>$(SolutionDir)..\bin\Silverlight Release\</OutputPath>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
+    <OutputPath>$(SolutionDir)..\bin\Silverlight3Release\</OutputPath>
     <DefineConstants>TRACE;SILVERLIGHT;CLR2;$(SignedSym)</DefineConstants>
     <NoStdLib>true</NoStdLib>
     <DebugType>pdbonly</DebugType>
@@ -83,31 +83,31 @@
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'V4 Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\V4 Debug</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\v4Debug</OutputPath>
     <DefineConstants>TRACE;DEBUG;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'V4 Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\V4 Release</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\v4Release</OutputPath>
     <DefineConstants>TRACE;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight 4 Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight 4 Debug</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight4Debug</OutputPath>
     <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -118,12 +118,12 @@
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight4Path)</SilverlightPath>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight 4 Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Release|AnyCPU' ">
     <NoStdLib>true</NoStdLib>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight 4 Release</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight4Release</OutputPath>
     <DefineConstants>TRACE;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>

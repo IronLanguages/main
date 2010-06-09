@@ -36,12 +36,12 @@ gencache  =%DLR_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd
 ;= Silverlight Build Commands
 ;=
 
-bsrbd    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
-bsrbr    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
-bsd      =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
-bsr      =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
-bsd4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight 4 Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
-bsr4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight 4 Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
+bsrbd    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight3Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsrbr    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight3Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsd      =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight3Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsr      =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight3Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsd4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight4Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
+bsr4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight4Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
 
 ;==============================================================================
 ;= [Iron]Python program aliases
@@ -50,9 +50,9 @@ bsr4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration
 ipy     ="%DLR_ROOT%\Bin\Debug\ipy.exe" $*
 ipyr    ="%DLR_ROOT%\Bin\Release\ipy.exe" -X:TabCompletion $*
 ipyd    ="%DLR_ROOT%\Bin\Debug\ipy.exe" -D -X:TabCompletion $*
-ipy4    ="%DLR_ROOT%\Bin\V4 Debug\ipy.exe" $*
-ipyr4   ="%DLR_ROOT%\Bin\V4 Release\ipy.exe" -X:TabCompletion $*
-ipyd4   ="%DLR_ROOT%\Bin\V4 Debug\ipy.exe" -D -X:TabCompletion $*
+ipy4    ="%DLR_ROOT%\Bin\v4Debug\ipy.exe" $*
+ipyr4   ="%DLR_ROOT%\Bin\v4Release\ipy.exe" -X:TabCompletion $*
+ipyd4   ="%DLR_ROOT%\Bin\v4Debug\ipy.exe" -D -X:TabCompletion $*
 ipym    =mono "%DLR_ROOT%\Bin\Debug\ipy.exe" $*
 ipyrm   =mono "%DLR_ROOT%\Bin\Release\ipy.exe" -X:TabCompletion $*
 ipydm   =mono "%DLR_ROOT%\Bin\Debug\ipy.exe" -D -X:TabCompletion $*
@@ -69,9 +69,9 @@ msip    ="%windir%\system32\WindowsPowerShell\v1.0\powershell.exe" measure-comma
 rbx     ="%DLR_ROOT%\Bin\Debug\ir.exe" $*
 rbr     ="%DLR_ROOT%\Bin\Release\ir.exe" $*
 rbd     ="%DLR_ROOT%\Bin\Debug\ir.exe" -D $*
-rbx4    ="%DLR_ROOT%\Bin\V4 Debug\ir.exe" $*
-rbr4    ="%DLR_ROOT%\Bin\V4 Release\ir.exe" $*
-rbd4    ="%DLR_ROOT%\Bin\V4 Debug\ir.exe" -D $*
+rbx4    ="%DLR_ROOT%\Bin\v4Debug\ir.exe" $*
+rbr4    ="%DLR_ROOT%\Bin\v4Release\ir.exe" $*
+rbd4    ="%DLR_ROOT%\Bin\v4Debug\ir.exe" -D $*
 rbxm    =mono "%DLR_ROOT%\Bin\Debug\ir.exe" $*
 rbrm    =mono "%DLR_ROOT%\Bin\Release\ir.exe" $*
 rbdm    =mono "%DLR_ROOT%\Bin\Debug\ir.exe" -D $*
@@ -83,10 +83,10 @@ msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command
 ;= Chiron aliases
 ;=
 
-chd     ="%DLR_ROOT%\Bin\Silverlight Debug\Chiron.exe" $*
-chr     ="%DLR_ROOT%\Bin\Silverlight Release\Chiron.exe" $*
-chd4    ="%DLR_ROOT%\Bin\Silverlight 4 Debug\Chiron.exe" $*
-chr4    ="%DLR_ROOT%\Bin\Silverlight 4 Release\Chiron.exe" $*
+chd     ="%DLR_ROOT%\Bin\Silverlight3Debug\Chiron.exe" $*
+chr     ="%DLR_ROOT%\Bin\Silverlight3Release\Chiron.exe" $*
+chd4    ="%DLR_ROOT%\Bin\Silverlight4Debug\Chiron.exe" $*
+chr4    ="%DLR_ROOT%\Bin\Silverlight4Release\Chiron.exe" $*
 
 ;==============================================================================
 ;= Miscellaneous utilities

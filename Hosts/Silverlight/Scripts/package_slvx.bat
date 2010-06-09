@@ -2,7 +2,7 @@
 
 echo DLR slvx files being created ...
 
-set build_configuration=Silverlight Debug
+set build_configuration=Silverlight3Debug
 if %1 neq "" set build_configuration=%1
 
 set build_path=%~dp0..\..\..\Bin\%build_configuration%

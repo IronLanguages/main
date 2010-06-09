@@ -24,11 +24,11 @@
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight Debug\</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight3Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE;SILVERLIGHT;SILVERLIGHT_3;CLR2;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -37,11 +37,11 @@
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight Release\</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight3Release\</OutputPath>
     <DefineConstants>TRACE;SILVERLIGHT;SILVERLIGHT_3;CLR2;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -51,11 +51,11 @@
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight 4 Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight 4 Debug\</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight4Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -65,12 +65,12 @@
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight4Path)</SilverlightPath>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight 4 Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Release|AnyCPU' ">
     <NoStdLib>true</NoStdLib>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight 4 Release\</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight4Release\</OutputPath>
     <DefineConstants>TRACE;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>

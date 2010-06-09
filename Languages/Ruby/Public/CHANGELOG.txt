@@ -1865,7 +1865,7 @@ ironruby-0.9.4 (RC2) 2010-02-10
 	Date: Friday, January 22, 2010 9:14:51 AM
 
 	Comment:
-		Silverlight Debug binaries raise an assert when hit by the tests, and if SL Debug is built after SL Release, the SL Debug binaries overwrite the SL Release binaries in the IIS direcotry. By not running BuildSilverLightTests.bat we ensure that only the release binaries get tested, even if they run on the same machine one after another.
+		Silverlight3Debug binaries raise an assert when hit by the tests, and if SL Debug is built after SL Release, the SL Debug binaries overwrite the SL Release binaries in the IIS direcotry. By not running BuildSilverLightTests.bat we ensure that only the release binaries get tested, even if they run on the same machine one after another.
 		
 		This also fixes the assert issue by changing the code page in Silverlight
 		
@@ -3302,7 +3302,7 @@ ironruby-0.9.1.0 - 2009-09-28
 	User: merllab
 	Date: Thursday, August 27, 2009 2:19:13 PM
 
-	(tomat) (V4Config6) Adds configurations for Dev10 builds (V4 Debug and V4 Release)
+	(tomat) (V4Config6) Adds configurations for Dev10 builds (v4Debug and v4Release)
 
 	(Shelveset: V4Config6;REDMOND\tomat | SNAP CheckinId: 9273)
 	-------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 @echo off
 if "%1" == "-4" (
-  set DIR=%DLR_ROOT%\Bin\V4 Debug
+  set DIR=%DLR_ROOT%\Bin\v4Debug
 ) else (
   set DIR=%DLR_ROOT%\Bin\Debug
 )

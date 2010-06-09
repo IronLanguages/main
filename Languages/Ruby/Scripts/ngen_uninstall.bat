@@ -1,4 +1,4 @@
-pushd "..\..\..\Bin\V4 Release"
+pushd "..\..\..\Bin\v4Release"
 ngen uninstall ir.exe
 ngen uninstall Microsoft.Scripting.Core.dll
 ngen uninstall IronRuby.Libraries.dll
