@@ -465,18 +465,9 @@ namespace Microsoft.Scripting.Metadata {
         // internal DirectoryEntry ManagedNativeHeaderDirectory;
     }
 
-    internal struct MetadataHeader {
-        internal uint Signature;
-        internal ushort MajorVersion;
-        internal ushort MinorVersion;
-        internal uint ExtraData;
-        internal int VersionStringSize;
-        internal string VersionString;
-    }
-
     internal struct StorageHeader {
         internal ushort Flags;
-        internal short NumberOfStreams;
+        internal ushort NumberOfStreams;
     }
 
     internal struct StreamHeader {
@@ -495,11 +486,11 @@ namespace Microsoft.Scripting.Metadata {
     }
 
     internal struct MetadataTableHeader {
-        internal uint Reserved;
+        // internal uint Reserved;
         internal byte MajorVersion;
         internal byte MinorVersion;
         internal HeapSizeFlag HeapSizeFlags;
-        internal byte RowId;
+        // internal byte RowId;
         internal TableMask ValidTables;
         internal TableMask SortedTables;
         internal int[] CompressedMetadataTableRowCount;

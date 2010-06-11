@@ -12,6 +12,8 @@
  *
  *
  * ***************************************************************************/
+//#define DEBUG_HEADERS
+
 #if !SILVERLIGHT
 
 using System;
@@ -24,8 +26,6 @@ namespace Microsoft.Scripting.Metadata {
         private readonly MemoryBlock _image;
         private const int TableCount = (int)MetadataRecordType.GenericParamConstraint + 1;
 
-        #region Constructors and Utils
-
         internal MetadataImport(MemoryBlock image) {
             _image = image;
 
@@ -33,31 +33,29 @@ namespace Microsoft.Scripting.Metadata {
                 ReadPEFileLevelData();
                 ReadCORModuleLevelData();
                 ReadMetadataLevelData();
-            } catch (OverflowException) {
-                throw new BadImageFormatException();
             } catch (ArgumentOutOfRangeException) {
                 throw new BadImageFormatException();
             }
         }
 
-        #endregion Constructors and Utils
+        [Conditional("DEBUG_HEADERS")]
+        private unsafe void DP(MemoryReader reader, object comment) {
+            Console.WriteLine("{0:X8} {1}", (int)(reader.Block.Pointer - _image.Pointer) + reader.Position, comment);
+        }
 
-        #region Fields and Properties [PEFile]
+        #region PE File
 
         private int _numberOfSections;
         private OptionalHeaderDirectoryEntries _optionalHeaderDirectoryEntries;
         private SectionHeader[] _sectionHeaders;
         private MemoryBlock _win32ResourceBlock;
 
-        #endregion Fields and Properties [PEFile]
-
-        #region Methods [PEFile]
-
         private void ReadOptionalHeaderDirectoryEntries(MemoryReader memReader) {
             // ExportTableDirectory
             // ImportTableDirectory
             memReader.SeekRelative(2 * 2 * sizeof(uint));
 
+            DP(memReader, 2);
             _optionalHeaderDirectoryEntries.ResourceTableDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
             _optionalHeaderDirectoryEntries.ResourceTableDirectory.Size = memReader.ReadUInt32();
 
@@ -74,6 +72,7 @@ namespace Microsoft.Scripting.Metadata {
             // DelayImportTableDirectory
             memReader.SeekRelative(11 * 2 * sizeof(uint));
 
+            DP(memReader, 2); 
             _optionalHeaderDirectoryEntries.COR20HeaderTableDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
             _optionalHeaderDirectoryEntries.COR20HeaderTableDirectory.Size = memReader.ReadUInt32();
 
@@ -82,15 +81,16 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         private void ReadSectionHeaders(MemoryReader memReader) {
-            int numberOfSections = _numberOfSections;
-            if (memReader.RemainingBytes < numberOfSections * PEFileConstants.SizeofSectionHeader) {
+            if (memReader.RemainingBytes < _numberOfSections * PEFileConstants.SizeofSectionHeader) {
                 throw new BadImageFormatException();
             }
 
-            _sectionHeaders = new SectionHeader[numberOfSections];
+            _sectionHeaders = new SectionHeader[_numberOfSections];
             SectionHeader[] sectionHeaderArray = _sectionHeaders;
-            for (int i = 0; i < numberOfSections; ++i) {
+            for (int i = 0; i < _numberOfSections; i++) {
                 memReader.SeekRelative(PEFileConstants.SizeofSectionName);
+
+                DP(memReader, 4);
                 sectionHeaderArray[i].VirtualSize = memReader.ReadUInt32();
                 sectionHeaderArray[i].VirtualAddress = memReader.ReadUInt32();
                 sectionHeaderArray[i].SizeOfRawData = memReader.ReadUInt32();
@@ -123,16 +123,19 @@ namespace Microsoft.Scripting.Metadata {
             memReader.Seek(ntHeaderOffset);
 
             //  Look for PESignature "PE\0\0"
-            uint NTSignature = memReader.ReadUInt32();
-            if (NTSignature != PEFileConstants.PESignature) {
+            DP(memReader, "PESignature");
+            uint signature = memReader.ReadUInt32();
+            if (signature != PEFileConstants.PESignature) {
                 throw new BadImageFormatException();
             }
 
             //  Read the COFF Header
-            _numberOfSections = memReader.Block.ReadInt16(memReader.Position + sizeof(ushort));
+            DP(memReader, "# sections");
+            _numberOfSections = memReader.Block.ReadUInt16(memReader.Position + sizeof(ushort));
             memReader.SeekRelative(PEFileConstants.SizeofCOFFFileHeader);
 
             //  Read the magic to determine if its PE or PE+
+            DP(memReader, "PEMagic");
             switch ((PEMagic)memReader.ReadUInt16()) {
                 case PEMagic.PEMagic32:
                     memReader.SeekRelative(PEFileConstants.SizeofOptionalHeaderStandardFields32 - sizeof(ushort));
@@ -179,28 +182,23 @@ namespace Microsoft.Scripting.Metadata {
             return RvaToMemoryBlock(directory.RelativeVirtualAddress, directory.Size);
         }
 
-        #endregion Methods [PEFile]
+        #endregion
 
-        #region Fields and Properties [CORModule]
+        #region COR Module
 
-        private COR20Header COR20Header;
-        private MetadataHeader MetadataHeader;
-        private StorageHeader StorageHeader;
-        private StreamHeader[] StreamHeaders;
+        private COR20Header _cor20Header;
+        private StorageHeader _storageHeader;
+        private StreamHeader[] _streamHeaders;
 
-        private MemoryBlock StringStream;
-        private MemoryBlock BlobStream;
-        private MemoryBlock GUIDStream;
-        private MemoryBlock UserStringStream;
+        private MemoryBlock _stringStream;
+        private MemoryBlock _blobStream;
+        private MemoryBlock _guidStream;
+        private MemoryBlock _userStringStream;
 
-        private MetadataStreamKind MetadataStreamKind;
-        private MemoryBlock MetadataTableStream;
-        private MemoryBlock ResourceMemoryBlock;
-        private MemoryBlock StrongNameSignatureBlock;
-
-        #endregion Fields and Properties [CORModule]
-
-        #region Methods [CORModule]
+        private MetadataStreamKind _metadataStreamKind;
+        private MemoryBlock _metadataTableStream;
+        private MemoryBlock _resourceMemoryBlock;
+        private MemoryBlock _strongNameSignatureBlock;
 
         private void ReadCOR20Header() {
             MemoryBlock memBlock = DirectoryToMemoryBlock(_optionalHeaderDirectoryEntries.COR20HeaderTableDirectory);
@@ -214,17 +212,19 @@ namespace Microsoft.Scripting.Metadata {
             // MinorRuntimeVersion = memReader.ReadUInt16();
             memReader.SeekRelative(sizeof(int) + 2 * sizeof(short));
 
-            COR20Header.MetaDataDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
-            COR20Header.MetaDataDirectory.Size = memReader.ReadUInt32();
+            DP(memReader, 2);
+            _cor20Header.MetaDataDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
+            _cor20Header.MetaDataDirectory.Size = memReader.ReadUInt32();
             
             // COR20Header.COR20Flags = (COR20Flags)memReader.ReadUInt32();
             // COR20Header.EntryPointTokenOrRVA = memReader.ReadUInt32();
             memReader.SeekRelative(2 * sizeof(uint));
 
-            COR20Header.ResourcesDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
-            COR20Header.ResourcesDirectory.Size = memReader.ReadUInt32();
-            COR20Header.StrongNameSignatureDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
-            COR20Header.StrongNameSignatureDirectory.Size = memReader.ReadUInt32();
+            DP(memReader, 4);
+            _cor20Header.ResourcesDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
+            _cor20Header.ResourcesDirectory.Size = memReader.ReadUInt32();
+            _cor20Header.StrongNameSignatureDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
+            _cor20Header.StrongNameSignatureDirectory.Size = memReader.ReadUInt32();
 
             // CodeManagerTableDirectory
             // VtableFixupsDirectory
@@ -234,51 +234,52 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         private void ReadMetadataHeader(MemoryReader memReader) {
-            MetadataHeader.Signature = memReader.ReadUInt32();
-            if (MetadataHeader.Signature != COR20Constants.COR20MetadataSignature) {
+            DP(memReader, 8);
+            uint signature = memReader.ReadUInt32();
+            if (signature != COR20Constants.COR20MetadataSignature) {
                 throw new BadImageFormatException();
             }
 
-            MetadataHeader.MajorVersion = memReader.ReadUInt16();
-            MetadataHeader.MinorVersion = memReader.ReadUInt16();
-            MetadataHeader.ExtraData = memReader.ReadUInt32();
-            MetadataHeader.VersionStringSize = memReader.ReadInt32();
-            if (memReader.RemainingBytes < MetadataHeader.VersionStringSize) {
+            // MajorVersion = memReader.ReadUInt16();
+            // MinorVersion = memReader.ReadUInt16();
+            memReader.SeekRelative(2 * sizeof(ushort));
+            
+            uint reserved = memReader.ReadUInt32();
+            if (reserved != 0) {
                 throw new BadImageFormatException();
             }
 
-            int bytesRead;
-            MetadataHeader.VersionString = memReader.Block.ReadUtf8(memReader.Position, out bytesRead);
-            memReader.SeekRelative(MetadataHeader.VersionStringSize);
+            int versionStringSize = memReader.ReadInt32();
+            memReader.SeekRelative(versionStringSize);
         }
 
         private void ReadStorageHeader(MemoryReader memReader) {
-            StorageHeader.Flags = memReader.ReadUInt16();
-            StorageHeader.NumberOfStreams = memReader.ReadInt16();
+            DP(memReader, 2);
+            _storageHeader.Flags = memReader.ReadUInt16();
+            _storageHeader.NumberOfStreams = memReader.ReadUInt16();
         }
 
         private void ReadStreamHeaders(MemoryReader memReader) {
-            int numberOfStreams = StorageHeader.NumberOfStreams;
-            StreamHeaders = new StreamHeader[numberOfStreams];
-            StreamHeader[] streamHeaders = StreamHeaders;
-            for (int i = 0; i < numberOfStreams; ++i) {
+            int numberOfStreams = _storageHeader.NumberOfStreams;
+            _streamHeaders = new StreamHeader[numberOfStreams];
+            StreamHeader[] streamHeaders = _streamHeaders;
+            for (int i = 0; i < numberOfStreams; i++) {
                 if (memReader.RemainingBytes < COR20Constants.MinimumSizeofStreamHeader) {
 	                throw new BadImageFormatException();
                 }
 
+                DP(memReader, 3);
                 streamHeaders[i].Offset = memReader.ReadUInt32();
                 streamHeaders[i].Size = memReader.ReadUInt32();
-                //  Review: Oh well there is no way i can test if we will read correctly. However we can check it after reading and aligning...
-                streamHeaders[i].Name = memReader.ReadAscii();
+                streamHeaders[i].Name = memReader.ReadAscii(32);
                 memReader.Align(4);
-                if (memReader.RemainingBytes < 0) {
-	                throw new BadImageFormatException();
-                }
             }
         }
 
         private void ProcessAndCacheStreams(MemoryBlock metadataRoot) {
-            foreach (StreamHeader streamHeader in StreamHeaders) {
+            _metadataStreamKind = MetadataStreamKind.Illegal;
+
+            foreach (StreamHeader streamHeader in _streamHeaders) {
                 if ((long)streamHeader.Offset + streamHeader.Size > metadataRoot.Length) {
                     throw new BadImageFormatException();
                 }
@@ -286,42 +287,64 @@ namespace Microsoft.Scripting.Metadata {
 
                 switch (streamHeader.Name) {
                     case COR20Constants.StringStreamName:
-                        StringStream = block;
+                        if (_stringStream != null) {
+                            throw new BadImageFormatException();
+                        }
+                        _stringStream = block;
                         break;
 
                     case COR20Constants.BlobStreamName:
-                        BlobStream = block;
+                        if (_blobStream != null) {
+                            throw new BadImageFormatException();
+                        }
+                        _blobStream = block;
                         break;
 
                     case COR20Constants.GUIDStreamName:
-                        GUIDStream = block;
+                        if (_guidStream != null) {
+                            throw new BadImageFormatException();
+                        }
+                        _guidStream = block;
                         break;
 
                     case COR20Constants.UserStringStreamName:
-                        UserStringStream = block;
+                        if (_userStringStream != null) {
+                            throw new BadImageFormatException();
+                        }
+                        _userStringStream = block;
                         break;
 
                     case COR20Constants.CompressedMetadataTableStreamName:
-                        MetadataStreamKind = MetadataStreamKind.Compressed;
-                        MetadataTableStream = block;
+                        if (_metadataStreamKind != MetadataStreamKind.Illegal) {
+                            throw new BadImageFormatException();
+                        }
+                        _metadataStreamKind = MetadataStreamKind.Compressed;
+                        _metadataTableStream = block;
                         break;
 
                     case COR20Constants.UncompressedMetadataTableStreamName:
-                        MetadataStreamKind = MetadataStreamKind.UnCompressed;
-                        MetadataTableStream = block;
+                        if (_metadataStreamKind != MetadataStreamKind.Illegal) {
+                            throw new BadImageFormatException();
+                        }
+                        _metadataStreamKind = MetadataStreamKind.UnCompressed;
+                        _metadataTableStream = block;
                         break;
 
                     default:
 		                throw new BadImageFormatException();
                 }
             }
+
+            if (_stringStream == null || _blobStream == null || _guidStream == null || _userStringStream == null || _metadataStreamKind == MetadataStreamKind.Illegal) {
+                throw new BadImageFormatException();
+            }
         }
 
         private void ReadCORModuleLevelData() {
             ReadCOR20Header();
 
-            MemoryBlock metadataRoot = DirectoryToMemoryBlock(COR20Header.MetaDataDirectory);
-            if (metadataRoot.Length < COR20Header.MetaDataDirectory.Size) {
+            MemoryBlock metadataRoot = DirectoryToMemoryBlock(_cor20Header.MetaDataDirectory);
+            if (metadataRoot == null || metadataRoot.Length < _cor20Header.MetaDataDirectory.Size) {
                 throw new BadImageFormatException();
             }
 
@@ -332,62 +355,62 @@ namespace Microsoft.Scripting.Metadata {
             ReadStreamHeaders(memReader);
             ProcessAndCacheStreams(metadataRoot);
 
-            ResourceMemoryBlock = DirectoryToMemoryBlock(COR20Header.ResourcesDirectory);
-            StrongNameSignatureBlock = DirectoryToMemoryBlock(COR20Header.StrongNameSignatureDirectory);
+            _resourceMemoryBlock = DirectoryToMemoryBlock(_cor20Header.ResourcesDirectory);
+            _strongNameSignatureBlock = DirectoryToMemoryBlock(_cor20Header.StrongNameSignatureDirectory);
         }
 
         #endregion Methods [CORModule]
 
-        #region Fields and Properties [Metadata]
+        #region Metadata
 
         private MetadataTableHeader _metadataTableHeader;
         private int[] _tableRowCounts;
 
-        public ModuleTable ModuleTable;
-        public TypeRefTable TypeRefTable;
-        public TypeDefTable TypeDefTable;
-        public FieldPtrTable FieldPtrTable;
-        public FieldTable FieldTable;
-        public MethodPtrTable MethodPtrTable;
-        public MethodTable MethodTable;
-        public ParamPtrTable ParamPtrTable;
-        public ParamTable ParamTable;
-        public InterfaceImplTable InterfaceImplTable;
-        public MemberRefTable MemberRefTable;
-        public ConstantTable ConstantTable;
-        public CustomAttributeTable CustomAttributeTable;
-        public FieldMarshalTable FieldMarshalTable;
-        public DeclSecurityTable DeclSecurityTable;
-        public ClassLayoutTable ClassLayoutTable;
-        public FieldLayoutTable FieldLayoutTable;
-        public StandAloneSigTable StandAloneSigTable;
-        public EventMapTable EventMapTable;
-        public EventPtrTable EventPtrTable;
-        public EventTable EventTable;
-        public PropertyMapTable PropertyMapTable;
-        public PropertyPtrTable PropertyPtrTable;
-        public PropertyTable PropertyTable;
-        public MethodSemanticsTable MethodSemanticsTable;
-        public MethodImplTable MethodImplTable;
-        public ModuleRefTable ModuleRefTable;
-        public TypeSpecTable TypeSpecTable;
-        public ImplMapTable ImplMapTable;
-        public FieldRVATable FieldRVATable;
-        public EnCLogTable EnCLogTable;
-        public EnCMapTable EnCMapTable;
-        public AssemblyTable AssemblyTable;
-        public AssemblyProcessorTable AssemblyProcessorTable;
-        public AssemblyOSTable AssemblyOSTable;
-        public AssemblyRefTable AssemblyRefTable;
-        public AssemblyRefProcessorTable AssemblyRefProcessorTable;
-        public AssemblyRefOSTable AssemblyRefOSTable;
-        public FileTable FileTable;
-        public ExportedTypeTable ExportedTypeTable;
-        public ManifestResourceTable ManifestResourceTable;
-        public NestedClassTable NestedClassTable;
-        public GenericParamTable GenericParamTable;
-        public MethodSpecTable MethodSpecTable;
-        public GenericParamConstraintTable GenericParamConstraintTable;
+        internal ModuleTable ModuleTable;
+        internal TypeRefTable TypeRefTable;
+        internal TypeDefTable TypeDefTable;
+        internal FieldPtrTable FieldPtrTable;
+        internal FieldTable FieldTable;
+        internal MethodPtrTable MethodPtrTable;
+        internal MethodTable MethodTable;
+        internal ParamPtrTable ParamPtrTable;
+        internal ParamTable ParamTable;
+        internal InterfaceImplTable InterfaceImplTable;
+        internal MemberRefTable MemberRefTable;
+        internal ConstantTable ConstantTable;
+        internal CustomAttributeTable CustomAttributeTable;
+        internal FieldMarshalTable FieldMarshalTable;
+        internal DeclSecurityTable DeclSecurityTable;
+        internal ClassLayoutTable ClassLayoutTable;
+        internal FieldLayoutTable FieldLayoutTable;
+        internal StandAloneSigTable StandAloneSigTable;
+        internal EventMapTable EventMapTable;
+        internal EventPtrTable EventPtrTable;
+        internal EventTable EventTable;
+        internal PropertyMapTable PropertyMapTable;
+        internal PropertyPtrTable PropertyPtrTable;
+        internal PropertyTable PropertyTable;
+        internal MethodSemanticsTable MethodSemanticsTable;
+        internal MethodImplTable MethodImplTable;
+        internal ModuleRefTable ModuleRefTable;
+        internal TypeSpecTable TypeSpecTable;
+        internal ImplMapTable ImplMapTable;
+        internal FieldRVATable FieldRVATable;
+        internal EnCLogTable EnCLogTable;
+        internal EnCMapTable EnCMapTable;
+        internal AssemblyTable AssemblyTable;
+        internal AssemblyProcessorTable AssemblyProcessorTable;
+        internal AssemblyOSTable AssemblyOSTable;
+        internal AssemblyRefTable AssemblyRefTable;
+        internal AssemblyRefProcessorTable AssemblyRefProcessorTable;
+        internal AssemblyRefOSTable AssemblyRefOSTable;
+        internal FileTable FileTable;
+        internal ExportedTypeTable ExportedTypeTable;
+        internal ManifestResourceTable ManifestResourceTable;
+        internal NestedClassTable NestedClassTable;
+        internal GenericParamTable GenericParamTable;
+        internal MethodSpecTable MethodSpecTable;
+        internal GenericParamConstraintTable GenericParamConstraintTable;
 
         internal bool IsManifestModule {
             get { return AssemblyTable.NumberOfRows == 1; }
@@ -413,36 +436,38 @@ namespace Microsoft.Scripting.Metadata {
             get { return PropertyPtrTable.NumberOfRows > 0; }
         }
 
-        #endregion Fields and Properties [Metadata]
-
-        #region Methods [Metadata]
-
         private void ReadMetadataTableInformation(MemoryReader memReader) {
             if (memReader.RemainingBytes < MetadataStreamConstants.SizeOfMetadataTableHeader) {
                 throw new BadImageFormatException();
             }
 
-            _metadataTableHeader.Reserved = memReader.ReadUInt32();
+            // Reserved
+            memReader.SeekRelative(sizeof(uint));
+
+            DP(memReader, 1);
             _metadataTableHeader.MajorVersion = memReader.ReadByte();
             _metadataTableHeader.MinorVersion = memReader.ReadByte();
             _metadataTableHeader.HeapSizeFlags = (HeapSizeFlag)memReader.ReadByte();
-            _metadataTableHeader.RowId = memReader.ReadByte();
+            
+            // Rid
+            memReader.SeekRelative(sizeof(byte));
+
             _metadataTableHeader.ValidTables = (TableMask)memReader.ReadUInt64();
             _metadataTableHeader.SortedTables = (TableMask)memReader.ReadUInt64();
             ulong presentTables = (ulong)_metadataTableHeader.ValidTables;
             ulong validTablesForVersion = 0;
 
-            int version = _metadataTableHeader.MajorVersion << 16 | _metadataTableHeader.MinorVersion;
+            int version = _metadataTableHeader.MajorVersion << 8 | _metadataTableHeader.MinorVersion;
             switch (version) {
-                case 0x00010000:
+                case 0x0100:
                     validTablesForVersion = (ulong)TableMask.V1_0_TablesMask;
                     break;
 
-                case 0x00010001:
+                case 0x0101:
                     validTablesForVersion = (ulong)TableMask.V1_1_TablesMask;
                     break;
 
-                case 0x00020000:
+                case 0x0200:
                     validTablesForVersion = (ulong)TableMask.V2_0_TablesMask;
                     break;
 
@@ -454,7 +479,7 @@ namespace Microsoft.Scripting.Metadata {
                 throw new BadImageFormatException();
             }
 
-            if (MetadataStreamKind == MetadataStreamKind.Compressed && (presentTables & (ulong)TableMask.CompressedStreamNotAllowedMask) != 0) {
+            if (_metadataStreamKind == MetadataStreamKind.Compressed && (presentTables & (ulong)TableMask.CompressedStreamNotAllowedMask) != 0) {
                 throw new BadImageFormatException();
             }
 
@@ -719,13 +744,10 @@ namespace Microsoft.Scripting.Metadata {
             currentTableSize = GenericParamConstraintTable.Table.Length;
             totalRequiredSize += currentTableSize;
             currentPointer += currentTableSize;
-            if (totalRequiredSize > metadataTablesMemoryBlock.Length) {
-                throw new BadImageFormatException();
-            }
         }
 
         private void ReadMetadataLevelData() {
-            MemoryReader memReader = new MemoryReader(MetadataTableStream);
+            MemoryReader memReader = new MemoryReader(_metadataTableStream);
 
             ReadMetadataTableInformation(memReader);
             ProcessAndCacheMetadataTableBlocks(memReader.GetRemainingBlock());
@@ -743,25 +765,25 @@ namespace Microsoft.Scripting.Metadata {
             int size;
             int dataOffset = GetBlobDataOffset(blob, out size);
             var result = new byte[size];
-            BlobStream.Read(dataOffset, result);
+            _blobStream.Read(dataOffset, result);
             return result;
         }
 
         internal MemoryBlock GetBlobBlock(uint blob) {
             int size;
             int dataOffset = GetBlobDataOffset(blob, out size);
-            return BlobStream.GetRange(dataOffset, size);
+            return _blobStream.GetRange(dataOffset, size);
         }
 
         internal int GetBlobDataOffset(uint blob, out int size) {
-            if (blob >= BlobStream.Length) {
+            if (blob >= _blobStream.Length) {
                 throw new BadImageFormatException();
             }
 
             int offset = (int)blob;
             int bytesRead;
-            size = BlobStream.ReadCompressedInt32(offset, out bytesRead);
-            if (offset > BlobStream.Length - bytesRead - size) {
+            size = _blobStream.ReadCompressedInt32(offset, out bytesRead);
+            if (offset > _blobStream.Length - bytesRead - size) {
                 throw new BadImageFormatException();
             }
 
@@ -776,24 +798,24 @@ namespace Microsoft.Scripting.Metadata {
             }
 
             switch (type) {
-                case ElementType.Boolean: return BlobStream.ReadByte(offset) != 0;
-                case ElementType.Char: return (char)BlobStream.ReadUInt16(offset);
-                case ElementType.Int8: return BlobStream.ReadSByte(offset);
-                case ElementType.UInt8: return BlobStream.ReadByte(offset);
-                case ElementType.Int16: return BlobStream.ReadInt16(offset);
-                case ElementType.UInt16: return BlobStream.ReadUInt16(offset);
-                case ElementType.Int32: return BlobStream.ReadInt32(offset);
-                case ElementType.UInt32: return BlobStream.ReadUInt32(offset);
-                case ElementType.Int64: return BlobStream.ReadInt64(offset);
-                case ElementType.UInt64: return BlobStream.ReadUInt64(offset);
-                case ElementType.Single: return BlobStream.ReadSingle(offset);
-                case ElementType.Double: return BlobStream.ReadDouble(offset);
+                case ElementType.Boolean: return _blobStream.ReadByte(offset) != 0;
+                case ElementType.Char: return (char)_blobStream.ReadUInt16(offset);
+                case ElementType.Int8: return _blobStream.ReadSByte(offset);
+                case ElementType.UInt8: return _blobStream.ReadByte(offset);
+                case ElementType.Int16: return _blobStream.ReadInt16(offset);
+                case ElementType.UInt16: return _blobStream.ReadUInt16(offset);
+                case ElementType.Int32: return _blobStream.ReadInt32(offset);
+                case ElementType.UInt32: return _blobStream.ReadUInt32(offset);
+                case ElementType.Int64: return _blobStream.ReadInt64(offset);
+                case ElementType.UInt64: return _blobStream.ReadUInt64(offset);
+                case ElementType.Single: return _blobStream.ReadSingle(offset);
+                case ElementType.Double: return _blobStream.ReadDouble(offset);
 
                 case ElementType.String:
-                    return BlobStream.ReadUtf16(offset, size);
+                    return _blobStream.ReadUtf16(offset, size);
 
                 case ElementType.Class:
-                    if (BlobStream.ReadUInt32(offset) != 0) {
+                    if (_blobStream.ReadUInt32(offset) != 0) {
                         throw new BadImageFormatException();
                     }
                     return null;
@@ -837,7 +859,7 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         internal Guid GetGuid(uint blob) {
-            if (blob - 1 > GUIDStream.Length - 16) {
+            if (blob - 1 > _guidStream.Length - 16) {
                 throw new BadImageFormatException();
             }
 
@@ -845,7 +867,7 @@ namespace Microsoft.Scripting.Metadata {
                 return Guid.Empty;
             }
 
-            return GUIDStream.ReadGuid((int)(blob - 1));
+            return _guidStream.ReadGuid((int)(blob - 1));
         }
 
         #endregion
@@ -1057,8 +1079,8 @@ namespace Microsoft.Scripting.Metadata {
                 return token.Rid <= _tableRowCounts[tableIndex];
             }
             switch (tableIndex) {
-                case (int)MetadataTokenType.String >> 24: return token.Rid < StringStream.Length;
-                case (int)MetadataTokenType.Name >> 24: return token.Rid < UserStringStream.Length;
+                case (int)MetadataTokenType.String >> 24: return token.Rid < _stringStream.Length;
+                case (int)MetadataTokenType.Name >> 24: return token.Rid < _userStringStream.Length;
             }
             return false;
         }
@@ -1068,7 +1090,7 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         internal MetadataName GetMetadataName(uint blob) {
-            return StringStream.ReadName(blob);
+            return _stringStream.ReadName(blob);
         }
 
         internal object GetDefaultValue(MetadataToken token) {
@@ -1080,6 +1102,14 @@ namespace Microsoft.Scripting.Metadata {
             uint blob = ConstantTable.GetValue(constantRid, out type);
             return GetBlobValue(blob, type);
         }
+
+        #region Test Support
+
+        internal MemoryBlock Image {
+            get { return _image; }
+        }
+
+        #endregion
 
         #region Dump
 #if DEBUG
@@ -1111,39 +1141,31 @@ namespace Microsoft.Scripting.Metadata {
 
             output.WriteLine();
             output.WriteLine("COR20 Header:");
-            output.WriteLine("  MetaDataDirectory                @{0:X8} {1}", COR20Header.MetaDataDirectory.RelativeVirtualAddress, COR20Header.MetaDataDirectory.Size);
-            output.WriteLine("  ResourcesDirectory               @{0:X8} {1}", COR20Header.ResourcesDirectory.RelativeVirtualAddress, COR20Header.ResourcesDirectory.Size);
-            output.WriteLine("  StrongNameSignatureDirectory     @{0:X8} {1}", COR20Header.StrongNameSignatureDirectory.RelativeVirtualAddress, COR20Header.StrongNameSignatureDirectory.Size);
-            output.WriteLine();
-            output.WriteLine("MetadataHeader:");
-            output.WriteLine("  Signature                        {0}", MetadataHeader.Signature);
-            output.WriteLine("  MajorVersion                     {0}", MetadataHeader.MajorVersion);
-            output.WriteLine("  MinorVersion                     {0}", MetadataHeader.MinorVersion);
-            output.WriteLine("  ExtraData                        {0}", MetadataHeader.ExtraData);
-            output.WriteLine("  VersionStringSize                {0}", MetadataHeader.VersionStringSize);
-            output.WriteLine("  VersionString                    '{0}'", MetadataHeader.VersionString);
+            output.WriteLine("  MetaDataDirectory                @{0:X8} {1}", _cor20Header.MetaDataDirectory.RelativeVirtualAddress, _cor20Header.MetaDataDirectory.Size);
+            output.WriteLine("  ResourcesDirectory               @{0:X8} {1}", _cor20Header.ResourcesDirectory.RelativeVirtualAddress, _cor20Header.ResourcesDirectory.Size);
+            output.WriteLine("  StrongNameSignatureDirectory     @{0:X8} {1}", _cor20Header.StrongNameSignatureDirectory.RelativeVirtualAddress, _cor20Header.StrongNameSignatureDirectory.Size);
             output.WriteLine();
             output.WriteLine("StorageHeader:");
-            output.WriteLine("  Flags                            {0}", StorageHeader.Flags);
-            output.WriteLine("  NumberOfStreams                  {0}", StorageHeader.NumberOfStreams);
+            output.WriteLine("  Flags                            {0}", _storageHeader.Flags);
+            output.WriteLine("  NumberOfStreams                  {0}", _storageHeader.NumberOfStreams);
 
             output.WriteLine();
             output.WriteLine("Streams:");
-            foreach (var stream in StreamHeaders) {
+            foreach (var stream in _streamHeaders) {
                 output.WriteLine("  {0,-10}             {1:X8} {2}", "'" + stream.Name + "'", stream.Offset, stream.Size);
             }
 
             output.WriteLine();
-            output.WriteLine("StringStream:            +{0:X8}", StringStream.Pointer - _image.Pointer);
-            output.WriteLine("BlobStream:              +{0:X8}", BlobStream.Pointer - _image.Pointer);
-            output.WriteLine("GUIDStream:              +{0:X8}", GUIDStream.Pointer - _image.Pointer);
-            output.WriteLine("UserStringStream:        +{0:X8}", UserStringStream.Pointer - _image.Pointer);
-            output.WriteLine("MetadataTableStream:     +{0:X8}", MetadataTableStream.Pointer - _image.Pointer);
-            output.WriteLine("ResourceMemoryReader:    +{0:X8}", ResourceMemoryBlock.Pointer - _image.Pointer);
+            output.WriteLine("StringStream:            +{0:X8}", _stringStream.Pointer - _image.Pointer);
+            output.WriteLine("BlobStream:              +{0:X8}", _blobStream.Pointer - _image.Pointer);
+            output.WriteLine("GUIDStream:              +{0:X8}", _guidStream.Pointer - _image.Pointer);
+            output.WriteLine("UserStringStream:        +{0:X8}", _userStringStream.Pointer - _image.Pointer);
+            output.WriteLine("MetadataTableStream:     +{0:X8}", _metadataTableStream.Pointer - _image.Pointer);
+            output.WriteLine("ResourceMemoryReader:    +{0:X8}", _resourceMemoryBlock != null ? (_resourceMemoryBlock.Pointer - _image.Pointer) : 0);
             
             output.WriteLine();
             output.WriteLine("Misc:");
-            output.WriteLine("  MetadataStreamKind     {0}", MetadataStreamKind);
+            output.WriteLine("  MetadataStreamKind     {0}", _metadataStreamKind);
         }
 
 #endif

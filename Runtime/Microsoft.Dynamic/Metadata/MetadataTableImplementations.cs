@@ -47,8 +47,7 @@ namespace Microsoft.Scripting.Metadata {
 
         internal uint GetName(int rowId) {
             int rowOffset = (rowId - 1) * RowSize;
-            uint name = Table.ReadReference(rowOffset + NameOffset, IsStringHeapRefSizeSmall);
-            return name;
+            return Table.ReadReference(rowOffset + NameOffset, IsStringHeapRefSizeSmall);
         }
 
         internal uint GetMVId(int rowId) {

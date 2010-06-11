@@ -133,14 +133,6 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         ~MemoryMapping() {
-            Dispose();
-        }
-
-        /// <summary>
-        /// Disposes the memory mapping. Make sure that you're not using associated
-        /// <see cref="MemoryBlock"/>s or <see cref="MetadataName"/>s anymore.
-        /// </summary>
-        public void Dispose() {
             if (_pointer == null) {
                 // uninitialized:
                 return;

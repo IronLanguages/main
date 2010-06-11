@@ -24,15 +24,15 @@ namespace Microsoft.Scripting.Metadata {
     /// <summary>
     /// Represents a block in memory.
     /// </summary>
-    public unsafe class MemoryBlock {
+    public unsafe sealed class MemoryBlock {
         [SecurityCritical]
         private readonly byte* _pointer;
 
         private readonly int _length;
-        private readonly MemoryMapping _owner;
+        private readonly object _owner;
 
         [SecurityCritical]
-        internal MemoryBlock(MemoryMapping owner, byte* pointer, int length) {
+        internal MemoryBlock(object owner, byte* pointer, int length) {
             _pointer = pointer;
             _length = length;
             _owner = owner;
@@ -61,9 +61,6 @@ namespace Microsoft.Scripting.Metadata {
 
         [SecuritySafeCritical]
         public byte ReadByte(int offset) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
             if (offset < 0 || offset > _length - sizeof(byte)) {
                 throw new ArgumentOutOfRangeException();
             }
@@ -74,9 +71,6 @@ namespace Microsoft.Scripting.Metadata {
 
         [SecuritySafeCritical]
         public short ReadInt16(int offset) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
             if (offset < 0 || offset > _length - sizeof(short)) {
                 throw new ArgumentOutOfRangeException();
             }
@@ -87,9 +81,6 @@ namespace Microsoft.Scripting.Metadata {
 
         [SecuritySafeCritical]
         public int ReadInt32(int offset) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
             if (offset < 0 || offset > _length - sizeof(int)) {
                 throw new ArgumentOutOfRangeException();
             }
@@ -100,9 +91,6 @@ namespace Microsoft.Scripting.Metadata {
 
         [SecuritySafeCritical]
         public long ReadInt64(int offset) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
             if (offset < 0 || offset > _length - sizeof(long)) {
                 throw new ArgumentOutOfRangeException();
             }
@@ -113,9 +101,6 @@ namespace Microsoft.Scripting.Metadata {
 
         [SecuritySafeCritical]
         public Guid ReadGuid(int offset) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
             if (offset < 0 || offset > _length - sizeof(Guid)) {
                 throw new ArgumentOutOfRangeException();
             }
@@ -126,9 +111,6 @@ namespace Microsoft.Scripting.Metadata {
 
         [SecuritySafeCritical]
         public void Read(int offset, byte[] result) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
             if (result == null) {
                 throw new ArgumentNullException("result");
             }
@@ -152,9 +134,6 @@ namespace Microsoft.Scripting.Metadata {
 
         [SecuritySafeCritical]
         public string ReadUtf16(int offset, int byteCount) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
             if (offset < 0 || offset > _length - byteCount) {
                 throw new ArgumentOutOfRangeException("offset");
             }
@@ -172,9 +151,6 @@ namespace Microsoft.Scripting.Metadata {
 
         [SecuritySafeCritical]
         public string ReadAscii(int offset, int maxByteCount) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
             if (maxByteCount < 0) {
                 throw new ArgumentOutOfRangeException("maxByteCount");
             }
@@ -191,71 +167,6 @@ namespace Microsoft.Scripting.Metadata {
             }
 
             return new string((sbyte*)pStart, 0, (int)(pIter - pStart), Encoding.ASCII);
-        }
-
-        // TODO: improve
-        // TODO: handle corrupted data: \0 beyond end of buffer
-        [SecuritySafeCritical]
-        public string ReadUtf8(int offset, out int numberOfBytesRead) {
-            if (_owner._pointer == null) {
-                throw new ObjectDisposedException("MemoryMapping");
-            }
-            if (offset < 0 || offset >= _length) {
-                throw new ArgumentOutOfRangeException("offset");
-            }
-
-            byte* pStart = _pointer + offset;
-            byte* pIter = pStart;
-            StringBuilder sb = new StringBuilder();
-            byte b = 0;
-            for (; ; ) {
-                b = *pIter++;
-                if (b == 0) {
-                    break;
-                }
-
-                if ((b & 0x80) == 0) {
-                    sb.Append((char)b);
-                    continue;
-                }
-
-                char ch;
-                byte b1 = *pIter++;
-                if (b1 == 0) { //Dangling lead byte, do not decompose
-                    sb.Append((char)b);
-                    break;
-                }
-                if ((b & 0x20) == 0) {
-                    ch = (char)(((b & 0x1F) << 6) | (b1 & 0x3F));
-                } else {
-                    byte b2 = *pIter++;
-                    if (b2 == 0) { //Dangling lead bytes, do not decompose
-                        sb.Append((char)((b << 8) | b1));
-                        break;
-                    }
-                    uint ch32;
-                    if ((b & 0x10) == 0)
-                        ch32 = (uint)(((b & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F));
-                    else {
-                        byte b3 = *pIter++;
-                        if (b3 == 0) { //Dangling lead bytes, do not decompose
-                            sb.Append((char)((b << 8) | b1));
-                            sb.Append((char)b2);
-                            break;
-                        }
-                        ch32 = (uint)(((b & 0x07) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F));
-                    }
-                    if ((ch32 & 0xFFFF0000) == 0)
-                        ch = (char)ch32;
-                    else { //break up into UTF16 surrogate pair
-                        sb.Append((char)((ch32 >> 10) | 0xD800));
-                        ch = (char)((ch32 & 0x3FF) | 0xDC00);
-                    }
-                }
-                sb.Append(ch);
-            }
-            numberOfBytesRead = (int)(pIter - pStart);
-            return sb.ToString();
         }
 
         [CLSCompliant(false)]
