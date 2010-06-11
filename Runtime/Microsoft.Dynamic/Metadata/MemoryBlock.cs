@@ -5,7 +5,7 @@
  * This source code is subject to terms and conditions of the Microsoft Public License. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
  * you cannot locate the  Microsoft Public License, please send an email to 
- * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
  * by the terms of the Microsoft Public License.
  *
  * You must not remove this notice, or any other, from this software.
@@ -21,6 +21,9 @@ using System.Security;
 using System.Text;
 
 namespace Microsoft.Scripting.Metadata {
+    /// <summary>
+    /// Represents a block in memory.
+    /// </summary>
     public unsafe class MemoryBlock {
         [SecurityCritical]
         private readonly byte* _pointer;
@@ -46,6 +49,7 @@ namespace Microsoft.Scripting.Metadata {
             return new MemoryBlock(_owner, _pointer + start, length);
         }
 
+        [CLSCompliant(false)]
         public byte* Pointer {
             [SecurityCritical]
             get { return _pointer; }
@@ -254,10 +258,12 @@ namespace Microsoft.Scripting.Metadata {
             return sb.ToString();
         }
 
+        [CLSCompliant(false)]
         public sbyte ReadSByte(int offset) {
             return unchecked((sbyte)ReadByte(offset));
         }
 
+        [CLSCompliant(false)]
         public ushort ReadUInt16(int offset) {
             return unchecked((ushort)ReadInt16(offset));
         }
@@ -266,10 +272,12 @@ namespace Microsoft.Scripting.Metadata {
             return unchecked((char)ReadInt16(offset));
         }
 
+        [CLSCompliant(false)]
         public uint ReadUInt32(int offset) {
             return unchecked((uint)ReadInt32(offset));
         }
 
+        [CLSCompliant(false)]
         public ulong ReadUInt64(int offset) {
             return unchecked((ulong)ReadInt64(offset));
         }

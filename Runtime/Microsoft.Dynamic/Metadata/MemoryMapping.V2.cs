@@ -5,7 +5,7 @@
  * This source code is subject to terms and conditions of the Microsoft Public License. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
  * you cannot locate the  Microsoft Public License, please send an email to 
- * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
  * by the terms of the Microsoft Public License.
  *
  * You must not remove this notice, or any other, from this software.
@@ -19,18 +19,23 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using System.Security;
 using Microsoft.Win32.SafeHandles;
+using System.Security;
+#if MONO_TODO
 using Mono.Unix.Native;
+#endif
 
 namespace Microsoft.Scripting.Metadata {
+    /// <summary>
+    /// Represents a memory mapped file. Can only be used by trusted code.
+    /// </summary>
     public unsafe sealed class MemoryMapping : CriticalFinalizerObject {
         [SecurityCritical]
         internal byte* _pointer;
 
         private int _capacity;
 
-        public long Capacity {
+        public int Capacity {
             get { return _capacity; }
         }
 
@@ -47,6 +52,13 @@ namespace Microsoft.Scripting.Metadata {
             return new MemoryBlock(this, _pointer + start, length);
         }
 
+        private MemoryMapping() {
+        }
+
+        /// <summary>
+        /// Creates an empty mapping for given file. Only first 2GB the file are mapped if the file is greater.
+        /// </summary>
+        [SecurityCritical]
         public static MemoryMapping Create(string path) {
             if (path == null) {
                 throw new ArgumentNullException("path");
@@ -58,7 +70,7 @@ namespace Microsoft.Scripting.Metadata {
             }
         }
 
-        [SecuritySafeCritical]
+        [SecurityCritical]
         private static MemoryMapping WindowsCreate(string path) {
             int size;
             IntPtr mappingHandle = IntPtr.Zero;
@@ -87,8 +99,9 @@ namespace Microsoft.Scripting.Metadata {
             return mapping;
         }
 
-        [SecuritySafeCritical]
+        [SecurityCritical]
         private static MemoryMapping UnixCreate(string path) {
+#if MONO_TODO
             int size;
             int fileDescriptor = 0;
             MemoryMapping mapping = null;
@@ -114,20 +127,37 @@ namespace Microsoft.Scripting.Metadata {
             }
 
             return mapping;
+#else
+            return null;
+#endif
         }
 
-        [SecuritySafeCritical]
         ~MemoryMapping() {
+            Dispose();
+        }
+
+        /// <summary>
+        /// Disposes the memory mapping. Make sure that you're not using associated
+        /// <see cref="MemoryBlock"/>s or <see cref="MetadataName"/>s anymore.
+        /// </summary>
+        public void Dispose() {
             if (_pointer == null) {
                 // uninitialized:
                 return;
             }
 
+            // It is not safe to close the view at this point if there are any MemoryBlocks alive.
+            // It's up to the user to ensure not to use them. Since you need unmanaged code priviledge to use them
+            // this is not a security issue (it would be if this API was security safe critical).
+
             if (IsWindows) {
                 UnsafeNativeMethods.UnmapViewOfFile(_pointer);
             } else {
+#if MONO_TODO
                 Syscall.munmap(new IntPtr(_pointer), (ulong)_capacity);
+#endif
             }
+
             _pointer = null;
         }
 

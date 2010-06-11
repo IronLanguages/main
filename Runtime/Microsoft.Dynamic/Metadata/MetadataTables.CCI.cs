@@ -5,7 +5,7 @@
  * This source code is subject to terms and conditions of the Microsoft Public License. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
  * you cannot locate the  Microsoft Public License, please send an email to 
- * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
  * by the terms of the Microsoft Public License.
  *
  * You must not remove this notice, or any other, from this software.
@@ -14,9 +14,15 @@
  * ***************************************************************************/
 #if !SILVERLIGHT
 
+// TODO: remove
+#if CLR4
+using System.Diagnostics.Contracts;
+#else
+using Contract = Microsoft.Scripting.Utils.ContractUtils;
+#endif
+
 using System;
 using System.Configuration.Assemblies;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Security;
 using System.IO;
@@ -56,7 +62,6 @@ namespace Microsoft.Scripting.Metadata {
             m_path = path;
         }
 
-        [Pure]
         public bool IsValidToken(MetadataToken token) {
             return m_import.IsValidToken(token);
         }
@@ -67,7 +72,7 @@ namespace Microsoft.Scripting.Metadata {
 
         public static MetadataTables OpenFile(string fileName) {
             var file = MemoryMapping.Create(fileName);
-            var import = new MetadataImport(file.GetRange(0, (int)Math.Min(file.Capacity, Int32.MaxValue)));
+            var import = new MetadataImport(file.GetRange(0, (int)System.Math.Min(file.Capacity, Int32.MaxValue)));
             return new MetadataTables(import, fileName);
         }
 
@@ -819,7 +824,8 @@ namespace Microsoft.Scripting.Metadata {
             m_record = record;
         }
 
-        // TODO: int? memory reader?
+        // TODO: MemoryBlock
+        [CLSCompliant(false)]
         public uint Offset {
             get {
                 return m_record.Import.ManifestResourceTable.GetOffset(m_record.Rid);

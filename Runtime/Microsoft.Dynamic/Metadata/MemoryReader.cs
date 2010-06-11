@@ -5,7 +5,7 @@
  * This source code is subject to terms and conditions of the Microsoft Public License. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
  * you cannot locate the  Microsoft Public License, please send an email to 
- * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
  * by the terms of the Microsoft Public License.
  *
  * You must not remove this notice, or any other, from this software.
@@ -18,6 +18,9 @@ using System;
 using System.Diagnostics;
 
 namespace Microsoft.Scripting.Metadata {
+    /// <summary>
+    /// Reads data from a memory block. Maintains a position.
+    /// </summary>
     public class MemoryReader {
         private readonly MemoryBlock _block;
         private int _position;
@@ -70,6 +73,7 @@ namespace Microsoft.Scripting.Metadata {
             return result;
         }
 
+        [CLSCompliant(false)]
         public SByte ReadSByte() {
             var result = _block.ReadSByte(_position);
             _position += sizeof(sbyte);
@@ -100,18 +104,21 @@ namespace Microsoft.Scripting.Metadata {
             return result;
         }
 
+        [CLSCompliant(false)]
         public ushort ReadUInt16() {
             var result = _block.ReadUInt16(_position);
             _position += sizeof(ushort);
             return result;
         }
 
+        [CLSCompliant(false)]
         public uint ReadUInt32() {
             var result = _block.ReadUInt32(_position);
             _position += sizeof(uint);
             return result;
         }
 
+        [CLSCompliant(false)]
         public ulong ReadUInt64() {
             var result = _block.ReadUInt64(_position);
             _position += sizeof(ulong);

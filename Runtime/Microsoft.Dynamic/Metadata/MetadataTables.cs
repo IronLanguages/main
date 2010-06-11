@@ -5,7 +5,7 @@
  * This source code is subject to terms and conditions of the Microsoft Public License. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
  * you cannot locate the  Microsoft Public License, please send an email to 
- * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
  * by the terms of the Microsoft Public License.
  *
  * You must not remove this notice, or any other, from this software.
@@ -14,10 +14,16 @@
  * ***************************************************************************/
 #if !SILVERLIGHT
 
+// TODO:
+#if CLR2
+using Contract = Microsoft.Scripting.Utils.ContractUtils;
+#else
+using System.Diagnostics.Contracts;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Reflection;
 using System.Security;
@@ -48,7 +54,7 @@ using System.Security;
 namespace Microsoft.Scripting.Metadata {
 #else
 namespace System.Reflection {
-    using System.Reflection.Metadata;
+    using Microsoft.Scripting.Metadata;
 #endif
     public enum AssemblyFileAttributes {
         ContainsMetadata = 0x00000000,
@@ -136,11 +142,7 @@ namespace System.Reflection {
     }
 }
 
-#if CCI
 namespace Microsoft.Scripting.Metadata {
-#else
-namespace System.Reflection.Metadata {
-#endif
     [DebuggerDisplay("{DebugView}")]
     public partial struct MetadataRecord : IEquatable<MetadataRecord> {
         internal readonly MetadataToken m_token;

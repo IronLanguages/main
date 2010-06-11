@@ -5,7 +5,7 @@
  * This source code is subject to terms and conditions of the Microsoft Public License. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
  * you cannot locate the  Microsoft Public License, please send an email to 
- * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
  * by the terms of the Microsoft Public License.
  *
  * You must not remove this notice, or any other, from this software.
@@ -20,11 +20,6 @@ using System.Reflection;
 using System.IO;
 
 namespace Microsoft.Scripting.Metadata {
-    //  For reading the binary file.
-    //  Understands the binary file format.
-    //  Understands the metadata storage format.
-    //  Understands the IL storage format.
-    //  Does not understand the object model/Instructions.
     internal sealed class MetadataImport {
         private readonly MemoryBlock _image;
         private const int TableCount = (int)MetadataRecordType.GenericParamConstraint + 1;
