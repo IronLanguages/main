@@ -54,6 +54,7 @@ using System.Security.Permissions;
 #if !CLR2 && !SILVERLIGHT
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif
+[assembly: SecurityTransparent]
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
@@ -65,11 +66,7 @@ using System.Security.Permissions;
 [assembly: InternalsVisibleTo("Metadata")]
 #endif
 
-#if SILVERLIGHT
-[assembly: SecurityTransparent]
-#else
-[assembly: SecurityCritical]
-[module: UnverifiableCode]
+#if !SILVERLIGHT
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.1.00")]
 [assembly: AssemblyInformationalVersion("1.0.1")]
