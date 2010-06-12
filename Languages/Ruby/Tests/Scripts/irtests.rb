@@ -21,8 +21,23 @@ class IRTest
     end
     
     @options = options
-    @config = (options[:clr4] ? "V4 " : "") + (options[:release] ? "Release" : "Debug")
-    @sl_config = "Silverlight " + (options[:clr4] ? "4 " : "") + (options[:release] ? "Release" : "Debug")
+    if options[:clr4]
+      if options[:release]
+        @config = "v4Release"
+        @sl_config = "Silverlight4Release"
+      else
+        @config = "v4Debug"
+        @sl_config = "Silverlight4Debug"
+      end
+    else
+      if options[:release]
+        @config = "Release"
+        @sl_config = "Silverlight3Release"
+      else
+        @config = "Debug"
+        @sl_config = "Silverlight3Debug"
+      end
+    end
     
     @root = File.expand_path(ENV["DLR_ROOT"])
     
