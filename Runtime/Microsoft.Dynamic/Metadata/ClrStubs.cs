@@ -15,6 +15,7 @@
 #if !SILVERLIGHT
 
 using System.Text;
+using System;
 
 namespace Microsoft.Scripting.Metadata {
     internal static class ClrStubs {
@@ -25,6 +26,9 @@ namespace Microsoft.Scripting.Metadata {
         internal unsafe static void GetChars(this Encoding encoding, byte* bytes, int byteCount, char* chars, int charCount, object nls) {
             encoding.GetChars(bytes, byteCount, chars, charCount);
         }
+    }
+
+    internal class DummyAttribute : Attribute {
     }
 }
 

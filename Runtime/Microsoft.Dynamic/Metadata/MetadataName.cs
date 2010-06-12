@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 #if !SILVERLIGHT
+#if CCI
+using SecurityCritical = Microsoft.Scripting.Metadata.DummyAttribute;
+using SecuritySafeCritical = Microsoft.Scripting.Metadata.DummyAttribute;
+#else
+using System.Security;
+#endif
 
 using System;
 using System.Diagnostics;
-using System.Security;
 using System.Text;
 
 namespace Microsoft.Scripting.Metadata {
@@ -367,7 +372,7 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         public int LastIndexOf(byte b, int start, int count) {
-            if (start < 0 || start >= Length) {
+            if (start < 0 || start > Length) {
                 throw new ArgumentOutOfRangeException("start");
             }
             if (count < 0 || start < count - 1) {
@@ -377,7 +382,7 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         public unsafe MetadataNamePart GetPart(int start) {
-            if (start < 0 || start >= Length) {
+            if (start < 0 || start > Length) {
                 throw new ArgumentOutOfRangeException("start");
             }
             return new MetadataNamePart(m_name.GetSuffix(start), m_byteCount - start);

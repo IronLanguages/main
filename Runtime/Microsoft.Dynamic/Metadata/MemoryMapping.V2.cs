@@ -30,7 +30,6 @@ namespace Microsoft.Scripting.Metadata {
     /// Represents a memory mapped file. Can only be used by trusted code.
     /// </summary>
     public unsafe sealed class MemoryMapping : CriticalFinalizerObject {
-        [SecurityCritical]
         internal byte* _pointer;
 
         private int _capacity;
@@ -58,7 +57,6 @@ namespace Microsoft.Scripting.Metadata {
         /// <summary>
         /// Creates an empty mapping for given file. Only first 2GB the file are mapped if the file is greater.
         /// </summary>
-        [SecurityCritical]
         public static MemoryMapping Create(string path) {
             if (path == null) {
                 throw new ArgumentNullException("path");
@@ -70,7 +68,6 @@ namespace Microsoft.Scripting.Metadata {
             }
         }
 
-        [SecurityCritical]
         private static MemoryMapping WindowsCreate(string path) {
             int size;
             IntPtr mappingHandle = IntPtr.Zero;
@@ -99,7 +96,6 @@ namespace Microsoft.Scripting.Metadata {
             return mapping;
         }
 
-        [SecurityCritical]
         private static MemoryMapping UnixCreate(string path) {
 #if MONO_TODO
             int size;

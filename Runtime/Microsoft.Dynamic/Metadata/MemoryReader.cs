@@ -142,8 +142,9 @@ namespace Microsoft.Scripting.Metadata {
         /// </summary>
         public string ReadAscii(int maxByteCount) {
             int current = _position;
-            _position = current + maxByteCount;
-            return _block.ReadAscii(current, maxByteCount);
+            string result = _block.ReadAscii(current, maxByteCount);
+            _position = current + result.Length + 1; // terminating \0
+            return result;
         }
     }
 }

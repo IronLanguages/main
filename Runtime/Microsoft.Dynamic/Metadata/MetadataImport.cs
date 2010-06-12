@@ -12,8 +12,6 @@
  *
  *
  * ***************************************************************************/
-//#define DEBUG_HEADERS
-
 #if !SILVERLIGHT
 
 using System;
@@ -38,11 +36,6 @@ namespace Microsoft.Scripting.Metadata {
             }
         }
 
-        [Conditional("DEBUG_HEADERS")]
-        private unsafe void DP(MemoryReader reader, object comment) {
-            Console.WriteLine("{0:X8} {1}", (int)(reader.Block.Pointer - _image.Pointer) + reader.Position, comment);
-        }
-
         #region PE File
 
         private int _numberOfSections;
@@ -55,7 +48,6 @@ namespace Microsoft.Scripting.Metadata {
             // ImportTableDirectory
             memReader.SeekRelative(2 * 2 * sizeof(uint));
 
-            DP(memReader, 2);
             _optionalHeaderDirectoryEntries.ResourceTableDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
             _optionalHeaderDirectoryEntries.ResourceTableDirectory.Size = memReader.ReadUInt32();
 
@@ -72,7 +64,6 @@ namespace Microsoft.Scripting.Metadata {
             // DelayImportTableDirectory
             memReader.SeekRelative(11 * 2 * sizeof(uint));
 
-            DP(memReader, 2); 
             _optionalHeaderDirectoryEntries.COR20HeaderTableDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
             _optionalHeaderDirectoryEntries.COR20HeaderTableDirectory.Size = memReader.ReadUInt32();
 
@@ -90,7 +81,6 @@ namespace Microsoft.Scripting.Metadata {
             for (int i = 0; i < _numberOfSections; i++) {
                 memReader.SeekRelative(PEFileConstants.SizeofSectionName);
 
-                DP(memReader, 4);
                 sectionHeaderArray[i].VirtualSize = memReader.ReadUInt32();
                 sectionHeaderArray[i].VirtualAddress = memReader.ReadUInt32();
                 sectionHeaderArray[i].SizeOfRawData = memReader.ReadUInt32();
@@ -123,19 +113,16 @@ namespace Microsoft.Scripting.Metadata {
             memReader.Seek(ntHeaderOffset);
 
             //  Look for PESignature "PE\0\0"
-            DP(memReader, "PESignature");
             uint signature = memReader.ReadUInt32();
             if (signature != PEFileConstants.PESignature) {
                 throw new BadImageFormatException();
             }
 
             //  Read the COFF Header
-            DP(memReader, "# sections");
             _numberOfSections = memReader.Block.ReadUInt16(memReader.Position + sizeof(ushort));
             memReader.SeekRelative(PEFileConstants.SizeofCOFFFileHeader);
 
             //  Read the magic to determine if its PE or PE+
-            DP(memReader, "PEMagic");
             switch ((PEMagic)memReader.ReadUInt16()) {
                 case PEMagic.PEMagic32:
                     memReader.SeekRelative(PEFileConstants.SizeofOptionalHeaderStandardFields32 - sizeof(ushort));
@@ -212,7 +199,6 @@ namespace Microsoft.Scripting.Metadata {
             // MinorRuntimeVersion = memReader.ReadUInt16();
             memReader.SeekRelative(sizeof(int) + 2 * sizeof(short));
 
-            DP(memReader, 2);
             _cor20Header.MetaDataDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
             _cor20Header.MetaDataDirectory.Size = memReader.ReadUInt32();
             
@@ -220,7 +206,6 @@ namespace Microsoft.Scripting.Metadata {
             // COR20Header.EntryPointTokenOrRVA = memReader.ReadUInt32();
             memReader.SeekRelative(2 * sizeof(uint));
 
-            DP(memReader, 4);
             _cor20Header.ResourcesDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
             _cor20Header.ResourcesDirectory.Size = memReader.ReadUInt32();
             _cor20Header.StrongNameSignatureDirectory.RelativeVirtualAddress = memReader.ReadUInt32();
@@ -234,7 +219,6 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         private void ReadMetadataHeader(MemoryReader memReader) {
-            DP(memReader, 8);
             uint signature = memReader.ReadUInt32();
             if (signature != COR20Constants.COR20MetadataSignature) {
                 throw new BadImageFormatException();
@@ -254,7 +238,6 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         private void ReadStorageHeader(MemoryReader memReader) {
-            DP(memReader, 2);
             _storageHeader.Flags = memReader.ReadUInt16();
             _storageHeader.NumberOfStreams = memReader.ReadUInt16();
         }
@@ -268,7 +251,6 @@ namespace Microsoft.Scripting.Metadata {
 	                throw new BadImageFormatException();
                 }
 
-                DP(memReader, 3);
                 streamHeaders[i].Offset = memReader.ReadUInt32();
                 streamHeaders[i].Size = memReader.ReadUInt32();
                 streamHeaders[i].Name = memReader.ReadAscii(32);
@@ -288,6 +270,10 @@ namespace Microsoft.Scripting.Metadata {
                 switch (streamHeader.Name) {
                     case COR20Constants.StringStreamName:
                         if (_stringStream != null) {
+                            throw new BadImageFormatException();
+                        }
+                        // the first and the last byte of the heap must be zero:
+                        if (block.Length == 0 || block.ReadByte(0) != 0 || block.ReadByte(block.Length - 1) != 0) {
                             throw new BadImageFormatException();
                         }
                         _stringStream = block;
@@ -335,7 +321,8 @@ namespace Microsoft.Scripting.Metadata {
                 }
             }
 
-            if (_stringStream == null || _blobStream == null || _guidStream == null || _userStringStream == null || _metadataStreamKind == MetadataStreamKind.Illegal) {
+            // mandatory streams:
+            if (_stringStream == null || _guidStream == null || _metadataStreamKind == MetadataStreamKind.Illegal) {
                 throw new BadImageFormatException();
             }
         }
@@ -444,7 +431,6 @@ namespace Microsoft.Scripting.Metadata {
             // Reserved
             memReader.SeekRelative(sizeof(uint));
 
-            DP(memReader, 1);
             _metadataTableHeader.MajorVersion = memReader.ReadByte();
             _metadataTableHeader.MinorVersion = memReader.ReadByte();
             _metadataTableHeader.HeapSizeFlags = (HeapSizeFlag)memReader.ReadByte();
@@ -776,7 +762,7 @@ namespace Microsoft.Scripting.Metadata {
         }
 
         internal int GetBlobDataOffset(uint blob, out int size) {
-            if (blob >= _blobStream.Length) {
+            if (_blobStream == null || blob >= _blobStream.Length) {
                 throw new BadImageFormatException();
             }
 
@@ -1080,7 +1066,7 @@ namespace Microsoft.Scripting.Metadata {
             }
             switch (tableIndex) {
                 case (int)MetadataTokenType.String >> 24: return token.Rid < _stringStream.Length;
-                case (int)MetadataTokenType.Name >> 24: return token.Rid < _userStringStream.Length;
+                case (int)MetadataTokenType.Name >> 24: return _userStringStream != null && token.Rid < _userStringStream.Length;
             }
             return false;
         }
@@ -1157,9 +1143,9 @@ namespace Microsoft.Scripting.Metadata {
 
             output.WriteLine();
             output.WriteLine("StringStream:            +{0:X8}", _stringStream.Pointer - _image.Pointer);
-            output.WriteLine("BlobStream:              +{0:X8}", _blobStream.Pointer - _image.Pointer);
+            output.WriteLine("BlobStream:              +{0:X8}", _blobStream != null ? (_blobStream.Pointer - _image.Pointer) : 0);
             output.WriteLine("GUIDStream:              +{0:X8}", _guidStream.Pointer - _image.Pointer);
-            output.WriteLine("UserStringStream:        +{0:X8}", _userStringStream.Pointer - _image.Pointer);
+            output.WriteLine("UserStringStream:        +{0:X8}", _userStringStream != null ? (_userStringStream.Pointer - _image.Pointer) : 0);
             output.WriteLine("MetadataTableStream:     +{0:X8}", _metadataTableStream.Pointer - _image.Pointer);
             output.WriteLine("ResourceMemoryReader:    +{0:X8}", _resourceMemoryBlock != null ? (_resourceMemoryBlock.Pointer - _image.Pointer) : 0);
             

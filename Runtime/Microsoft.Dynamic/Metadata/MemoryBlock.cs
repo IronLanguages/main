@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 #if !SILVERLIGHT
+#if CCI
+using SecurityCritical = Microsoft.Scripting.Metadata.DummyAttribute;
+using SecuritySafeCritical = Microsoft.Scripting.Metadata.DummyAttribute;
+#else
+using System.Security;
+#endif
 
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
 
 namespace Microsoft.Scripting.Metadata {
@@ -230,10 +235,15 @@ namespace Microsoft.Scripting.Metadata {
             return result;
         }
 
+        [SecuritySafeCritical]
         internal MetadataName ReadName(uint offset) {
-            if (offset > _length) {
+            if (offset >= _length) {
                 throw new BadImageFormatException();
             }
+
+            // there is always a terminating zero:
+            Debug.Assert(_pointer[_length - 1] == 0);
+
             return new MetadataName(_pointer + offset, _owner);
         }
 
