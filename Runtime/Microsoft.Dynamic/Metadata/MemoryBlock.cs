@@ -13,16 +13,10 @@
  *
  * ***************************************************************************/
 #if !SILVERLIGHT
-#if CCI
-using SecurityCritical = Microsoft.Scripting.Metadata.DummyAttribute;
-using SecuritySafeCritical = Microsoft.Scripting.Metadata.DummyAttribute;
-#else
-using System.Security;
-#endif
-
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 namespace Microsoft.Scripting.Metadata {

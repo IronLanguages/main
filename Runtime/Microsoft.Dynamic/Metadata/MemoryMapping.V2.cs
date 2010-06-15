@@ -20,7 +20,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
-using System.Security;
 #if MONO_TODO
 using Mono.Unix.Native;
 #endif

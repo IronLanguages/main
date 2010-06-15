@@ -27,9 +27,6 @@ namespace Microsoft.Scripting.Metadata {
             encoding.GetChars(bytes, byteCount, chars, charCount);
         }
     }
-
-    internal class DummyAttribute : Attribute {
-    }
 }
 
 #endif
