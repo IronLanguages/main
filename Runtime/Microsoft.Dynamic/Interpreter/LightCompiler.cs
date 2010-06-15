@@ -1220,6 +1220,13 @@ namespace Microsoft.Scripting.Interpreter {
             var node = (NewExpression)expr;
 
             if (node.Constructor != null) {
+                var parameters = node.Constructor.GetParameters();
+                if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef)) {
+                    _forceCompile = true;
+                }
+            }
+
+            if (node.Constructor != null) {
                 foreach (var arg in node.Arguments) {
                     this.Compile(arg);
                 }
