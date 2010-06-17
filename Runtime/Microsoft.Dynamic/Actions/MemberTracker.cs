@@ -154,6 +154,16 @@ namespace Microsoft.Scripting.Actions {
         }
 
         /// <summary>
+        /// Gets an expression that assigns a value to the left hand side.
+        /// 
+        /// Returns null if it's an error to assign to.  The caller can then call GetErrorForSet to
+        /// get the correct error Expression (or null if a default error should be provided).
+        /// </summary>
+        public virtual DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
+            return SetValue(resolverFactory, binder, type, value);
+        }
+
+        /// <summary>
         /// Gets an expression that performs a call on the object using the specified arguments.
         /// 
         /// Returns null if it's an error to perform the specific operation.  The caller can then call 
@@ -201,6 +211,15 @@ namespace Microsoft.Scripting.Actions {
         protected internal virtual DynamicMetaObject SetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject instance) {
             return SetValue(resolverFactory, binder, type, instance);
         }
+
+        /// <summary>
+        /// Helper for setting values that have been bound.  Called from BoundMemberTracker.  Custom member
+        /// trackers can override this to provide their own behaviors when bound to an instance.
+        /// </summary>
+        protected internal virtual DynamicMetaObject SetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject instance, DynamicMetaObject errorSuggestion) {
+            return SetValue(resolverFactory, binder, type, instance, errorSuggestion);
+        }
+
 
         /// <summary>
         /// Binds the member tracker to the specified instance rturning a new member tracker if binding 

@@ -74,5 +74,9 @@ namespace Microsoft.Scripting.Actions {
         public override DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value) {
             return _tracker.SetBoundValue(resolverFactory, binder, type, value, _instance);
         }
+
+        public override DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
+            return _tracker.SetBoundValue(resolverFactory, binder, type, value, _instance, errorSuggestion);
+        }
     }
 }

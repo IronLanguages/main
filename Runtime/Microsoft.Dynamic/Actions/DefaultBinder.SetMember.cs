@@ -189,22 +189,22 @@ namespace Microsoft.Scripting.Actions {
                     case TrackerTypes.Type:
                     case TrackerTypes.Constructor:
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeReadOnlyMemberError(type, memInfo.Name), BindingRestrictions.Empty, typeof(object))
+                            errorSuggestion ?? MakeError(MakeReadOnlyMemberError(type, memInfo.Name), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     case TrackerTypes.Event:
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeEventValidation(members, self, value, memInfo.ResolutionFactory), BindingRestrictions.Empty, typeof(object))
+                            errorSuggestion ?? MakeError(MakeEventValidation(members, self, value, memInfo.ResolutionFactory), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     case TrackerTypes.Field:
-                        MakeFieldRule(memInfo, self, value, type, members);
+                        MakeFieldRule(memInfo, self, value, type, members, errorSuggestion);
                         break;
                     case TrackerTypes.Property:
-                        MakePropertyRule(memInfo, self, value, type, members);
+                        MakePropertyRule(memInfo, self, value, type, members, errorSuggestion);
                         break;
                     case TrackerTypes.Custom:
-                        MakeGenericBody(memInfo, self, value, type, members[0]);
+                        MakeGenericBody(memInfo, self, value, type, members[0], errorSuggestion);
                         break;
                     case TrackerTypes.All:
                         // no match
@@ -224,12 +224,12 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type type, MemberTracker tracker) {
+        private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type type, MemberTracker tracker, DynamicMetaObject errorSuggestion) {
             if (instance != null) {
                 tracker = tracker.BindToInstance(instance);
             }
 
-            DynamicMetaObject val = tracker.SetValue(memInfo.ResolutionFactory, this, type, target);
+            DynamicMetaObject val = tracker.SetValue(memInfo.ResolutionFactory, this, type, target, errorSuggestion);
 
             if (val != null) {
                 memInfo.Body.FinishCondition(val);
@@ -240,7 +240,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakePropertyRule(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type targetType, MemberGroup properties) {
+        private void MakePropertyRule(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type targetType, MemberGroup properties, DynamicMetaObject errorSuggestion) {
             PropertyTracker info = (PropertyTracker)properties[0];
 
             MethodInfo setter = info.GetSetMethod(true);
@@ -257,7 +257,7 @@ namespace Microsoft.Scripting.Actions {
 
                 if (info.IsStatic != (instance == null)) {
                     memInfo.Body.FinishCondition(
-                        MakeError(
+                        errorSuggestion ?? MakeError(
                             MakeStaticPropertyInstanceAccessError(
                                 info,
                                 true,
@@ -269,7 +269,7 @@ namespace Microsoft.Scripting.Actions {
                     );
                 } else if (info.IsStatic && info.DeclaringType != targetType) {
                     memInfo.Body.FinishCondition(
-                        MakeError(
+                        errorSuggestion ?? MakeError(
                             MakeStaticAssignFromDerivedTypeError(targetType, instance, info, target, memInfo.ResolutionFactory), 
                             typeof(object)
                         )
@@ -327,14 +327,14 @@ namespace Microsoft.Scripting.Actions {
                 }
             } else {
                 memInfo.Body.FinishCondition(
-                    MakeError(
+                    errorSuggestion ?? MakeError(
                         MakeMissingMemberErrorForAssignReadOnlyProperty(targetType, instance, memInfo.Name), typeof(object)
                     )
                 );
             }
         }
 
-        private void MakeFieldRule(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type targetType, MemberGroup fields) {
+        private void MakeFieldRule(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type targetType, MemberGroup fields, DynamicMetaObject errorSuggestion) {
             FieldTracker field = (FieldTracker)fields[0];
 
             // TODO: Tmp variable for target
@@ -355,21 +355,21 @@ namespace Microsoft.Scripting.Actions {
                 );
             } else if (field.IsInitOnly || field.IsLiteral) {
                 memInfo.Body.FinishCondition(
-                    MakeError(
+                    errorSuggestion ?? MakeError(
                         MakeReadOnlyMemberError(targetType, memInfo.Name), 
                         typeof(object)
                     )
                 );
             } else if (field.IsStatic && targetType != field.DeclaringType) {
                 memInfo.Body.FinishCondition(
-                    MakeError(
+                    errorSuggestion ?? MakeError(
                         MakeStaticAssignFromDerivedTypeError(targetType, instance, field, target, memInfo.ResolutionFactory), 
                         typeof(object)
                     )
                 );
             } else if (field.DeclaringType.IsValueType && !field.IsStatic) {
                 memInfo.Body.FinishCondition(
-                    MakeError(
+                    errorSuggestion ?? MakeError(
                         MakeSetValueTypeFieldError(field, instance, target),
                         typeof(object)
                     )
