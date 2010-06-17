@@ -26,21 +26,21 @@
     <ThrowErrorsInValidation>true</ThrowErrorsInValidation>
     <TestPageFileName>TestPage.html</TestPageFileName>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\v2Debug</OutputPath>
     <DefineConstants>DEBUG;TRACE;SILVERLIGHT;CLR2</DefineConstants>
     <NoStdLib>true</NoStdLib>
     <NoConfig>true</NoConfig>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\v2Release</OutputPath>
     <DefineConstants>TRACE;SILVERLIGHT;CLR2</DefineConstants>
     <NoStdLib>true</NoStdLib>
     <NoConfig>true</NoConfig>

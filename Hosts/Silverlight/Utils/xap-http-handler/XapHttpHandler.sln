@@ -25,14 +25,14 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "XapHttpHandler.SampleSite",
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		v2Debug|Any CPU = v2Debug|Any CPU
+		v2Release|Any CPU = v2Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BDD1EB64-90A2-412D-884A-8169F3FDC48E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BDD1EB64-90A2-412D-884A-8169F3FDC48E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BDD1EB64-90A2-412D-884A-8169F3FDC48E}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{BDD1EB64-90A2-412D-884A-8169F3FDC48E}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{BDD1EB64-90A2-412D-884A-8169F3FDC48E}.v2Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
+		{BDD1EB64-90A2-412D-884A-8169F3FDC48E}.v2Debug|Any CPU.Build.0 = v2Debug|Any CPU
+		{BDD1EB64-90A2-412D-884A-8169F3FDC48E}.v2Release|Any CPU.ActiveCfg = v2Debug|Any CPU
+		{BDD1EB64-90A2-412D-884A-8169F3FDC48E}.v2Release|Any CPU.Build.0 = v2Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
