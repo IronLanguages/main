@@ -119,7 +119,7 @@ get-item |
 convert-doskey |
 import-module
 
-if (test-path "$env:DLR_ROOT%\..\Users\%USERNAME%\psdev.ps1") {
-  . "$env:DLR_ROOT%\..\Users\%USERNAME%\psdev.ps1"
+if (test-path "$env:DLR_ROOT%\..\Users\$env:USERNAME\psdev.ps1") {
+  . "$env:DLR_ROOT%\..\Users\$env:USERNAME\psdev.ps1"
 }
 pop-location
