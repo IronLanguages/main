@@ -11,22 +11,32 @@ set PROGRAM_FILES_x86=%ProgramFiles(x86)%
 
 if EXIST "%PROGRAM_FILES_x86%" set PROGRAM_FILES_32=%PROGRAM_FILES_x86%
 if EXIST "%PROGRAM_FILES_x86%" set PROGRAM_FILES_64=%ProgramW6432%
+if EXIST "%DLR_ROOT%\Internal" set INTERNALDEV="1"
+If DEFINED THISISSNAP set INTERNALDEV="1"
 
-REM -- Nullify the existing environment
-call %DLR_ROOT%\Test\Scripts\SetTestEnv.bat
+if DEFINED INTERNALDEV (
+  REM -- Nullify the existing environment
+  call %DLR_ROOT%\Test\Scripts\SetTestEnv.bat
 
-REM -- IronRuby environment variables --
-set RUBY18_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin
-set RUBY18_EXE=%RUBY18_BIN%\ruby.exe
-set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe
+  REM -- IronRuby environment variables --
+  set RUBY18_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin
+  set RUBY18_EXE=%RUBY18_BIN%\ruby.exe
+  set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe
+
+  REM -- IronPython environment variables
+  set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib
+
+  REM -- Python environment variables
+  set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
+) else (
+  set RUBY18_BIN=
+  set RUBY18_EXE=ruby.exe
+  set RUBY19_EXE=c:\ruby19\bin\ruby.exe
+)
 set RUBYOPT=
 set GEM_PATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\lib\ruby\gems\1.8
 
-REM -- IronPython environment variables
-set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib
 
-REM -- Python environment variables
-set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
 
 
 if EXIST "%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe" (
@@ -101,14 +111,16 @@ if exist "%PROGRAM_FILES_32%\Microsoft.NET\SDK\v2.0\Bin\sdkvars.bat" (
 )
 
 :EnvDone
+if DEFINED INTERNALDEV set PATH=%PATH%;%DLR_ROOT%\External\Tools;%DLR_ROOT%\Scripts\Bat;%DLR_ROOT%\Util\Internal\Snap\bin;%DLR_ROOT%\Util\tfpt
 
-set PATH=%PATH%;%DLR_ROOT%\External\Tools;%DLR_ROOT%\Scripts\Bat;%DLR_ROOT%\Util\Internal\Snap\bin
 set PATH=%PATH%;%DLR_ROOT%\Languages\Ruby\Scripts;%DLR_ROOT%\Languages\Ruby\Scripts\bin;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin;%RUBY18_BIN%
-set PATH=%PATH%;%DLR_ROOT%\Util\tfpt
 
 REM -- Mono
-if "%1" == "mono" set DLR_VM=%DLR_ROOT%\External.LCA_RESTRICTED\Mono\bin\mono.exe
-if "%1" == "mono" set PATH=%DLR_ROOT%\External.LCA_RESTRICTED\Mono\bin;%PATH%
+if not DEFINED DLR_VM_PATH (
+  set DLR_VM_PATH=%DLR_ROOT%\External.LCA_RESTRICTED\Mono\bin\mono.exe
+)
+if "%1" == "mono" set DLR_VM=%DLR_VM_PATH%\mono.exe
+if "%1" == "mono" set PATH=%DLR_VM_PATH%;%PATH%
 
 if not DEFINED HOME_FOR_MSPECRC (
   if DEFINED HOME (
@@ -139,6 +151,8 @@ doskey /macrofile=%BAT%Alias.txt
 doskey /macrofile=%BAT%AliasInternal.txt
 cd /D %CURRENT%
 
+if not DEFINED INTERNALDEV goto Continue2
+
 REM Disable strong name validation for the assemblies we build, if it isn't already
 %SN_UTIL% -Vl | find "*,31bf3856ad364e35" > NUL 2>&1
 IF NOT "%ERRORLEVEL%"=="0" goto DisableSNValidation
@@ -153,6 +167,8 @@ IF NOT "%ERRORLEVEL%"=="0" goto SnError
 
 REM Disable strong name verification for development builds of Silverlight
 %DLR_ROOT%\Util\Internal\Silverlight\x86ret\snskipverf.exe
+
+:Continue2
 
 REM Run user specific setup
 if EXIST %DLR_ROOT%\..\Users\%USERNAME%\Dev.bat call %DLR_ROOT%\..\Users\%USERNAME%\Dev.bat

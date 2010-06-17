@@ -94,7 +94,7 @@ applicable_drivers = []
 ARGV.each do |option|
     case option
     when /all/
-        applicable_drivers << Test::Iron_m2 << Test::Iron_m3 << Test::Iron_cc
+        applicable_drivers << Test::Iron_m2 << Test::Iron_m1 << Test::Iron_cc
     when /coreclr/
         applicable_drivers << Test::Iron_cc
     when /fast|interpret/
@@ -106,13 +106,13 @@ ARGV.each do |option|
     when /cruby/
         applicable_drivers << Test::CRuby
     when /checkin/
-        applicable_drivers << Test::Iron_m2 << Test::Iron_m3 << Test::CRuby
+        applicable_drivers << Test::Iron_m2 << Test::Iron_m1
     when /neg/
     else
         p "Invalid option: #{option}"
     end
 end
-applicable_drivers = [ Test::Iron_m2, Test::Iron_m3, Test::CRuby ] if applicable_drivers.empty?
+applicable_drivers = [ Test::Iron_m2, Test::Iron_m1] if applicable_drivers.empty?
 applicable_drivers.uniq!
 
 test_files = TestListFile::load 
