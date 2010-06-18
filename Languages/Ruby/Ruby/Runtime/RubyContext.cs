@@ -2309,19 +2309,10 @@ namespace IronRuby.Runtime {
         private static readonly Dictionary<ExpressionType, int> _TransformationHistogram = new Dictionary<ExpressionType,int>();
 #endif
 
-        private static long _ParseTimeTicks;
-        private static long _AstGenerationTimeTicks;
-
         internal MSA.Expression<T> ParseSourceCode<T>(SourceUnit/*!*/ sourceUnit, RubyCompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
             Debug.Assert(sourceUnit.LanguageContext == this);
 
-            long ts1, ts2;
-
-            ts1 = Stopwatch.GetTimestamp();
             SourceUnitTree ast = new Parser().Parse(sourceUnit, options, errorSink);
-            ts2 = Stopwatch.GetTimestamp();
-
-            Interlocked.Add(ref _ParseTimeTicks, ts2 - ts1);
 
             if (ast == null) {
                 return null;
@@ -2334,11 +2325,7 @@ namespace IronRuby.Runtime {
                 System.Linq.Expressions.Expression.Histogram = _TransformationHistogram;
                 try {
 #endif
-            ts1 = Stopwatch.GetTimestamp();
             lambda = TransformTree<T>(ast, sourceUnit, options);
-            ts2 = Stopwatch.GetTimestamp();
-            Interlocked.Add(ref _AstGenerationTimeTicks, ts2 - ts1);
-
 #if MEASURE_AST
                 } finally {
                     System.Linq.Expressions.Expression.Histogram = oldHistogram;
@@ -2548,17 +2535,9 @@ namespace IronRuby.Runtime {
                 using (TextWriter output = File.CreateText("perfstats.log")) {
                     output.WriteLine(String.Format(@"
   total:         {0}
-  parse:         {1}
-  ast transform: {2}
-  script code:   {3}
-  il:            {4} (TODO)
-  binding:       {5} ({6} calls)
+  binding:       {1} ({2} calls)
 ",
                         _upTime.Elapsed,
-                        new TimeSpan(_ParseTimeTicks),
-                        new TimeSpan(_AstGenerationTimeTicks),
-                        new TimeSpan(Loader._ScriptCodeGenerationTimeTicks),
-                        new TimeSpan(), // TODO: new TimeSpan(Loader._ILGenerationTimeTicks),
 #if MEASURE
                     new TimeSpan(MetaAction.BindingTimeTicks), 
                     MetaAction.BindCallCount

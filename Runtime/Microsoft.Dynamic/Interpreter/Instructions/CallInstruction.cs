@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.Interpreter {
                 return GetArrayAccessor(info, argumentCount);
             }
 
-            if (info is DynamicMethod || !info.IsStatic && info.DeclaringType.IsValueType) {
+            if (ReflectionUtils.IsDynamicMethod(info) || !info.IsStatic && info.DeclaringType.IsValueType) {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
 
@@ -149,7 +149,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private static bool ShouldCache(MethodInfo info) {            
-            return !(info is DynamicMethod);
+            return !ReflectionUtils.IsDynamicMethod(info);
         }
                
         /// <summary>

@@ -151,15 +151,7 @@ namespace Microsoft.Scripting.Utils {
         /// Creates an open delegate for the given (dynamic)method.
         /// </summary>
         public static Delegate CreateDelegate(MethodInfo methodInfo, Type delegateType) {
-            ContractUtils.RequiresNotNull(delegateType, "delegateType");
-            ContractUtils.RequiresNotNull(methodInfo, "methodInfo");
-
-            DynamicMethod dm = methodInfo as DynamicMethod;
-            if (dm != null) {
-                return dm.CreateDelegate(delegateType);
-            } else {
-                return Delegate.CreateDelegate(delegateType, methodInfo);
-            }
+            return CreateDelegate(methodInfo, delegateType, null);
         }
 
         /// <summary>
@@ -169,12 +161,30 @@ namespace Microsoft.Scripting.Utils {
             ContractUtils.RequiresNotNull(methodInfo, "methodInfo");
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
 
+            if (PlatformAdaptationLayer.IsCompactFramework) {
+                return Delegate.CreateDelegate(delegateType, target, methodInfo);
+            }
+
+            return CreateDelegateInternal(methodInfo, delegateType, target);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Delegate CreateDelegateInternal(MethodInfo methodInfo, Type delegateType, object target) {
             DynamicMethod dm = methodInfo as DynamicMethod;
             if (dm != null) {
                 return dm.CreateDelegate(delegateType, target);
             } else {
                 return Delegate.CreateDelegate(delegateType, target, methodInfo);
             }
+        }
+
+        public static bool IsDynamicMethod(MethodBase method) {
+            return !PlatformAdaptationLayer.IsCompactFramework && IsDynamicMethodInternal(method);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool IsDynamicMethodInternal(MethodBase method) {
+            return method is DynamicMethod;
         }
 
         public static void GetDelegateSignature(Type delegateType, out ParameterInfo[] parameterInfos, out ParameterInfo returnInfo) {

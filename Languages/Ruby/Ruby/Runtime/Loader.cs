@@ -91,8 +91,6 @@ namespace IronRuby.Runtime {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
         private int _compiledFileCount;
 
-        internal static long _ScriptCodeGenerationTimeTicks;
-
         /// <summary>
         /// TODO: Thread safety: the user of this object is responsible for locking it.
         /// </summary>
@@ -593,13 +591,8 @@ namespace IronRuby.Runtime {
                     FactoryKind = (flags & LoadFlags.LoadIsolated) != 0 ? TopScopeFactoryKind.WrappedFile : TopScopeFactoryKind.File
                 };
 
-                long ts1 = Stopwatch.GetTimestamp();
                 ScriptCode compiledCode = sourceUnit.Compile(options, _context.RuntimeErrorSink);
-                long ts2 = Stopwatch.GetTimestamp();
-                Interlocked.Add(ref _ScriptCodeGenerationTimeTicks, ts2 - ts1);
-
                 AddCompiledFile(fullPath, compiledCode);
-
                 return compiledCode;
             }
         }
