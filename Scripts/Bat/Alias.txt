@@ -28,9 +28,9 @@ brbr       =msbuild.exe %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Release"
 bipd       =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Debug" $*
 bipr       =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Release" $*
 bmsd      =msbuild.exe %DLR_ROOT%\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj /p:Configuration="Debug" $*
-geninit   =%DLR_ROOT%\Languages\Ruby\Libraries.LCA_RESTRICTED\GenerateInitializers.cmd
-geninity  =%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\GenerateInitializers.cmd
-gencache  =%DLR_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd
+geninit   =%DLR_ROOT%\Languages\Ruby\Libraries.LCA_RESTRICTED\GenerateInitializers.cmd $*
+geninity  =%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\GenerateInitializers.cmd $*
+gencache  =%DLR_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd $*
 
 ;==============================================================================
 ;= Silverlight Build Commands
