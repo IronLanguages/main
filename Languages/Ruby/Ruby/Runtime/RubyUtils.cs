@@ -829,6 +829,14 @@ namespace IronRuby.Runtime {
 
         #region Evals
 
+        //                         scope                   parent scope            self
+        // M.module_eval {}        block                   current                 M 
+        // x.instance_eval {}      block                   current                 x
+        // M.module_eval ""        ModEval(module: M)      current                 M
+        // x.instance_eval ""      ModEval(module: S(x))   current                 x 
+        // eval "", binding        binding.scope           binding.scope.parent    binding.scope.self
+        //
+
 #if DEBUG
         private static int _stringEvalCounter;
 #endif

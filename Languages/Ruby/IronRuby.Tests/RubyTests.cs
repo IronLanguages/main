@@ -574,8 +574,15 @@ namespace IronRuby.Tests {
                 UnqualifiedConstants2,
 
                 AliasMethodLookup1,
+                AliasMethodLookup2,
+                AliasMethodLookup3,
                 
-                UndefMethodLookup,
+                UndefMethodLookup1,
+                UndefMethodLookup2,
+                UndefMethodLookup3,
+                UndefMethodLookup4,
+                UndefMethodLookup5,
+                UndefMethodLookup6,
                 MethodAdded1,
                 MethodLookup1,
                 Visibility1,

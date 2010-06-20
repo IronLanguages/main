@@ -144,7 +144,7 @@ p ((undef u))
         /// <summary>
         /// Undef (unlike alias) doesn't look up the method in Object.
         /// </summary>
-        public void UndefMethodLookup() {
+        public void UndefMethodLookup1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 module Kernel; def m_kernel; end; end
@@ -165,6 +165,138 @@ end
 !undef m_object
 !undef m_kernel
 !undef m_n
+");
+        }
+
+        /// <summary>
+        /// Undef in class_eval.
+        /// </summary>
+        public void UndefMethodLookup2() {
+            TestOutput(@"
+module Kernel; def m_kernel; end; end
+class Object;  def m_object; end; end
+
+p method(:m_kernel)
+p method(:m_object)
+
+module N
+  Object.class_eval do
+    undef m_object
+    undef m_kernel
+  end
+end
+
+p method(:m_kernel) rescue p $!
+p method(:m_object) rescue p $!
+", @"
+#<Method: Object(Kernel)#m_kernel>
+#<Method: Object#m_object>
+#<NameError: undefined method `m_kernel' for class `Object'>
+#<NameError: undefined method `m_object' for class `Object'>
+");
+        }
+
+        /// <summary>
+        /// Undef on singletons.
+        /// </summary>
+        public void UndefMethodLookup3() {
+            TestOutput(@"
+class D
+  def f; end
+end
+
+d = D.new
+
+class << d
+  def undef_f
+    undef f rescue p $!
+  end
+end
+
+p d.method(:f)
+d.undef_f
+puts '---'
+p D.instance_method(:f)
+p d.method(:f) rescue p $!
+", @"
+#<Method: D#f>
+---
+#<UnboundMethod: D#f>
+#<NameError: undefined method `f' for class `D'>
+");
+        }
+
+        /// <summary>
+        /// Undef in instance_eval.
+        /// </summary>
+        public void UndefMethodLookup4() {
+            TestOutput(@"
+class C
+  def f; end
+end
+
+class D
+  def f; end
+  
+  C.instance_eval do
+    p self
+    undef f rescue p $!
+  end
+end
+
+puts '---'
+p C.instance_method(:f) rescue p $!
+p D.instance_method(:f) rescue p $!
+", @"
+C
+#<NameError: undefined method `f' for class `Class'>
+---
+#<UnboundMethod: C#f>
+#<UnboundMethod: D#f>
+");
+        }
+
+        /// <summary>
+        /// Undef in define_method.
+        /// </summary>
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
+        public void UndefMethodLookup5() {
+            TestOutput(@"
+class D
+end
+
+class E
+  D.send(:define_method, :bar) {
+    undef f rescue p $!
+  }
+end
+
+d = D.new
+d.bar
+", @"
+#<NameError: undefined method `f' for class `D'>
+");
+        }
+
+        /// <summary>
+        /// Undef in define_method.
+        /// </summary>
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void UndefMethodLookup6() {
+            TestOutput(@"
+class D
+end
+
+class E
+  D.send(:define_method, :bar) {
+    undef f rescue p $!
+  }
+end
+
+d = D.new
+d.bar
+", @"
+#<NameError: undefined method `f' for class `E'>
 ");
         }
     }

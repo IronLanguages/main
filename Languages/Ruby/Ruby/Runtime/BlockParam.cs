@@ -130,11 +130,10 @@ namespace IronRuby.Runtime {
         internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(BlockParam).GetProperty("Self"); } }
 
         // friend: RubyOps
-        internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter, RubyModule moduleDeclaration) {
+        internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter) {
             _callerKind = callerKind;
             _proc = proc;
             _isLibProcConverter = isLibProcConverter;
-            _methodLookupModule = moduleDeclaration;
         }
 
         internal void SetFlowControl(BlockReturnReason reason, RuntimeFlowControl targetFrame, ProcKind sourceProcKind) {
@@ -269,7 +268,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static BlockParam/*!*/ CreateBfcForYield(Proc proc) {
             if (proc != null) {
-                return new BlockParam(proc, BlockCallerKind.Yield, false, null);
+                return new BlockParam(proc, BlockCallerKind.Yield, false);
             } else {
                 throw RubyExceptions.NoBlockGiven();
             }
@@ -278,7 +277,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static BlockParam/*!*/ CreateBfcForProcCall(Proc/*!*/ proc) {
             Assert.NotNull(proc);
-            return new BlockParam(proc, BlockCallerKind.Call, false, null);
+            return new BlockParam(proc, BlockCallerKind.Call, false);
         }
         
         [Emitted]
@@ -296,7 +295,7 @@ namespace IronRuby.Runtime {
                 isProcConverter = false;
             }
 
-            return new BlockParam(proc, BlockCallerKind.Yield, isProcConverter, null);
+            return new BlockParam(proc, BlockCallerKind.Yield, isProcConverter);
         }
 
         [Emitted] 

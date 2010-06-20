@@ -595,7 +595,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] // UndefineMethod:
         public static void UndefineMethod(RubyScope/*!*/ scope, string/*!*/ name) {
-            RubyModule owner = scope.GetInnerMostModuleForMethodLookup();
+            RubyModule owner = scope.GetMethodDefinitionOwner();
 
             if (!owner.ResolveMethod(name, VisibilityContext.AllVisible).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(owner, name);

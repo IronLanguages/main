@@ -116,6 +116,50 @@ end
         }
 
         /// <summary>
+        /// Alias in define_method.
+        /// </summary>
+        [Options(Compatibility = RubyCompatibility.Ruby186)]
+        public void AliasMethodLookup2() {
+            TestOutput(@"
+class D
+end
+
+class E
+  D.send(:define_method, :bar) {
+    alias g f rescue p $!
+  }
+end
+
+d = D.new
+d.bar
+", @"
+#<NameError: undefined method `f' for class `D'>
+");
+        }
+
+        /// <summary>
+        /// Alias in define_method.
+        /// </summary>
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void AliasMethodLookup3() {
+            TestOutput(@"
+class D
+end
+
+class E
+  D.send(:define_method, :bar) {
+    alias g f rescue p $!
+  }
+end
+
+d = D.new
+d.bar
+", @"
+#<NameError: undefined method `f' for class `E'>
+");
+        }
+
+        /// <summary>
         /// "alias" uses the same lookup algorithm as method definition (see RubyScope.GetMethodDefinitionOwner).
         /// </summary>
         public void AliasInModuleEval1() {
