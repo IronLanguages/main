@@ -4,6 +4,10 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 # On Ruby < 1.9 #methods returns an Array of Strings
 ruby_version_is ""..."1.9" do
   describe "Kernel#methods" do
+    it "returns methods that are not valid method or operator tokens" do
+      KernelSpecs::Methods.new.methods.should include("test_spec {foo} 001 [bar]")
+    end
+
     it "returns singleton methods defined by obj.meth" do
       KernelSpecs::Methods.methods(false).should include("ichi")
     end

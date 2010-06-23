@@ -9,27 +9,21 @@ class UnitTestSetup
     gem 'test-unit', "= 2.0.5"
     gem 'activerecord', "= 2.3.5"
     gem 'activesupport', "= 2.3.5"
-    
-    # Check if we should use a private version of ironruby-dbi (for ironruby-dbi development scenarios)
-    ironruby_dbi_path = ENV['IRONRUBY_DBI']
-    if ironruby_dbi_path
-      abort "Could not find %IRONRUBY_DBI%/lib/dbd/mssql.rb" if not File.exist?(File.expand_path('lib/dbd/mssql.rb', ironruby_dbi_path))
-      gem "dbi", "= 0.4.3"
-      require 'dbi'
-      $LOAD_PATH.unshift(File.expand_path('lib', ironruby_dbi_path))
-      require "dbd/MSSQL"
-      puts "Using ironruby-dbi from #{ironruby_dbi_path}"
-    end
-    
-    require 'ironruby_sqlserver' if UnitTestRunner.ironruby?
+    gem 'activerecord-sqlserver-adapter', "=2.3.5"
   end
 
   def ensure_database_exists(name)
-    conn = DBI.connect("DBI:MSSQL:server=#{ENV["COMPUTERNAME"]}\\SQLEXPRESS;integrated security=true")
+    conn = ActiveRecord::Base.sqlserver_connection({
+      :mode => 'ADONET',
+      :adapter => 'sqlserver',
+      :host => ENV['COMPUTERNAME'] + "\\SQLEXPRESS",
+      :integrated_security => 'true',
+      :database => ''
+    })
     begin
       conn.execute "CREATE DATABASE #{name}"
       return
-    rescue DBI::DatabaseError => e
+    rescue => e
       if e.message =~ /already exists/
         return
       end
@@ -40,7 +34,7 @@ class UnitTestSetup
   end
 
   def gather_files
-    sqlserver_adapter_root_dir = File.expand_path 'External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activerecord-sqlserver-adapter-2.3', ENV['DLR_ROOT']
+    sqlserver_adapter_root_dir = File.expand_path 'External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activerecord-sqlserver-adapter-2.3.5', ENV['DLR_ROOT']
     activerecord_tests_dir = File.expand_path 'External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/activerecord/test', ENV['DLR_ROOT']
     $LOAD_PATH << sqlserver_adapter_root_dir + '/test'
     $LOAD_PATH << activerecord_tests_dir
@@ -48,16 +42,13 @@ class UnitTestSetup
     if UnitTestRunner.ironruby?
       $LOAD_PATH << File.expand_path('Languages/Ruby/Tests/Scripts/adonet_sqlserver', ENV['DLR_ROOT'])
     else
-      dbi_0_2_2 = 'c:/bugs/rails/dbi-0.2.2' # change this for your computer
-      $LOAD_PATH << "#{dbi_0_2_2}/lib"
-      require "#{dbi_0_2_2}/lib/dbi.rb"
-      require "#{dbi_0_2_2}/lib/dbd/ado.rb"
       $LOAD_PATH << File.expand_path('Languages/Ruby/Tests/Scripts/native_sqlserver', ENV['DLR_ROOT'])
     end
 
     require 'active_record'
     require 'active_record/test_case'
     require 'active_record/fixtures'
+    require 'active_record/connection_adapters/sqlserver_adapter'
 
     ensure_database_exists "activerecord_unittest"
     ensure_database_exists "activerecord_unittest2"
@@ -262,7 +253,10 @@ class UnitTestSetup
       # D:\vs_langs01_s\dlr\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\ObjectSpace.cs:37:in `each_object'
       # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activerecord-sqlserver-adapter-2.3/test/cases/connection_test_sqlserver.rb:117:in `assert_all_statements_used_are_closed'
       # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activerecord-sqlserver-adapter-2.3/test/cases/connection_test_sqlserver.rb:70
-      "test: ConnectionSqlserver should insert without identity closes statement. "
+      "test: ConnectionSqlserver should insert without identity closes statement. ",
+      # uninitialized constant ConnectionTestSqlserver::ODBC
+      "test: ConnectionSqlserver should finish ODBC statment handle from #execute with block. ",
+      "test: ConnectionSqlserver should return finished ODBC statment handle from #execute without block. "
 
     disable DateTimeTest, 
       # <Tue Feb 10 15:30:45 -0800 1807> expected but was

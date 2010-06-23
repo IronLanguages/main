@@ -887,12 +887,12 @@ namespace IronRuby.Builtins {
             var result = new RubyArray();
             using (self.Context.ClassHierarchyLocker()) {
                 self.ForEachMember(inherited, attributes, foreignMembers, (name, module, member) => {
-                    if (Tokenizer.IsMethodName(name, true) || Tokenizer.IsOperatorName(name)) {
-                        if (member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMapping) == 0 && RubyUtils.HasMangledName(name)) {
+                    if (member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMapping) == 0 && RubyUtils.HasMangledName(name)) {
+                        if (Tokenizer.IsMethodName(name, true) || Tokenizer.IsOperatorName(name)) {
                             result.Add(new ClrName(name));
-                        } else {
-                            result.Add(self.Context.StringifyIdentifier(name));
                         }
+                    } else {
+                        result.Add(self.Context.StringifyIdentifier(name));
                     }
                 });
             }

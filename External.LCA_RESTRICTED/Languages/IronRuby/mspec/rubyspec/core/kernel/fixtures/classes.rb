@@ -38,6 +38,8 @@ module KernelSpecs
 
     def self.juu_ni; end
     def juu_san; end
+    
+    define_method("test_spec {foo} 001 [bar]") {}
   end
 
   class A
