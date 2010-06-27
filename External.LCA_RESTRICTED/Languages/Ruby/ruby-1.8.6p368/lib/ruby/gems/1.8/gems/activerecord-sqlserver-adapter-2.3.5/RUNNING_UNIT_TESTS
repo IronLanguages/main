@@ -1,0 +1,65 @@
+== Creating the test database
+
+The default names for the test databases are "activerecord_unittest" and 
+"activerecord_unittest2". If you want to use another database name then be sure 
+to update the connection adapter setups you want to test with in 
+test/connections/<your database>/connection.rb. 
+
+The connection files make certain assumptions. For instance, the ODBC connection 
+assumes you have a DSN setup that matches the name of the default database names.
+
+
+== Requirements
+
+The following gems need to be installed. Make sure you have gems.github.com as a
+source. Info here. http://gems.github.com/
+
+We use echoe for packagemanagement to rubyforge. Not needed really for the tests 
+but since we need it... you need to install it.
+
+  * gem install echoe
+  * gem install thoughtbot-shoulda -s http://gems.github.com
+  * gem install mocha
+
+The tests of this adapter depend on the existence of rails checkout. All the tests
+defined by rails are re-used. For this to work the following directory structure 
+is assumed to exist:
+
+#{RAILS_ROOT}/vendor/plugins/adapters/sqlserver
+#{RAILS_ROOT}/vendor/rails/activerecord/test
+
+Define a user named 'rails' in SQL Server with all privileges granted for the 
+test databases. Use an empty password for said user.
+
+
+== Running with Rake
+
+The easiest way to run the unit tests is through Rake. Either run "rake test" which 
+defaults to ODBC mode or being mode specific using either "rake sqlserver:test:adonet" 
+or "rake sqlserver:test:odbc". For more information, checkout the full array of rake tasks 
+with "rake -T"
+
+Rake can be found at http://rake.rubyforge.org
+
+
+== Running with Autotest
+
+Using autotest is easy, just run "autotest" and the tests will run continually in the 
+same order as the rake test command. By default autotest will use ODBC connection. If 
+you want to change this you can edit the autotest/sqlserver.rb file and set odbc_mode 
+to false.
+
+Lastly, you can run autotest on just the adapter specific tests with "autotest sqlserver". 
+This will continuously run ONLY the SQL Sever specific behavior tests which are much 
+quicker to run than the entire active record test suite.
+
+
+== Running by hand
+
+Unit tests are located in test directory. If you only want to run a single test suite, 
+you can do so with:
+
+   rake test_sqlserver TEST=base_test.rb
+   
+That'll run the base suite using the SQLServer-Ruby adapter.
+

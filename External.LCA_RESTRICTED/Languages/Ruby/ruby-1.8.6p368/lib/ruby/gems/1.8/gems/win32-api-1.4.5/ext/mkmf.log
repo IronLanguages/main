@@ -1,0 +1,23 @@
+have_func: checking for strncpy_s()... -------------------- no
+
+"gcc -o conftest -I. -IC:/vsl/m1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/1.8/i386-mingw32 -I.   -g -O2  conftest.c  -L. -LC:/vsl/m1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib -L.      -lmsvcrt-ruby18-static  -lshell32 -lws2_32  "
+checked program was:
+/* begin */
+1: #include <windows.h>
+2: #include <winsock.h>
+3: 
+4: /*top*/
+5: int main() { return 0; }
+6: int t() { void ((*volatile p)()); p = (void ((*)()))strncpy_s; return 0; }
+/* end */
+
+"gcc -o conftest -I. -IC:/vsl/m1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/1.8/i386-mingw32 -I.   -g -O2  conftest.c  -L. -LC:/vsl/m1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib -L.      -lmsvcrt-ruby18-static  -lshell32 -lws2_32  "
+checked program was:
+/* begin */
+1: /*top*/
+2: int main() { return 0; }
+3: int t() { strncpy_s(); return 0; }
+/* end */
+
+--------------------
+

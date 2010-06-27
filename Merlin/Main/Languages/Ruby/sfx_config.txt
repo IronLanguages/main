@@ -1,8 +1,0 @@
-;!@Install@!UTF-8!
-Title="IronRuby"
-ExtractPathText="Installation path:"
-BeginPrompt="IronRuby Alpha Installer"
-InstallPath="c:\\ironruby"
-GUIMode="2"
-GUIFlags="64"
-;!@InstallEnd@!

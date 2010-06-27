@@ -1,0 +1,15 @@
+<Project DefaultTargets="Build" ToolsVersion="dogfood" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <!--Import the settings-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\tools\Microsoft.DevDiv.Native.Settings.targets" />
+
+  <!--DIRS-->
+  <ItemGroup Condition=" '$(BuildExePhase)' == '' ">
+    <ProjectFile Include="Languages\dirs.proj" />
+    <ProjectFile Include="Runtime\dirs.proj" />
+    <ProjectFile Include="Test\dirs.proj" />
+  </ItemGroup>
+  
+  <!--Import the targets-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\tools\microsoft.devdiv.traversal.targets" />
+</Project> 

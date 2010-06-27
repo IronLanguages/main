@@ -1,2 +1,0 @@
-﻿%MERLIN_ROOT%\Languages\Ruby
-%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\Ruby

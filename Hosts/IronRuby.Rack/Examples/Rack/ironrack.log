@@ -1,0 +1,1493 @@
+
+=== Booting ironruby-rack at 4/23/2010 1:12:21 AM
+
+=== Booting ironruby-rack at 4/23/2010 1:12:37 AM
+
+=== Booting ironruby-rack at 4/23/2010 1:13:09 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+=> Rack application loaded (4281 ms)
+
+=== Request started at 4/23/2010 1:13:13 AM
+undefined method `call' for nil:NilClass
+    unknown: undefined method `call' for nil:NilClass (NoMethodError)
+    
+    
+
+=== Booting ironruby-rack at 4/23/2010 1:13:36 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    require 'app'
+    run App.new
+    
+    ) }.to_app
+=> Rack application loaded (4137 ms)
+
+=== Request started at 4/23/2010 1:13:40 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (436ms)
+
+=== Request started at 4/23/2010 1:13:40 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (9ms)
+
+=== Request started at 4/23/2010 1:13:44 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (8ms)
+
+=== Request started at 4/23/2010 1:13:44 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (19ms)
+
+=== Booting ironruby-rack at 4/23/2010 1:24:30 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    require 'app'
+    run App.new
+    
+    ) }.to_app
+=> Rack application loaded (4158 ms)
+
+=== Request started at 4/23/2010 1:24:34 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (395ms)
+
+=== Booting ironruby-rack at 4/23/2010 1:25:48 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    require 'app'
+    run App.new
+    
+    ) }.to_app
+=> Rack application loaded (4045 ms)
+
+=== Request started at 4/23/2010 1:25:52 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (384ms)
+
+=== Booting ironruby-rack at 4/23/2010 1:28:08 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (3971 ms)
+
+=== Request started at 4/23/2010 1:28:12 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (46ms)
+
+=== Booting ironruby-rack at 4/23/2010 1:29:40 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4340 ms)
+
+=== Request started at 4/23/2010 1:29:44 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (73ms)
+
+=== Booting ironruby-rack at 4/23/2010 1:30:15 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (5600 ms)
+
+=== Request started at 4/23/2010 1:30:21 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (138ms)
+
+=== Booting ironruby-rack at 4/23/2010 1:33:17 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4189 ms)
+
+=== Request started at 4/23/2010 1:33:21 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (53ms)
+
+=== Booting ironruby-rack at 4/23/2010 1:43:06 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4030 ms)
+
+=== Request started at 4/23/2010 1:43:10 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (47ms)
+
+=== Booting ironruby-rack at 4/23/2010 1:43:25 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4081 ms)
+
+=== Request started at 4/23/2010 1:43:29 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (48ms)
+
+=== Booting ironruby-rack at 4/23/2010 3:10:19 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4039 ms)
+
+=== Request started at 4/23/2010 3:10:24 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (49ms)
+
+=== Request started at 4/23/2010 3:10:24 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (6ms)
+
+=== Booting ironruby-rack at 4/23/2010 3:13:04 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4006 ms)
+
+=== Request started at 4/23/2010 3:13:08 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (47ms)
+
+=== Request started at 4/23/2010 3:13:09 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (6ms)
+
+=== Booting ironruby-rack at 4/23/2010 3:15:44 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (51849 ms)
+
+=== Request started at 4/23/2010 3:16:36 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (54ms)
+
+=== Request started at 4/23/2010 3:16:39 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (53809ms)
+
+=== Request started at 4/23/2010 3:17:36 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (5330ms)
+
+=== Booting ironruby-rack at 4/23/2010 3:17:53 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+
+=== Booting ironruby-rack at 4/23/2010 3:17:55 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+uninitialized constant Gem::ConfigFile
+    d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:434:in `const_missing': uninitialized constant Gem::ConfigFile (NameError)
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:434:in `configuration'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:468:in `dir'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:919:in `set_paths'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:690:in `path'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/source_index.rb:68:in `installed_spec_directories'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/source_index.rb:58:in `from_installed_gems'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:946:in `source_index'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:260:in `activate'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:68:in `gem'
+    	from (eval):0
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:54:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:47:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:39:in `Require'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:56:in `InitRack'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:31:in `.ctor'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\HttpHandlerFactory.cs:37:in `GetHandler'
+    	from System.Web:0:in `MapHttpHandler'
+    	from System.Web:0:in `System.Web.HttpApplication.IExecutionStep.Execute'
+    	from System.Web:0:in `ExecuteStep'
+    	from System.Web:0:in `ResumeSteps'
+    	from System.Web:0:in `System.Web.IHttpAsyncHandler.BeginProcessRequest'
+    	from System.Web:0:in `ProcessRequestInternal'
+    	from System.Web:0:in `ProcessRequestNoDemand'
+    	from System.Web:0:in `ProcessRequest'
+    	from WebDev.WebHost40:0:in `Process'
+    	from WebDev.WebHost40:0:in `ProcessRequest'
+    
+    
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4165 ms)
+
+=== Request started at 4/23/2010 3:17:57 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (48ms)
+
+=== Booting ironruby-rack at 4/23/2010 3:18:05 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+[DEBUG] >>> Rack
+[DEBUG] >>> Rack::VERSION
+[DEBUG] >>> gem 'rack'
+[DEBUG] >>> Gem.methods
+
+=== Booting ironruby-rack at 4/23/2010 3:23:07 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack >=1.0.0
+[DEBUG] >>> gem 'rack', '>=1.0.0';require 'rack'
+=> Loaded rack-1.0
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (48727 ms)
+
+=== Request started at 4/23/2010 3:23:56 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (1066ms)
+
+=== Booting ironruby-rack at 4/23/2010 3:25:01 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack 1.1.0
+[DEBUG] >>> gem 'rack', '1.1.0';require 'rack'
+Gem::LoadError
+    d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:827:in `report_activate_error': RubyGem version error: rack(1.0.1 not = 1.1.0)\n (Gem::LoadError)
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:261:in `activate'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:68:in `gem'
+    	from (eval):0
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:54:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:47:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:39:in `Require'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:56:in `InitRack'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:31:in `.ctor'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\HttpHandlerFactory.cs:37:in `GetHandler'
+    	from System.Web:0:in `MapHttpHandler'
+    	from System.Web:0:in `System.Web.HttpApplication.IExecutionStep.Execute'
+    	from System.Web:0:in `ExecuteStep'
+    	from System.Web:0:in `ResumeSteps'
+    	from System.Web:0:in `System.Web.IHttpAsyncHandler.BeginProcessRequest'
+    	from System.Web:0:in `ProcessRequestInternal'
+    	from System.Web:0:in `ProcessRequestNoDemand'
+    	from System.Web:0:in `ProcessRequest'
+    	from WebDev.WebHost40:0:in `Process'
+    	from WebDev.WebHost40:0:in `ProcessRequest'
+    
+    
+
+=== Booting ironruby-rack at 4/23/2010 3:26:27 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+Gem::LoadError
+    d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:827:in `report_activate_error': RubyGem version error: rack(1.0.1 not = 1.1.0)\n (Gem::LoadError)
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:261:in `activate'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:68:in `gem'
+    	from (eval):0
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:54:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:47:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:39:in `Require'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:56:in `InitRack'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:31:in `.ctor'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\HttpHandlerFactory.cs:37:in `GetHandler'
+    	from System.Web:0:in `MapHttpHandler'
+    	from System.Web:0:in `System.Web.HttpApplication.IExecutionStep.Execute'
+    	from System.Web:0:in `ExecuteStep'
+    	from System.Web:0:in `ResumeSteps'
+    	from System.Web:0:in `System.Web.IHttpAsyncHandler.BeginProcessRequest'
+    	from System.Web:0:in `ProcessRequestInternal'
+    	from System.Web:0:in `ProcessRequestNoDemand'
+    	from System.Web:0:in `ProcessRequest'
+    	from WebDev.WebHost40:0:in `Process'
+    	from WebDev.WebHost40:0:in `ProcessRequest'
+    
+    
+
+=== Booting ironruby-rack at 4/23/2010 3:29:09 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+Gem::LoadError
+    d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:827:in `report_activate_error': RubyGem version error: rack(1.0.1 not = 1.1.0)\n (Gem::LoadError)
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:261:in `activate'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:68:in `gem'
+    	from (eval):0
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:54:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:47:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:39:in `Require'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:56:in `InitRack'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:31:in `.ctor'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\HttpHandlerFactory.cs:37:in `GetHandler'
+    	from System.Web:0:in `MapHttpHandler'
+    	from System.Web:0:in `System.Web.HttpApplication.IExecutionStep.Execute'
+    	from System.Web:0:in `ExecuteStep'
+    	from System.Web:0:in `ResumeSteps'
+    	from System.Web:0:in `System.Web.IHttpAsyncHandler.BeginProcessRequest'
+    	from System.Web:0:in `ProcessRequestInternal'
+    	from System.Web:0:in `ProcessRequestNoDemand'
+    	from System.Web:0:in `ProcessRequest'
+    	from WebDev.WebHost40:0:in `Process'
+    	from WebDev.WebHost40:0:in `ProcessRequest'
+    
+    
+
+=== Booting ironruby-rack at 4/23/2010 3:31:48 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+Gem::LoadError
+    d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:827:in `report_activate_error': RubyGem version error: rack(1.0.1 not = 1.1.0)\n (Gem::LoadError)
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:261:in `activate'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:68:in `gem'
+    	from (eval):0
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:54:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:47:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:39:in `Require'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:56:in `InitRack'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:31:in `.ctor'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\HttpHandlerFactory.cs:37:in `GetHandler'
+    	from System.Web:0:in `MapHttpHandler'
+    	from System.Web:0:in `System.Web.HttpApplication.IExecutionStep.Execute'
+    	from System.Web:0:in `ExecuteStep'
+    	from System.Web:0:in `ResumeSteps'
+    	from System.Web:0:in `System.Web.IHttpAsyncHandler.BeginProcessRequest'
+    	from System.Web:0:in `ProcessRequestInternal'
+    	from System.Web:0:in `ProcessRequestNoDemand'
+    	from System.Web:0:in `ProcessRequest'
+    	from WebDev.WebHost40:0:in `Process'
+    	from WebDev.WebHost40:0:in `ProcessRequest'
+    
+    
+
+=== Booting ironruby-rack at 4/23/2010 3:34:49 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+Gem::LoadError
+    d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:827:in `report_activate_error': RubyGem version error: rack(1.0.1 not = 1.1.0)\n (Gem::LoadError)
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:261:in `activate'
+    	from d:/dlr1/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:68:in `gem'
+    	from (eval):0
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:54:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:47:in `Execute'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\RubyEngine.cs:39:in `Require'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:56:in `InitRack'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\Application.cs:31:in `.ctor'
+    	from d:\dlr1\dlr\Hosts\IronRuby.Rack\HttpHandlerFactory.cs:37:in `GetHandler'
+    	from System.Web:0:in `MapHttpHandler'
+    	from System.Web:0:in `System.Web.HttpApplication.IExecutionStep.Execute'
+    	from System.Web:0:in `ExecuteStep'
+    	from System.Web:0:in `ResumeSteps'
+    	from System.Web:0:in `System.Web.IHttpAsyncHandler.BeginProcessRequest'
+    	from System.Web:0:in `ProcessRequestInternal'
+    	from System.Web:0:in `ProcessRequestNoDemand'
+    	from System.Web:0:in `ProcessRequest'
+    	from WebDev.WebHost40:0:in `Process'
+    	from WebDev.WebHost40:0:in `ProcessRequest'
+    
+    
+
+=== Booting ironruby-rack at 4/23/2010 3:36:29 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+=> Loaded rack-1.1
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4041 ms)
+
+=== Request started at 4/23/2010 3:36:33 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (48ms)
+
+=== Booting ironruby-rack at 4/23/2010 3:36:42 AM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+=> Loaded rack-1.1
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (48055 ms)
+
+=== Request started at 4/23/2010 3:37:30 AM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (1789ms)
+
+=== Booting ironruby-rack at 4/25/2010 4:30:29 PM
+
+=== Booting ironruby-rack at 4/25/2010 4:31:24 PM
+
+=== Booting ironruby-rack at 4/25/2010 4:35:43 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'd:\\dlr1\\dlr\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+=> Loaded rack-1.1
+=> Application root: 'd:\\dlr1\\dlr\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4140 ms)
+
+=== Request started at 4/25/2010 4:35:47 PM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (47ms)
+
+=== Request started at 4/25/2010 4:35:58 PM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (6ms)
+
+=== Request started at 4/25/2010 4:36:05 PM
+[DEBUG] >>> 
+                        __body.each do |part| 
+                            __response.write part 
+                        end
+                        
+[DEBUG] >>> 
+                        __body.close if __body.respond_to? :close
+                        
+>>> Request finished (6ms)
+
+=== Booting ironruby-rack at 5/16/2010 4:34:17 PM
+
+=== Booting ironruby-rack at 5/16/2010 4:34:39 PM
+
+=== Booting ironruby-rack at 5/16/2010 4:36:27 PM
+An error occurred creating the configuration section handler for microsoft.scripting: Could not load file or assembly 'Microsoft.Scripting, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040) (D:\D3\Hosts\IronRuby.Rack\Examples\Rack\web.config line 5)
+       at System.Configuration.BaseConfigurationRecord.FindAndEnsureFactoryRecord(String configKey, Boolean& isRootDeclaredHere)
+       at System.Configuration.BaseConfigurationRecord.GetSectionRecursive(String configKey, Boolean getLkg, Boolean checkPermission, Boolean getRuntimeObject, Boolean requestIsHere, Object& result, Object& resultRuntimeObject)
+       at System.Configuration.BaseConfigurationRecord.GetSection(String configKey)
+       at System.Web.HttpContext.GetSection(String sectionName)
+       at System.Web.Configuration.HttpConfigurationSystem.GetSection(String sectionName)
+       at System.Web.Configuration.HttpConfigurationSystem.System.Configuration.Internal.IInternalConfigSystem.GetSection(String configKey)
+       at System.Configuration.ConfigurationManager.GetSection(String sectionName)
+       at Microsoft.Scripting.Hosting.Configuration.Section.LoadRuntimeSetup(ScriptRuntimeSetup setup, Stream configFileStream) in D:\D3\Runtime\Microsoft.Scripting\Hosting\Configuration\Section.cs:line 116
+       at Microsoft.Scripting.Hosting.ScriptRuntimeSetup.ReadConfiguration() in D:\D3\Runtime\Microsoft.Scripting\Hosting\ScriptRuntimeSetup.cs:line 180
+       at Microsoft.Scripting.Hosting.ScriptRuntime.CreateFromConfiguration() in D:\D3\Runtime\Microsoft.Scripting\Hosting\ScriptRuntime.cs:line 108
+       at Rack.IronRubyEngine.Init() in D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:line 19
+       at Rack.IronRubyApplication..ctor(String appPath) in D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:line 33
+       at Rack.RackDispatcher..ctor(HttpContext context) in D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:line 29
+    
+
+=== Booting ironruby-rack at 5/16/2010 4:37:16 PM
+Invalid argument value
+    Parameter name: ScriptRuntimeSetup must have at least one LanguageSetup
+       at Microsoft.Scripting.Utils.ContractUtils.Requires(Boolean precondition, String paramName) in D:\D3\Runtime\Microsoft.Scripting\Utils\ContractUtils.cs:line 47
+       at Microsoft.Scripting.Hosting.ScriptRuntimeSetup.ToConfiguration() in D:\D3\Runtime\Microsoft.Scripting\Hosting\ScriptRuntimeSetup.cs:line 128
+       at Microsoft.Scripting.Hosting.ScriptRuntime..ctor(ScriptRuntimeSetup setup) in D:\D3\Runtime\Microsoft.Scripting\Hosting\ScriptRuntime.cs:line 58
+       at Microsoft.Scripting.Hosting.ScriptRuntime.CreateFromConfiguration() in D:\D3\Runtime\Microsoft.Scripting\Hosting\ScriptRuntime.cs:line 108
+       at Rack.IronRubyEngine.Init() in D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:line 19
+       at Rack.IronRubyApplication..ctor(String appPath) in D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:line 33
+       at Rack.RackDispatcher..ctor(HttpContext context) in D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:line 29
+    
+
+=== Booting ironruby-rack at 5/16/2010 4:39:15 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:29:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:78:in `Init'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 4:40:34 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:29:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:78:in `Init'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+=== Booting ironruby-rack at 5/16/2010 4:45:38 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:78:in `Init'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 4:45:43 PM
+Request is not available in this context
+    unknown: Request is not available in this context (System::Web::HttpException)
+    
+    
+
+=== Booting ironruby-rack at 5/16/2010 4:47:06 PM
+Request is not available in this context
+    unknown: Request is not available in this context (System::Web::HttpException)
+    
+    
+=== Booting ironruby-rack at 5/16/2010 5:10:46 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:86:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+=== Booting ironruby-rack at 5/16/2010 5:12:52 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:84:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 5:14:11 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:84:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 5:15:42 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:84:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 5:18:04 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:84:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\
+
+=== Request started at 5/16/2010 5:18:34 PM
+Object reference not set to an instance of an object.
+    unknown: Object reference not set to an instance of an object. (System::NullReferenceException)
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 5:19:33 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:84:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\
+
+=== Request started at 5/16/2010 5:19:39 PM
+>>> Request finished (1ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\
+
+=== Request started at 5/16/2010 5:20:25 PM
+>>> Request finished (0ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\
+
+=== Request started at 5/16/2010 5:20:32 PM
+>>> Request finished (0ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\
+
+=== Request started at 5/16/2010 5:20:47 PM
+>>> Request finished (0ms)
+
+=== Booting ironruby-rack at 5/16/2010 5:21:03 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:84:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\
+
+=== Request started at 5/16/2010 5:21:20 PM
+>>> Request finished (1ms)
+
+=== Booting ironruby-rack at 5/16/2010 5:23:44 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:84:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 5:24:40 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:84:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 5:26:17 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+Win32API is not supported in 64-bit process
+    D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:87:in `Reinitialize': Win32API is not supported in 64-bit process (System::NotSupportedException)
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `initialize'
+    	from D:\D3\Languages\Ruby\Libraries.LCA_RESTRICTED\Win32API\Win32API.cs:189:in `Create'
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems/config_file.rb:43
+    	from D:/D3/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/site_ruby/1.8/rubygems.rb:1126
+    	from (eval):0:in `require'
+    	from (eval):0
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:71:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:60:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:56:in `Execute'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:48:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyEngine.cs:39:in `Require'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:62:in `InitRack'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\IronRubyApplication.cs:34:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\RackDispatcher.cs:28:in `.ctor'
+    	from D:\D3\Hosts\IronRuby.Rack\Src\AspNetHost.cs:83:in `<Init>b__1'
+    
+    
+[DEBUG] >>> require 'rubygems'; Gem.path
+
+=== Booting ironruby-rack at 5/16/2010 5:27:38 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+[DEBUG] >>> Rack::VERSION
+=> Loaded rack-1.1
+=> Application root: 'D:\\D3\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (52416 ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\Rack-v4\
+
+=== Request started at 5/16/2010 5:29:01 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (5756ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\Rack-v4\
+
+=== Request started at 5/16/2010 5:29:50 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (3ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\Rack-v4\
+
+=== Request started at 5/16/2010 5:29:51 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (3ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\Rack-v4\
+
+=== Request started at 5/16/2010 5:29:52 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (3ms)
+
+=== Booting ironruby-rack at 5/16/2010 5:29:59 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+[DEBUG] >>> Rack::VERSION
+=> Loaded rack-1.1
+=> Application root: 'D:\\D3\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (3862 ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\Rack-v4\
+
+=== Request started at 5/16/2010 5:30:03 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (47ms)
+
+=== Booting ironruby-rack at 5/16/2010 5:30:31 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+[DEBUG] >>> Rack::VERSION
+=> Loaded rack-1.1
+=> Application root: 'D:\\D3\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (3814 ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\Rack-v4\
+
+=== Request started at 5/16/2010 5:30:35 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (47ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\Rack-v4\
+
+=== Request started at 5/16/2010 5:32:07 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (28ms)
+
+=== Booting ironruby-rack at 5/16/2010 5:40:49 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+[DEBUG] >>> Rack::VERSION
+=> Loaded rack-1.1
+=> Application root: 'D:\\D3\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (17917 ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\Rack-v4\
+
+=== Request started at 5/16/2010 5:41:31 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (55ms)
+
+=== Booting ironruby-rack at 5/16/2010 5:42:09 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+[DEBUG] >>> Rack::VERSION
+=> Loaded rack-1.1
+=> Application root: 'D:\\D3\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (5106 ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\
+
+=== Request started at 5/16/2010 5:42:15 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (62ms)
+
+=== Booting ironruby-rack at 5/16/2010 5:42:16 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+[DEBUG] >>> Rack::VERSION
+=> Loaded rack-1.1
+=> Application root: 'D:\\D3\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (3444 ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\favicon.ico
+
+=== Request started at 5/16/2010 5:42:21 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (8ms)
+
+=== Booting ironruby-rack at 5/16/2010 5:42:58 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+[DEBUG] >>> Rack::VERSION
+=> Loaded rack-1.1
+=> Application root: 'D:\\D3\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (4079 ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\
+
+=== Request started at 5/16/2010 5:43:02 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (52ms)
+
+
+=== Booting ironruby-rack at 5/16/2010 5:47:44 PM
+[DEBUG] >>> TOPLEVEL_BINDING = binding
+=> Setting GEM_PATH: 'D:\\D3\\External.LCA_RESTRICTED\\Languages\\Ruby\\ruby-1.8.6p368\\lib\\ruby\\gems\\1.8'
+=> Setting RACK_ENV: 'production'
+=> Loading RubyGems
+[DEBUG] >>> require 'rubygems'
+=> Loading Rack =1.1.0
+[DEBUG] >>> gem 'rack', '=1.1.0';require 'rack'
+[DEBUG] >>> Rack::VERSION
+=> Loaded rack-1.1
+=> Application root: 'D:\\D3\\Hosts\\IronRuby.Rack\\Examples\\Rack'
+=> Loading Rack application
+[DEBUG] >>> Rack::Builder.new { (
+    app = proc do |env|
+      return [200, { "Content-Type" => "text/html" }, "hello <b>world</b>"]
+    end
+    run app
+    ) }.to_app
+=> Rack application loaded (5358 ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\
+
+=== Request started at 5/16/2010 5:47:52 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (59ms)
+File not found: D:\D3\Hosts\IronRuby.Rack\Examples\Rack\public\favicon.ico
+
+=== Request started at 5/16/2010 5:47:54 PM
+[DEBUG] >>> __body.each(&__each_block)
+>>> Request finished (6ms)

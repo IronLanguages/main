@@ -1,4 +1,0 @@
-fails:File.identical? return true if they are identical
-fails:File.identical? raises an ArgumentError if not passed two arguments
-fails:File.identical? raises a TypeError if not passed String types
-fails:File.identical? returns true if both named files are identical

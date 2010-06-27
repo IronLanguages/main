@@ -1,0 +1,103 @@
+;==============================================================================
+;= Folder navigation
+;=
+
+bin     =cd /d %DLR_ROOT%\Bin
+ip      =cd /d %DLR_ROOT%\Languages\IronPython
+rb      =cd /d %DLR_ROOT%\Languages\Ruby
+rt      =cd /d %DLR_ROOT%\Runtime
+r       =cd /d %DLR_ROOT%
+mspc    =cd /d %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\mspec
+ipl     =cd /d %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib
+cpl     =cd /d %DLR_ROOT%\External.LCA_RESTRICTED\Languages\CPython\26\Lib
+
+irk     =cd /d %DLR_ROOT%\Hosts\IronRuby.Rack
+rbs     =cd /d %DLR_ROOT%\Languages\Ruby\Samples
+msl     =cd /d %PROGRAM_FILES_32%\Microsoft Silverlight
+sl      =cd /d %DLR_ROOT%\Hosts\Silverlight
+mss     =cd /d %DLR_ROOT%\Hosts\Silverlight\Microsoft.Scripting.Silverlight
+ch      =cd /d %DLR_ROOT%\Hosts\Silverlight\Chiron
+sls     =cd /d %DLR_ROOT%\Hosts\Silverlight\Samples
+
+;==============================================================================
+;= Build commands
+;=
+
+brbd       =msbuild.exe %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Debug" $*
+brbr       =msbuild.exe %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Release" $*
+bipd       =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Debug" $*
+bipr       =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Release" $*
+bmsd      =msbuild.exe %DLR_ROOT%\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj /p:Configuration="Debug" $*
+geninit   =%DLR_ROOT%\Languages\Ruby\Libraries.LCA_RESTRICTED\GenerateInitializers.cmd $*
+geninity  =%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\GenerateInitializers.cmd $*
+gencache  =%DLR_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd $*
+
+;==============================================================================
+;= Silverlight Build Commands
+;=
+
+bsrbd    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight3Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsrbr    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight3Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsd      =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight3Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsr      =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight3Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
+bsd4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight4Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
+bsr4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight4Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
+
+;==============================================================================
+;= [Iron]Python program aliases
+;=
+
+ipy     ="%DLR_ROOT%\Bin\Debug\ipy.exe" $*
+ipyr    ="%DLR_ROOT%\Bin\Release\ipy.exe" -X:TabCompletion $*
+ipyd    ="%DLR_ROOT%\Bin\Debug\ipy.exe" -D -X:TabCompletion $*
+ipy2    ="%DLR_ROOT%\Bin\v2Debug\ipy.exe" $*
+ipyr2   ="%DLR_ROOT%\Bin\v2Release\ipy.exe" -X:TabCompletion $*
+ipyd2   ="%DLR_ROOT%\Bin\v2Debug\ipy.exe" -D -X:TabCompletion $*
+ipym    =mono "%DLR_ROOT%\Bin\Debug\ipy.exe" $*
+ipyrm   =mono "%DLR_ROOT%\Bin\Release\ipy.exe" -X:TabCompletion $*
+ipydm   =mono "%DLR_ROOT%\Bin\Debug\ipy.exe" -D -X:TabCompletion $*
+ipw     ="%DLR_ROOT%\Bin\Debug\ipyw.exe" $*
+ipwr    ="%DLR_ROOT%\Bin\Release\ipyw.exe" $*
+ipwd    ="%DLR_ROOT%\Bin\Debug\ipyw.exe" -D $*
+ipi     ="%DLR_ROOT%\Bin\Release\ipy.exe" -D -X:TabCompletion -X:AutoIndent $*
+msip    ="%windir%\system32\WindowsPowerShell\v1.0\powershell.exe" measure-command { %DLR_ROOT%\Bin\Release\ipy.exe $* }
+
+;==============================================================================
+;= [Iron]Ruby program aliases
+;=
+
+rbx     ="%DLR_ROOT%\Bin\Debug\ir.exe" $*
+rbr     ="%DLR_ROOT%\Bin\Release\ir.exe" $*
+rbd     ="%DLR_ROOT%\Bin\Debug\ir.exe" -D $*
+rbx2    ="%DLR_ROOT%\Bin\v2Debug\ir.exe" $*
+rbr2    ="%DLR_ROOT%\Bin\v2Release\ir.exe" $*
+rbd2    ="%DLR_ROOT%\Bin\v2Debug\ir.exe" -D $*
+rbxm    =mono "%DLR_ROOT%\Bin\Debug\ir.exe" $*
+rbrm    =mono "%DLR_ROOT%\Bin\Release\ir.exe" $*
+rbdm    =mono "%DLR_ROOT%\Bin\Debug\ir.exe" -D $*
+irb19   ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\irb.bat" $*
+ruby19  ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe" $*
+msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %DLR_ROOT%\Bin\Release\ir.exe $* }
+
+;==============================================================================
+;= Chiron aliases
+;=
+
+chd     ="%DLR_ROOT%\Bin\Silverlight3Debug\Chiron.exe" $*
+chr     ="%DLR_ROOT%\Bin\Silverlight3Release\Chiron.exe" $*
+chd4    ="%DLR_ROOT%\Bin\Silverlight4Debug\Chiron.exe" $*
+chr4    ="%DLR_ROOT%\Bin\Silverlight4Release\Chiron.exe" $*
+
+;==============================================================================
+;= Miscellaneous utilities
+;=
+
+n       =notepad.exe $*
+bc      ="%PROGRAM_FILES_32%\Beyond Compare 2\Bc2.exe" $*
+scite   =C:\programs\ruby\scite\scite.exe $*
+ps      =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe $*
+csc2    =%FrameworkDir%\v2.0.50727\csc $*
+csc3    =%FrameworkDir%\v3.5\csc $*
+
+;==============================================================================
+;=

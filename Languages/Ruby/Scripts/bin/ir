@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+export MONO_IOMAP=all
+export MONO_MANAGED_WATCHER=1 
+
+fpath=`which $0`
+fdir=`dirname $fpath`
+mono $fdir/ir.exe $*

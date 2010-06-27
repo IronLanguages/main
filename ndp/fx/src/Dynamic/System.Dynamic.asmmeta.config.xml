@@ -1,4 +1,0 @@
-<?xml version="1.0"?>
-<root phase="2">
-    <assembly publish="$(SDK_REF_PATH)\..\..\..\sdk\ref\v4.0\System.Dynamic.dll"/>
-</root>

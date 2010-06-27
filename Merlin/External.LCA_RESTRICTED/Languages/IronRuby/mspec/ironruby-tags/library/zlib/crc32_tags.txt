@@ -1,5 +1,0 @@
-fails:Zlib.crc32 calculates CRC checksum for string
-fails:Zlib.crc32 calculates CRC checksum for string and initial CRC value
-fails:Zlib.crc32 calculates the CRC checksum for string and initial CRC value for Bignums
-fails:Zlib.crc32 assumes that the initial value is given to crc, if crc is omitted
-fails:Zlib.crc32 it returns the CRC initial value, if string is omitted

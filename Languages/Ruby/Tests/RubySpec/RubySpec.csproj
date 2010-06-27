@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{534A82C6-3EB0-4888-ABD2-A15284683E8D}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>RubySpec</RootNamespace>
+    <AssemblyName>RubySpec</AssemblyName>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\v2Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;CLR2</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\v2Release</OutputPath>
+    <DefineConstants>TRACE;CLR2</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <ItemGroup>
+    <Content Include="..\..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\ironruby-tags\critical_tags.txt">
+      <Link>IronRuby-tags\critical_tags.txt</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\spec\spec_helper.rb">
+      <Link>MSpec\Spec\spec_helper.rb</Link>
+    </None>
+    <None Include="..\..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\rubyspec\spec_helper.rb">
+      <Link>RubySpec\spec_helper.rb</Link>
+    </None>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,2 @@
+﻿%DLR_ROOT%\Languages\Ruby
+%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby
