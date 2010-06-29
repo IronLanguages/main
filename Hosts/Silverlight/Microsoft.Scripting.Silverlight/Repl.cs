@@ -75,7 +75,7 @@ namespace Microsoft.Scripting.Silverlight {
         private ScriptEngine        _engine;
         private ScriptScope         _currentScope;
         private static int          _count;
-        private ReplHistory         _history = new ReplHistory();
+        private ReplHistory _history = new ReplHistory();
         private LanguageNeutralFormatter _neutralFormatter;
         #endregion
 
@@ -101,14 +101,30 @@ namespace Microsoft.Scripting.Silverlight {
             get { return _engine; }
         }
 
+        /// <summary>
+        /// Command history
+        /// </summary>
         public ReplHistory History {
             get { return _history; }
         }
 
+        /// <summary>
+        /// HtmlElement for inputting commands
+        /// </summary>
         public HtmlElement Input {
             get { return _silverlightDlrReplCode; }
         }
 
+        /// <summary>
+        /// HtmlElement for standard out
+        /// </summary>
+        public HtmlElement Output {
+            get { return OutputBuffer.Element; }
+        }
+
+        /// <summary>
+        /// Handles formatting of the repl's results
+        /// </summary>
         public IReplFormatter Formatter { get; private set; }
         #endregion
 
@@ -290,127 +306,40 @@ namespace Microsoft.Scripting.Silverlight {
 
         #region History
 
-        private string Remember() {
-            return _history.ReplaceWriteCommand(Input.GetProperty("value").ToString());
-        }
-
-        private void Store() {
-            Remember();
-            _history.StartNewCommand();
-        }
-
         /// <summary>
         /// Get the next command
         /// </summary>
         public string GetNextCommand() {
-            _history.ReadNext();
-            return _history.CurrentReadCommand;
+            return _history.GetNextText() ?? GetLastCommand();
         }
 
         /// <summary>
         /// Get the previous command
         /// </summary>
         public string GetPreviousCommand() {
-            Remember();
-            _history.ReadPrev();
-            return _history.CurrentReadCommand;
+            return _history.GetPreviousText() ?? GetFirstCommand();
         }
 
-        public class ReplHistory {
-
-            private List<string> _commands;
-            private int _readPointer;
-            private int _writePointer;
-            private Func<bool> ResetReadPointerBehavior { get; set; }
-
-            public List<string> Commands { get { return _commands; } }
-            
-            public ReplHistory() : this(true) {
-                Clear();
-            }
-
-            public ReplHistory(bool cmdExeBehavior) {
-                if (cmdExeBehavior) {
-                    ResetReadPointerBehavior = new Func<bool>(() => _readPointer == _writePointer);
-                } else {
-                    ResetReadPointerBehavior = new Func<bool>(() => true);
-                }
-            }
-
-            public string CurrentReadCommand {
-                get {
-                    return GetCommand(_readPointer);
-                }
-            }
-
-            public string CurrentWriteCommand {
-                get {
-                    return GetCommand(_writePointer);
-                }
-            }
-
-            public int ReadPrev() {
-                if (_readPointer > 0)
-                    _readPointer -= 1;
-                return _readPointer;
-            }
-
-            public int ReadNext() {
-                if (_readPointer < (_commands.Count - 1))
-                    _readPointer += 1;
-                return _readPointer;
-            }
-
-            public string GetCommand(int index) {
-                if (_commands.Count == 0) return "";
-                return _commands[PointerValue(index)];
-            }
-
-            public string SetCommand(int index, string cmd) {
-                if (_commands.Count == 0) StartNewCommand();
-                return _commands[PointerValue(_writePointer)] = cmd;
-            }
-
-            public int ResetReadPointer() {
-                return _readPointer = PointerValue(_commands.Count - 1);
-            }
-
-            public int ResetWritePointer() {
-                return _writePointer = PointerValue(_commands.Count - 1);
-            }
-
-            private int PointerValue(int p) {
-                if (p <= 0) return 0;
-                else if (p > _commands.Count - 1) return _commands.Count - 1;
-                return p;
-            }
-
-            public string AppendWriteCommand(string cmd) {
-                return ReplaceWriteCommand(CurrentWriteCommand + cmd);
-            }
-
-            public string AppendWriteCommand(char c) {
-                return ReplaceWriteCommand(CurrentWriteCommand + c);
-            }
-
-            public string ReplaceWriteCommand(string cmd) {
-                return SetCommand(_writePointer, cmd);
-            }
-
-            public void StartNewCommand() {
-                _commands.Add("");
-                if (ResetReadPointerBehavior())
-                    ResetReadPointer();
-                ResetWritePointer();
-            }
-
-            public void Clear() {
-                _commands = new List<string>(new string[] { "" });
-                _readPointer = 0;
-                _writePointer = 0;
-            }
+        /// <summary>
+        /// Resets the Repl's command history
+        /// </summary>
+        public void ResetHistory() {
+            _history = new ReplHistory();
         }
 
+        private string GetLastCommand() {
+            var entry = _history.Last;
+            return entry != null ? entry.Text : null;
+        }
+
+        private string GetFirstCommand() {
+            var entry = _history.First;
+            return entry != null ? entry.Text : null;
+        }
+
+        private void Store() {
+            _history.Add(Input.GetProperty("value").ToString());
+        }
         #endregion
 
         #region Running Code
@@ -577,10 +506,11 @@ namespace Microsoft.Scripting.Silverlight {
         internal void ShowDefaults() {
             _silverlightDlrReplCode.SetProperty("value", "");
             _outputBuffer.ScrollToBottom();
+            // Raises Common_MethodFailed sometimes ...
             try {
                 _silverlightDlrReplPrompt.Focus();
                 _silverlightDlrReplCode.Focus();
-            } catch {}
+            } catch { }
         }
 
         #region Code input
@@ -705,14 +635,14 @@ namespace Microsoft.Scripting.Silverlight {
         /// Render the next command
         /// </summary>
         public void ShowNextCommand() {
-            _silverlightDlrReplCode.SetProperty("value", GetNextCommand());
+            _silverlightDlrReplCode.SetProperty("value", GetNextCommand() ?? "");
         }
 
         /// <summary>
         /// Render the previous command
         /// </summary>
         public void ShowPreviousCommand() {
-            _silverlightDlrReplCode.SetProperty("value", GetPreviousCommand());
+            _silverlightDlrReplCode.SetProperty("value", GetPreviousCommand() ?? "");
         }
         #endregion
 
@@ -774,6 +704,8 @@ namespace Microsoft.Scripting.Silverlight {
             Reset();
         }
 
+        public HtmlElement Element { get { return _results; } }
+
         public string Queue { get { return _queue; } }
 
         public override void Write(string str) {
@@ -811,12 +743,19 @@ namespace Microsoft.Scripting.Silverlight {
 
         private void AppendToResults(string str, string outputClass, Action<HtmlElement> process) {
             str = str == String.Empty ? " " : str;
-            _results.AppendChild(PutTextInNewElement(
-                str, ElementName, 
-                outputClass ?? ElementClass,
-                process ?? ElementProcessor
-            ));
-
+            var self = new { Name = this.ElementName, Klass = this.ElementClass, Processor = this.ElementProcessor };
+            Action doWrite = () => {
+                _results.AppendChild(PutTextInNewElement(
+                    str, self.Name,
+                    outputClass ?? self.Klass,
+                    process ?? self.Processor
+                ));
+            };
+            if (!HtmlPage.Document.Dispatcher.CheckAccess()) {
+                HtmlPage.Document.Dispatcher.BeginInvoke(doWrite);
+            } else {
+                doWrite();
+            }
         }
 
         // TODO any library I can use to do this?

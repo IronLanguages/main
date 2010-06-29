@@ -206,6 +206,7 @@ namespace Microsoft.Scripting.Silverlight {
                             );
                         scope = engine.CreateScope();
                     } else if (sc.Inline != null) {
+                        Assert.NotNull(DynamicApplication.HtmlPageUri);
                         var page = BrowserPAL.PAL.VirtualFilesystem.GetFileContents(DynamicApplication.HtmlPageUri);
                         var code = AlignSourceLines(sc.Inline, page);
                         sourceCode =

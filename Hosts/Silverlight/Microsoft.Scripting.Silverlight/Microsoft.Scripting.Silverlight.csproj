@@ -153,6 +153,7 @@
     <Compile Include="ErrorFormatter.cs" />
     <Compile Include="ExtensionTypes.cs" />
     <Compile Include="Repl.cs" />
+    <Compile Include="ReplHistory.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Window.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

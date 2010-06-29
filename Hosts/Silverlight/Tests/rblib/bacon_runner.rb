@@ -8,7 +8,12 @@ end
 $: << 'rblib'
 
 if SILVERLIGHT
+  $: << 'lib'
+  require 'test_results'
+  
+  include System
   include System::Windows
+  include System::Windows::Browser
   include System::Windows::Controls
 
   dyneng = DynamicApplication.current.engine
@@ -18,7 +23,7 @@ if SILVERLIGHT
   $stdout = $repl.output_buffer
   $stderr = $repl.output_buffer
 
-  Application.current.root_visual = UserControl.new  
+  Application.current.root_visual = UserControl.new
 end
 
 require 'bacon'
@@ -102,6 +107,48 @@ class BaconRunner
       end
     end
     BaconRunner.execute_at_exit_blocks
+    BaconResults.broadcast
+  end
+end
+
+class BaconResults
+  class << self
+    def broadcast
+      r = get_results
+      TestResults.broadcast(r, pass?(r), get_output)
+    end
+    
+    def get_results
+      results_str = get_results_string
+      %W(tests assertions skips specifications requirements failures errors).inject({}) do |results, ttype|
+        results_str.scan(/(\d*)\s#{ttype}/) do |m|
+          results[ttype.to_sym] = m.first.split(/[ (]/).last.to_i
+        end
+        results
+      end
+    end
+  
+    def pass?(results)
+      results.keys.size > 0 &&
+      results.has_key?(:failures) && results.has_key?(:errors) &&
+      results[:failures] && results[:errors] &&
+      results[:failures] == 0 && results[:errors] == 0
+    end
+  
+    def get_output
+      if output_element = $repl.output
+        output_element.html
+      end
+    end
+
+    def get_results_string
+      results_element = $repl.output.children.select do |i|
+        i.tag_name == 'span' && i.css_class == ''
+      end[-2]
+      results_element ?
+        HttpUtility.html_decode(results_element.html).to_s :
+        nil
+    end
   end
 end
 

@@ -18,7 +18,7 @@ describe 'Parsing init parameters' do
   end
 
   it 'should not have a debug flag' do
-    DynamicApplication.current.debug.should.be.false
+    DynamicApplication.current.debug.should.be.true
   end
 
   it 'should have an init params collection' do
@@ -63,7 +63,7 @@ describe 'Hosting API' do
   end
   
   it 'should set the debug mode' do
-    DynamicApplication.current.runtime.setup.debug_mode.should.be.false
+    DynamicApplication.current.runtime.setup.debug_mode.should.be.true
   end
   
   it 'should load Silverlight platform DLLs' do

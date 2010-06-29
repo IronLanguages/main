@@ -5,15 +5,21 @@
   <script type="text/javascript">
     if(!window.DLR)
       window.DLR = {}
-    DLR.settings = {source: 'tests.xap'}
+    DLR.settings = {debug: true, source: 'tests.xap'}
   </script>
-  <script type="text/javascript" src="dlr.js"></script>
+  <script type="text/javascript" src="/dlr-build/dlr.js"></script>
+  <script type="text/javascript" src="jslib/jquery.js"></script>
+  <script type="text/javascript" src="jslib/util.js"></script>
+
+  <script type="application/x-zip-compressed" src="lib.zip"></script>
 
   <script type="application/python"></script>
+  
+  <script type="text/ruby" src="rblib/test_results.rb" defer='defer'></script>
 
-  <script type="text/ruby" src="rblib/bacon_runner.rb" defer='true'></script>
-  <script type="text/ruby" src="rblib/bacon.rb" defer='true'></script>
-  <script type="text/ruby" src="rblib/python.rb" defer='true'></script>
+  <script type="text/ruby" src="rblib/bacon_runner.rb" defer='defer'></script>
+  <script type="text/ruby" src="rblib/bacon.rb" defer='defer'></script>
+  <script type="text/ruby" src="rblib/python.rb" defer='defer'></script>
   <script type="application/ruby">
     require 'helper'
     require 'rblib/bacon_runner'
@@ -25,41 +31,45 @@
         ruby_extensions
         repl
         window
-      ),
-      :integration => [
-        '01',
-        'args',
-        'auto_addref',
-        'error_handle',
-        'execfile',
-        'issubclass',
-        #'modules',
-        #'multi_import',
-        #'name',
-        #'net',
-        #'querystring',
-        #'re',
-        #'smoke',
-        #'sys_path',
-        #'s_clock_rb',
-        #'s_dlr_console',
-        #'s_fractulator',
-        #'thread',
-        #'utf8',
-        #'xamlloader',
-        #'xcode',
-        #'xcode_semantics',
-        #'x_attribute_error',
-        #'x_devidebyzero',
-        #'x_import_1',
-        #'x_import_2',
-        #'x_import_3',
-        #'x_rethrow',
-        #'x_syntax_error',
-        #'x_typeerror'
-      ]
+      )
     )
   </script>
+
+  <script type="text/python" src="pylib/traceback.py" defer='defer'></script>
+  <script type="text/python" src="pylib/linecache.py" defer='defer'></script>
+  <script type="text/python" src="pylib/os.py" defer='defer'></script>
+  <script type="text/python" src="pylib/ntpath.py" defer='defer'></script>
+  <script type="text/python" src="pylib/stat.py" defer='defer'></script>
+  <script type="text/python" src="pylib/genericpath.py" defer='defer'></script>
+  <script type="text/python" src="pylib/warnings.py" defer='defer'></script>
+  <script type="text/python" src="pylib/types.py" defer='defer'></script>
+  <script type="text/python" src="pylib/random.py" defer='defer'></script>
+  <script type="text/python" src="pylib/__future__.py" defer='defer'></script>
+  <script type="text/python" src="pylib/getopt.py" defer='defer'></script>
+  <script type="text/python" src="pylib/unittest.py" defer='defer'></script>
+  <script type="text/python" src="pylib/unittest_runner.py" defer='defer'></script>
+  <script type="text/python">
+    def run_python_tests():
+      import sys
+      sys.path.append("pylib")
+      import unittest_runner
+      
+      return unittest_runner.run_testcases('regressions', [
+        ('test_args', 'ArgsRegression'),
+        ('test_autoaddref', 'AutoAddRefRegression'),
+        ('test_execfile', 'ExecFileRegression'),
+        ('test_htmlbridge', 'HtmlBridgeRegression'),
+        ('test_issubclass', 'IsSubClassRegression'),
+        ('test_modules', 'ModulesRegression'),
+        ('test_multiimport', 'MultiImportRegression'),
+        ('test_name', 'NameRegression'),
+        ('test_typeerror', 'TypeErrorRegression'),
+        ('test_utf8', 'UTF8Regression'),
+      ])
+
+    run_python_tests()
+  </script>
+
 </head>
 <body>
 </body>

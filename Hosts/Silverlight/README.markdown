@@ -7,8 +7,8 @@ Dynamic Languages in Silverlight
   Runtime (DLR). The supported languages are IronPython and IronRuby.
 
   Note: this is meant to be used to develop applications with 
-  Silverlight 2 RTW. Install Silverlight for [Windows](http://go.microsoft.com/fwlink/?LinkID=119972)
-  or the [Mac](http://go.microsoft.com/fwlink/?LinkID=119973)
+  Silverlight. Install Silverlight for [Windows](http://go.microsoft.com/fwlink/?LinkID=119972)
+  or [Mac](http://go.microsoft.com/fwlink/?LinkID=119973)
 
 Package
 -------
@@ -20,8 +20,8 @@ Package
 
   /Microsoft.Scripting.Silverlight: Source code for Microsoft.Scripting.Silverlight.dll
 
-  /Public:    Public Solution file, tools for creating and running Silverlight 
-              applications, and the Microsoft Public License
+  /Public:    Tools for creating and running Silverlight applications, and the
+              Microsoft Public License
 
 Getting Started
 ---------------
@@ -46,7 +46,20 @@ Getting Started
 
 CHANGELOG
 ---------
-  0.5.0 - 2009-03-20
+  
+  2010-03-05
+  
+  - MIX10 release
+  
+  2009-11-??
+  
+  - RubyConf release
+  
+  - Adds support for DLR-based languages embedded in the HTML page:
+    <script type="text/python">, <script type="text/ruby">, and
+    <script type="text/arbitrary-dlr-language">.
+
+  2009-03-20
 
   - MIX09 release for Silverlight 2 and Silverlight 3 Beta.
 
@@ -87,7 +100,7 @@ CHANGELOG
     * XapHttpHandler gives IIS or Cassini the auto-XAPing power of Chiron (also in utilities) (Harry Pierson) March 19, 2009
       commit 63a5ea3cf94068b87273531b5c96d84d8de983d2
 
-  0.4.0 - 2008-10-15
+  2008-10-15
 
   - New builds of DLR/Languages for Silverlight 2 RTW
 
@@ -102,28 +115,28 @@ CHANGELOG
     method dispatch. Therefore, the sample that showed this, jscript/fractulator,
     is not in this release.
 
-  0.3.9 - 2008-09-29
+  2008-09-29
 
   - New builds of DLR/Languages for Silverlight 2 RC
 
-  0.3.0 - 2008-08-29
+  2008-08-29
 
   - New builds of DLR/Languages
 
-  0.2.1 - 2008-06-11
+  2008-06-11
 
   - Now script/sl.bat does not depend on Ruby being installed
 
-  0.2.0 - 2008-06-09
+  2008-06-09
 
   - Release for Silverlight 2 Beta 2. Removes samples and source code from 
     main project to seperate downloads on http://codeplex.com/sdlsdk.
 
-  0.1.1 - 2008-05-06
+  2008-05-06
 
   - Adds Managed JScript to the package, as well as the "sl" command
 
-  0.1.0 - 2008-03-07
+  2008-03-07
 
   - MIX08 release for Silverlight 2; IronRuby and IronPython support for 
     Silverlight 2 Beta 1.

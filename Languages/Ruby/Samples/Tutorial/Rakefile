@@ -7,47 +7,41 @@ task :run => 'tutorial:run'
 
 cwd = File.dirname(__FILE__)
 
-# TODO: Mono support
+require 'rbconfig'
+irbin = RbConfig::CONFIG['bindir']
+ir = "#{irbin}/ir.exe"
+raise "Could not find ir.exe" unless File.exist? ir
+IR = ir
+
+# TODO: Mono support -- (jimmysch) Moonlight only as Mono doesn't support WPF
+CSC="#{ENV['SystemRoot']}\\Microsoft.NET\\Framework\\v3.5\\csc.exe"
+CSC2="#{ENV['SystemRoot']}\\Microsoft.NET\\Framework\\v2.0.50727\\csc.exe"
 
 if ENV["DLR_ROOT"]
   root = ENV['DLR_ROOT']
   # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
   BIN = "#{root}/Languages/Ruby/Scripts/bin"
-  RUBY_STDLIBS = "#{root}/../External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby/1.8"
+  RUBY_STDLIBS = "#{root}/External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby/1.8"
   IRONRUBY_LIBS = "#{root}/Languages/Ruby/Libs"
-  GEMS = "#{root}/../External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems"
+  GEMS = "#{root}/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems"
 
   chiron = "#{root}/Bin/Silverlight3Debug/Chiron.exe"
   chiron = "#{root}/Bin/Silverlight3Release/Chiron.exe" unless File.exist?(chiron)
   raise "Could not find Chiron.exe. Do you have a build of Silverlight? If not, type 'bsd'" unless File.exist?(chiron)
   CHIRON = chiron
-
-  ir = "#{root}/Bin/Release/ir.exe"
-  ir = "#{root}/Bin/Debug/ir.exe" unless File.exist? ir
-  raise "Could not find ir.exe" unless File.exist? ir
-  IR = ir
-  CSC="csc"
 else
-  BIN = "#{cwd}/../../bin"
-  RUBY_STDLIBS = "#{cwd}/../../lib/ruby/1.8"
+  BIN = irbin
+  RUBY_STDLIBS = "#{irbin}/../lib/ruby/1.8"
   IRONRUBY_LIBS = RUBY_STDLIBS
-  GEMS = "#{cwd}/../../lib/IronRuby/gems/1.8/gems"
-  CHIRON = "#{cwd}/../../silverlight/bin/Chiron.exe"
-  IR = "#{cwd}/../../bin/ir.exe"
+  GEMS = "#{irbin}/../lib/IronRuby/gems/1.8/gems"
+  CHIRON = "#{irbin}/../silverlight/bin/Chiron.exe"
+
   if File.exist?("#{GEMS}/minitest-1.4.2")
     `#{BIN}/igem install minitest --version 1.4.2 --no-rdoc --no-ri`
   end
-  
-  csc="#{ENV['SystemRoot']}\\Microsoft.NET\\Framework\\v3.5\\csc.exe"
-  unless File.exists? csc
-    puts "Can't guarantee location of csc.exe. Assuming it is in the path, but this may fail."
-    csc="csc"
-  end
-  puts "csc = #{csc}" if $DEBUG
-  CSC=csc  
 end
 
-CLEAN.include("app.xap", "deploy","app/Libs","app/Tutorials/*_tutorial.generated.html")
+CLEAN.include("app.xap", "deploy","app/Libs","app/Tutorials/*_tutorial.generated.html", "dlr.js")
 CLOBBER.include("**/SplashScreen.dll","**/SplashScreen.g.resources","**/TutorialSamples.dll")
 
 namespace 'tutorial' do
@@ -60,6 +54,7 @@ namespace 'tutorial' do
       %w(stringio.rb bigdecimal.rb).each{|i| cp "#{IRONRUBY_LIBS}/#{i}", 'app/Libs' }
       cp_r "#{RUBY_STDLIBS}/rdoc", "app/Libs"
       cp_r "#{GEMS}/minitest-1.4.2", "app/Libs"
+      cp "#{File.dirname(CHIRON)}/dlr.js", '.'
     end
   end
 
@@ -72,16 +67,26 @@ namespace 'tutorial' do
       %w(app.xap sl_tutorial.html console_tutorial.rb).each{|i| cp i, 'deploy'}
       %w(test app).each{|i| cp_r i, 'deploy'}
       Dir['app/Tutorials/*generated.html'].each{|i| cp i, 'deploy'}
+      cp "#{File.dirname(CHIRON)}/dlr.js", 'deploy'
     end
     puts "Deployment finished: see the 'deploy' directory"
   end
 
   desc 'Test the tutorial'
-  task :test => :build do
-    cd "#{cwd}/test" do
-      puts `#{IR} test_console.rb`
+  task :test => ['test:desktop', 'test:silverlight']
+
+  namespace 'test' do
+    desc "Test the tutorial on the desktop"
+    task :desktop => :build do
+      cd "#{cwd}/test" do
+        puts `#{IR} test_console.rb`
+      end
     end
-    `#{CHIRON} /n /b:sl_tutorial.html?test`
+    
+    desc "Test the tutorial in Silverlight"
+    task :silverlight => :build do
+      `#{CHIRON} /n /b:sl_tutorial.html?test`
+    end
   end
 
   desc 'Generate HTML for tutorial'
@@ -102,7 +107,7 @@ namespace 'tutorial' do
 
   file "app/Tutorials/ironruby_files/TutorialSamples.dll" => "app/Tutorials/ironruby_files/Prime.cs" do
     cd "#{cwd}/app/Tutorials/ironruby_files" do
-       system "#{CSC} /t:library Prime.cs"
+       system "#{CSC2} /t:library Prime.cs"
        mv "Prime.dll","TutorialSamples.dll"
     end
   end

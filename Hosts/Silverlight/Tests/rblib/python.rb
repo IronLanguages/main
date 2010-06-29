@@ -5,6 +5,7 @@ rescue LoadError
 end
 include Microsoft::Scripting
 include Microsoft::Scripting::Hosting
+include Microsoft::Scripting::Silverlight
 
 def python(str, type = :file)
   @python_engine ||= DynamicApplication.Current.Runtime.

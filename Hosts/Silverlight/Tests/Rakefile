@@ -1,0 +1,19 @@
+require 'fileutils'
+require 'rbconfig'
+IR_BIN = RbConfig::CONFIG['bindir']
+IR_EXE = ::File.join(IR_BIN, 'ir.exe')
+
+task :default => [:test]
+
+desc "Run Silverlight tests"
+task :test do
+  FileUtils.cd File.expand_path(File.dirname(__FILE__)) do
+    system "#{IR_EXE} ../Scripts/test_driver.rb"
+  end
+end
+
+desc "Removes generated/copied files"
+task :clean do
+  FileUtils.rm File.join(File.dirname(__FILE__), "dlr.js")
+  FileUtils.rm File.join(File.dirname(__FILE__), "lib.zip")
+end

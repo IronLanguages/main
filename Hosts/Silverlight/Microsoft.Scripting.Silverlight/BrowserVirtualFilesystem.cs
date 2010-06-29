@@ -223,6 +223,10 @@ namespace Microsoft.Scripting.Silverlight {
         protected override Stream GetFileInternal(object xap, Uri relativeUri) {
             relativeUri = new Uri(NormalizePath(relativeUri.ToString()), UriKind.Relative);
             StreamResourceInfo sri = null;
+
+            // TODO: Application.GetResourceStream always returns null when called from
+            // a non-UI thread. Should dispatch to the UI thread but block this thread until
+            // the call completes.
             if (xap == null) {
                 sri = Application.GetResourceStream(relativeUri);
             } else {
