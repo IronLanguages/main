@@ -35,7 +35,7 @@ namespace Microsoft.Scripting.Actions {
     /// <summary>
     /// NamespaceTracker represent a CLS namespace.
     /// </summary>
-    public class NamespaceTracker : MemberTracker, IAttributesCollection, IMembersList {
+    public class NamespaceTracker : MemberTracker, IMembersList, IEnumerable<KeyValuePair<string, object>> {
         // _dict contains all the currently loaded entries. However, there may be pending types that have
         // not yet been loaded in _typeNames
         internal Dictionary<string, MemberTracker> _dict = new Dictionary<string, MemberTracker>();
@@ -155,7 +155,7 @@ namespace Microsoft.Scripting.Actions {
             foreach (TypeNames typeNameList in _typeNames.Values) {
                 foreach (string typeName in typeNameList.GetNormalizedTypeNames()) {
                     object value;
-                    if (!TryGetValue(SymbolTable.StringToId(typeName), out value)) {
+                    if (!TryGetValue(typeName, out value)) {
                         Debug.Assert(false, "We should never get here as TryGetMember should raise a TypeLoadException");
                         throw new TypeLoadException(typeName);
                     }
@@ -250,29 +250,24 @@ namespace Microsoft.Scripting.Actions {
 
         #region IAttributesCollection Members
 
-        public void Add(SymbolId name, object value) {
-            throw new InvalidOperationException();
-        }
-
-        public bool TryGetValue(SymbolId name, out object value) {
+        public bool TryGetValue(string name, out object value) {
             MemberTracker tmp;
             bool res = TryGetValue(name, out tmp);
             value = tmp;
             return res;
         }
 
-        public bool TryGetValue(SymbolId name, out MemberTracker value) {
+        public bool TryGetValue(string name, out MemberTracker value) {
             lock (_topPackage.HierarchyLock) {
                 LoadNamespaces();
 
-                if (_dict.TryGetValue(SymbolTable.IdToString(name), out value)) {
+                if (_dict.TryGetValue(name, out value)) {
                     return true;
                 }
 
                 MemberTracker existingTypeEntity = null;
-                string nameString = SymbolTable.IdToString(name);
 
-                if (nameString.IndexOf(Type.Delimiter) != -1) {
+                if (name.IndexOf(Type.Delimiter) != -1) {
                     value = null;
                     return false;
                 }
@@ -280,19 +275,19 @@ namespace Microsoft.Scripting.Actions {
                 // Look up the type names and load the type if its name exists
 
                 foreach (KeyValuePair<Assembly, TypeNames> kvp in _typeNames) {
-                    if (!kvp.Value.Contains(nameString)) {
+                    if (!kvp.Value.Contains(name)) {
                         continue;
                     }
 
-                    existingTypeEntity = kvp.Value.UpdateTypeEntity((TypeTracker)existingTypeEntity, nameString);
+                    existingTypeEntity = kvp.Value.UpdateTypeEntity((TypeTracker)existingTypeEntity, name);
                 }
 
                 if (existingTypeEntity == null) {
-                    existingTypeEntity = CheckForUnlistedType(nameString);
+                    existingTypeEntity = CheckForUnlistedType(name);
                 }
 
                 if (existingTypeEntity != null) {
-                    _dict[SymbolTable.IdToString(name)] = existingTypeEntity;
+                    _dict[name] = existingTypeEntity;
                     value = existingTypeEntity;
                     return true;
                 }
@@ -301,17 +296,13 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        public bool Remove(SymbolId name) {
-            throw new InvalidOperationException();
-        }
-
-        public bool ContainsKey(SymbolId name) {
+        public bool ContainsKey(string name) {
             object dummy;
             return TryGetValue(name, out dummy);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-        public object this[SymbolId name] {
+        public object this[string name] {
             get {
                 object res;
                 if (TryGetValue(name, out res)) {
@@ -319,73 +310,19 @@ namespace Microsoft.Scripting.Actions {
                 }
                 throw new KeyNotFoundException();
             }
-            set {
-                throw new InvalidOperationException();
-            }
-        }
-
-        public IDictionary<SymbolId, object> SymbolAttributes {
-            get {
-                LoadNamespaces();
-
-                Dictionary<SymbolId, object> res = new Dictionary<SymbolId, object>();
-                foreach (KeyValuePair<object, object> kvp in this) {
-                    string strkey = kvp.Key as string;
-                    if (strkey != null) {
-                        res[SymbolTable.StringToId(strkey)] = kvp.Value;
-                    }
-                }
-
-                return res;
-            }
-        }
-
-        public void AddObjectKey(object name, object value) {
-            throw new InvalidOperationException();
-        }
-
-        public bool TryGetObjectValue(object name, out object value) {
-            string str = name as string;
-            if (str != null) {
-                return TryGetValue(SymbolTable.StringToId(str), out value);
-            }
-
-            value = null;
-            return false;
-        }
-
-        public bool RemoveObjectKey(object name) {
-            throw new InvalidOperationException();
-        }
-
-        public bool ContainsObjectKey(object name) {
-            object dummy;
-            return TryGetObjectValue(name, out dummy);
-        }
-
-        public IDictionary<object, object> AsObjectKeyedDictionary() {
-            LoadNamespaces();
-
-            lock (_topPackage.HierarchyLock) {
-                Dictionary<object, object> res = new Dictionary<object, object>();
-                foreach (KeyValuePair<string, MemberTracker> kvp in _dict) {
-                    res[kvp.Key] = kvp.Value;
-                }
-                return res;
-            }
         }
 
         public int Count {
             get { return _dict.Count; }
         }
 
-        public ICollection<object> Keys {
+        public ICollection<string> Keys {
             get {
                 LoadNamespaces();
 
                 lock (_topPackage.HierarchyLock) {
-                    List<object> res = new List<object>();
-                    return (ICollection<object>)AddKeys(res);
+                    var res = new List<string>();
+                    return (ICollection<string>)AddKeys(res);
                 }
             }
         }
@@ -408,27 +345,23 @@ namespace Microsoft.Scripting.Actions {
 
         #endregion
 
-        #region IEnumerable<KeyValuePair<object,object>> Members
+        #region IEnumerable<KeyValuePair<string, object>> Members
 
         [Pure]
-        public IEnumerator<KeyValuePair<object, object>> GetEnumerator() {
-            foreach (object key in Keys) {
-                yield return new KeyValuePair<object, object>(key, this[SymbolTable.StringToId((string)key)]);
+        public IEnumerator<KeyValuePair<string, object>> GetEnumerator() {
+            foreach (var key in Keys) {
+                yield return new KeyValuePair<string, object>(key, this[key]);
             }
         }
 
         #endregion
-
-        #region IEnumerable Members
 
         [Pure]
         IEnumerator IEnumerable.GetEnumerator() {
-            foreach (object key in Keys) {
-                yield return new KeyValuePair<object, object>(key, this[SymbolTable.StringToId((string)key)]);
+            foreach (var key in Keys) {
+                yield return new KeyValuePair<string, object>(key, this[key]);
             }
         }
-
-        #endregion
 
         public IList<Assembly> PackageAssemblies {
             get {

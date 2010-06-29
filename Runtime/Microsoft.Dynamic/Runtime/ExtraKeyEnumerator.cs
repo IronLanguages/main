@@ -18,15 +18,15 @@ using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
     class ExtraKeyEnumerator : CheckedDictionaryEnumerator {
-        private CustomSymbolDictionary _idDict;
+        private CustomStringDictionary _idDict;
         private int _curIndex = -1;
 
-        public ExtraKeyEnumerator(CustomSymbolDictionary idDict) {
+        public ExtraKeyEnumerator(CustomStringDictionary idDict) {
             _idDict = idDict;
         }
 
         protected override object GetKey() {
-            return SymbolTable.IdToString(_idDict.GetExtraKeys()[_curIndex]);
+            return _idDict.GetExtraKeys()[_curIndex];
         }
 
         protected override object GetValue() {
@@ -42,8 +42,6 @@ namespace Microsoft.Scripting.Runtime {
 
             while (_curIndex < (_idDict.GetExtraKeys().Length - 1)) {
                 _curIndex++;
-                if (_idDict.GetExtraKeys()[_curIndex].Id < 0) break;
-
                 object val;
                 if (_idDict.TryGetExtraValue(_idDict.GetExtraKeys()[_curIndex], out val) && val != Uninitialized.Instance) {
                     return true;

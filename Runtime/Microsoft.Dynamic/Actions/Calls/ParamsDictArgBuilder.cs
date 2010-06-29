@@ -73,7 +73,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         public override Type Type {
             get {
-                return typeof(IAttributesCollection);
+                return ParameterInfo.ParameterType;
             }
         }
 
@@ -114,8 +114,6 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             if (dictType == typeof(IDictionary)) {
                 func = BinderOps.MakeDictionary<object, object>;
-            } else if (dictType == typeof(IAttributesCollection)) {
-                func = BinderOps.MakeSymbolDictionary;
             } else if (dictType.IsGenericType) {
                 Type[] genArgs = dictType.GetGenericArguments();
                 if (dictType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ||

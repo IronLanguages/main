@@ -267,13 +267,11 @@ namespace Microsoft.Scripting.Hosting {
             return GetEngine(languageId).CreateScope(storage);
         }
 
-        [Obsolete("IAttributesCollection is obsolete, use CreateScope(IDynamicMetaObjectProvider) instead")]
-        public ScriptScope CreateScope(IAttributesCollection dictionary) {
+        public ScriptScope CreateScope(IDictionary<string, object> dictionary) {
             return InvariantEngine.CreateScope(dictionary);
         }
 
-        [Obsolete("IAttributesCollection is obsolete, use CreateScope(string, IDynamicMetaObjectProvider) instead")]
-        public ScriptScope CreateScope(string languageId, IAttributesCollection storage) {
+        public ScriptScope CreateScope(string languageId, IDictionary<string, object> storage) {
             return GetEngine(languageId).CreateScope(storage);
         }
 

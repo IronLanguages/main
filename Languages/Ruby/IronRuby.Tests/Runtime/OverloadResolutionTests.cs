@@ -148,7 +148,7 @@ namespace IronRuby.Tests {
             public void K2([DefaultProtocol]int a) { }
 
             // level 0: no overload applicable
-            // level 1: {L1, L3} applicable, MutableString <-/-> SymbolId
+            // level 1: {L1, L3} applicable, MutableString <-/-> RubySymbol
             public void L1([NotNull]RubySymbol a, [DefaultProtocol, NotNull]string b) { }
             public void L2([NotNull]string a, [DefaultProtocol, NotNull]string b) { }
             public void L3([DefaultProtocol]MutableString a, [DefaultProtocol, NotNull]string b) { }

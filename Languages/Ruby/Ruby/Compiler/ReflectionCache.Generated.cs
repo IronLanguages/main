@@ -70,8 +70,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ConvertMutableStringToFloat;
         public static MethodInfo/*!*/ ConvertStringToFloat { get { return _ConvertStringToFloat ?? (_ConvertStringToFloat = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, System.String, System.Double>(RubyOps.ConvertStringToFloat)); } }
         private static MethodInfo _ConvertStringToFloat;
-        public static MethodInfo/*!*/ ConvertSymbolIdToClrString { get { return _ConvertSymbolIdToClrString ?? (_ConvertSymbolIdToClrString = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, System.Int32, System.String>(RubyOps.ConvertSymbolIdToClrString)); } }
-        private static MethodInfo _ConvertSymbolIdToClrString;
+        public static MethodInfo/*!*/ ConvertRubySymbolToClrString { get { return _ConvertRubySymbolToClrString ?? (_ConvertRubySymbolToClrString = CallInstruction.CacheFunc<IronRuby.Runtime.RubyContext, System.Int32, System.String>(RubyOps.ConvertRubySymbolToClrString)); } }
+        private static MethodInfo _ConvertRubySymbolToClrString;
         public static MethodInfo/*!*/ ConvertSymbolToClrString { get { return _ConvertSymbolToClrString ?? (_ConvertSymbolToClrString = CallInstruction.CacheFunc<IronRuby.Builtins.RubySymbol, System.String>(RubyOps.ConvertSymbolToClrString)); } }
         private static MethodInfo _ConvertSymbolToClrString;
         public static MethodInfo/*!*/ CreateArgumentsError { get { return _CreateArgumentsError ?? (_CreateArgumentsError = CallInstruction.CacheFunc<System.String, System.ArgumentException>(RubyOps.CreateArgumentsError)); } }

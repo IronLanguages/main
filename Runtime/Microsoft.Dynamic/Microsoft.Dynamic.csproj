@@ -198,7 +198,6 @@
     <Compile Include="Ast\SourceFileInformation.cs" />
     <Compile Include="Ast\LightDynamicExpression.cs" />
     <Compile Include="Ast\Utils.cs" />
-    <Compile Include="Ast\VariableDictionaryExpression.cs" />
     <Compile Include="Ast\NewArrayExpression.cs" />
     <Compile Include="Ast\NewExpression.cs" />
     <Compile Include="Ast\UnaryExpression.cs" />
@@ -310,7 +309,6 @@
     <Compile Include="Runtime\Generator.cs" />
     <Compile Include="Ast\GeneratorExpression.cs" />
     <Compile Include="Ast\GeneratorRewriter.cs" />
-    <Compile Include="Ast\SymbolConstantExpression.cs" />
     <Compile Include="Actions\Calls\Candidate.cs" />
     <Compile Include="Ast\YieldExpression.cs" />
     <Compile Include="Generation\DelegateHelpers.cs" />
@@ -438,10 +436,9 @@
     <Compile Include="Generation\IExpressionSerializable.cs" />
     <Compile Include="Generation\ToDiskRewriter.cs" />
     <Compile Include="Runtime\AssemblyTypeNames.cs" />
-    <Compile Include="Runtime\BaseSymbolDictionary.cs" />
     <Compile Include="Runtime\BinderType.cs" />
     <Compile Include="Runtime\CallTargets.cs" />
-    <Compile Include="Runtime\CustomSymbolDictionary.cs" />
+    <Compile Include="Runtime\CustomStringDictionary.cs" />
     <Compile Include="Runtime\DlrCachedCodeAttribute.cs" />
     <Compile Include="Runtime\DocumentationAttribute.cs" />
     <Compile Include="Runtime\ExceptionHelpers.cs" />
@@ -460,8 +457,6 @@
     <Compile Include="Runtime\ReflectionCache.cs" />
     <Compile Include="Runtime\ScriptingRuntimeHelpers.cs" />
     <Compile Include="Runtime\StaticExtensionMethodAttribute.cs" />
-    <Compile Include="Runtime\SymbolDictionary.cs" />
-    <Compile Include="Runtime\TransformDictEnumerator.cs" />
     <Compile Include="Runtime\Uninitialized.cs" />
     <Compile Include="Utils\ArrayUtils.cs" />
     <Compile Include="Utils\AssemblyQualifiedTypeName.cs" />

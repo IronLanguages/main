@@ -234,15 +234,6 @@ namespace Microsoft.Scripting.Runtime {
             return Error.UnexpectedType("StrongBox<" + type.Name + ">", CompilerHelpers.GetType(received).Name);
         }
         
-        public static void InitializeSymbols(Type t) {
-            foreach (FieldInfo fi in t.GetFields()) {
-                if (fi.FieldType == typeof(SymbolId)) {
-                    Debug.Assert(((SymbolId)fi.GetValue(null)) == SymbolId.Empty);
-                    fi.SetValue(null, SymbolTable.StringToId(fi.Name));
-                }
-            }
-        }
-
         /// <summary>
         /// Provides the test to see if an interpreted call site should switch over to being compiled.
         /// </summary>

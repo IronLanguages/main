@@ -41,29 +41,15 @@ namespace Microsoft.Scripting.Generation {
         private Dictionary<object, Expression> _constantCache;
         private ParameterExpression _constantPool;
         private Dictionary<Type, Type> _delegateTypes;
-#if SILVERLIGHT
-        private StrongBox<Type> _finishedSymbolType;
-#endif
         private int _depth;
         private readonly TypeGen _typeGen;
-        private TypeGen _symbolGen;
-        private static int _id;
         
-        private readonly Dictionary<SymbolId, FieldBuilderExpression> _indirectSymbolIds = new Dictionary<SymbolId, FieldBuilderExpression>();
-
         internal ToDiskRewriter(TypeGen typeGen) {            
             _typeGen = typeGen;
         }
 
         public LambdaExpression RewriteLambda(LambdaExpression lambda) {
-            var res = (LambdaExpression)Visit(lambda);
-            if (_symbolGen != null) {
-#if SILVERLIGHT
-                _finishedSymbolType.Value = 
-#endif
-                _symbolGen.FinishType();
-            }
-            return res;
+            return (LambdaExpression)Visit(lambda);
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node) {
@@ -115,40 +101,6 @@ namespace Microsoft.Scripting.Generation {
                 return VisitDynamic((DynamicExpression)node);
             }
 
-            SymbolConstantExpression symbol = node as SymbolConstantExpression;
-            if (symbol != null) {
-                SymbolId id = symbol.Value;
-
-                if (id == SymbolId.Empty) {
-                    return Expression.Field(null, typeof(SymbolId).GetField("Empty"));
-                }
-
-                FieldBuilderExpression value;
-                if (!_indirectSymbolIds.TryGetValue(id, out value)) {
-                    // create field, emit fix-up...
-
-                    if (_symbolGen == null) {
-                        _symbolGen = new TypeGen(_typeGen.AssemblyGen, ((ModuleBuilder)_typeGen.TypeBuilder.Module).DefineType("Symbols" + Interlocked.Increment(ref _id)));
-#if SILVERLIGHT
-                        _finishedSymbolType = new StrongBox<Type>();
-#endif
-                    }
-                    FieldBuilder field = _symbolGen.AddStaticField(typeof(SymbolId), FieldAttributes.Public, SymbolTable.IdToString(id));
-                    ILGen init = _symbolGen.TypeInitializer;
-                    if (_indirectSymbolIds.Count == 0) {
-                        init.EmitType(_symbolGen.TypeBuilder);
-                        init.EmitCall(typeof(ScriptingRuntimeHelpers), "InitializeSymbols");
-                    }
-#if SILVERLIGHT
-                    _indirectSymbolIds[id] = value = new FieldBuilderExpression(field, _finishedSymbolType);
-#else
-                    _indirectSymbolIds[id] = value = new FieldBuilderExpression(field);
-#endif
-                }
-                Debug.Assert(value != null);
-                return value;
-
-            }
             return Visit(node.Reduce());
         }
 
@@ -174,16 +126,6 @@ namespace Microsoft.Scripting.Generation {
                 }
 
                 return res;
-            }
-
-            var symbols = node.Value as SymbolId[];
-            if (symbols != null) {
-                return Expression.NewArrayInit(
-                     typeof(SymbolId),
-                     new ReadOnlyCollection<Expression>(
-                         symbols.Map(s => VisitExtension(new SymbolConstantExpression(s)))
-                     )
-                 );
             }
 
             var strings = node.Value as string[];

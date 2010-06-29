@@ -42,7 +42,6 @@ namespace Microsoft.Scripting.Runtime {
     public sealed class Scope : IDynamicMetaObjectProvider {
         private ScopeExtension[] _extensions; // resizable
         private readonly IDynamicMetaObjectProvider _storage;
-        private static readonly object _getFailed = new object();
 
         /// <summary>
         /// Creates a new scope with a new empty thread-safe dictionary.  
@@ -52,13 +51,9 @@ namespace Microsoft.Scripting.Runtime {
             _storage = new ScopeStorage();
         }
 
-        /// <summary>
-        /// Creates a new scope with the provided dictionary.
-        /// </summary>
-        [Obsolete("IAttributesCollection is obsolete, use Scope(IDynamicMetaObjectProvider) overload instead")]
-        public Scope(IAttributesCollection dictionary) {
+        public Scope(IDictionary<string, object> dictionary) {
             _extensions = ScopeExtension.EmptyArray;
-            _storage = new AttributesAdapter(dictionary);
+            _storage = new StringDictionaryExpando(dictionary);
         }
 
         /// <summary>
@@ -165,134 +160,5 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         #endregion
-
-        internal sealed class AttributesAdapter : IDynamicMetaObjectProvider {
-            private readonly IAttributesCollection _data;
-
-            public AttributesAdapter(IAttributesCollection data) {
-                _data = data;
-            }
-
-            private static object TryGetMember(object adapter, SymbolId name) {
-                object result;
-                if (((AttributesAdapter)adapter)._data.TryGetValue(name, out result)) {
-                    return result;
-                }
-                return _getFailed;
-            }
-
-            private static void TrySetMember(object adapter, SymbolId name, object value) {
-                ((AttributesAdapter)adapter)._data[name] = value;
-            }
-
-            private static bool TryDeleteMember(object adapter, SymbolId name) {
-                return ((AttributesAdapter)adapter)._data.Remove(name);
-            }
-
-            #region IDynamicMetaObjectProvider Members
-
-            DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
-                return new Meta(parameter, this);
-            }
-
-            #endregion
-
-            internal sealed class Meta : DynamicMetaObject {
-                public Meta(Expression parameter, AttributesAdapter storage)
-                    : base(parameter, BindingRestrictions.Empty, storage) {
-                }
-
-                public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
-                    return DynamicTryGetMember(binder.Name,
-                        binder.FallbackGetMember(this).Expression,
-                        (tmp) => tmp
-                    );
-                }
-
-                public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
-                    return DynamicTryGetMember(binder.Name, 
-                        binder.FallbackInvokeMember(this, args).Expression,
-                        (tmp) => binder.FallbackInvoke(new DynamicMetaObject(tmp, BindingRestrictions.Empty), args, null).Expression
-                    );
-                }
-
-                private DynamicMetaObject DynamicTryGetMember(string name, Expression fallback, Func<Expression, Expression> resultOp) {
-                    var tmp = Expression.Parameter(typeof(object));
-                    return new DynamicMetaObject(
-                        Expression.Block(
-                            new[] { tmp },
-                            Expression.Condition(
-                                Expression.NotEqual(
-                                    Expression.Assign(
-                                        tmp,
-                                        Expression.Invoke(
-                                            Expression.Constant(new Func<object, SymbolId, object>(AttributesAdapter.TryGetMember)),
-                                            Expression,
-                                            Expression.Constant(SymbolTable.StringToId(name))
-                                        )
-                                    ),
-                                    Expression.Constant(_getFailed)
-                                ),
-                                ExpressionUtils.Convert(resultOp(tmp), typeof(object)),
-                                ExpressionUtils.Convert(fallback, typeof(object))
-                            )
-                        ),
-                        GetRestrictions()
-                    );
-                }
-
-                private BindingRestrictions GetRestrictions() {
-                    return BindingRestrictions.GetTypeRestriction(Expression, typeof(AttributesAdapter));
-                }
-
-                public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
-                    return new DynamicMetaObject(
-                        Expression.Block(
-                            Expression.Invoke(
-                                Expression.Constant(new Action<object, SymbolId, object>(AttributesAdapter.TrySetMember)),
-                                Expression,
-                                Expression.Constant(SymbolTable.StringToId(binder.Name)),
-                                Expression.Convert(
-                                    value.Expression,
-                                    typeof(object)
-                                )
-                            ),
-                            value.Expression
-                        ),
-                        GetRestrictions()
-                    );
-                }
-
-                public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder) {
-                    return new DynamicMetaObject(
-                        Expression.Condition(
-                            Expression.Invoke(
-                                Expression.Constant(new Func<object, SymbolId, bool>(AttributesAdapter.TryDeleteMember)),
-                                Expression,
-                                Expression.Constant(SymbolTable.StringToId(binder.Name))
-                            ),
-                            Expression.Default(binder.ReturnType),
-                            binder.FallbackDeleteMember(this).Expression
-                        ),
-                        GetRestrictions()
-                    );
-                }
-
-                public new AttributesAdapter Value {
-                    get {
-                        return (AttributesAdapter)base.Value;
-                    }
-                }
-
-                public override IEnumerable<string> GetDynamicMemberNames() {
-                    foreach (object o in Value._data.Keys) {
-                        if (o is string) {
-                            yield return (string)o;
-                        }
-                    }
-                }
-            }
-
-        }
     }
 }

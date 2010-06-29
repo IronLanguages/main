@@ -1302,12 +1302,6 @@ namespace Microsoft.Scripting.Interpreter {
                 return;
             }
 
-            var node = expr as Microsoft.Scripting.Ast.SymbolConstantExpression;
-            if (node != null) {
-                _instructions.EmitLoad(node.Value);
-                return;
-            }
-
             if (expr.CanReduce) {
                 Compile(expr.Reduce());
             } else {

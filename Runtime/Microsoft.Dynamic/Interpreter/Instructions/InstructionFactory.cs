@@ -47,8 +47,7 @@ namespace Microsoft.Scripting.Interpreter {
 #if !CLR2
                     { typeof(BigInt), InstructionFactory<BigInt>.Factory },
 #endif
-                    { typeof(BigInteger), InstructionFactory<BigInteger>.Factory },
-                    { typeof(SymbolId), InstructionFactory<SymbolId>.Factory },     
+                    { typeof(BigInteger), InstructionFactory<BigInteger>.Factory }  
                 };
             }
 

@@ -39,14 +39,14 @@ namespace IronRuby.Builtins {
         // Make a 2 element array
         internal static RubyArray/*!*/ MakeArray(KeyValuePair<object, object> pair) {
             RubyArray list = new RubyArray(2);
-            list.Add(BaseSymbolDictionary.ObjToNull(pair.Key));
+            list.Add(CustomStringDictionary.ObjToNull(pair.Key));
             list.Add(pair.Value);
             return list;
         }
 
         internal static RubyArray/*!*/ MakeArray(object key, object value) {
             RubyArray list = new RubyArray(2);
-            list.Add(BaseSymbolDictionary.ObjToNull(key));
+            list.Add(CustomStringDictionary.ObjToNull(key));
             list.Add(value);
             return list;
         }
@@ -91,7 +91,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]")]
         public static object GetElement(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object key) {
             object result;
-            if (!self.TryGetValue(BaseSymbolDictionary.NullToObj(key), out result)) {
+            if (!self.TryGetValue(CustomStringDictionary.NullToObj(key), out result)) {
                 return null;
             }
             return result;
@@ -138,7 +138,7 @@ namespace IronRuby.Builtins {
             RubyUtils.RequiresNotFrozen(context, self);
 
             object value;
-            if (!self.TryGetValue(BaseSymbolDictionary.NullToObj(key), out value)) {
+            if (!self.TryGetValue(CustomStringDictionary.NullToObj(key), out value)) {
                 // key not found, call the block if it was passed in
                 if (block != null) {
                     object result;
@@ -147,7 +147,7 @@ namespace IronRuby.Builtins {
                 }
                 return null;
             }
-            self.Remove(BaseSymbolDictionary.NullToObj(key));
+            self.Remove(CustomStringDictionary.NullToObj(key));
             return value;
         }
 
@@ -165,7 +165,7 @@ namespace IronRuby.Builtins {
 
             foreach (var pair in self) {
                 object result;
-                if (block.Yield(BaseSymbolDictionary.ObjToNull(pair.Key), pair.Value, out result)) {
+                if (block.Yield(CustomStringDictionary.ObjToNull(pair.Key), pair.Value, out result)) {
                     return result;
                 }
 
@@ -213,7 +213,7 @@ namespace IronRuby.Builtins {
                 // TODO: what are all the scenarios where the block can mutate the hash? can it remove keys? if so, what happens?
                 for (int i = 0; i < keys.Length; i++) {
                     object result;
-                    if (block.Yield(BaseSymbolDictionary.ObjToNull(keys[i]), self[keys[i]], out result)) {
+                    if (block.Yield(CustomStringDictionary.ObjToNull(keys[i]), self[keys[i]], out result)) {
                         return result;
                     }
                 }
@@ -233,7 +233,7 @@ namespace IronRuby.Builtins {
                 // TODO: what are all the scenarios where the block can mutate the hash? can it remove keys? if so, what happens?
                 for (int i = 0; i < keys.Length; i++) {
                     object result;
-                    if (block.Yield(BaseSymbolDictionary.ObjToNull(keys[i]), out result)) {
+                    if (block.Yield(CustomStringDictionary.ObjToNull(keys[i]), out result)) {
                         return result;
                     }
                 }
@@ -268,7 +268,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("fetch")]
         public static object Fetch(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self, object key, [Optional]object defaultValue) {
             object result;
-            if (self.TryGetValue(BaseSymbolDictionary.NullToObj(key), out result)) {
+            if (self.TryGetValue(CustomStringDictionary.NullToObj(key), out result)) {
                 return result;
             }
 
@@ -293,7 +293,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("key?")]
         [RubyMethod("member?")]
         public static bool HasKey(IDictionary<object, object>/*!*/ self, object key) {
-            return self.ContainsKey(BaseSymbolDictionary.NullToObj(key));
+            return self.ContainsKey(CustomStringDictionary.NullToObj(key));
         }
 
         [RubyMethod("has_value?")]
@@ -311,7 +311,7 @@ namespace IronRuby.Builtins {
         public static object Index(BinaryOpStorage/*!*/ equals, IDictionary<object, object>/*!*/ self, object value) {
             foreach (KeyValuePair<object, object> pair in self) {
                 if (Protocols.IsEqual(equals, pair.Value, value)) {
-                    return BaseSymbolDictionary.ObjToNull(pair.Key);
+                    return CustomStringDictionary.ObjToNull(pair.Key);
                 }
             }
             return null;
@@ -337,7 +337,7 @@ namespace IronRuby.Builtins {
                     if (str.Length != 1) {
                         str.Append(", ");
                     }
-                    str.Append(context.Inspect(BaseSymbolDictionary.ObjToNull(pair.Key)));
+                    str.Append(context.Inspect(CustomStringDictionary.ObjToNull(pair.Key)));
                     str.Append("=>");
                     str.Append(context.Inspect(pair.Value));
                 }
@@ -351,7 +351,7 @@ namespace IronRuby.Builtins {
             // invert returns a Hash, even from subclasses
             Hash hash = new Hash(context.EqualityComparer, self.Count);
             foreach (KeyValuePair<object, object> pair in self) {
-                hash[BaseSymbolDictionary.NullToObj(pair.Value)] = BaseSymbolDictionary.ObjToNull(pair.Key);
+                hash[CustomStringDictionary.NullToObj(pair.Value)] = CustomStringDictionary.ObjToNull(pair.Key);
             }
             return hash;
         }
@@ -360,7 +360,7 @@ namespace IronRuby.Builtins {
         public static RubyArray/*!*/ GetKeys(IDictionary<object, object>/*!*/ self) {
             RubyArray keys = new RubyArray(self.Count);
             foreach (object key in self.Keys) {
-                keys.Add(BaseSymbolDictionary.ObjToNull(key));
+                keys.Add(CustomStringDictionary.ObjToNull(key));
             }
             return keys;
         }
@@ -392,13 +392,13 @@ namespace IronRuby.Builtins {
 
             if (block == null) {
                 foreach (var pair in CopyKeyValuePairs(hash)) {
-                    self[BaseSymbolDictionary.NullToObj(pair.Key)] = pair.Value;
+                    self[CustomStringDictionary.NullToObj(pair.Key)] = pair.Value;
                 }
             } else {
                 foreach (var pair in CopyKeyValuePairs(hash)) {
                     object key = pair.Key, newValue = pair.Value, oldValue;
                     if (self.TryGetValue(key, out oldValue)) {
-                        if (block.Yield(BaseSymbolDictionary.ObjToNull(key), oldValue, pair.Value, out newValue)) {
+                        if (block.Yield(CustomStringDictionary.ObjToNull(key), oldValue, pair.Value, out newValue)) {
                             return newValue;
                         }
                     }
@@ -436,7 +436,7 @@ namespace IronRuby.Builtins {
 
             foreach (KeyValuePair<object,object> pair in self) {
                 object result;
-                if (block.Yield(BaseSymbolDictionary.ObjToNull(pair.Key), pair.Value, out result)) {
+                if (block.Yield(CustomStringDictionary.ObjToNull(pair.Key), pair.Value, out result)) {
                     return result;
                 }
 
@@ -465,7 +465,7 @@ namespace IronRuby.Builtins {
 
             foreach (var pair in CopyKeyValuePairs(self)) {
                 object result;
-                if (block.Yield(BaseSymbolDictionary.ObjToNull(pair.Key), pair.Value, out result)) {
+                if (block.Yield(CustomStringDictionary.ObjToNull(pair.Key), pair.Value, out result)) {
                     return result;
                 }
 

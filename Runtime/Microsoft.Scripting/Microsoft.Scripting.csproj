@@ -151,8 +151,10 @@
     <Compile Include="Hosting\ParameterDoc.cs" />
     <Compile Include="Hosting\ParameterFlags.cs" />
     <Compile Include="IndexSpan.cs" />
+    <Compile Include="Runtime\ObjectDictionaryExpando.cs" />
     <Compile Include="Runtime\DocumentationProvider.cs" />
     <Compile Include="Runtime\DynamicStackFrame.cs" />
+    <Compile Include="Runtime\StringDictionaryExpando.cs" />
     <Compile Include="Stubs.cs" />
     <Compile Include="CompilerOptions.cs" />
     <Compile Include="ErrorSink.cs" />
@@ -169,7 +171,6 @@
     <Compile Include="Hosting\ExceptionOperations.cs" />
     <Compile Include="Hosting\LanguageSetup.cs" />
     <Compile Include="Hosting\ObjectOperations.cs" />
-    <Compile Include="IAttributesCollection.cs" />
     <Compile Include="InvalidImplementationException.cs" />
     <Compile Include="LanguageOptions.cs" />
     <Compile Include="PlatformAdaptationLayer.cs" />
@@ -184,7 +185,6 @@
     <Compile Include="Hosting\ScriptScope.cs" />
     <Compile Include="Hosting\ScriptSource.cs" />
     <Compile Include="Hosting\TokenCategorizer.cs" />
-    <Compile Include="Runtime\BaseSymbolDictionary.cs" />
     <Compile Include="Runtime\ContextId.cs" />
     <Compile Include="Runtime\DlrConfiguration.cs" />
     <Compile Include="Runtime\DynamicOperations.cs" />
@@ -203,11 +203,9 @@
     <Compile Include="Runtime\SharedIO.cs" />
     <Compile Include="Runtime\SourceStringContentProvider.cs" />
     <Compile Include="Runtime\StreamContentProvider.cs" />
-    <Compile Include="Runtime\SymbolDictionary.cs" />
     <Compile Include="Runtime\TokenInfo.cs" />
     <Compile Include="Runtime\TokenizerService.cs" />
     <Compile Include="Runtime\TokenTriggers.cs" />
-    <Compile Include="Runtime\TransformDictEnumerator.cs" />
     <Compile Include="ScriptCodeParseResult.cs" />
     <Compile Include="Severity.cs" />
     <Compile Include="SourceCodeKind.cs" />
@@ -217,8 +215,6 @@
     <Compile Include="SourceSpan.cs" />
     <Compile Include="SourceUnit.cs" />
     <Compile Include="SpecSharp.cs" />
-    <Compile Include="SymbolId.cs" />
-    <Compile Include="SymbolTable.cs" />
     <Compile Include="SyntaxErrorException.cs" />
     <Compile Include="TextContentProvider.cs" />
     <Compile Include="TokenCategory.cs" />

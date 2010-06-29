@@ -50,10 +50,6 @@ namespace Microsoft.Scripting.Actions {
         /// updates the associated module to mark the package as imported.
         /// </summary>
         public NamespaceTracker TryGetPackage(string name) {
-            return TryGetPackage(SymbolTable.StringToId(name));
-        }
-
-        public NamespaceTracker TryGetPackage(SymbolId name) {
             NamespaceTracker pm = TryGetPackageAny(name) as NamespaceTracker;
             if (pm != null) {
                 return pm;
@@ -62,10 +58,6 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public MemberTracker TryGetPackageAny(string name) {
-            return TryGetPackageAny(SymbolTable.StringToId(name));
-        }
-
-        public MemberTracker TryGetPackageAny(SymbolId name) {
             MemberTracker ret;
             if (TryGetValue(name, out ret)) {
                 return ret;
@@ -73,10 +65,10 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        public MemberTracker TryGetPackageLazy(SymbolId name) {
+        public MemberTracker TryGetPackageLazy(string name) {
             lock (HierarchyLock) {
                 MemberTracker ret;
-                if (_dict.TryGetValue(SymbolTable.IdToString(name), out ret)) {
+                if (_dict.TryGetValue(name, out ret)) {
                     return ret;
                 }
                 return null;

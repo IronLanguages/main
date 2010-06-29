@@ -268,7 +268,7 @@ namespace Microsoft.Scripting.Debugging {
                 }
 
                 int localIndex = isStrongBoxed ? strongBoxIndex++ : byrefIndex++;
-                VariableInfo varInfo = new VariableInfo(SymbolTable.StringToId(alias), pendingLocal.Type, isParameter, isHidden, isStrongBoxed, localIndex, _variableInfos.Count);
+                VariableInfo varInfo = new VariableInfo(alias, pendingLocal.Type, isParameter, isHidden, isStrongBoxed, localIndex, _variableInfos.Count);
 
                 _variableInfos.Add(varInfo);
                 _pendingToVariableInfosMap.Add(pendingLocal, varInfo);
@@ -328,7 +328,7 @@ namespace Microsoft.Scripting.Debugging {
                     _pendingToVerifiedLocalsMap.Add(pendingLocal, verifiedLocal);
                 }
 
-                VariableInfo varInfo = new VariableInfo(SymbolTable.StringToId(alias), pendingLocal.Type, isParameter, isHidden, true, strongBoxIndex++, _variableInfos.Count);
+                VariableInfo varInfo = new VariableInfo(alias, pendingLocal.Type, isParameter, isHidden, true, strongBoxIndex++, _variableInfos.Count);
 
                 _variableInfos.Add(varInfo);
                 _pendingToVariableInfosMap.Add(pendingLocal, varInfo);

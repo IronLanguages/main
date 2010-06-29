@@ -122,7 +122,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]")]
         public static object GetElement(CallSiteStorage<Func<CallSite, Hash, object, object>>/*!*/ storage, Hash/*!*/ self, object key) {
             object result;
-            if (!self.TryGetValue(BaseSymbolDictionary.NullToObj(key), out result)) {
+            if (!self.TryGetValue(CustomStringDictionary.NullToObj(key), out result)) {
                 var site = storage.GetCallSite("default", 1);
                 return site.Target(site, self, key);
             }
@@ -172,7 +172,7 @@ namespace IronRuby.Builtins {
                     } else {
                         str.Append(", ");
                     }
-                    str.Append(context.Inspect(BaseSymbolDictionary.ObjToNull(entry.Key)));
+                    str.Append(context.Inspect(CustomStringDictionary.ObjToNull(entry.Key)));
                     str.Append("=>");
                     str.Append(context.Inspect(entry.Value));
                 }

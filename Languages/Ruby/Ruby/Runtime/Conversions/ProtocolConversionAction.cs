@@ -439,7 +439,7 @@ namespace IronRuby.Runtime.Conversions {
             }
 
             if (target is int) {
-                metaBuilder.Result = Methods.ConvertSymbolIdToClrString.OpCall(
+                metaBuilder.Result = Methods.ConvertRubySymbolToClrString.OpCall(
                     AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
                     AstUtils.Convert(targetExpression, typeof(int))
                 );

@@ -556,8 +556,8 @@ namespace IronRuby.Builtins {
             // copy namespace members:
             if (module._namespaceTracker != null) {
                 Debug.Assert(_constants != null);
-                foreach (KeyValuePair<SymbolId, object> constant in module._namespaceTracker.SymbolAttributes) {
-                    _constants.Add(SymbolTable.IdToString(constant.Key), new ConstantStorage(constant.Value));
+                foreach (KeyValuePair<string, object> constant in module._namespaceTracker) {
+                    _constants.Add(constant.Key, new ConstantStorage(constant.Value));
                 }
             }
 
@@ -1122,7 +1122,7 @@ namespace IronRuby.Builtins {
 
             if (_namespaceTracker != null) {
                 object value;
-                if (_namespaceTracker.TryGetValue(SymbolTable.StringToId(name), out value)) {
+                if (_namespaceTracker.TryGetValue(name, out value)) {
                     storage = new ConstantStorage( _context.TrackerToModule(value));
                     return true;
                 }
@@ -1167,7 +1167,7 @@ namespace IronRuby.Builtins {
             }
 
             object namespaceValue;
-            if (_namespaceTracker != null && _namespaceTracker.TryGetValue(SymbolTable.StringToId(name), out namespaceValue)) {
+            if (_namespaceTracker != null && _namespaceTracker.TryGetValue(name, out namespaceValue)) {
                 _constants[name] = ConstantStorage.Removed;
                 _context.ConstantAccessVersion++;
                 value = namespaceValue;
@@ -1194,8 +1194,8 @@ namespace IronRuby.Builtins {
             }
 
             if (_namespaceTracker != null) {
-                foreach (KeyValuePair<SymbolId, object> constant in _namespaceTracker.SymbolAttributes) {
-                    string name = SymbolTable.IdToString(constant.Key);
+                foreach (KeyValuePair<string, object> constant in _namespaceTracker) {
+                    string name = constant.Key;
                     // we check if we haven't already yielded the value so that we don't yield values hidden by a user defined constant:
                     if (!_constants.ContainsKey(name) && action(this, name, constant.Value)) {
                         return true;

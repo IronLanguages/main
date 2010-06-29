@@ -750,7 +750,7 @@ namespace IronRuby.Runtime {
             }
 
             public IDisposable TrackObject(object obj) {
-                obj = BaseSymbolDictionary.NullToObj(obj);
+                obj = CustomStringDictionary.NullToObj(obj);
                 Dictionary<object, bool> tracker = TryPushInfinite(obj);
                 return (tracker == null) ? null : new RecursionHandle(tracker, obj);
             }
@@ -808,7 +808,7 @@ namespace IronRuby.Runtime {
             if (str != null) {
                 key = str.Duplicate(context, false, str.Clone()).Freeze();
             } else {
-                key = BaseSymbolDictionary.NullToObj(key);
+                key = CustomStringDictionary.NullToObj(key);
             }
             return obj[key] = value;
         }

@@ -57,9 +57,6 @@ namespace Microsoft.Scripting.Ast {
             if (value == null) {
                 return NullLiteral;
             }
-            if (value is SymbolId) {
-                return new SymbolConstantExpression((SymbolId)value);
-            }
 
             BigInteger bi = value as BigInteger;
             if ((object)bi != null) {

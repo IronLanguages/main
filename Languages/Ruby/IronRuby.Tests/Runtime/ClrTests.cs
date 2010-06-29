@@ -2802,7 +2802,7 @@ false
 
         public void ClrOperators2() {
             TestOutput(@"
-p :b == true                # Symbol hides SymbolId::op_Equality
+p :b == true                
 p String == Fixnum          # Only instance operator calls are allowed (MutableString::op_Equality shound be ignored)
 
 class C < Numeric

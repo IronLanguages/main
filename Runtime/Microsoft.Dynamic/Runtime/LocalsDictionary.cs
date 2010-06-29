@@ -23,12 +23,12 @@ namespace Microsoft.Scripting.Runtime {
     /// <summary>
     /// Creates a dictionary of locals in this scope
     /// </summary>
-    public sealed class LocalsDictionary : CustomSymbolDictionary {
+    public sealed class LocalsDictionary : CustomStringDictionary {
         private readonly IRuntimeVariables _locals;
-        private readonly SymbolId[] _symbols;
-        private Dictionary<SymbolId, int> _boxes;
+        private readonly string[] _symbols;
+        private Dictionary<string, int> _boxes;
 
-        public LocalsDictionary(IRuntimeVariables locals, SymbolId[] symbols) {
+        public LocalsDictionary(IRuntimeVariables locals, string[] symbols) {
             Assert.NotNull(locals, symbols);
             _locals = locals;
             _symbols = symbols;
@@ -37,7 +37,7 @@ namespace Microsoft.Scripting.Runtime {
         private void EnsureBoxes() {
             if (_boxes == null) {
                 int count = _symbols.Length;
-                Dictionary<SymbolId, int> boxes = new Dictionary<SymbolId, int>(count);
+                Dictionary<string, int> boxes = new Dictionary<string, int>(count);
                 for (int i = 0; i < count; i++) {
                     boxes[_symbols[i]] = i;
                 }
@@ -45,11 +45,11 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        public override SymbolId[] GetExtraKeys() {
+        public override string[] GetExtraKeys() {
             return _symbols;
         }
 
-        protected internal override bool TrySetExtraValue(SymbolId key, object value) {
+        protected internal override bool TrySetExtraValue(string key, object value) {
             EnsureBoxes();
 
             int index;
@@ -61,7 +61,7 @@ namespace Microsoft.Scripting.Runtime {
             return false;
         }
 
-        protected internal override bool TryGetExtraValue(SymbolId key, out object value) {
+        protected internal override bool TryGetExtraValue(string key, out object value) {
             EnsureBoxes();
 
             int index;

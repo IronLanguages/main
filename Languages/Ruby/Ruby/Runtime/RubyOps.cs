@@ -2020,7 +2020,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] // ProtocolConversionAction
-        public static string/*!*/ ConvertSymbolIdToClrString(RubyContext/*!*/ context, int value) {
+        public static string/*!*/ ConvertRubySymbolToClrString(RubyContext/*!*/ context, int value) {
             context.ReportWarning("do not use Fixnums as Symbols");
 
             RubySymbol result = context.FindSymbol(value);

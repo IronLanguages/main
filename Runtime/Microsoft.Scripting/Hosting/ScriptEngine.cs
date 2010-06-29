@@ -228,8 +228,7 @@ namespace Microsoft.Scripting.Hosting {
             return new ScriptScope(this, new Scope());
         }
 
-        [Obsolete("IAttributesCollection is obsolete, use CreateScope(IDynamicMetaObjectProvider) instead")]
-        public ScriptScope CreateScope(IAttributesCollection dictionary) {
+        public ScriptScope CreateScope(IDictionary<string, object> dictionary) {
             ContractUtils.RequiresNotNull(dictionary, "dictionary");
             return new ScriptScope(this, new Scope(dictionary));
         }
