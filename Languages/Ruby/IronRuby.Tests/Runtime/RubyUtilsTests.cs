@@ -35,6 +35,7 @@ namespace IronRuby.Tests {
             
             // special cases:
             Assert(RubyUtils.TryUnmangleName("on") == "On");
+            Assert(RubyUtils.TryUnmangleName("or") == "Or");
             Assert(RubyUtils.TryUnmangleName("up") == "Up");
             Assert(RubyUtils.TryUnmangleName("in") == "In");
             Assert(RubyUtils.TryUnmangleName("to") == "To");
@@ -99,6 +100,7 @@ namespace IronRuby.Tests {
 
             // special cases:
             Assert(RubyUtils.TryUnmangleName("ON") == null);
+            Assert(RubyUtils.TryUnmangleName("OR") == null);
             Assert(RubyUtils.TryUnmangleName("UP") == null);
             Assert(RubyUtils.TryUnmangleName("IN") == null);
             Assert(RubyUtils.TryUnmangleName("TO") == null);

@@ -1287,7 +1287,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region load, load_assembly, require
+        #region load, load_assembly, require, using_clr_extensions
 
         [RubyMethod("load", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
@@ -1308,6 +1308,24 @@ namespace IronRuby.Builtins {
         [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
         public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
             return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.Require);
+        }
+
+        [RubyMethod("using_clr_extensions", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("using_clr_extensions", RubyMethodAttributes.PublicSingleton)]
+        public static void UsingClrExtensions(RubyContext/*!*/ context, object self, RubyModule namespaceModule) {
+            string ns;
+            if (namespaceModule == null) {
+                ns = "";
+            } else if (namespaceModule.NamespaceTracker == null) {
+                throw RubyExceptions.CreateNotClrNamespaceError(namespaceModule);
+            } else if (context != namespaceModule.Context) {
+                throw RubyExceptions.CreateTypeError("Cannot use namespace `{0}' defined in a foreign runtime #{1}",
+                    namespaceModule.NamespaceTracker.Name, namespaceModule.Context.RuntimeId);
+            } else {
+                ns = namespaceModule.NamespaceTracker.Name;
+            }
+
+            context.ActivateExtensions(ns);
         }
 
         #endregion

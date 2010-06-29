@@ -94,8 +94,12 @@ namespace IronRuby.Builtins {
         // A name is added to the set whenever a method of that name is defined on any singleton-subclass (or its included modules) of this class.
         // A name can be removed from this table only if no method of that name exists in any singleton-subclass (or its included modules) of this class.
         // TODO (opt): Currently we don't remove items from this dictionary. We would need to ref-count the methods.
+        //
         internal Dictionary<string, bool> ClrSingletonMethods { get; set; }
-         
+
+        // Increased each time an extension method is defined on interfaces or generic definitions included in this class.
+        internal int _extensionVersion;
+
         #endregion
 
         #region Dynamic Sites
@@ -379,6 +383,33 @@ namespace IronRuby.Builtins {
             Debug.Assert(j == -1);
         }
 
+        /// <summary>
+        /// Invalidates
+        /// - failure cache on RubyClass via incrementing extension version
+        /// - groups 
+        /// - call sites via incrementing method version
+        /// </summary>
+        internal override void PrepareExtensionMethodsUpdate(List<ExtensionMethodInfo>/*!*/ extensions) {
+            _extensionVersion++;
+
+            // No groups cached, no overloads cached in call-sites.
+            if (MethodInitializationNeeded) {
+                return;
+            }
+            
+            MethodsUpdated("ExtensionMethods");
+
+            // Differences from preparing Ruby method for update:
+            // - No override search. 
+            //   - We need to invalidate groups regardless of whether the e.m. overrides a method or not (it needs to be added to all groups below).
+            //   - We could optimize a bit if the definition overrides a method group thata hasn't been used in a call site.
+            //     In that case we wouldn't need to invalidate any rules. This is rare and we would still need to invalidate groups. So we don't do that.
+            // - No CLR singletons special casing - extension methods can't be added on singletons.
+            foreach (var extension in extensions) {
+                InvalidateGroupsInSubClasses(extension.Method.Name, Int32.MaxValue);
+            }
+        }
+
         internal override void PrepareMethodUpdate(string/*!*/ methodName, RubyMemberInfo/*!*/ method) {
             PrepareMethodUpdate(methodName, method, 0);
         }
@@ -388,7 +419,7 @@ namespace IronRuby.Builtins {
 
             bool superClassUpdated = false;
 
-            /// A singleton subclass of a CLR type that doesn't implement IRubyObject:
+            // A singleton subclass of a CLR type that doesn't implement IRubyObject:
             if (_isSingletonClass && !_superClass.IsSingletonClass && !_superClass.IsRubyClass && !(_singletonClassOf is IRubyObject)) {
                 var ssm = _superClass.ClrSingletonMethods;
                 if (ssm != null) {
@@ -439,7 +470,8 @@ namespace IronRuby.Builtins {
                     MethodsUpdated("SetMethod: " + methodName);
                 }
 
-                // If the overridden method is not a group the groups below were already updated.
+                // If the overridden method is not a group the groups below don't need to be updated since they don't include any overloads
+                // from above the current method definition.
                 RubyOverloadGroupInfo overriddenGroup = overriddenMethod as RubyOverloadGroupInfo;
                 if (overriddenGroup != null) {
                     // It suffice to compare the level of the overridden group.
@@ -672,15 +704,30 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Stores unsucessfull look-ups of CLR type members.
         /// Reflection is not efficient at caching look-ups and we do multiple of them (due to mangling) each time a method is being resolved.
+        /// { (declaring-type, method-name, isStatic) -> (type-extension-version) }
         /// </summary>
-        private static Dictionary<Key<Type, string, bool>, bool> _clrFailedMemberLookupCache = new Dictionary<Key<Type, string, bool>, bool>();
+        private static Dictionary<Key<Type, string, bool>, int> _clrFailedMemberLookupCache = new Dictionary<Key<Type, string, bool>, int>();
 
-        private static bool IsFailureCached(Type/*!*/ type, string/*!*/ methodName, bool isStatic) {
+        private static bool IsFailureCached(Type/*!*/ type, string/*!*/ methodName, bool isStatic, int extensionVersion) {
             // check for cached lookup failure (if the cache is available):
             bool result = false;
+            var key = Key.Create(type, methodName, isStatic);
+
             var cache = Interlocked.Exchange(ref _clrFailedMemberLookupCache, null);
             if (cache != null) {
-                result = cache.ContainsKey(Key.Create(type, methodName, isStatic));
+                int cachedExtensionVersion;
+                if (cache.TryGetValue(key, out cachedExtensionVersion)) {
+                    if (cachedExtensionVersion != extensionVersion) {
+                        // can't use the cached failure if there are any new extension methods:
+                        cache.Remove(key);
+                        result = false;
+                    } else {
+                        result = true;
+                    }
+                } else {
+                    result = false;
+                }
+
                 Interlocked.Exchange(ref _clrFailedMemberLookupCache, cache);
             }
 
@@ -690,18 +737,13 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private static void CacheFailure(Type/*!*/ type, string/*!*/ methodName, bool isStatic) {
+        private static void CacheFailure(Type/*!*/ type, string/*!*/ methodName, bool isStatic, int extensionVersion) {
             // store failure to the cache if the cache is not owned by another thread:
             var cache = Interlocked.Exchange(ref _clrFailedMemberLookupCache, null);
             if (cache != null) {
-                cache[Key.Create(type, methodName, isStatic)] = true;
+                cache[Key.Create(type, methodName, isStatic)] = extensionVersion;
                 Interlocked.Exchange(ref _clrFailedMemberLookupCache, cache);
             }
-        }
-
-        // thread safe: doesn't need any lock since it only accesses immutable state
-        public bool TryGetClrMember(string/*!*/ name, out RubyMemberInfo method) {
-            return TryGetClrMember(name, null, out method);
         }
 
         // thread safe: doesn't need any lock since it only accesses immutable state
@@ -724,9 +766,10 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateNameError(String.Format("`{0}' does not inherit from `{1}'", cls.Name, Context.GetTypeName(asType, true)));
             }
 
-            // TODO: should declaring module of the resulting method rather be the base class?
             method = null;
-            return cls.TryGetClrMember(asType ?? type, name, true, true, 0, out method);
+            using (Context.ClassHierarchyLocker()) {
+                return cls.TryGetClrMember(asType ?? type, name, true, true, 0, out method);
+            }
         }
 
         // thread safe: doesn't need any lock since it only accesses immutable state
@@ -744,7 +787,7 @@ namespace IronRuby.Builtins {
         protected override bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool mapNames, bool unmangleNames, out RubyMemberInfo method) {
             Context.RequiresClassHierarchyLock();
 
-            if (IsFailureCached(type, name, _isSingletonClass)) {
+            if (IsFailureCached(type, name, _isSingletonClass, _extensionVersion)) {
                 method = null;
                 return false;
             }
@@ -753,7 +796,7 @@ namespace IronRuby.Builtins {
                 return true;
             }
 
-            CacheFailure(type, name, _isSingletonClass);
+            CacheFailure(type, name, _isSingletonClass, _extensionVersion);
             method = null;
             return false;
         }
@@ -763,6 +806,8 @@ namespace IronRuby.Builtins {
         /// May add or use method groups to/from super-clases if BindingFlags.DeclaredOnly is used.
         /// </summary>
         private bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool mapNames, bool unmangleNames, BindingFlags basicBindingFlags, out RubyMemberInfo method) {
+            Context.RequiresClassHierarchyLock();
+
             basicBindingFlags |= BindingFlags.Public | BindingFlags.NonPublic;
 
             // We look only for members directly declared on the type and handle method overloads inheritance manually.  
@@ -914,11 +959,11 @@ namespace IronRuby.Builtins {
         /// </remarks>
         private bool TryGetClrMethod(Type/*!*/ type, BindingFlags bindingFlags, bool specialNameOnly, 
             string/*!*/ name, string clrNamePrefix, string/*!*/ clrName, string altClrName, out RubyMemberInfo method) {
+            Context.RequiresClassHierarchyLock();
 
             // declared only:
-            MemberInfo[] declaredClrMethods = GetDeclaredClrMethods(type, bindingFlags, clrNamePrefix, clrName, altClrName);
-            int initialVisibleMemberCount = GetVisibleMethodCount(declaredClrMethods, specialNameOnly);
-            if (initialVisibleMemberCount == 0) {
+            List<OverloadInfo> initialMembers = new List<OverloadInfo>(GetDeclaredClrMethods(type, bindingFlags, clrNamePrefix, clrName, altClrName, specialNameOnly));
+            if (initialMembers.Count == 0) {
                 // case [1]
                 //
                 // Note: This failure might be cached (see CacheFailure) based on the type and name, 
@@ -927,16 +972,12 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
-            var initialMembers = ReflectionOverloadInfo.CreateArray(declaredClrMethods);
-
             // If all CLR inherited members are to be returned we are done.
             // (creates a detached info; used by Kernel#clr_member)
             if ((bindingFlags & BindingFlags.DeclaredOnly) == 0) {
-                method = MakeGroup(initialMembers, initialVisibleMemberCount, specialNameOnly, true);
+                method = MakeGroup(initialMembers, initialMembers.Count, specialNameOnly, true);
                 return true;
             }
-
-            Context.RequiresClassHierarchyLock();
 
             // inherited overloads:
             List<RubyClass> ancestors = new List<RubyClass>();
@@ -970,13 +1011,17 @@ namespace IronRuby.Builtins {
 
                 if (inheritedGroup != null) {
                     AddMethodsOverwriteExisting(ref allMethods, inheritedGroup.MethodBases, inheritedGroup.OverloadOwners, specialNameOnly);
+                } else if (inheritedRubyMember.IsRemovable) {
+                    // The groups created below won't contain overloads defined above (if there are any).
+                    // If this method is removed we need to invalidate them.
+                    inheritedRubyMember.InvalidateGroupsOnRemoval = true;
                 }
             }
 
             // populate classes in (type..Kernel] or (type..C) with method groups:
             for (int i = ancestors.Count - 1; i >= 0; i--) {
-                var declared = GetDeclaredClrMethods(ancestors[i].TypeTracker.Type, bindingFlags, clrNamePrefix, clrName, altClrName);
-                if (declared.Length != 0 && AddMethodsOverwriteExisting(ref allMethods, ReflectionOverloadInfo.CreateArray(declared), null, specialNameOnly)) {
+                var declared = ancestors[i].GetDeclaredClrMethods(ancestors[i].TypeTracker.Type, bindingFlags, clrNamePrefix, clrName, altClrName, specialNameOnly);
+                if (AddMethodsOverwriteExisting(ref allMethods, declared, null, specialNameOnly)) {
                     // There is no cached method that needs to be invalidated.
                     //
                     // Proof:
@@ -997,20 +1042,34 @@ namespace IronRuby.Builtins {
                 // return the group, it will be stored in the method table by the caller:
                 method = MakeGroup(allMethods.Values);
             } else {
-                method = MakeGroup(initialMembers, initialVisibleMemberCount, specialNameOnly, false);
+                method = MakeGroup(initialMembers, initialMembers.Count, specialNameOnly, false);
             }
 
             return true;
         }
 
-        private static MemberInfo/*!*/[]/*!*/ GetDeclaredClrMethods(Type/*!*/ type, BindingFlags bindingFlags, string prefix, string/*!*/ name, string altName) {
-            MemberInfo[] result = GetDeclaredClrMethods(type, bindingFlags, prefix + name);
-            if (altName == null) {
-                return result;
+        private IEnumerable<OverloadInfo>/*!*/ GetDeclaredClrMethods(Type/*!*/ type, BindingFlags bindingFlags, string prefix, string/*!*/ name, string altName, bool specialNameOnly) {
+            string memberName = prefix + name;
+            string altMemberName = prefix + altName;
+
+            MemberInfo[] methods = GetDeclaredClrMethods(type, bindingFlags, memberName);
+            MemberInfo[] altMethods = (altName != null) ? GetDeclaredClrMethods(type, bindingFlags, altMemberName) : Utils.EmptyMemberInfos;
+
+            foreach (MethodBase method in methods.Concat(altMethods)) {
+                if (IsVisible(method.Attributes, method.DeclaringType, specialNameOnly)) {
+                    yield return new ReflectionOverloadInfo(method);
+                }
             }
 
-            MemberInfo[] altResult = GetDeclaredClrMethods(type, bindingFlags, prefix + altName);
-            return Utils.Concatenate(result, altResult);
+            if ((bindingFlags & BindingFlags.Instance) != 0) {
+                var extensions = GetClrExtensionMethods(type, memberName);
+                var altExtensions = GetClrExtensionMethods(type, altMemberName);
+
+                foreach (var extension in extensions.Concat(altExtensions)) {
+                    // TODO: inherit ExtensionMethodInfo <: OverloadInfo?
+                    yield return new ReflectionOverloadInfo(extension.Method);
+                }
+            }
         }
 
         private static MemberInfo/*!*/[]/*!*/ GetDeclaredClrMethods(Type/*!*/ type, BindingFlags bindingFlags, string/*!*/ name) {
@@ -1022,13 +1081,32 @@ namespace IronRuby.Builtins {
             return type.GetMember(name, MemberTypes.Method, bindingFlags | BindingFlags.InvokeMethod);
         }
 
+        private IEnumerable<ExtensionMethodInfo>/*!*/ GetClrExtensionMethods(Type/*!*/ type, string/*!*/ name) {
+            List<ExtensionMethodInfo> extensions;
+            if (_extensionMethods != null && _extensionMethods.TryGetValue(name, out extensions)) {
+                foreach (var extension in extensions) {
+                    yield return extension;
+                }
+            }
+
+            foreach (var mixin in Mixins) {
+                if (mixin._extensionMethods != null && mixin._extensionMethods.TryGetValue(name, out extensions)) {
+                    foreach (var extension in extensions) {
+                        if (extension.IsExtensionOf(type)) {
+                            yield return extension;
+                        }
+                    }
+                }
+            }
+        }
+
         // Returns the number of methods newly added to the dictionary.
         private bool AddMethodsOverwriteExisting(ref Dictionary<Key<string, ValueArray<Type>>, ClrOverloadInfo> methods,
-            OverloadInfo/*!*/[]/*!*/ newOverloads, RubyOverloadGroupInfo/*!*/[] overloadOwners, bool specialNameOnly) {
+            IEnumerable<OverloadInfo/*!*/>/*!*/ newOverloads, RubyOverloadGroupInfo/*!*/[] overloadOwners, bool specialNameOnly) {
 
             bool anyChange = false;
-            for (int i = 0; i < newOverloads.Length; i++) {
-                var method = newOverloads[i];
+            int i = 0;
+            foreach (var method in newOverloads) {
                 if (IsVisible(method.Attributes, method.DeclaringType, specialNameOnly)) {
                     var paramTypes = Key.Create(method.Name, new ValueArray<Type>(ReflectionUtils.GetParameterTypes(method.Parameters)));
                     if (methods == null) {
@@ -1042,6 +1120,7 @@ namespace IronRuby.Builtins {
 
                     anyChange = true;
                 }
+                i++;
             }
             return anyChange;
         }
@@ -1099,9 +1178,9 @@ namespace IronRuby.Builtins {
             return !field.IsInitOnly && !field.IsLiteral;
         }
 
-        private int GetVisibleMethodCount(MemberInfo[]/*!*/ members, bool specialNameOnly) {
+        private int GetVisibleMethodCount(IEnumerable<OverloadInfo/*!*/>/*!*/ members, bool specialNameOnly) {
             int count = 0;
-            foreach (MethodBase method in members) {
+            foreach (OverloadInfo method in members) {
                 if (IsVisible(method.Attributes, method.DeclaringType, specialNameOnly)) {
                     count++;
                 }
@@ -1133,12 +1212,12 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private RubyMethodGroupInfo/*!*/ MakeGroup(OverloadInfo[]/*!*/ members, int visibleMemberCount, bool specialNameOnly, bool isDetached) {
+        private RubyMethodGroupInfo/*!*/ MakeGroup(IEnumerable<OverloadInfo/*!*/>/*!*/ members, int visibleMemberCount, bool specialNameOnly, bool isDetached) {
             var allMethods = new OverloadInfo[visibleMemberCount];
-            for (int i = 0, j = 0; i < members.Length; i++) {
-                var method = members[i];
+            int i = 0;
+            foreach (var method in members) {
                 if (IsVisible(method.Attributes, method.DeclaringType, specialNameOnly)) {
-                    allMethods[j++] = method;
+                    allMethods[i++] = method;
                 }
             }
 

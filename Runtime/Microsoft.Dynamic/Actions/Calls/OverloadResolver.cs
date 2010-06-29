@@ -712,6 +712,11 @@ namespace Microsoft.Scripting.Actions.Calls {
                 }
             }
 
+            // prefer regular methods over extensions:
+            if (one.Overload.IsExtension != two.Overload.IsExtension) {
+                return one.Overload.IsExtension ? Candidate.Two : Candidate.One;
+            }
+
             return Candidate.Equivalent;
         }
 

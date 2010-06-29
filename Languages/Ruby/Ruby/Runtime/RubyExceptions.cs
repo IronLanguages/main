@@ -70,6 +70,10 @@ namespace IronRuby.Runtime {
             return CreateTypeError("`{0}' doesn't represent a CLR type", rubyClass.Name);
         }
 
+        public static Exception/*!*/ CreateNotClrNamespaceError(RubyModule/*!*/ rubyModule) {
+            return CreateTypeError("`{0}' doesn't represent a CLR namespace", rubyModule.Name);
+        }
+
         public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {
             Debug.Assert(rubyClass.IsRubyClass);
 

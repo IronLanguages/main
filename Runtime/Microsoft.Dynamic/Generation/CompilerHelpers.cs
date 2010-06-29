@@ -200,8 +200,13 @@ namespace Microsoft.Scripting.Generation {
             // first try and get it from the base type we're overriding...
             MethodInfo baseMethod = method.GetBaseDefinition();
 
-            if (baseMethod.DeclaringType.IsVisible) return baseMethod;
-            if (baseMethod.DeclaringType.IsInterface) return baseMethod;
+            if (baseMethod.DeclaringType.IsVisible || baseMethod.DeclaringType.IsInterface) {
+                // We need to instantiate the method as GetBaseDefinition might return a generic definition of the base method:
+                if (baseMethod.IsGenericMethodDefinition) {
+                    baseMethod = baseMethod.MakeGenericMethod(method.GetGenericArguments());
+                }
+                return baseMethod;
+            }
 
             // maybe we can get it from an interface on the type this
             // method came from...
@@ -216,7 +221,7 @@ namespace Microsoft.Scripting.Generation {
                 }
             }
 
-            return baseMethod;
+            return method;
         }
 
         /// <summary>

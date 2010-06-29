@@ -883,11 +883,11 @@ internal class LibraryDef {
 
         // generate references:
         foreach (KeyValuePair<Type, string> moduleRef in _moduleRefs) {
-            _output.WriteLine("{0} {1} = GetModule(typeof({2}));", TypeRubyModule, moduleRef.Value, moduleRef.Key);
+            _output.WriteLine("{0} {1} = GetModule(typeof({2}));", TypeRubyModule, moduleRef.Value, TypeName(moduleRef.Key));
         }
 
         foreach (KeyValuePair<Type, string> classRef in _classRefs) {
-            _output.WriteLine("{0} {1} = GetClass(typeof({2}));", TypeRubyClass, classRef.Value, classRef.Key);
+            _output.WriteLine("{0} {1} = GetClass(typeof({2}));", TypeRubyClass, classRef.Value, TypeName(classRef.Key));
         }
 
         _output.WriteLine();

@@ -216,9 +216,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static T[] Append<T>(T[] array, T item) {
-            ContractUtils.RequiresNotNull(array, "array");
-
-            System.Array.Resize<T>(ref array, array.Length + 1);
+            System.Array.Resize<T>(ref array, (array == null) ? 1 : array.Length + 1);
             array[array.Length - 1] = item;
             return array;
         }
@@ -228,12 +226,12 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static T[] AppendRange<T>(T[] array, IList<T> items, int additionalItemCount) {
-            ContractUtils.RequiresNotNull(array, "array");
-            if (additionalItemCount < 0) throw new ArgumentOutOfRangeException("additionalItemCount");
+            if (additionalItemCount < 0) {
+                throw new ArgumentOutOfRangeException("additionalItemCount");
+            }
 
-            int j = array.Length;
-
-            System.Array.Resize<T>(ref array, array.Length + items.Count + additionalItemCount);
+            int j = (array == null) ? 0 : array.Length;
+            System.Array.Resize<T>(ref array, j + items.Count + additionalItemCount);
 
             for (int i = 0; i < items.Count; i++, j++) {
                 array[j] = items[i];

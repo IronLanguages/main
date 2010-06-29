@@ -124,7 +124,9 @@ namespace IronRuby.Runtime.Calls {
         }
 
         /// <summary>
-        /// True if the member can be permanently removed (attached CLR members can't).
+        /// True if the member can be permanently removed.
+        /// True for attached CLR members, i.e. real CLR members and extension methods.
+        /// False for detached CLR members and extension methods.
         /// If the member cannot be removed we hide it.
         /// </summary>
         internal bool IsRemovable {
@@ -136,18 +138,21 @@ namespace IronRuby.Runtime.Calls {
         }
 
         /// <summary>
-        /// True if this member hides any CLR overloads of groups below it.
+        /// True if the method should invalidate groups below it in the inheritance hierarchy. 
         /// </summary>
         /// <remarks>
+        /// Set when a Ruby method is defined that hides a CLR overload that is used in a method group below the definition.
+        /// Set when an extension method is added above the Ruby method definition and the change isn't propagated below.
         /// Undefined and Hidden method singletons cannot be removed so they don't need to be marked.
         /// </remarks>
+        [DebuggerDisplay("{_invalidateGroupsOnRemoval}")]
         internal bool InvalidateGroupsOnRemoval {
             get {
-                // RequiresClassHierarchyLock
+                Context.RequiresClassHierarchyLock();
                 return _invalidateGroupsOnRemoval;
             }
             set {
-                // RequiresClassHierarchyLock
+                Context.RequiresClassHierarchyLock();
                 Debug.Assert(IsRemovable);
                 _invalidateGroupsOnRemoval = value;
             }

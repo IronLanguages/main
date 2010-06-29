@@ -20,7 +20,7 @@ using Microsoft.Scripting.Actions.Calls;
 
 namespace IronRuby.Runtime.Calls {
     /// <summary>
-    /// A group of CLR method overloads that might be declared in multiple types and partially hidden by by Ruby method definitions.
+    /// A group of CLR method overloads that might be declared in multiple types and partially hidden by Ruby method definitions.
     /// </summary>
     internal sealed class RubyOverloadGroupInfo : RubyMethodGroupInfo {
         // A method group that owns each overload or null if all overloads are owned by this group.
@@ -82,7 +82,7 @@ namespace IronRuby.Runtime.Calls {
 
             SetInvalidateSitesOnOverride(this);
 
-            // Do not invalidate recursively. Only method groups that are listed needs invalidation. 
+            // Do not invalidate recursively. Only method groups that are listed need invalidation. 
             if (_overloadOwners != null) {
                 foreach (var overloadOwner in _overloadOwners) {
                     if (overloadOwner != null) {

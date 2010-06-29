@@ -66,7 +66,7 @@ namespace IronRuby.Runtime.Calls {
         internal OverloadInfo/*!*/[]/*!*/ SetMethodBasesNoLock(OverloadInfo/*!*/[]/*!*/ methods) {
             Debug.Assert(
                 CollectionUtils.TrueForAll(methods, (method) => method.IsStatic || method.DeclaringType == typeof(Object)) ||
-                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || RubyUtils.IsExtension(method) || RubyUtils.IsOperator(method))
+                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || method.IsExtension || RubyUtils.IsOperator(method))
             );
 
             return _methodBases = methods;
@@ -107,7 +107,7 @@ namespace IronRuby.Runtime.Calls {
 
         public override RubyMemberInfo TryBindGenericParameters(Type/*!*/[]/*!*/ typeArguments) {
             var boundMethods = new List<OverloadInfo>();
-            foreach (var method in MethodBases) {
+            foreach (OverloadInfo method in MethodBases) {
                 if (method.IsGenericMethodDefinition) {
                     if (typeArguments.Length == method.GenericArguments.Count) {
                         boundMethods.Add(method.MakeGenericMethod(typeArguments));

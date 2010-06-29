@@ -107,7 +107,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
                 if (method.IsStatic) {
-                    Debug.Assert(RubyUtils.IsOperator(method) || RubyUtils.IsExtension(method));
+                    Debug.Assert(RubyUtils.IsOperator(method) || method.IsExtension);
 
                     // receiver maps to the first parameter:
                     AddSimpleHiddenMapping(mapping, infos[i], true);
@@ -195,7 +195,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (callConvention == SelfCallConvention.SelfIsInstance) {
                 if (method.IsStatic) {
-                    Debug.Assert(RubyUtils.IsOperator(method) || RubyUtils.IsExtension(method));
+                    Debug.Assert(RubyUtils.IsOperator(method) || method.IsExtension);
                     i++;
                 }
             }

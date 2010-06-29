@@ -128,6 +128,10 @@ namespace IronRuby.Runtime {
         public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, string[] variableNames, 
             RubyScope/*!*/ parent, RubyModule/*!*/ module) {
 
+            if (parent.RubyContext != module.Context) {
+                throw RubyExceptions.CreateTypeError("Cannot open a module `{0}' defined in a foreign runtime #{1}", module.Name, module.Context.RuntimeId);
+            }
+
             RubyModuleScope scope = new RubyModuleScope(parent, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
             scope.SetLocals(locals, variableNames ?? ArrayUtils.EmptyStrings);

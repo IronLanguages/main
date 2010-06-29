@@ -26,8 +26,7 @@ namespace IronRuby.Builtins {
     [UndefineMethod("append_features")]
     [UndefineMethod("module_function")]
     public sealed class ClassOps {
-
-        #region Construction
+        #region initialize, initialize_copy, allocate, new, superclass, inherited
 
         // factory defined in on RubyClass
 
@@ -42,21 +41,7 @@ namespace IronRuby.Builtins {
         public static void InitializeCopy(RubyClass/*!*/ self, [NotNull]RubyClass/*!*/ other) {
             self.InitializeClassCopy(other);
         }
-
         
-        #endregion
-
-        #region Private Instance Methods
-
-        [RubyMethod("inherited", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
-        public static void Inherited(object/*!*/ self, object subclass) {
-            // nop
-        }
-
-        #endregion
-
-        #region Public Instance Methods
-
         [RubyMethod("allocate")]
         public static RuleGenerator/*!*/ Allocate() {
             return new RuleGenerator(RuleGenerators.InstanceAllocator);
@@ -79,6 +64,15 @@ namespace IronRuby.Builtins {
                 return self.SuperClass;
             }
         }
+
+        [RubyMethod("inherited", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void Inherited(object/*!*/ self, object subclass) {
+            // nop
+        }
+
+        #endregion
+
+        #region IronRuby: clr_new, clr_ctor
 
         [RubyMethod("clr_new")]
         public static RuleGenerator/*!*/ ClrNew() {

@@ -436,16 +436,14 @@ C = IronRuby.create_engine.execute <<end
   C
 end
 ");
-            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; def foo; end; end"));
-            
-            // alias operates in the runtime of the class within which scope it is used:
-            Engine.Execute("class C; alias foo bar; end");
+            // can't define a method on a foreign class:
+            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("C.send(:define_method, :foo) {}"));
 
-            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; define_method(:goo) {}; end"));
-            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute(@"
-module M; end
-class C; include M; end
-"));
+            // can't open a scope of a foreign class:
+            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; end"));
+
+            // alias operates in the runtime of the class within which scope it is used:
+            Engine.Execute("C.send(:alias_method, :foo, :bar); C.new.foo");
         }
         
         public void ObjectOperations1() {

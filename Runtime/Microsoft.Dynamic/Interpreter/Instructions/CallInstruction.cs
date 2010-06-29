@@ -95,7 +95,8 @@ namespace Microsoft.Scripting.Interpreter {
             } catch (NotSupportedException) {
                 // if Delegate.CreateDelegate can't handle the method fallback to 
                 // the slow reflection version.  For example this can happen w/ 
-                // a generic method defined on an interface and implemented on a class.
+                // a generic method defined on an interface and implemented on a class or 
+                // a virtual generic method.
                 res = new MethodInfoCallInstruction(info, argumentCount);
             }
 

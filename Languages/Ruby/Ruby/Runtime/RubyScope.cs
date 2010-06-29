@@ -506,7 +506,9 @@ namespace IronRuby.Runtime {
                 RubyModule module = scope.Module;
 
                 if (module != null) {
-                    if (module.TryGetConstant(context, autoloadScope, name, out result)) {
+	                Debug.Assert(module.Context == context);
+
+                    if (module.TryGetConstantNoLock(autoloadScope, name, out result)) {
                         return null;
                     }
 
@@ -521,14 +523,14 @@ namespace IronRuby.Runtime {
 
             // check the inner most module and it's base classes/mixins:
             if (innerMostModule != null) {
-                if (innerMostModule.TryResolveConstant(context, autoloadScope, name, out result)) {
+                if (innerMostModule.TryResolveConstantNoLock(autoloadScope, name, out result)) {
                     return null;
                 }
             } else {
                 innerMostModule = context.ObjectClass;
             }
 
-            if (context.ObjectClass.TryResolveConstant(context, autoloadScope, name, out result)) {
+            if (context.ObjectClass.TryResolveConstantNoLock(autoloadScope, name, out result)) {
                 return null;
             }
 
@@ -805,8 +807,8 @@ var closureScope = scope as RubyClosureScope;
 
         public override RubyModule Module { get { return _module; } }
 
-        internal RubyModuleScope(RubyScope/*!*/ parent, RubyModule module) {
-            Assert.NotNull(parent);
+        internal RubyModuleScope(RubyScope/*!*/ parent, RubyModule/*!*/ module) {
+            Assert.NotNull(parent, module);
 
             // RuntimeFlowControl:
             _activeFlowControlScope = parent.FlowControlScope;

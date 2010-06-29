@@ -79,6 +79,7 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Runtime\ClrTests_Globals.cs" />
     <Compile Include="Driver.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Manual.cs" />

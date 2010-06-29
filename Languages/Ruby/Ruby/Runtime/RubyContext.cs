@@ -40,6 +40,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Collections.ObjectModel;
 
 namespace IronRuby.Runtime {
     [ReflectionCached]
@@ -480,9 +481,9 @@ namespace IronRuby.Runtime {
             }
 
             _namespaces = new TopNamespaceTracker(manager);
-            manager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(AssemblyLoaded);
+            manager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>((_, e) => AssemblyLoaded(e.Assembly));
             foreach (Assembly asm in manager.GetLoadedAssemblyList()) {
-                _namespaces.LoadAssembly(asm);
+                AssemblyLoaded(asm);
             }
 
             // TODO:
@@ -725,8 +726,9 @@ namespace IronRuby.Runtime {
 
         #region CLR Types and Namespaces
 
-        private void AssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
-            _namespaces.LoadAssembly(e.Assembly);
+        private void AssemblyLoaded(Assembly/*!*/ assembly) {
+            _namespaces.LoadAssembly(assembly);
+            AddExtensionAssembly(assembly);
         }
 
         internal void AddModuleToCacheNoLock(Type/*!*/ type, RubyModule/*!*/ module) {
@@ -873,8 +875,8 @@ namespace IronRuby.Runtime {
         /// An interface is mixed into the type that implements it.
         /// A generic type definition is mixed into its instantiations.
         /// 
-        /// In both cases these modules don't contribute any callable CLR methods, 
-        /// however Ruby methods defined on them can be called from the target type instances.
+        /// In both cases these modules don't themselves contribute any callable CLR methods 
+        /// yet they might contribute CLR extension methods and Ruby methods defined on them.
         /// </summary>
         private RubyModule[] GetClrMixinsNoLock(Type/*!*/ type) {
             List<RubyModule> modules = new List<RubyModule>();
@@ -904,6 +906,137 @@ namespace IronRuby.Runtime {
             }
 
             return modules.Count > 0 ? modules.ToArray() : null;
+        }
+
+        #endregion
+
+        #region CLR Extension Methods
+
+        private readonly object ExtensionsLock = new object();
+        
+        // List of assemblies that might include extension methods but whose processing was delayed until the first call of use_clr_extensions.
+        // Null once use_clr_extensions has been called.
+        private List<Assembly> _potentialExtensionAssemblies = new List<Assembly>();
+
+        // A list of extension methods that are available for activation. Grouped by a declaring namespace.
+        // Value is null if the namepsace has been activated.
+        private Dictionary<string, List<IEnumerable<ExtensionMethodInfo>>> _availableExtensions;
+
+        private void AddExtensionAssembly(Assembly/*!*/ assembly) {
+            if (_potentialExtensionAssemblies != null) {
+                lock (ExtensionsLock) {
+                    if (_potentialExtensionAssemblies != null) {
+                        _potentialExtensionAssemblies.Add(assembly);
+                        return;
+                    }
+                }
+            }
+
+            LoadExtensions(ReflectionUtils.GetVisibleExtensionMethodGroups(assembly, true));
+        }
+
+        private void LoadExtensions(IEnumerable<KeyValuePair<string, IEnumerable<ExtensionMethodInfo>>>/*!*/ extensionMethodGroups) {
+            List<IEnumerable<ExtensionMethodInfo>> immediatelyActivated = null;
+
+            lock (ExtensionsLock) {
+                foreach (var extensionMethodGroup in extensionMethodGroups) {
+                    if (_availableExtensions == null) {
+                        _availableExtensions = new Dictionary<string, List<IEnumerable<ExtensionMethodInfo>>>();
+                    }
+
+                    string ns = extensionMethodGroup.Key;
+                    List<IEnumerable<ExtensionMethodInfo>> extensions;
+                    if (_availableExtensions.TryGetValue(ns, out extensions)) {
+                        if (extensions == null) {
+                            if (immediatelyActivated == null) {
+                                immediatelyActivated = new List<IEnumerable<ExtensionMethodInfo>>();
+                            }
+                            extensions = immediatelyActivated;
+                        }
+                    } else {
+                        _availableExtensions.Add(ns, extensions = new List<IEnumerable<ExtensionMethodInfo>>());
+                    }
+                    extensions.Add(extensionMethodGroup.Value);
+                }
+            }
+
+            if (immediatelyActivated != null) {
+                ActivateExtensions(immediatelyActivated);
+            }
+        }
+
+        public void ActivateExtensions(string/*!*/ @namespace) {
+            ContractUtils.RequiresNotNull(@namespace, "namespace");
+
+            Assembly[] assemblies = null;
+            if (_potentialExtensionAssemblies != null) {
+                lock (ExtensionsLock) {
+                    if (_potentialExtensionAssemblies != null) {
+                        assemblies = _potentialExtensionAssemblies.ToArray();
+                        _potentialExtensionAssemblies = null;
+                    }
+                }
+            }
+
+            if (assemblies != null) {
+                var extensionGroups = new List<KeyValuePair<string, IEnumerable<ExtensionMethodInfo>>>(); 
+                foreach (var assembly in assemblies) {
+                    extensionGroups.AddRange(ReflectionUtils.GetVisibleExtensionMethodGroups(assembly, true));
+                }
+                LoadExtensions(extensionGroups);
+            }
+
+            List<IEnumerable<ExtensionMethodInfo>> extensions;
+            lock (ExtensionsLock) {
+                _availableExtensions.TryGetValue(@namespace, out extensions);
+                
+                // activate namespace:
+                _availableExtensions[@namespace] = null;
+            }
+
+            if (extensions != null) {
+                ActivateExtensions(extensions);
+            }
+        }
+
+        private void ActivateExtensions(List<IEnumerable<ExtensionMethodInfo>>/*!*/ extensionLists) {
+            var groupedByType = new Dictionary<Type, List<ExtensionMethodInfo>>();
+            foreach (var extensionList in extensionLists) {
+                foreach (var extension in extensionList) {
+                    Type extendedType = extension.ExtendedType;
+                    Debug.Assert(!extendedType.IsGenericTypeDefinition && !extendedType.IsPointer && !extendedType.IsByRef);
+
+                    Type target;
+                    if (extendedType.ContainsGenericParameters) {
+                        if (extendedType.IsGenericParameter) {
+                            // TODO: we can do better if there are constraints defined on the parameter
+                            target = typeof(object);
+                        } else {
+                            target = extendedType.IsArray ? typeof(Array) : extendedType.GetGenericTypeDefinition();
+                        }
+                    } else {
+                        target = extendedType;
+                    }
+
+                    List<ExtensionMethodInfo> list;
+                    if (!groupedByType.TryGetValue(target, out list)) {
+                        groupedByType.Add(target, list = new List<ExtensionMethodInfo>());
+                    }
+                    list.Add(extension);
+                }
+            }
+
+            using (ClassHierarchyLocker()) {
+                lock (ModuleCacheLock) {
+                    foreach (var entry in groupedByType) {
+                        Type target = entry.Key;
+                        var methods = entry.Value;
+
+                        RubyModule targetModule = (target.IsGenericTypeDefinition || target.IsInterface) ? GetOrCreateModuleNoLock(target) : GetOrCreateClassNoLock(target);
+                        targetModule.AddExtensionMethodsNoLock(methods);
+                    }
+                }
+            }
         }
 
         #endregion

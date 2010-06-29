@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -143,6 +144,35 @@ namespace Microsoft.Scripting.Utils {
             return result;
         }
 
+        internal static string ToValidTypeName(string str) {
+            if (String.IsNullOrEmpty(str)) {
+                return "_";
+            }
+
+            StringBuilder sb = new StringBuilder(str);
+            for (int i = 0; i < str.Length; i++) {
+                if (str[i] == '\0' || str[i] == '.' || str[i] == '*' || str[i] == '+' || str[i] == '[' || str[i] == ']' || str[i] == '\\') {
+                    sb[i] = '_';
+                }
+            }
+            return sb.ToString();
+        }
+
+        public static string GetNormalizedTypeName(Type type) {
+            string name = type.Name;
+            if (type.IsGenericType) {
+                return GetNormalizedTypeName(name);
+            }
+            return name;
+        }
+
+        public static string GetNormalizedTypeName(string typeName) {
+            Debug.Assert(typeName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
+            int backtick = typeName.IndexOf(ReflectionUtils.GenericArityDelimiter);
+            if (backtick != -1) return typeName.Substring(0, backtick);
+            return typeName;
+        }
+
         #endregion
 
         #region Delegates
@@ -195,6 +225,38 @@ namespace Microsoft.Scripting.Utils {
 
             parameterInfos = invokeMethod.GetParameters();
             returnInfo = invokeMethod.ReturnParameter;
+        }
+
+        /// <summary>
+        /// Gets a Func of CallSite, object * paramCnt, object delegate type
+        /// that's suitable for use in a non-strongly typed call site.
+        /// </summary>
+        public static Type GetObjectCallSiteDelegateType(int paramCnt) {
+            switch (paramCnt) {
+                case 0: return typeof(Func<CallSite, object, object>);
+                case 1: return typeof(Func<CallSite, object, object, object>);
+                case 2: return typeof(Func<CallSite, object, object, object, object>);
+                case 3: return typeof(Func<CallSite, object, object, object, object, object>);
+                case 4: return typeof(Func<CallSite, object, object, object, object, object, object>);
+                case 5: return typeof(Func<CallSite, object, object, object, object, object, object, object>);
+                case 6: return typeof(Func<CallSite, object, object, object, object, object, object, object, object>);
+                case 7: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object>);
+                case 8: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object>);
+                case 9: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object>);
+                case 10: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object>);
+                case 11: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object>);
+                case 12: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
+                case 13: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
+                case 14: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
+                default:
+                    Type[] paramTypes = new Type[paramCnt + 2];
+                    paramTypes[0] = typeof(CallSite);
+                    paramTypes[1] = typeof(object);
+                    for (int i = 0; i < paramCnt; i++) {
+                        paramTypes[i + 2] = typeof(object);
+                    }
+                    return Snippets.Shared.DefineDelegate("InvokeDelegate" + paramCnt, typeof(object), paramTypes);
+            }
         }
 
         #endregion
@@ -316,19 +378,7 @@ namespace Microsoft.Scripting.Utils {
 
         #endregion
 
-        internal static string ToValidTypeName(string str) {
-            if (String.IsNullOrEmpty(str)) {
-                return "_";
-            }
-
-            StringBuilder sb = new StringBuilder(str);
-            for (int i = 0; i < str.Length; i++) {
-                if (str[i] == '\0' || str[i] == '.' || str[i] == '*' || str[i] == '+' || str[i] == '[' || str[i] == ']' || str[i] == '\\') {
-                    sb[i] = '_';
-                }
-            }
-            return sb.ToString();
-        }
+        #region Type Reflection
 
         /// <summary>
         /// Like Type.GetInterfaces, but only returns the interfaces implemented by this type
@@ -345,53 +395,7 @@ namespace Microsoft.Scripting.Utils {
             return interfaces;
         }
 
-        public static string GetNormalizedTypeName(Type type) {
-            string name = type.Name;
-            if (type.IsGenericType) {
-                return GetNormalizedTypeName(name);
-            }
-            return name;
-        }
-
-        public static string GetNormalizedTypeName(string typeName) {
-            Debug.Assert(typeName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
-            int backtick = typeName.IndexOf(ReflectionUtils.GenericArityDelimiter);
-            if (backtick != -1) return typeName.Substring(0, backtick);
-            return typeName;
-        }
-
-        /// <summary>
-        /// Gets a Func of CallSite, object * paramCnt, object delegate type
-        /// that's suitable for use in a non-strongly typed call site.
-        /// </summary>
-        public static Type GetObjectCallSiteDelegateType(int paramCnt) {
-            switch (paramCnt) {
-                case 0: return typeof(Func<CallSite, object, object>);
-                case 1: return typeof(Func<CallSite, object, object, object>);
-                case 2: return typeof(Func<CallSite, object, object, object, object>);
-                case 3: return typeof(Func<CallSite, object, object, object, object, object>);
-                case 4: return typeof(Func<CallSite, object, object, object, object, object, object>);
-                case 5: return typeof(Func<CallSite, object, object, object, object, object, object, object>);
-                case 6: return typeof(Func<CallSite, object, object, object, object, object, object, object, object>);
-                case 7: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object>);
-                case 8: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object>);
-                case 9: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object>);
-                case 10: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object>);
-                case 11: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object>);
-                case 12: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
-                case 13: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
-                case 14: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
-                default:
-                    Type[] paramTypes = new Type[paramCnt + 2];
-                    paramTypes[0] = typeof(CallSite);
-                    paramTypes[1] = typeof(object);
-                    for (int i = 0; i < paramCnt; i++) {
-                        paramTypes[i + 2] = typeof(object);
-                    }
-                    return Snippets.Shared.DefineDelegate("InvokeDelegate" + paramCnt, typeof(object), paramTypes);
-            }
-        }
-
+        #endregion
 
         #region Type Builder
 
@@ -524,5 +528,306 @@ namespace Microsoft.Scripting.Utils {
         }
 
         #endregion
+
+        #region Extension Methods
+
+        // TODO: handle type load exceptions
+        public static IEnumerable<MethodInfo> GetVisibleExtensionMethodsSlow(Assembly assembly) {
+            var ea = typeof(ExtensionAttribute);
+            if (assembly.IsDefined(ea, false)) {
+#if SILVERLIGHT
+                foreach (Module module in assembly.GetModules()) {
+#else
+                foreach (Module module in assembly.GetModules(false)) {
+#endif
+                    foreach (Type type in module.GetTypes()) {
+                        var tattrs = type.Attributes;
+                        if (((tattrs & TypeAttributes.VisibilityMask) == TypeAttributes.Public ||
+                            (tattrs & TypeAttributes.VisibilityMask) == TypeAttributes.NestedPublic) &&
+                            (tattrs & TypeAttributes.Abstract) != 0 &&
+                            (tattrs & TypeAttributes.Sealed) != 0 &&
+                            type.IsDefined(ea, false)) {
+
+                            foreach (MethodInfo method in type.GetMethods()) {
+                                if (method.IsPublic && method.IsStatic && method.IsDefined(ea, false)) {
+                                    yield return method;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Value is null if there are no extension methods in the assembly.
+        private static Dictionary<Assembly, Dictionary<string, List<ExtensionMethodInfo>>> _extensionMethodsCache;
+
+        /// <summary>
+        /// Enumerates extension methods in given assembly. Groups the methods by declaring namespace.
+        /// Uses a global cache if <paramref name="useCache"/> is true.
+        /// </summary>
+        public static IEnumerable<KeyValuePair<string, IEnumerable<ExtensionMethodInfo>>> GetVisibleExtensionMethodGroups(Assembly/*!*/ assembly, bool useCache) {
+#if !CLR2
+            useCache &= !assembly.IsDynamic;
+#endif
+            if (useCache) {
+                if (_extensionMethodsCache == null) {
+                    _extensionMethodsCache = new Dictionary<Assembly, Dictionary<string, List<ExtensionMethodInfo>>>();
+                }
+
+                lock (_extensionMethodsCache) {
+                    Dictionary<string, List<ExtensionMethodInfo>> existing;
+                    if (_extensionMethodsCache.TryGetValue(assembly, out existing)) {
+                        return EnumerateExtensionMethods(existing);
+                    }
+                }
+            }
+
+            Dictionary<string, List<ExtensionMethodInfo>> result = null;
+            foreach (MethodInfo method in ReflectionUtils.GetVisibleExtensionMethodsSlow(assembly)) {
+                if (method.DeclaringType == null || method.DeclaringType.IsGenericTypeDefinition) {
+                    continue;
+                }
+
+                var parameters = method.GetParameters();
+                if (parameters.Length == 0) {
+                    continue;
+                }
+
+                Type type = parameters[0].ParameterType;
+                if (type.IsByRef || type.IsPointer) {
+                    continue;
+                }
+
+                string ns = method.DeclaringType.Namespace ?? String.Empty;
+                List<ExtensionMethodInfo> extensions = null;
+
+                if (result == null) {
+                    result = new Dictionary<string, List<ExtensionMethodInfo>>();
+                }
+
+                if (!result.TryGetValue(ns, out extensions)) {
+                    result.Add(ns, extensions = new List<ExtensionMethodInfo>());
+                }
+
+                extensions.Add(new ExtensionMethodInfo(type, method));
+            }
+
+            if (useCache) {
+                lock (_extensionMethodsCache) {
+                    _extensionMethodsCache[assembly] = result;
+                }
+            }
+
+            return EnumerateExtensionMethods(result);
+        }
+
+        // TODO: GetVisibleExtensionMethods(Hashset<string> namespaces, Type type, string methodName) : IEnumerable<MethodInfo> {}
+
+        private static IEnumerable<KeyValuePair<string, IEnumerable<ExtensionMethodInfo>>> EnumerateExtensionMethods(Dictionary<string, List<ExtensionMethodInfo>> dict) {
+            if (dict != null) {
+                foreach (var entry in dict) {
+                    yield return new KeyValuePair<string, IEnumerable<ExtensionMethodInfo>>(entry.Key, new ReadOnlyCollection<ExtensionMethodInfo>(entry.Value));
+                }
+            }
+        }
+
+        #endregion
+
+        #region Generic Types
+
+        internal static Dictionary<Type, Type> BindGenericParameters(Type/*!*/ openType, Type/*!*/ closedType, bool ignoreUnboundParameters) {
+            var binding = new Dictionary<Type, Type>();
+            BindGenericParameters(openType, closedType, (parameter, type) => {
+                Type existing;
+                if (binding.TryGetValue(parameter, out existing)) {
+                    return type == existing;
+                }
+
+                binding[parameter] = type;
+
+                return true;
+            });
+
+            return ConstraintsViolated(binding, ignoreUnboundParameters) ? null : binding;
+        }
+
+        /// <summary>
+        /// Binds occurances of generic parameters in <paramref name="openType"/> against corresponding types in <paramref name="closedType"/>.
+        /// Invokes <paramref name="binder"/>(parameter, type) for each such binding.
+        /// Returns false if the <paramref name="openType"/> is structurally different from <paramref name="closedType"/> or if the binder returns false.
+        /// </summary>
+        internal static bool BindGenericParameters(Type/*!*/ openType, Type/*!*/ closedType, Func<Type, Type, bool>/*!*/ binder) {
+            if (openType.IsGenericParameter) {
+                return binder(openType, closedType);
+            }
+
+            if (openType.IsArray) {
+                if (!closedType.IsArray) {
+                    return false;
+                }
+                return BindGenericParameters(openType.GetElementType(), closedType.GetElementType(), binder);
+            }
+
+            if (!openType.IsGenericType || !closedType.IsGenericType) {
+                return openType == closedType;
+            }
+
+            if (openType.GetGenericTypeDefinition() != closedType.GetGenericTypeDefinition()) {
+                return false;
+            }
+
+            Type[] closedArgs = closedType.GetGenericArguments();
+            Type[] openArgs = openType.GetGenericArguments();
+
+            for (int i = 0; i < openArgs.Length; i++) {
+                if (!BindGenericParameters(openArgs[i], closedArgs[i], binder)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        internal static bool ConstraintsViolated(Dictionary<Type, Type>/*!*/ binding, bool ignoreUnboundParameters) {
+            foreach (var entry in binding) {
+                if (ConstraintsViolated(entry.Key, entry.Value, binding, ignoreUnboundParameters)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool ConstraintsViolated(Type/*!*/ genericParameter, Type/*!*/ closedType, Dictionary<Type, Type>/*!*/ binding, bool ignoreUnboundParameters) {
+            if ((genericParameter.GenericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint) != 0 && closedType.IsValueType) {
+                // value type to parameter type constrained as class
+                return true;
+            }
+
+            if ((genericParameter.GenericParameterAttributes & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0 &&
+                (!closedType.IsValueType || (closedType.IsGenericType && closedType.GetGenericTypeDefinition() == typeof(Nullable<>)))) {
+                // nullable<T> or class/interface to parameter type constrained as struct
+                return true;
+            }
+
+            if ((genericParameter.GenericParameterAttributes & GenericParameterAttributes.DefaultConstructorConstraint) != 0 &&
+                (!closedType.IsValueType && closedType.GetConstructor(Type.EmptyTypes) == null)) {
+                // reference type w/o a default constructor to type constrianed as new()
+                return true;
+            }
+
+            Type[] constraints = genericParameter.GetGenericParameterConstraints();
+            for (int i = 0; i < constraints.Length; i++) {
+                Type instantiation = InstantiateConstraint(constraints[i], binding);
+
+                if (instantiation == null) {
+                    if (ignoreUnboundParameters) {
+                        continue;
+                    } else {
+                        return true;
+                    }
+                }
+
+                if (!instantiation.IsAssignableFrom(closedType)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static Type InstantiateConstraint(Type/*!*/ constraint, Dictionary<Type, Type>/*!*/ binding) {
+            Debug.Assert(!constraint.IsArray && !constraint.IsByRef && !constraint.IsGenericTypeDefinition);
+            if (!constraint.ContainsGenericParameters) {
+                return constraint;
+            }
+
+            Type closedType;
+            if (constraint.IsGenericParameter) {
+                return binding.TryGetValue(constraint, out closedType) ? closedType : null;
+            }
+
+            Type[] args = constraint.GetGenericArguments();
+            for (int i = 0; i < args.Length; i++) {
+                if ((args[i] = InstantiateConstraint(args[i], binding)) == null) {
+                    return null;
+                }
+            }
+
+            return constraint.GetGenericTypeDefinition().MakeGenericType(args);
+        }
+
+        #endregion
+    }
+
+    public struct ExtensionMethodInfo : IEquatable<ExtensionMethodInfo> {
+        private readonly Type/*!*/ _extendedType; // cached type of the first parameter
+        private readonly MethodInfo/*!*/ _method;
+
+        internal ExtensionMethodInfo(Type/*!*/ extendedType, MethodInfo/*!*/ method) {
+            Assert.NotNull(extendedType, method);
+            _extendedType = extendedType;
+            _method = method;
+        }
+
+        public Type/*!*/ ExtendedType {
+            get { return _extendedType; }
+        }
+
+        public MethodInfo/*!*/ Method {
+            get { return _method; }
+        }
+
+        public override bool Equals(object obj) {
+            return obj is ExtensionMethodInfo && Equals((ExtensionMethodInfo)obj);
+        }
+
+        public bool Equals(ExtensionMethodInfo other) {
+            return _method.Equals(other._method);
+        }
+
+        public static bool operator ==(ExtensionMethodInfo self, ExtensionMethodInfo other) {
+            return self.Equals(other);
+        }
+
+        public static bool operator !=(ExtensionMethodInfo self, ExtensionMethodInfo other) {
+            return !self.Equals(other);
+        }
+
+        public override int GetHashCode() {
+            return _method.GetHashCode();
+        }
+        
+        /// <summary>
+        /// Determines if a given type matches the type that the method extends. 
+        /// The match might be non-trivial if the extended type is an open generic type with constraints.
+        /// </summary>
+        public bool IsExtensionOf(Type/*!*/ type) {
+            ContractUtils.RequiresNotNull(type, "type");
+#if CLR2 || SILVERLIGHT
+            if (type == _extendedType) {
+                return true;
+            }
+#else
+            if (type.IsEquivalentTo(ExtendedType)) {
+                return true;
+            }
+#endif
+            if (!_extendedType.ContainsGenericParameters) {
+                return false;
+            }
+
+            //
+            // Ignores constraints that can't be instantiated given the information we have (type of the first parameter).
+            //
+            // For example, 
+            // void Foo<S, T>(this S x, T y) where S : T;
+            //
+            // We make such methods available on all types. 
+            // If they are not called with arguments that satisfy the constraint the overload resolver might fail.
+            //
+            return ReflectionUtils.BindGenericParameters(_extendedType, type, true) != null;
+        }
     }
 }

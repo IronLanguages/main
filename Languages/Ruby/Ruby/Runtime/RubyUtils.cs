@@ -424,6 +424,7 @@ namespace IronRuby.Runtime {
                 case ('o' << 8) | 'f':
                 case ('o' << 8) | 'k':
                 case ('o' << 8) | 'n':
+                case ('o' << 8) | 'r':
                 case ('t' << 8) | 'o':
                 case ('u' << 8) | 'p':
                     return true;
@@ -619,10 +620,6 @@ namespace IronRuby.Runtime {
 
         internal static bool IsOperator(OverloadInfo/*!*/ method) {
             return MapOperator(method) != null;
-        }
-
-        internal static bool IsExtension(OverloadInfo/*!*/ method) {
-            return false;
         }
 
         internal static string MapOperator(ExpressionType op) {
