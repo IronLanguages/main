@@ -29,7 +29,6 @@ IronRuby core runtime components
       <ComponentRef Id="NGENComp_Microsoft.Dynamic.dll" />
       <ComponentRef Id="NGENComp_Microsoft.Scripting.Core.dll" />
       <ComponentRef Id="NGENComp_Microsoft.Scripting.Debugging.dll" />
-      <ComponentRef Id="NGENComp_Microsoft.Scripting.ExtensionAttribute.dll" />
       <ComponentRef Id="NGENComp_IronRuby.dll" />
       <ComponentRef Id="NGENComp_IronRuby.Libraries.dll" />
       <ComponentRef Id="NGENComp_IronRuby.Libraries.YAML.dll" />
@@ -39,7 +38,6 @@ IronRuby core runtime components
       <ComponentRef Id="Comp_Microsoft.Dynamic.dll" />
       <ComponentRef Id="Comp_Microsoft.Scripting.Core.dll" />
       <ComponentRef Id="Comp_Microsoft.Scripting.Debugging.dll" />
-      <ComponentRef Id="Comp_Microsoft.Scripting.ExtensionAttribute.dll" />
       <ComponentRef Id="Comp_IronRuby.dll" />
       <ComponentRef Id="Comp_IronRuby.Libraries.dll" />
       <ComponentRef Id="Comp_IronRuby.Libraries.YAML.dll" />
@@ -197,12 +195,6 @@ IronRuby core runtime components
             <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.Debugging.dll" Priority="1" Platform="all" />
           </File>
         </Component>
-        <Component Id="NGENComp_Microsoft.Scripting.ExtensionAttribute.dll" DiskId="1" Guid="374e3a66-2955-49d4-af44-3962a308cb21">
-          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
-          <File Id="NGENFile_Microsoft.Scripting.ExtensionAttribute.dll" Name="Microsoft.Scripting.ExtensionAttribute.dll" >
-            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.ExtensionAttribute.dll" Priority="1" Platform="all" />
-          </File>
-        </Component>
         <Component Id="NGENComp_IronRuby.dll" DiskId="1" Guid="aa117df6-e5bb-4a48-9a0f-01c1ace18390">
           <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
           <File Id="NGENFile_IronRuby.dll" Name="IronRuby.dll" >
@@ -251,10 +243,6 @@ IronRuby core runtime components
         <Component Id="Comp_Microsoft.Scripting.Debugging.dll" DiskId="1" Guid="aeea20d2-ab7b-4d7c-afbe-b714a8d84f37">
           <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
           <File Id="File_Microsoft.Scripting.Debugging.dll" Name="Microsoft.Scripting.Debugging.dll" />
-        </Component>
-        <Component Id="Comp_Microsoft.Scripting.ExtensionAttribute.dll" DiskId="1" Guid="8e216b71-c789-4b7d-92c1-66ad23229388">
-          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
-          <File Id="File_Microsoft.Scripting.ExtensionAttribute.dll" Name="Microsoft.Scripting.ExtensionAttribute.dll" />
         </Component>
         <Component Id="Comp_IronRuby.dll" DiskId="1" Guid="eb73e090-89c5-4301-a4a9-4dbe44f11432">
           <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>

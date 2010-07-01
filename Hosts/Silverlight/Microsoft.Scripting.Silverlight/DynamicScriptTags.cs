@@ -17,8 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Browser;
-using Microsoft.Scripting.Hosting;
 using System.IO;
+using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {

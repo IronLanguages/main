@@ -604,7 +604,7 @@ puts GM3.foo(123)
             Context.ObjectClass.SetConstant("F", Context.GetClass(typeof(Func<object,string>)));
             Context.ObjectClass.SetConstant("SB", Context.GetClass(typeof(StrongBox<int>)));
             Context.ObjectClass.SetConstant("SBx",
-                new StrongBox<Dictionary<List<Dictionary<Func<int, bool[][,,,][], double>[], int>>, Func<Dictionary<int, int>, bool, double>>[]>()
+                new StrongBox<Dictionary<List<Dictionary<Func<int, bool[][,,,][], double>[], int>>, Func<Dictionary<int, int>, bool, double>>[]>(null)
             );
             Context.ObjectClass.SetConstant("I", new Inference1());
             Context.ObjectClass.SetConstant("E", Context.GetClass(typeof(InteropTests.Generics1.Extensions)));

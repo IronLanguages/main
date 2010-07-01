@@ -1,17 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Web;
-using IronRuby.Builtins;
-using IronRuby.StandardLibrary.StringIO;
-using System.Diagnostics;
+﻿/* ****************************************************************************
+ *
+ * Copyright (c) Microsoft Corporation. 
+ *
+ * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * copy of the license can be found in the License.html file at the root of this distribution. If 
+ * you cannot locate the  Microsoft Public License, please send an email to 
+ * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * by the terms of the Microsoft Public License.
+ *
+ * You must not remove this notice, or any other, from this software.
+ *
+ *
+ * ***************************************************************************/
 
-#if !CLR2
-using SysUtils = System;
-#else
-using SysUtils = Microsoft.Scripting.Utils;
-#endif
+using System;
+using System.Collections.Generic;
+using IronRuby.Builtins;
 
 namespace IronRubyRack.Handler {
 
@@ -305,7 +309,7 @@ namespace IronRubyRack.Handler {
                 // application instance itself, or a File-like object.
 
                 var body = ruby_response[2];
-                var each_block = (SysUtils.Func<IronRuby.Runtime.BlockParam, object, object, object>)((block, notUsed, part) => {
+                var each_block = (Func<IronRuby.Runtime.BlockParam, object, object, object>)((block, notUsed, part) => {
                     response.Write(((MutableString)part).ToByteArray());
                     return null;
                 });

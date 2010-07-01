@@ -87,7 +87,6 @@ namespace Microsoft.Scripting {
             AddAssemblyMappings(languageKeyVer, 
                 "Microsoft.Scripting",
                 "Microsoft.Dynamic",
-                "Microsoft.Scripting.ExtensionAttribute",
                 "Microsoft.Scripting.Core",
                 "Microsoft.Scripting.Silverlight",
                 "IronPython",

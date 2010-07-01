@@ -19,7 +19,6 @@ module Rack
       )
       IRONRUBY_BINARIES_CLR2 = %W(
         Microsoft.Scripting.Core.dll 
-        Microsoft.Scripting.ExtensionAttribute.dll
       )
       RACK_BINARIES = %W(
         IronRuby.Rack.dll

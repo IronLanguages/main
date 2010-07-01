@@ -33,7 +33,6 @@ namespace Microsoft.Scripting.Silverlight {
         /// List of valid assemblies to be inside Microsoft.Scripting.slvx
         /// </summary>
         private static List<string> _assemblyNames = new List<string>() {
-            "Microsoft.Scripting.ExtensionAttribute",
             "Microsoft.Scripting.Core",
             "Microsoft.Scripting",
             "Microsoft.Dynamic",

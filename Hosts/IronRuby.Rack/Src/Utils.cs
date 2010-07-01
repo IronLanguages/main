@@ -14,14 +14,11 @@
  * ***************************************************************************/
 
 using System;
+using System.Configuration;
+using System.IO;
 using System.Web;
 using IronRuby.Builtins;
-using IronRuby.Runtime;
 using Microsoft.Scripting.Hosting;
-using Microsoft.Scripting.Hosting.Providers;
-using System.IO;
-using System.Configuration;
-using System.Collections;
 
 namespace IronRubyRack {
 

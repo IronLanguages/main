@@ -1,5 +1,4 @@
 bin = "#{ENV['DLR_ROOT']}\\bin\\debug"
-reference "#{bin}\\Microsoft.Scripting.ExtensionAttribute.dll"
 reference "#{bin}\\Microsoft.Scripting.dll"
 reference "#{bin}\\Microsoft.Dynamic.dll"
 reference "#{bin}\\Microsoft.Scripting.Core.dll"

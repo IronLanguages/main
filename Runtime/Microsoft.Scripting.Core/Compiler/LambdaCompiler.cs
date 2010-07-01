@@ -310,7 +310,7 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         private MemberExpression CreateLazyInitializedField<T>(string name) {
             if (_method is DynamicMethod) {
-                return Expression.Field(Expression.Constant(new StrongBox<T>()), "Value");
+                return Expression.Field(Expression.Constant(new StrongBox<T>(default(T))), "Value");
             } else {
                 return Expression.Field(null, CreateStaticField(name, typeof(T)));
             }

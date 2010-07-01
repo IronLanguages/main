@@ -19,6 +19,7 @@ using Microsoft.Scripting.Runtime;
 
 #if CLR2
 using Microsoft.Scripting.Utils;
+using System;
 #else
 using System;
 #endif

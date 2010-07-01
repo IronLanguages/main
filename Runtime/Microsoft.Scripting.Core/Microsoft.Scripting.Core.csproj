@@ -24,8 +24,10 @@
     <DelaySign>true</DelaySign>
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(SolutionDir)..\Util\Internal\Silverlight\x86ret\</SilverlightPath>
     <BaseAddress>855638016</BaseAddress>
+    <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
+    <NoConfig>true</NoConfig>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <CodeAnalysisRuleSet>Microsoft.Scripting.Core.ruleset</CodeAnalysisRuleSet>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -35,6 +37,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -45,6 +48,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -54,6 +58,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -65,6 +70,7 @@
     <ErrorReport>prompt</ErrorReport>
     <NoStdLib>true</NoStdLib>
     <SilverlightBuild>true</SilverlightBuild>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
     <OutputPath>$(SolutionDir)..\bin\Silverlight3Release</OutputPath>
@@ -74,21 +80,8 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="System.Configuration" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
-    </Reference>
-    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
       <Link>Properties\SilverlightVersion.cs</Link>
@@ -210,16 +203,9 @@
     <Compile Include="Utils\ReadOnlyCollectionBuilder.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReferenceEqualityComparer.cs" />
-    <Compile Include="Utils\StrongBox.cs" />
     <Compile Include="Utils\TrueReadOnlyCollection.cs" />
     <Compile Include="Utils\TypeExtensions.cs" />
     <Compile Include="Stubs.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="Microsoft.Scripting.ExtensionAttribute.csproj">
-      <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
-      <Name>Microsoft.Scripting.ExtensionAttribute</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\..\System\Linq\Expressions\System.Linq.Expressions.txt">
@@ -228,6 +214,25 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Microsoft.Scripting.Core.ruleset" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
   <Import Condition=" '$(Golden)' == 'True'" Project="..\..\External\Build\Microsoft.VersionNumber.targets" />

@@ -123,7 +123,6 @@ namespace Chiron {
             IList<Uri> assemblies = new List<Uri>();
             assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Silverlight.dll"));
 #if CLR2
-            assemblies.Add(GetAssemblyUri("Microsoft.Scripting.ExtensionAttribute.dll"));
             assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Core.dll"));
 #else
             assemblies.Add(GetAssemblyUri("System.Numerics.dll"));

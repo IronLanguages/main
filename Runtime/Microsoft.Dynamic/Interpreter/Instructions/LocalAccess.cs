@@ -252,7 +252,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             public override int Run(InterpretedFrame frame) {
-                frame.Data[_index] = new StrongBox<object>() { Value = _defaultValue };
+                frame.Data[_index] = new StrongBox<object>(_defaultValue);
                 return 1;
             }
 
@@ -332,7 +332,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             public override int Run(InterpretedFrame frame) {
-                frame.Data[_index] = new StrongBox<object>() { Value = Activator.CreateInstance(_type) };
+                frame.Data[_index] = new StrongBox<object>(Activator.CreateInstance(_type));
                 return 1;
             }
 

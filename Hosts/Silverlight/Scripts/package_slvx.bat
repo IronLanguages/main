@@ -26,7 +26,6 @@ xcopy /Y /Q Microsoft.Dynamic.dll __Microsoft.Scripting.slvx
 xcopy /Y /Q Microsoft.Scripting.Silverlight.dll __Microsoft.Scripting.slvx
 if exist Microsoft.Scripting.Core.dll (
   xcopy /Y /Q Microsoft.Scripting.Core.dll __Microsoft.Scripting.slvx
-  xcopy /Y /Q Microsoft.Scripting.ExtensionAttribute.dll __Microsoft.Scripting.slvx
 )
 if exist System.Numerics.dll (
   xcopy /Y /Q System.Numerics.dll __Microsoft.Scripting.slvx

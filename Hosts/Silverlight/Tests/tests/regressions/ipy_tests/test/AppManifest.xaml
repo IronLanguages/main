@@ -7,7 +7,6 @@
   <Deployment.Parts>
     <!-- Dynamic Language Runtime assemblies -->
     <AssemblyPart x:Name="Microsoft.Scripting.Silverlight" Source="Microsoft.Scripting.Silverlight.dll" />
-    <AssemblyPart Source="Microsoft.Scripting.ExtensionAttribute.dll" />
     <AssemblyPart Source="Microsoft.Scripting.Core.dll" />
     <AssemblyPart Source="Microsoft.Dynamic.dll" />
     <AssemblyPart Source="Microsoft.Scripting.dll" />

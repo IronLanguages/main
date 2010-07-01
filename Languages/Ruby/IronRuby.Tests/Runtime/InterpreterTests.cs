@@ -122,7 +122,7 @@ namespace IronRuby.Tests {
             var m_g = new Func<int, int, int, int>(Interpreter1_g).Method;
 
 
-            var value = new StrongBox<int>();
+            var value = new StrongBox<int>(0);
             LabelTarget label;
             int rc, ri;
 
