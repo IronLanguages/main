@@ -66,25 +66,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return resolver.Convert(args.GetObject(_index), args.GetType(_index), null, method.DeclaringType);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")] // TODO
-        internal protected virtual Func<object[], object> ToDelegate(ref MethodInfo method, OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            if (_index == -1) {
-                return (_) => null;
-            }
-
-            GetCallableMethod(args, ref method);
-
-            Func<object[], object> conv = resolver.GetConvertor(_index + 1, args.GetObject(_index), null, method.DeclaringType);
-            if (conv != null) {
-                return conv;
-            }
-
-            return (Func<object[], object>)Delegate.CreateDelegate(
-                typeof(Func<object[], object>),
-                _index + 1,
-                typeof(ArgBuilder).GetMethod("ArgumentRead"));
-        }
-
         private void GetCallableMethod(RestrictedArguments args, ref MethodInfo method) {
             // If we have a non-visible method see if we can find a better method which
             // will call the same thing but is visible. If this fails we still bind anyway - it's

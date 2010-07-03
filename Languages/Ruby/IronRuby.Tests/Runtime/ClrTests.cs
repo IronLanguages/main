@@ -598,6 +598,18 @@ puts GM3.foo(123)
             public int Complex<A,B,C>(ref Dictionary<List<Dictionary<Func<A, B[][,,,][], C>[], int>>, Func<Dictionary<int, A>, B, C>>[] arg) {
                 return 4;
             }
+
+            public int Where<T>(IEnumerable<T> e, Func<T, bool> f) {
+                return 5;
+            }
+
+            public int Where<T>(IEnumerable<T> e, Func<T, int, bool> f) {
+                return 6;
+            }
+
+            public int Where<T>(IEnumerable<T> e, object f) {
+                return 7;
+            }
         }
 
         public void ClrGenericParametersInference1() {
@@ -608,7 +620,7 @@ puts GM3.foo(123)
             );
             Context.ObjectClass.SetConstant("I", new Inference1());
             Context.ObjectClass.SetConstant("E", Context.GetClass(typeof(InteropTests.Generics1.Extensions)));
-
+            
             TestOutput(@"
 p I.Array(System::Array[Fixnum].new(3))
 p I.Multiple([1,2,3], F.new { |x| x.to_s })
@@ -646,6 +658,23 @@ p I.DeepShape(Dictionary[Dictionary[Fixnum, System::String], Dictionary[Fixnum, 
 p I.Complex(SBx)
 ", @"
 4
+");
+  
+             TestOutput(@"
+l1 = lambda { |x| }
+l2 = lambda { |x, y| }
+l3 = lambda { |*| }
+a = System::Array[Object].new(1)
+
+p I.Where(a, l1)
+p I.Where(a, l2)
+p I.Where(a, l3) rescue puts 'ambiguous'
+p I.Where(a, 123)
+", @"
+5
+6
+ambiguous
+7
 ");
         }
 

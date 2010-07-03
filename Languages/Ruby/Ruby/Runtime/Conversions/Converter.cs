@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
@@ -34,66 +35,86 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Runtime.Conversions {
     using Ast = Expression;
+    
+    public interface IConvertibleRubyMetaObject : IConvertibleMetaObject {
+        Convertibility IsConvertibleTo(Type type, bool isExplicit);
+    }
+
+    public struct Convertibility {
+        public static readonly Convertibility NotConvertible = new Convertibility(false, null);
+        public static readonly Convertibility AlwaysConvertible = new Convertibility(true, null);
+
+        public readonly bool IsConvertible;
+        public readonly Expression Assumption;
+
+        public Convertibility(bool isConvertible, Expression assumption) {
+            IsConvertible = isConvertible;
+            Assumption = assumption;
+        }
+    }
 
     internal static partial class Converter {
-        internal static bool CanConvertFrom(DynamicMetaObject fromArg, Type/*!*/ fromType, Type/*!*/ toType, bool toNotNullable,
+        internal static Convertibility CanConvertFrom(DynamicMetaObject fromArg, Type/*!*/ fromType, Type/*!*/ toType, bool toNotNullable,
             NarrowingLevel level, bool explicitProtocolConversions, bool implicitProtocolConversions) {
             ContractUtils.RequiresNotNull(fromType, "fromType");
             ContractUtils.RequiresNotNull(toType, "toType");
 
             var metaConvertible = fromArg as IConvertibleMetaObject;
+            var rubyMetaConvertible = fromArg as IConvertibleRubyMetaObject;
 
             //
             // narrowing level 0:
             //
 
             if (toType == fromType) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             if (fromType == typeof(DynamicNull)) {
                 if (toNotNullable) {
-                    return false;
+                    return Convertibility.NotConvertible;
                 }
 
                 if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                    return true;
+                    return Convertibility.AlwaysConvertible;
                 }
 
                 if (!toType.IsValueType) {
                     // null convertible to any reference type:
-                    return true;
+                    return Convertibility.AlwaysConvertible;
                 } else if (toType == typeof(bool)) {
-                    return true;
+                    return Convertibility.AlwaysConvertible;
                 } else if (!ProtocolConversionAction.HasDefaultConversion(toType)) {
                     // null not convertible to a value type unless a protocol conversion is allowed:
-                    return false;
+                    return Convertibility.NotConvertible;
                 }
             }
 
             // blocks:
             if (fromType == typeof(MissingBlockParam)) {
-                return toType == typeof(BlockParam) && !toNotNullable;
+                return new Convertibility(toType == typeof(BlockParam) && !toNotNullable, null);
             }
 
             if (fromType == typeof(BlockParam) && toType == typeof(MissingBlockParam)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             if (toType.IsAssignableFrom(fromType)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             if (HasImplicitNumericConversion(fromType, toType)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             if (CompilerHelpers.GetImplicitConverter(fromType, toType) != null) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
-            if (metaConvertible != null) {
-                return metaConvertible.CanConvertTo(toType, false);
+            if (rubyMetaConvertible != null) {
+                return rubyMetaConvertible.IsConvertibleTo(toType, false);
+            } else if (metaConvertible != null) {
+                return new Convertibility(metaConvertible.CanConvertTo(toType, false), null);
             }
 
             //
@@ -101,11 +122,11 @@ namespace IronRuby.Runtime.Conversions {
             //
 
             if (level < NarrowingLevel.One) {
-                return false;
+                return Convertibility.NotConvertible;
             }
 
             if (explicitProtocolConversions && ProtocolConversionAction.HasDefaultConversion(toType)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             //
@@ -113,31 +134,33 @@ namespace IronRuby.Runtime.Conversions {
             //
 
             if (level < NarrowingLevel.Two) {
-                return false;
+                return Convertibility.NotConvertible;
             }
 
             if (HasExplicitNumericConversion(fromType, toType)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             if (CompilerHelpers.GetExplicitConverter(fromType, toType) != null) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             if (CompilerHelpers.HasTypeConverter(fromType, toType)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             if (fromType == typeof(char) && toType == typeof(string)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             if (toType == typeof(bool)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
-            if (metaConvertible != null) {
-                return metaConvertible.CanConvertTo(toType, true);
+            if (rubyMetaConvertible != null) {
+                return rubyMetaConvertible.IsConvertibleTo(toType, true);
+            } else if (metaConvertible != null) {
+                return new Convertibility(metaConvertible.CanConvertTo(toType, true), null);
             }
 
             // 
@@ -145,19 +168,19 @@ namespace IronRuby.Runtime.Conversions {
             // 
 
             if (level < NarrowingLevel.Three) {
-                return false;
+                return Convertibility.NotConvertible;
             }
 
             if (implicitProtocolConversions && ProtocolConversionAction.HasDefaultConversion(toType)) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
             // A COM object can potentially be converted to the given interface, but might also be not so use this only as the last resort:
             if (TypeUtils.IsComObjectType(fromType) && toType.IsInterface) {
-                return true;
+                return Convertibility.AlwaysConvertible;
             }
 
-            return false;
+            return Convertibility.NotConvertible;
         }
 
         internal static Expression/*!*/ ConvertExpression(Expression/*!*/ expr, Type/*!*/ toType, RubyContext/*!*/ context, Expression/*!*/ contextExpression,

@@ -270,6 +270,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetParentLocals;
         public static MethodInfo/*!*/ GetParentScope { get { return _GetParentScope ?? (_GetParentScope = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Runtime.RubyScope>(RubyOps.GetParentScope)); } }
         private static MethodInfo _GetParentScope;
+        public static MethodInfo/*!*/ GetProcArity { get { return _GetProcArity ?? (_GetProcArity = CallInstruction.CacheFunc<IronRuby.Builtins.Proc, int>(RubyOps.GetProcArity)); } }
+        private static MethodInfo _GetProcArity;
         public static MethodInfo/*!*/ GetProcSelf { get { return _GetProcSelf ?? (_GetProcSelf = CallInstruction.CacheFunc<IronRuby.Builtins.Proc, System.Object>(RubyOps.GetProcSelf)); } }
         private static MethodInfo _GetProcSelf;
         public static MethodInfo/*!*/ GetQualifiedConstant { get { return _GetQualifiedConstant ?? (_GetQualifiedConstant = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Runtime.ConstantSiteCache, System.String[], System.Boolean, System.Object>(RubyOps.GetQualifiedConstant)); } }

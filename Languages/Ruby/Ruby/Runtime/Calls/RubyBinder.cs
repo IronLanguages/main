@@ -60,7 +60,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override bool CanConvertFrom(Type/*!*/ fromType, Type/*!*/ toType, bool toNotNullable, NarrowingLevel level) {
-            return Converter.CanConvertFrom(null, fromType, toType, toNotNullable, level, false, false);
+            return Converter.CanConvertFrom(null, fromType, toType, toNotNullable, level, false, false).IsConvertible;
         }
 
         public override Candidate PreferConvert(Type t1, Type t2) {

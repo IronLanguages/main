@@ -932,11 +932,6 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         // TODO: revisit
-        public virtual Func<object[], object> GetConvertor(int index, DynamicMetaObject metaObject, ParameterInfo info, Type toType) {
-            throw new NotImplementedException();
-        }
-
-        // TODO: revisit
         public virtual Expression GetDynamicConversion(Expression value, Type type) {
             return Expression.Convert(value, type);
         }

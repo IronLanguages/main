@@ -235,24 +235,12 @@ namespace Microsoft.Scripting {
 #endif
         }
 
-        [Obsolete("Use GetFileSystemEntries instead")]
-        public virtual string[] GetFiles(string path, string searchPattern) {
-#if !SILVERLIGHT
-            return Directory.GetFiles(path, searchPattern);
-            // TODO: return GetFileSystemEntries(path, searchPattern, true, false);
-#else
-            throw new NotImplementedException();
-#endif
+        public string[] GetFiles(string path, string searchPattern) {
+            return GetFileSystemEntries(path, searchPattern, true, false);
         }
 
-        [Obsolete("Use GetFileSystemEntries instead")]
-        public virtual string[] GetDirectories(string path, string searchPattern) {
-#if !SILVERLIGHT
-            return Directory.GetDirectories(path, searchPattern);
-            // TODO: return GetFileSystemEntries(path, searchPattern, false, true);
-#else
-            throw new NotImplementedException();
-#endif
+        public string[] GetDirectories(string path, string searchPattern) {
+            return GetFileSystemEntries(path, searchPattern, false, true);
         }
 
         public string[] GetFileSystemEntries(string path, string searchPattern) {
@@ -261,27 +249,15 @@ namespace Microsoft.Scripting {
 
         public virtual string[] GetFileSystemEntries(string path, string searchPattern, bool includeFiles, bool includeDirectories) {
 #if !SILVERLIGHT
-#pragma warning disable 618
             if (includeFiles && includeDirectories) {
-                return ArrayUtils.AppendRange(GetDirectories(path, searchPattern), GetFiles(path, searchPattern));
+                return Directory.GetFileSystemEntries(path, searchPattern);
             }
             if (includeFiles) {
-                return GetFiles(path, searchPattern);
+                return Directory.GetFiles(path, searchPattern);
             }
             if (includeDirectories) {
-                return GetDirectories(path, searchPattern);
+                return Directory.GetDirectories(path, searchPattern);
             }
-#pragma warning restore 618
-            // TODO: remove virtual GetFiles/GetDirectories and use this code:
-            //if (includeFiles && includeDirectories) {
-            //    return Directory.GetFileSystemEntries(path, searchPattern);
-            //}
-            //if (includeFiles) {
-            //    return Directory.GetFiles(path, searchPattern);
-            //}
-            //if (includeDirectories) {
-            //    return Directory.GetDirectories(path, searchPattern);
-            //}
             return ArrayUtils.EmptyStrings;
 #else
             throw new NotImplementedException();

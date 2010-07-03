@@ -95,6 +95,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static int GetProcArity(Proc/*!*/ proc) {
+            return proc.Dispatcher.Arity;
+        }
+
+        [Emitted]
         public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, string[] variableNames, 
             InterpretedFrame interpretedFrame) {
 
