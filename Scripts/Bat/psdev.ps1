@@ -111,7 +111,7 @@ function Convert-Doskey {
 }
 
 push-location (split-path $MyInvocation.MyCommand.Definition)
-invoke-cmdscript Dev.bat $args
+. $PWD\invoke-cmdscript.ps1 Dev.bat $args
 
 (resolve-path "./alias.txt"),(resolve-path "./aliasInternal.txt") | 
 ? { test-path "$_" } |
