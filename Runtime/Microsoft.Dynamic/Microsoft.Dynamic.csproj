@@ -192,6 +192,7 @@
     <Compile Include="Ast\LightExceptionConvertingExpression.cs" />
     <Compile Include="Ast\LightLambdaExpression.cs" />
     <Compile Include="Ast\LightThrowExpression.cs" />
+    <Compile Include="Runtime\DynamicXamlReader.cs" />
     <Compile Include="Runtime\LightThrowingAttribute.cs" />
     <Compile Include="Ast\LightExceptionRewriter.cs" />
     <Compile Include="Runtime\LightExceptions.cs" />
@@ -483,6 +484,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Runtime.Remoting" />
+    <Reference Include="System.Xaml" Condition="'$(TargetFrameworkVersion)' == 'v4.0'" />
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
