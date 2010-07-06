@@ -612,6 +612,8 @@ namespace System.Linq.Expressions.Compiler {
                typeTo.IsInterface ||
                typeFrom == typeof(object) || // boxing cast
                typeTo == typeof(object) ||
+               typeFrom == typeof(System.Enum) ||
+               typeFrom == typeof(System.ValueType) ||
                TypeUtils.IsLegalExplicitVariantDelegateConversion(typeFrom, typeTo))
             {
                 il.EmitCastToType(typeFrom, typeTo);
