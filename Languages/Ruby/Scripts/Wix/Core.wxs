@@ -26,6 +26,7 @@ IronRuby core runtime components
     </ComponentGroup>
     <ComponentGroup Id="CG_NGen_Dlls" >
       <ComponentRef Id="NGENComp_Microsoft.Scripting.dll" />
+      <ComponentRef Id="NGENComp_Microsoft.Scripting.Metadata.dll" />
       <ComponentRef Id="NGENComp_Microsoft.Dynamic.dll" />
       <ComponentRef Id="NGENComp_Microsoft.Scripting.Core.dll" />
       <ComponentRef Id="NGENComp_Microsoft.Scripting.Debugging.dll" />
@@ -35,6 +36,7 @@ IronRuby core runtime components
     </ComponentGroup>
     <ComponentGroup Id="CG_Dlls" >
       <ComponentRef Id="Comp_Microsoft.Scripting.dll" />
+      <ComponentRef Id="Comp_Microsoft.Scripting.Metadata.dll" />
       <ComponentRef Id="Comp_Microsoft.Dynamic.dll" />
       <ComponentRef Id="Comp_Microsoft.Scripting.Core.dll" />
       <ComponentRef Id="Comp_Microsoft.Scripting.Debugging.dll" />
@@ -177,6 +179,12 @@ IronRuby core runtime components
             <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.dll" Priority="1" Platform="all" />
           </File>
         </Component>
+        <Component Id="NGENComp_Microsoft.Scripting.Metadata.dll" DiskId="1" Guid="a892e571-7677-4e25-ba9d-9c8e3ab222f5">
+          <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
+          <File Id="NGENFile_Microsoft.Scripting.Metadata.dll" Name="Microsoft.Scripting.Metadata.dll" >
+            <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.Metadata.dll" Priority="1" Platform="all" />
+          </File>
+        </Component>v
         <Component Id="NGENComp_Microsoft.Dynamic.dll" DiskId="1" Guid="0bad1a1b-c748-4ab7-aab2-8c90725dfb70">
           <Condition><![CDATA[(ALLUSERS = 1)]]></Condition>
           <File Id="NGENFile_Microsoft.Dynamic.dll" Name="Microsoft.Dynamic.dll" >
@@ -231,6 +239,10 @@ IronRuby core runtime components
         <Component Id="Comp_Microsoft.Scripting.dll" DiskId="1" Guid="9cb378be-ad0e-4658-8733-1ca79f834f93">
           <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
           <File Id="File_Microsoft.Scripting.dll" Name="Microsoft.Scripting.dll" />
+        </Component>
+        <Component Id="Comp_Microsoft.Scripting.Metadata.dll" DiskId="1" Guid="503736cb-e23a-421b-96d1-f0a68c444c59">
+          <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>
+          <File Id="File_Microsoft.Scripting.Metadata.dll" Name="Microsoft.Scripting.Metadata.dll" />
         </Component>
         <Component Id="Comp_Microsoft.Dynamic.dll" DiskId="1" Guid="d3560bf4-25b6-4213-998b-4eb1a1a85cd1">
           <Condition><![CDATA[(ALLUSERS = 2)]]></Condition>

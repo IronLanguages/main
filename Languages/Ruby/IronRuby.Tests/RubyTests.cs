@@ -466,6 +466,7 @@ namespace IronRuby.Tests {
                 ClrMembers1,
                 ClrVisibility1,
                 ClrVisibility2,
+                ClrExtensionMethods0,
                 ClrExtensionMethods1,
                 ClrExtensionMethods2,
                 ClrExtensionMethods3,

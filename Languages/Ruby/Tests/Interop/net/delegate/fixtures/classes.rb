@@ -1,7 +1,8 @@
 bin = "#{ENV['DLR_ROOT']}\\bin\\debug"
 reference "#{bin}\\Microsoft.Scripting.dll"
-reference "#{bin}\\Microsoft.Dynamic.dll"
+reference "#{bin}\\Microsoft.Scripting.Metadata.dll"
 reference "#{bin}\\Microsoft.Scripting.Core.dll"
+reference "#{bin}\\Microsoft.Dynamic.dll"
 reference "#{bin}\\IronRuby.dll"
 reference "#{bin}\\IronRuby.Libraries.dll"
 csc <<-EOL

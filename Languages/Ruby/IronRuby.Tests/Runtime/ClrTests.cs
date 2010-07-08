@@ -682,6 +682,70 @@ ambiguous
 
         #region Extension Methods
 
+        public void ClrExtensionMethods0() {
+            bool expectExact = typeof(Enumerable).Assembly.FullName == "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+
+            Dictionary<string, int> expected = new Dictionary<string, int>();
+            foreach (string name in new[] {
+                "AsQueryable", "AsQueryable", "Where", "Where", "OfType", "Cast", "Select", "Select", "SelectMany", "SelectMany", "SelectMany", "SelectMany", "Join", "Join", "GroupJoin", 
+                "GroupJoin", "OrderBy", "OrderBy", "OrderByDescending", "OrderByDescending", "ThenBy", "ThenBy", "ThenByDescending", "ThenByDescending", "Take", "TakeWhile", 
+                "TakeWhile", "Skip", "SkipWhile", "SkipWhile", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "Distinct", "Distinct", 
+                "Concat", "Zip", "Union", "Union", "Intersect", "Intersect", "Except", "Except", "First", "First", "FirstOrDefault", "FirstOrDefault", "Last", "Last", 
+                "LastOrDefault", "LastOrDefault", "Single", "Single", "SingleOrDefault", "SingleOrDefault", "ElementAt", "ElementAtOrDefault", "DefaultIfEmpty", "DefaultIfEmpty", 
+                "Contains", "Contains", "Reverse", "SequenceEqual", "SequenceEqual", "Any", "Any", "All", "Count", "Count", "LongCount", "LongCount", "Min", "Min", "Max", "Max", 
+                "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Average", "Average",
+                "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average",
+                "Average", "Average", "Average", "Aggregate", "Aggregate", "Aggregate", "Where", "Where", "Select", "Select", "SelectMany", "SelectMany", "SelectMany", "SelectMany", 
+                "Take", "TakeWhile", "TakeWhile", "Skip", "SkipWhile", "SkipWhile", "Join", "Join", "GroupJoin", "GroupJoin", "OrderBy", "OrderBy", "OrderByDescending", 
+                "OrderByDescending", "ThenBy", "ThenBy", "ThenByDescending", "ThenByDescending", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", 
+                "GroupBy", "Concat", "Zip", "Distinct", "Distinct", "Union", "Union", "Intersect", "Intersect", "Except", "Except", "Reverse", "SequenceEqual", "SequenceEqual",
+                "AsEnumerable", "ToArray", "ToList", "ToDictionary", "ToDictionary", "ToDictionary", "ToDictionary", "ToLookup", "ToLookup", "ToLookup", "ToLookup", "DefaultIfEmpty", 
+                "DefaultIfEmpty", "OfType", "Cast", "First", "First", "FirstOrDefault", "FirstOrDefault", "Last", "Last", "LastOrDefault", "LastOrDefault", "Single", "Single", 
+                "SingleOrDefault", "SingleOrDefault", "ElementAt", "ElementAtOrDefault", "Any", "Any", "All", "Count", "Count", "LongCount", "LongCount", "Contains", "Contains", 
+                "Aggregate", "Aggregate", "Aggregate", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", 
+                "Sum", "Sum", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", 
+                "Min", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", 
+                "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average",
+                "Average", "Average", "Average", "Average", "Average", "AsParallel", "AsParallel", "AsOrdered", "AsOrdered", "AsUnordered", "AsParallel", "AsSequential",
+                "WithDegreeOfParallelism", "WithCancellation", "WithExecutionMode", "WithMergeOptions", "ForAll", "Where", "Where", "Select", "Select", "Zip", "Zip", "Join", "Join", 
+                "Join", "Join", "GroupJoin", "GroupJoin", "GroupJoin", "GroupJoin", "SelectMany", "SelectMany", "SelectMany", "SelectMany", "OrderBy", "OrderBy", "OrderByDescending", 
+                "OrderByDescending", "ThenBy", "ThenBy", "ThenByDescending", "ThenByDescending", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy",
+                "Aggregate", "Aggregate", "Aggregate", "Aggregate", "Aggregate", "Count", "Count", "LongCount", "LongCount", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", 
+                "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min",
+                "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max",
+                "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", 
+                "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Any", "Any", "All", "Contains", "Contains", "Take", 
+                "TakeWhile", "TakeWhile", "Skip", "SkipWhile", "SkipWhile", "Concat", "Concat", "SequenceEqual", "SequenceEqual", "SequenceEqual", "SequenceEqual", "Distinct", 
+                "Distinct", "Union", "Union", "Union", "Union", "Intersect", "Intersect", "Intersect", "Intersect", "Except", "Except", "Except", "Except", "AsEnumerable", "ToArray",
+                "ToList", "ToDictionary", "ToDictionary", "ToDictionary", "ToDictionary", "ToLookup", "ToLookup", "ToLookup", "ToLookup", "Reverse", "OfType", "Cast", "First", "First", 
+                "FirstOrDefault", "FirstOrDefault", "Last", "Last", "LastOrDefault", "LastOrDefault", "Single", "Single", "SingleOrDefault", "SingleOrDefault", "DefaultIfEmpty", 
+                "DefaultIfEmpty", "ElementAt", "ElementAtOrDefault", "Unwrap", "Unwrap", 
+            }) {
+                int count;
+                if (!expected.TryGetValue(name, out count)) {
+                    count = 0;
+                }
+                expected[name] = count + 1;
+            }
+
+            var methods = ReflectionUtils.GetVisibleExtensionMethods(typeof(Enumerable).Assembly);
+            new List<MethodInfo>(ReflectionUtils.GetVisibleExtensionMethodsSlow(typeof(Enumerable).Assembly));
+
+            Dictionary<string, int> actual = new Dictionary<string, int>();
+            foreach (MethodInfo method in methods) {
+                int count;
+                if (!actual.TryGetValue(method.Name, out count)) {
+                    count = 0;
+                }
+                actual[method.Name] = count + 1;
+            }
+
+            foreach (string name in actual.Keys) {
+                Assert(expected.ContainsKey(name));
+                Assert(expectExact ? expected[name] == actual[name] : expected[name] >= actual[name]);
+            }
+        }
+
         public void ClrExtensionMethods1() {
 #if !CLR2
             Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);

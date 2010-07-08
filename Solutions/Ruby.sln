@@ -42,9 +42,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chiron", "..\Hosts\SilverLi
 		{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD} = {7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Metadata", "..\Runtime\Microsoft.Scripting.Metadata\Microsoft.Scripting.Metadata.csproj", "{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}"
+EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 14
+		SccNumberOfProjects = 15
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = http://vstfdevdiv:8080/devdiv
 		SccProjectUniqueName0 = ..\\Languages\\Ruby\\IronRuby.Tests\\IronRuby.Tests.csproj
@@ -117,6 +119,11 @@ Global
 		SccAuxPath13 = http://vstfdevdiv:8080/devdiv
 		SccLocalPath13 = ..\\Hosts\\SilverLight\\Chiron
 		SccProvider13 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccProjectUniqueName14 = ..\\Runtime\\Microsoft.Scripting.Metadata\\Microsoft.Scripting.Metadata.csproj
+		SccProjectName14 = ../Runtime/Microsoft.Scripting.Metadata
+		SccAuxPath14 = http://vstfdevdiv:8080/devdiv
+		SccLocalPath14 = ..\\Runtime\\Microsoft.Scripting.Metadata
+		SccProvider14 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -340,6 +347,20 @@ Global
 		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Silverlight4Release|Any CPU.Build.0 = Silverlight4Release|Any CPU
 		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.v2Debug|Any CPU.ActiveCfg = Silverlight3Debug|Any CPU
 		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.v2Release|Any CPU.ActiveCfg = Silverlight3Release|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.FxCop|Any CPU.ActiveCfg = FxCop|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.FxCop|Any CPU.Build.0 = FxCop|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.Silverlight3Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.Silverlight3Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.Silverlight4Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.Silverlight4Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.v2Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.v2Debug|Any CPU.Build.0 = v2Debug|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.v2Release|Any CPU.ActiveCfg = v2Release|Any CPU
+		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}.v2Release|Any CPU.Build.0 = v2Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
