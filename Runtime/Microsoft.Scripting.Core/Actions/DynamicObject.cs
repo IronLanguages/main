@@ -451,7 +451,39 @@ namespace System.Dynamic {
                     // will always be a cast or unbox
                     Debug.Assert(convert.Method == null);
 
-                    resultMO = new DynamicMetaObject(convert, resultMO.Restrictions);
+                    // Prepare a good exception message in case the convert will fail
+                    string convertFailed = Strings.DynamicObjectResultNotAssignable(
+                        "{0}",
+                        this.Value.GetType(),
+                        binder.GetType(),
+                        binder.ReturnType
+                    );
+
+                    var checkedConvert = Expression.Condition(
+                        Expression.TypeIs(resultMO.Expression, binder.ReturnType),
+                        convert,
+                        Expression.Throw(
+                            Expression.New(typeof(InvalidCastException).GetConstructor(new Type[]{typeof(string)}),
+                                Expression.Call(
+                                    typeof(string).GetMethod("Format", new Type[] {typeof(string), typeof(object)}),
+                                    Expression.Constant(convertFailed),
+                                    Expression.Condition(
+                                        Expression.Equal(resultMO.Expression, Expression.Constant(null)),
+                                        Expression.Constant("null"),
+                                        Expression.Call(
+                                            resultMO.Expression,
+                                            typeof(object).GetMethod("GetType")
+                                        ),
+                                        typeof(object)
+                                    )
+                                )
+                            ),
+                            binder.ReturnType
+                        ),
+                        binder.ReturnType
+                    );
+
+                    resultMO = new DynamicMetaObject(checkedConvert, resultMO.Restrictions);
                 }
 
                 if (fallbackInvoke != null) {
