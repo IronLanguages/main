@@ -321,8 +321,14 @@ namespace System.Linq.Expressions.Compiler {
                     ResolveVariable(v, _closureHoistedLocals).EmitLoad();
                     lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));
                 } else {
+#if CLR2
+                    // array[i] = new StrongBox<T>(default(T));
+                    lc.IL.EmitDefault(v.Type);
+                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));
+#else
                     // array[i] = new StrongBox<T>();
                     lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(Type.EmptyTypes));
+#endif
                 }
                 // if we want to cache this into a local, do it now
                 if (ShouldCache(v)) {

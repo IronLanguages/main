@@ -132,7 +132,7 @@ namespace System.Runtime.CompilerServices {
     /// Dynamic site type.
     /// </summary>
     /// <typeparam name="T">The delegate type.</typeparam>
-    public sealed partial class CallSite<T> : CallSite where T : class {
+    public partial class CallSite<T> : CallSite where T : class {
         /// <summary>
         /// The update delegate. Called when the dynamic site experiences cache miss.
         /// </summary>
