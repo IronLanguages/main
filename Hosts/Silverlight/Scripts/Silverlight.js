@@ -3,8 +3,8 @@
 //  Silverlight.js   			version 2.0.40814.0
 //
 //  This file is provided by Microsoft as a helper file for websites that
-//  incorporate Silverlight Objects. This file is provided under the Microsoft
-//  Public License available at 
+//  incorporate Silverlight Objects. This file is provided under the Apache License,
+//  Version 2.0 available at 
 //  http://code.msdn.microsoft.com/silverlightjs/Project/License.aspx.  
 //  You may not use or distribute this file or the code in this file except as 
 //  expressly permitted under that license.

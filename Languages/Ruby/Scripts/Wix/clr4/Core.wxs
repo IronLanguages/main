@@ -117,7 +117,7 @@ IronRuby core runtime components
       <Component Id="Comp_Core" DiskId="1" Guid="A05DFDF8-A83C-4d27-B5AC-299158736CE1">
         <File Id="File_Changelog.txt" Name="CHANGELOG.txt" />
         <File Id="File_License.cpl.txt" Name="LICENSE.CPL.txt" />
-        <File Id="File_License.mspl.txt" Name="LICENSE.MSPL.html" />
+        <File Id="File_License.apache.txt" Name="LICENSE.APACHE.html" />
         <File Id="File_License.ruby.txt" Name="LICENSE.Ruby.txt" />
         <File Id="File_Readme.txt" Name="README.txt" />
       </Component>

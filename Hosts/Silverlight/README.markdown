@@ -21,7 +21,7 @@ Package
   /Microsoft.Scripting.Silverlight: Source code for Microsoft.Scripting.Silverlight.dll
 
   /Public:    Tools for creating and running Silverlight applications, and the
-              Microsoft Public License
+              Apache License, Version 2.0
 
 Getting Started
 ---------------
