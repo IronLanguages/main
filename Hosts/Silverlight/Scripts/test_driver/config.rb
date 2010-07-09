@@ -36,34 +36,31 @@ class TestConfig
       @current.browsers
     end
 
-    def test_config(opts)
-      @current = TestConfig.new(Dir.pwd, opts)
+    def load(options)
+      @current = TestConfig.new(Dir.pwd, options[:tests])
+      @current.browsers = options[:browsers]
+      set_log_level(options[:log_level] || 'INFO')
+      @current
     end
-
-    def load(path)
-      path = File.join Dir.pwd, path
-      raise LoadError unless File.exist?(path)
-      self.instance_eval File.read(path), File.expand_path(path)
-    end
-    
+ 
     def build_config=(type)
       @build_config = type
     end
     
     def build_config
       unless @build_config
-        log.debug "Looking for build configurations"
+        debug "Looking for build configurations"
         BUILD_CONFIGS.each do |b|
           bc = get_build_config(b)
           if File.exist?(File.join(bc[1], "Microsoft.Scripting.Silverlight.dll"))
-            log.debug "FOUND \"#{b}\""
+            debug "FOUND \"#{b}\""
             @build_config, @build_path = bc
             break
           end
         end
       end
       unless @build_config
-        log.fatal "No Silverlight build found! Build any of the Silverlight build configurations in Dlr.sln and retry."
+        fatal "No Silverlight build found! Build any of the Silverlight build configurations in Dlr.sln and retry."
         exit(1)
       end
       [@build_config, @build_path]

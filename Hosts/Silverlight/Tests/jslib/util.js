@@ -1,9 +1,9 @@
 var BROWSERS = [
-  'Microsoft Internet Explorer',
-  'Mozilla Firefox',
-  'Google Chrome',
-  'Apple Safari',
-  'Opera'
+  'explorer',
+  'firefox',
+  'chrome',
+  'safari',
+  'opera'
 ]
 
 function reportTestResults(failures, total) {

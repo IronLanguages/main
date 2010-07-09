@@ -27,10 +27,14 @@ module Browsers
     include Browsers
 
     def self.get_browser(name)
-      browser_constant_name = (Browsers.constants - ["PROGRAM_FILES", "BrowserBase"]).select do |i| 
-        Browsers.const_get(i).new.name == name
+      browser_constant_name = NAMES.select do |i|
+        Browsers.const_get(i).new.short_name == name
       end.first
       Browsers.const_get(browser_constant_name) if browser_constant_name
+    end
+
+    def short_name
+      name.split.last.downcase
     end
 
     def initialize
@@ -39,12 +43,12 @@ module Browsers
     end
 
     def start(url)
-      log.info "Starting #{name}"
+      info "Starting #{name}"
       __start path, url_to_args(url)
     end
   
     def stop
-      log.info "Stopping #{name}"
+      info "Stopping #{name}"
       __stop
     end
     
@@ -54,6 +58,10 @@ module Browsers
     
     def url_to_args(url)
       "#{url}"
+    end
+    
+    def installed?
+      __exist? path
     end
     
     def name
@@ -71,7 +79,7 @@ module Browsers
     end
     
     def supported?
-      not mac?
+      installed? and not mac?
     end
   end
       
@@ -79,7 +87,7 @@ module Browsers
     def name
       "Apple Safari"
     end
-    
+
     def windows_path
       "#{PROGRAM_FILES}/Safari/Safari.exe"
     end
@@ -89,7 +97,7 @@ module Browsers
     end
     
     def supported?
-      true
+      installed?
     end
   end
 
@@ -107,7 +115,7 @@ module Browsers
     end
     
     def supported?
-      true
+      installed?
     end
   end
   
@@ -121,7 +129,7 @@ module Browsers
     end
     
     def supported?
-      not mac?
+      installed? and not mac?
     end
   end
   
@@ -139,7 +147,9 @@ module Browsers
     end
     
     def supported?
-      true
+      installed?
     end
   end
+
+  NAMES = constants - ["PROGRAM_FILES", "BrowserBase"]
 end

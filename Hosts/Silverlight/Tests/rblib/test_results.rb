@@ -6,14 +6,8 @@ require 'system-json'
 
 class TestResults
   URI = "http://localhost:9090/complete" unless defined? URI
-  BROWSERS = [
-    'Microsoft Internet Explorer',
-    'Mozilla Firefox',
-    'Google Chrome',
-    'Apple Safari',
-    'Opera'
-  ] unless defined? BROWSERS
-  
+  BROWSERS = %W(explorer firefox chrome safari) unless defined? BROWSERS
+
   class << self
     def broadcast(results, passed, output = '')
       results = to_hash(results)

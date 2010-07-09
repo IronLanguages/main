@@ -17,7 +17,14 @@ class TestVerifier < Sinatra::Base
   end
   
   def html2text(html)
-    Html2Text.html2text(HttpUtility.html_decode(HttpUtility.url_decode(html)))
+    text = Html2Text.html2text(HttpUtility.html_decode(HttpUtility.url_decode(html)))
+    text.split("\n\n").join("\n")
+  end
+  
+  def expected_num(url)
+    require 'uri'
+    u = URI.parse(url)
+    TestConfig.current.tests[u.path[1..-1]]
   end
   
   COMPLETE = lambda do
@@ -30,11 +37,16 @@ class TestVerifier < Sinatra::Base
     Thread.exclusive do
       TestVerifier.results ||= {}
       TestVerifier.results[tr['browser']] ||= {}
-      TestVerifier.results[tr['browser']][tr['url']] ||= []
-      TestVerifier.results[tr['browser']][tr['url']] << tr
+      num_expected_results = expected_num(tr['url'])
+      if num_expected_results.to_i > 0
+        TestVerifier.results[tr['browser']][tr['url']] ||= []
+        if TestVerifier.results[tr['browser']][tr['url']].size < num_expected_results
+          TestVerifier.results[tr['browser']][tr['url']] << tr
+        end
+      end
     end
     status 200
-    log.debug tr.inspect
+    debug tr.inspect
     nil
   end
 

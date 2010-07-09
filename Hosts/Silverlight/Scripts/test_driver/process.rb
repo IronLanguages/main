@@ -10,6 +10,10 @@ class ProcessWrapper
     @process
   end
 
+  def __exist?(path)
+    File.exist?(path)
+  end
+
   def __start(path, args = nil)
     __stop
     @process = ::System::Diagnostics::Process.new
@@ -24,7 +28,7 @@ class ProcessWrapper
     @process.start
     @process_id = @process.id
   end
-    
+
   def __stop
     if @process && !@process.has_exited
       begin
@@ -46,5 +50,9 @@ class ProcessWrapper
       `TASKKILL /PID #{@process_id} /T`
       @process_id = nil
     end
+  end
+  
+  def __wait_for_exit
+    @process.has_exited || @process.wait_for_exit(10_000)
   end
 end

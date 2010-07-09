@@ -8,18 +8,18 @@ class ChironHelper < ProcessWrapper
   end
 
   def start
-    log.info "Starting Chiron"
+    info "Starting Chiron"
     TestDriver::ITERATIONS.times do |i|
       start_helper
       sleep 5
       if running?
-        log.debug 'Chiron started'
+        debug 'Chiron started'
         return true
       elsif i == (ITERATIONS - 1)
-        log.fatal 'Tried starting on Chiron on many ports, aborting'
+        fatal 'Tried starting on Chiron on many ports, aborting'
         exit(1)
       else
-        log.debug 'Timeout: trying on another port'
+        debug 'Timeout: trying on another port'
         @uri.port += 1
       end
     end
@@ -41,23 +41,38 @@ class ChironHelper < ProcessWrapper
   end
 
   def stop
-    log.info "Stopping Chiron"
+    info "Stopping Chiron"
     if actual_process
       __stop
-      log.debug "Chiron stopped"
+      debug "Chiron stopped"
     else
-      log.warn "Chiron not running"
+      warn "Chiron not running"
     end
   end
 
   def start_helper
     build_config, path = TestConfig.build_config
-    log.debug "Starting web server with \"#{build_config}\" configuration "
+    debug "Starting web server with \"#{build_config}\" configuration "
     chiron = File.join(path, "Chiron.exe")
     chiron_args = "/d:#{TestConfig.current.tests_dir} /w:#{@uri.port}"
-    #f = File.open('./chiron.log', 'w')
-    #$p = Process.create 'app_name' => chiron, 'startup_info' => {'stdout' => f}
+    chiron_args << ' /n /s' unless log.debug?
     __start chiron, chiron_args
   end
   
+  def zip_directory(dir_path)
+    zip_path = "#{dir_path}.zip"
+    build_config, path = TestConfig.build_config
+    debug "Generating \"#{zip_path}\" from \"#{dir_path}\" directory."
+    chiron = File.join(path, "Chiron.exe")
+    chiron_args = "/d:#{to_dos_path dir_path} /x:#{to_dos_path zip_path} /s"
+    __start chiron, chiron_args
+    unless __wait_for_exit
+      raise "Failed to generate \"#{zip_path}\" from \"#{dir_path}\" directory."
+    end
+  end
+
+private
+  def to_dos_path str
+    str.gsub('/', '\\')
+  end
 end
