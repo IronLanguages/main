@@ -423,6 +423,7 @@ namespace IronRuby.Tests {
                 RubyHosting4,
                 RubyHosting5,
                 RubyHosting_Scopes1,
+                RubyHosting_Scopes2,
                 CrossRuntime1,
                 CrossRuntime2,
 

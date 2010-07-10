@@ -358,6 +358,24 @@ p scope.x + scope.y
 ");
         }
 
+        public void RubyHosting_Scopes2() {
+            var s = Engine.CreateScope();
+            Context.ObjectClass.SetConstant("S", s);
+            s.SetVariable("FooBar", 123);
+
+            TestOutput(@"
+p S.get_variable('FooBar')
+p S.get_variable('foo_bar')
+p S.GetVariable('FooBar')
+p S.GetVariable('foo_bar')
+", @"
+123
+123
+123
+123
+");
+        }
+
         public void HostingDefaultOptions1() {
             // this reports warnings that the default ErrorSink should ignore:
             Engine.Execute(@"
