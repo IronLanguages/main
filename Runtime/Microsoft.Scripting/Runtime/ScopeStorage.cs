@@ -28,7 +28,7 @@ using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
     /// <summary>
-    /// Provides optimized and cachable support for scope storage.
+    /// Provides optimized and cacheable support for scope storage.
     /// 
     /// This is the default object used for storing values in a scope.
     /// 

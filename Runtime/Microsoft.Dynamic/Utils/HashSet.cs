@@ -70,6 +70,20 @@ namespace Microsoft.Scripting.Utils {
             get { return false; }
         }
 
+        public bool IsSupersetOf(HashSet<T> other) {
+            if (Count < other.Count) {
+                return false;
+            }
+
+            foreach (T t in other._data.Keys) {
+                if (!_data.ContainsKey(t)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public bool Remove(T item) {
             return _data.Remove(item);
         }
