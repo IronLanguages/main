@@ -882,20 +882,42 @@ p C.methods(false)
         }
 
         public class DynamicObject2 : DynamicObject {
-            public override bool TryGetMember(GetMemberBinder binder, out object result) {
-                result = 123;
-                return binder.Name == "foo";
+            public override bool TryInvokeMember(InvokeMemberBinder binder, dynamic[] args, out dynamic result) {
+                if (binder.Name == "Foo") {
+                    result = 1;
+                    return true;
+                } else {
+                    result = null;
+                    return false;
+                }
+            }
+
+            public override bool TryGetMember(GetMemberBinder binder, out dynamic result) {
+                if (binder.Name == "Bar") {
+                    result = 2;
+                    return true;
+                } else {
+                    result = null;
+                    return false;
+                }
             }
         }
 
         public void Dlr_DynamicObject2() {
-            // TODO:
-//            Context.ObjectClass.SetConstant("C", new DynamicObject2());
-//            TestOutput(@"
-//p C.foo
-//", @"
-//123
-//");
+            Context.ObjectClass.SetConstant("C", new DynamicObject2());
+            TestOutput(@"
+p C.foo
+p C.Foo
+p C.bar
+p C.Bar
+C.xxx rescue puts $!.to_s[0, 22]
+", @"
+1
+1
+2
+2
+undefined method `xxx'
+");
         }
 
         public class DynamicObject3 : DynamicObject {
