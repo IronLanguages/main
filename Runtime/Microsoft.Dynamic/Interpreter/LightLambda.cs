@@ -193,6 +193,12 @@ namespace Microsoft.Scripting.Interpreter {
             //
             // We can't miss 0. The first thread that writes -1 must have read 0 and hence start compilation.
             if (unchecked(_compilationThreshold--) == 0) {
+#if SILVERLIGHT
+                if (PlatformAdaptationLayer.IsCompactFramework) {
+                    _compilationThreshold = Int32.MaxValue;
+                    return false;
+                }
+#endif
                 if (_interpreter.CompileSynchronously) {
                     _delegateCreator.Compile(null);
                     return TryGetCompiled();

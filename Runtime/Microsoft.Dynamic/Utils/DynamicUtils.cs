@@ -122,7 +122,7 @@ namespace Microsoft.Scripting.Utils {
                 );
             }
 
-            public T/*!*/ Bind(DynamicMetaObjectBinder/*!*/ binder, int countDown, object[] args) {
+            public T/*!*/ Bind(DynamicMetaObjectBinder/*!*/ binder, int compilationThreshold, object[] args) {
                 if (CachedBindingInfo<T>.LastInterpretedFailure != null && CachedBindingInfo<T>.LastInterpretedFailure.Binder == binder) {
                     // we failed the rule because we have a compiled target available, return the compiled target
                     Debug.Assert(CachedBindingInfo<T>.LastInterpretedFailure.CompiledTarget != null);
@@ -132,7 +132,7 @@ namespace Microsoft.Scripting.Utils {
                 }
 
                 // we haven't produced a rule yet....
-                var bindingInfo = new CachedBindingInfo<T>(binder, countDown);
+                var bindingInfo = new CachedBindingInfo<T>(binder, compilationThreshold);
 
                 var targetMO = DynamicMetaObject.Create(args[0], _parameters[1]); // 1 is skipping CallSite
                 DynamicMetaObject[] argsMO = new DynamicMetaObject[args.Length - 1];
@@ -237,11 +237,11 @@ namespace Microsoft.Scripting.Utils {
     /// </summary>
     abstract class CachedBindingInfo {
         public readonly DynamicMetaObjectBinder/*!*/ Binder;
-        public int CountDown;
+        public int CompilationThreshold;
 
-        public CachedBindingInfo(DynamicMetaObjectBinder binder, int countDown) {
+        public CachedBindingInfo(DynamicMetaObjectBinder binder, int compilationThreshold) {
             Binder = binder;
-            CountDown = countDown;
+            CompilationThreshold = compilationThreshold;
         }
 
         public abstract bool CheckCompiled();
@@ -254,8 +254,8 @@ namespace Microsoft.Scripting.Utils {
         [ThreadStatic]
         public static CachedBindingInfo<T> LastInterpretedFailure;
 
-        public CachedBindingInfo(DynamicMetaObjectBinder binder, int countDown)
-            : base(binder, countDown) {
+        public CachedBindingInfo(DynamicMetaObjectBinder binder, int compilationThreshold)
+            : base(binder, compilationThreshold) {
         }
 
         public override bool CheckCompiled() {

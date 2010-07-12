@@ -240,12 +240,17 @@ namespace Microsoft.Scripting.Runtime {
         public static bool InterpretedCallSiteTest(bool restrictionResult, object bindingInfo) {
             if (restrictionResult) {
                 CachedBindingInfo bindInfo = (CachedBindingInfo)bindingInfo;
-                if (bindInfo.CountDown >= 0) {
+                if (bindInfo.CompilationThreshold >= 0) {
                     // still interpreting...
-                    bindInfo.CountDown--;
+                    bindInfo.CompilationThreshold--;
                     return true;
                 }
-
+#if SILVERLIGHT
+                if (PlatformAdaptationLayer.IsCompactFramework) {
+                    bindInfo.CompilationThreshold = Int32.MaxValue;
+                    return true;
+                }
+#endif
                 return bindInfo.CheckCompiled();
             }
             return false;

@@ -91,7 +91,7 @@ namespace Microsoft.Scripting {
             _showClrExceptions = GetOption(options, "ShowClrExceptions", false);
             _perfStats = GetOption(options, "PerfStats", false);
             _noAdaptiveCompilation = GetOption(options, "NoAdaptiveCompilation", false);
-            _compilationThreshold = GetOption(options, "CompilationThreshold", -1);
+            _compilationThreshold = GetOption(options, "CompilationThreshold", PlatformAdaptationLayer.IsCompactFramework ? Int32.MaxValue : -1);
             _searchPaths = GetSearchPathsOption(options) ?? new ReadOnlyCollection<string>(new string[0]);
         }
 
