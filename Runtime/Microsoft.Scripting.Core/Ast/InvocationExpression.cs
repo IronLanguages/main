@@ -191,9 +191,7 @@ namespace System.Linq.Expressions {
         /// <param name="expression">The expression to be invoked.</param>
         internal static MethodInfo GetInvokeMethod(Expression expression) {
             Type delegateType = expression.Type;
-            if (delegateType == typeof(Delegate)) {
-                throw Error.ExpressionTypeNotInvocable(delegateType);
-            } else if (!typeof(Delegate).IsAssignableFrom(expression.Type)) {
+            if (!expression.Type.IsSubclassOf(typeof(MulticastDelegate))) {
                 Type exprType = TypeUtils.FindGenericType(typeof(Expression<>), expression.Type);
                 if (exprType == null) {
                     throw Error.ExpressionTypeNotInvocable(expression.Type);

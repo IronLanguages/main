@@ -99,7 +99,7 @@ namespace System.Runtime.CompilerServices {
         public static CallSite Create(Type delegateType, CallSiteBinder binder) {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             if (_SiteCtors == null) {
                 // It's okay to just set this, worst case we're just throwing away some data
@@ -191,6 +191,7 @@ namespace System.Runtime.CompilerServices {
         /// <returns>The new instance of dynamic call site.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static CallSite<T> Create(CallSiteBinder binder) {
+            if (!typeof(T).IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
             return new CallSite<T>(binder);
         }
 

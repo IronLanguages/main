@@ -454,7 +454,7 @@ namespace System.Linq.Expressions {
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments) {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
 
@@ -478,9 +478,9 @@ namespace System.Linq.Expressions {
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0) {
-            ContractUtils.RequiresNotNull(delegateType, "delegatType");
+            ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
             var parameters = method.GetParametersCached();
@@ -507,9 +507,9 @@ namespace System.Linq.Expressions {
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1) {
-            ContractUtils.RequiresNotNull(delegateType, "delegatType");
+            ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
             var parameters = method.GetParametersCached();
@@ -539,9 +539,9 @@ namespace System.Linq.Expressions {
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2) {
-            ContractUtils.RequiresNotNull(delegateType, "delegatType");
+            ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
             var parameters = method.GetParametersCached();
@@ -574,9 +574,9 @@ namespace System.Linq.Expressions {
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3) {
-            ContractUtils.RequiresNotNull(delegateType, "delegatType");
+            ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
             var parameters = method.GetParametersCached();

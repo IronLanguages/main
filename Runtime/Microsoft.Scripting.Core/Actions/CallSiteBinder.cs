@@ -66,7 +66,7 @@ namespace System.Runtime.CompilerServices {
 
             private LambdaSignature() {
                 Type target = typeof(T);
-                if (!typeof(Delegate).IsAssignableFrom(target)) {
+                if (!target.IsSubclassOf(typeof(MulticastDelegate))) {
                     throw Error.TypeParameterIsNotDelegate(target);
                 }
 

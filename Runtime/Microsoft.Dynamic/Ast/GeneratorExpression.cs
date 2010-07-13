@@ -203,7 +203,7 @@ namespace Microsoft.Scripting.Ast {
             IEnumerable<ParameterExpression> parameters)
         {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
-            ContractUtils.Requires(typeof(Delegate).IsAssignableFrom(delegateType) && !delegateType.IsAbstract, "Lambda type parameter must be derived from System.Delegate");
+            ContractUtils.Requires(delegateType.IsSubclassOf(typeof(MulticastDelegate)), "Lambda type parameter must be derived from System.Delegate");
             Type generatorType = delegateType.GetMethod("Invoke").GetReturnType();
 
             var paramList = parameters.ToReadOnly();

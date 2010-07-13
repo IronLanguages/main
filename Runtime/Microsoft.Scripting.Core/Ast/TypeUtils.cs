@@ -280,7 +280,7 @@ namespace System.Dynamic.Utils {
         private static bool IsDelegate(Type t)
         {
             Debug.Assert(t != null);
-            return t.IsSubclassOf(typeof(System.Delegate));
+            return t.IsSubclassOf(typeof(System.MulticastDelegate));
         }
 
         internal static bool IsLegalExplicitVariantDelegateConversion(Type source, Type dest)
