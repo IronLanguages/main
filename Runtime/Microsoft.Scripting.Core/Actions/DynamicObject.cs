@@ -22,6 +22,7 @@ using System.Linq.Expressions;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
     /// <summary>
@@ -243,7 +244,7 @@ namespace System.Dynamic {
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
                 if (IsOverridden("TrySetMember")) {
-                    return CallMethodReturnLast("TrySetMember", binder, GetArgs(value), (e) => binder.FallbackSetMember(this, value, e));
+                    return CallMethodReturnLast("TrySetMember", binder, NoArgs, value.Expression, (e) => binder.FallbackSetMember(this, value, e));
                 }
 
                 return base.BindSetMember(binder, value);
@@ -286,7 +287,7 @@ namespace System.Dynamic {
                 var call = BuildCallMethodWithResult(
                     "TryInvokeMember",
                     binder,
-                    GetArgArray(args),
+                    DynamicMetaObject.GetExpressions(args),
                     BuildCallMethodWithResult(
                         "TryGetMember",
                         new GetBinderAdapter(binder),
@@ -303,7 +304,7 @@ namespace System.Dynamic {
 
             public override DynamicMetaObject BindCreateInstance(CreateInstanceBinder binder, DynamicMetaObject[] args) {
                 if (IsOverridden("TryCreateInstance")) {
-                    return CallMethodWithResult("TryCreateInstance", binder, GetArgArray(args), (e) => binder.FallbackCreateInstance(this, args, e));
+                    return CallMethodWithResult("TryCreateInstance", binder, DynamicMetaObject.GetExpressions(args), (e) => binder.FallbackCreateInstance(this, args, e));
                 }
 
                 return base.BindCreateInstance(binder, args);
@@ -311,7 +312,7 @@ namespace System.Dynamic {
 
             public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args) {
                 if (IsOverridden("TryInvoke")) {
-                    return CallMethodWithResult("TryInvoke", binder, GetArgArray(args), (e) => binder.FallbackInvoke(this, args, e));
+                    return CallMethodWithResult("TryInvoke", binder, DynamicMetaObject.GetExpressions(args), (e) => binder.FallbackInvoke(this, args, e));
                 }
 
                 return base.BindInvoke(binder, args);
@@ -319,7 +320,7 @@ namespace System.Dynamic {
 
             public override DynamicMetaObject BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg) {
                 if (IsOverridden("TryBinaryOperation")) {
-                    return CallMethodWithResult("TryBinaryOperation", binder, GetArgs(arg), (e) => binder.FallbackBinaryOperation(this, arg, e));
+                    return CallMethodWithResult("TryBinaryOperation", binder, DynamicMetaObject.GetExpressions(new DynamicMetaObject[] {arg}), (e) => binder.FallbackBinaryOperation(this, arg, e));
                 }
 
                 return base.BindBinaryOperation(binder, arg);
@@ -335,7 +336,7 @@ namespace System.Dynamic {
 
             public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {
                 if (IsOverridden("TryGetIndex")) {
-                    return CallMethodWithResult("TryGetIndex", binder, GetArgArray(indexes), (e) => binder.FallbackGetIndex(this, indexes, e));
+                    return CallMethodWithResult("TryGetIndex", binder, DynamicMetaObject.GetExpressions(indexes), (e) => binder.FallbackGetIndex(this, indexes, e));
                 }
 
                 return base.BindGetIndex(binder, indexes);
@@ -343,7 +344,7 @@ namespace System.Dynamic {
 
             public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
                 if (IsOverridden("TrySetIndex")) {
-                    return CallMethodReturnLast("TrySetIndex", binder, GetArgArray(indexes, value), (e) => binder.FallbackSetIndex(this, indexes, value, e));
+                    return CallMethodReturnLast("TrySetIndex", binder, DynamicMetaObject.GetExpressions(indexes), value.Expression, (e) => binder.FallbackSetIndex(this, indexes, value, e));
                 }
 
                 return base.BindSetIndex(binder, indexes, value);
@@ -351,7 +352,7 @@ namespace System.Dynamic {
 
             public override DynamicMetaObject BindDeleteIndex(DeleteIndexBinder binder, DynamicMetaObject[] indexes) {
                 if (IsOverridden("TryDeleteIndex")) {
-                    return CallMethodNoResult("TryDeleteIndex", binder, GetArgArray(indexes), (e) => binder.FallbackDeleteIndex(this, indexes, e));
+                    return CallMethodNoResult("TryDeleteIndex", binder, DynamicMetaObject.GetExpressions(indexes), (e) => binder.FallbackDeleteIndex(this, indexes, e));
                 }
 
                 return base.BindDeleteIndex(binder, indexes);
@@ -361,25 +362,61 @@ namespace System.Dynamic {
 
             private readonly static Expression[] NoArgs = new Expression[0];
 
-            private static Expression[] GetArgs(params DynamicMetaObject[] args) {
-                Expression[] paramArgs = DynamicMetaObject.GetExpressions(args);
+            private static Expression[] GetConvertedArgs(params Expression[] args) {
+                ReadOnlyCollectionBuilder<Expression> paramArgs = new ReadOnlyCollectionBuilder<Expression>(args.Length);
 
-                for (int i = 0; i < paramArgs.Length; i++) {
-                    paramArgs[i] = Expression.Convert(args[i].Expression, typeof(object));
+                for (int i = 0; i < args.Length; i++) {
+                    paramArgs.Add(Expression.Convert(args[i], typeof(object)));
                 }
 
-                return paramArgs;
+                return paramArgs.ToArray();
             }
 
-            private static Expression[] GetArgArray(DynamicMetaObject[] args) {
-                return new[] { Expression.NewArrayInit(typeof(object), GetArgs(args)) };
+            /// <summary>
+            /// Helper method for generating expressions that assign byRef call
+            /// parameters back to their original variables
+            /// </summary>
+            private static Expression ReferenceArgAssign(Expression callArgs, Expression[] args) {
+                ReadOnlyCollectionBuilder<Expression> block = null;
+
+                for (int i = 0; i < args.Length; i++) {
+                    ContractUtils.Requires(args[i] is ParameterExpression);
+                    if (((ParameterExpression)args[i]).IsByRef) {
+                        if (block == null)
+                            block = new ReadOnlyCollectionBuilder<Expression>();
+
+                        block.Add(
+                            Expression.Assign(
+                                args[i],
+                                Expression.Convert(
+                                    Expression.ArrayIndex(
+                                        callArgs,
+                                        Expression.Constant(i)
+                                    ),
+                                    args[i].Type
+                                )
+                            )
+                        );
+                    }
+                }
+
+                if (block != null)
+                    return Expression.Block(block);
+                else
+                    return Expression.Empty();
             }
 
-            private static Expression[] GetArgArray(DynamicMetaObject[] args, DynamicMetaObject value) {
-                return new Expression[] {
-                    Expression.NewArrayInit(typeof(object), GetArgs(args)),
-                    Expression.Convert(value.Expression, typeof(object))
-                };
+            /// <summary>
+            /// Helper method for generating arguments for calling methods
+            /// on DynamicObject.  parameters is either a list of ParameterExpressions
+            /// to be passed to the method as an object[], or NoArgs to signify that
+            /// the target method takes no object[] parameter.
+            /// </summary>
+            private static Expression[] BuildCallArgs(DynamicMetaObjectBinder binder, Expression[] parameters, Expression arg0, Expression arg1) {
+                if (!object.ReferenceEquals(parameters, NoArgs))
+                    return arg1 != null ? new Expression[] { Constant(binder), arg0, arg1 } : new Expression[] { Constant(binder), arg0 };
+                else
+                    return arg1 != null ? new Expression[] { Constant(binder), arg1 } : new Expression[] { Constant(binder) };
             }
 
             private static ConstantExpression Constant(DynamicMetaObjectBinder binder) {
@@ -422,6 +459,14 @@ namespace System.Dynamic {
                 return fallback(callDynamic);
             }
 
+            /// <summary>
+            /// Helper method for generating a MetaObject which calls a
+            /// specific method on DynamicObject that returns a result.
+            /// 
+            /// args is either an array of arguments to be passed
+            /// to the method as an object[] or NoArgs to signify that
+            /// the target method takes no parameters.
+            /// </summary>
             private DynamicMetaObject BuildCallMethodWithResult(string methodName, DynamicMetaObjectBinder binder, Expression[] args, DynamicMetaObject fallbackResult, Fallback fallbackInvoke) {
                 if (!IsOverridden(methodName)) {
                     return fallbackResult;
@@ -435,11 +480,8 @@ namespace System.Dynamic {
                 // }
                 //
                 var result = Expression.Parameter(typeof(object), null);
-
-                var callArgs = new Expression[args.Length + 2];
-                Array.Copy(args, 0, callArgs, 1, args.Length);
-                callArgs[0] = Constant(binder);
-                callArgs[callArgs.Length - 1] = result;
+                ParameterExpression callArgs = methodName != "TryBinaryOperation" ? Expression.Parameter(typeof(object[]), null) : Expression.Parameter(typeof(object), null);
+                var callArgsValue = GetConvertedArgs(args);
 
                 var resultMO = new DynamicMetaObject(result, BindingRestrictions.Empty);
 
@@ -492,14 +534,23 @@ namespace System.Dynamic {
 
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
-                        new[] { result },
+                        new[] { result, callArgs },
+                        methodName != "TryBinaryOperation" ? Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)) : Expression.Assign(callArgs, callArgsValue[0]),
                         Expression.Condition(
                             Expression.Call(
                                 GetLimitedSelf(),
                                 typeof(DynamicObject).GetMethod(methodName),
-                                callArgs
+                                BuildCallArgs(
+                                    binder,
+                                    args,
+                                    callArgs,
+                                    result
+                                )
                             ),
-                            resultMO.Expression,
+                            Expression.Block(
+                                methodName != "TryBinaryOperation" ? ReferenceArgAssign(callArgs, args) : Expression.Empty(),
+                                resultMO.Expression
+                            ),
                             fallbackResult.Expression,
                             binder.ReturnType
                         )
@@ -514,8 +565,12 @@ namespace System.Dynamic {
             /// Helper method for generating a MetaObject which calls a
             /// specific method on Dynamic, but uses one of the arguments for
             /// the result.
+            /// 
+            /// args is either an array of arguments to be passed
+            /// to the method as an object[] or NoArgs to signify that
+            /// the target method takes no parameters.
             /// </summary>
-            private DynamicMetaObject CallMethodReturnLast(string methodName, DynamicMetaObjectBinder binder, Expression[] args, Fallback fallback) {
+            private DynamicMetaObject CallMethodReturnLast(string methodName, DynamicMetaObjectBinder binder, Expression[] args, Expression value, Fallback fallback) {
                 //
                 // First, call fallback to do default binding
                 // This produces either an error or a call to a .NET member
@@ -531,19 +586,28 @@ namespace System.Dynamic {
                 //
 
                 var result = Expression.Parameter(typeof(object), null);
-                var callArgs = args.AddFirst(Constant(binder));
-                callArgs[args.Length] = Expression.Assign(result, callArgs[args.Length]);
+                var callArgs = Expression.Parameter(typeof(object[]), null);
+                var callArgsValue = GetConvertedArgs(args);
 
                 var callDynamic = new DynamicMetaObject(
                     Expression.Block(
-                        new[] { result },
+                        new[] { result, callArgs },
+                        Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
                         Expression.Condition(
                             Expression.Call(
                                 GetLimitedSelf(),
                                 typeof(DynamicObject).GetMethod(methodName),
-                                callArgs
+                                BuildCallArgs(
+                                    binder,
+                                    args,
+                                    callArgs,
+                                    Expression.Assign(result, Expression.Convert(value, typeof(object)))
+                                )
                             ),
-                            result,
+                            Expression.Block(
+                                ReferenceArgAssign(callArgs, args),
+                                result
+                            ),
                             fallbackResult.Expression,
                             typeof(object)
                         )
@@ -567,6 +631,10 @@ namespace System.Dynamic {
             /// Helper method for generating a MetaObject which calls a
             /// specific method on Dynamic, but uses one of the arguments for
             /// the result.
+            /// 
+            /// args is either an array of arguments to be passed
+            /// to the method as an object[] or NoArgs to signify that
+            /// the target method takes no parameters.
             /// </summary>
             private DynamicMetaObject CallMethodNoResult(string methodName, DynamicMetaObjectBinder binder, Expression[] args, Fallback fallback) {
                 //
@@ -574,21 +642,35 @@ namespace System.Dynamic {
                 // This produces either an error or a call to a .NET member
                 //
                 DynamicMetaObject fallbackResult = fallback(null);
+                var callArgs = Expression.Parameter(typeof(object[]), null);
+                var callArgsValue = GetConvertedArgs(args);
 
                 //
                 // Build a new expression like:
                 //   if (TryDeleteMember(payload)) { } else { fallbackResult }
                 //
                 var callDynamic = new DynamicMetaObject(
-                    Expression.Condition(
-                        Expression.Call(
-                            GetLimitedSelf(),
-                            typeof(DynamicObject).GetMethod(methodName),
-                            args.AddFirst(Constant(binder))
-                        ),
-                        Expression.Empty(),
-                        fallbackResult.Expression,
-                        typeof(void)
+                    Expression.Block(
+                        new[] { callArgs },
+                        Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
+                        Expression.Condition(
+                            Expression.Call(
+                                GetLimitedSelf(),
+                                typeof(DynamicObject).GetMethod(methodName),
+                                BuildCallArgs(
+                                    binder,
+                                    args,
+                                    callArgs,
+                                    null
+                                )
+                            ),
+                            Expression.Block(
+                                ReferenceArgAssign(callArgs, args),
+                                Expression.Empty()
+                            ),
+                            fallbackResult.Expression,
+                            typeof(void)
+                        )
                     ),
                     GetRestrictions().Merge(fallbackResult.Restrictions)
                 );
