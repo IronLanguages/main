@@ -2974,7 +2974,7 @@ module RbReadline
             elsif ((@rl_byte_oriented) && old[ostart+ols] == ?\0 && lendiff > 0)
                # At the end of a line the characters do not have to
                # be "inserted".  They can just be placed on the screen.
-               # However, this screws up the rest of this block, which
+               # However, this ###### up the rest of this block, which
                # assumes you've done the insert because you can.
                _rl_output_some_chars(new,nfd, lendiff)
                @_rl_last_c_pos += col_lendiff
@@ -3010,7 +3010,7 @@ module RbReadline
          if (@_rl_term_dc && (2 * col_temp) >= -col_lendiff)
 
             # If all we're doing is erasing the invisible characters in the
-            #   prompt string, don't bother.  It screws up the assumptions
+            #   prompt string, don't bother.  It ###### up the assumptions
             #   about what's on the screen.
             if (@_rl_horizontal_scroll_mode && @_rl_last_c_pos == 0 &&
                -lendiff == @visible_wrap_offset)

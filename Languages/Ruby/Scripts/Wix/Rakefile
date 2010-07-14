@@ -7,7 +7,7 @@ require 'wix_rake'
 CLEAN.include("Feature_*.wxs","*.wixobj","*.wixpdb", "*.log")
 CLOBBER.include("*.msi")
 ROOT_DIR = ENV['ROOT_DIR'] || "C:\\ironruby"
-WIX_BIN = ENV['WIX_BIN'] || "#{ENV['MERLIN_ROOT']}\\External\\Wix3"
+WIX_BIN = ENV['WIX_BIN'] || "#{ENV['DLR_ROOT']}\\External\\Wix3"
 WIXOBJ = FileList["Core.wixobj", "IronRuby.wixobj", "Feature_Lib.wixobj", "Feature_Samples.wixobj", "Feature_Silverlight.wixobj"]
 
 WixRake::Task.wix = WIX_BIN
