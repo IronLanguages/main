@@ -34,7 +34,7 @@ namespace IronRuby.Builtins {
     // That's a common operation String methods do.
     [Serializable]
     [DebuggerDisplay("{GetDebugValue()}", Type = "{GetDebugType()}")]
-    public partial class MutableString : IEquatable<MutableString>, IComparable<MutableString>, IRubyObjectState, IDuplicable {
+    public partial class MutableString : IEquatable<MutableString>, IComparable<MutableString>, IComparable, IRubyObjectState, IDuplicable {
         private Content/*!*/ _content;
         private RubyEncoding/*!*/ _encoding;
         
@@ -787,6 +787,10 @@ namespace IronRuby.Builtins {
             }
 
             return _content.OrdinalCompareTo(other._content) == 0;
+        }
+
+        public int CompareTo(object obj) {
+            return CompareTo(obj as MutableString);
         }
 
         public int CompareTo(MutableString other) {
