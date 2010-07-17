@@ -1,0 +1,60 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\fx\Microsoft.Fx.Settings.targets" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Microsoft.Scripting.Metadata</RootNamespace>
+    <AssemblyName>Microsoft.Scripting.Metadata</AssemblyName>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <BinPlaceSymbols>false</BinPlaceSymbols> 
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <GenerateAssemblyAttribute>false</GenerateAssemblyAttribute>
+    <OutputPath>$(SuiteBinPath)\dlr</OutputPath>
+    <AssemblyOriginatorKeyFile>..\..\Internal\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
+    <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
+    <DelaySign>true</DelaySign>
+    <DefineConstants>CLR4;CCI;$(SignedSym)</DefineConstants>
+    <BaseAddress>857735168</BaseAddress>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Core" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <!-- Begin Generated Project Items By GenerateSystemCoreCsproj.py -->
+    <ItemGroup>
+      <!--                    -->
+      <!--                    -->
+      <!--                    -->
+      <Compile Include="ClrStubs.cs" />
+      <Compile Include="MemoryBlock.cs" />
+      <Compile Include="MemoryMapping.V2.cs" />
+      <Compile Include="MemoryReader.cs" />
+      <Compile Include="MetadataExtensions.cs" />
+      <Compile Include="MetadataImport.cs" />
+      <Compile Include="MetadataName.cs" />
+      <Compile Include="MetadataServices.cs" />
+      <Compile Include="MetadataTableEnumerator.CCI.cs" />
+      <Compile Include="MetadataTableImplementations.cs" />
+      <Compile Include="MetadataTables.CCI.cs" />
+      <Compile Include="MetadataTables.cs" />
+      <Compile Include="PEFileStructures.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <!--                              -->
+      <!--          Properties          -->
+      <!--                              -->
+      <Compile Include="Properties\AssemblyInfo.cs" />
+    </ItemGroup>
+  <!-- End Generated Project Items By GenerateSystemCoreCsproj.py -->
+  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\External\Build\Microsoft.VersionNumber.targets" />
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\fx\Microsoft.Fx.targets" />
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);PRODUCTION_BUILD</DefineConstants>
+    <PublishMetaAssemblyPath>$(InternalPath)\sdk\ref\WinFX\$(WINFX_REFS_VERSION)</PublishMetaAssemblyPath>
+  </PropertyGroup>
+  <Target Name="AfterCompile" DependsOnTargets="Verify" Condition="'$(SpecSharpVerify)' == 'true'" />
+</Project>

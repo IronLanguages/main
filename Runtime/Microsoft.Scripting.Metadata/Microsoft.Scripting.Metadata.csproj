@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft.Scripting.Metadata</RootNamespace>
+    <AssemblyName>Microsoft.Scripting.Metadata</AssemblyName>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\Microsoft.Scripting.Metadata.xml</DocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>618</WarningsNotAsErrors>
+    <NoWarn>1591</NoWarn>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)..\Internal\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
+    <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
+    <DelaySign>true</DelaySign>
+    <BaseAddress>859832320</BaseAddress>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
+    <NoConfig>true</NoConfig>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <CodeAnalysisRuleSet>Microsoft.Scripting.Metadata.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\FxCop</OutputPath>
+    <DefineConstants>TRACE;CLR4;CCI;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\v2Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;CLR2;CCI;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\v2Release</OutputPath>
+    <DefineConstants>TRACE;CLR2;CCI;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;CLR4;CCI;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
+    <DefineConstants>TRACE;CLR4;CCI;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ClrStubs.cs" />
+    <Compile Include="MetadataExtensions.cs" />
+    <Compile Include="MemoryBlock.cs" />
+    <Compile Include="MemoryMapping.V2.cs" />
+    <Compile Include="MemoryReader.cs" />
+    <Compile Include="MetadataImport.cs" />
+    <Compile Include="MetadataName.cs" />
+    <Compile Include="MetadataTableEnumerator.CCI.cs" />
+    <Compile Include="MetadataTableImplementations.cs" />
+    <Compile Include="MetadataTables.CCI.cs" />
+    <Compile Include="MetadataTables.cs" />
+    <Compile Include="PEFileStructures.cs" />
+    <Compile Include="MetadataServices.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Microsoft.Scripting.Metadata.ruleset" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
+  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\External\Build\Microsoft.VersionNumber.targets" />
+</Project>

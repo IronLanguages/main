@@ -1,6 +1,6 @@
 if RUBY_VERSION == '1.9.1' and RUBY_ENGINE == "ironruby"
   # The 1.9 libraries are currently not included in ir.exe.config
-  $LOAD_PATH.unshift(File.expand_path('External.LCA_RESTRICTED/Languages/Ruby/ruby-1.9.1p129/lib/ruby/1.9.1', ENV['DLR_ROOT']))
+  $LOAD_PATH.unshift(File.expand_path('External.LCA_RESTRICTED/Languages/Ruby/ruby19/lib/ruby/1.9.1', ENV['DLR_ROOT']))
   # We want IronRuby's version of thread.rb to get precedence
   $LOAD_PATH.unshift(File.expand_path('Languages/Ruby/Libs', ENV['DLR_ROOT']))
   # Rational is a core builtin type in 1.9

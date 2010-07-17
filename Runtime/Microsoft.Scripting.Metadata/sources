@@ -1,0 +1,4 @@
+TARGETTYPE=NOTARGET 
+CLR_TARGETTYPE=DLL 
+MSBuildProjectFile=Microsoft.Scripting.Metadata.Build.csproj 
+SOURCES= 

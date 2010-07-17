@@ -21,7 +21,7 @@ if DEFINED INTERNALDEV (
   REM -- IronRuby environment variables --
   set RUBY18_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin
   set RUBY18_EXE=%RUBY18_BIN%\ruby.exe
-  set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe
+  set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe
 
   REM -- IronPython environment variables
   set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib
