@@ -1,0 +1,26 @@
+IronPython in Silverlight
+
+
+== Generating an application
+
+Silverlight\script\sl python MyApp
+
+Will create "MyApp" in the current directory. 
+
+
+== Run an app
+
+Silverlight\script\server /b:MyApp\index.html
+
+This will launch a browser pointed at the application.
+
+
+== Package
+
+  Silverlight\bin              IronPython binaries for Silverlight
+  Silverlight\script           "server" and "sl" script
+
+
+== License
+
+Read the License.* files at the root of this release.

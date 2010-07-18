@@ -1,0 +1,2821 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252" />
+<title>IronPython Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../Doc/IronPython.css" />
+<style type="text/css">
+    p.AntiVerify { display : none; }
+    p.Code-Background { color : gray; }
+    p.NoVerify-Background { color : gray; }
+    p.Code-Highlighted { color : gray; }
+    p.NoVerify-Highlighted { color : gray; }
+    p.CodeSample { color:blue; }
+    p.DOSCommand { color:green; }
+    p.ExceptionExample { color:green; }
+    p.ExceptionOutput {display : none; }
+    p.HiddenCode { display : none; }
+    p.HiddenOutput {display : none; }
+    p.LooseVerify { display : none; }
+    p.Stepnonumbering { text-indent: 2em; }
+    p.TypedExample { color : green; }
+    p.UserExample { color : green; }
+    p.UserCode { color:green; }
+</style>
+
+</head>
+
+<body lang="EN-US">
+
+<div class="Section1">
+    <p class="Title1">IronPython Tutorial</p>
+    <p class="Title2">A tour of Python on .NET</p>
+    <p class="Title2">&nbsp;</p>
+    <hr />
+    <p class="CopyrightText">Information in this document is subject to change without
+    notice. The example companies, organizations, products, people, and events depicted
+    herein are fictitious. No association with any real company, organization, product,
+    person or event is intended or should be inferred. Complying with all applicable
+    copyright laws is the responsibility of the user. Without limiting the rights
+    under copyright, no part of this document may be reproduced, stored in or introduced
+    into a retrieval system, or transmitted in any form or by any means (electronic,
+    mechanical, photocopying, recording, or otherwise), or for any purpose, without
+    the express written permission of Microsoft Corporation.</p>
+    <p class="CopyrightText">&nbsp;</p>
+    <p class="CopyrightText">Microsoft may have patents, patent applications, trademarked,
+    copyrights, or other intellectual property rights covering subject matter in
+    this document. Except as expressly provided in any written license agreement
+    from Microsoft, the furnishing of this document does not give you any license
+    to these patents, trademarks, copyrights, or other intellectual property.</p>
+    <p class="CopyrightText">&nbsp;</p>
+    <p class="CopyrightText">© Microsoft Corporation. All rights reserved.</p>
+    <p class="CopyrightText">&nbsp;</p>
+    <p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, Active
+    Directory, BizTalk, SQL Server, SharePoint, Outlook, PowerPoint, FrontPage,
+    Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual SourceSafe, Visual
+    C#, Visual J#,&nbsp; and Visual Studio are either registered trademarks or trademarks
+    of Microsoft Corporation in the U.S.A. and/or other countries.</p>
+    <p class="CopyrightText">&nbsp;</p>
+    <p class="CopyrightText">Other product and company names herein may be the trademarks of their respective owners.</p>
+    <hr />
+    <p class="ContentsHeading">Contents</p>
+    <p class="Toc1"><a href="#Intro">Introduction</a></p>
+    <p class="Toc1">Tutorial 1: <a href="#T1">Basic IronPython</a></p>
+    <p class="Toc2">Exercise 1: <a href="#T1.1">The IronPython interactive console</a></p>
+    <p class="Toc3">Task 1: <a href="#T1.1.1">IronPython console</a></p>
+    <p class="Toc3">Task 2: <a href="#T1.1.2">Built-in modules and interactive exploration</a></p>
+    <p class="Toc3">Task 3: <a href="#T1.1.3">External Python modules</a></p>
+    <p class="Toc2">Exercise 2: <a href="#T1.2">Using the standard .NET libraries from IronPython</a></p>
+    <p class="Toc3">Task 1: <a href="#T1.2.1">Basic .NET library use</a></p>
+    <p class="Toc3">Task 2: <a href="#T1.2.2">Working with .NET classes</a></p>
+    <p class="Toc3">Task 3: <a href="#T1.2.3">Generics</a></p>
+    <p class="Toc2">Exercise 3: <a href="#T1.3">Loading additional .NET libraries</a></p>
+    <p class="Toc3">Task 1: <a href="#T1.3.1">Using System.Xml - AddReference</a></p>
+    <p class="Toc3">Task 2: <a href="#T1.3.2">Mapack - Loading the .NET libraries - AddReferenceToFile</a></p>
+    <p class="Toc2">Exercise 4: <a href="#T1.4">Obtaining and Using the Python Standard Library</a></p>
+    <p class="Toc3">Task 1: <a href="#T1.4.1">Configuring IronPython to use the Python standard library</a></p>
+    <p class="Toc1">Tutorial 2: <a href="#T2">Advanced IronPython</a></p>
+    <p class="Toc2">Exercise 1: <a href="#T2.1">Events and Delegates</a></p>
+    <p class="Toc3">Task 1: <a href="#T2.1.1">File System Watcher</a></p>
+    <p class="Toc3">Task 2: <a href="#T2.1.2">Improving the event handler</a></p>
+    <p class="Toc3">Task 3: <a href="#T2.1.3">Defining events in Python</a></p>
+    <p class="Toc2">Exercise 2: <a href="#T2.2">Windows Forms</a></p>
+    <p class="Toc3">Task 1: <a href="#T2.2.1">Simple Windows Forms application</a></p>
+    <p class="Toc2">Exercise 3: <a href="#T2.3">Windows Presentation Foundation (Avalon)</a></p>
+    <p class="Toc3">Task 1: <a href="#T2.3.1">Simple Avalon Application</a></p>
+    <p class="Toc3">Task 2: <a href="#T2.3.2">Avalon calculator</a></p>
+    <p class="Toc1">Tutorial 3: <a href="#T3">IronPython and COM interoperability</a></p>
+    <p class="Toc2">Exercise 1: <a href="#T3.1">Use Word for Spell Checking</a></p>
+    <p class="Toc3">Task 1: <a href="#T3.1.1">Accessing Word and Checking
+    Spelling</a></p>
+    <p class="Toc3">Task 2: <a href="#T3.1.2">Use Windows Form Dialog to Correct
+    Spelling</a></p>
+    <p class="Toc1">Tutorial 4: <a href="#T4">Debugging IronPython programs</a></p>
+    <p class="Toc2">Exercise 1: <a href="#T4.1">Debugging IronPython programs</a></p>
+    <p class="Toc3">Task 1: <a href="#T4.1.1">Debugging IronPython programs using Microsoft CLR Debugger</a></p>
+    <p class="Toc1">Tutorial 5: <a href="#T5">Extending IronPython</a></p>
+    <p class="Toc2">Exercise 1: <a href="#T5.1">Extending using C#</a></p>
+    <p class="Toc3">Task 1: <a href="#T5.1.1">Implementing a simple class - constructor and ToString</a></p>
+    <p class="Toc3">Task 2: <a href="#T5.1.2">Making the object enumerable</a></p>
+    <p class="Toc3">Task 3: <a href="#T5.1.3">Adding a custom operator</a></p>
+    <p class="Toc3">Task 4: <a href="#T5.1.4">Adding a delegate</a></p>
+    <p class="Toc2">Exercise 2: <a href="#T5.2">Extending using Visual Basic.NET</a></p>
+    <p class="Toc3">Task 1: <a href="#T5.2.1">Implementing a simple class - constructor and ToString</a></p>
+    <p class="Toc3">Task 2: <a href="#T5.2.2">Making the object enumerable</a></p>
+    <p class="Toc3">Task 3: <a href="#T5.2.3">Adding a custom operator</a></p>
+    <p class="Toc3">Task 4: <a href="#T5.2.4">Adding a delegate</a></p>
+    <p class="Toc1">Tutorial 6: <a href="#T7">Using Visual Studio to Edit .py
+    Files and Debug Them</a></p>
+    <p class="Toc2">Exercise 1: <a href="#T6.1">Setting up Visual Studio for
+    IronPython Debugging</a></p>
+    <p class="Toc3">Task 1: <a href="#T6.1.1">Setting up Visual Studio for
+    IronPython Debugging</a></p>
+</div>
+<div class="Section2">
+    <h1><a name="Intro">Introduction</a></h1>
+    <p class="Normal">IronPython is the .NET implementation of the Python programming language
+        (<a href="http://www.python.org">www.python.org</a>).&nbsp; It's a dynamically typed language with support
+        for many programming paradigms such as imperative, object-oriented, and functional programming, and also allows
+        you to seamlessly use existing .NET code.</p>
+    <p class="Normal">&nbsp;</p>
+    <p class="Normal">The goal of this tutorial is to quickly familiarize you with the
+    IronPython console and to show you how to make use of the extensive .NET libraries
+    available.&nbsp; This tutorial also shows you how to get started in more specialized
+    areas such as interoperating with <a href="http://www.microsoft.com/com/default.mspx">COM</a>
+    and extending IronPython with C# and/or Visual Basic.&nbsp; While we do explain some
+    finer points of Python's syntax, this tutorial is NOT meant to be an introduction to
+    Python itself, and if you're looking for that, we recommend you start with the tutorial at
+    <a href="http://docs.python.org/tut/tut.html">www.python.org</a>
+    or the often recommended book
+    <a href="http://oreilly.com/catalog/9780596513986/"><i>Learning Python</i></a>
+    by Mark Lutz and David Ascher. In addition,
+    <a href="http://www.ironpythoninaction.com/"><i>IronPython in Action</i></a>
+    by Michael Foord and Christian Muirhead is a definitive guide that includes
+    a wealth of IronPython-specific information.<br><br>
+    Some of the exercises in this tutorial require specific software installations.&nbsp;
+    The prerequisites to successfully complete the whole tutorial are:</p>
+    <ul type="disc">
+        <li class="Normal">Microsoft .NET Framework Version 4.0 
+        <ul type="circle">
+            <li class="Normal">Required to run IronPython.</li>
+            <li class="Normal">Download from
+            <a href="http://www.microsoft.com/downloads/details.aspx?FamilyID=9cfb2d51-5ff4-4491-b0e5-b386f32c0992&amp;displaylang=en">here</a>.</li>
+        </ul>
+        </li>
+    </ul>
+    <ul>
+        <li class="Normal">Visual Studio 2010
+		<ul type="circle">
+			<li class="Normal">Very useful for the C#/VB extending tutorials.</li>
+			<li class="Normal">Separate .NET 4.0 installation is not required if 
+			Visual Studio 2010 is installed.</li>
+			<li class="Normal">Download from
+            <a href="http://www.microsoft.com/visualstudio">here</a>.</li>
+		</ul>
+		</li>
+		<li class="Normal"><a name="Mapack">Mapack</a> (example assembly found
+        on the internet)<ul>
+			<li>Required for the turorial &quot;<a href="#T1">Basic IronPython</a>&quot;
+            and exercise &quot;<a href="#T1.3">Loading additional .NET Libraries</a>&quot;.</li>
+			<li>Download Mapack from
+            <a href="http://www.lutzroeder.com/dotnet/">here</a> (direct link
+            to the Mapack.zip download is
+            <a href="http://www.lutzroeder.com/dotnet/Download.aspx?File=Mapack">here</a>).</li>
+			<li>Extract Mapack.dll from the zip file directly into the Tutorial
+            directory.</li>
+		</ul>
+		</li>
+    </ul>
+    <p class="Normal">&nbsp;</p>
+    <p class="Body">This tutorial assumes that the IronPython distribution was uncompressed
+    into the directory C:\IronPython.&nbsp; Please note that your individual setup may
+    vary.</p>
+    <p class="Body">This tutorial also assumes that you will launch the
+    IronPython console (c:\ironpython\ipy.exe) from the tutorial directory.&nbsp;
+    When the tutorials direct you to start the IronPython console from the tutorial directory,
+    you should change to the tutorial directory (&gt;cd c:\ironpython\tutorial)
+    and launch the console with the tutorial as your working directory (&gt;..\ipy.exe).</p>
+    <a name="VS2005Note"></a>
+    <p class="Body">&nbsp;</p>
+    <h1><a name="T1">Tutorial 1: Basic IronPython</a></h1>
+    <p class="Body">The emphasis of this tutorial is on the basic interaction with
+    the IronPython interpreter and using the interactive environment to explore
+    the .NET libraries.</p>
+    <p class="Body">Estimated time to complete this tutorial: <b>30 minutes</b></p>
+    <p class="Body">The objective of this tutorial is to launch the IronPython interpreter,
+    explore the environment of the interactive console and use IronPython to interact
+    with .NET libraries.</p>
+    <p class="Body">The exercises in this tutorial are:</p>
+    <ul>
+        <li>
+        <p class="ExerciseList"><a href="#T1.1">The IronPython interactive console</a></p>
+        </li>
+        <li>
+        <p class="ExerciseList"><a href="#T1.2">Using the standard .NET libraries
+        from IronPython</a></p>
+        </li>
+        <li>
+        <p class="ExerciseList"><a href="#T1.3">Loading additional .NET libraries</a></p>
+        </li>
+    </ul>
+    <h2><a name="T1.1">Exercise 1: The IronPython interactive console</a></h2>
+    <p class="Body">In this exercise, you will start the IronPython interactive
+    interpreter and perform simple tasks to become acquainted with the IronPython
+    environment.</p>
+    <p class="Normal">If you are familiar with using the Python interactive console,
+    the import statement and exploring the Python interactive environment using
+    dir() function and __doc__ attribute, you can <a href="#T1.2">skip this exercise</a>.</p>
+    <h3><a name="T1.1.1">Task 1: IronPython console</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        by changing to the tutorial directory (&gt;cd c:\ironpython\tutorial) and
+        launching the console c:\ironpython\ipy.exe executable (&gt;..\ipy.exe).&nbsp;
+        This is how you should always launch the console for the tutorials, but
+        from now on, we'll just direct you to &quot;start the IronPython console from
+        the tutorial directory&quot;.</p>
+        </li>
+    </ol>
+    <p class="Code-Highlighted">IronPython 2.7 (2.7.10920.0) on .NET 4.0.30319.1<br />
+    Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; _</p>
+    <ol start="2">
+        <li>
+        <p class="Step">IronPython's console interfaces with the user in a standard
+        Read-Eval-Print Loop, or REPL. This means that the console repeatedly reads
+        user input, evaluates the statement, prints the result (if any), and awaits
+        more input. Try it out by executing the simple statements listed below.
+        <b>Note:</b> The input line starting with 'for' requires an extra press of
+        the enter key afterwards as a signal to the interpreter that there are no
+        more statements in the 'for' loop.</p>
+        </li>
+    </ol>
+    <p class="TypedExample">2+2</p>
+    <p class="TypedExample">print &quot;Hello World!&quot;</p>
+    <p class="TypedExample">for i in range(3): print i</p>
+    <p class="TypedExample">x = 10</p>
+    <p class="TypedExample">print x</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">After this step, the console window will contain
+    the following text:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; 2+2</p>
+    <p class="Code-Background">4</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; print &quot;Hello World!&quot;</p>
+    <p class="Code-Background">Hello World!</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; for i in range(3): print i</p>
+    <p class="Code-Highlighted">...</p>
+    <p class="Code-Background">0<br />
+    1<br />
+    2</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; x = 10<br />
+    &gt;&gt;&gt; print x</p>
+    <p class="Code-Background"></p>
+    <p class="Code-Background">10</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; </p>
+    <ol start="3">
+        <li>
+        <p class="Step">The IronPython console supports multi-line statements, often
+        used in function or class definitions.&nbsp; IronPython prompts for additional lines in a
+        multi-line statement using:</p>
+        </li>
+    </ol>
+    <p class="Code-Highlighted">...</p>
+    <p class="Code-Background"></p>
+    <p class="Body">&nbsp;</p>
+    <p class="Stepnonumbering">One of the more unique aspects of Python is its sensitivity to whitespace at the
+        beginning of a line. Unlike C, C# or Java, where blocks of code are grouped by curly brackets "{...}",
+        blocks of code in Python are grouped based on their level of indentation.&nbsp; Every new block of code
+        must be indented one more level than the previous block of code.&nbsp; Blocks of code are used for many
+        constructs, including function and class definitions, the bodies of loops, 'if'...'elif'...'else' clauses,
+        and 'try'...'except'...'finally' blocks. </p>
+    <p class="Stepnonumbering">Define the 'add' function (note, you
+    need to enter spaces before the 'return' statement):</p>
+    <p class="TypedExample">def add(a, b):<br>
+&nbsp;&nbsp;&nbsp; return a + b</p>
+    <p class="Stepnonumbering">To complete the function definition, press Enter
+    once more at this point</p>
+    <p class="TypedExample">add(3, 2)</p>
+    <p class="TypedExample">add('Iron', 'Python')</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">After this step, the console contents will be:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; def add(a, b):<br />
+    ...&nbsp;&nbsp;&nbsp;&nbsp; return a + b<br />
+    ...<br />
+    &gt;&gt;&gt; add(3, 2)</p>
+    <p class="Code-Background">5</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; add(&quot;Iron&quot;, &quot;Python&quot;)</p>
+    <p class="Code-Background">&#39;IronPython&#39;</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; </p>
+    <p class="Step">&nbsp;</p>
+    <ol start="4">
+        <li>
+        <p class="Step">To exit the IronPython interactive console, type Ctrl+Z and Enter (alternatively,
+        press F6 followed by Enter).</p>
+        </li>
+    </ol>
+    <p class="TypedExample">^Z</p>
+    <h3><a name="T1.1.2">Task 2: Built-in modules and interactive exploration</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">Using the built-in function dir(), list the contents of
+        the IronPython environment:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">dir()</p>
+    <p class="Stepnonumbering">The output in the console window will be:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; dir()</p>
+    <p class="Code-Background">['__builtins__', '__doc__', '__name__']<br />
+</p>
+    <ol start="3">
+        <li>
+        <p class="Step">IronPython comes with several built-in modules including 'sys', which is
+        one of the most frequently used.&nbsp; Load the 'sys' module using the 'import' keyword:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import sys</p>
+    <ol start="4">
+        <li>
+        <p class="Step">The Python 'import' statement is similar to the 'using' statement
+        of C# or 'Imports' statement of Visual Basic. The important difference is
+        that the C# and VB statements bring the names from the imported namespace
+        into the global namespace to be accessed directly. Python’s import doesn’t
+        do that automatically, unless it is used in conjunction with the 'from'
+        keyword (more on this later). To access the names or attributes in an imported
+        module, prefix them with the module's name:</p>
+        </li>
+    </ol>
+    <p class="UserExample">sys.version</p>
+    <ol start="5">
+        <li>
+        <p class="Step">Use the dir() function to explore the environment:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">dir()</p>
+    <p class="Stepnonumbering" style="margin-left: 0.5in">The environment (global namespace) has changed, now
+    it contains the 'sys' module:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; dir()</p>
+    <p class="Code-Background">['__builtins__', '__doc__', '__name__', 'sys']</p>
+    <ol start="6">
+        <li>
+        <p class="Step">Use the dir() function to explore the contents of the 'sys'
+        module:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">dir(sys)</p>
+    <p class="HiddenOutput">['__doc__', '__name__', '__package__', '__stderr__', '__stdin__', '__stdout__', 'api_version', 'argv', 'builtin_module_names', 'byteorder', 'call_tracing', 'callstats', 'copyright', 'displayhook', 'dllhandle', 'dont_write_bytecode', 'exc_clear', 'exc_info', 'exc_traceback', 'exc_type', 'exc_value', 'excepthook', 'exec_prefix', 'executable', 'exit', 'flags', 'float_info', 'getcheckinterval', 'getdefaultencoding', 'getfilesystemencoding', 'getrecursionlimit', 'getsizeof', 'gettrace', 'getwindowsversion', 'hexversion', 'maxint', 'maxsize', 'maxunicode', 'meta_path', 'modules', 'path', 'path_hooks', 'path_importer_cache', 'platform', 'prefix', 'ps1', 'ps2', 'py3kwarning', 'setcheckinterval', 'setdefaultencoding', 'setrecursionlimit', 'settrace', 'stderr', 'stdin', 'stdout', 'subversion', 'version', 'version_info', 'warnoptions', 'winver']</p>
+    <ol start="7">
+        <li>
+        <p class="Step">Print the values of some of the 'sys' module attributes:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">sys.path</p>
+    <p class="LooseVerify">['.', '%DLR_ROOT%\\Test', '%DLR_ROOT%\\Languages\\IronPython\\Public\\Tutorial', '%DLR_ROOT%\\Languages\\IronPython\\Tests', '%DLR_ROOT%\\Test\\IronPythonTutorial', '%DLR_ROOT%\\bin\\Debug\\Lib', '%DLR_ROOT%\\bin\\Debug\\DLLs', '%DLR_ROOT%\\bin\\Debug']</p>
+    <p class="TypedExample">sys.executable</p>
+    <p class="LooseVerify">'%DLR_ROOT%\\bin\\Debug\\ipy.exe'</p>
+    <h3><a name="T1.1.3">Task 3: External Python modules</a></h3>
+    <p class="Normal">This task uses the module 'first.py' located in the Tutorial
+    folder.</p>
+    <ol>
+        <li>
+        <p class="Step">Import the 'first.py' module located in the Tutorial directory:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import first</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">Because you launched ipy.exe from there, the Tutorial directory appears
+    in sys.path, telling IronPython to look there in its search for 'first.py'.</p>
+    <ol start="2">
+        <li>
+        <p class="Step">Explore the 'first' module using dir():</p>
+        </li>
+    </ol>
+    <p class="TypedExample">dir(first)</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; dir(first)</p>
+    <p class="Code-Background">['__builtins__', '__doc__', '__file__', '__name__', '__package__', 'add', 'factorial', 'hi']</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Print the documentation for the 'add' and 'factorial' functions,
+        using __doc__ attribute:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">first.add.__doc__</p>
+    <p class="TypedExample">first.factorial.__doc__</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">We will use the __doc__ attribute later to explore .NET
+    methods and their parameter types.</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; first.add.__doc__</p>
+    <p class="Code-Background">&#39;add(a, b) -&gt; returns a + b&#39;</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; first.factorial.__doc__</p>
+    <p class="Code-Background">&#39;factorial(n) -&gt; returns factorial of n&#39;</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Call the methods in the 'first' module and print the contents
+        of the 'hi' attribute</p>
+        </li>
+    </ol>
+    <p class="TypedExample">first.add(1,2)</p>
+    <p class="TypedExample">first.factorial(5)</p>
+    <p class="TypedExample">first.hi</p>
+    <p class="Stepnonumbering">The expected output is:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; first.add(1,2)</p>
+    <p class="Code-Background">3</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; first.factorial(5)</p>
+    <p class="Code-Background">120</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; first.hi</p>
+    <p class="Code-Background">&#39;Hello from IronPython!&#39;</p>
+    <ol start="5">
+        <li>
+        <p class="Step">Exit the IronPython Interactive console (Ctrl+Z or F6 followed
+        by Enter)</p>
+        </li>
+    </ol>
+    <h2><a name="T1.2">Exercise 2: Using the standard .NET libraries from IronPython</a></h2>
+    <p class="Body">Much of IronPython's power arises from its ability to seamlessly
+    access the wealth of .NET libraries. This exercise will demonstrate how the
+    .NET libraries can be used from IronPython.</p>
+    <p class="Body">In this exercise, you will use the standard .NET libraries from
+    IronPython. </p>
+    <h3><a name="T1.2.1">Task 1: Basic .NET library use</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">Using the 'import' keyword, import the .NET System namespace:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import System</p>
+    <p class="Code-Background"></p>
+    <ol start="3">
+        <li>
+        <p class="Step">Explore the System.Environment class and access some of
+        its properties:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">dir(System.Environment)</p>
+    <p class="UserCode">System.Environment.OSVersion</p>
+    <p class="TypedExample">System.Environment.CommandLine</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">The expected output of these commands is as follows
+    (with ellipsis for convenience):</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; dir(System.Environment)</p>
+    <p class="HiddenOutput">['CommandLine','CurrentDirectory','Equals','Exit','ExitCode','ExpandEnvironmentVariables','FailFast','GetCommandLineArgs','GetEnvironmentVariable','GetEnvironmentVariables','GetFolderPath','GetHashCode','GetLogicalDrives','GetType','HasShutdownStarted','Is64BitOperatingSystem','Is64BitProcess','MachineName','MemberwiseClone','NewLine','OSVersion','ProcessorCount','ReferenceEquals','SetEnvironmentVariable','SpecialFolder','SpecialFolderOption','StackTrace','SystemDirectory','SystemPageSize','TickCount','ToString','UserDomainName','UserInteractive','UserName','Version','WorkingSet','__all__','__class__','__delattr__','__doc__','__format__','__getattribute__','__hash__','__init__','__new__','__reduce__','__reduce_ex__','__repr__','__setattr__','__sizeof__','__str__','__subclasshook__']</p>
+    <p class="NoVerify-Background">['CommandLine', 'CurrentDirectory', ... '__subclasshook__']</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; System.Environment.OSVersion</p>
+    <p class="NoVerify-Background">&lt;System.OperatingSystem object at 0x000000000000002B [Microsoft Windows NT 6.0.6000.0]</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; System.Environment.CommandLine</p>
+    <p class="LooseVerify">'"%DLR_ROOT%\\Bin\\Debug\\ipy.exe"'</p>
+    <p class="NoVerify-Background">'C:\\IronPython\\ipy.exe'</p>
+    <ol start="4">
+        <li>
+        <p class="Step">The import statement can also be used to import contents of
+        a class or module into the global namespace.&nbsp; Use the &quot;from ... import ...&quot;
+        flavor of the import statement to do this, then use dir() to explore the contents of the
+        global namespace.</p>
+        </li>
+    </ol>
+    <p class="TypedExample">from System.Math import *</p>
+    <p class="UserCode">dir()</p>
+    <p class="HiddenCode">set1 = set(dir())
+set2 = set(dir(object))
+list(set1-set2)
+    </p>
+	<p class="HiddenOutput">
+
+
+	['Tan','Sin','Ceiling','Sinh','Atan','Tanh','__name__','Pow','Cos','Cosh','Abs','Round','Atan2','BigMul','Acos','DivRem','Truncate','E','Max','__builtins__','Log','Asin','Floor','PI','Log10','System','Sign','Exp','Min','IEEERemainder','Sqrt']</p>
+    <p class="Stepnonumbering">Now you can call Math methods without having to specify
+    the namespace and class name prefix:</p>
+    <p class="TypedExample">Sin(PI/2)</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">The expected output is:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; from System.Math import *</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; dir()</p>
+    <p class="NoVerify-Background">
+    ['Abs', 'Acos', 'Asin', 'Atan', 'Atan2', 'BigMul', 'Ceiling', 'Cos', 'Cosh', 'DivRem', 'E', 'Equals', 'Exp', 'Floor', 'GetHashCode', 'GetType', 'IEEERemainder', 'Log', 'Log10', 'Max', 'Min', 'PI', 'Pow', 'Round', 'Sign', 'Sin', 'Sinh', 'Sqrt', 'System', 'Tan', 'Tanh', 'ToString', 'Truncate', '__builtins__', '__doc__', '__name__']</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; Sin(PI/2)</p>
+    <p class="Code-Background">1.0</p>
+    <h3><a name="T1.2.2">Task 2: Working with .NET classes</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Import the contents of the &quot;System.Collections&quot; namespace
+        into the global namespace:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">from System.Collections import *</p>
+    <p class="Code-Background"></p>
+    <ol start="2">
+        <li>
+        <p class="Step">Create instance of the Hashtable class and explore the instance
+        using dir():</p>
+        </li>
+    </ol>
+    <p class="TypedExample">h = Hashtable()</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">dir(h)</p>
+    <p class="HiddenCode">set1 = set(dir(h))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+    
+    ['Keys','GetObjectData','Count','Contains','__getitem__','KeyEquals','hcp','Clone','SyncRoot','__setitem__','Remove','Clear','comparer','__len__','ContainsValue','Add','__add__','EqualityComparer','GetHash','IsFixedSize','ContainsKey','CopyTo','GetEnumerator','Synchronized','__iter__','IsReadOnly','__contains__','Item','Values','IsSynchronized','OnDeserialization']</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Insert&nbsp;a few elements into the hash table:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">h['a'] = 'IronPython'</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">h['b'] = 'Tutorial'</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">IronPython supports the C#-style syntax for accessing
+    the hash table elements.&nbsp; The same syntax applies to any indexable object (Arrays,
+    Array lists etc):</p>
+    <p class="TypedExample">h['a']</p>
+    <p class="Stepnonumbering" style="page-break-after:avoid">&nbsp;</p>
+    <p class="Stepnonumbering" style="page-break-after:avoid">The output of this
+    step will be:</p>
+    <p class="NoVerify-Highlighted" style="page-break-after:avoid">&gt;&gt;&gt; h['a'] = 'IronPython'<br />
+    &gt;&gt;&gt; h['b'] = 'Tutorial'</p>
+    <p class="Code-Highlighted" style="page-break-after:avoid">&gt;&gt;&gt; h['a']</p>
+    <p class="Code-Background">'IronPython'</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Enumerate the contents of the hash table using the &quot;for
+        ... in ...&quot; statement. The hash table elements are instances of &quot;DictionaryEntry&quot;
+        class. Print the &quot;Key&quot; and &quot;Value&quot; properties of each entry:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">for e in h: print e.Key, ':', e.Value</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">The expected output in the console is as follows. Note that
+    the input line starting with 'for' requires an extra return or enter key press because
+    the interpreter prompts for more statements in the loop's body.</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; for e in h: print e.Key, ':', e.Value<br>
+    ...</p>
+    <p class="Code-Background">a : IronPython<br />
+    b : Tutorial</p>
+    <ol start="5">
+        <li>
+        <p class="Step">You can initialize the collection classes using instances
+        of the built-in list or tuple data types as arguments.&nbsp; You can
+        create a Python list by specifying the list of elements in square brackets: [1,2,3].&nbsp;
+        You create tuples by specifying elements in the parentheses: (1,2,3).</p>
+        </li>
+    </ol>
+    <p class="TypedExample">l = ArrayList([1,2,3])</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">for i in l: print i</p>
+    <p class="TypedExample">s = Stack((1,2,3))</p>
+    <p class="TypedExample">while s.Count: s.Pop()</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">The expected output is:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; l = ArrayList([1,2,3])<br />
+    &gt;&gt;&gt; for i in l: print i<br>
+    ...</p>
+    <p class="Code-Background">1<br />
+    2<br />
+    3</p>
+    <p class="Code-Background"></p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; s = Stack((1,2,3))<br />
+    &gt;&gt;&gt; while s.Count: s.Pop()<br>...</p>
+    <p class="Code-Background">3<br />
+    2<br />
+    1</p>
+    <h3><a name="T1.2.3">Task 3: Generics</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Import the Generic collections from the System.Collections.Generic
+        namespace:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">from System.Collections.Generic import *</p>
+    <p class="Code-Background"></p>
+    <ol start="2">
+        <li>
+        <p class="Step">To instantiate a generic class, the generic type arguments
+        must be specified.&nbsp; IronPython uses the following syntax to specify the type
+        arguments: generic_type[type_argument, ...].&nbsp; Create an instance of generic
+        list of string:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">l = List[str]()</p>
+        <p class="Code-Background"></p>
+    <ol start="3">
+        <li>
+        <p class="Step">Add string values into the list. Since we created a list of
+        string, adding strings is possible:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">l.Add(&quot;Hello&quot;)</p>
+        <p class="Code-Background"></p>
+    <p class="TypedExample">l.Add(&quot;Hi&quot;)</p>
+        <p class="Code-Background"></p>
+    <ol start="4">
+        <li>
+        <p class="Step">Try adding objects of types other than string:</p>
+        </li>
+    </ol>
+    <p class="ExceptionExample">l.Add(3)</p>
+    <p class="Code-Background"></p>
+    <p class="ExceptionExample">l.Add(2.5)</p>
+    <p class="Code-Background"></p>
+    <p class="ExceptionExample">l.Add([1,2,3])</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">Obviously, adding non-strings will result in a type error:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; l.Add(3)</p>
+    <p class="NoVerify-Background">Traceback (most recent call last):<br />
+&nbsp;&nbsp;File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;<br />
+TypeError: expected str, got int<br /></p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; l.Add(2.5)</p>
+    <p class="NoVerify-Background">Traceback (most recent call last):<br />
+&nbsp;&nbsp;File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;<br />
+TypeError: expected str, got float<br /></p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; l.Add([1,2,3])</p>
+    <p class="NoVerify-Background">Traceback (most recent call last):<br />
+&nbsp;&nbsp;File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;<br />
+TypeError: expected str, got list<br /></p>
+    <ol start="5">
+        <li>
+        <p class="Step">Enumerate the generic collection:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">for i in l: print i</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">The output will be:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; for i in l: print i<br>...</p>
+    <p class="Code-Background">Hello<br />
+Hi</p>
+    <p class="ExceptionOutput">TypeError: expected str, got int
+TypeError: expected str, got float
+TypeError: expected str, got list</p>
+    <ol start="6">
+        <li>
+        <p class="Step">Exit the IronPython Interactive console (Ctrl+Z or F6 followed
+        by Enter)</p>
+        </li>
+    </ol>
+    <h2><a name="T1.3">Exercise 3: Loading additional .NET libraries</a></h2>
+    <p class="Body">IronPython can directly import only some of the .NET libraries
+    - the most commonly used ones.&nbsp; To use additional .NET libraries, they must be
+    explicitly referenced.&nbsp; IronPython maintains a list of all referenced
+    assemblies (see clr.References in Task 1).&nbsp; To add a reference to a .NET assembly,
+    use the functions available in the built-in 'clr' module:</p>
+    <ul>
+        <li>
+        <p class="Body"><b>clr.AddReference</b> adds a reference to the .NET assembly
+        either by passing the .NET assembly object directly, or specifying the file
+        name or the assembly name (full or partial). This function is provided primarily
+        for the kind of interactive exploration we see in this Tutorial. We recommend
+        using the following functions in your code modules, since they provide more control
+        over which assembly gets loaded.</p>
+        </li>
+        <li>
+        <p class="Body"><b>clr.AddReferenceToFile</b> adds a reference to the assembly
+        specified by its file name. This function will load the assembly from the
+        file regardless of the assembly version. As a result, it doesn't guarantee
+        that the correct assembly version is being loaded. To guarantee that correct
+        assembly version is being loaded, use clr.AddReferenceByName. Moreover,
+        AddReferenceToFile requires that the assembly be located in a
+        directory listed in sys.path.</p>
+        </li>
+        <li>
+        <p class="Body"><b>clr.AddReferenceToFileAndPath</b> provides similar
+        functionality to AddReferenceToFile. The difference is that it accepts
+        absolute path and before loading the assembly, AddReferenceToFileAndPath
+        adds the file path into sys.path.</p>
+        </li>
+        <li>
+        <p class="Body"><b>clr.AddReferenceByName</b> adds a reference to the assembly
+        specified by its full assembly name, for example: &quot;System.Xml, Version=2.0.0.0,
+        Culture=neutral, PublicKeyToken=b77a5c561934e089&quot;.</p>
+        </li>
+        <li>
+        <p class="Body"><b>clr.AddReferenceByPartialName</b> adds reference to the
+        assembly by specifying a partial assembly name. This function cannot guarantee
+        that the correct version of the assembly is being loaded. Use clr.AddReferenceByName
+        to reference a specific version of the assembly.</p>
+        </li>
+    </ul>
+    <h3><a name="T1.3.1">Task 1: Using System.Xml - AddReference</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">To import System.Xml, the reference to the assembly containing
+        the Xml components must be first added to IronPython.&nbsp; Reference System.Xml
+        using the following code&nbsp; (you can enter &quot;clr.References&quot; before
+        and after the call to &quot;clr.AddReference&quot; to see it change if you want):</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">clr.AddReference('System.Xml')</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">from System.Xml import *</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">dir()</p>
+    <p class="HiddenOutput">['ConformanceLevel','DtdProcessing','EntityHandling','Formatting','IHasXmlNode','IXmlLineInfo','IXmlNamespaceResolver','NameTable','NamespaceHandling','NewLineHandling','ReadState','Resolvers','Schema','Serialization','ValidationType','WhitespaceHandling','WriteState','XPath','XmlAttribute','XmlAttributeCollection','XmlCDataSection','XmlCharacterData','XmlComment','XmlConvert','XmlDateTimeSerializationMode','XmlDeclaration','XmlDocument','XmlDocumentFragment','XmlDocumentType','XmlElement','XmlEntity','XmlEntityReference','XmlException','XmlImplementation','XmlLinkedNode','XmlNameTable','XmlNamedNodeMap','XmlNamespaceManager','XmlNamespaceScope','XmlNode','XmlNodeChangedAction','XmlNodeChangedEventArgs','XmlNodeChangedEventHandler','XmlNodeList','XmlNodeOrder','XmlNodeReader','XmlNodeType','XmlNotation','XmlOutputMethod','XmlParserContext','XmlProcessingInstruction','XmlQualifiedName','XmlReader','XmlReaderSettings','XmlResolver','XmlSecureResolver','XmlSignificantWhitespace','XmlSpace','XmlText','XmlTextReader','XmlTextWriter','XmlTokenizedType','XmlUrlResolver','XmlValidatingReader','XmlWhitespace','XmlWriter','XmlWriterSettings','Xsl','__builtins__','__doc__','__name__','clr']</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Note that the clr.AddReference function accepts either System.Reflection.Assembly object or string
+        as a parameter. The string parameter can
+        be a full assembly name, a partial assembly name, or a file name. For more control
+        over the assembly references, use the appropriate functions described
+        above. </p>
+        <p class="Step">For example, consider the following alternatives for the statement clr.AddReference('System.Xml') above:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">clr.AddReferenceByName('System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089')</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">clr.AddReferenceByPartialName('System.Xml')</p>
+    <p class="Code-Background"></p>
+    <ol start="4">
+        <li>
+        <p class="Step">Load the XML file 'load.xml' into the XmlDocument. The
+        xml file contains sample savegame data from the IronPython sample 'Puzzle' .
+        For direct viewing, the load.xml file is located in the Tutorial folder</p>
+        </li>
+    </ol>
+    <p class="TypedExample">d = XmlDocument()</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">d.Load('load.xml')</p>
+    <p class="Code-Background"></p>
+    <ol start="5">
+        <li>
+        <p class="Step">We can now query the document. Query for all the saved games using the query below:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">n = d.SelectNodes('//Puzzle/SavedGames/Game/@caption')</p>
+    <p class="TypedExample">for e in n: print e.Value</p>
+    <p class="Stepnonumbering">&nbsp;</p>
+    <p class="Stepnonumbering">The output in the console window will be:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; n = d.SelectNodes('//Puzzle/SavedGames/Game/@caption')<br />
+    &gt;&gt;&gt; for e in n: print e.Value<br>...</p>
+    <p class="Code-Background">
+    Seattle (default game)<br />
+    New York<br />
+    World<br />
+    North America<br />
+    </p>
+    <ol start="6">
+        <li>
+        <p class="Step">(Optional) Import the 'xmlutil.py' module located in the
+        Tutorial directory and use the function provided in the module to walk the
+        contents of the Xml document:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import xmlutil</p>
+    <p class="TypedExample">for e in xmlutil.Walk(d): print e.Name, e.Value</p>
+    <p class="HiddenOutput">#document None
+#comment  *************************************************************************
+ *
+ * Copyright (c) Microsoft Corporation.&nbsp;
+ *
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A&nbsp;
+ * copy of the license can be found in the License.html file at the root of this distribution. If&nbsp;
+ * you cannot locate the  Apache License, Version 2.0, please send an email to&nbsp;
+ * ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound&nbsp;
+ * by the terms of the Apache License, Version 2.0.
+ *
+ * You must not remove this notice, or any other, from this software.
+ *
+ *
+ * ***************************************************************************&nbsp;
+Puzzle None
+SavedGames None
+Game None
+caption Seattle (default game)
+type a
+y 714
+x 327
+level 11
+dimension 3
+Game None
+caption New York
+type r
+y 1538
+x 1205
+level 12
+dimension 3
+Game None
+caption World
+type h
+y 0
+x 0
+level 2
+dimension 4
+Game None
+caption North America
+type a
+x 2
+y 5
+level 4
+dimension 3
+TopLeftPreviewTile None
+x -3
+y -3
+dimension 3
+level 5
+Cache None
+allow true</p>
+    <p class="Stepnonumbering">The Walk function is a generator (a Python function
+    that contains a &quot;yield&quot; statement). As the Walk function executes, it returns
+    (yields) the XML nodes one by one to the caller, who is iterating over the generator.
+    The source for the Walk function is:</p>
+    <p class="CodeSample">def Walk(xml):</br>
+    &nbsp;&nbsp;&nbsp; yield xml</br><br>
+    &nbsp;&nbsp;&nbsp; if hasattr(xml, &quot;Attributes&quot;):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; attrs = xml.Attributes<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if attrs:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for attr in attrs:</br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    yield attr</br><br>
+    &nbsp;&nbsp;&nbsp; for child in xml:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for c in Walk(child):</br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    yield c</p>
+    <ol start="7">
+        <li>
+        <p class="Step">Exit the IronPython Interactive console (Ctrl+Z or F6 followed
+        by Enter)</p>
+        </li>
+    </ol>
+    <h3><a name="T1.3.2">Task 2: Mapack - Loading the .NET libraries - AddReferenceToFile</a></h3>
+    <p class="Normal">This task requires the Mapack.dll library for linear algebra computations.&nbsp;
+    The library is not part of the IronPython distribution. See <a href="#Mapack">prerequisites</a>
+    for download details.</p>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">Use the clr.AddReferenceToFile function to load the Matrix
+        library &quot;Mapack.dll&quot;:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">clr.AddReferenceToFile(&quot;Mapack.dll&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">from Mapack import *</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">dir()</p>
+    <p class="Stepnonumbering">The expected output will be:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;Mapack.dll&quot;)<br />
+    &gt;&gt;&gt; from Mapack import *<br />
+    &gt;&gt;&gt; dir()</p>
+    <p class="Code-Background">['CholeskyDecomposition', 'EigenvalueDecomposition', 'LuDecomposition', 'Matrix', 'QrDecomposition', 'SingularValueDecomposition', '__builtins__', '__doc__', '__name__', 'clr']</p>
+    <p class="StepNoNumbering"></p>
+    <p class="StepNoNumbering">If you're having trouble getting this to work, make sure
+    Mapack.dll is on the search path. One easy way to do this is to copy Mapack.dll into
+    the Tutorial direcroty (or whichever directory you're running IronPython from).</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Instantiate the Matrix class:</p>
+        </li>
+    </ol>
+    <p class="ExceptionExample">m = Matrix()</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">Oops, bad arguments for the constructor.&nbsp; In the next
+    step, you'll learn how to discover which constructors are available.</p>
+    <p class="Code-Highlighted">Traceback (most recent call last):<br />
+&nbsp;&nbsp;File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;<br />
+TypeError: Matrix() takes at least 1 argument (0 given)</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Using the __doc__ attribute, find out information about
+        Matrix constructors:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">print Matrix.__new__.__doc__</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; print Matrix.__new__.__doc__</p>
+    <p class="Code-Background">__new__(cls: type, rows: int, columns: int)<br />
+    __new__(cls:type, rows: int, columns: int, value: float)<br />
+    __new__(cls:type, value: Array[Array[float]])
+    </p>
+    <ol start="5">
+        <li>
+        <p class="Step">Create instances of the Matrix class using the correct constructors
+        and set some matrix elements manually.&nbsp; IronPython supports custom indexing
+        on .NET classes. </p>
+        </li>
+    </ol>
+    <p class="TypedExample">m = Matrix(2, 2, 1.2)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">n = Matrix(2,1)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">n[0,0] = 4</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">print m</p>
+    <p class="TypedExample">print n</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; m = Matrix(2, 2, 1.2)<br />
+    &gt;&gt;&gt; n = Matrix(2,1)<br />
+    &gt;&gt;&gt; n[0,0] = 4<br />
+    &gt;&gt;&gt; print m</p>
+    <p class="Code-Background">1.2 0<br />
+0 1.2<br />
+</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; print n</p>
+    <p class="Code-Background">4<br />
+0<br />
+</p>
+    <ol start="6">
+        <li>
+        <p class="Step">(Optional) IronPython also supports overloaded operators.
+        Matrix provides implementations of operators +, - (binary and unary), *,
+        and equality. You can see the Python representation of these operators
+        (__eq__, __add__, __mul__, __sub__, ...) using dir():</p>
+        </li>
+    </ol>
+    <p class="UserCode">dir(m)</p>
+    <p class="HiddenCode">set1 = set(dir(m))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+    
+    ['FrobeniusNorm','InfinityNorm','Rows','__neg__','__radd__','Columns','__getitem__','Symmetric','__rmul__','Inverse','__rsub__','Solve','Clone','__setitem__','Multiply','Submatrix','Subtract','Random','__eq__','Diagonal','Trace','Negate','Add','Determinant','Norm1','__sub__','__add__','Transpose','Square','Item','__mul__','__ne__']</p>
+    <ol start="7">
+        <li>
+        <p class="Step">Make simple calculations with the matrices:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">print m * n</p>
+    <p class="TypedExample">print n.Transpose() * m</p>
+    <p class="TypedExample">print m * 3</p>
+    <p class="TypedExample">print n + -n</p>
+    <p class="Stepnonumbering">The expected output of this step is:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; print m * n</p>
+    <p class="Code-Background">4.8<br />
+0<br /><br />
+</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; print n.Transpose() * m</p>
+    <p class="Code-Background">4.8 0
+<br /><br /></p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; print m * 3</p>
+    <p class="Code-Background">3.6 0<br />
+0 3.6<br /><br />
+</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; print n + -n</p>
+    <p class="Code-Background">0<br />
+0<br /><br />
+</p>
+    <p class="ExceptionOutput">TypeError: Matrix() takes at least 1 argument (0 given)</p>
+    <ol start="8">
+        <li>
+        <p class="Step">Exit the IronPython Interactive console (Ctrl+Z or F6 followed
+        by Enter)</p>
+        </li>
+    </ol>
+    <h2><a name="T1.4">Exercise 4: Obtaining and Using the Python Standard Library</a></h2>
+    <p class="BodyNote"><b>Note:</b> If you installed IronPython using the MSI installer file, then the Python
+    standard library is already included, and this exercise does not apply. These steps are only necessary
+    if you installed IronPython using the ZIP file, which does not include the library. In that case,
+    this exercise explians how you can obtain Python and direct IronPython to the Python 
+    standard library.<br /><br />
+    If you're not sure how IronPython was installed, then attempt <a href="#T1.4.1.3">steps 3-4</a>
+    below. If your output matches this tutorial's, then you already have access to the Python standard
+    libraries, and this exercise may be skipped. If you get an ImportError message, then this exercise
+    is necessary.</p>
+    <h3><a name="T1.4.1">Task 1: Configuring IronPython to use the Python standard library</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Download the latest Python installer from
+        <a href="http://www.python.org/download/">http://www.python.org/download/</a>
+        and install Python.&nbsp; The rest of this exercise will assume you used the
+        default installer settings (e.g. installing to c:\python27).</p>
+        </li>
+        <li>
+        <p class="Step">Create a file named 'site.py' and place it in your IronPython 'Lib'
+        directory.&nbsp; There might be one there already, in which case you can simply edit
+        it.&nbsp; This 'site.py' file is automatically executed every time you run IronPython,
+        making it a convenient way to tell IronPython the location of Python's standard library.&nbsp; To
+        do so, add the following code into IronPython's 'site.py'.&nbsp; (Replace
+        c:\python27\lib with your actual path to the Python lib directory):</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import sys</p>
+    <p class="TypedExample">sys.path.append(r&quot;c:\python27\lib&quot;)</p>
+    <p class="SyntaxNote"><b>Syntax Note:</b> Preceding a string literal with 'r' tells
+    Python to parse the string in "raw" mode, which does not require backslashes (\) to
+    be escaped. This is helpful for the readability of certain strings, such as Windows
+    paths.</p>
+    <ol start="3">
+        <li>
+        <a name="T1.4.1.3"><p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p></a>
+        </li>
+        <li>
+        <p class="Step">Now you can use the Python standard library from
+        IronPython, for example to get the current working directory.</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import os</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">os.getcwd()</p>
+    <p class="Stepnonumbering">Assuming you're using the standard IronPython installation
+    directory, the output should look like this:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import os<br />
+    &gt;&gt;&gt; os.getcwd()<br /></p>
+    <p class="Code-Background">'C:\\ironpython\\Tutorial'</p>
+    <p class="LooseVerify">
+
+    '%DLR_ROOT%\\Test\\IronPythonTutorial'</p>
+    <p class="LabSummary">Tutorial Summary</p>
+    <p class="Body">In this tutorial you performed the following exercises.</p>
+    <ul>
+        <li>
+        <p class="Body"><a href="#T1.1">The IronPython interactive console</a></p>
+        </li>
+        <li>
+        <p class="Body"><a href="#T1.2">Using the standard .NET libraries from IronPython</a></p>
+        </li>
+        <li>
+        <p class="Body"><a href="#T1.3">Loading additional .NET libraries</a></p>
+        </li>
+        <li>
+        <p class="Body"><a href="#T1.4">Obtaining and Using the Python Standard
+        Library</a></p>
+        </li>
+    </ul>
+    <p class="Body">In this tutorial, you became acquainted with IronPython's interactive
+    console and learned a powerful Python development technique -- the use of dir() and __doc__
+    to dynamically explore the environment.&nbsp; You learned to load and import
+    .NET libraries from IronPython (using the import statement), create instances
+    of .NET classes (including generic classes), call methods, enumerate .NET collections,
+    and even use overloaded operators on .NET objects.&nbsp; Finally, you
+    learned how to access the standard Python libraries.</p>
+    <p class="Body">&nbsp;</p>
+    <h1><a name="T2">Tutorial 2: Advanced IronPython</a></h1>
+    <p class="Body">A large part of IronPython's beauty lies in its capacity for dynamic-style
+    development -- modifying the live application by adding functioning elements
+    to it.&nbsp; With Windows applications, this often requires delegates and event handling
+    (i.e., adding a button to an existing form and adding functionality to handle the user's
+    pressing the button).</p>
+    <p class="Body">This tutorial will focus on creating delegates and handling
+    events in IronPython, as well as creating Windows applications using Windows Forms and
+    the new Windows Presentation Foundation, or WPF (formerly known as Avalon).</p>
+    <p class="Body">Estimated time to complete this tutorial: <b>25 minutes</b></p>
+    <p class="Body">The objective of this tutorial is to learn how to create delegates
+    and handle events using IronPython, and to use that knowledge to build working Windows
+    applications using Windows Forms and Windows Presentation Foundation.</p>
+    <ul>
+        <li>
+        <p class="ExerciseList"><a href="#T2.1">Events and Delegates</a></p>
+        </li>
+        <li>
+        <p class="ExerciseList"><a href="#T2.2">Windows Forms</a></p>
+        </li>
+        <li>
+        <p class="ExerciseList"><a href="#T2.3">Windows Presentation Foundation
+        (Avalon)</a></p>
+        </li>
+    </ul>
+    <h2><a name="T2.1">Exercise 1: Events and Delegates</a></h2>
+    <p class="Body">In this exercise, you will create a simple event handler and
+    learn how to explore event handler use. The event handler we'll use in this
+    exercise is the FileSystemWatcher -- a component that raises events on file system
+    changes.</p>
+    <h3><a name="T2.1.1">Task 1: File System Watcher</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">Import the contents of System.IO into the global namespace:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">from System.IO import *</p>
+    <p class="Code-Background"></p>
+    <ol start="3">
+        <li>
+        <p class="Step">Create an instance of the FileSystemWatcher class and set its
+        'Path' property to watch over the current directory:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w = FileSystemWatcher()</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">dir(w)</p>
+    <p class="HiddenCode">set1 = set(dir(w))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+
+['SynchronizingObject','Deleted','EnableRaisingEvents','DesignMode','GetLifetimeService','OnRenamed','InitializeLifetimeService','IncludeSubdirectories','WaitForChanged','NotifyFilter','Filter','__enter__','Renamed','Container','Site','Changed','Path','Created','CreateObjRef','GetService','InternalBufferSize','OnChanged','CanRaiseEvents','Dispose','Disposed','__exit__','BeginInit','OnCreated','Error','Events','EndInit','OnDeleted','OnError']</p>
+    <p class="TypedExample">w.Path = '.'</p>
+    <p class="Code-Background"></p>
+    <ol start="4">
+        <li>
+        <p class="Step" style="page-break-after:avoid">Create the function to handle
+        the events.&nbsp; Because we don't know yet what arguments the delegate will have,
+        let's accept any number of arguments:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">def handle(*args): print args</p>
+    <p class="Code-Background"></p>
+    <p class="SyntaxNote"><b>Syntax Note:</b> The * operator in front of a function
+    parameter signifies the aggregation of any (remaining) input arguments into a
+    list by that name. As such, * is only acceptable in front of a function's final
+    parameter.</p>
+    <ol start="5">
+        <li>
+        <p class="Step">Register the event handler for the 'Changed', 'Created',
+        and 'Deleted' events:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.Changed += handle</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Created += handle</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Deleted += handle</p>
+    <p class="Code-Background"></p>
+    <ol start="6">
+        <li>
+        <p class="Step">Enable the watcher to raise events:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.EnableRaisingEvents = True</p>
+    <ol start="7">
+        <li>
+        <p class="Step">Open the Tutorial folder and create a file.&nbsp; An easy way
+        to create the file is to right-click with the mouse and select 'New\Text
+        Document. The file watcher will raise the 'Created' event.</p>
+        </li>
+    </ol>
+    <p class="Stepnonumbering">You can then open the file in Notepad, type in any
+    text, and save the file.&nbsp; This raises the 'Changed' event.&nbsp;
+    Then finish by deleting
+    the file to see the 'Deleted' event get raised.</p>
+    <p class="Stepnonumbering">At the end of this step, the output in the command
+    window will be similar to the following:</p>
+    <p class="Code-Highlighted">(System.IO.FileSystemWatcher, &lt;System.IO.FileSystemEventArgs object at 0x03CE0BB8&gt;)<br />
+    (System.IO.FileSystemWatcher, &lt;System.IO.FileSystemEventArgs object at 0x039B3B4D&gt;)<br />
+    (System.IO.FileSystemWatcher, &lt;System.IO.FileSystemEventArgs object at 0x039B3B4D&gt;)<br />
+    (System.IO.FileSystemWatcher, &lt;System.IO.FileSystemEventArgs object at 0x014EF022&gt;)</p>
+    <ol start="8">
+        <li>
+        <p class="Step">In the next task, we will create an improved event handler.&nbsp; For now, remove the current event handler from the file watcher events:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.Changed -= handle</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Created -= handle</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Deleted -= handle</p>
+    <p class="Code-Background">
+    </p>
+    <ol start="9">
+        <li>
+        <p class="Step">(Optional) You can try step 7 again to see that the events,
+        while they are still being raised, are no longer being handled by our Python
+        'handler' function.</p>
+        </li>
+    </ol>
+    <h3><a name="T2.1.2">Task 2: Improving the event handler</a></h3>
+    <ol>
+        <li>
+        <p class="Step">In the previous task, step 7 we can see that the types of
+        the parameters passed to all three events were the same:</p>
+        </li>
+    </ol>
+    <p class="Stepnonumbering">FileSystemWatcher - the instance of the object that
+    raised the event</p>
+    <p class="Stepnonumbering">FileSystemEventArgs - the information about the event
+    raised</p>
+    <p class="Stepnonumbering">Use dir() to explore the event arguments class to
+    find what information the event contains:</p>
+    <p class="TypedExample">from System.IO import *</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w = FileSystemWatcher()</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Path = '.'</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">dir(FileSystemEventArgs)</p>
+    <p class="HiddenCode">set1 = set(dir(FileSystemEventArgs))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="Stepnonumbering" style="page-break-after:avoid">The output in the
+    console window will be:</p>
+    <p class="Code-Highlighted" style="page-break-after:avoid">&gt;&gt;&gt; dir(FileSystemEventArgs)</p>
+    <p class="Code-Background">
+
+['Name', 'ChangeType', 'FullPath', 'Empty']</p>
+    <ol start="2">
+        <li>
+        <p class="Step">Now with more knowledge of the FileSystemEventArgs object's
+        properties, we can create a better event handler that will display its
+        ChangeType and FullPath properties:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">def handle(w, a): print a.ChangeType, a.FullPath</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Register the new event handler for the 'Changed', 'Created'
+        and 'Deleted' events:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.Changed += handle</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Created += handle</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Deleted += handle</p>
+    <p class="Code-Background">
+
+    </p>
+    <ol start="4">
+        <li>
+        <p class="Step">Make sure the raising of the events is enabled:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.EnableRaisingEvents = True</p>
+    <ol start="5">
+        <li>
+        <p class="Step">Open the Tutorial folder again and create a new file ('Created'
+        event), edit the file in Notepad and save it ('Changed' event) and finish
+        by deleting the file ('Deleted' event).</p>
+        </li>
+    </ol>
+    <p class="Stepnonumbering">At the end of this step, the output in the command
+    window will be similar to the following:</p>
+    <p class="Code-Highlighted">Created .\New Text Document.txt<br />
+    Changed .\New Text Document.txt<br />
+    Changed .\New Text Document.txt<br />
+    Deleted .\New Text Document.txt</p>
+    <ol start="6">
+        <li>
+        <p class="Step">Remove the event handler from the file watcher events:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.Changed -= handle</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Created -= handle</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Deleted -= handle</p>
+    <p class="Code-Background"></p>
+    <ol start="7">
+        <li>
+        <p class="Step">Exit the IronPython Interactive console (Ctrl+Z or F6, followed
+        by Enter).</p>
+        </li>
+    </ol>
+
+        <h3><a name="T2.1.3">Task 3: Defining events in Python</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Finally, let's look at how we can get event handler syntax from Python code:</p>
+        </li>
+    </ol>
+    <p class="Stepnonumbering">pyevent - a module providing Python event support</p>
+    <p class="Stepnonumbering">make_event - a function that returns an event tuple containing both
+    the hook (the object which allows connecting and disconnecting of handler delegates) and the
+    callable event-firing object.</p>
+    <br/>
+    <p class="Stepnonumbering" style="page-break-after:avoid">To create an event:</p>
+    <br/>
+    <p class="TypedExample">import pyevent</p>
+    <p class="TypedExample">hook,caller = pyevent.make_event()</p>
+    <br />
+    <p class="SyntaxNote"><b>Syntax Note:</b> Python supports the &quot;unpacking&quot;
+    of iterable objects, which is similar to pattern-matching on F# tuples. This feature
+    is used like normal variable assignment, except the left-hand side of the '=' is a
+    comma-separated list of variables, each of which is assigned the corresponding
+    value in the iterable. Unpacking can only be used when the number of items returned
+    by the right-hand side's iterator is known and exactly matches the length of the
+    comma-separated variable list.</p>
+    <br />
+    <p class="Stepnonumbering">This has returned created for us two objects.  The first object
+    allows a user to hook a function up to the event.  The second object allows the owner of
+    the event to cause the event to be raised.  This allows for the separation of these
+    abilities just like .NET.&nbsp; Now let's take this and put it into a class and see how
+    it gets used.</p>
+
+    <ol start="2">
+        <li>
+        <p class="Step">We'll define a class that has an event for</p>
+        </li>
+    </ol>
+
+    <p class="TypedExample">class MyClass(object):<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;OnNewInstance,_NewInstance= pyevent.make_event()<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;def __new__(cls):<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res = object.__new__(object)<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MyClass._NewInstance(res)<br />
+    </p>
+    <p class="Code-Background"></p>
+    <p class="Code-Background"></p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">def NewInst(x): print 'new inst: ', x </p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">MyClass.OnNewInstance += NewInst</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">a = MyClass()</p>
+    <p class="Stepnonumbering">The console output should look like:</p>
+    <p class="Code-Background">new inst:&nbsp; &lt;object object at 0x000000000000002B&gt;</p>
+
+    <ol start="3">
+        <li>
+        <p class="Step">Just like with CLR events you can also remove event handlers:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">MyClass.OnNewInstance -= NewInst</p>
+    <p class="Code-Background"></p>
+
+    <h2><a name="T2.2">Exercise 2: Windows Forms</a></h2>
+    <p class="Body">In this exercise, you will create simple Windows Forms applications
+    dynamically from the IronPython interactive console.</p>
+    <p class="Body">To interactively develop Windows applications, IronPython must
+    be initialized for that purpose.&nbsp; By default, the Python console executes on one thread 
+    only.&nbsp; While this thread awaits text input in the console window, the Windows application
+    being dynamically created from the console is blocked, or unable to process Windows messages.&nbsp;
+    Therefore, the application does not repaint itself or handle input to the UI.</p>
+    <p class="Body">We provide a .py file to initialize IronPython for properly multithreaded
+    Windows Forms development. See the tasks below.</p>
+    <h3><a name="T2.2.1">Task 1: Simple Windows Forms application</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">Initialize Windows Forms by loading the winforms module/script:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import winforms</p>
+    <p class="Code-Background"></p>
+    <p class="SyntaxNote"><b>Syntax Note:</b> Python modules get automatically initialized
+    (executed) when imported, meaning that the Windows Forms initialization code in
+    winforms.py has executed due to the import statement.</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Import the contents of the System.Windows.Forms and System.Drawing
+        namespaces into the global namespace: </p>
+        </li>
+    </ol>
+    <p class="TypedExample">from System.Windows.Forms import *</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">from System.Drawing import *</p>
+    <p class="Code-Background"></p>
+    <ol start="4">
+        <li>
+        <p class="Step">Create an instance of the Form class and display it:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">f = Form()</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">f.Show()</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">You may need to alt-tab or look for the running
+    application since it may not have popped to the top level on your desktop.</p>
+    <ol start="5">
+        <li>
+        <p class="Step">Now set the form's Text property:</p>
+        </li>
+    </ol>
+    <p class="Stepnonumbering">This change should now appear in the form window's title bar.</p>
+    <p class="TypedExample">f.Text = &quot;My First Interactive Application&quot;</p>
+    <p class="Code-Background"></p>
+    <ol start="6">
+        <li>
+        <p class="Step">To bring the application alive, let&#39;s focus on the Click
+        event of the form. Create an event handler for the Click event and click
+        on the form to receive the event. Then remove the event handler</p>
+        </li>
+    </ol>
+    <p class="TypedExample">def click(*args): print args</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">f.Click += click</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">Click on the form to receive the event..</p>
+    <p class="Stepnonumbering">The output will be a tuple containing a Form
+    object and a MouseEventArgs object, like so:</p>
+    <p class="Noverify-Background">(&lt;System.Windows.Forms.Form object at
+    0x000000000000002B [System.Windows.Forms.Form, Text: My First Interactive Application]&gt;,
+    &lt;System.Windows.Forms.MouseEventArgs object at 0x000000000000002C
+    [System.Windows.Forms.MouseEventArgs]&gt;)</p>
+    <p class="Stepnonumbering">Now remove the click handler because we're going
+    to further develop it.</p>
+    <p class="TypedExample">f.Click -= click</p>
+    <p class="Code-Background"></p>
+    <ol start="7">
+        <li>
+        <p class="Step">Use dir() function to explore MouseEventArgs</p>
+        </li>
+    </ol>
+    <p class="UserCode">dir(MouseEventArgs)</p>
+    <p class="HiddenCode">set1 = set(dir(MouseEventArgs))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+
+['Button','Delta','Empty','Clicks','X','Y','Location']</p>
+    <ol start="8">
+        <li>
+        <p class="Step" style="page-break-after:avoid">Knowing the contents of the
+        MouseEventArgs, create an improved event handler for the Click event:</p>
+        </li>
+    </ol>
+    <p class="TypedExample" style="page-break-after:avoid">def click(f, a):<br>
+&nbsp;&nbsp;&nbsp; l = Label(Text = &quot;Hello&quot;)<br>
+&nbsp;&nbsp;&nbsp; l.Location = a.Location<br>
+&nbsp;&nbsp;&nbsp; f.Controls.Add(l)</p>
+<p class="SyntaxNote"><b>Syntax Note:</b> Python functions support named parameters
+such as the 'Text' parameter in the above invocation of 'Label'. This allows us to
+specify function arguments by name rather than their ordering, and synergizes nicely
+with Python's capacity for optional parameters.</p>
+<p class="Code-Background"></p>
+    <ol start="9">
+        <li>
+        <p class="Step" style="page-break-after:avoid">Register the event handler:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">f.Click += click</p>
+    <p class="Code-Background"></p>
+    <ol start="10">
+        <li>
+        <p class="Step">Now clicking on the form with the mouse will add &quot;Hello&quot;
+        labels. We can also access the controls we just added via mouse clicks and
+        change them</p>
+        </li>
+    </ol>
+    <p class="TypedExample">for i in f.Controls: i.Font = Font(&quot;Verdana&quot;, 15)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">for i in f.Controls: i.Text = &quot;Hi&quot;</p>
+    <p class="Code-Background"></p>
+    <ol start="11">
+        <li>
+        <p class="Step">After a few moments of clicking, the form will get quite
+        crowded, so we can clear it out:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">f.Controls.Clear()</p>
+    <p class="HiddenCode">f.Close()</p>
+    <p class="Code-Background"></p>
+    <ol start="12">
+        <li>
+        <p class="Step">Exit the IronPython Interactive console (Ctrl+Z or F6 followed
+        by Enter)</p>
+        </li>
+    </ol>
+    <p class="Body">The standalone version of this script is located in wfdemo.py
+    in the Tutorial directory.</p>
+    <h2><a name="T2.3">Exercise 3: Windows Presentation Foundation (Avalon)</a></h2>
+    <p class="Body">In this exercise, you will interactively create a simple interactive
+    Windows Presentation Foundation application.</p>
+    <p class="Body">Just like Windows Forms, the Windows Presentation Foundation
+    also requires initialization to support interactive development. The initialization
+    code is available in &quot;avalon.py&quot; in your Tutorial directory.</p>
+    <h3><a name="T2.3.1">Task 1: Simple Avalon Application</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">Initialize Windows Presentation Foundation:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">from avalon import *</p>
+    <p class="Code-Background"></p>
+    <ol start="3">
+        <li>
+        <p class="Step">Create Avalon window, display it, and set some of its properties:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w = Window()</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Show()</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">You may need to alt-tab or look for the running
+    application since it may not have popped to the top level on your desktop.&nbsp;
+    Now, let's do more.</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Title = &quot;My Avalon Application&quot;</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.SizeToContent = SizeToContent.WidthAndHeight</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">By setting the window property to
+    &quot;SizeToContent&quot;, the window shrinks.</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Let's add some content now:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.Content = TextBlock()</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Content.Text = &quot;Hello IronPython!&quot;</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Content.FontSize = 50</p>
+    <p class="Code-Background"></p>
+    <ol start="5">
+        <li>
+        <p class="Step">Remove the window content:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.Content = None</p>
+    <ol start="6">
+        <li>
+        <p class="Step">You may leave the interpreter open and continue on to Task 2.</p>
+        </li>
+    </ol>
+    <h3><a name="T2.3.2">Task 2: Avalon calculator</a></h3>
+    <ol>
+        <li>
+        <p class="Step">If you are continuing from the Task 1, proceed to step 2.&nbsp;
+        Otherwise, please follow the <a href="#T2.3.1">steps 1-3</a> from Task 1, the
+        relevant portions of which are repeated here:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">from avalon import *</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w = Window()</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">w.Show()</p>
+    <p class="Code-Background"></p>
+    <ol start="2">
+        <li>
+        <p class="Step">Windows Presentation Foundation uses the XAML format to describe
+        the graphical layout and basic behaviors of UI. Load the &quot;calc.xaml&quot;
+        and display the resulting content:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">w.Content = LoadXaml(&quot;calc.xaml&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">Regardless of whether you flowed into this task
+    from Task 1, w.SizeToContent has been reset to manual, so you will need to
+    drag the window's border down and to the right to see the calculator UI.</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Let's walk the calculator's object model tree (function
+        Walk is defined in the avalon.py file)</p>
+        </li>
+    </ol>
+    <p class="TypedExample">for n in Walk(w): print n</p>
+    <p class="HiddenOutput">System.Windows.Window<br />
+&lt;System.Windows.Controls.Canvas object at 0x000000000000002B [System.Windows.Controls.Canvas]&gt;<br />
+&lt;System.Windows.Controls.Canvas object at 0x000000000000002C [System.Windows.Controls.Canvas]&gt;<br />
+&lt;System.Windows.Shapes.Rectangle object at 0x000000000000002D [System.Windows.Shapes.Rectangle]&gt;<br />
+&lt;System.Windows.Controls.Canvas object at 0x000000000000002E [System.Windows.Controls.Canvas]&gt;</p>
+<p class="HiddenOutput">System.Windows.Controls.TextBox
+System.Windows.Controls.RichTextBox
+System.Windows.Controls.Button: 1
+1
+System.Windows.Controls.Button: 9
+9
+System.Windows.Controls.Button: 8
+8
+System.Windows.Controls.Button: 5
+5
+System.Windows.Controls.Button: 4
+4
+System.Windows.Controls.Button: 2
+2
+System.Windows.Controls.Button: 3
+3
+System.Windows.Controls.Button: 6
+6
+System.Windows.Controls.Button: *
+*
+System.Windows.Controls.Button: 7
+7
+System.Windows.Controls.Button: -
+-
+System.Windows.Controls.Button: 0
+0
+System.Windows.Controls.Button: .
+.
+System.Windows.Controls.Button: =
+=
+System.Windows.Controls.Button: +
++
+System.Windows.Controls.Button: /
+/
+System.Windows.Controls.Button: C
+C</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Using a generator, we can capture all buttons in the
+        calculator:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">[ n for n in Walk(w) if isinstance(n, Button) ]</p>
+    <p class="LooseVerify">System.Windows.Controls.Button</p>
+    <p class="SyntaxNote"><b>Syntax Note:</b> Python's generator syntax is a
+    concise way of enumerating, filtering (by way of the optional &quot;if
+    ...&quot; portion), and mapping over (by way of the leftmost portion, an
+    identity expression in this example) an iterable.</p>
+    <p class="Stepnonumbering">The console printed the list of all buttons. Let's
+    store this list object in a variable for later use:</p>
+    <p class="TypedExample">buttons = _</p>
+    <p class="Code-Background"></p>
+    <p class="SyntaxNote"><b>Syntax Note:</b> Available only in the interpreter,
+    the &quot;_&quot; variable stores the last non-None result value printed by
+    the console.</p>
+    <ol start="5">
+        <li>
+        <p class="Step">At this point we can make changes to all the buttons. For
+        example, let's change the colors and fonts:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">for b in buttons: b.FontSize *= 2</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">for b in buttons: b.Foreground = SolidColorBrush(Colors.Blue)</p>
+    <p class="Code-Background"></p>
+    <ol start="6">
+        <li>
+        <p class="Step" style="page-break-after:avoid">To bring the calculator alive,
+        we need to provide event handlers for each button.&nbsp; These can be imported
+        from the calculator.py file:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import calculator</p>
+    <p class="Code-Background"></p>
+    <ol start="7">
+        <li>
+        <p class="Step">The calculator module contains the Calculator class that
+        will be responsible for tracking the expression as it is being built by
+        the calculator.&nbsp; To bring the calculator alive (that is, register event
+        handlers for the UI), enter:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">calculator.enliven(w)</p>
+    <p class="HiddenOutput">Registering self.on_One to handle One.Click
+Registering self.on_Nine to handle Nine.Click
+Registering self.on_Eight to handle Eight.Click
+Registering self.on_Five to handle Five.Click
+Registering self.on_Four to handle Four.Click
+Registering self.on_Two to handle Two.Click
+Registering self.on_Three to handle Three.Click
+Registering self.on_Six to handle Six.Click
+Registering self.on_Multiply to handle Multiply.Click
+Registering self.on_Seven to handle Seven.Click
+Registering self.on_Subtract to handle Subtract.Click
+Registering self.on_Zero to handle Zero.Click
+Registering self.on_DecimalPoint to handle DecimalPoint.Click
+Registering self.on_Equals to handle Equals.Click
+Registering self.on_Plus to handle Plus.Click
+Registering self.on_Divide to handle Divide.Click
+Registering self.on_Clear to handle Clear.Click</p>
+    <ol start="8">
+        <li>
+        <p class="Step">At this point, you can click on the calculator buttons and
+        evaluate expressions.</p>
+        </li>
+        <li>
+        <p class="Step">Feel free to explore the calculator.py script file (located
+        in Tutorial directory).&nbsp; The point of interest is the Calculator.__init__
+        constructor method:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">def __init__(self, controls):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (1)<br />
+&nbsp;&nbsp;&nbsp; self.expression = &quot;&quot;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (2)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (3)<br />
+&nbsp;&nbsp;&nbsp; for i in controls:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (4)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if isinstance(i, Button):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (5)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if hasattr(self,
+    &quot;on_&quot; + i.Name):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (6)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    i.Click += getattr(self, &quot;on_&quot; + i.Name)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (7)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; elif isinstance(i, TextBox):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (8)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if i.Name ==
+    &quot;Result&quot;:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (9)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    self.result = i&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (10)<br />
+&nbsp;&nbsp;&nbsp; self.result.Text = self.expression&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    (11)</p>
+    <br />
+    <p class="Stepnonumbering">The &quot;controls&quot; argument for the method is the list of buttons and
+    text boxes, very similar to the list of buttons created in steps 3 and 4 of this task.&nbsp;
+    The initialization code enumerates the list (line 4), identifies buttons (line 5), and uses the name of
+    the button (&quot;One&quot;, &quot;Multiply&quot;, &quot; Equals&quot;, ...) to find the calculator attribute
+    (method) with the corresponding name (for example, &quot;on_One&quot;, &quot;on_Multiply&quot;,
+    and &quot;on_Equals&quot;, respectively).&nbsp; If such an attribute (method) is available,
+    we hook the Click event event, using the name to fetch the attribute (line 7).</p>
+    <ol start="10">
+        <li>
+        <p class="Step">The second point of interest is the on_Equals method, especially
+        the highlighted line.&nbsp; Python has a built-in function, &quot;eval&quot;, which evaluates
+        an expression passed as a string and returns the resulting value.&nbsp; Calculator uses &quot;eval&quot;
+        to evaluate the calculator expressions.&nbsp; The &quot;str&quot; function will then convert the value
+        into a string for display.</p>
+        </li>
+    </ol>
+    <p class="CodeSample">def on_Equals(self, b, e):<br />
+&nbsp;&nbsp;&nbsp; try:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; result
+    = str(eval(self.expression))<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; self.result.Text
+    = result<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; self.expression = result<br />
+&nbsp;&nbsp;&nbsp; except:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; self.result.Text = &quot;&lt;&lt;ERROR&gt;&gt;&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; self.expression = &quot;&quot;</p>
+    <ol start="11">
+        <li>
+        <p class="Step">Exit the IronPython Interactive console (Ctrl+Z or F6 followed
+        by Enter)</p>
+        </li>
+    </ol>
+    <p class="LabSummary">Tutorial Summary</p>
+    <p class="Body">IronPython provides a very easy way to develop live applications
+    in a dynamic and exploratory way. Both Windows Forms and Windows Presentation
+    Foundation (Avalon) applications can be easily developed in this manner with minimal
+    setup. The advantage is that changes are visible immediately, and modifications
+    are happening to a live system without requiring recompilation or even re-execution.</p>
+    <p class="Body">In this tutorial you performed the following exercises:</p>
+    <ul>
+        <li>
+        <p class="ExerciseList"><a href="#T2.1">Events and Delegates</a></p>
+        </li>
+        <li>
+        <p class="ExerciseList"><a href="#T2.2">Windows Forms</a></p>
+        </li>
+        <li>
+        <p class="ExerciseList"><a href="#T2.3">Windows Presentation Foundation
+        (Avalon)</a></p>
+        </li>
+    </ul>
+    <p class="Body">&nbsp;</p>
+    <p class="Body">In this tutorial, you became familiar with using delegates and
+    handling events in IronPython -- an essential part of interactive development
+    of Windows applications using WinForms or Avalon. Then you dynamically created
+    a simple interactive application in Windows Forms and two applications using
+    Windows Presentation Foundation. </p>
+    <h1><a name="T3">Tutorial 3: IronPython and COM interoperability</a></h1>
+    <p class="Body">COM interoperability is an important part of .NET Framework.
+    To use COM objects from the .NET application, an interop assembly that contains
+    the .NET metadata for the COM objects is required. This tutorial will outline
+    how the interop assemblies can be created (in the case they are not provided
+    by the creators of the COM object) and will demonstrate the ease with which
+    COM objects can be used from IronPython.</p>
+    <p class="Body">Estimated time to complete this tutorial: <b>15 minutes</b></p>
+    <p class="Body">The objective of this tutorial is to explore COM interoperability
+    from IronPython.</p>
+    <ul>
+        <li>
+        <p class="ExerciseList"><a href="#T3.1">Word Spell Checking</a></p>
+        </li>
+    </ul>
+    <h2><a name="T3.1">Exercise 1: Use Word for Spell Checking</a></h2>
+    <p class="Body">In this exercise you will create an instance of Microsoft
+    Word and use it to check word spellings.</p>
+    <h3><a name="T3.1.1">Task 1: Accessing Word and Checking Spelling</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">Import clr module and add a reference to the Word COM
+        interop assembly.</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">clr.AddReferenceByPartialName(&quot;Microsoft.Office.Interop.Word&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">from Microsoft.Office.Interop.Word import ApplicationClass</p>
+    <p class="Code-Background"></p>
+    </p>
+    <ol start="3">
+        <li>
+        <p class="Step">Start an instance of Word as a COM server running.&nbsp;
+        You won't see it show up since it is hidden, but you can see it in the
+        Windows Task Manager by typing ctrl-shift-escape and looking for the
+        WINWORD.EXE process.</p></li>
+    </ol>
+    <p class="TypedExample">w = ApplicationClass()</p>
+    <p class="Code-Background"></p>
+    <ol start="4">
+        <li>
+        <p class="Step">Define the following function to check the spelling.&nbsp;
+        Remember to indent the lines of the function's body extra spaces, and you
+        have to hit an extra return or enter to complete the function's definition.</p></li>
+    </ol>
+    <p class="TypedExample">def check_word (word):<br>
+&nbsp;&nbsp; return w.CheckSpelling(word)</p>
+<p class="Code-Background"></p>
+    <p class="TypedExample">check_word(&quot;foo&quot;)</p>
+    <p class="HiddenOutput">False</p>
+    <p class="TypedExample">check_word(&quot;food&quot;)</p>
+    <p class="HiddenOutput">True</p>
+    <ol start="5">
+        <li>
+        <p class="Step">You can try that out on a couple of words, but now lets
+        define a function that will suggest corrections for us.&nbsp; First, we
+        need to add a document so that we can call GetSpellingSuggestions(),
+        which gives a nice error message if you try to call it with no documents
+        opened.</p></li>
+    </ol>
+    <p class="TypedExample">w.Documents.Add()</p>
+    <p class="LooseVerify">Microsoft.Office.Interop.Word.DocumentClass</p>
+    <ol start="6">
+        <li>
+        <p class="Step">The first result of
+        several return values from GetSpellingSuggestions() is a collection of
+        items, each of which is a correction suggestion.&nbsp; We use a Python
+        list comprehension to iterate through the COM collection object and call
+        the Name property on each item object in the collection.&nbsp; Each
+        item's Name property is a string that Word is suggesting as a correct
+        spelling.</p></li>
+    </ol>
+    <p class="TypedExample">def suggestions(word):<br>
+&nbsp;&nbsp; res_objects = w.GetSpellingSuggestions(word)<br>
+&nbsp;&nbsp; return [x.Name for x in res_objects]</p>
+<p class="Code-Background"></p>
+    <ol start="7">
+        <li>
+        <p class="Step">Now, let's shut down Word and exit the IronPython
+        console.&nbsp; When you enter the next line and hit return, if you are
+        watching the Windows Task Manager, you will see the WINWORD.EXE process
+        go away.</p></li>
+    </ol>
+    <p class="TypedExample">w.Quit()</p>
+    <p class="Code-Background"></p>
+    <h3><a name="T3.1.2">Task 2: Use Windows Form Dialog to Correct Spelling</a></h3>
+    <p class="Body">In this task you will use an example already written that is
+    very similar to what you did in Task 1, but it demonstrates two additional
+    features.&nbsp; It uses a Python standard module to register a clean up
+    function so that when the IronPython console terminates, the Word process is
+    closed.&nbsp; The example also has a function, correct_word, that uses a
+    Windows Form as a dialog to let users select a correct word to return.</p>
+    <ol>
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+        <li>
+        <p class="Step">Import spellcheck.</p>
+        </li>
+        <li>
+        <p class="Step">Call spellcheck.correct_word on a correctly spelled
+        word, and you'll see the function returns the word.</p>
+        </li>
+        <li>
+        <p class="Step">Call spellcheck.correct_word on a misspelled word, and a
+        Windows Form similar to Word's spelling correction dialog appears.&nbsp;
+        You can pick from the list and click the Replace button, double click a
+        word in the suggestions list, enter custom text and click the Use Custom
+        button, click an Ignore button to return the misspelled word, and so on. </p>
+        </li>
+        <li>
+        <p class="Step">Open the spellcheck.py file to see the code for the the
+        Windows Form as well as the functions.</li>
+    </ol>
+    <p class="Body">&nbsp;</p>
+    <p class="LabSummary">Tutorial Summary</p>
+    <p class="Body">This tutorial was focused on using COM interop to control COM objects from the IronPython environment.</p>
+    <p class="Body">In this tutorial you performed the following exercises.</p>
+    <ul>
+        <li>
+        <p class="ExerciseList"><a href="#T3.1">Word Spell Checking</a></p>
+        </li>
+    </ul>
+    <p class="Body">&nbsp;</p>
+    <p class="Body">You used Word to check the spelling of words, learned
+    how to supply missing optional arguments, and inspected code that builds a
+    Windows Form and uses it as a dialog.</p>
+    <p class="Normal">&nbsp;</p>
+    <h1><a name="T4">Tutorial 4: Debugging IronPython programs</a></h1>
+    <p class="Body">This tutorial will walk you through a very simple debug session,
+    debugging a Python script using the Microsoft CLR Debugger.&nbsp; If you have a
+    Visual Studio SKU, see <a href="#T7">using Visual Studio</a>, and consider skipping
+    this exercise.</p>
+    <p class="Body">Estimated time to complete this tutorial: <b>10 minutes</b></p>
+    <p class="Body">The objective of this tutorial is debugging simple Python script
+    using Microsoft CLR Debugger.</p>
+    <ul>
+        <li>
+        <p class="Body"><a href="#T4.1">Debugging IronPython programs</a></p>
+        </li>
+    </ul>
+    <h2><a name="T4.1">Exercise 1: Debugging IronPython programs</a></h2>
+    <p class="Body">In this exercise, you will step through a simple Python script
+    in the Microsoft CLR Debugger.</p>
+    <h3><a name="T4.1.1">Task 1: Debugging IronPython programs using Microsoft CLR
+    Debugger</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Launch Microsoft CLR Debugger.</p>
+        </li>
+        <li>
+        <p class="Step">From the debugger Menu, select Debug / Program to Debug
+        ...</p>
+        </li>
+        <li>
+        <p class="Step">For Program, browse to the ipy.exe (located
+        in the installaton directory)</p>
+        </li>
+        <li>
+        <p class="Step">For Arguments, type in &quot;-D debugging.py&quot;</p>
+        </li>
+        <li>
+        <p class="Step">Change Working directory to the Tutorial directory</p>
+        </li>
+        <li>
+        <p class="Step">Click OK</p>
+        </li>
+        <li>
+        <p class="Step">From the Menu, select File / Open / File. Browse to the
+        Tutorial directory and select two files to open:</p>
+        </li>
+    </ol>
+    <p class="Body">debugging.py</p>
+    <p class="Body">first.py</p>
+    <ol start="8">
+        <li>
+        <p class="Step">Place breakpoint at the following line of the debugging.py
+        file (Place cursor on the line and pres F9):</p>
+        </li>
+    </ol>
+    <p class="Body">print first.add(1, 2)</p>
+    <ol start="9">
+        <li>
+        <p class="Step">Press F5 - Start Debugging.</p>
+        </li>
+    </ol>
+    <p class="Stepnonumbering">IronPython will compile the debugging.py file and
+    start executing it. You will hit the breakpoint you inserted at line 3.</p>
+    <p class="StepNote">Note: If you get poor performance starting the debugging
+    session, exit the debugger, open the Windows Explorer and delete the following
+    directory:</p>
+    <p class="StepNote">%USERPROFILE%\Application Data\Microsoft\DbgClr</p>
+    <ol start="10">
+        <li>
+        <p class="Step">Pressing F11, step through the execution of the program,
+        explore variables (even change the values of the variables in the watch
+        window) and explore the call stack. </p>
+        </li>
+        <li>
+        <p class="Step">End the debugging session and exit the debugger.</p>
+        </li>
+    </ol>
+    <p class="LabSummary">Tutorial Summary</p>
+    <p class="Body">In this tutorial you performed the following exercises.</p>
+    <ul>
+        <li>
+        <p class="Body"><a href="#T4.1">Debugging IronPython programs</a></p>
+        </li>
+    </ul>
+    <p class="Body">In this tutorial, you walked through the simple debug session
+    of IronPython program. You used Microsoft CLR Debugger, placed breakpoints and
+    stepped through the Python program execution.</p>
+    <p class="Body">&nbsp;</p>
+    <h1><a name="T5">Tutorial 5: Extending IronPython</a></h1>
+    <p class="Body">Estimated time to complete this tutorial: <b>25- 60 minutes</b></p>
+    <p class="Body">The objective of this tutorial is to implement the class which
+    will seamlessly fit into the IronPython environment. You can choose to follow
+    Exercise 1 - C# implementation, Exercise 2 - Visual Basic, or both. Both tracks
+    will result in the same functionality.</p>
+    <ul>
+        <li>
+        <p class="Body"><a href="#T5.1">Extending using C#</a></p>
+        </li>
+        <li>
+        <p class="Body"><a href="#T5.2">Extending using Visual Basic.NET</a></p>
+        </li>
+    </ul>
+    <h2><a name="T5.1">Exercise 1: Extending using C#</a></h2>
+    <p class="Body">In this exercise you will use C# language to build a class that
+    supports enumeration, custom operators and delegates, and you will use that class
+    from IronPython.  It’s worth noting that as Python does not contain protected class members,
+    such members get promoted to public class members when imported into IronPython.  Private
+    class members, however, will be invisible in IronPython when imported.</p>
+    <h3><a name="T5.1.1">Task 1: Implementing a simple class - constructor and ToString</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Open the &quot;SDK Command Prompt&quot; or &quot;Visual Studio 2010 
+		Command Prompt&quot; from the start menu. A more recent Visual Studio command 
+		prompt should also work.</p>
+        </li>
+        <li>
+        <p class="Step">Open the &quot;csextend.cs&quot; file in Notepad or your favorite text
+        editor. The file is initially empty.</p>
+        </li>
+    </ol>
+    <p class="DosExample">notepad csextend.cs</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Add using clauses at the beginning of the file:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">using System;<br />
+    using System.Collections;</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Define a simple class:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">public class Simple {<br />
+&nbsp;&nbsp;&nbsp; private int data;<br>
+    <br />
+&nbsp;&nbsp;&nbsp; public Simple(int data) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.data = data;<br />
+&nbsp;&nbsp;&nbsp; }<br>
+    <br />
+&nbsp;&nbsp;&nbsp; public override string ToString() {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return String.Format(&quot;Simple&lt;{0}&gt;&quot;, data);<br />
+&nbsp;&nbsp;&nbsp; }<br />
+    }</p>
+    <ol start="5">
+        <li>
+        <p class="Step">Switch back to the Command Prompt window and build the
+        code using available csx.bat (C# extension):</p>
+        </li>
+    </ol>
+    <p class="DosExample">csx</p>
+    <ol start="6">
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+    </ol>
+    <ol start="7">
+        <li>
+        <p class="Step">Load the dll that you just built (csextend.dll) into IronPython.
+        Then explore the Simple class using built-in dir() function:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">clr.AddReferenceToFile(&quot;csextend.dll&quot;)</p>
+    <p class="HiddenCode">clr.AddReferenceToFile(&quot;csextend_5.1.1.dll&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">import Simple</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">dir(Simple)</p>
+    <p class="HiddenCode">set1 = set(dir(Simple))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+
+[]</p>
+    <p class="Stepnonumbering">You will see following output:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;csextend.dll&quot;)<br />
+    &gt;&gt;&gt; import Simple<br />
+    &gt;&gt;&gt; dir(Simple)<br /></p>
+    <p class="Code-Highlighted">['Equals', 'GetHashCode', 'GetType', 'MemberwiseClone', 'ReferenceEquals', 'ToString', '__class__', '__delattr__', '__doc__', '__format__', '__getattribute__', '__hash__', '__init__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']</p>
+    <ol start="8">
+        <li>
+        <p class="Step">Instantiate the Simple class:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">s = Simple(10)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">print s</p>
+    <p class="Stepnonumbering">IronPython will output:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; s = Simple(10)<br />
+    &gt;&gt;&gt; print s</p>
+    <p class="Code-Background">Simple&lt;10&gt;</p>
+    <ol start="9">
+        <li>
+        <p class="Step">You have just explored all the functionality currently available
+        in the Simple class. Exit IronPython and return to the C# code to add more.</p>
+        </li>
+    </ol>
+    <h3><a name="T5.1.2">Task 2: Making the object enumerable</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Back in Notepad, open &quot;csextend.cs&quot; to add more functionality
+        to the Simple class.</p>
+        </li>
+        <li>
+        <p class="Step">First, inherit the Simple class from IEnumerable and implement the
+        GetEnumerator() method. Use the C#'s new &quot;yield return&quot; statement:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">public class Simple : IEnumerable {<br>
+    <br />
+&nbsp;&nbsp;&nbsp; private int data;<br /><br />
+&nbsp;&nbsp;&nbsp; public Simple(int data) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.data = data;<br />
+&nbsp;&nbsp;&nbsp; }<br /><br />
+&nbsp;&nbsp;&nbsp; public override string ToString() {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return String.Format(&quot;Simple&lt;{0}&gt;&quot;, data);<br />
+&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;<br />
+    &nbsp;&nbsp;&nbsp; public IEnumerator GetEnumerator()
+    {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (int i = 0; i &lt; data; i++) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; yield return
+    new Simple(i);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp; }</p>
+    <p class="CodeSample">}</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Save the changes, compile the code (csx), launch IronPython
+        Console (ip) and test the code:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">clr.AddReferenceToFile(&quot;csextend.dll&quot;)</p>
+    <p class="HiddenCode">clr.AddReferenceToFile(&quot;csextend_5.1.2.dll&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">import Simple</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">dir(Simple)</p>
+    <p class="HiddenCode">set1 = set(dir(Simple))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+
+['GetEnumerator','__iter__']</p>
+    <p class="TypedExample">s = Simple(10)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">for i in s: print i</p>
+    <p class="Stepnonumbering">You will get the following output in the IronPython
+    console window:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;csextend.dll&quot;)<br />
+    &gt;&gt;&gt; import Simple<br />
+    &gt;&gt;&gt; dir(Simple)<br />
+    <p class="Code-Highlighted">['Equals', 'GetEnumerator', 'GetHashCode', 'GetType', 'MemberwiseClone', 'ReferenceEquals', 'ToString', '__class__', '__delattr__', '__doc__', '__format__', '__getattribute__', '__hash__', '__init__', '__iter__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; s = Simple(10)<br />
+    &gt;&gt;&gt; for i in s: print i</p>
+    <p class="Code-Background">Simple&lt;0&gt;<br />
+    Simple&lt;1&gt;<br />
+    Simple&lt;2&gt;<br />
+    Simple&lt;3&gt;<br />
+    Simple&lt;4&gt;<br />
+    Simple&lt;5&gt;<br />
+    Simple&lt;6&gt;<br />
+    Simple&lt;7&gt;<br />
+    Simple&lt;8&gt;<br />
+    Simple&lt;9&gt;</p>
+    <p class="StepNote">Notice that the dir() function now shows the GetEnumerator
+    method.</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Exit IronPython and return to the C# code to add more
+        functionality.</p>
+        </li>
+    </ol>
+    <h3><a name="T5.1.3">Task 3: Adding a custom operator</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Add the operator + method:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">using System;<br />
+    using System.Collections;</br>
+    <br />
+    public class Simple : IEnumerable {<br />
+&nbsp;&nbsp;&nbsp; private int data;<br />
+&nbsp;&nbsp;&nbsp; public Simple(int data) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.data = data;<br />
+&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp; public override string ToString() {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return String.Format(&quot;Simple&lt;{0}&gt;&quot;, data);<br />
+&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp; public IEnumerator GetEnumerator() {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (int i = 0; i &lt; data; i ++) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; yield return
+    new Simple(i);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;</br>
+    &nbsp;&nbsp;&nbsp; public static Simple operator +(Simple a, Simple b) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return new Simple(a.data + b.data);<br />
+&nbsp;&nbsp;&nbsp; }</br>
+    }</p>
+    <ol start="2">
+        <li>
+        <p class="Step">Return to the command prompt, compile the code (csx), launch
+        IronPython Console (ip) and test the code:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">clr.AddReferenceToFile(&quot;csextend.dll&quot;)</p>
+    <p class="HiddenCode">clr.AddReferenceToFile(&quot;csextend_5.1.3.dll&quot;)</p>
+        <p class="Code-Background"></p>
+    <p class="TypedExample">import Simple</p>
+        <p class="Code-Background"></p>
+    <p class="UserCode">dir(Simple)</p>
+    <p class="HiddenCode">set1 = set(dir(Simple))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+
+    ['__radd__','__add__','GetEnumerator','__iter__']</p>
+    <p class="TypedExample">a = Simple(10)</p>
+        <p class="Code-Background"></p>
+    <p class="TypedExample">b = Simple(20)</p>
+        <p class="Code-Background"></p>
+    <p class="TypedExample">a + b</p>
+    <p class="LooseVerify">Simple&lt;30&gt;</p>
+    <p class="Stepnonumbering">Notice in the output of dir() that you will now see
+    the additional methods __add__ and __radd__, Python's notion of custom operator
+    implementation:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;csextend.dll&quot;)<br />
+    &gt;&gt;&gt; import Simple<br />
+    &gt;&gt;&gt; dir(Simple)</p>
+    <p class="Code-Highlighted">['Equals', 'GetEnumerator', 'GetHashCode', 'GetType', 'MemberwiseClone', 'ReferenceEquals', 'ToString', '__add__', '__class__', '__delattr__', '__doc__', '__format__', '__getattribute__', '__hash__', '__init__', '__iter__', '__new__', '__radd__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; a = Simple(10)<br />
+    &gt;&gt;&gt; b = Simple(20)</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; a + b</p>
+    <p class="Code-Background">&lt;Simple object at 0x000000000000002B [Simple&lt;30&gt;]&gt;</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Exit IronPython and return to the C# code to add more
+        functionality.</p>
+        </li>
+    </ol>
+    <h3><a name="T5.1.4">Task 4: Adding a delegate</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Add the declaration of the delegate to the top of the C#
+        source file:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">using System;<br />
+    using System.Collections;<br />
+&nbsp;<br>
+   public delegate int Transformer(int input);</p>
+    <ol start="2">
+        <li>
+        <p class="Step">Add the &quot;Transform&quot; method to the Simple class,
+        which takes the delegate as a parameter and invokes the it:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">using System;<br />
+    using System.Collections;<br />
+&nbsp;<br>
+    public delegate int Transformer(int input);<br>
+    <br />
+    public class Simple : IEnumerable {<br />
+&nbsp;&nbsp;&nbsp; private int data;<br />
+&nbsp;&nbsp;&nbsp; public Simple(int data) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.data = data;<br />
+&nbsp;&nbsp;&nbsp; }<br>
+    <br />
+&nbsp;&nbsp;&nbsp; public override string ToString() {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return String.Format(&quot;Simple&lt;{0}&gt;&quot;, data);<br />
+&nbsp;&nbsp;&nbsp; }<br>
+    <br />
+&nbsp;&nbsp;&nbsp; public IEnumerator GetEnumerator() {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (int i = 0; i &lt; data; i ++) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; yield return
+    new Simple(i);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;<br>
+    &nbsp;&nbsp;&nbsp; public int Transform(Transformer
+    t) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return t(data);<br />
+&nbsp;&nbsp;&nbsp; }<br>
+    <br />
+&nbsp;&nbsp;&nbsp; public static Simple operator +(Simple a, Simple b) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return new Simple(a.data + b.data);<br />
+&nbsp;&nbsp;&nbsp; }<br />
+    }</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Return to the command prompt, compile the code
+        (csx), launch IronPython Console (ip) and test the code:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">clr.AddReferenceToFile(&quot;csextend.dll&quot;)</p>
+    <p class="HiddenCode">clr.AddReferenceToFile(&quot;csextend_5.1.4.dll&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">import Simple</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">a = Simple(10)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">def X(i):<br>
+&nbsp;&nbsp;&nbsp; return i + 100</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">a.Transform(X)</p>
+    <p class="Stepnonumbering">The function X is getting passed as the delegate
+    to the Simple&#39;s Transform method. You will get following output:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;csextend.dll&quot;)<br />
+    &gt;&gt;&gt; import Simple<br />
+    &gt;&gt;&gt; a = Simple(10)</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; def X(i):<br />
+    ...&nbsp;&nbsp;&nbsp;&nbsp; return i + 100<br />
+    ...<br />
+    &gt;&gt;&gt; a.Transform(X)</p>
+    <p class="Code-Background">110</p>
+    <ol start="4">
+        <li>
+        <p class="Step">This concludes the C# extending example. An interesting optional
+        exercise is to combine the debugging example with this one. If you are so inclined,
+        try debugging the script that you just typed in. To do so, open the
+        &quot;debugcsx.py&quot; script located in Tutorial directory and place a breakpoint
+        on the function 'X'. You will see a mixed call stack between C# and IronPython.</p>
+        </li>
+    </ol>
+    <h2><a name="T5.2">Exercise 2: Extending using Visual Basic.NET</a></h2>
+    <p class="Body">In this exercise you will use the Visual Basic .NET language to
+    build a class that supports enumeration, custom operators and delegates, and
+    you will use that class from IronPython.  It’s worth noting that as Python does
+    not contain protected class members, these members become public when imported into
+    IronPython. Private class members, however, will be invisible from IronPython.</p>
+    <h3><a name="T5.2.1">Task 1: Implementing a simple class - constructor and ToString</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Open the &quot;SDK Command Prompt&quot; or &quot;Visual Studio 
+		2010 Command Prompt&quot; from the start menu. A more recent Visual Studio 
+		Command Prompt should also work.</p>
+        </li>
+        <li>
+        <p class="Step">Open &quot;vbextend.vb&quot; in notepad or your favorite text editor. The
+        file is initially empty.</p>
+        </li>
+    </ol>
+    <p class="DosExample">notepad vbextend.vb</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Add Imports clauses at the beginning of the file:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">Imports System<br />
+    Imports System.Collections</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Define a simple class:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">Public Class Simple<br />
+&nbsp;&nbsp;&nbsp; Private data As Integer<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Public Sub New(ByVal data As Integer)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Me.data = data<br />
+&nbsp;&nbsp;&nbsp; End Sub<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Overrides Function ToString() As String<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return String.Format(&quot;Simple&lt;{0}&gt;&quot;, data)<br />
+&nbsp;&nbsp;&nbsp; End Function<br />
+&nbsp;</p>
+    <p class="CodeSample">End Class</p>
+    <ol start="5">
+        <li>
+        <p class="Step">Switch back to the Command Prompt window and build the
+        code using the available vbx.bat (Visual Basic extension):</p>
+        </li>
+    </ol>
+    <p class="DosExample">vbx</p>
+    <ol start="6">
+        <li>
+        <p class="Step">Start the IronPython console from the tutorial directory
+        (see <a href="#Intro">Introduction</a> for details).</p>
+        </li>
+    </ol>
+    <ol start="7">
+        <li>
+        <p class="Step">Load the dll that you just built (vbextend.dll) into IronPython.
+        Then explore the Simple class using built-in dir() function:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">clr.AddReferenceToFile(&quot;vbextend.dll&quot;)</p>
+    <p class="HiddenCode">clr.AddReferenceToFile(&quot;vbextend_5.2.1.dll&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">import Simple</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">dir(Simple)</p>
+    <p class="HiddenCode">set1 = set(dir(Simple))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+
+[]</p>
+    <p class="Stepnonumbering">You will see following output:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;vbextend.dll&quot;)<br />
+    &gt;&gt;&gt; import Simple<br />
+    &gt;&gt;&gt; dir(Simple)</p>
+    <p class="Code-Highlighted">['Equals', 'GetHashCode', 'GetType', 'MemberwiseClone', 'ReferenceEquals', 'ToString', '__class__', '__delattr__', '__doc__', '__format__', '__getattribute__', '__hash__', '__init__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']</p>
+    <ol start="8">
+        <li>
+        <p class="Step">Instantiate and print a Simple object:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">s = Simple(10)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">print s</p>
+    <p class="Stepnonumbering">IronPython will output:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; s = Simple(10)<br />
+    &gt;&gt;&gt; print s</p>
+    <p class="Code-Background">Simple&lt;10&gt;</p>
+    <ol start="9">
+        <li>
+        <p class="Step">You just have explored all the functionality available in
+        the Simple class. Exit IronPython and return to the Visual Basic code
+        to add more functionality.</p>
+        </li>
+    </ol>
+    <h3><a name="T5.2.2">Task 2: Making the object enumerable</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Back in Notepad, open &quot;vbextend.vb&quot; to add more functionality
+        to the Simple class.</p>
+        </li>
+        <li>
+        <p class="Step">First, inherit the Simple class from IEnumerable and implement
+        the GetEnumerator() method. Unlike C#, Visual Basic does not offer the yield
+        keyword, so implementing IEnumerable interface requires adding a helper class
+        SimpleEnum:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">Imports System<br />
+    Imports System.Collections<br />
+&nbsp;</p>
+    <p class="CodeSample">Public Class SimpleEnum<br />
+&nbsp;&nbsp;&nbsp; Implements IEnumerator<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Private data As Integer<br />
+&nbsp;&nbsp;&nbsp; Private curr As Integer<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Public Sub New(ByVal data As Integer)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Me.data = data<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Me.curr = -1<br />
+&nbsp;&nbsp;&nbsp; End Sub<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Public ReadOnly Property Current() As Object _<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Implements IEnumerator.Current<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Get<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return New Simple(curr)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; End Get<br />
+&nbsp;&nbsp;&nbsp; End Property<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Public Function MoveNext() As Boolean _<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Implements IEnumerator.MoveNext<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; curr += 1<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return curr &lt; data<br />
+&nbsp;&nbsp;&nbsp; End Function<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Public Sub Reset() Implements IEnumerator.Reset<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; curr = -1<br />
+&nbsp;&nbsp;&nbsp; End Sub<br />
+    End Class</p>
+    <p class="CodeSample"><br />
+    Public Class Simple</p>
+    <p class="CodeSample">&nbsp;&nbsp;&nbsp; Implements IEnumerable<br />
+    <br />
+    <p class="CodeSample">&nbsp;&nbsp;&nbsp; Private data As Integer<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Public Sub New(ByVal data As Integer)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Me.data = data<br />
+&nbsp;&nbsp;&nbsp; End Sub<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Overrides Function ToString() As String<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return String.Format(&quot;Simple&lt;{0}&gt;&quot;, data)<br />
+&nbsp;&nbsp;&nbsp; End Function<br />
+&nbsp;</p>
+    <p class="CodeSample">&nbsp;&nbsp;&nbsp; Function GetEnumerator() As IEnumerator
+    _<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Implements IEnumerable.GetEnumerator<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return New SimpleEnum(data)<br />
+&nbsp;&nbsp;&nbsp; End Function</p>
+    <p class="CodeSample"><br />
+    End Class</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Compile the code (vbx), launch IronPython Console (ip) and
+        test the code:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">clr.AddReferenceToFile(&quot;vbextend.dll&quot;)</p>
+    <p class="HiddenCode">clr.AddReferenceToFile(&quot;vbextend_5.2.2.dll&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">import Simple</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">dir(Simple)</p>
+    <p class="HiddenCode">set1 = set(dir(Simple))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+
+['GetEnumerator','__iter__']</p>
+    <p class="TypedExample">s = Simple(10)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">for i in s: print i</p>
+    <p class="Stepnonumbering">You will get the following output in the IronPython
+    console window:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;vbextend.dll&quot;)<br />
+    &gt;&gt;&gt; import Simple<br />
+    &gt;&gt;&gt; dir(Simple)</p>
+    <p class="Code-Highlighted">['Equals', 'GetEnumerator', 'GetHashCode', 'GetType', 'MemberwiseClone', 'ReferenceEquals', 'ToString', '__class__', '__delattr__', '__doc__', '__format__', '__getattribute__', '__hash__', '__init__', '__iter__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; s = Simple(10)<br />
+    &gt;&gt;&gt; for i in s: print i</p>
+    <p class="Code-Background">Simple&lt;0&gt;<br />
+    Simple&lt;1&gt;<br />
+    Simple&lt;2&gt;<br />
+    Simple&lt;3&gt;<br />
+    Simple&lt;4&gt;<br />
+    Simple&lt;5&gt;<br />
+    Simple&lt;6&gt;<br />
+    Simple&lt;7&gt;<br />
+    Simple&lt;8&gt;<br />
+    Simple&lt;9&gt;</p>
+    <p class="Normal">&nbsp;</p>
+    <p class="StepNote">Notice that the dir() function now shows the GetEnumerator
+    method.</p>
+    <ol start="4">
+        <li>
+        <p class="Step">Exit IronPython and return to the Visual Basic code
+        to add more functionality.</p>
+        </li>
+    </ol>
+    <h3><a name="T5.2.3">Task 3: Adding a custom operator</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Add the operator + method to the Simple class:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">Public Class Simple<br />
+&nbsp;&nbsp;&nbsp; Implements IEnumerable<br />
+&nbsp;&nbsp;&nbsp; Private data As Integer<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Public Sub New(ByVal data As Integer)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Me.data = data<br />
+&nbsp;&nbsp;&nbsp; End Sub<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Overrides Function ToString() As String<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return String.Format(&quot;Simple&lt;{0}&gt;&quot;, data)<br />
+&nbsp;&nbsp;&nbsp; End Function<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Function GetEnumerator() As IEnumerator _<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    Implements IEnumerable.GetEnumerator<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return New SimpleEnum(data)<br />
+&nbsp;&nbsp;&nbsp; End Function<br />
+&nbsp;</p>
+    <p class="CodeSample">&nbsp;&nbsp;&nbsp; Shared Operator +(ByVal a As
+    Simple, ByVal b As Simple) As Simple<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return New Simple(a.data + b.data)<br />
+&nbsp;&nbsp;&nbsp; End Operator</p>
+    <p class="CodeSample"><br />
+    End Class</p>
+    <ol start="2">
+        <li>
+        <p class="Step">Compile the code (vbx), launch IronPython Console (ip) and
+        test the code:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">clr.AddReferenceToFile(&quot;vbextend.dll&quot;)</p>
+    <p class="HiddenCode">clr.AddReferenceToFile(&quot;vbextend_5.2.3.dll&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">import Simple</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">dir(Simple)</p>
+    <p class="HiddenCode">set1 = set(dir(Simple))
+set2 = set(dir(object))
+list(set1-set2)</p>
+    <p class="HiddenOutput">
+
+    ['__radd__','__add__','GetEnumerator','__iter__']</p>
+    <p class="TypedExample">a = Simple(10)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">b = Simple(20)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">a + b</p>
+    <p class="LooseVerify">Simple&lt;30</p>
+    <p class="Stepnonumbering">Notice in the output of dir() that you now see the
+    additional methods __add__ and __radd__, Python's notion of custom operator
+    implementation:</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;vbextend.dll&quot;)<br />
+    &gt;&gt;&gt; import Simple<br />
+    &gt;&gt;&gt; dir(Simple)</p>
+    <p class="Code-Background">['Equals', 'GetEnumerator', 'GetHashCode', 'GetType', 'MemberwiseClone', 'ReferenceEquals', 'ToString', '__add__', '__class__', '__delattr__', '__doc__', '__format__', '__getattribute__', '__hash__', '__init__', '__iter__', '__new__', '__radd__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; a = Simple(10)<br />
+    &gt;&gt;&gt; b = Simple(20)</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; a + b</p>
+    <p class="Code-Background">&lt;Simple object at 0x000000000000002B [Simple&lt;30&gt;]&gt;</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Exit IronPython and return to the Visual Basic .NET
+        code to add more functionality.</p>
+        </li>
+    </ol>
+    <h3><a name="T5.2.4">Task 4: Adding a delegate</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Add the declaration of the delegate to the top of the Visual
+        Basic source file:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">Imports System<br />
+    Imports System.Collections<br />
+&nbsp;</p>
+    <p class="CodeSample">Public Delegate Function Transformer(ByVal input
+    As Integer) As Integer</p>
+    <ol start="2">
+        <li>
+        <p class="Step">Add the &quot;Transform&quot; method to the Simple class,
+        which takes the delegate as a parameter and invokes it:</p>
+        </li>
+    </ol>
+    <p class="CodeSample">Public Class Simple<br />
+&nbsp;&nbsp;&nbsp; Implements IEnumerable<br />
+&nbsp;&nbsp;&nbsp; Private data As Integer<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Public Sub New(ByVal data As Integer)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Me.data = data<br />
+&nbsp;&nbsp;&nbsp; End Sub<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Overrides Function ToString() As String<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return String.Format(&quot;Simple&lt;{0}&gt;&quot;, data)<br />
+&nbsp;&nbsp;&nbsp; End Function<br />
+    <br />
+&nbsp;&nbsp;&nbsp; Function GetEnumerator() As IEnumerator _<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    Implements IEnumerable.GetEnumerator<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return New SimpleEnum(data)<br />
+&nbsp;&nbsp;&nbsp; End Function<br />
+&nbsp;</p>
+    <p class="CodeSample">&nbsp;&nbsp;&nbsp; Function Transform(ByVal t As
+    Transformer) As Integer<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return t(data)<br />
+&nbsp;&nbsp;&nbsp; End Function</p>
+    <p class="CodeSample"><br />
+&nbsp;&nbsp;&nbsp; Shared Operator +(ByVal a As Simple, ByVal b As Simple) As Simple<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Return New Simple(a.data + b.data)<br />
+&nbsp;&nbsp;&nbsp; End Operator<br />
+    <br />
+    End Class</p>
+    <ol start="3">
+        <li>
+        <p class="Step">Return to the command prompt, compile the code
+        (vbx), launch IronPython Console (ip) and test the code:</p>
+        </li>
+    </ol>
+    <p class="TypedExample">import clr</p>
+    <p class="Code-Background"></p>
+    <p class="UserCode">clr.AddReferenceToFile(&quot;vbextend.dll&quot;)</p>
+    <p class="HiddenCode">clr.AddReferenceToFile(&quot;vbextend_5.2.4.dll&quot;)</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">import Simple</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">a = Simple(10)</p>
+    <p class="TypedExample">def X(i):<br>
+&nbsp;&nbsp;&nbsp; return i + 100</p>
+    <p class="Code-Background"></p>
+    <p class="TypedExample">&nbsp;</p>
+    <p class="TypedExample">a.Transform(X)</p>
+    <p class="Code-Background"></p>
+    <p class="Stepnonumbering">The function X is getting passed as the delegate
+    to the Simple&#39;s Transform method. You will get following output:</p>
+    <p class="Code-Highlighted">&nbsp;</p>
+    <p class="Code-Highlighted">&gt;&gt;&gt; import clr<br />
+    &gt;&gt;&gt; clr.AddReferenceToFile(&quot;vbextend.dll&quot;)<br />
+    &gt;&gt;&gt; import Simple<br />
+    &gt;&gt;&gt; a = Simple(10)<br />
+    &gt;&gt;&gt; def X(i):</p>
+    <p class="Code-Highlighted">...&nbsp;&nbsp;&nbsp;&nbsp; return i + 100<br />
+    ...<br />
+    &gt;&gt;&gt; a.Transform(X)</p>
+    <p class="Code-Background">110</p>
+    <p class="Normal"></p>
+    <ol start="4">
+        <li>
+        <p class="Step">This concludes the Visual Basic extending example. An interesting
+        optional exercise is to combine the debugging example with this one. If you are so
+        inclined, try debugging the script that you just typed in. To do so, open the
+        &quot;debugvbx.py&quot; script located in the Tutorial directory and place a
+        breakpoint on the function 'X'. You will see mixed call stack between Visual
+        Basic and Python.</p>
+        </li>
+    </ol>
+    <p class="LabSummary">Tutorial Summary</p>
+    <p class="Body">The complete version of the csextend.cs and vbextend.vb files
+    are located in the Tutorial\Extend directory along with files csxtest.py and
+    vbxtest.py which contain the test code for the C# and Visual Basic .NET extensions
+    respectively.</p>
+    <p class="Body">The code to experiment with debugging Python and C# or Visual
+    Basic code is located in the Python scripts debugcsx.py and debugvbx.py respectively.</p>
+    <p class="Body">In this tutorial you performed the following exercises.</p>
+    <ul>
+        <li>
+        <p class="Body"><a href="#T5.1">Extending IronPython using C# code</a></p>
+        </li>
+        <li>
+        <p class="Body"><a href="#T5.2">Extending IronPython using Visual Basic
+        .NET</a></p>
+        </li>
+    </ul>
+    <p class="Body">In this tutorial, you implemented a simple class to be used
+    from IronPython. You added the ability for IronPython to enumerate the class,
+    added a custon addition operator to it, and included support for a delegate.
+    The implementation was in either C#, Visual Basic, or both.</p>
+<h1><a name="T7">Tutorial 6: Using Visual Studio to Edit .py Files and Debug Them</a></h1>
+    <p class="BodyNote">There is a community technology preview add-in for 
+	Visual Studio 2010, IronPython Tools, which supports development of Python 
+	code.&nbsp; Not only does this include Python syntax highlighting, it also 
+	adds Python expression completion support to Visual Studio among other 
+	things!&nbsp; You can download IronPython Tools from
+	<a href="http://www.ironpython.net/tools/">http://www.ironpython.net/tools/</a>.</p>
+	<p class="BodyNote">If you would like to see more features added to this 
+	tool, we would love
+    your feedback! Please vote and/or leave a comment
+    <a href="https://connect.microsoft.com/VisualStudio/feedback/ViewFeedback.aspx?FeedbackID=475830">here</a>.</p>
+    <p class="Body">This tutorial shows you how to quickly set up Visual Studio to
+    work on Python scripts in a directory.</p>
+    <p class="Body">Estimated time to complete this tutorial: <b>5 minutes</b></p>
+    <p class="Body">The objective of this tutorial is to set up Visual Studio
+    for some basic tool support for debugging.</p>
+    <ul>
+        <li>
+        <p class="Body"><a href="#T6.1">Setting up Visual Studio for IronPython
+        Debugging</a></p>
+        </li>
+    </ul>
+    <h2><a name="T6.1">Exercise 1: Setting up Visual Studio for IronPython
+    Debugging</a></h2>
+    <p class="Body">In this exercise you will set up a Visual Studio solution
+    that you can use to edit .py files in a directory and debug them using the
+    Visual Studio .NET debugger.&nbsp; We will use the Tutorial directory as an
+    example, but you could save your solution anywhere.</p>
+    <h3><a name="T6.1.1">Task 1: Setting up Visual Studio for IronPython
+    Debugging</a></h3>
+    <ol>
+        <li>
+        <p class="Step">Open Visual Studio and close any solution or projects
+        you might have open.</p>
+        </li>
+        <li>
+        <p class="Step">Use the File-&gt;Open-&gt;Project/Solution ... command and
+        browse to the ipy.exe application in your IronPython installation
+        (c:\IronPython\ipy.exe is where the tutorial assumes you have it).</p>
+        </li>
+        <li>
+        <p class="Step">We will use the Tutorial directory as an example, and
+        we'll want to set it up as the working directory for loading .py
+        scripts.&nbsp; Right click on the ipy.exe project node in the Visual
+        Studio's solution
+        explorer and choose the Properties command.</p>
+        </li>
+        <li>
+        <p class="Step">In the properties dialog, you will fill in two
+        fields, the Command Arguments and Working Directory.&nbsp; For the
+        Command Arguments, enter &quot;-D first.py&quot;.&nbsp; For the Working Directory,
+        enter the path to the Tutorial directory (c:\IronPython\Tutorial\ is
+        where we assume you have it).&nbsp; Click Apply and OK to confirm your
+        changes.</p>
+        </li>
+        <li>
+        <p class="Step">Now let's save the solution with the File-&gt;Save All ...
+        command.&nbsp; Save it to the Tutorial directory.</p>
+        </li>
+        <li>
+        <p class="Step">To test out our set up, use Ctrl+O to open a file.&nbsp;
+        Browse to the &quot;first.py&quot; file in the Tutorial directory.&nbsp; Place the
+        caret on the line that reads &quot;def add(a, b):&quot;, and press F9 to set a
+        breakpoint.</p>
+        </li>
+        <li>
+        <p class="Step">Press F5 to run the script, and you will hit the
+        breakpoint.&nbsp; If you Press F10, you will step through the file, but
+        all it does is load the definitions and set some variables before
+        terminating.</p>
+        </li>
+        <li>
+        <p class="Step">To see more stepping, we'll add a line to the file and
+        set another breakpoint.&nbsp; Add a line to the end of the file to
+        invoke the factorial function (&quot;factorial(5)&quot;).&nbsp; Add a breakpoint to the line that reads
+        &quot;if n &lt;= 1: return 1&quot;.&nbsp; Now Press F5 to run the script.&nbsp;
+        Press F10 repeatedly and notice the locals window where
+        the parameter &quot;n&quot; decrements to 0 and then goes back up to 5 as the
+        recursion unwinds.&nbsp; You can also hover the mouse over the &quot;n&quot;
+        in the editor window to get a data tip of its value each time you stop at the
+        breakpoint.</p>
+        </li>
+    </ol>
+<p class="Body">To work on other scripts, just change the Command Arguments
+property for the ipy.exe project as we did above to name another script you want
+to load on F5.&nbsp; You might also find it useful to go to the
+Tools-&gt;Options... dialog and change a property on the Environment-&gt;Documents
+page to show the open script files.&nbsp; If you check the property &quot;Show Miscellaneous Files in the Solution
+Explorer&quot;, then you will get a list of the .py files you are editing.&nbsp; Each
+time you open this solution again at a later time, you will see all the .py
+files you developed while using this solution file.</p>
+    <p class="LabSummary">Tutorial Summary</p>
+    <p class="Body">In this tutorial you performed the following exercises.</p>
+    <ul>
+        <li>
+        <p class="Body"><a href="#T6.1">Setting up Visual Studio for IronPython
+        Debugging</a></p>
+        </li>
+    </ul>
+    <p class="Normal">In this tutorial you set up Visual Studio to work on
+    Python scripts in a directory and debug them.</p>
+
+</body>
+
+</html>
