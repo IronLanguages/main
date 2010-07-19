@@ -42,6 +42,7 @@ namespace IronRuby.Builtins {
         private uint _flags;
         private const uint IsFrozenFlag = 1;
         private const uint IsTaintedFlag = 2;
+        private const uint IsUntrustedFlag = 4;
 
         [Conditional("DEBUG")]
         private void ObjectInvariant() {
@@ -154,6 +155,16 @@ namespace IronRuby.Builtins {
             }
         }
 
+        public bool IsUntrusted {
+            get {
+                return (_flags & IsUntrustedFlag) != 0;
+            }
+            set {
+                Mutate();
+                _flags = (_flags & ~IsUntrustedFlag) | (value ? IsUntrustedFlag : 0);
+            }
+        }
+
         public bool IsFrozen {
             get {
                 return (_flags & IsFrozenFlag) != 0;
@@ -206,10 +217,10 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
-            using (IDisposable handle = _EqualsTracker.TrackObject(self)) {
-                if (handle == null) {
-                    // hashing of recursive array
-                    return false;
+            using (IDisposable handleSelf = _EqualsTracker.TrackObject(self), handleOther = _EqualsTracker.TrackObject(other)) {
+                if (handleSelf == null && handleOther == null) {
+                    // both arrays went recursive:
+                    return true;
                 }
 
                 var site = eqlStorage.GetCallSite("eql?");

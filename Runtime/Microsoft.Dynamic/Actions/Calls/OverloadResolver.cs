@@ -440,9 +440,11 @@ namespace Microsoft.Scripting.Actions.Calls {
         private List<ApplicableCandidate> SelectCandidatesWithConvertibleArgs(List<ApplicableCandidate> candidates, NarrowingLevel level, 
             ref List<CallFailure> failures) {
 
+            bool hasGenericCandidates = false;
             var result = new List<ApplicableCandidate>();
             foreach (ApplicableCandidate candidate in candidates) {
                 if (candidate.Method.Overload.ContainsGenericParameters) {
+                    hasGenericCandidates = true;
                     continue;
                 }
 
@@ -454,7 +456,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 }
             }
 
-            if (result.Count == 0) {
+            if (hasGenericCandidates) {
                 // attempt generic method type inference
                 foreach (ApplicableCandidate candidate in candidates) {
                     if (!candidate.Method.Overload.IsGenericMethodDefinition) {

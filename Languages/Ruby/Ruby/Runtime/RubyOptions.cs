@@ -115,6 +115,7 @@ namespace IronRuby.Runtime {
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             _argumentEncoding = GetOption(options, "ArgumentEncoding", RubyEncoding.Default);
 
+            _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
             _mainFile = GetOption(options, "MainFile", (string)null);
             _verbosity = GetOption(options, "Verbosity", 1);
             _debugVariable = GetOption(options, "DebugVariable", false);
@@ -123,13 +124,14 @@ namespace IronRuby.Runtime {
             _loadFromDisk = GetOption(options, "LoadFromDisk", false);
             _profile = GetOption(options, "Profile", false);
             _noAssemblyResolveHook = GetOption(options, "NoAssemblyResolveHook", false);
-            _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             _requirePaths = GetStringCollectionOption(options, "RequiredPaths", ';', ',');
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
-            _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
 
             if (_compatibility < RubyCompatibility.Ruby19) {
                 _kcode = GetKCoding(options, "KCode", null);
+                _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
+            } else {
+                _libraryPaths = GetStringCollectionOption(options, "LibraryPaths19", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             }
         }
 

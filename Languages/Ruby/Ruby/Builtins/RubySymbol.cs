@@ -117,6 +117,11 @@ namespace IronRuby.Builtins {
             set { /* nop */ }
         }
 
+        public bool IsUntrusted {
+            get { return false; }
+            set { /* nop */ }
+        }
+
         public void Freeze() {
             // nop
         }

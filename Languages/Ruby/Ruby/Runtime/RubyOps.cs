@@ -2355,6 +2355,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static bool IsObjectUntrusted(RubyInstanceData instanceData) {
+            return instanceData != null && instanceData.Untrusted;
+        }
+
+        [Emitted]
         public static void FreezeObject(ref RubyInstanceData instanceData) {
             RubyOps.GetInstanceData(ref instanceData).Freeze();
         }
@@ -2362,6 +2367,11 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static void SetObjectTaint(ref RubyInstanceData instanceData, bool value) {
             RubyOps.GetInstanceData(ref instanceData).Tainted = value;
+        }
+
+        [Emitted]
+        public static void SetObjectTrustiness(ref RubyInstanceData instanceData, bool untrusted) {
+            RubyOps.GetInstanceData(ref instanceData).Untrusted = untrusted;
         }
 
 #if !SILVERLIGHT // serialization

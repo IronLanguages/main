@@ -41,6 +41,7 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateTypeError(Exception innerException, string/*!*/ message, params object[] args) {
+            // TODO: RuntimeError in 1.9
             return new InvalidOperationException(FormatMessage(message, args), innerException);
         }
 

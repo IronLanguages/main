@@ -24,6 +24,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime;
+using Microsoft.Scripting;
 
 namespace IronRuby.Builtins {
 
@@ -72,22 +73,43 @@ namespace IronRuby.Builtins {
         #region Instance Methods
 
         [RubyMethod("==")]
-        public static bool Equals(BinaryOpStorage/*!*/ equals, IDictionary<object, object>/*!*/ self, object otherHash) {
-            IDictionary<object, object> other = otherHash as IDictionary<object, object>;
-            if (other == null || self.Count != other.Count) {
+        public static bool Equals(RespondToStorage/*!*/ respondTo, BinaryOpStorage/*!*/ equals, IDictionary<object, object>/*!*/ self, object other) {
+            return Protocols.RespondTo(respondTo, other, "to_hash") && Protocols.IsEqual(equals, other, self);
+        }
+
+        [MultiRuntimeAware]
+        private static RubyUtils.RecursionTracker _EqualsTracker = new RubyUtils.RecursionTracker();
+
+        [RubyMethod("==")]
+        public static bool Equals(BinaryOpStorage/*!*/ equals, IDictionary<object, object>/*!*/ self, [NotNull]IDictionary<object, object>/*!*/ other) {
+            Assert.NotNull(self, other);
+
+            if (ReferenceEquals(self, other)) {
+                return true;
+            }
+
+            if (self.Count != other.Count) {
                 return false;
             }
 
-            // Each key value pair must be the same
-            foreach (KeyValuePair<object, object> pair in self) {
-                object value;
-                if (!other.TryGetValue(pair.Key, out value) || !Protocols.IsEqual(equals, pair.Value, value)) {
-                    return false;
+            using (IDisposable handleSelf = _EqualsTracker.TrackObject(self), handleOther = _EqualsTracker.TrackObject(other)) {
+                if (handleSelf == null && handleOther == null) {
+                    // both dictionaries went recursive:
+                    return true;
+                }
+
+                // Each key value pair must be the same
+                foreach (KeyValuePair<object, object> pair in self) {
+                    object value;
+                    if (!other.TryGetValue(pair.Key, out value) || !Protocols.IsEqual(equals, pair.Value, value)) {
+                        return false;
+                    }
                 }
             }
-            return true;
-        }
 
+            return true;
+        }        
+        
         [RubyMethod("[]")]
         public static object GetElement(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object key) {
             object result;

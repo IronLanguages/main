@@ -762,6 +762,12 @@ namespace IronRuby.Builtins {
             set { GetInstanceData().Tainted = value; }
         }
 
+        // thread-safe:
+        public bool IsUntrusted {
+            get { return GetInstanceData().Untrusted; }
+            set { GetInstanceData().Untrusted = value; }
+        }
+
         int IRubyObject.BaseGetHashCode() {
             return base.GetHashCode();
         }
@@ -2164,14 +2170,20 @@ namespace IronRuby.Builtins {
                 set { _obj.IsTainted = value; }
             }
 
-            [DebuggerDisplay("{C}", Name = "frozen?", Type = "")]
+            [DebuggerDisplay("{C}", Name = "untrusted?", Type = "")]
             public bool C {
+                get { return _obj.IsUntrusted; }
+                set { _obj.IsUntrusted = value; }
+            }
+
+            [DebuggerDisplay("{D}", Name = "frozen?", Type = "")]
+            public bool D {
                 get { return _obj.IsFrozen; }
                 set { if (value) { _obj.Freeze(); } }
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public object D {
+            public object E {
                 get {
                     var instanceData = _obj.TryGetInstanceData();
                     if (instanceData == null) {
@@ -2193,23 +2205,23 @@ namespace IronRuby.Builtins {
 
             #endregion
 
-            [DebuggerDisplay("{GetModuleName(E),nq}", Name = "super", Type = "")]
-            public object E {
+            [DebuggerDisplay("{GetModuleName(F),nq}", Name = "super", Type = "")]
+            public object F {
                 get { return _obj.GetSuperClass(); }
             }
 
             [DebuggerDisplay("", Name = "mixins", Type = "")]
-            public object F {
+            public object G {
                 get { return _obj.GetMixins(); }
             }
 
             [DebuggerDisplay("", Name = "instance methods", Type = "")]
-            public object G {
+            public object H {
                 get { return GetMethods(RubyMethodAttributes.Instance); }
             }
 
             [DebuggerDisplay("", Name = "singleton methods", Type = "")]
-            public object H {
+            public object I {
                 get { return GetMethods(RubyMethodAttributes.Singleton); }
             }
 

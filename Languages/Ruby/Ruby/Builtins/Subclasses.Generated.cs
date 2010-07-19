@@ -69,6 +69,11 @@ namespace IronRuby.Builtins {
                 set { GetInstanceData().Tainted = value; }
             }
 
+            public bool IsUntrusted {
+                get { return _instanceData != null && _instanceData.Untrusted; }
+                set { GetInstanceData().Untrusted = value; }
+            }
+
             public void Freeze() {
                 GetInstanceData().Freeze();
             }
@@ -125,6 +130,11 @@ namespace IronRuby.Builtins {
                 set { GetInstanceData().Tainted = value; }
             }
 
+            public bool IsUntrusted {
+                get { return _instanceData != null && _instanceData.Untrusted; }
+                set { GetInstanceData().Untrusted = value; }
+            }
+
             public void Freeze() {
                 GetInstanceData().Freeze();
             }
@@ -178,6 +188,11 @@ namespace IronRuby.Builtins {
                 set { GetInstanceData().Tainted = value; }
             }
 
+            public bool IsUntrusted {
+                get { return _instanceData != null && _instanceData.Untrusted; }
+                set { GetInstanceData().Untrusted = value; }
+            }
+
             public void Freeze() {
                 GetInstanceData().Freeze();
             }
@@ -229,6 +244,11 @@ namespace IronRuby.Builtins {
             public bool IsTainted {
                 get { return _instanceData != null && _instanceData.Tainted; }
                 set { GetInstanceData().Tainted = value; }
+            }
+
+            public bool IsUntrusted {
+                get { return _instanceData != null && _instanceData.Untrusted; }
+                set { GetInstanceData().Untrusted = value; }
             }
 
             public void Freeze() {

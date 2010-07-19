@@ -319,9 +319,8 @@ namespace IronRuby.Builtins {
         #region ==, <=>, eql?, hash
 
         [RubyMethod("==")]
-        public static bool Equals(ConversionStorage<IList>/*!*/ arrayTryConvert, BinaryOpStorage/*!*/ equals, IList/*!*/ self, object other) {
-            IList otherAsArray = Protocols.TryConvertToArray(arrayTryConvert, other);
-            return otherAsArray != null ? Equals(equals, self, otherAsArray) : false;
+        public static bool Equals(RespondToStorage/*!*/ respondTo, BinaryOpStorage/*!*/ equals, IList/*!*/ self, object other) {
+            return Protocols.RespondTo(respondTo, other, "to_ary") && Protocols.IsEqual(equals, other, self);
         }
 
         [MultiRuntimeAware]
@@ -331,7 +330,7 @@ namespace IronRuby.Builtins {
         public static bool Equals(BinaryOpStorage/*!*/ equals, IList/*!*/ self, [NotNull]IList/*!*/ other) {
             Assert.NotNull(self, other);
 
-            if (object.ReferenceEquals(self, other)) {
+            if (ReferenceEquals(self, other)) {
                 return true;
             }
 
@@ -339,15 +338,14 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
-            using (IDisposable handle = _EqualsTracker.TrackObject(self)) {
-                if (handle == null) {
-                    // hashing of recursive array
-                    return false;
+            using (IDisposable handleSelf = _EqualsTracker.TrackObject(self), handleOther = _EqualsTracker.TrackObject(other)) {
+                if (handleSelf == null && handleOther == null) {
+                    // both arrays went recursive:
+                    return true;
                 }
 
                 for (int i = 0; i < self.Count; ++i) {
-                    bool result = Protocols.IsEqual(equals, self[i], other[i]);
-                    if (!result) {
+                    if (!Protocols.IsEqual(equals, self[i], other[i])) {
                         return false;
                     }
                 }
@@ -357,12 +355,13 @@ namespace IronRuby.Builtins {
         }
 
         [MultiRuntimeAware]
-        private static RubyUtils.RecursionTracker _infiniteComparisonTracker = new RubyUtils.RecursionTracker();
+        private static RubyUtils.RecursionTracker _ComparisonTracker = new RubyUtils.RecursionTracker();
 
         [RubyMethod("<=>")]
         public static object Compare(BinaryOpStorage/*!*/ comparisonStorage, IList/*!*/ self, [DefaultProtocol, NotNull]IList/*!*/ other) {
-            using (IDisposable handle = _infiniteComparisonTracker.TrackObject(self)) {
-                if (handle == null) {
+            using (IDisposable handleSelf = _ComparisonTracker.TrackObject(self), handleOther = _ComparisonTracker.TrackObject(other)) {
+                if (handleSelf == null && handleOther == null) {
+                    // both arrays went recursive:
                     return 0;
                 }
 
@@ -933,7 +932,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("fill")]
-        public static IList/*!*/ Fill(ConversionStorage<int>/*!*/ fixnumCast, IList/*!*/ self, object obj, Range/*!*/ range) {
+        public static IList/*!*/ Fill(ConversionStorage<int>/*!*/ fixnumCast, IList/*!*/ self, object obj, [NotNull]Range/*!*/ range) {
             int begin = NormalizeIndex(self, Protocols.CastToFixnum(fixnumCast, range.Begin));
             int end = NormalizeIndex(self, Protocols.CastToFixnum(fixnumCast, range.End));
             int length = Math.Max(0, end - begin + (range.ExcludeEnd ? 0 : 1));
@@ -983,7 +982,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("fill")]
-        public static object Fill(ConversionStorage<int>/*!*/ fixnumCast, [NotNull]BlockParam/*!*/ block, IList/*!*/ self, Range/*!*/ range) {
+        public static object Fill(ConversionStorage<int>/*!*/ fixnumCast, [NotNull]BlockParam/*!*/ block, IList/*!*/ self, [NotNull]Range/*!*/ range) {
             int begin = NormalizeIndex(self, Protocols.CastToFixnum(fixnumCast, range.Begin));
             int end = NormalizeIndex(self, Protocols.CastToFixnum(fixnumCast, range.End));
             int length = Math.Max(0, end - begin + (range.ExcludeEnd ? 0 : 1));

@@ -68,7 +68,7 @@ class MSpecScript
   # The set of substitutions to transform a spec filename
   # into a tag filename.
   set :tags_patterns, [
-                        [%r(rubyspec/), 'ironruby-tags/'],
+                        [%r(rubyspec/), RUBY_VERSION[0, 3] == "1.9" ? 'ironruby-tags-19/' : 'ironruby-tags/'],
                         [/interop\//i, 'interop/tags/'],
                         [/_spec.rb$/, '_tags.txt']
                       ]

@@ -39,14 +39,20 @@ namespace IronRuby.Builtins {
             set { _obj.IsTainted = value; }
         }
 
-        [DebuggerDisplay("{C}", Name = "frozen?", Type = "")]
+        [DebuggerDisplay("{C}", Name = "untrusted?", Type = "")]
         public bool C {
+            get { return _obj.IsUntrusted; }
+            set { _obj.IsUntrusted = value; }
+        }
+
+        [DebuggerDisplay("{D}", Name = "frozen?", Type = "")]
+        public bool D {
             get { return _obj.IsFrozen; }
             set { if (value) { _obj.Freeze(); } }
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public object/*!*/ D {
+        public object/*!*/ E {
             get {
                 var instanceData = _obj.TryGetInstanceData();
                 if (instanceData == null) {

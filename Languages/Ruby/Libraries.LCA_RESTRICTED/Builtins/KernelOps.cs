@@ -557,7 +557,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region frozen?, freeze, tainted?, taint, untaint, 1.9: trust, untrust, untrusted?
+        #region frozen?, freeze, tainted?, taint, untaint, trust, untrust, untrusted?
 
         [RubyMethod("frozen?")]
         public static bool Frozen([NotNull]MutableString/*!*/ self) {
@@ -607,7 +607,31 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        // 1.9 public: trust, untrust, untrusted?
+        [RubyMethod("untrusted?")]
+        public static bool Untrusted(RubyContext/*!*/ context, object self) {
+            if (!RubyUtils.HasObjectState(self)) {
+                return false; // can't untrust value types
+            }
+            return context.IsObjectUntrusted(self);
+        }
+
+        [RubyMethod("trust")]
+        public static object Trust(RubyContext/*!*/ context, object self) {
+            if (!RubyUtils.HasObjectState(self)) {
+                return self;
+            }
+            context.SetObjectTrustiness(self, false);
+            return self;
+        }
+
+        [RubyMethod("untrust")]
+        public static object Untrust(RubyContext/*!*/ context, object self) {
+            if (!RubyUtils.HasObjectState(self)) {
+                return self;
+            }
+            context.SetObjectTrustiness(self, true);
+            return self;
+        }
 
         #endregion
 

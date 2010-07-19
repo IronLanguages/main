@@ -149,7 +149,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static MutableString/*!*/ FormatObjectPrefix(RubyContext/*!*/ context, string/*!*/ className, long objectId, bool isTainted) {
+        public static MutableString/*!*/ FormatObjectPrefix(RubyContext/*!*/ context, string/*!*/ className, long objectId, bool isTainted, bool isUntrusted) {
             MutableString str = MutableString.CreateMutable(context.GetIdentifierEncoding());
             str.Append("#<");
             str.Append(className);
@@ -159,19 +159,24 @@ namespace IronRuby.Runtime {
             AppendFormatHexObjectId(str, objectId);
 
             str.IsTainted |= isTainted;
+            str.IsUntrusted |= isUntrusted;
             return str;
         }
 
-        public static MutableString/*!*/ FormatObject(RubyContext/*!*/ context, string/*!*/ className, long objectId, bool isTainted) {
-            return FormatObjectPrefix(context, className, objectId, isTainted).Append(">");
+        public static MutableString/*!*/ FormatObject(RubyContext/*!*/ context, string/*!*/ className, long objectId, bool isTainted, bool isUntrusted) {
+            return FormatObjectPrefix(context, className, objectId, isTainted, isUntrusted).Append(">");
         }
 
         public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
-            return FormatObject(context, context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
+            bool tainted, untrusted;
+            context.GetObjectTrust(obj, out tainted, out untrusted);
+            return FormatObject(context, context.GetClassDisplayName(obj), GetObjectId(context, obj), tainted, untrusted);
         }
 
         public static MutableString/*!*/ ObjectToMutableStringPrefix(RubyContext/*!*/ context, object obj) {
-            return FormatObjectPrefix(context, context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
+            bool tainted, untrusted;
+            context.GetObjectTrust(obj, out tainted, out untrusted);
+            return FormatObjectPrefix(context, context.GetClassDisplayName(obj), GetObjectId(context, obj), tainted, untrusted);
         }
 
         public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, long objectId) {
@@ -183,7 +188,8 @@ namespace IronRuby.Runtime {
                 self.ImmediateClass.Context, 
                 self.ImmediateClass.GetNonSingletonClass().Name, 
                 self.GetInstanceData().ObjectId, 
-                self.IsTainted
+                self.IsTainted,
+                self.IsUntrusted
             );
         }
 

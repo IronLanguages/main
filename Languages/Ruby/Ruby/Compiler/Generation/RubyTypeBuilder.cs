@@ -367,6 +367,23 @@ namespace IronRuby.Compiler.Generation {
             il.EmitCall(Methods.SetObjectTaint);
             il.Emit(OpCodes.Ret);
 
+            // bool IRubyObject.IsUntrusted { 
+            //   get { return RubyOps.IsObjectUntrusted(_instanceData); }
+            //   set { return RubyOps.SetObjectTaint(ref _instanceData, value); }
+            // }
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObjectState_get_IsUntrusted);
+            il.EmitLoadArg(0);
+            il.EmitFieldGet(InstanceDataField);
+            il.EmitCall(Methods.IsObjectUntrusted);
+            il.Emit(OpCodes.Ret);
+
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObjectState_set_IsUntrusted);
+            il.EmitLoadArg(0);
+            il.EmitFieldAddress(InstanceDataField);
+            il.EmitLoadArg(1);
+            il.EmitCall(Methods.SetObjectTrustiness);
+            il.Emit(OpCodes.Ret);
+
             // TODO: can we merge this with #base#GetHashCode/Equals/ToString?
 
             // int IRubyObject.BaseGetHashCode() { return base.GetHashCode(); }

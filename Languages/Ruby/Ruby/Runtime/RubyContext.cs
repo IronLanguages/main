@@ -1806,6 +1806,34 @@ namespace IronRuby.Runtime {
             return data != null ? data.Tainted : false;
         }
 
+        public bool IsObjectUntrusted(object obj) {
+            var state = obj as IRubyObjectState;
+            if (state != null) {
+                return state.IsUntrusted;
+            }
+
+            RubyInstanceData data = TryGetInstanceData(obj);
+            return data != null ? data.Untrusted : false;
+        }
+
+        public void GetObjectTrust(object obj, out bool tainted, out bool untrusted) {
+            var state = obj as IRubyObjectState;
+            if (state != null) {
+                tainted = state.IsTainted;
+                untrusted = state.IsUntrusted;
+                return;
+            }
+
+            RubyInstanceData data = TryGetInstanceData(obj);
+            if (data != null) {
+                tainted = data.Tainted;
+                untrusted = data.Untrusted;
+            } else {
+                tainted = false;
+                untrusted = false; // TODO: default?
+            }
+        }
+
         public void FreezeObject(object obj) {
             var state = obj as IRubyObjectState;
             if (state != null) {
@@ -1821,6 +1849,15 @@ namespace IronRuby.Runtime {
                 state.IsTainted = taint;
             } else {
                 GetInstanceData(obj).Tainted = taint;
+            }
+        }
+
+        public void SetObjectTrustiness(object obj, bool untrusted) {
+            var state = obj as IRubyObjectState;
+            if (state != null) {
+                state.IsUntrusted = untrusted;
+            } else {
+                GetInstanceData(obj).Untrusted = untrusted;
             }
         }
 

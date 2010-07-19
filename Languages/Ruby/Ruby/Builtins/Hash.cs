@@ -34,6 +34,7 @@ namespace IronRuby.Builtins {
         private uint _flags;
         private const uint IsFrozenFlag = 1;
         private const uint IsTaintedFlag = 2;
+        private const uint IsUntrustedFlag = 4;
 
         public Proc DefaultProc { get { return _defaultProc; } set { _defaultProc = value; } }
         public object DefaultValue { get { return _defaultValue; } set { _defaultValue = value; } }
@@ -111,6 +112,16 @@ namespace IronRuby.Builtins {
             set {
                 Mutate();
                 _flags = (_flags & ~IsTaintedFlag) | (value ? IsTaintedFlag : 0);
+            }
+        }
+
+        public bool IsUntrusted {
+            get {
+                return (_flags & IsUntrustedFlag) != 0;
+            }
+            set {
+                Mutate();
+                _flags = (_flags & ~IsUntrustedFlag) | (value ? IsUntrustedFlag : 0);
             }
         }
 
