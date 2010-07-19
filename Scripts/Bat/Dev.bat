@@ -116,11 +116,19 @@ if DEFINED INTERNALDEV set PATH=%PATH%;%DLR_ROOT%\External\Tools;%DLR_ROOT%\Scri
 set PATH=%PATH%;%DLR_ROOT%\Languages\Ruby\Scripts;%DLR_ROOT%\Languages\Ruby\Scripts\bin;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin;%RUBY18_BIN%
 
 REM -- Mono
-if not DEFINED DLR_VM_PATH (
-  set DLR_VM_PATH=%DLR_ROOT%\External.LCA_RESTRICTED\Mono\bin\mono.exe
-)
-if "%1" == "mono" set DLR_VM=%DLR_VM_PATH%\mono.exe
-if "%1" == "mono" set PATH=%DLR_VM_PATH%;%PATH%
+if defined DLR_VM_PATH goto MonoInitEnd
+if not "%1" == "mono" goto MonoInitEnd
+set DLR_VM_PATH=%~f2
+if NOT EXIST %DLR_VM_PATH%\mono.exe goto MonoNotFound
+set DLR_VM=%DLR_VM_PATH%\mono.exe
+set PATH=%DLR_VM_PATH%;%PATH%
+goto MonoInitEnd
+
+:MonoNotFound
+echo Mono runtime not found at %2
+goto End
+
+:MonoInitEnd
 
 if not DEFINED HOME_FOR_MSPECRC (
   if DEFINED HOME (

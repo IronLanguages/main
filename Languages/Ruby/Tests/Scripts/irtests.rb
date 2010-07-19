@@ -21,27 +21,27 @@ class IRTest
     end
     
     @options = options
-    if options[:clr4]
+    if options[:clr2] or options[:mono]
       if options[:release]
-        @config = "v4Release"
-        @sl_config = "Silverlight4Release"
+        @config = "v2Release"
+        @sl_config = "Silverlight3Release"
       else
-        @config = "v4Debug"
-        @sl_config = "Silverlight4Debug"
+        @config = "v2Debug"
+        @sl_config = "Silverlight3Debug"
       end
     else
       if options[:release]
         @config = "Release"
-        @sl_config = "Silverlight3Release"
+        @sl_config = "Silverlight4Release"
       else
         @config = "Debug"
-        @sl_config = "Silverlight3Debug"
+        @sl_config = "Silverlight4Debug"
       end
     end
     
     @root = File.expand_path(ENV["DLR_ROOT"])
     
-    explicit_config = options[:clr4] or options[:release]
+    explicit_config = !options[:clr2] or options[:release]
     requires_compile = !options[:nocompile]
     abort "Using DLR_BIN requires using --nocompile" if ENV["DLR_BIN"] and requires_compile and not explicit_config
     
@@ -171,9 +171,8 @@ class IRTest
   end
   
   def build_cmd(solution, build_config = @config, options = "")
-    version = @options[:clr4] ? "4" : ""
     build_engine = @options[:mono] ? "xbuild" : "msbuild"
-    "#{build_engine} /verbosity:minimal #{dlr_path("Solutions/#{solution}#{version}.sln")} /p:Configuration=#{q build_config} #{options}"
+    "#{build_engine} /verbosity:minimal #{dlr_path("Solutions/#{solution}.sln")} /p:Configuration=#{q build_config} #{options}"
   end
   
   def silverlight_build_runner
@@ -357,7 +356,7 @@ class IRTest
   def build_options
     [
       @options[:mono] ? "-m" : nil,
-      @options[:clr4] ? "-4" : nil,
+      @options[:clr2] ? "-2" : nil,
       @options[:release] ? "-r" : nil,
       @options[:selftest] ? "-s" : nil,
     ]
@@ -384,8 +383,8 @@ if $0 == __FILE__
       iroptions[:nocompile] = n
     end
     
-    opts.on("-4", "--clr4", "Use CLR4 configuration") do |n|
-      iroptions[:clr4] = n
+    opts.on("-2", "--clr2", "Use CLR2 configuration") do |n|
+      iroptions[:clr2] = n
     end
     
     opts.on("-m", "--mono", "Run tests on Mono") do |n|

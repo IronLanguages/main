@@ -1,20 +1,26 @@
 @echo off
 setlocal
 
-if "%DLR_BIN%" == "" (
-    set TEMP_IR_PATH=%DLR_ROOT%\bin\debug
+if "%DLR_VM%" == "" (
+    set _DEFAULT_CONFIG=Debug
 ) else (
-    set TEMP_IR_PATH=%DLR_BIN%
-)
+    set _DEFAULT_CONFIG=v2Debug
+)    
 
-set HOME=%USERPROFILE%
-set RUBY_EXE=%TEMP_IR_PATH%\ir.exe
+if "%DLR_BIN%" == "" (
+    set RUBY_EXE=%DLR_ROOT%\bin\%_DEFAULT_CONFIG%\ir.exe
+) else (
+    set RUBY_EXE=%DLR_BIN%\ir.exe
+)
 
 if "%DLR_VM%" == "" (
     set _EXE="%RUBY_EXE%"
 ) else (
-    set _EXE=%DLR_VM% "%RUBY_EXE%"
+    set _EXE="%DLR_VM%" "%RUBY_EXE%"
 )
+
+set HOME=%USERPROFILE%
+
 if "%THISISSNAP%" == "1" (
   if exist "%DLR_ROOT%\Languages\Ruby\Tests\interop\com\ComTest.exe" (
           call %~dp0elevate.bat "%DLR_ROOT%\Languages\Ruby\Tests\interop\com\ComTest.exe"  /unregserver > NUL 2>&1
