@@ -32,7 +32,7 @@ namespace IronPython.Runtime {
     /// 
     /// The default specification is:
     /// 
-    /// format_spec =  [[fill]align][sign][#][0][width][.precision][type]
+    /// format_spec =  [[fill]align][sign][#][0][width][,][.precision][type]
     /// fill        =  a character other than }
     /// align       =  "&lt;" | "&gt;" | "=" | "^"
     /// sign        =  "+" | "-" | " "
@@ -43,13 +43,14 @@ namespace IronPython.Runtime {
     internal class StringFormatSpec {
         internal readonly char? Fill, Alignment, Sign, Type;
         internal readonly int? Width, Precision;
-        internal readonly bool IncludeType, ZeroPad;
+        internal readonly bool IncludeType, ZeroPad, ThousandsComma;
 
-        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, int? precision, char? type, bool includeType) {
+        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, int? precision, char? type, bool includeType) {
             Fill = fill;
             Alignment = alignment;
             Sign = sign;
             Width = width;
+            ThousandsComma = thousandsComma;
             Precision = precision;
             Type = type;
             IncludeType = includeType;
@@ -63,7 +64,7 @@ namespace IronPython.Runtime {
 
             char? fill = null, sign = null, align = null, type = null;
             int? width = null, precision = null;
-            bool includeType = false;
+            bool includeType = false, thousandsComma = false;
 
             int curOffset = 0;
             if (formatSpec.Length >= 2) {
@@ -127,6 +128,13 @@ namespace IronPython.Runtime {
                 width = ParseInt(formatSpec, ref curOffset);
             }
 
+            // read optional comma
+            if (curOffset != formatSpec.Length &&
+                formatSpec[curOffset] == ',') {
+                curOffset++;
+                thousandsComma = true;
+            }
+
             // read precision
             if (curOffset != formatSpec.Length &&
                 formatSpec[curOffset] == '.') {
@@ -143,6 +151,18 @@ namespace IronPython.Runtime {
             // read type
             if (curOffset != formatSpec.Length) {
                 type = formatSpec[curOffset++];
+
+                if (thousandsComma) {
+                    switch (type) {
+                        case 'b':
+                        case 'c':
+                        case 'n':
+                        case 'o':
+                        case 'x':
+                        case 'X':
+                            throw PythonOps.ValueError("Cannot specify ',' with '{0}'", type);
+                    }
+                }
             }
 
             return new StringFormatSpec(
@@ -150,6 +170,7 @@ namespace IronPython.Runtime {
                 align,
                 sign,
                 width,
+                thousandsComma,
                 precision,
                 type,
                 includeType

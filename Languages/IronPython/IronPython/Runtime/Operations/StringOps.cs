@@ -1277,7 +1277,7 @@ namespace IronPython.Runtime.Operations {
         /// replacement_field =  "{" field_name ["!" conversion] [":" format_spec] "}"
         /// field_name        =  (identifier | integer) ("." identifier | "[" element_index "]")*
         /// 
-        /// format_spec: [[fill]align][sign][#][0][width][.precision][type]
+        /// format_spec: [[fill]align][sign][#][0][width][,][.precision][type]
         /// 
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>

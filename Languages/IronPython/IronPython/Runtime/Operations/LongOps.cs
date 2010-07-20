@@ -1000,6 +1000,7 @@ namespace IronPython.Runtime.Operations {
 
                     digits = ToCultureString(val, PythonContext.GetContext(context).NumericCulture);
                     break;
+#if CLR2
                 case null:
                 case 'd':
                     digits = val.ToString();
@@ -1041,6 +1042,63 @@ namespace IronPython.Runtime.Operations {
                         digits = val.ToString();
                     }
                     break;
+#else
+                case null:
+                case 'd':
+                    if (spec.ThousandsComma) {
+                        digits = val.ToString("#,0", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = val.ToString("D", CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case '%':
+                    if (spec.ThousandsComma) {
+                        digits = val.ToString("#,0.000000%", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = val.ToString("0.000000%", CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case 'e':
+                    if (spec.ThousandsComma) {
+                        digits = val.ToString("#,0.000000e+00", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = val.ToString("0.000000e+00", CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case 'E':
+                    if (spec.ThousandsComma) {
+                        digits = val.ToString("#,0.000000E+00", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = val.ToString("0.000000E+00", CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case 'f':
+                case 'F':
+                    if (spec.ThousandsComma) {
+                        digits = val.ToString("#,########0.000000", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = val.ToString("#########0.000000", CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case 'g':
+                    if (val >= 1000000) {
+                        digits = val.ToString("0.#####e+00", CultureInfo.InvariantCulture);
+                    } else if (spec.ThousandsComma) {
+                        digits = val.ToString("#,0", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = val.ToString(CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case 'G':
+                    if (val >= 1000000) {
+                        digits = val.ToString("0.#####E+00", CultureInfo.InvariantCulture);
+                    } else if (spec.ThousandsComma) {
+                        digits = val.ToString("#,0", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = val.ToString(CultureInfo.InvariantCulture);
+                    }
+                    break;
+#endif
                 case 'X':
                     digits = AbsToHex(val, false);
                     break;

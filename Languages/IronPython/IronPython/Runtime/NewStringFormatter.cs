@@ -130,7 +130,7 @@ namespace IronPython.Runtime {
 
             /// <summary>
             /// Provides an enumerable of the parsed format.  The elements of the tuple are:
-            ///     the text proceeding the format information
+            ///     the text preceding the format information
             ///     the field name
             ///     the format spec
             ///     the conversion

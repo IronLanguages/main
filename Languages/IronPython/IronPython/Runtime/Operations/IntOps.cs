@@ -451,16 +451,46 @@ namespace IronPython.Runtime.Operations {
                     break;
                 case null:
                 case 'd':
-                    digits = self.ToString("D", CultureInfo.InvariantCulture);
+                    if (spec.ThousandsComma) {
+                        digits = self.ToString("#,0", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = self.ToString("D", CultureInfo.InvariantCulture);
+                    }
                     break;
-                case '%': digits = self.ToString("0.000000%", CultureInfo.InvariantCulture); break;
-                case 'e': digits = self.ToString("0.000000e+00", CultureInfo.InvariantCulture); break;
-                case 'E': digits = self.ToString("0.000000E+00", CultureInfo.InvariantCulture); break;
-                case 'f': digits = self.ToString("#########0.000000", CultureInfo.InvariantCulture); break;
-                case 'F': digits = self.ToString("#########0.000000", CultureInfo.InvariantCulture); break;
+                case '%':
+                    if (spec.ThousandsComma) {
+                        digits = self.ToString("#,0.000000%", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = self.ToString("0.000000%", CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case 'e':
+                    if (spec.ThousandsComma) {
+                        digits = self.ToString("#,0.000000e+00", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = self.ToString("0.000000e+00", CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case 'E':
+                    if (spec.ThousandsComma) {
+                        digits = self.ToString("#,0.000000E+00", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = self.ToString("0.000000E+00", CultureInfo.InvariantCulture);
+                    }
+                    break;
+                case 'f':
+                case 'F':
+                    if (spec.ThousandsComma) {
+                        digits = self.ToString("#,########0.000000", CultureInfo.InvariantCulture);
+                    } else {
+                        digits = self.ToString("#########0.000000", CultureInfo.InvariantCulture);
+                    }
+                    break;
                 case 'g':
                     if (self >= 1000000 || self <= -1000000) {
                         digits = self.ToString("0.#####e+00", CultureInfo.InvariantCulture);
+                    } else if (spec.ThousandsComma) {
+                        digits = self.ToString("#,0", CultureInfo.InvariantCulture);
                     } else {
                         digits = self.ToString(CultureInfo.InvariantCulture);
                     }
@@ -468,6 +498,8 @@ namespace IronPython.Runtime.Operations {
                 case 'G':
                     if (self >= 1000000 || self <= -1000000) {
                         digits = self.ToString("0.#####E+00", CultureInfo.InvariantCulture);
+                    } else if (spec.ThousandsComma) {
+                        digits = self.ToString("#,0", CultureInfo.InvariantCulture);
                     } else {
                         digits = self.ToString(CultureInfo.InvariantCulture);
                     }

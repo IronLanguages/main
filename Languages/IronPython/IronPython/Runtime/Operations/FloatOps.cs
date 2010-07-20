@@ -432,7 +432,7 @@ namespace IronPython.Runtime.Operations {
         public static object __int__(double d) {
             if (Int32.MinValue <= d && d <= Int32.MaxValue) {
                 return (int)d;
-            } else if (Int64.MinValue <= d && d <= Int64.MaxValue) {
+            } else if (Int64.MinValue <= d && d < Int64.MaxValue) {
                 return (long)d;
             } else if (double.IsInfinity(d)) {
                 throw PythonOps.OverflowError("cannot convert float infinity to integer");
@@ -771,11 +771,32 @@ namespace IronPython.Runtime.Operations {
 
             string digits;
             switch (spec.Type) {
-                case '%': digits = self.ToString("0." + new string('0', precision) + "%", CultureInfo.InvariantCulture); break;
+                case '%': {
+                        string fmt = "0." + new string('0', precision) + "%";
+                        if (spec.ThousandsComma) {
+                            fmt = "#," + fmt;
+                        }
+                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
+                        break;
+                    }
                 case 'f':
-                case 'F': digits = self.ToString("0." + new string('0', precision), CultureInfo.InvariantCulture); break;
-                case 'e': digits = self.ToString("0." + new string('0', precision) + "e+00", CultureInfo.InvariantCulture); break;
-                case 'E': digits = self.ToString("0." + new string('0', precision) + "E+00", CultureInfo.InvariantCulture); break;
+                case 'F': {
+                        string fmt = "0." + new string('0', precision);
+                        if (spec.ThousandsComma) {
+                            fmt = "#," + fmt;
+                        }
+                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
+                        break;
+                    }
+                case 'e':
+                case 'E': {
+                        string fmt = "0." + new string('0', precision) + spec.Type + "+00";
+                        if (spec.ThousandsComma) {
+                            fmt = "#," + fmt;
+                        }
+                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
+                        break;
+                    }
                 case '\0':
                 case null:
                     if (spec.Precision != null) {
@@ -814,6 +835,8 @@ namespace IronPython.Runtime.Operations {
                         // just the default formatting
                         if (IncludeExponent(self)) {
                             digits = self.ToString("0.#e+00", CultureInfo.InvariantCulture);
+                        } else if (spec.ThousandsComma) {
+                            digits = self.ToString("#,0.0###", CultureInfo.InvariantCulture);
                         } else {
                             digits = self.ToString("0.0###", CultureInfo.InvariantCulture);
                         }
@@ -851,11 +874,14 @@ namespace IronPython.Runtime.Operations {
                                 // we've already figured out, we don't have any digits for decimal points, so just format as a number + exponent
                                 fmt = "0";
                             } else if (spec.Precision > 1 || digitCnt > 6) {
-                                // include the requested percision to the right of the decimal
+                                // include the requested precision to the right of the decimal
                                 fmt = "0.#" + new string('#', precision);
                             } else {
                                 // zero precision, no decimal
                                 fmt = "0";
+                            }
+                            if (spec.ThousandsComma) {
+                                fmt = "#," + fmt;
                             }
 
                             digits = self.ToString(fmt + (spec.Type == 'G' ? "E+00" : "e+00"), CultureInfo.InvariantCulture);
