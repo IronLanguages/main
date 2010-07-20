@@ -9,9 +9,9 @@ using IronRuby.Runtime;
 [assembly: AssemblyTitle("IronRuby.Libraries.Yaml")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("MSIT")]
+[assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("IronRuby.Libraries.Yaml")]
-[assembly: AssemblyCopyright("Copyright © MSIT 2008")]
+[assembly: AssemblyCopyright("Copyright © Microsoft 2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

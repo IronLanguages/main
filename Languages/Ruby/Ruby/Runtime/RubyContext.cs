@@ -89,8 +89,15 @@ namespace IronRuby.Runtime {
         }
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "1.0.0.1";
-        public static readonly Version IronRubyVersion = new Version(1, 0, 0, 1);
+        public const string IronRubyInformationalVersion = "1.1";
+#if !SILVERLIGHT
+        public const string/*!*/ IronRubyVersionString = "1.1.0.0";
+        public static readonly Version IronRubyVersion = new Version(1, 1, 0, 0);
+#else
+        public const string/*!*/ IronRubyVersionString = "1.1.1300.0";
+        public static readonly Version IronRubyVersion = new Version(1, 1, 1300, 0);
+        
+#endif
         internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";

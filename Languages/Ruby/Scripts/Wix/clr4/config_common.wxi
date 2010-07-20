@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Include>
 <?define ProductShortName = "IronRuby" ?>
-<?define ProductVersion = "1.0.0.0" ?>
+<?define ProductVersion = "1.1.0.0" ?>
 <?define Manufacturer = "Microsoft Corporation" ?>
 <?define RegKey="SOFTWARE\Microsoft\$(var.ProductShortName)\$(var.ProductVersionText)"?>
 </Include>

@@ -23,18 +23,18 @@ using System.Security;
 [assembly: AssemblyTitle("IronRuby.Rack")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Microsoft")]
-[assembly: AssemblyProduct("Ruby")]
-[assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("")]
+[assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
 [assembly: ComVisible(false)]
 [assembly: Guid("ca75230d-3011-485d-b1db-dfe924b6c434")]
 
-#if !SILVERLIGHT
-[assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]
-[assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
+
+[assembly: AssemblyVersion("0.0.9.0")]
+[assembly: AssemblyFileVersion("0.0.9.0")]
+[assembly: AssemblyInformationalVersion("0.0")]
 [assembly: AllowPartiallyTrustedCallers]
 [assembly: SecurityTransparent]
-#endif

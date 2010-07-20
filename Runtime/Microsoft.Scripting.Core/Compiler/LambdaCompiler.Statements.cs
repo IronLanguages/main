@@ -43,8 +43,6 @@ namespace System.Linq.Expressions.Compiler {
 
             int count = node.ExpressionCount;
             CompilationFlags tailCall = flags & CompilationFlags.EmitAsTailCallMask;
-            CompilationFlags middleTailCall = tailCall == CompilationFlags.EmitAsNoTail ? CompilationFlags.EmitAsNoTail : CompilationFlags.EmitAsMiddle;
-
             for (int index = 0; index < count - 1; index++) {
                 var e = node.GetExpression(index);
                 var next = node.GetExpression(index + 1);
@@ -57,19 +55,23 @@ namespace System.Linq.Expressions.Compiler {
                         continue;
                     }
                 }
-                // In the middle of the block.
-                // We may do better here by marking it as Tail if the following expressions are not going to emit any IL.
-                var tailCallFlag = middleTailCall;
 
-                var g = next as GotoExpression;
-                if (g != null && (g.Value == null || !Significant(g.Value))) {
-                    var labelInfo = ReferenceLabel(g.Target);
-                    if (labelInfo.CanReturn) {
+                CompilationFlags tailCallFlag;
+                if (tailCall != CompilationFlags.EmitAsNoTail) {
+                    var g = next as GotoExpression;
+                    if (g != null && (g.Value == null || !Significant(g.Value)) && ReferenceLabel(g.Target).CanReturn) {
                         // Since tail call flags are not passed into EmitTryExpression, CanReturn means the goto will be emitted
                         // as Ret. Therefore we can emit the current expression with tail call.
                         tailCallFlag = CompilationFlags.EmitAsTail;
+                    } else {
+                        // In the middle of the block.
+                        // We may do better here by marking it as Tail if the following expressions are not going to emit any IL.
+                        tailCallFlag = CompilationFlags.EmitAsMiddle;
                     }
+                } else {
+                    tailCallFlag = CompilationFlags.EmitAsNoTail;
                 }
+
                 flags = UpdateEmitAsTailCallFlag(flags, tailCallFlag);
                 EmitExpressionAsVoid(e, flags);
             }
