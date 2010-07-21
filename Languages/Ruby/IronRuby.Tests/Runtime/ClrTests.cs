@@ -610,6 +610,14 @@ puts GM3.foo(123)
             public int Where<T>(IEnumerable<T> e, object f) {
                 return 7;
             }
+
+            public int Mixed<T>(T arg) {
+                return 8;
+            }
+
+            public int Mixed(object arg) {
+                return 9;
+            }
         }
 
         public void ClrGenericParametersInference1() {
@@ -620,7 +628,7 @@ puts GM3.foo(123)
             );
             Context.ObjectClass.SetConstant("I", new Inference1());
             Context.ObjectClass.SetConstant("E", Context.GetClass(typeof(InteropTests.Generics1.Extensions)));
-            
+     
             TestOutput(@"
 p I.Array(System::Array[Fixnum].new(3))
 p I.Multiple([1,2,3], F.new { |x| x.to_s })
@@ -676,6 +684,14 @@ p I.Where(a, 123)
 ambiguous
 7
 ");
+
+            // an inferred type is more specific than object:
+            TestOutput(@"
+p I.Mixed(1)
+", @"
+8
+");
+
         }
 
         #endregion

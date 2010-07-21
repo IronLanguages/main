@@ -108,7 +108,6 @@ namespace Microsoft.Scripting.Metadata {
             int size;
             int fileDescriptor = 0;
             MemoryMapping mapping = null;
-            IntPtr ptr = IntPtr.Zero;
 
             // make sure we don't get interrupted before we save the handle and the pointer:
             RuntimeHelpers.PrepareConstrainedRegions();

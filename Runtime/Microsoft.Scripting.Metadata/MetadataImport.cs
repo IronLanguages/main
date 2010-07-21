@@ -1100,7 +1100,6 @@ namespace Microsoft.Scripting.Metadata {
         #region Dump
 #if DEBUG
         public unsafe void Dump(TextWriter output) {
-            IntPtr imageStart = (IntPtr)_image.Pointer;
             output.WriteLine("Image:");
             output.WriteLine("  {0}", _image.Length);
             output.WriteLine();
