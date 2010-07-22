@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -472,17 +473,19 @@ namespace IronPython.Runtime.Operations {
         public static int __hash__(double d) {
             // Python allows equality between floats, ints, and big ints.
             if ((d % 1) == 0) {
-                // This double represents an integer number, so it must hash like an integer number.
+                // This double represents an integer, so it must hash like an integer.
                 if (Int32.MinValue <= d && d <= Int32.MaxValue) {
                     return ((int)d).GetHashCode();
-                }
-                // Special values
-                if (double.IsInfinity(d) || double.IsNaN(d)) {
-                    return d.GetHashCode();
                 }
                 // Big integer
                 BigInteger b = (BigInteger)d;
                 return BigIntegerOps.__hash__(b);
+            }
+            // Special values
+            if (double.IsInfinity(d)) {
+                return d > 0 ? 314159 : -271828;
+            } else if (double.IsNaN(d)) {
+                return 0;
             }
             return d.GetHashCode();
         }
