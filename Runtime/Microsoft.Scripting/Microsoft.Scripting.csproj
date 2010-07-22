@@ -232,7 +232,7 @@
     <Compile Include="Utils\ExpressionUtils.cs" />
     <Compile Include="Utils\NativeMethods.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
-    <Compile Include="Utils\ReflectionUtils.cs" />
+    <Compile Include="Utils\DelegateUtils.cs" />
     <Compile Include="Utils\StringUtils.cs" />
     <Compile Include="Utils\TextStream.cs" />
   </ItemGroup>

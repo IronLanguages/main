@@ -646,7 +646,7 @@ namespace Microsoft.Scripting.Runtime {
                     ParameterExpression callInfo = Expression.Parameter(typeof(CallSiteBinder));
                     ParameterExpression target = Expression.Parameter(typeof(object));
                     ParameterExpression args = Expression.Parameter(typeof(object[]));
-                    Type funcType = ReflectionUtils.GetObjectCallSiteDelegateType(paramCount);
+                    Type funcType = DelegateUtils.GetObjectCallSiteDelegateType(paramCount);
                     ParameterExpression site = Expression.Parameter(typeof(CallSite<>).MakeGenericType(funcType));
                     Expression[] siteArgs = new Expression[paramCount + 2];
                     siteArgs[0] = site;

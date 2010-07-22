@@ -23,7 +23,7 @@ using System.Text;
 using System.Threading;
 
 namespace Microsoft.Scripting.Utils {
-    static class ReflectionUtils {
+    internal static class DelegateUtils {
         private static AssemblyBuilder _assembly;
         private static ModuleBuilder _modBuilder;
         private static int _typeCount;
