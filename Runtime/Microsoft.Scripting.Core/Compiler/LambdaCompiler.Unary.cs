@@ -105,10 +105,9 @@ namespace System.Linq.Expressions.Compiler {
             if (operandIsNullable) {
                 switch (op) {
                     case ExpressionType.Not: {
-                            if (operandType != typeof(bool?))
+                            if (operandType != typeof(bool?)) {
                                 goto case ExpressionType.Negate;
-
-                            Label labIfNull = _ilg.DefineLabel();
+                            }
                             Label labEnd = _ilg.DefineLabel();
                             LocalBuilder loc = GetLocal(operandType);
 

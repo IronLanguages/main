@@ -613,7 +613,7 @@ namespace IronRuby.Builtins {
         }
 
         private static void SetCritical(RubyContext/*!*/ context, bool value) {
-            Debug.Assert(context.RubyOptions.Compatibility < RubyCompatibility.Ruby19);
+            // Debug.Assert(context.RubyOptions.Compatibility < RubyCompatibility.Ruby19);
             if (value) {
                 bool lockTaken = false;
                 try {

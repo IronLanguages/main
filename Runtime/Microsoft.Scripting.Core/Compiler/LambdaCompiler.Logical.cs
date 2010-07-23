@@ -175,7 +175,6 @@ namespace System.Linq.Expressions.Compiler {
             // if not null, call conversion
             _ilg.MarkLabel(labNotNull);
             Debug.Assert(b.Conversion.Parameters.Count == 1);
-            ParameterExpression p = b.Conversion.Parameters[0];
 
             // emit the delegate instance
             EmitLambdaExpression(b.Conversion);

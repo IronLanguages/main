@@ -337,7 +337,6 @@ namespace System.Runtime.CompilerServices {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomNoMatchDelegate(MethodInfo invoke) {
             var @params = invoke.GetParametersCached().Map(p => Expression.Parameter(p.ParameterType, p.Name));
-            var site = @params[0];
             return Expression.Lambda<T>(
                 Expression.Block(
                     Expression.Call(

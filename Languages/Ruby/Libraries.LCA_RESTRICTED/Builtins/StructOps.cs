@@ -212,16 +212,7 @@ namespace IronRuby.Builtins {
             }
             Debug.Assert(self.ItemCount == other.ItemCount);
 
-            if (self.Values.Length > 0) {
-                var site = equals.GetCallSite("==");
-                for (int i = 0; i < self.Values.Length; i++) {
-                    if (RubyOps.IsFalse(site.Target(site, self.Values[i], other.Values[i]))) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
+            return IListOps.Equals(equals, self.Values, other.Values);
         }
 
         [RubyMethod("to_s")]

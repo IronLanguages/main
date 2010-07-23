@@ -229,12 +229,7 @@ namespace System.Linq.Expressions {
             GetMemberBinder getMember;
             SetMemberBinder setMember;
             DeleteMemberBinder deleteMember;
-            GetIndexBinder getIndex;
-            SetIndexBinder setIndex;
-            DeleteIndexBinder deleteIndex;
             InvokeMemberBinder call;
-            InvokeBinder invoke;
-            CreateInstanceBinder create;
             UnaryOperationBinder unary;
             BinaryOperationBinder binary;
 
@@ -246,17 +241,17 @@ namespace System.Linq.Expressions {
                 return "SetMember " + setMember.Name;
             } else if ((deleteMember = binder as DeleteMemberBinder) != null) {
                 return "DeleteMember " + deleteMember.Name;
-            } else if ((getIndex = binder as GetIndexBinder) != null) {
+            } else if (binder is GetIndexBinder) {
                 return "GetIndex";
-            } else if ((setIndex = binder as SetIndexBinder) != null) {
+            } else if (binder is SetIndexBinder) {
                 return "SetIndex";
-            } else if ((deleteIndex = binder as DeleteIndexBinder) != null) {
+            } else if (binder is DeleteIndexBinder) {
                 return "DeleteIndex";
             } else if ((call = binder as InvokeMemberBinder) != null) {
                 return "Call " + call.Name;
-            } else if ((invoke = binder as InvokeBinder) != null) {
+            } else if (binder is InvokeBinder) {
                 return "Invoke";
-            } else if ((create = binder as CreateInstanceBinder) != null) {
+            } else if (binder is CreateInstanceBinder) {
                 return "Create";
             } else if ((unary = binder as UnaryOperationBinder) != null) {
                 return "UnaryOperation " + unary.Operation;
@@ -866,8 +861,6 @@ namespace System.Linq.Expressions {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected internal override Expression VisitUnary(UnaryExpression node) {
-            bool parenthesize = NeedsParentheses(node, node.Operand);
-
             switch (node.NodeType) {
                 case ExpressionType.Convert:
                     Out("(" + node.Type.ToString() + ")");

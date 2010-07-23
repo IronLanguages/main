@@ -264,7 +264,7 @@ namespace IronRuby.Runtime.Conversions {
 
                     // respond_to?()
                     Methods.IsTrue.OpCall(
-                    AstUtils.LightDynamic(
+                        AstUtils.LightDynamic(
                             RubyCallAction.Make(args.RubyContext, Symbols.RespondTo, RubyCallSignature.WithImplicitSelf(1)),
                             args.TargetExpression, 
                             Ast.Constant(args.RubyContext.CreateSymbol(toMethodName, RubyEncoding.Binary))
@@ -300,7 +300,7 @@ namespace IronRuby.Runtime.Conversions {
             metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(targetClassNameConstant, AstUtils.Constant(TargetTypeName)));            
         }
 
-        private Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
+        protected virtual Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
             var validator = ConversionResultValidator;
             return (validator != null) ? validator.OpCall(targetClassNameConstant, AstUtils.Box(result)) : result;
         }
@@ -386,7 +386,7 @@ namespace IronRuby.Runtime.Conversions {
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToProcValidator; } }
     }
 
-    #region String, Symbol, Regex
+    #region String, Path, Symbol, Regex
 
     public sealed class ConvertToStrAction : ConvertToReferenceTypeAction<ConvertToStrAction, MutableString> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
@@ -397,6 +397,16 @@ namespace IronRuby.Runtime.Conversions {
             out MethodInfo postConverter) {
             postConverter = Methods.StringToMutableString;
             return context.MetaBinderFactory.InteropConvert(typeof(string), true);
+        }
+    }
+
+    public sealed class ConvertToPathAction : ConvertToReferenceTypeAction<ConvertToPathAction, MutableString> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToPath; } }
+        protected override string/*!*/ TargetTypeName { get { return "String"; } }
+        protected override MethodInfo ConversionResultValidator { get { return null; } }
+        
+        protected override Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
+            return AstUtils.LightDynamic(ConvertToStrAction.Make(args.RubyContext), AstUtils.Box(result));
         }
     }
 

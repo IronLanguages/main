@@ -109,7 +109,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region CastToString, TryCastToString, ConvertToString
+        #region CastToString, CastToPath, TryCastToString, ConvertToString
 
         /// <summary>
         /// Converts an object to string using to_str protocol (<see cref="ConvertToStrAction"/>).
@@ -117,6 +117,21 @@ namespace IronRuby.Runtime {
         public static MutableString/*!*/ CastToString(ConversionStorage<MutableString>/*!*/ stringCast, object obj) {
             var site = stringCast.GetSite(ConvertToStrAction.Make(stringCast.Context));
             return site.Target(site, obj);
+        }
+
+        /// <summary>
+        /// Converts an object to string using to_path-to_str protocol.
+        /// Protocol:
+        /// ? to_path => to_path() and to_str conversion on the result
+        /// ? to_str => to_str()
+        /// </summary>
+        public static MutableString/*!*/ CastToPath(ConversionStorage<MutableString>/*!*/ toPath, object obj) {
+            var site = toPath.GetSite(CompositeConversionAction.Make(toPath.Context, CompositeConversion.ToPathToStr));
+            MutableString result = site.Target(site, obj);
+            if (result == null) {
+                throw RubyExceptions.CreateTypeConversionError("nil", "String");
+            }
+            return result; 
         }
 
         /// <summary>
@@ -288,11 +303,17 @@ namespace IronRuby.Runtime {
         /// Protocol for determining value equality in Ruby (uses IsTrue protocol on result of == call)
         /// </summary>
         public static bool IsEqual(BinaryOpStorage/*!*/ equals, object lhs, object rhs) {
+            return IsEqual(equals.GetCallSite("=="), lhs, rhs);
+        }
+
+        /// <summary>
+        /// Protocol for determining value equality in Ruby (uses IsTrue protocol on result of == call)
+        /// </summary>
+        public static bool IsEqual(CallSite<Func<CallSite, object, object, object>>/*!*/ site, object lhs, object rhs) {
             // check reference equality first:
             if (lhs == rhs) {
                 return true;
             }
-            var site = equals.GetCallSite("==");
             return IsTrue(site.Target(site, lhs, rhs));
         }
 

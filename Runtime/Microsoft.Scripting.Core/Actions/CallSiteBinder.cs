@@ -166,7 +166,6 @@ namespace System.Runtime.CompilerServices {
         }
 
         private static Expression<T> Stitch<T>(Expression binding, LambdaSignature<T> signature) where T : class {
-            Type targetType = typeof(T);
             Type siteType = typeof(CallSite<T>);
 
             var body = new ReadOnlyCollectionBuilder<Expression>(3);

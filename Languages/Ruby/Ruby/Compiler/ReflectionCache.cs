@@ -32,6 +32,7 @@ namespace IronRuby.Compiler {
     using MSAst = Microsoft.Scripting.Ast;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
     using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
+    using Microsoft.Scripting.Interpreter;
 
     public static partial class Fields {
         private static FieldInfo _StrongBox_Value;

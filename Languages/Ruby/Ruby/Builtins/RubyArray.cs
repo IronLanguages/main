@@ -225,7 +225,7 @@ namespace IronRuby.Builtins {
 
                 var site = eqlStorage.GetCallSite("eql?");
                 for (int i = 0; i < self.Count; i++) {
-                    if (!Protocols.IsTrue(site.Target(site, self[i], other[i]))) {
+                    if (!Protocols.IsEqual(site, self[i], other[i])) {
                         return false;
                     }
                 }

@@ -81,10 +81,29 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>0 if no block is given; otherwise, the value of the block</returns>
         [RubyMethod("chdir", RubyMethodAttributes.PublicSingleton)]
-        public static object ChangeDirectory(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ dir) {
-            var pal = self.Context.Platform;
-            string strDir = self.Context.DecodePath(dir);
+        public static object ChangeDirectory(ConversionStorage<MutableString>/*!*/ toPath, BlockParam block, RubyClass/*!*/ self, object dir) {
+            var d = Protocols.CastToPath(toPath, dir);
+            return ChangeDirectory(self.Context.Platform, self.Context.DecodePath(d), d, block);
+        }
 
+        /// <summary>
+        /// change the directory to the value of the environment variable HOME or LOGDIR
+        /// </summary>
+        [RubyMethod("chdir", RubyMethodAttributes.PublicSingleton)]
+        public static object ChangeDirectory(BlockParam block, RubyClass/*!*/ self) {
+#if !SILVERLIGHT
+            string defaultDirectory = RubyUtils.GetHomeDirectory(self.Context.Platform);
+            if (defaultDirectory == null) {
+                throw RubyExceptions.CreateArgumentError("HOME / USERPROFILE not set");
+            }
+
+            return ChangeDirectory(self.Context.Platform, defaultDirectory, self.Context.EncodePath(defaultDirectory), block);
+#else
+            throw new InvalidOperationException();
+#endif
+        }
+
+        private static object ChangeDirectory(PlatformAdaptationLayer/*!*/ pal, string/*!*/ strDir, MutableString/*!*/ dir, BlockParam block) {
             if (block == null) {
                 SetCurrentDirectory(pal, strDir);
                 return 0;
@@ -101,23 +120,6 @@ namespace IronRuby.Builtins {
             }
         }
 
-        /// <summary>
-        /// change the directory to the value of the environment variable HOME or LOGDIR
-        /// </summary>
-        [RubyMethod("chdir", RubyMethodAttributes.PublicSingleton)]
-        public static object ChangeDirectory(BlockParam block, RubyClass/*!*/ self) {
-#if !SILVERLIGHT
-            string defaultDirectory = RubyUtils.GetHomeDirectory(self.Context.Platform);
-            if (defaultDirectory == null) {
-                throw RubyExceptions.CreateArgumentError("HOME / USERPROFILE not set");
-            }
-
-            return ChangeDirectory(block, self, self.Context.EncodePath(defaultDirectory));
-#else
-            throw new InvalidOperationException();
-#endif
-        }
-
         [RubyMethod("chroot", RubyMethodAttributes.PublicSingleton)]
         public static int ChangeRoot(object self) {
             throw new InvalidOperationException();
@@ -126,8 +128,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("rmdir", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
-        public static int RemoveDirectory(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
-            string strDir = self.Context.DecodePath(dirname);
+        public static int RemoveDirectory(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object dirname) {
+            string strDir = self.Context.DecodePath(Protocols.CastToPath(toPath, dirname));
             try {
                 self.Context.Platform.DeleteDirectory(strDir, false);
             } catch (Exception ex) {
@@ -137,13 +139,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("entries", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray/*!*/ GetEntries(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
-            return new RubyDir(self, dirname).GetEntries(self.Context);
+        public static RubyArray/*!*/ GetEntries(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object dirname) {
+            return new RubyDir(self, Protocols.CastToPath(toPath, dirname)).GetEntries(self.Context);
         }
 
         [RubyMethod("foreach", RubyMethodAttributes.PublicSingleton)]
-        public static object ForEach(BlockParam block, RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
-            return new RubyDir(self, dirname).EnumerateEntries(self.Context, block, null);
+        public static object ForEach(ConversionStorage<MutableString>/*!*/ toPath, BlockParam block, RubyClass/*!*/ self, object dirname) {
+            return new RubyDir(self, Protocols.CastToPath(toPath, dirname)).EnumerateEntries(self.Context, block, null);
         }
 
         [RubyMethod("getwd", RubyMethodAttributes.PublicSingleton)]
@@ -194,10 +196,10 @@ namespace IronRuby.Builtins {
         #endregion
 
         [RubyMethod("mkdir", RubyMethodAttributes.PublicSingleton)]
-        public static int MakeDirectory(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname, [Optional]object permissions) {
+        public static int MakeDirectory(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object dirname, [Optional]object permissions) {
             var platform = self.Context.Platform;
 
-            string strDir = self.Context.DecodePath(dirname);
+            string strDir = self.Context.DecodePath(Protocols.CastToPath(toPath, dirname));
             if (platform.FileExists(strDir) || platform.DirectoryExists(strDir)) {
                 throw RubyExceptions.CreateEEXIST(strDir);
             }
@@ -216,8 +218,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(BlockParam block, RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
-            RubyDir rd = new RubyDir(self, dirname);
+        public static object Open(ConversionStorage<MutableString>/*!*/ toPath, BlockParam block, RubyClass/*!*/ self, object dirname) {
+            RubyDir rd = new RubyDir(self, Protocols.CastToPath(toPath, dirname));
 
             try {
                 object result;
@@ -229,8 +231,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyDir/*!*/ Open(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ dirname) {
-            return new RubyDir(self, dirname);
+        public static RubyDir/*!*/ Open(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object dirname) {
+            return new RubyDir(self, Protocols.CastToPath(toPath, dirname));
         }
 
         #endregion
@@ -248,6 +250,7 @@ namespace IronRuby.Builtins {
             return self.EnumerateEntries(context, block, self);
         }
 
+        [RubyMethod("to_path")]
         [RubyMethod("path")]
         public static MutableString GetPath(RubyContext/*!*/ context, RubyDir/*!*/ self) {
             if (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {

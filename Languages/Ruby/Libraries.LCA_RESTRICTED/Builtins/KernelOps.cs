@@ -1171,11 +1171,11 @@ namespace IronRuby.Builtins {
                     return RubyFileOps.RubyStatOps.IsCharDevice(RubyFileOps.RubyStatOps.Create(context, file1));
 
                 case 'd':
-                    return RubyFileOps.DirectoryExists(context, file1);
+                    return FileTest.DirectoryExists(context, file1);
 
                 case 'e':
                 case 'f':
-                    return RubyFileOps.FileExists(context, file1);
+                    return FileTest.FileExists(context, file1);
 
                 case 'g':
                     return RubyFileOps.RubyStatOps.IsSetGid(RubyFileOps.RubyStatOps.Create(context, file1));

@@ -370,7 +370,7 @@ namespace IronRuby.Builtins {
         #region sysopen
         [RubyMethod("sysopen", RubyMethodAttributes.PublicSingleton)]
         public static int SysOpen(RubyClass/*!*/ self, [NotNull]MutableString path, [Optional]MutableString mode, [Optional]int perm) {
-            if (RubyFileOps.DirectoryExists(self.Context, path)) {
+            if (FileTest.DirectoryExists(self.Context, path)) {
                 // TODO: What file descriptor should be returned for a directory?
                 return -1;
             }

@@ -158,6 +158,9 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         #region Private Constructors
 
+        public BigDecimal() : this(0, NaN) {
+        }
+
         private BigDecimal(int sign, Fraction/*!*/ fraction, int exponent)
             : this(sign, fraction, exponent, fraction.Precision) {
         }

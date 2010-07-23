@@ -344,8 +344,9 @@ namespace IronRuby.Builtins {
                     return true;
                 }
 
+                var site = equals.GetCallSite("==");
                 for (int i = 0; i < self.Count; ++i) {
-                    if (!Protocols.IsEqual(equals, self[i], other[i])) {
+                    if (!Protocols.IsEqual(site, self[i], other[i])) {
                         return false;
                     }
                 }
@@ -362,7 +363,7 @@ namespace IronRuby.Builtins {
             using (IDisposable handleSelf = _ComparisonTracker.TrackObject(self), handleOther = _ComparisonTracker.TrackObject(other)) {
                 if (handleSelf == null && handleOther == null) {
                     // both arrays went recursive:
-                    return 0;
+                    return ScriptingRuntimeHelpers.Int32ToObject(0);
                 }
 
                 int limit = Math.Min(self.Count, other.Count);

@@ -37,7 +37,8 @@ namespace IronRuby.Runtime.Conversions {
         ToFixnumToStr,
         ToStrToFixnum,
         ToIntToI,
-        ToAryToInt
+        ToAryToInt,
+        ToPathToStr,
     }
 
     public sealed class CompositeConversionAction : RubyConversionAction {
@@ -59,7 +60,7 @@ namespace IronRuby.Runtime.Conversions {
             get { return _resultType; }
         }
 
-        public static CompositeConversionAction Make(RubyContext context, CompositeConversion conversion) {
+        public static CompositeConversionAction/*!*/ Make(RubyContext/*!*/ context, CompositeConversion/*!*/ conversion) {
             switch (conversion) {
                 case CompositeConversion.ToFixnumToStr:
                     return new CompositeConversionAction(conversion,
@@ -79,6 +80,11 @@ namespace IronRuby.Runtime.Conversions {
                 case CompositeConversion.ToAryToInt:
                     return new CompositeConversionAction(conversion,
                         typeof(Union<IList, int>), ConvertToArrayAction.Make(context), ConvertToFixnumAction.Make(context)
+                    );
+
+                case CompositeConversion.ToPathToStr:
+                    return new CompositeConversionAction(conversion,
+                        typeof(MutableString), ConvertToPathAction.Make(context), ConvertToStrAction.Make(context)
                     );
 
                 default:

@@ -99,9 +99,10 @@ namespace IronRuby.Builtins {
                 }
 
                 // Each key value pair must be the same
+                var site = equals.GetCallSite("==");
                 foreach (KeyValuePair<object, object> pair in self) {
                     object value;
-                    if (!other.TryGetValue(pair.Key, out value) || !Protocols.IsEqual(equals, pair.Value, value)) {
+                    if (!other.TryGetValue(pair.Key, out value) || !Protocols.IsEqual(site, pair.Value, value)) {
                         return false;
                     }
                 }

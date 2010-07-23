@@ -25,6 +25,8 @@ using System;
 #endif
 
 namespace IronRuby.Builtins {
+    // TODO: conversion: to_io, to_path, to_str
+
     [RubyModule("FileTest")]
     public static class FileTest {
         [RubyMethod("blockdev?", RubyMethodAttributes.PublicSingleton)]
@@ -42,7 +44,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("directory?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("directory?", RubyMethodAttributes.PrivateInstance)]
         public static bool IsDirectory(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.DirectoryExists(self.Context, path);
+            return DirectoryExists(self.Context, path);
         }
 
         [RubyMethod("executable?", RubyMethodAttributes.PublicSingleton)]
@@ -58,13 +60,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("exists?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("exists?", RubyMethodAttributes.PrivateInstance)]
         public static bool Exists(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.FileExists(self.Context, path) || RubyFileOps.DirectoryExists(self.Context, path);
+            return FileExists(self.Context, path) || DirectoryExists(self.Context, path);
         }
 
         [RubyMethod("file?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("file?", RubyMethodAttributes.PrivateInstance)]
         public static bool IsFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.FileExists(self.Context, path);
+            return FileExists(self.Context, path);
         }
 
         [RubyMethod("grpowned?", RubyMethodAttributes.PublicSingleton)]
@@ -177,6 +179,19 @@ namespace IronRuby.Builtins {
             }
 
             return RubyFileOps.RubyStatOps.IsZeroLength(RubyFileOps.RubyStatOps.Create(self.Context, strPath));
+        }
+
+        internal static bool FileExists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            return context.Platform.FileExists(context.DecodePath(path));
+        }
+
+        internal static bool DirectoryExists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            return context.Platform.DirectoryExists(context.DecodePath(path));
+        }
+
+        internal static bool Exists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            var strPath = context.DecodePath(path);
+            return context.Platform.DirectoryExists(strPath) || context.Platform.FileExists(strPath);
         }
 
         private static bool RunIfFileExists(RubyContext/*!*/ context, MutableString/*!*/ path, Func<FileSystemInfo, bool> del) {
