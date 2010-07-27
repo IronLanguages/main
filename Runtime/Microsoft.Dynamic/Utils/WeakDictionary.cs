@@ -102,6 +102,8 @@ namespace Microsoft.Scripting.Utils {
                 // in the objects being kept alive forever. The caller needs to ensure that this cannot happen.
                 Debug.Assert(!dict.ContainsKey(value));
 
+                CheckCleanup();
+
                 dict[new WeakObject(key)] = value;
             }
         }
