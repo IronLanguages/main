@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "examples", "examples", "{EAC25738-57E7-4371-A03B-A5AA366380B3}"
+	ProjectSection(WebsiteProperties) = preProject
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/ipy-aspnet-20100716"
+		Debug.AspNetCompiler.PhysicalPath = "examples"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\ipy-aspnet-20100716\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/ipy-aspnet-20100716"
+		Release.AspNetCompiler.PhysicalPath = "examples"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\ipy-aspnet-20100716\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		VWDPort = "57336"
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EAC25738-57E7-4371-A03B-A5AA366380B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAC25738-57E7-4371-A03B-A5AA366380B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
