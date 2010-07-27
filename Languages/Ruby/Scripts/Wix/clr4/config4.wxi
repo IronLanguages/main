@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Include>
-<?define ProductVersionText = "1.1" ?>
-<?define EnvVariableName="IRONRUBY_11_40" ?>
-<?define UpgradeCode = "adb11d18-30fb-4488-8898-7ffa4a43e23f" ?>
-</Include>
