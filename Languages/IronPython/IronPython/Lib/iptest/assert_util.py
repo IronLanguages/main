@@ -212,8 +212,8 @@ def SequencesAreEqual(a, b, m=None):
     for i in xrange(len(a)):
         Assert(a[i] == b[i], m or 'sequences differ at index %d: expected %r, but found %r' % (i, b[i], a[i]))
 
-def AlmostEqual(a, b):
-    Assert(round(a-b, 6) == 0, "expected %r and %r almost same" % (a, b))    
+def AlmostEqual(a, b, tolerance=6):
+    Assert(round(a-b, tolerance) == 0, "expected %r and %r almost same" % (a, b))
     
 def AssertError(exc, func, *args, **kwargs):
     try:        func(*args, **kwargs)

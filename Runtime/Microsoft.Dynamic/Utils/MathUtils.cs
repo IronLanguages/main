@@ -216,6 +216,169 @@ namespace Microsoft.Scripting.Utils {
 #endif
         }
 
+        #region Special Functions
+
+        public static double Erf(double v0) {
+            // Calculate the error function using the approximation method outlined in
+            // W. J. Cody's "Rational Chebyshev Approximations for the Error Function"
+
+            if (v0 >= 10.0) {
+                return 1.0;
+            } else if (v0 <= -10.0) {
+                return -1.0;
+            }
+
+            if (v0 > 0.47 || v0 < -0.47) {
+                return 1.0 - ErfComplement(v0);
+            }
+
+            double sq = v0 * v0;
+            double numer = EvalPolynomial(sq, ErfNumerCoeffs);
+            double denom = EvalPolynomial(sq, ErfDenomCoeffs);
+
+            return v0 * numer / denom;
+        }
+
+        public static double ErfComplement(double v0) {
+            if (v0 >= 30.0) {
+                return 0.0;
+            } else if (v0 <= -10.0) {
+                return 2.0;
+            }
+
+            double a = Math.Abs(v0);
+            if (a < 0.47) {
+                return 1.0 - Erf(v0);
+            }
+
+            // Different approximations are required for different ranges of v0
+            double res;
+            if (a <= 4.0) {
+                // Use the approximation method outlined in W. J. Cody's "Rational Chebyshev
+                // Approximations for the Error Function"
+                double numer = EvalPolynomial(a, ErfcNumerCoeffs);
+                double denom = EvalPolynomial(a, ErfcDenomCoeffs);
+
+                res = Math.Exp(-a * a) * numer / denom;
+            } else {
+                // Use the approximation method introduced by C. Tellambura and A. Annamalai
+                // in "Efficient Computation of erfc(x) for Large Arguments"
+                const double h = 0.5;
+                const double hSquared = 0.25;
+                const int nTerms = 10;
+                double sq = a * a;
+                res = 0.0;
+                for (int i = nTerms; i > 0; i--) {
+                    double term = i * i * hSquared;
+                    res += Math.Exp(-term) / (term + sq);
+                }
+
+                res = h * a * Math.Exp(-sq) / Math.PI * (res * 2 + 1.0 / sq);
+            }
+
+            if (v0 < 0.0) {
+                res = 2.0 - res;
+            }
+            return res;
+        }
+
+        public static double Gamma(double v0) {
+            // Calculate the Gamma function using the Lanczos approximation
+
+            if (double.IsNegativeInfinity(v0)) {
+                return double.NaN;
+            }
+            double a = Math.Abs(v0);
+
+            // Special-case integers
+            if (a % 1.0 == 0.0) {
+                // Gamma is undefined on non-positive integers
+                if (v0 <= 0.0) {
+                    return double.NaN;
+                }
+
+                // factorial(v0 - 1)
+                if (a <= 25.0) {
+                    if (a <= 2.0) {
+                        return 1.0;
+                    }
+                    a -= 1.0;
+                    v0 -= 1.0;
+                    while (--v0 > 1.0) {
+                        a *= v0;
+                    }
+                    return a;
+                }
+            }
+
+            // lim(Gamma(v0)) = 1.0 / v0 as v0 approaches 0.0
+            if (a < 1e-50) {
+                return 1.0 / v0;
+            }
+
+            double res;
+            if (v0 < -150.0) {
+                // If Gamma(1 - v0) could overflow for large v0, use the duplication formula to
+                // compute Gamma(1 - v0):
+                //     Gamma(x) * Gamma(x + 0,5) = sqrt(pi) * 2**(1 - 2x) * Gamma(2x)
+                // ==> Gamma(1 - x) = Gamma((1-x)/2) * Gamma((2-x)/2) / (2**x * sqrt(pi))
+                // Then apply the reflection formula:
+                //     Gamma(x) = pi / sin(pi * x) / Gamma(1 - x)
+                double halfV0 = v0 / 2.0;
+                res = Math.Pow(Math.PI, 1.5) / SinPi(v0);
+                res *= Math.Pow(2.0, v0);
+                res /= PositiveGamma(0.5 - halfV0);
+                res /= PositiveGamma(1.0 - halfV0);
+            } else if (v0 < 0.001) {
+                // For values less than or close to zero, just use the reflection formula
+                res = Math.PI / SinPi(v0);
+                double v1 = 1.0 - v0;
+                if (v0 == 1.0 - v1) {
+                    res /= PositiveGamma(v1);
+                } else {
+                    // Computing v1 has resulted in a loss of precision. To avoid this, use the
+                    // recurrence relation Gamma(x + 1) = x * Gamma(x).
+                    res /= -v0 * PositiveGamma(-v0);
+                }
+            } else {
+                res = PositiveGamma(v0);
+            }
+
+            return res;
+        }
+
+        public static double LogGamma(double v0) {
+            // Calculate the log of the Gamma function using the Lanczos approximation
+
+            if (double.IsInfinity(v0)) {
+                return double.PositiveInfinity;
+            }
+            double a = Math.Abs(v0);
+
+            // Gamma is undefined on non-positive integers
+            if (v0 <= 0.0 && a % 1.0 == 0.0) {
+                return double.NaN;
+            }
+
+            // lim(LGamma(v0)) = -log|v0| as v0 approaches 0.0
+            if (a < 1e-50) {
+                return -Math.Log(a);
+            }
+
+            double res;
+            if (v0 < 0.0) {
+                // For negative values, use the reflection formula:
+                //     Gamma(x) = pi / sin(pi * x) / Gamma(1 - x)
+                // ==> LGamma(x) = log(pi / |sin(pi * x)|) - LGamma(1 - x)
+                res = Math.Log(Math.PI / AbsSinPi(v0));
+                res -= PositiveLGamma(1.0 - v0);
+            } else {
+                res = PositiveLGamma(v0);
+            }
+
+            return res;
+        }
+
         public static double Hypot(double x, double y) {
             //
             // sqrt(x*x + y*y) == sqrt(x*x * (1 + (y*y)/(x*x))) ==
@@ -246,6 +409,167 @@ namespace Microsoft.Scripting.Utils {
             // calculate abs(x) * sqrt(1 + (y/x)*(y/x))
             return x * System.Math.Sqrt(1 + y * y);
         }
+
+        /// <summary>
+        /// Evaluates a polynomial in v0 where the coefficients are ordered in increasing degree
+        /// </summary>
+        private static double EvalPolynomial(double v0, double[] coeffs) {
+            double res = 0.0;
+            for (int i = coeffs.Length - 1; i >= 0; i--) {
+                res = checked(res * v0 + coeffs[i]);
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Evaluates a polynomial in v0 where the coefficients are ordered in increasing degree
+        /// if reverse is false, and increasing degree if reverse is true.
+        /// </summary>
+        private static double EvalPolynomial(double v0, double[] coeffs, bool reverse) {
+            if (!reverse) {
+                return EvalPolynomial(v0, coeffs);
+            }
+
+            double res = 0.0;
+            for (int i = 0; i < coeffs.Length; i++) {
+                res = checked(res * v0 + coeffs[i]);
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// A numerically precise version of sin(v0 * pi)
+        /// </summary>
+        private static double SinPi(double v0) {
+            double res = Math.Abs(v0) % 2.0;
+
+            if (res < 0.25) {
+                res = Math.Sin(res * Math.PI);
+            } else if (res < 0.75) {
+                res = Math.Cos((res - 0.5) * Math.PI);
+            } else if (res < 1.25) {
+                res = -Math.Sin((res - 1.0) * Math.PI);
+            } else if (res < 1.75) {
+                res = -Math.Cos((res - 1.5) * Math.PI);
+            } else {
+                res = Math.Sin((res - 2.0) * Math.PI);
+            }
+
+            return v0 < 0 ? -res : res;
+        }
+
+        /// <summary>
+        /// A numerically precise version of |sin(v0 * pi)|
+        /// </summary>
+        private static double AbsSinPi(double v0) {
+            double res = Math.Abs(v0) % 1.0;
+
+            if (res < 0.25) {
+                res = Math.Sin(res * Math.PI);
+            } else if (res < 0.75) {
+                res = Math.Cos((res - 0.5) * Math.PI);
+            } else {
+                res = Math.Sin((res - 1.0) * Math.PI);
+            }
+
+            return Math.Abs(res);
+        }
+
+        // polynomial coefficients ordered by increasing degree
+        private static double[] ErfNumerCoeffs = {
+            2.4266795523053175e02, 2.1979261618294152e01,
+            6.9963834886191355, -3.5609843701815385e-02
+        };
+        private static double[] ErfDenomCoeffs = {
+            2.1505887586986120e02, 9.1164905404514901e01,
+            1.5082797630407787e01, 1.0
+        };
+        private static double[] ErfcNumerCoeffs = {
+            3.004592610201616005e02, 4.519189537118729422e02,
+            3.393208167343436870e02, 1.529892850469404039e02,
+            4.316222722205673530e01, 7.211758250883093659,
+            5.641955174789739711e-01, -1.368648573827167067e-07
+        };
+        private static double[] ErfcDenomCoeffs = {
+            3.004592609569832933e02, 7.909509253278980272e02,
+            9.313540948506096211e02, 6.389802644656311665e02,
+            2.775854447439876434e02, 7.700015293522947295e01,
+            1.278272731962942351e01, 1.0
+        };
+        private static double[] GammaNumerCoeffs = {
+            4.401213842800460895436e13, 4.159045335859320051581e13,
+            1.801384278711799677796e13, 4.728736263475388896889e12,
+            8.379100836284046470415e11, 1.055837072734299344907e11,
+            9.701363618494999493386e09, 6.549143975482052641016e08,
+            3.223832294213356530668e07, 1.128514219497091438040e06,
+            2.666579378459858944762e04, 3.818801248632926870394e02,
+            2.506628274631000502415
+        };
+        private static double[] GammaDenomCoeffs = {
+            0.0, 39916800.0, 120543840.0, 150917976.0,
+            105258076.0, 45995730.0, 13339535.0, 2637558.0,
+            357423.0, 32670.0, 1925.0, 66.0, 1.0
+        };
+
+        /// <summary>
+        /// Take the quotient of the 2 polynomials forming the Lanczos approximation
+        /// with N=13 and G=13.144565
+        /// </summary>
+        private static double GammaRationalFunc(double v0) {
+            double numer = 0.0;
+            double denom = 0.0;
+
+            if (v0 < 1e15) {
+                numer = EvalPolynomial(v0, GammaNumerCoeffs);
+                denom = EvalPolynomial(v0, GammaDenomCoeffs);
+            } else {
+                double vRecip = 1.0 / v0;
+                numer = EvalPolynomial(vRecip, GammaNumerCoeffs, true);
+                denom = EvalPolynomial(vRecip, GammaDenomCoeffs, true);
+            }
+
+            return numer / denom;
+        }
+
+        /// <summary>
+        /// Computes the Gamma function on positive values, using the Lanczos approximation.
+        /// Lanczos parameters are N=13 and G=13.144565.
+        /// </summary>
+        private static double PositiveGamma(double v0) {
+            if (v0 > 200.0) {
+                return Double.PositiveInfinity;
+            }
+
+            double vg = v0 + 12.644565; // v0 + g - 0.5
+            double res = GammaRationalFunc(v0);
+            res /= Math.Exp(vg);
+            if (v0 < 120.0) {
+                res *= Math.Pow(vg, v0 - 0.5);
+            } else {
+                // Use a smaller exponent if we're in danger of overflowing Math.Pow
+                double sqrt = Math.Pow(vg, v0 / 2.0 - 0.25);
+                res *= sqrt;
+                res *= sqrt;
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Computes the Log-Gamma function on positive values, using the Lanczos approximation.
+        /// Lanczos parameters are N=13 and G=13.144565.
+        /// </summary>
+        private static double PositiveLGamma(double v0) {
+            double vg = v0 + 12.644565; // v0 + g - 0.5
+            double res = Math.Log(GammaRationalFunc(v0)) - vg;
+            res += (v0 - 0.5) * Math.Log(vg);
+
+            return res;
+        }
+
+        #endregion
 
         #region BigInteger
 

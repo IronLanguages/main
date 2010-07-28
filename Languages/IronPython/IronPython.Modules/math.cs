@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -221,11 +222,25 @@ namespace IronPython.Modules {
         }
 
         public static double log1p(double v0) {
-            return log(v0 + 1.0);
+            // Calculate log(1.0 + v0) using William Kahan's algorithm for numerical precision
+
+            if (double.IsPositiveInfinity(v0)) {
+                return double.PositiveInfinity;
+            }
+
+            double v1 = v0 + 1.0;
+
+            // Linear approximation for very small v0
+            if (v1 == 1.0) {
+                return v0;
+            }
+
+            // Apply correction factor
+            return log(v1) * v0 / (v1 - 1.0);
         }
 
         public static double log1p(BigInteger value) {
-            return log(value + (BigInteger)1);
+            return log(value + BigInteger.One);
         }
 
         public static double log1p(object value) {
@@ -233,10 +248,14 @@ namespace IronPython.Modules {
             // an explicit overload which properly matches the order here
             double val;
             if (Converter.TryConvertToDouble(value, out val)) {
-                return log(val + 1.0);
+                return log1p(val);
             } else {
-                return log(Converter.ConvertToBigInteger(value) + (BigInteger)1);
+                return log1p(Converter.ConvertToBigInteger(value));
             }
+        }
+
+        public static double expm1(double v0) {
+            return Check(v0, Math.Tanh(v0 / 2.0) * (Math.Exp(v0) + 1.0));
         }
 
         public static double asinh(double v0) {
@@ -331,6 +350,20 @@ namespace IronPython.Modules {
             return Math.Atan2(v0, v1);
         }
 
+        /// <summary>
+        /// Error function on real values
+        /// </summary>
+        public static double erf(double v0) {
+            return MathUtils.Erf(v0);
+        }
+
+        /// <summary>
+        /// Complementary error function on real values: erfc(x) =  1 - erf(x)
+        /// </summary>
+        public static double erfc(double v0) {
+            return MathUtils.ErfComplement(v0);
+        }
+
         public static object factorial(double v0) {
             if (v0 % 1.0 != 0.0) {
                 throw PythonOps.ValueError("factorial() only accepts integral values");
@@ -340,7 +373,7 @@ namespace IronPython.Modules {
             }
 
             BigInteger val = 1;
-            for (BigInteger mul = (BigInteger)v0; mul > (BigInteger)1; mul -= (BigInteger)1) {
+            for (BigInteger mul = (BigInteger)v0; mul > BigInteger.One; mul -= BigInteger.One) {
                 val *= mul;
             }
 
@@ -356,7 +389,7 @@ namespace IronPython.Modules {
             }
 
             BigInteger val = 1;
-            for (BigInteger mul = value; mul > (BigInteger)1; mul -= (BigInteger)1) {
+            for (BigInteger mul = value; mul > BigInteger.One; mul -= BigInteger.One) {
                 val *= mul;
             }
 
@@ -375,6 +408,20 @@ namespace IronPython.Modules {
             } else {
                 return factorial(Converter.ConvertToBigInteger(value));
             }
+        }
+
+        /// <summary>
+        /// Gamma function on real values
+        /// </summary>
+        public static double gamma(double v0) {
+            return Check(v0, MathUtils.Gamma(v0));
+        }
+
+        /// <summary>
+        /// Natural log of absolute value of Gamma function
+        /// </summary>
+        public static double lgamma(double v0) {
+            return Check(v0, MathUtils.LogGamma(v0));
         }
 
         public static object trunc(CodeContext/*!*/ context, object value) {
@@ -431,6 +478,8 @@ namespace IronPython.Modules {
             return DoubleOps.Sign(sign) * Math.Abs(val);
         }
 
+        #region Private Implementation Details
+
         private static void SetExponentLe(byte[] v, int exp) {
             exp += Bias;
             ushort oldExp = LdExponentLe(v);
@@ -468,12 +517,16 @@ namespace IronPython.Modules {
 
         private static void DecomposeLe(byte[] v, out double m, out int e) {
             if (IsDenormalizedLe(v)) {
-                throw new NotImplementedException();
+                m = BitConverter.ToDouble(v, 0);
+                m *= Math.Pow(2.0, 1022);
+                v = BitConverter.GetBytes(m);
+                e = IntExponentLe(v) - 1022;
             } else {
                 e = IntExponentLe(v);
-                SetExponentLe(v, 0);
-                m = BitConverter.ToDouble(v, 0);
             }
+
+            SetExponentLe(v, 0);
+            m = BitConverter.ToDouble(v, 0);
         }
 
         private static double Check(double v) {
@@ -497,5 +550,7 @@ namespace IronPython.Modules {
                 return PythonOps.CheckMath(output);
             }
         }
+
+        #endregion
     }
 }

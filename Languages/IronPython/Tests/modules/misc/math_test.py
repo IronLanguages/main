@@ -16,7 +16,7 @@
 from iptest.assert_util import *
 if is_cli or is_silverlight:
     from System import Int64, Byte, Int16
-import math
+import math, itertools
 
 def test_nonnumeric_multiply():
     Assert("pypypypypy" == 5 * "py")
@@ -75,6 +75,179 @@ def test_more_complex():
     if is_cli or is_silverlight: AreEqual(5j * Int64(), 0)
     AreEqual(5j * 3L, 15j)
     AssertError(TypeError, (lambda:(5j*[])))
+
+# TODO: remove @skip when tests are running against 2.7
+@skip('win32')
+def test_erf():
+    table = [
+        (0.0,  0.0000000),
+        (0.05, 0.0563720),
+        (0.1,  0.1124629),
+        (0.15, 0.1679960),
+        (0.2,  0.2227026),
+        (0.25, 0.2763264),
+        (0.3,  0.3286268),
+        (0.35, 0.3793821),
+        (0.4,  0.4283924),
+        (0.45, 0.4754817),
+        (0.5,  0.5204999),
+        (0.55, 0.5633234),
+        (0.6,  0.6038561),
+        (0.65, 0.6420293),
+        (0.7,  0.6778012),
+        (0.75, 0.7111556),
+        (0.8,  0.7421010),
+        (0.85, 0.7706681),
+        (0.9,  0.7969082),
+        (0.95, 0.8208908),
+        (1.0,  0.8427008),
+        (1.1,  0.8802051),
+        (1.2,  0.9103140),
+        (1.3,  0.9340079),
+        (1.4,  0.9522851),
+        (1.5,  0.9661051),
+        (1.6,  0.9763484),
+        (1.7,  0.9837905),
+        (1.8,  0.9890905),
+        (1.9,  0.9927904),
+        (2.0,  0.9953223),
+        (2.1,  0.9970205),
+        (2.2,  0.9981372),
+        (2.3,  0.9988568),
+        (2.4,  0.9993115),
+        (2.5,  0.9995930),
+        (2.6,  0.9997640),
+        (2.7,  0.9998657),
+        (2.8,  0.9999250),
+        (2.9,  0.9999589),
+        (3.0,  0.9999779),
+        (3.1,  0.9999884),
+        (3.2,  0.9999940),
+        (3.3,  0.9999969),
+        (3.4,  0.9999985),
+        (3.5,  0.9999993),
+        (4.0,  1.0000000),
+    ]
+    
+    for x, y in table:
+        AlmostEqual(y, math.erf(x), tolerance=7)
+        AlmostEqual(-y, math.erf(-x), tolerance=7)
+
+# TODO: remove @skip when tests are running against 2.7
+@skip('win32')
+def test_erfc():
+    table = [
+        (0.0,  1.0000000),
+        (0.05, 0.9436280),
+        (0.1,  0.8875371),
+        (0.15, 0.8320040),
+        (0.2,  0.7772974),
+        (0.25, 0.7236736),
+        (0.3,  0.6713732),
+        (0.35, 0.6206179),
+        (0.4,  0.5716076),
+        (0.45, 0.5245183),
+        (0.5,  0.4795001),
+        (0.55, 0.4366766),
+        (0.6,  0.3961439),
+        (0.65, 0.3579707),
+        (0.7,  0.3221988),
+        (0.75, 0.2888444),
+        (0.8,  0.2578990),
+        (0.85, 0.2293319),
+        (0.9,  0.2030918),
+        (0.95, 0.1791092),
+        (1.0,  0.1572992),
+        (1.1,  0.1197949),
+        (1.2,  0.0896860),
+        (1.3,  0.0659921),
+        (1.4,  0.0477149),
+        (1.5,  0.0338949),
+        (1.6,  0.0236516),
+        (1.7,  0.0162095),
+        (1.8,  0.0109095),
+        (1.9,  0.0072096),
+        (2.0,  0.0046777),
+        (2.1,  0.0029795),
+        (2.2,  0.0018628),
+        (2.3,  0.0011432),
+        (2.4,  0.0006885),
+        (2.5,  0.0004070),
+        (2.6,  0.0002360),
+        (2.7,  0.0001343),
+        (2.8,  0.0000750),
+        (2.9,  0.0000411),
+        (3.0,  0.0000221),
+        (3.1,  0.0000116),
+        (3.2,  0.0000060),
+        (3.3,  0.0000031),
+        (3.4,  0.0000015),
+        (3.5,  0.0000007),
+        (4.0,  0.0000000),
+    ]
+    
+    for x, y in table:
+        AlmostEqual(y, math.erfc(x), tolerance=7)
+        AlmostEqual(2.0 - y, math.erfc(-x), tolerance=7)
+
+# TODO: remove @skip when tests are running against 2.7
+@skip('win32')
+def test_erf_erfc():
+    tolerance = 15
+    for x in itertools.count(0.0, 0.001):
+        if x > 5.0:
+            break
+        AlmostEqual(math.erf(x), -math.erf(-x), tolerance)
+        AlmostEqual(math.erfc(x), 2.0 - math.erfc(-x), tolerance)
+        
+        AlmostEqual(1.0 - math.erf(x), math.erfc(x), tolerance)
+        AlmostEqual(1.0 - math.erf(-x), math.erfc(-x), tolerance)
+        AlmostEqual(1.0 - math.erfc(x), math.erf(x), tolerance)
+        AlmostEqual(1.0 - math.erfc(-x), math.erf(-x), tolerance)
+
+# TODO: remove @skip when tests are running against 2.7
+@skip('win32')
+def test_gamma():
+    AlmostEqual(math.gamma(0.5), math.sqrt(math.pi), 15)
+    for i in xrange(1, 20):
+        AreEqual(math.factorial(i-1), math.gamma(i))
+    AreEqual(math.gamma(float('inf')), float('inf'))
+    AssertError(ValueError, math.gamma, float('-inf'))
+    Assert(math.isnan(math.gamma(float('nan'))))
+    for i in xrange(0, -1001, -1):
+        AssertError(ValueError, math.gamma, i)
+
+# TODO: remove @skip when tests are running against 2.7
+@skip('win32')
+def test_lgamma():
+    tolerance = 14
+    AlmostEqual(math.lgamma(0.5), 0.5 * math.log(math.pi), 15)
+    for i in xrange(1, 20):
+        if i > 14:
+            tolerance = 13
+        AlmostEqual(math.log(math.factorial(i-1)), math.lgamma(i), tolerance)
+    AreEqual(math.lgamma(float('inf')), float('inf'))
+    AreEqual(math.lgamma(float('-inf')), float('inf'))
+    Assert(math.isnan(math.lgamma(float('nan'))))
+    for i in xrange(0, -1001, -1):
+        AssertError(ValueError, math.lgamma, i)
+
+# TODO: remove @skip when tests are running against 2.7
+@skip('win32')
+def test_gamma_lgamma():
+    tolerance = 13
+    for x in itertools.count(0.001, 0.001):
+        if x > 5.0:
+            break
+        AlmostEqual(math.lgamma(x), math.log(math.gamma(x)), tolerance)
+        AlmostEqual(math.lgamma(x*x), math.log(math.gamma(x*x)), tolerance)
+        AlmostEqual(math.lgamma(2.0**x), math.log(math.gamma(2.0**x)), tolerance)
+        
+        # Test negative values too, but not integers
+        if x % 1.0 != 0.0:
+            AlmostEqual(math.lgamma(-x), math.log(abs(math.gamma(-x))), tolerance)
+            AlmostEqual(math.lgamma(-x*x), math.log(abs(math.gamma(-x*x))), tolerance)
+            AlmostEqual(math.lgamma(-2.0**x), math.log(abs(math.gamma(-2.0**x))), tolerance)
 
 def test_pow():
     AreEqual(pow(2, 1000000000, 2147483647 + 10), 511677409)
