@@ -1,0 +1,1 @@
+fails:The -e command line option throws LocalJumpError when return is called

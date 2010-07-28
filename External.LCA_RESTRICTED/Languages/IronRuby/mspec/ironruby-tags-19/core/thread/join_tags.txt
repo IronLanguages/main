@@ -1,0 +1,1 @@
+fails:Thread#join raises any uncaught exception encountered in ensure block

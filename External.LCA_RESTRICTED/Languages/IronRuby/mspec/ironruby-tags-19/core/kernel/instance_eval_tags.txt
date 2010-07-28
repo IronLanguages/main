@@ -1,0 +1,2 @@
+fails:Kernel#instance_eval takes no arguments with a block
+fails:Kernel#instance_eval doesn't pass the object to the block

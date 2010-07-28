@@ -1,0 +1,2 @@
+fails:Enumerable#min raises a NoMethodError for elements without #<=>
+fails:Enumerable#min return the minimun when using a block rule

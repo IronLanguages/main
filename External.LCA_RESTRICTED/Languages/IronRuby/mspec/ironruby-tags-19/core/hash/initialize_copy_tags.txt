@@ -1,0 +1,2 @@
+fails:Hash#initialize_copy tries to convert the passed argument to a hash using #to_hash
+fails:Hash#initialize_copy raises a RuntimeError if called on a frozen instance

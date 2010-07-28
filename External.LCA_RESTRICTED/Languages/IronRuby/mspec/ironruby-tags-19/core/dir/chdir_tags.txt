@@ -1,0 +1,1 @@
+fails:Dir.chdir prefers #to_str over #to_path

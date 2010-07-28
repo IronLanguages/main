@@ -1,0 +1,1 @@
+fails:StringIO#initialize when passed no arguments is private

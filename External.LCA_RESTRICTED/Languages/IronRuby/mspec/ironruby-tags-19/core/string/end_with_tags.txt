@@ -1,0 +1,3 @@
+fails:String#end_with? returns true only if any ending match
+fails:String#end_with? ignores arguments not convertible to string
+fails:String#end_with? uses only the needed arguments

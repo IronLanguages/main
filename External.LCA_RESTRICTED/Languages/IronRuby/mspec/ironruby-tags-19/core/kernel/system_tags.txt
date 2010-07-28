@@ -1,0 +1,4 @@
+fails:Kernel#system returns nil when command execution fails
+fails:Kernel#system returns false when the command has a non-zero exit status
+fails:Kernel#system captures stdout
+fails:Kernel#system captures stderr
