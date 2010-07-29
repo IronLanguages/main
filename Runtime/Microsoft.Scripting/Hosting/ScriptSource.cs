@@ -160,7 +160,15 @@ namespace Microsoft.Scripting.Hosting {
 
 #if !SILVERLIGHT
         /// <summary>
-        /// Executes the code in the specified scope and return a result.
+        /// Executes the code in an empty scope.
+        /// Returns an ObjectHandle wrapping the resulting value of running the code.  
+        /// </summary>
+        public ObjectHandle ExecuteAndWrap() {
+            return new ObjectHandle((object)Execute());
+        }
+
+        /// <summary>
+        /// Executes the code in the specified scope.
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  
         /// </summary>
         public ObjectHandle ExecuteAndWrap(ScriptScope scope) {
@@ -170,9 +178,45 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Executes the code in an empty scope.
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  
+        /// 
+        /// If an exception is thrown the exception is caught and an ObjectHandle to
+        /// the exception is provided.
         /// </summary>
-        public ObjectHandle ExecuteAndWrap() {
-            return new ObjectHandle((object)Execute());
+        /// <remarks>
+        /// Use this API to handle non-serializable exceptions (exceptions might not be serializable due to security restrictions) 
+        /// or if an exception serialization loses information.
+        /// </remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        public ObjectHandle ExecuteAndWrap(out ObjectHandle exception) {
+            exception = null;
+            try {
+                return new ObjectHandle((object)Execute());
+            } catch (Exception e) {
+                exception = new ObjectHandle(e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Executes the expression in the specified scope and return a result.
+        /// Returns an ObjectHandle wrapping the resulting value of running the code.  
+        /// 
+        /// If an exception is thrown the exception is caught and an ObjectHandle to
+        /// the exception is provided.
+        /// </summary>
+        /// <remarks>
+        /// Use this API to handle non-serializable exceptions (exceptions might not be serializable due to security restrictions) 
+        /// or if an exception serialization loses information.
+        /// </remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        public ObjectHandle ExecuteAndWrap(ScriptScope scope, out ObjectHandle exception) {
+            exception = null;
+            try {
+                return new ObjectHandle((object)Execute(scope));
+            } catch (Exception e) {
+                exception = new ObjectHandle(e);
+                return null;
+            }
         }
 #endif
 

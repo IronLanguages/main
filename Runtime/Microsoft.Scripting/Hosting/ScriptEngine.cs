@@ -190,6 +190,11 @@ namespace Microsoft.Scripting.Hosting {
         /// If an exception is thrown the exception is caught and an ObjectHandle to
         /// the exception is provided.
         /// </summary>
+        /// <remarks>
+        /// Use this API in case the exception is not serializable (for example, due to security restrictions) or its serialization 
+        /// loses information that you need to access.
+        /// </remarks>
+        [Obsolete("Use ScriptSource.ExecuteAndWrap instead")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public ObjectHandle ExecuteAndWrap(string expression, ScriptScope scope, out ObjectHandle exception) {
             exception = null;
@@ -208,6 +213,11 @@ namespace Microsoft.Scripting.Hosting {
         /// If an exception is thrown the exception is caught and an ObjectHandle to
         /// the exception is provided.
         /// </summary>
+        /// <remarks>
+        /// Use this API in case the exception is not serializable (for example, due to security restrictions) or its serialization 
+        /// loses information that you need to access.
+        /// </remarks>
+        [Obsolete("Use ScriptSource.ExecuteAndWrap instead")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public ObjectHandle ExecuteAndWrap(string expression, out ObjectHandle exception) {
             exception = null;
