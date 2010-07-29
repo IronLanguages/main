@@ -1,10 +1,6 @@
 require 'rubygems'
 require 'shoulda'
 require 'mocha'
-[ File.expand_path(File.join(File.dirname(__FILE__),'..','..','test')),
-  File.expand_path(File.join(File.dirname(__FILE__),'..','..','test','connections','native_sqlserver_odbc')),
-  File.expand_path(File.join(File.dirname(__FILE__),'..','..','..','..','..','rails','activerecord','test'))
-].each{ |lib| $:.unshift(lib) unless $:.include?(lib) } if ENV['TM_DIRECTORY']
 require 'cases/helper'
 require 'models/topic'
 require 'active_record/version'

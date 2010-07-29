@@ -46,20 +46,8 @@ class MigrationTestSqlserver < ActiveRecord::TestCase
       assert lock_version_column.default.nil?
     end
     
-    should 'not drop the default contraint if just renaming' do
-      find_default = lambda do 
-        @connection.select_all("EXEC sp_helpconstraint 'defaults','nomsg'").select do |row|     
-          row['constraint_type'] == "DEFAULT on column decimal_number"
-        end.last
-      end
-      default_before = find_default.call
-      @connection.change_column :defaults, :decimal_number, :decimal, :precision => 4
-      default_after = find_default.call
-      assert default_after
-      assert_equal default_before['constraint_keys'], default_after['constraint_keys']
-    end
-    
   end
+  
   
 end
 

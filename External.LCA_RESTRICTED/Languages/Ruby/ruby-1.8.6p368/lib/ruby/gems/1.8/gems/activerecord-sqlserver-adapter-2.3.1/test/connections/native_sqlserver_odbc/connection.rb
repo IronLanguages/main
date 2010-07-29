@@ -1,4 +1,4 @@
-print "Using SQLServer via ADONET\n"
+print "Using native SQLServer via ODBC\n"
 require_dependency 'models/course'
 require 'logger'
 
@@ -7,17 +7,17 @@ ActiveRecord::Base.logger = Logger.new("debug.log")
 ActiveRecord::Base.configurations = {
   'arunit' => {
     :adapter  => 'sqlserver',
-    :mode     => 'ADONET',
+    :mode     => 'ODBC',
     :host     => 'localhost',
     :username => 'rails',
-    :database => 'activerecord_unittest'
+    :dsn => 'activerecord_unittest'
   },
   'arunit2' => {
     :adapter  => 'sqlserver',
-    :mode     => 'ADONET',
+    :mode     => 'ODBC',
     :host     => 'localhost',
     :username => 'rails',
-    :database => 'activerecord_unittest2'
+    :dsn => 'activerecord_unittest2'
   }
 }
 

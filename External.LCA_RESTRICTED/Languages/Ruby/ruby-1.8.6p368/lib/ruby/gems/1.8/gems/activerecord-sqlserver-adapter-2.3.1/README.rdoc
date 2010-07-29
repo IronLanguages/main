@@ -6,8 +6,6 @@ The SQL Server adapter for rails is back for ActiveRecord 2.2 and up! We are cur
 
 == What's New
 
-* IronRuby support using ADONET connection mode.
-* Direct ODBC mode. No DBI anymore, means around 20% faster!
 * Now supports SQL Server 2008 too!
 * Fully tested under 1.9!!! Correctly encodes/decodes UTF-8 types in ruby 1.9 too.
 * Now supports both rails 2.2 & 2.3!!!
@@ -130,30 +128,25 @@ It is our goal to match the adapter version with each version of rails. However 
 
 == Installation
 
-You will need Ruby ODBC. If you are using the adapter under 1.9, then you need at least ruby-odbc version 0.9996. ODBC is the preferred mode, however if you are using IronRuby you can use the ADONET connection mode which uses native System.Data connection. Other connection modes may be supported, possibly a straight FreeTDS layer. The sky is the limit now and we have a code that can be accept these optional transports. If you are interested in helping, open a ticket and submit a patch. Or start a conversation on the Google Group.
+First, you will need Ruby DBI and Ruby ODBC. If you are using the adapter under 1.9, then you need at least ruby-odbc version 0.9996. To my knowledge the ADO DBD for DBI is no longer supported. The installation below is not a comprehensive walk thru on how to get all the required moving parts like FreeTDS installed and/or configured. It will also assume gem installations of both the dependent libraries and the adapter itself.
 
+It should be noted that this version of the adapter was developed using both the ancient 0.0.23 version of DBI up to the current stable release of 0.4.1. Note that DBI 0.4.1 is the minimal for ruby 1.9 compatibility. Because later versions of DBI will be changing many things, IT IS HIGHLY NECESSARY that you max your install to version 0.4.1 which the examples below show. For the time being we are not supporting DBI versions higher than 0.4.1 this they settle down on new internal implementations.
+
+  $ gem install dbi --version 0.4.1
+  $ gem install dbd-odbc --version 0.2.4
   $ gem install activerecord-sqlserver-adapter
 
 Optionally configure your gem dependencies in your rails environment.rb file.
 
-  config.gem 'activerecord-sqlserver-adapter', :version => 'x.x.xx'
+  config.gem 'dbi', :version => '0.4.1'
+  config.gem 'dbd-odbc', :version => '0.2.4', :lib => 'dbd/ODBC'
+  config.gem 'activerecord-sqlserver-adapter', :version => 'x.x.xx', 
+                                               :lib => 'active_record/connection_adapters/sqlserver_adapter'
 
 Here are some external links for libraries and/or tutorials on how to install any other additional components to use this adapter. If you know of a good one that we can include here, just let us know.
 
+* http://ruby-dbi.sourceforge.net/
 * http://www.ch-werner.de/rubyodbc/
-
-
-== IronRuby ADONET Mode
-
-A few details on this implementation. All that is needed in your database.yml configuration file is "mode: adonet" vs "odbc" and if you are running IronRuby, the connection will be native. You can also specify an "integrated_security: true" option in your configuration, remember to remove the username/password options too. To use this adapter, you will not need need ANY DBI middle layer or special extension gems to the adapter. 
-
-This adapter is opinionated in regards to IronRuby on types going in and out of the DB. For example strings will be String, not System::String and DateTime vs System::Datetime. There are many more examples but the rule of thumb is that the types will be simple types that correlate to a standard Ruby implementation. We enforce this basic rule because it is necessary to pass the tests and let the framework do its job. We recommend sticking to native Ruby types in your application code too.
-
-The adapter establishes a System::Data::SqlClient connection that has both MultipleActiveResultSets (MARS) and Pooling turned off. There are good reasons for this one because the connection would not work otherwise for all the code issued by ActiveRecord. Remember too that ActiveRecord has it's own connection pooling and these underlying features like MARS/Pooling work against the adapter code.
-
-Currently IronRuby is passing most of the ActiveRecord and Adapter tests. Here is a list of the ones remaining. Some are in the adapter's realm and some are in Marshaling area of IronRuby's core to fix. Feel like helping knock these out? Submit a patch to github issues.
-
-http://gist.github.com/381101
 
 
 == Contributing

@@ -128,15 +128,6 @@ class AdapterTestSqlserver < ActiveRecord::TestCase
       assert !@connection.send(:insert_sql?,'UPDATE...')
       assert !@connection.send(:insert_sql?,'SELECT...')
     end
-    
-    context 'for #limited_update_conditions' do
-    
-      should 'only match up to the first WHERE' do
-        where_sql = "TOP 1 WHERE ([posts].author_id = 1 and [posts].columnWHEREname = 2)  ORDER BY posts.id"
-        assert_equal "WHERE bar IN (SELECT TOP 1  bar FROM foo WHERE ([posts].author_id = 1 and [posts].columnWHEREname = 2)  ORDER BY posts.id)", @connection.limited_update_conditions(where_sql, 'foo', 'bar')
-      end
-    
-    end
         
     context 'for #sql_for_association_limiting?' do
       
@@ -225,10 +216,6 @@ class AdapterTestSqlserver < ActiveRecord::TestCase
         assert_equal 'MIN(comments.id) DESC', order_to_min_set(@single_order_with_desc)
         assert_equal 'MIN(comments.id), MIN(comments.post_id) ASC', order_to_min_set(@two_orders_with_asc)
         assert_equal 'MIN(comments.id) DESC, MIN(comments.post_id) ASC', order_to_min_set(@two_orders_with_desc_and_asc)
-      end
-      
-      should 'leave order by alone when same column crosses two tables' do
-        assert_equal ' ORDER BY developers.name, projects.name', add_order!('developers.name, projects.name')
       end
       
     end

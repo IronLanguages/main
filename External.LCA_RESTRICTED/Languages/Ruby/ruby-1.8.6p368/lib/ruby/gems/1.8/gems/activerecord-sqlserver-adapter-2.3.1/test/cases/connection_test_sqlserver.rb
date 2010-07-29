@@ -12,16 +12,22 @@ class ConnectionTestSqlserver < ActiveRecord::TestCase
   end
   
   
-  should 'return finished ODBC statment handle from #execute without block' do
-    assert_all_statements_used_are_closed do
-      @connection.execute('SELECT * FROM [topics]')
-    end
+  should 'return finished DBI statment handle from #execute without block' do
+    handle = @connection.execute('SELECT * FROM [topics]')
+    assert_instance_of DBI::StatementHandle, handle
+    assert handle.finished?
   end
   
-  should 'finish ODBC statment handle from #execute with block' do
+  should 'finish DBI statment handle from #execute with block' do
     assert_all_statements_used_are_closed do
       @connection.execute('SELECT * FROM [topics]') { }
     end
+  end
+  
+  should 'return an unfinished DBI statement handler from #raw_execute' do
+    handle = @connection.send(:raw_execute,'SELECT * FROM [topics]')
+    assert_instance_of DBI::StatementHandle, handle
+    assert !handle.finished?
   end
   
   should 'finish connection from #raw_select' do
@@ -31,6 +37,7 @@ class ConnectionTestSqlserver < ActiveRecord::TestCase
   end
   
   should 'affect rows' do
+    assert Topic.connection.instance_variable_get("@connection")["AutoCommit"]
     topic_data = { 1 => { "content" => "1 updated" }, 2 => { "content" => "2 updated" } }
     updated = Topic.update(topic_data.keys, topic_data.values)
     assert_equal 2, updated.size
@@ -107,15 +114,15 @@ class ConnectionTestSqlserver < ActiveRecord::TestCase
   
   def assert_all_statements_used_are_closed(&block)
     existing_handles = []
-    ObjectSpace.each_object(ODBC::Statement) {|handle| existing_handles << handle}
+    ObjectSpace.each_object(DBI::StatementHandle) {|handle| existing_handles << handle}
     GC.disable
     yield
     used_handles = []
-    ObjectSpace.each_object(ODBC::Statement) {|handle| used_handles << handle unless existing_handles.include? handle}
+    ObjectSpace.each_object(DBI::StatementHandle) {|handle| used_handles << handle unless existing_handles.include? handle}
     assert_block "No statements were used within given block" do
       used_handles.size > 0
     end
-    ObjectSpace.each_object(ODBC::Statement) do |handle|
+    ObjectSpace.each_object(DBI::StatementHandle) do |handle|
       assert_block "Statement should have been closed within given block" do
         handle.finished?
       end

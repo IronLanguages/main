@@ -2,60 +2,6 @@
 MASTER
 
 
-* 2.3.5
-
-* Initial IronRuby ADONET connection mode support baked right in. Removed most &block 
-  parameters, no handle/request object yielded anymore. Better abstraction and compliance 
-  per the ActiveRecord abstract adapter to not yielding handles for #execute and only for 
-  low level #select. Better wrapping of all queries at lowest level in #log so exceptions 
-  at anytime can be handled correctly by core AR. Critical for System::Data's command 
-  readers. Better abstraction for introspecting on #connection_mode. Added support for 
-  running singular test cases via TextMate's Command-R. [Ken Collins]
-  
-* Force a binary encoding on values coming in and out of those columns for ruby 1.9.
-  Fixes ticket #33 [Jeroen Zwartepoorte]
-
-* Using change_column will leave default if the type does not change or a new default
-  is not included. Fixes issue #22. [Ransom Briggs]
-
-* Use correct SP name for sp_MSforeachtable so any collation can get to it. [7to3]
-
-* Qualify INFORMATION_SCHEMA.COLUMNS with a correct period DB name if present.
-
-* Allow adapter to return multipe results sets, for example from stored procedures. [Chris Hall]
-
-
-* 2.3.4
-
-* For tables that named with schema(ex. rails.users), they could not get length of column.
-  column of varchar(40) gets length => nil. Ticket #27 & #15 [Ken Tachiya]
-
-* Altered limited_update_conditions regex conditions, the .* would greedily fail 
-  if the where_sql had WHERE in a table or field, etc. [Ransom Briggs]
-
-* Changing test to allow ENV['ARUNIT_DB_NAME'] as the database name for the test units. 
-  Matches up with AR conventions. [Ransom Briggs]
-
-
-2.3.3
-  
-* Revert #ad83df82 and again cache column information at the connection's instance. The 
-  previous commit was causing all sorts of view and schema reflection problems. [Ken Collins]
-
-
-2.3.2
-
-* Insert queries that include the word "insert" as a partial column name with the word 
-  "id" as a value were falsely being matched as identity inserts. [Sean Caffery/bfabry]
-
-* Delegate all low level #raw_connection calls to #raw_connection_run and #raw_connection_do
-  which abstract out the low level modes in the connection options at that point. [Ken Collins]
-
-* Remove DBI dependency and go straight ODBC for speed improvement [Erik Bryn]
-
-* Leave order by alone when same column crosses two tables [Ransom Briggs]
-
-
 * 2.3 * (December 1st, 2009)
 
 * Table and column aliases can handle many. Resolves ticket #19 [stonegao]

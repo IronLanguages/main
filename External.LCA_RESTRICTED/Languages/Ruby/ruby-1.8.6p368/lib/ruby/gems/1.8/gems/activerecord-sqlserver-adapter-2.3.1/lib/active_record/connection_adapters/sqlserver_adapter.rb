@@ -1,5 +1,6 @@
-require 'active_record'
 require 'active_record/connection_adapters/abstract_adapter'
+require_library_or_gem 'dbi' unless defined?(DBI)
+require 'active_record/connection_adapters/sqlserver_adapter/core_ext/dbi'
 require 'active_record/connection_adapters/sqlserver_adapter/core_ext/active_record'
 require 'base64'
 
@@ -8,24 +9,21 @@ module ActiveRecord
   class Base
     
     def self.sqlserver_connection(config) #:nodoc:
-      config = config.dup.symbolize_keys!
-      config.reverse_merge! :mode => :odbc, :host => 'localhost', :username => 'sa', :password => ''
-      mode = config[:mode].to_s.downcase.underscore.to_sym
-      case mode
-      when :odbc
-        require_library_or_gem 'odbc' unless defined?(ODBC)
-        require 'active_record/connection_adapters/sqlserver_adapter/core_ext/odbc'
-        raise ArgumentError, 'Missing :dsn configuration.' unless config.has_key?(:dsn)
-      when :adonet
-        require 'System.Data'
-        raise ArgumentError, 'Missing :database configuration.' unless config.has_key?(:database)
-      when :ado
-        raise NotImplementedError, 'Please use version 2.3.1 of the adapter for ADO connections. Future versions may support ADO.NET.'
-        raise ArgumentError, 'Missing :database configuration.' unless config.has_key?(:database)
+      config.symbolize_keys!
+      mode        = config[:mode] ? config[:mode].to_s.upcase : 'ADO'
+      username    = config[:username] ? config[:username].to_s : 'sa'
+      password    = config[:password] ? config[:password].to_s : ''
+      if mode == "ODBC"
+        raise ArgumentError, "Missing DSN. Argument ':dsn' must be set in order for this adapter to work." unless config.has_key?(:dsn)
+        dsn       = config[:dsn]
+        driver_url = "DBI:ODBC:#{dsn}"
       else
-        raise ArgumentError, "Unknown connection mode in #{config.inspect}."
+        raise ArgumentError, "Missing Database. Argument ':database' must be set in order for this adapter to work." unless config.has_key?(:database)
+        database  = config[:database]
+        host      = config[:host] ? config[:host].to_s : 'localhost'
+        driver_url = "DBI:ADO:Provider=SQLOLEDB;Data Source=#{host};Initial Catalog=#{database};User ID=#{username};Password=#{password};"
       end
-      ConnectionAdapters::SQLServerAdapter.new(logger,config.merge(:mode=>mode))
+      ConnectionAdapters::SQLServerAdapter.new(logger, [driver_url, username, password])
     end
     
     protected
@@ -56,12 +54,10 @@ module ActiveRecord
         end
         
         def string_to_binary(value)
-          value = value.dup.force_encoding(Encoding::BINARY) if value.respond_to?(:force_encoding)
          "0x#{value.unpack("H*")[0]}"
         end
         
         def binary_to_string(value)
-          value = value.dup.force_encoding(Encoding::BINARY) if value.respond_to?(:force_encoding)
           value =~ /[^[:xdigit:]]/ ? value : [value].pack('H*')
         end
         
@@ -151,30 +147,53 @@ module ActiveRecord
       
     end #SQLServerColumn
     
-    # In ODBC mode, the adapter requires Ruby ODBC and requires that you specify 
-    # a :dsn option. Ruby ODBC is available at http://www.ch-werner.de/rubyodbc/
+    # In ADO mode, this adapter will ONLY work on Windows systems, since it relies on 
+    # Win32OLE, which, to my knowledge, is only available on Windows.
+    #
+    # This mode also relies on the ADO support in the DBI module. If you are using the
+    # one-click installer of Ruby, then you already have DBI installed, but the ADO module 
+    # is *NOT* installed. You will need to get the latest source distribution of Ruby-DBI 
+    # from http://ruby-dbi.sourceforge.net/ unzip it, and copy the file from 
+    # <tt>src/lib/dbd_ado/ADO.rb</tt> to <tt>X:/Ruby/lib/ruby/site_ruby/1.8/DBD/ADO/ADO.rb</tt>
+    # 
+    # You will more than likely need to create the ADO directory. Once you've installed 
+    # that file, you are ready to go.
+    # 
+    # In ODBC mode, the adapter requires the ODBC support in the DBI module which requires
+    # the Ruby ODBC module. Ruby ODBC 0.996 was used in development and testing,
+    # and it is available at http://www.ch-werner.de/rubyodbc/
     #
     # Options:
     #
+    # * <tt>:mode</tt>          -- ADO or ODBC. Defaults to ADO.
     # * <tt>:username</tt>      -- Defaults to sa.
-    # * <tt>:password</tt>      -- Defaults to blank string.
-    # * <tt>:dsn</tt>           -- An ODBC DSN. (required)
+    # * <tt>:password</tt>      -- Defaults to empty string.
+    # * <tt>:windows_auth</tt>  -- Defaults to "User ID=#{username};Password=#{password}"
+    #
+    # ADO specific options:
+    #
+    # * <tt>:host</tt>          -- Defaults to localhost.
+    # * <tt>:database</tt>      -- The name of the database. No default, must be provided.
+    # * <tt>:windows_auth</tt>  -- Use windows authentication instead of username/password.
+    #
+    # ODBC specific options:
+    #
+    # * <tt>:dsn</tt>           -- Defaults to nothing.
     # 
     class SQLServerAdapter < AbstractAdapter
       
-      ADAPTER_NAME                = 'SQLServer'.freeze
-      VERSION                     = '2.3.5'.freeze
-      DATABASE_VERSION_REGEXP     = /Microsoft SQL Server\s+(\d{4})/
-      SUPPORTED_VERSIONS          = [2000,2005,2008].freeze
-      LIMITABLE_TYPES             = ['string','integer','float','char','nchar','varchar','nvarchar'].freeze
-      LOST_CONNECTION_EXCEPTIONS  = {
-        :odbc   => ['ODBC::Error'],
-        :adonet => ['TypeError','System::Data::SqlClient::SqlException']
-      }
-      LOST_CONNECTION_MESSAGES    = {
-        :odbc   => [/link failure/, /server failed/, /connection was already closed/, /invalid handle/i],
-        :adonet => [/current state is closed/, /network-related/]
-      }
+      ADAPTER_NAME            = 'SQLServer'.freeze
+      VERSION                 = '2.3'.freeze
+      DATABASE_VERSION_REGEXP = /Microsoft SQL Server\s+(\d{4})/
+      SUPPORTED_VERSIONS      = [2000,2005,2008].freeze
+      LIMITABLE_TYPES         = ['string','integer','float','char','nchar','varchar','nvarchar'].freeze
+      
+      LOST_CONNECTION_EXCEPTIONS = [DBI::DatabaseError, DBI::InterfaceError]
+      LOST_CONNECTION_MESSAGES = [
+        'Communication link failure',
+        'Read from the server failed',
+        'Write to the server failed',
+        'Database connection was already closed']
       
       cattr_accessor :native_text_database_type, :native_binary_database_type, :native_string_database_type,
                      :log_info_schema_queries, :enable_default_unicode_types, :auto_connect
@@ -187,8 +206,8 @@ module ActiveRecord
         
       end
       
-      def initialize(logger,config)
-        @connection_options = config
+      def initialize(logger, connection_options)
+        @connection_options = connection_options
         connect
         super(raw_connection, logger)
         initialize_sqlserver_caches
@@ -320,19 +339,19 @@ module ActiveRecord
       
       # REFERENTIAL INTEGRITY ====================================#
       
-      def disable_referential_integrity
-        do_execute "EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'"
+      def disable_referential_integrity(&block)
+        do_execute "EXEC sp_MSForEachTable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'"
         yield
       ensure
-        do_execute "EXEC sp_MSforeachtable 'ALTER TABLE ? CHECK CONSTRAINT ALL'"
+        do_execute "EXEC sp_MSForEachTable 'ALTER TABLE ? CHECK CONSTRAINT ALL'"
       end
       
       # CONNECTION MANAGEMENT ====================================#
       
       def active?
-        raw_connection_do("SELECT 1")
+        raw_connection.execute("SELECT 1").finish
         true
-      rescue *lost_connection_exceptions
+      rescue *LOST_CONNECTION_EXCEPTIONS
         false
       end
 
@@ -343,12 +362,12 @@ module ActiveRecord
       end
 
       def disconnect!
-        case connection_mode
-        when :odbc
-          raw_connection.disconnect rescue nil
-        else :adonet
-          raw_connection.close rescue nil
-        end
+        raw_connection.disconnect rescue nil
+      end
+      
+      def finish_statement_handle(handle)
+        handle.finish if handle && handle.respond_to?(:finish) && !handle.finished?
+        handle
       end
       
       # DATABASE STATEMENTS ======================================#
@@ -378,26 +397,23 @@ module ActiveRecord
       end
       
       def select_rows(sql, name = nil)
-        raw_select(sql,name).first.last
+        raw_select(sql,name).last
       end
       
-      def execute(sql, name = nil, skip_logging = false)
+      def execute(sql, name = nil, &block)
         if table_name = query_requires_identity_insert?(sql)
-          with_identity_insert_enabled(table_name) { do_execute(sql,name) }
+          handle = with_identity_insert_enabled(table_name) { raw_execute(sql,name,&block) }
         else
-          do_execute(sql,name)
+          handle = raw_execute(sql,name,&block)
         end
+        finish_statement_handle(handle)
       end
       
       def execute_procedure(proc_name, *variables)
         vars = variables.map{ |v| quote(v) }.join(', ')
         sql = "EXEC #{proc_name} #{vars}".strip
         select(sql,'Execute Procedure',true).inject([]) do |results,row|
-          if row.kind_of?(Array)
-            results << row.inject([]) { |rs,r| rs << r.with_indifferent_access }
-          else
-            results << row.with_indifferent_access
-          end
+          results << row.with_indifferent_access
         end
       end
       
@@ -509,7 +525,7 @@ module ActiveRecord
       end
       
       def limited_update_conditions(where_sql, quoted_table_name, quoted_primary_key)
-        match_data = where_sql.match(/^(.*?[\]\) ])WHERE[\[\( ]/)
+        match_data = where_sql.match(/(.*)WHERE/)
         limit = match_data[1]
         where_sql.sub!(limit,'')
         "WHERE #{quoted_primary_key} IN (SELECT #{limit} #{quoted_primary_key} FROM #{quoted_table_name} #{where_sql})"
@@ -552,13 +568,13 @@ module ActiveRecord
       end
       
       def views(name = nil)
-        @sqlserver_views_cache ||= 
+        @@sqlserver_views_cache ||= 
           info_schema_query { select_values("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_NAME NOT IN ('sysconstraints','syssegments')") }
       end
       
       def view_information(table_name)
         table_name = unqualify_table_name(table_name)
-        @sqlserver_view_information_cache[table_name] ||= begin
+        @@sqlserver_view_information_cache[table_name] ||= begin
           view_info = info_schema_query { select_one("SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_NAME = '#{table_name}'") }
           if view_info
             if view_info['VIEW_DEFINITION'].blank? || view_info['VIEW_DEFINITION'].length == 4000
@@ -599,7 +615,7 @@ module ActiveRecord
       def columns(table_name, name = nil)
         return [] if table_name.blank?
         cache_key = unqualify_table_name(table_name)
-        @sqlserver_columns_cache[cache_key] ||= column_definitions(table_name).collect do |ci|
+        @@sqlserver_columns_cache[cache_key] ||= column_definitions(table_name).collect do |ci|
           sqlserver_options = ci.except(:name,:default_value,:type,:null)
           SQLServerColumn.new ci[:name], ci[:default_value], ci[:type], ci[:null], sqlserver_options
         end
@@ -607,7 +623,7 @@ module ActiveRecord
       
       def create_table(table_name, options = {})
         super
-        remove_sqlserver_columns_cache_for(table_name)
+        initialize_sqlserver_caches
       end
       
       def rename_table(table_name, new_name)
@@ -616,12 +632,12 @@ module ActiveRecord
       
       def drop_table(table_name, options = {})
         super
-        remove_sqlserver_columns_cache_for(table_name)
+        initialize_sqlserver_caches
       end
       
       def add_column(table_name, column_name, type, options = {})
         super
-        remove_sqlserver_columns_cache_for(table_name)
+        initialize_sqlserver_caches
       end
       
       def remove_column(table_name, *column_names)
@@ -631,36 +647,32 @@ module ActiveRecord
           remove_indexes(table_name, column_name)
           do_execute "ALTER TABLE #{quote_table_name(table_name)} DROP COLUMN #{quote_column_name(column_name)}"
         end
-        remove_sqlserver_columns_cache_for(table_name)
+        initialize_sqlserver_caches
       end
       
       def change_column(table_name, column_name, type, options = {})
         sql_commands = []
-        column_object = columns(table_name).detect { |c| c.name.to_s == column_name.to_s }
+        remove_default_constraint(table_name, column_name)
         change_column_sql = "ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} #{type_to_sql(type, options[:limit], options[:precision], options[:scale])}"
         change_column_sql << " NOT NULL" if options[:null] == false
         sql_commands << change_column_sql
-        if options_include_default?(options) || (column_object && column_object.type != type.to_sym)
-         	remove_default_constraint(table_name,column_name)
-        end
         if options_include_default?(options)
-          remove_sqlserver_columns_cache_for(table_name)
           sql_commands << "ALTER TABLE #{quote_table_name(table_name)} ADD CONSTRAINT #{default_name(table_name,column_name)} DEFAULT #{quote(options[:default])} FOR #{quote_column_name(column_name)}"
         end
         sql_commands.each { |c| do_execute(c) }
-        remove_sqlserver_columns_cache_for(table_name)
+        initialize_sqlserver_caches
       end
       
       def change_column_default(table_name, column_name, default)
         remove_default_constraint(table_name, column_name)
         do_execute "ALTER TABLE #{quote_table_name(table_name)} ADD CONSTRAINT #{default_name(table_name, column_name)} DEFAULT #{quote(default)} FOR #{quote_column_name(column_name)}"
-        remove_sqlserver_columns_cache_for(table_name)
+        initialize_sqlserver_caches
       end
       
       def rename_column(table_name, column_name, new_column_name)
         column_for(table_name,column_name)
         do_execute "EXEC sp_rename '#{table_name}.#{column_name}', '#{new_column_name}', 'COLUMN'"
-        remove_sqlserver_columns_cache_for(table_name)
+        initialize_sqlserver_caches
       end
       
       def remove_index(table_name, options = {})
@@ -759,46 +771,22 @@ module ActiveRecord
       # CONNECTION MANAGEMENT ====================================#
       
       def connect
-        config = @connection_options
-        @connection = case connection_mode
-                      when :odbc
-                        ODBC.connect config[:dsn], config[:username], config[:password]
-                      when :adonet
-                        System::Data::SqlClient::SqlConnection.new.tap do |connection|
-                          connection.connection_string = System::Data::SqlClient::SqlConnectionStringBuilder.new.tap do |cs|
-                            cs.user_i_d = config[:username] if config[:username]
-                            cs.password = config[:password] if config[:password]
-                            cs.integrated_security = true if config[:integrated_security] == 'true'
-                            cs.add 'Server', config[:host].to_clr_string
-                            cs.initial_catalog = config[:database]
-                            cs.multiple_active_result_sets = false
-                            cs.pooling = false
-                          end.to_s
-                          connection.open
-                        end
-                      end
+        driver_url, username, password = @connection_options
+        @connection = DBI.connect(driver_url, username, password)
+        configure_connection
       rescue
         raise unless @auto_connecting
       end
       
-      def connection_mode
-        @connection_options[:mode]
-      end
-      
-      def lost_connection_exceptions
-        exceptions = LOST_CONNECTION_EXCEPTIONS[connection_mode]
-        @lost_connection_exceptions ||= exceptions ? exceptions.map(&:constantize) : []
-      end
-      
-      def lost_connection_messages
-        LOST_CONNECTION_MESSAGES[connection_mode]
+      def configure_connection
+        raw_connection['AutoCommit'] = true
       end
       
       def with_auto_reconnect
         begin
           yield
-        rescue *lost_connection_exceptions => e
-          if lost_connection_messages.any? { |lcm| e.message =~ lcm }
+        rescue *LOST_CONNECTION_EXCEPTIONS => e
+          if LOST_CONNECTION_MESSAGES.any? { |lcm| e.message =~ Regexp.new(lcm,Regexp::IGNORECASE) }
             retry if auto_reconnected?
           end
           raise
@@ -821,50 +809,11 @@ module ActiveRecord
         @auto_connecting = false
       end
       
-      def raw_connection_run(sql)
-        with_auto_reconnect do
-          case connection_mode
-          when :odbc
-            block_given? ? raw_connection.run_block(sql) { |handle| yield(handle) } : raw_connection.run(sql)
-          else :adonet
-            raw_connection.create_command.tap{ |cmd| cmd.command_text = sql }.execute_reader
-          end
-        end
-      end
-      
-      def raw_connection_do(sql)
-        case connection_mode
-        when :odbc
-          raw_connection.do(sql)
-        else :adonet
-          raw_connection.create_command.tap{ |cmd| cmd.command_text = sql }.execute_non_query
-        end
-      end
-      
-      def finish_statement_handle(handle)
-        case connection_mode
-        when :odbc
-          handle.drop if handle && handle.respond_to?(:drop) && !handle.finished?
-        when :adonet
-          handle.close if handle && handle.respond_to?(:close) && !handle.is_closed
-          handle.dispose if handle && handle.respond_to?(:dispose)
-        end
-        handle
-      end
-      
       # DATABASE STATEMENTS ======================================
       
       def select(sql, name = nil, ignore_special_columns = false)
         repair_special_columns(sql) unless ignore_special_columns
-        fields_and_row_sets = raw_select(sql,name)
-        final_result_set = fields_and_row_sets.inject([]) do |rs,fields_and_rows|
-          fields, rows = fields_and_rows
-          rs << zip_fields_and_rows(fields,rows)
-        end
-        final_result_set.many? ? final_result_set : final_result_set.first
-      end
-      
-      def zip_fields_and_rows(fields, rows)
+        fields, rows = raw_select(sql,name)
         rows.inject([]) do |results,row|
           row_hash = {}
           fields.each_with_index do |f, i|
@@ -887,87 +836,51 @@ module ActiveRecord
         log_info_schema_queries ? yield : ActiveRecord::Base.silence{ yield }
       end
       
+      def raw_execute(sql, name = nil, &block)
+        log(sql, name) do
+          if block_given?
+            with_auto_reconnect { raw_connection.execute(sql) { |handle| yield(handle) } }
+          else
+            with_auto_reconnect { raw_connection.execute(sql) }
+          end
+        end
+      end
+      
+      def without_type_conversion
+        raw_connection.convert_types = false if raw_connection.respond_to?(:convert_types=)
+        yield
+      ensure
+        raw_connection.convert_types = true if raw_connection.respond_to?(:convert_types=)
+      end
+      
       def do_execute(sql,name=nil)
         log(sql, name || 'EXECUTE') do
-          with_auto_reconnect { raw_connection_do(sql) }
+          with_auto_reconnect { raw_connection.do(sql) }
         end
       end
       
       def raw_select(sql, name = nil)
-        fields_and_row_sets = []
-        log(sql,name) do
-          begin
-            handle = raw_connection_run(sql)
-            loop do
-              fields_and_rows = case connection_mode
-                                when :odbc
-                                  handle_to_fields_and_rows_odbc(handle)
-                                when :adonet
-                                  handle_to_fields_and_rows_adonet(handle)
-                                end
-              fields_and_row_sets << fields_and_rows
-              break unless handle_more_results?(handle)
-            end
-          ensure
-            finish_statement_handle(handle)
-          end
-        end
-        fields_and_row_sets
-      end
-      
-      def handle_more_results?(handle)
-        case connection_mode
-        when :odbc
-          handle.more_results
-        when :adonet
-          handle.next_result
-        end
-      end
-      
-      def handle_to_fields_and_rows_odbc(handle)
-        fields = handle.columns(true).map { |c| c.name }
-        results = handle.inject([]) do |rows,row|
-          rows << row.inject([]) { |values,value| values << value }
-        end
+        handle = raw_execute(sql,name)
+        fields = handle.column_names
+        results = handle_as_array(handle)
         rows = results.inject([]) do |rows,row|
           row.each_with_index do |value, i|
-            if value.is_a? ODBC::TimeStamp
+            # DEPRECATED in DBI 0.4.0 and above. Remove when 0.2.2 and lower is no longer supported.
+            if value.is_a? DBI::Timestamp
               row[i] = value.to_sqlserver_string
             end
           end
           rows << row
         end
-        [fields,rows]
+        return fields, rows
       end
       
-      def handle_to_fields_and_rows_adonet(handle)
-        if handle.has_rows
-          fields = []
-          rows = []
-          fields_named = false
-          while handle.read
-            row = []
-            handle.visible_field_count.times do |row_index|
-              value = handle.get_value(row_index)
-              value = if value.is_a? System::String
-                        value.to_s
-                      elsif value.is_a? System::DBNull
-                        nil
-                      elsif value.is_a? System::DateTime
-                        value.to_string("yyyy-MM-dd HH:MM:ss.fff").to_s
-                      else
-                        value
-                      end
-              row << value
-              fields << handle.get_name(row_index).to_s unless fields_named
-            end
-            rows << row
-            fields_named = true
-          end
-        else
-          fields, rows = [], []
+      def handle_as_array(handle)
+        array = handle.inject([]) do |rows,row|
+          rows << row.inject([]){ |values,value| values << value }
         end
-        [fields,rows]
+        finish_statement_handle(handle)
+        array
       end
       
       def add_limit_offset_for_association_limiting!(sql, options)
@@ -1014,7 +927,7 @@ module ActiveRecord
       
       # IDENTITY INSERTS =========================================#
       
-      def with_identity_insert_enabled(table_name)
+      def with_identity_insert_enabled(table_name, &block)
         table_name = quote_table_name(table_name_or_views_table_name(table_name))
         set_identity_insert(table_name, true)
         yield
@@ -1033,7 +946,7 @@ module ActiveRecord
         if insert_sql?(sql)
           table_name = get_table_name(sql)
           id_column = identity_column(table_name)
-          id_column && sql =~ /^\s*INSERT[^(]+\([^)]*\b(#{id_column.name})\b,?[^)]*\)/i ? quote_table_name(table_name) : false
+          id_column && sql =~ /INSERT[^(]+\([^)]*\b(#{id_column.name})\b,?[^)]*\)/i ? quote_table_name(table_name) : false
         else
           false
         end
@@ -1107,21 +1020,14 @@ module ActiveRecord
         end
       end
       
-      def remove_sqlserver_columns_cache_for(table_name)
-        cache_key = unqualify_table_name(table_name)
-        @sqlserver_columns_cache[cache_key] = nil
-        initialize_sqlserver_caches(false)
-      end
-      
-      def initialize_sqlserver_caches(reset_columns=true)
-        @sqlserver_columns_cache = {} if reset_columns
-        @sqlserver_views_cache = nil
-        @sqlserver_view_information_cache = {}
+      def initialize_sqlserver_caches
+        @@sqlserver_columns_cache = {}
+        @@sqlserver_views_cache = nil
+        @@sqlserver_view_information_cache = {}
       end
       
       def column_definitions(table_name)
         db_name = unqualify_db_name(table_name)
-        db_name_with_period = "#{db_name}." if db_name
         table_name = unqualify_table_name(table_name)
         sql = %{
           SELECT
@@ -1133,7 +1039,7 @@ module ActiveRecord
           columns.NUMERIC_PRECISION as numeric_precision,
           CASE
             WHEN columns.DATA_TYPE IN ('nchar','nvarchar') THEN columns.CHARACTER_MAXIMUM_LENGTH
-            ELSE COL_LENGTH(columns.TABLE_SCHEMA+'.'+columns.TABLE_NAME, columns.COLUMN_NAME)
+            ELSE COL_LENGTH(columns.TABLE_NAME, columns.COLUMN_NAME) 
           END as length,
           CASE
             WHEN columns.IS_NULLABLE = 'YES' THEN 1
@@ -1143,11 +1049,11 @@ module ActiveRecord
             WHEN COLUMNPROPERTY(OBJECT_ID(columns.TABLE_SCHEMA+'.'+columns.TABLE_NAME), columns.COLUMN_NAME, 'IsIdentity') = 0 THEN NULL
             ELSE 1
           END as is_identity
-          FROM #{db_name_with_period}INFORMATION_SCHEMA.COLUMNS columns
+          FROM #{db_name}INFORMATION_SCHEMA.COLUMNS columns
           WHERE columns.TABLE_NAME = '#{table_name}'
           ORDER BY columns.ordinal_position
         }.gsub(/[ \t\r\n]+/,' ')
-        results = info_schema_query { select(sql,nil,true) }
+        results = info_schema_query { without_type_conversion{ select(sql,nil,true) } }
         results.collect do |ci|
           ci.symbolize_keys!
           ci[:type] = case ci[:type]
@@ -1163,8 +1069,8 @@ module ActiveRecord
           if ci[:default_value].nil? && views.include?(table_name)
             real_table_name = table_name_or_views_table_name(table_name)
             real_column_name = views_real_column_name(table_name,ci[:name])
-            col_default_sql = "SELECT c.COLUMN_DEFAULT FROM #{db_name_with_period}INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_NAME = '#{real_table_name}' AND c.COLUMN_NAME = '#{real_column_name}'"
-            ci[:default_value] = info_schema_query { select_value(col_default_sql) }
+            col_default_sql = "SELECT c.COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_NAME = '#{real_table_name}' AND c.COLUMN_NAME = '#{real_column_name}'"
+            ci[:default_value] = info_schema_query { without_type_conversion{ select_value(col_default_sql) } }
           end
           ci[:default_value] = case ci[:default_value]
                                when nil, '(null)', '(NULL)'
