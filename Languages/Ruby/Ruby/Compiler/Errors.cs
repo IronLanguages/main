@@ -80,7 +80,7 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo InvalidEscapeCharacter = new ErrorInfo(Tokenizer + 53, "Invalid escape character syntax");
         public static readonly ErrorInfo NullCharacterInSymbol = new ErrorInfo(Tokenizer + 54, "Symbol cannot contain '\\0'");
         public static readonly ErrorInfo EmptySymbolLiteral = new ErrorInfo(Tokenizer + 55, "empty symbol literal");
-        public static readonly ErrorInfo EncodingsMixed = new ErrorInfo(Tokenizer + 56, "{0} mixed within {1} source");
+        // TODO: public static readonly ErrorInfo EncodingsMixed = new ErrorInfo(Tokenizer + 56, "{0} mixed within {1} source");
 
         public static readonly ErrorInfo ModuleNameNotConstant = new ErrorInfo(Tokenizer + 66, "Class/module name must be a constant");
         public static readonly ErrorInfo ConstantReassigned = new ErrorInfo(Tokenizer + 67, "Constant re-assignment");
@@ -103,7 +103,10 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo AmpersandInVoidContext = new ErrorInfo(WarningLevel2 + 4, "Useless use of & in void context"); // TODO: level 1?
         public static readonly ErrorInfo StarInterpretedAsSplatArgument = new ErrorInfo(WarningLevel2 + 5, "`*' interpreted as argument prefix"); // TODO: level 1?
         public static readonly ErrorInfo ByteOrderMarkIgnored = new ErrorInfo(WarningLevel2 + 6, "UTF-8 byte-order-mark ignored.");
-        
+
+        // TODO: 
+        public static readonly ErrorInfo EncodingsMixed = new ErrorInfo(Tokenizer + 7, "{0} mixed within {1} source");
+
         internal static bool IsVerboseWarning(int errorCode) {
             return errorCode >= WarningLevel2;
         }

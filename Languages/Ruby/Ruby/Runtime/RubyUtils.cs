@@ -1132,6 +1132,7 @@ namespace IronRuby.Runtime {
         #endregion
 
         #region Paths
+
         public static MutableString CanonicalizePath(MutableString path) {
             for (int i = 0; i < path.Length; i++) {
                 if (path.GetChar(i) == '\\')
@@ -1150,6 +1151,7 @@ namespace IronRuby.Runtime {
                 basePath + "/" + path;
         }
 
+        // TODO: virtualize via PAL
         public static bool FileSystemUsesDriveLetters { get { return Path.DirectorySeparatorChar == '\\'; } }
 
         // Is path something like "/foo/bar" (or "c:/foo/bar" on Windows)
@@ -1176,10 +1178,10 @@ namespace IronRuby.Runtime {
                 return false;
             }
 
-            return (Char.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && path[2] == '/');
+            return Tokenizer.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && path[2] == '/';
         }
 
-        // returns "/" or something like "c:/"
+        // returns "//", "///", ... or something like "c:/"
         public static string GetPathRoot(PlatformAdaptationLayer/*!*/ platform, string path, out string pathAfterRoot) {
             Debug.Assert(IsAbsolutePath(path));
             if (IsAbsoluteDriveLetterPath(path)) {
@@ -1218,7 +1220,7 @@ namespace IronRuby.Runtime {
                 return false;
             }
 
-            if (Char.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && (path.Length == 2 || path[2] != '/')) {
+            if (Tokenizer.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && (path.Length == 2 || path[2] != '/')) {
                 partialDriveLetter = path[0];
                 relativePath = path.Substring(2);
                 return true;
@@ -1341,73 +1343,70 @@ namespace IronRuby.Runtime {
         // Returned path is always canonicalized to forward slashes
 
         public static string/*!*/ ExpandPath(PlatformAdaptationLayer/*!*/ platform, string/*!*/ path) {
-            if (String.IsNullOrEmpty(path)) {
-                return RubyUtils.CanonicalizePath(platform.CurrentDirectory);
-            }
-
-            int length = path.Length;
-
-            if (path[0] == '~') {
-                if (length == 1 || (path[1] == '/')) {
-
-                    string homeDirectory = platform.GetEnvironmentVariable("HOME");
-                    if (homeDirectory == null) {
-                        throw RubyExceptions.CreateArgumentError("couldn't find HOME environment -- expanding `~'");
-                    }
-
-                    if (length <= 2) {
-                        path = homeDirectory;
-                    } else {
-                        path = Path.Combine(homeDirectory, path.Substring(2));
-                    }
-                    return RubyUtils.CanonicalizePath(path);
-                } else {
-                    return path;
-                }
-            } else {
-                string currentDirectory = ExpandPath(platform, null);
-                return ExpandPath(platform, path, currentDirectory);
-            }
+            return ExpandPath(platform, path, platform.CurrentDirectory, true);
         }
 
-        public static string/*!*/ ExpandPath(PlatformAdaptationLayer/*!*/ platform, string/*!*/ path, string basePath) {
-            // We ignore basePath parameter if first string starts with a ~
-            if (basePath == null || (path.Length > 0 && path[0] == '~')) {
-                return ExpandPath(platform, path);
+        public static string/*!*/ ExpandPath(PlatformAdaptationLayer/*!*/ platform, string/*!*/ path, string/*!*/ basePath, bool expandHome) {
+            return ExpandPath(platform, path, basePath, expandHome, true);
+        }
+
+        private static string/*!*/ ExpandPath(PlatformAdaptationLayer/*!*/ platform, string/*!*/ path, string/*!*/ basePath, bool expandHome, bool expandBase) {
+            Assert.NotNull(platform, path, basePath);
+
+            if (expandHome) {
+                int length = path.Length;
+                if (length > 0 && path[0] == '~') {
+                    if (length == 1 || (path[1] == '/' || path[1] == '\\')) {
+                        string homeDirectory = platform.GetEnvironmentVariable("HOME");
+                        if (homeDirectory == null) {
+                            throw RubyExceptions.CreateArgumentError("couldn't find HOME environment -- expanding `~'");
+                        }
+
+                        if (length <= 2) {
+                            path = homeDirectory;
+                        } else {
+                            path = Path.Combine(homeDirectory, path.Substring(2));
+                        }
+                    } else {
+                        // MRI doesn't expand path that starts with ~, seems like a bug
+                        // http://redmine.ruby-lang.org/issues/show/3629
+                        return path;
+                    }
+                }
+                // MRI deosn't expand content of HOME variable (could be a relative path). We do.
+                // See http://redmine.ruby-lang.org/issues/show/3630
             }
 
             path = RubyUtils.CanonicalizePath(path);
             basePath = RubyUtils.CanonicalizePath(basePath);
-            char partialDriveLetter;
-            string relativePath;
 
             if (RubyUtils.IsAbsolutePath(path)) {
-                // "basePath" can be ignored is "path" is an absolute path
-                PathExpander pathExpander = new PathExpander(platform, path);
-                return pathExpander.GetResult();
-            } else if (RubyUtils.HasPartialDriveLetter(path, out partialDriveLetter, out relativePath)) {
-                string currentDirectory = partialDriveLetter.ToString() + ":/";
-                if (platform.DirectoryExists(currentDirectory)) {
-                    // File.expand_path("c:foo") returns "c:/current_folder_for_c_drive/foo"
-                    currentDirectory = platform.GetFullPath(partialDriveLetter.ToString() + ":");
-                }
-
-                return ExpandPath(platform, relativePath, currentDirectory);
-            } else if (RubyUtils.IsAbsolutePath(basePath)) {
-                PathExpander pathExpander = new PathExpander(platform, basePath);
-                pathExpander.AddRelativePath(path);
-                return pathExpander.GetResult();
-            } else if (RubyUtils.HasPartialDriveLetter(basePath, out partialDriveLetter, out relativePath)) {
-                // First expand basePath
-                string expandedBasePath = ExpandPath(platform, basePath);
-                return ExpandPath(platform, path, expandedBasePath);
-            } else {
-                // First expand basePath
-                string expandedBasePath = ExpandPath(platform, basePath);
-                Debug.Assert(RubyUtils.IsAbsolutePath(expandedBasePath));
-
-                return ExpandPath(platform, path, expandedBasePath);
+                // "basePath" can be ignored if "path" is an absolute path
+                return new PathExpander(platform, path).GetResult();
             }
+
+            // expand base path:
+            string expandedBasePath = expandBase ? ExpandPath(platform, basePath, platform.CurrentDirectory, expandHome, false) : basePath;
+
+            char drive;
+            string relativePath;
+            if (RubyUtils.HasPartialDriveLetter(path, out drive, out relativePath)) {
+                string _;
+                string root = RubyUtils.GetPathRoot(platform, expandedBasePath, out _);
+                if (root[0].ToLowerInvariant() != drive.ToLowerInvariant()) {
+                    expandedBasePath = RubyUtils.CanonicalizePath(platform.CurrentDirectory);
+                    root = RubyUtils.GetPathRoot(platform, expandedBasePath, out _);
+                    if (root[0].ToLowerInvariant() != drive.ToLowerInvariant()) {
+                        // MRI: Converts "X:path" to "X:/path" if X != base drive or current drive:
+                        return new PathExpander(platform, drive.ToString() + ":/" + relativePath).GetResult();
+                    }
+                }
+                path = relativePath;
+            }
+
+            PathExpander pathExpander = new PathExpander(platform, expandedBasePath);
+            pathExpander.AddRelativePath(path);
+            return pathExpander.GetResult();
         }
 
         /// <summary>

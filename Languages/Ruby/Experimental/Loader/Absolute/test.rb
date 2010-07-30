@@ -1,7 +1,9 @@
 $:.clear
 
 $".clear
-require 'C:\temp\load\Absolute\a'
+puts x = File.join(ENV["DLR_ROOT"], "Languages/Ruby/Experimental/Loader/Absolute/a")
+require x
 
 $".clear
-require 'C:\temp\load\Absolute\a.rb'
+puts x = File.join(ENV["DLR_ROOT"], "Languages/Ruby/Experimental/Loader/Absolute/a.rb")
+require x

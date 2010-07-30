@@ -126,12 +126,21 @@ namespace IronRuby.Runtime {
         /// ? to_str => to_str()
         /// </summary>
         public static MutableString/*!*/ CastToPath(ConversionStorage<MutableString>/*!*/ toPath, object obj) {
-            var site = toPath.GetSite(CompositeConversionAction.Make(toPath.Context, CompositeConversion.ToPathToStr));
-            MutableString result = site.Target(site, obj);
+            return CastToPath(toPath.GetSite(CompositeConversionAction.Make(toPath.Context, CompositeConversion.ToPathToStr)), obj);
+        }
+
+        /// <summary>
+        /// Converts an object to string using to_path-to_str protocol.
+        /// Protocol:
+        /// ? to_path => to_path() and to_str conversion on the result
+        /// ? to_str => to_str()
+        /// </summary>
+        public static MutableString/*!*/ CastToPath(CallSite<Func<CallSite, object, MutableString>>/*!*/ toPath, object obj) {
+            MutableString result = toPath.Target(toPath, obj);
             if (result == null) {
                 throw RubyExceptions.CreateTypeConversionError("nil", "String");
             }
-            return result; 
+            return result;
         }
 
         /// <summary>

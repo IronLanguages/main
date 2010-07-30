@@ -2628,7 +2628,7 @@ namespace IronRuby.Compiler {
                         if (c == 'u' && _compatibility >= RubyCompatibility.Ruby19) {
                             // TODO: if the string contains ascii characters only => it is ok and the encoding of the string will be UTF8
                             if (_encoding != RubyEncoding.UTF8) {
-                                ReportError(Errors.EncodingsMixed, RubyEncoding.UTF8.Name, _encoding.Name);
+                                ReportWarning(Errors.EncodingsMixed, RubyEncoding.UTF8.Name, _encoding.Name);
                                 content.Append('\\');
                                 content.Append('u');
                                 continue;

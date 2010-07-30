@@ -1058,7 +1058,7 @@ puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
 
         [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void MethodDefinitionInModuleEval1A() {
-            AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "A");
+            AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "B");
         }
 
         [Options(Compatibility = RubyCompatibility.Ruby186)]

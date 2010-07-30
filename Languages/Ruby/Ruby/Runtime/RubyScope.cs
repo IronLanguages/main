@@ -456,12 +456,13 @@ namespace IronRuby.Runtime {
         }
 
         internal RubyModule/*!*/ GetMethodDefinitionOwner() {
-            // MRI 1.9: skips all module_eval and define_method blocks.
-            // MRI 1.8: skips module_eval and define_method blocks above method scope.
-            // IronRuby: Fallback to the top-level singleton class when hosted.
-            if (RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby19) {
-                return GetInnerMostModuleForMethodLookup();
-            }
+            // MRI 1.9: 
+            // - define_method doesn't influence the definition owner (unlike MRI 1.8)
+            // - skips module_eval blocks above method scope 
+            // MRI 1.8: 
+            // - skips module_eval and define_method blocks above method scope.
+            // IronRuby: 
+            // - Fallback to the top-level singleton class when hosted.
 
             RubyScope scope = this;
             while (true) {
@@ -480,6 +481,9 @@ namespace IronRuby.Runtime {
                         return scope.GetInnerMostModuleForMethodLookup();
 
                     case ScopeKind.BlockMethod:
+                        if (RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby19) {
+                            break;
+                        }
                         return ((RubyBlockScope)scope).BlockFlowControl.Proc.Method.DeclaringModule;
 
                     case ScopeKind.BlockModule:

@@ -316,5 +316,21 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
+        #region permutation, combination
+
+        [RubyMethod("permutation", Compatibility = RubyCompatibility.Ruby19)]
+        public static object EnumeratePermutations(BlockParam block, RubyArray/*!*/ self, [DefaultProtocol]int size) {
+            // TODO:
+            return new RubyArray();
+        }
+
+        [RubyMethod("combination", Compatibility = RubyCompatibility.Ruby19)]
+        public static object EnumerateCombinations(BlockParam block, RubyArray/*!*/ self, [DefaultProtocol]int size) {
+            // TODO:
+            return new RubyArray();
+        }
+
+        #endregion
     }
 }

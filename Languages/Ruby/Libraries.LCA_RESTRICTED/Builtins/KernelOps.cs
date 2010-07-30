@@ -70,7 +70,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Array, Float, Integer, String, 1.9: Complex, Rational
+        #region Array, Float, Integer, String, Complex, Rational
 
         [RubyMethod("Array", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("Array", RubyMethodAttributes.PublicSingleton)]
@@ -132,9 +132,19 @@ namespace IronRuby.Builtins {
             return Protocols.ConvertToString(tosConversion, obj);
         }
 
-        // TODO 1.9:
-        // private instance/singleton Complex
-        // private instance/singleton Rational
+        [RubyMethod("Complex", RubyMethodAttributes.PrivateInstance, Compatibility = RubyCompatibility.Ruby19)]
+        [RubyMethod("Complex", RubyMethodAttributes.PublicSingleton, Compatibility = RubyCompatibility.Ruby19)]
+        public static object/*!*/ ToComplex(object self, object real, [Optional]object imaginary) {
+            // TODO:
+            return real;
+        }
+
+        [RubyMethod("Rational", RubyMethodAttributes.PrivateInstance, Compatibility = RubyCompatibility.Ruby19)]
+        [RubyMethod("Rational", RubyMethodAttributes.PublicSingleton, Compatibility = RubyCompatibility.Ruby19)]
+        public static object/*!*/ ToRational(object self, object numerator, [Optional]object denominator) {
+            // TODO:
+            return numerator;
+        }
 
         #endregion
 
@@ -931,7 +941,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region clr_member, method, 1.9: public_method, define_singleton_method
+        #region clr_member, method, public_method
 
         // thread-safe:
         /// <summary>
@@ -972,9 +982,88 @@ namespace IronRuby.Builtins {
         }
 
         // 1.9: public: public_method
-        // 1.9: public: define_singleton_method
 
         #endregion
+
+        #region define_singleton_method (thread-safe)
+
+        // thread-safe:
+        [RubyMethod("define_singleton_method", RubyMethodAttributes.PublicInstance)]
+        public static RubyMethod/*!*/ DefineSingletonMethod(RubyScope/*!*/ scope, object self,
+            [DefaultProtocol, NotNull]string/*!*/ methodName, [NotNull]RubyMethod/*!*/ method) {
+
+            // TODO:
+            return ModuleOps.DefineMethod(scope, scope.RubyContext.GetOrCreateSingletonClass(self), methodName, method);
+        }
+
+        // thread-safe:
+        // Defines method using mangled CLR name and aliases that method with the actual CLR name.
+        [RubyMethod("define_singleton_method", RubyMethodAttributes.PublicInstance)]
+        public static RubyMethod/*!*/ DefineSingletonMethod(RubyScope/*!*/ scope, object self,
+            [NotNull]ClrName/*!*/ methodName, [NotNull]RubyMethod/*!*/ method) {
+
+            // TODO:
+            return ModuleOps.DefineMethod(scope, scope.RubyContext.GetOrCreateSingletonClass(self), methodName, method);
+        }
+
+        // thread-safe:
+        [RubyMethod("define_singleton_method", RubyMethodAttributes.PublicInstance)]
+        public static UnboundMethod/*!*/ DefineSingletonMethod(RubyScope/*!*/ scope, object self,
+            [DefaultProtocol, NotNull]string/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
+
+            // TODO:
+            return ModuleOps.DefineMethod(scope, scope.RubyContext.GetOrCreateSingletonClass(self), methodName, method);
+        }
+
+        // thread-safe:
+        // Defines method using mangled CLR name and aliases that method with the actual CLR name.
+        [RubyMethod("define_singleton_method", RubyMethodAttributes.PublicInstance)]
+        public static UnboundMethod/*!*/ DefineSingletonMethod(RubyScope/*!*/ scope, object self,
+            [NotNull]ClrName/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
+
+            // TODO:
+            return ModuleOps.DefineMethod(scope, scope.RubyContext.GetOrCreateSingletonClass(self), methodName, method);
+        }
+
+        // thread-safe:
+        [RubyMethod("define_singleton_method", RubyMethodAttributes.PublicInstance)]
+        public static Proc/*!*/ DefineSingletonMethod(RubyScope/*!*/ scope, [NotNull]BlockParam/*!*/ block,
+            object self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
+
+            // TODO:
+            return ModuleOps.DefineMethod(scope, block, scope.RubyContext.GetOrCreateSingletonClass(self), methodName);
+        }
+
+        // thread-safe:
+        // Defines method using mangled CLR name and aliases that method with the actual CLR name.
+        [RubyMethod("define_singleton_method", RubyMethodAttributes.PublicInstance)]
+        public static Proc/*!*/ DefineSingletonMethod(RubyScope/*!*/ scope, [NotNull]BlockParam/*!*/ block,
+            object self, [NotNull]ClrName/*!*/ methodName) {
+
+            // TODO:
+            return ModuleOps.DefineMethod(scope, block, scope.RubyContext.GetOrCreateSingletonClass(self), methodName);
+        }
+
+        // thread-safe:
+        [RubyMethod("define_singleton_method", RubyMethodAttributes.PublicInstance)]
+        public static Proc/*!*/ DefineSingletonMethod(RubyScope/*!*/ scope, object self,
+            [DefaultProtocol, NotNull]string/*!*/ methodName, [NotNull]Proc/*!*/ block) {
+
+            // TODO:
+            return ModuleOps.DefineMethod(scope, scope.RubyContext.GetOrCreateSingletonClass(self), methodName, block);
+        }
+
+        // thread-safe:
+        [RubyMethod("define_singleton_method", RubyMethodAttributes.PublicInstance)]
+        public static Proc/*!*/ DefineSingletonMethod(RubyScope/*!*/ scope, object self,
+            [NotNull]ClrName/*!*/ methodName, [NotNull]Proc/*!*/ block) {
+
+            // TODO:
+            return ModuleOps.DefineMethod(scope, scope.RubyContext.GetOrCreateSingletonClass(self), methodName, block);
+        }
+
+        #endregion
+
 
         #region methods, (private|protected|public|singleton)_methods (thread-safe)
 
@@ -1315,8 +1404,24 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("load", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
-        public static bool Load(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
-            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, wrap ? LoadFlags.LoadIsolated : LoadFlags.None);
+        public static bool Load(ConversionStorage<MutableString>/*!*/ toPath, RubyScope/*!*/ scope, object self, object libraryName, [Optional]bool wrap) {
+            return scope.RubyContext.Loader.LoadFile(
+                scope.GlobalScope.Scope, 
+                self, 
+                Protocols.CastToPath(toPath, libraryName), 
+                wrap ? LoadFlags.LoadIsolated : LoadFlags.None
+            );
+        }
+
+        [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
+        public static bool Require(ConversionStorage<MutableString>/*!*/ toPath, RubyScope/*!*/ scope, object self, object libraryName) {
+            return scope.RubyContext.Loader.LoadFile(
+                scope.GlobalScope.Scope, 
+                self, 
+                Protocols.CastToPath(toPath, libraryName), 
+                LoadFlags.Require
+            );
         }
 
         [RubyMethod("load_assembly", RubyMethodAttributes.PrivateInstance)]
@@ -1326,12 +1431,6 @@ namespace IronRuby.Builtins {
 
             string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
             return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true) != null;
-        }
-
-        [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
-        public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
-            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.Require);
         }
 
         [RubyMethod("using_clr_extensions", RubyMethodAttributes.PrivateInstance)]

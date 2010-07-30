@@ -331,7 +331,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region path, basename, dirname, extname, expand_path, fnmatch
+        #region path, basename, dirname, extname, expand_path, absolute_path, fnmatch
 
         [RubyMethod("path", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ ToPath(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
@@ -464,8 +464,7 @@ namespace IronRuby.Builtins {
             return MutableString.Create(RubyUtils.GetExtension(pathStr.ConvertToString()), pathStr.Encoding).TaintBy(pathStr);
         }
 
-#if !SILVERLIGHT
-        [RubyMethod("expand_path", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("expand_path", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ ExpandPath(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path,
             [DefaultParameterValue(null)]object basePath) {
             var context = self.Context;
@@ -473,12 +472,28 @@ namespace IronRuby.Builtins {
             string result = RubyUtils.ExpandPath(
                 context.Platform,
                 context.DecodePath(Protocols.CastToPath(toPath, path)),
-                (basePath == null) ? null : context.DecodePath(Protocols.CastToPath(toPath, basePath))
+                (basePath == null) ? context.Platform.CurrentDirectory : context.DecodePath(Protocols.CastToPath(toPath, basePath)),
+                true
             );
 
             return self.Context.EncodePath(result);
         }
-#endif
+
+        [RubyMethod("absolute_path", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString/*!*/ AbsolutePath(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path,
+            [DefaultParameterValue(null)]object basePath) {
+            var context = self.Context;
+
+            string result = RubyUtils.ExpandPath(
+                context.Platform,
+                context.DecodePath(Protocols.CastToPath(toPath, path)),
+                (basePath == null) ? context.Platform.CurrentDirectory : context.DecodePath(Protocols.CastToPath(toPath, basePath)),
+                false
+            );
+
+            return self.Context.EncodePath(result);
+        }
+
         [RubyMethod("fnmatch", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("fnmatch?", RubyMethodAttributes.PublicSingleton)]
         public static bool FnMatch(ConversionStorage<MutableString>/*!*/ toPath, object/*!*/ self,

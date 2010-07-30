@@ -8,7 +8,7 @@ module BasicObjectBehavior
   end
 
   def public_features
-    [ :!, :!=, :==, :__send__, :equal?, :instance_eval, :instance_exec ]
+    [ :"!", :"!=", :==, :__send__, :equal?, :instance_eval, :instance_exec ]
   end
 end
 

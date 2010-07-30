@@ -87,6 +87,18 @@ namespace IronRuby.Builtins {
 
         #region Singleton Methods
 
+        [RubyMethod("aliases", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray/*!*/ GetAliases(RubyClass/*!*/ self) {
+            // TODO:
+            return new RubyArray();
+        }
+
+        [RubyMethod("name_list", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray/*!*/ GetNameList(RubyClass/*!*/ self) {
+            // TODO:
+            return new RubyArray();
+        }
+
         [RubyMethod("list", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetAvailableEncodings(RubyClass/*!*/ self) {
             // TODO: loads all encodings, we should be lazy with encoding creation
@@ -119,7 +131,26 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("default_external", RubyMethodAttributes.PublicSingleton)]
-        public static RubyEncoding/*!*/ GetDefaultEncoding(RubyClass/*!*/ self) {
+        public static RubyEncoding/*!*/ GetDefaultExternalEncoding(RubyClass/*!*/ self) {
+            // TODO:
+            return RubyEncoding.Default;
+        }
+
+        [RubyMethod("default_external=", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding/*!*/ SetDefaultExternalEncoding(RubyClass/*!*/ self, RubyEncoding encoding) {
+            // TODO:
+            return RubyEncoding.Default;
+        }
+
+        [RubyMethod("default_internal", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding/*!*/ GetDefaultInternalEncoding(RubyClass/*!*/ self) {
+            // TODO:
+            return RubyEncoding.Default;
+        }
+
+        [RubyMethod("default_internal=", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding/*!*/ SetDefaultInternalEncoding(RubyClass/*!*/ self, RubyEncoding encoding) {
+            // TODO:
             return RubyEncoding.Default;
         }
 

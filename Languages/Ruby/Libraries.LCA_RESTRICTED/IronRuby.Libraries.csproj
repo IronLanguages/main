@@ -114,6 +114,7 @@
     <Compile Include="BigDecimal\Fraction.cs" />
     <Compile Include="Builtins\ArgFilesSingletonOps.cs" />
     <Compile Include="Builtins\ArrayOps.cs" />
+    <Compile Include="Builtins\BasicObjectOps.cs" />
     <Compile Include="Builtins\BigNumOps.cs" />
     <Compile Include="Builtins\BindingOps.cs" />
     <Compile Include="Builtins\BuiltinsInitializer.cs" />
