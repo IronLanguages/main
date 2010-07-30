@@ -22,6 +22,7 @@ using System.Text;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 #if CLR2
@@ -37,18 +38,26 @@ namespace IronPython.Runtime {
     /// </summary>
     public static class LiteralParser {
         public static string ParseString(string text, bool isRaw, bool isUni) {
+            return ParseString(text.ToCharArray(), 0, text.Length, isRaw, isUni, false);
+        }
+
+        public static string ParseString(char[] text, int start, int length, bool isRaw, bool isUni, bool normalizeLineEndings) {
             Debug.Assert(text != null);
 
-            if (isRaw && !isUni) return text;
+            if (isRaw && !isUni && !normalizeLineEndings) return new String(text, start, length);
 
-            //PERFORMANCE-ISSUE ??? maybe optimize for the 0-escapes case
-            StringBuilder buf = new StringBuilder(text.Length);
-            int i = 0;
-            int l = text.Length;
+            StringBuilder buf = null;
+            int i = start;
+            int l = start + length;
             int val;
             while (i < l) {
                 char ch = text[i++];
-                if (ch == '\\') {
+                if ((!isRaw || isUni) && ch == '\\') {
+                    if (buf == null) {
+                         buf = new StringBuilder(length);
+                         buf.Append(text, start, i - start - 1);
+                    }
+
                     if (i >= l) {
                         if (isRaw) {
                             buf.Append('\\');
@@ -127,22 +136,35 @@ namespace IronPython.Runtime {
                                 continue;
                         }
                     }
-                } else {
+                } else if (ch == '\r' && normalizeLineEndings) {
+                    if (buf == null) {
+                        buf = new StringBuilder(length);
+                        buf.Append(text, start, i - start - 1);
+                    }
+
+                    // normalize line endings
+                    if (i < text.Length && text[i] == '\n') {
+                        i++;
+                    } 
+                    buf.Append('\n');
+                } else if (buf != null) {
                     buf.Append(ch);
                 }
             }
 
-            return buf.ToString();
+            if (buf != null) {
+                return buf.ToString();
+            }
+            return new String(text, start, length);
         }
 
-        internal static List<byte> ParseBytes(string text, bool isRaw) {
+        internal static List<byte> ParseBytes(char[] text, int start, int length, bool isRaw, bool normalizeLineEndings) {
             Debug.Assert(text != null);
 
-            //PERFORMANCE-ISSUE ??? maybe optimize for the 0-escapes case
-            List<byte> buf = new List<byte>(text.Length);
+            List<byte> buf = new List<byte>(length);
 
-            int i = 0;
-            int l = text.Length;
+            int i = start;
+            int l = start + length;
             int val;
             while (i < l) {
                 char ch = text[i++];
@@ -198,7 +220,12 @@ namespace IronPython.Runtime {
                             buf.Add((byte)ch);
                             continue;
                     }
-                    
+                } else if (ch == '\r' && normalizeLineEndings) {
+                    // normalize line endings
+                    if (i < text.Length && text[i] == '\n') {
+                        i++;
+                    }
+                    buf.Add((byte)'\n');
                 } else {
                     buf.Add((byte)ch);
                 }
@@ -280,7 +307,7 @@ namespace IronPython.Runtime {
             return true;
         }
 
-        private static bool TryParseInt(string text, int start, int length, int b, out int value) {
+        private static bool TryParseInt(char[] text, int start, int length, int b, out int value) {
             value = 0;
             if (start + length > text.Length) {
                 return false;
@@ -305,7 +332,7 @@ namespace IronPython.Runtime {
                     return ret;
                 }
             }
-            return iret;
+            return ScriptingRuntimeHelpers.Int32ToObject(iret);
         }
 
         public static object ParseIntegerSign(string text, int b) {
@@ -349,7 +376,7 @@ namespace IronPython.Runtime {
 
             ParseIntegerEnd(text, start, end);
 
-            return ret;
+            return ScriptingRuntimeHelpers.Int32ToObject(ret);
         }
 
         private static void ParseIntegerStart(string text, ref int b, ref int start, int end, ref short sign) {

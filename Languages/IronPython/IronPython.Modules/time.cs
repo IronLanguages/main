@@ -246,11 +246,16 @@ namespace IronPython.Modules {
                 }
             }
 
+            DayOfWeek? dayOfWeek = null;
+            if ((foundDateComp & FoundDateComponents.DayOfWeek) != 0) {
+                dayOfWeek = res.DayOfWeek;
+            }
+
             if ((foundDateComp & FoundDateComponents.Year) == 0) {
                 res = new DateTime(1900, res.Month, res.Day, res.Hour, res.Minute, res.Second, res.Millisecond, res.Kind);
             }
 
-            return GetDateTimeTuple(res);
+            return GetDateTimeTuple(res, dayOfWeek);
         }
 
         internal static string strftime(CodeContext/*!*/ context, string format, DateTime dt, int? microseconds) {
@@ -396,6 +401,7 @@ namespace IronPython.Modules {
             None,
             Year = 0x01,
             Date = (Year),
+            DayOfWeek = 0x02,
         }
 
         private static List<FormatInfo> PythonFormatToCLIFormat(string format, bool forParse, out bool postProcess, out FoundDateComponents found) {
@@ -409,8 +415,12 @@ namespace IronPython.Modules {
                     if (i + 1 == format.Length) throw PythonOps.ValueError("badly formatted string");
 
                     switch (format[++i]) {
-                        case 'a': newFormat.Add(new FormatInfo("ddd")); break;
-                        case 'A': newFormat.Add(new FormatInfo("dddd")); break;
+                        case 'a':
+                            found |= FoundDateComponents.DayOfWeek;
+                            newFormat.Add(new FormatInfo("ddd")); break;
+                        case 'A':
+                            found |= FoundDateComponents.DayOfWeek;
+                            newFormat.Add(new FormatInfo("dddd")); break;
                         case 'b': 
                             newFormat.Add(new FormatInfo("MMM")); 
                             break;
@@ -429,8 +439,8 @@ namespace IronPython.Modules {
                             if (forParse) newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "d"));
                             else newFormat.Add(new FormatInfo("dd"));
                             break;
-                        case 'H': newFormat.Add(new FormatInfo("HH")); break;
-                        case 'I': newFormat.Add(new FormatInfo("hh")); break;
+                        case 'H': newFormat.Add(new FormatInfo(forParse ? "H" : "HH")); break;
+                        case 'I': newFormat.Add(new FormatInfo(forParse ? "h" : "hh")); break;
                         case 'm':
                             newFormat.Add(new FormatInfo(forParse ? "M" : "MM"));
                             break;
@@ -492,8 +502,12 @@ namespace IronPython.Modules {
 
         // weekday: Monday is 0, Sunday is 6
         internal static int Weekday(DateTime dt) {
-            if (dt.DayOfWeek == DayOfWeek.Sunday) return 6;
-            else return (int)dt.DayOfWeek - 1;
+            return Weekday(dt.DayOfWeek);
+        }
+
+        internal static int Weekday(DayOfWeek dayOfWeek) {
+            if (dayOfWeek == DayOfWeek.Sunday) return 6;
+            else return (int)dayOfWeek - 1;
         }
 
         // isoweekday: Monday is 1, Sunday is 7
@@ -506,7 +520,11 @@ namespace IronPython.Modules {
             return GetDateTimeTuple(dt, null);
         }
 
-        internal static PythonTuple GetDateTimeTuple(DateTime dt, PythonDateTime.tzinfo tz) {
+        internal static PythonTuple GetDateTimeTuple(DateTime dt, DayOfWeek? dayOfWeek) {
+            return GetDateTimeTuple(dt, dayOfWeek, null);
+        }
+
+        internal static PythonTuple GetDateTimeTuple(DateTime dt, DayOfWeek? dayOfWeek, PythonDateTime.tzinfo tz) {
             int last = -1;
 
             if (tz == null) {
@@ -521,7 +539,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            return new struct_time(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, Weekday(dt), dt.DayOfYear, last);
+            return new struct_time(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, Weekday(dayOfWeek ?? dt.DayOfWeek), dt.DayOfYear, last);
         }
 
         internal static struct_time GetDateTimeTuple(DateTime dt, bool dstMode) {

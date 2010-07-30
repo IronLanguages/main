@@ -527,45 +527,6 @@ namespace IronPython.Compiler {
         }
 
 
-        private static readonly Dictionary<string, Token> kws = new Dictionary<string, Token>(StringComparer.Ordinal);
-
-        public static IDictionary<string, Token> Keywords {
-            get { return kws; }
-        }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
-        static Tokens() {
-            Keywords["and"] = kwAndToken;
-            Keywords["as"] = kwAsToken;
-            Keywords["assert"] = kwAssertToken;
-            Keywords["break"] = kwBreakToken;
-            Keywords["class"] = kwClassToken;
-            Keywords["continue"] = kwContinueToken;
-            Keywords["def"] = kwDefToken;
-            Keywords["del"] = kwDelToken;
-            Keywords["elif"] = kwElseIfToken;
-            Keywords["else"] = kwElseToken;
-            Keywords["except"] = kwExceptToken;
-            Keywords["exec"] = kwExecToken;
-            Keywords["finally"] = kwFinallyToken;
-            Keywords["for"] = kwForToken;
-            Keywords["from"] = kwFromToken;
-            Keywords["global"] = kwGlobalToken;
-            Keywords["if"] = kwIfToken;
-            Keywords["import"] = kwImportToken;
-            Keywords["in"] = kwInToken;
-            Keywords["is"] = kwIsToken;
-            Keywords["lambda"] = kwLambdaToken;
-            Keywords["not"] = kwNotToken;
-            Keywords["or"] = kwOrToken;
-            Keywords["pass"] = kwPassToken;
-            Keywords["print"] = kwPrintToken;
-            Keywords["raise"] = kwRaiseToken;
-            Keywords["return"] = kwReturnToken;
-            Keywords["try"] = kwTryToken;
-            Keywords["while"] = kwWhileToken;
-            Keywords["with"] = kwWithToken;
-            Keywords["yield"] = kwYieldToken;
-        }
 
         // *** END GENERATED CODE ***
 

@@ -248,8 +248,7 @@ def test_tokenizer_restart_multistring():
         t.StringLiteral(From(4, 1, 5), To(10, 1, 11)),
     ]
     expected2 = [
-        t.Keyword(From(0, 1, 1), To(3, 1, 4)),
-        t.StringLiteral(From(3, 1, 4), To(6, 1, 7)),
+        t.StringLiteral(From(0, 1, 1), To(6, 1, 7)),
     ]
     
     categorizer = engine.GetService[TokenCategorizer]()
@@ -274,8 +273,7 @@ def test_tokenizer_unterminated_string_literal():
         t.StringLiteral(From(4, 1, 5), To(8, 1, 9)),
     ]
     expected2 = [
-        t.Keyword(From(0, 1, 1), To(3, 1, 4)),
-        t.StringLiteral(From(3, 1, 4), To(4, 1, 5)),
+        t.StringLiteral(From(0, 1, 1), To(4, 1, 5)),
     ]
     
     categorizer = engine.GetService[TokenCategorizer]()

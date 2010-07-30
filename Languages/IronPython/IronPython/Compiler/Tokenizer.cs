@@ -60,30 +60,20 @@ namespace IronPython.Compiler {
         private const int MaxIndent = 80;
         private const int DefaultBufferCapacity = 1024;
 
+        private Dictionary<object, NameToken> _names;
+        private static object _currentName = new object();
+
         public Tokenizer() {
             _errors = ErrorSink.Null;
             _verbatim = true;
             _state = new State(null);
+            _names = new Dictionary<object, NameToken>(128, new TokenEqualityComparer(this));
         }
 
         public Tokenizer(ErrorSink errorSink) {
             _errors = errorSink;
             _state = new State(null);
-        }
-
-        [Obsolete("Use the overload that takes a PythonCompilerOptions instead")]
-        public Tokenizer(ErrorSink errorSink, bool verbatim)
-            : this(errorSink, verbatim, true) {
-        }
-
-        [Obsolete("Use the overload that takes a PythonCompilerOptions instead")]
-        public Tokenizer(ErrorSink errorSink, bool verbatim, bool dontImplyDedent) {
-            ContractUtils.RequiresNotNull(errorSink, "errorSink");
-
-            _errors = errorSink;
-            _verbatim = verbatim;
-            _state = new State(null);
-            _dontImplyDedent = dontImplyDedent;
+            _names = new Dictionary<object, NameToken>(128, new TokenEqualityComparer(this));
         }
 
         public Tokenizer(ErrorSink errorSink, PythonCompilerOptions options) {
@@ -96,10 +86,11 @@ namespace IronPython.Compiler {
             _dontImplyDedent = options.DontImplyDedent;
             _printFunction = options.PrintFunction;
             _unicodeLiterals = options.UnicodeLiterals;
+            _names = new Dictionary<object, NameToken>(128, new TokenEqualityComparer(this));
         }
 
         /// <summary>
-        /// Used to support legacy CreateParser API.
+        /// Used to create tokenizer for hosting API.
         /// </summary>
         internal Tokenizer(ErrorSink errorSink, PythonCompilerOptions options, bool verbatim)
             : this(errorSink, options) {
@@ -362,6 +353,12 @@ namespace IronPython.Compiler {
         private Token Next() {
             bool at_beginning = AtBeginning;
 
+            if (_state.IncompleteString != null && Peek() != EOF) {
+                IncompleteString prev = _state.IncompleteString;
+                _state.IncompleteString = null;
+                return ContinueString(prev.IsSingleTickQuote ? '\'' : '"', prev.IsRaw, prev.IsUnicode, false, prev.IsTripleQuoted, 0);
+            }
+
             DiscardToken();
 
             int ch = NextChar();
@@ -603,7 +600,10 @@ namespace IronPython.Compiler {
         }
 
         private Token ContinueString(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isTriple, int startAdd) {
-            bool multi_line = false;
+            // PERF: Might be nice to have this not need to get the whole token (which requires a buffer >= in size to the
+            // length of the string) and instead build up the string via pieces.  Currently on files w/ large doc strings we
+            // are forced to grow our buffer.
+
             int end_add = 0;
             int eol_size = 0;
 
@@ -627,7 +627,8 @@ namespace IronPython.Compiler {
                     
                     UnexpectedEndOfString(isTriple, isTriple);
                     string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add);
-                    incompleteContents = NormalizeMultiLineEndings(isTriple, multi_line, incompleteContents);
+                    
+                    _state.IncompleteString = new IncompleteString(quote == '\'', isRaw, isUnicode, isTriple);
                     return new IncompleteStringErrorToken(Resources.EofInString, incompleteContents);
                 } else if (ch == quote) {
 
@@ -652,8 +653,9 @@ namespace IronPython.Compiler {
                         UnexpectedEndOfString(isTriple, isTriple);
 
                         string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add - 1);
-                        incompleteContents = NormalizeMultiLineEndings(isTriple, multi_line, incompleteContents);
                         
+                        _state.IncompleteString = new IncompleteString(quote == '\'', isRaw, isUnicode, isTriple);
+
                         return new IncompleteStringErrorToken(Resources.EofInString, incompleteContents);
                     } else if ((eol_size = ReadEolnOpt(ch)) > 0) {
 
@@ -666,14 +668,11 @@ namespace IronPython.Compiler {
 
                             // incomplete string in the form "abc\
 
-                            string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add - 1);
-                            incompleteContents = NormalizeMultiLineEndings(isTriple, multi_line, incompleteContents);
+                            string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add - 1);                            
 
                             UnexpectedEndOfString(isTriple, true);
                             return new IncompleteStringErrorToken(Resources.EofInString, incompleteContents);
                         }
-
-                        multi_line = true;
 
                     } else if (ch != quote && ch != '\\') {
                         BufferBack();
@@ -689,42 +688,26 @@ namespace IronPython.Compiler {
                         UnexpectedEndOfString(isTriple, false);
 
                         string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add);
-                        incompleteContents = NormalizeMultiLineEndings(isTriple, multi_line, incompleteContents);
+                        
                         return new IncompleteStringErrorToken((quote == '"') ? Resources.NewLineInDoubleQuotedString : Resources.NewLineInSingleQuotedString, incompleteContents);
                     }
-
-                    multi_line = true;
                 }
             }
 
             MarkTokenEnd();
 
-            // TODO: do not create a string, parse in place
-            string contents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add); //.Substring(_start + startAdd, end - _start - (startAdd + eadd));
-
-            contents = NormalizeMultiLineEndings(isTriple, multi_line, contents);
-
-            return MakeStringToken(quote, isRaw, isUnicode, isBytes, isTriple, contents);
+            return MakeStringToken(quote, isRaw, isUnicode, isBytes, isTriple, _start + startAdd, TokenLength - startAdd - end_add);
         }
 
-        private string NormalizeMultiLineEndings(bool isTriple, bool multi_line, string contents) {
-            // EOLN should be normalized to '\n' in triple-quoted strings:
-            // TODO: do this better
-            if (multi_line && isTriple && !_disableLineFeedLineSeparator) {
-                contents = contents.Replace("\r\n", "\n").Replace("\r", "\n");
-            }
-            return contents;
-        }
-
-        private Token MakeStringToken(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isTriple, string contents) {
+        private Token MakeStringToken(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isTriple, int start, int length) {
             if (!isBytes) {
-                contents = LiteralParser.ParseString(contents, isRaw, isUnicode || UnicodeLiterals);
+                string contents = LiteralParser.ParseString(_buffer, start, length, isRaw, isUnicode || UnicodeLiterals, !_disableLineFeedLineSeparator);
                 if (isUnicode) {
                     return new UnicodeStringToken(contents);
                 }
                 return new ConstantValueToken(contents);
             } else {
-                List<byte> data = LiteralParser.ParseBytes(contents, isRaw);
+                List<byte> data = LiteralParser.ParseBytes(_buffer, start, length, isRaw, !_disableLineFeedLineSeparator);
                 if (data.Count == 0) {
                     return new ConstantValueToken(Bytes.Empty);
                 }
@@ -999,24 +982,298 @@ namespace IronPython.Compiler {
         }
 
         private Token ReadName() {
+            #region Generated Python Keyword Lookup
+
+            // *** BEGIN GENERATED CODE ***
+            // generated by function: keyword_lookup_generator from: generate_ops.py
+
             int ch;
-
-            do { ch = NextChar(); } while (IsNamePart(ch));
             BufferBack();
-
-            MarkTokenEnd();
-
-            string name = GetTokenString();
-            if (name == "None") return Tokens.NoneToken;
-
-            Token result;
-            if (Tokens.Keywords.TryGetValue(name, out result)) {
-                if (result != Tokens.KeywordPrintToken || !_printFunction) {
-                    return result;
+            ch = NextChar();
+            if (ch == 'i') {
+                ch = NextChar();
+                if (ch == 'n') {
+                    if (!IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordInToken;
+                    }
+                } else if (ch == 'm') {
+                    if (NextChar() == 'p' && NextChar() == 'o' && NextChar() == 'r' && NextChar() == 't' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordImportToken;
+                    }
+                } else if (ch == 's') {
+                    if (!IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordIsToken;
+                    }
+                } else if (ch == 'f') {
+                    if (!IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordIfToken;
+                    }
+                }
+            } else if (ch == 'w') {
+                ch = NextChar();
+                if (ch == 'i') {
+                    if (NextChar() == 't' && NextChar() == 'h' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordWithToken;
+                    }
+                } else if (ch == 'h') {
+                    if (NextChar() == 'i' && NextChar() == 'l' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordWhileToken;
+                    }
+                }
+            } else if (ch == 't') {
+                if (NextChar() == 'r' && NextChar() == 'y' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordTryToken;
+                }
+            } else if (ch == 'r') {
+                ch = NextChar();
+                if (ch == 'e') {
+                    if (NextChar() == 't' && NextChar() == 'u' && NextChar() == 'r' && NextChar() == 'n' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordReturnToken;
+                    }
+                } else if (ch == 'a') {
+                    if (NextChar() == 'i' && NextChar() == 's' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordRaiseToken;
+                    }
+                }
+            } else if (ch == 'p') {
+                ch = NextChar();
+                if (ch == 'a') {
+                    if (NextChar() == 's' && NextChar() == 's' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordPassToken;
+                    }
+                } else if (ch == 'r') {
+                    if (NextChar() == 'i' && NextChar() == 'n' && NextChar() == 't' && !IsNamePart(Peek())) {
+                        if (!_printFunction) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordPrintToken;
+                        }
+                    }
+                }
+            } else if (ch == 'g') {
+                if (NextChar() == 'l' && NextChar() == 'o' && NextChar() == 'b' && NextChar() == 'a' && NextChar() == 'l' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordGlobalToken;
+                }
+            } else if (ch == 'f') {
+                ch = NextChar();
+                if (ch == 'r') {
+                    if (NextChar() == 'o' && NextChar() == 'm' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordFromToken;
+                    }
+                } else if (ch == 'i') {
+                    if (NextChar() == 'n' && NextChar() == 'a' && NextChar() == 'l' && NextChar() == 'l' && NextChar() == 'y' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordFinallyToken;
+                    }
+                } else if (ch == 'o') {
+                    if (NextChar() == 'r' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordForToken;
+                    }
+                }
+            } else if (ch == 'e') {
+                ch = NextChar();
+                if (ch == 'x') {
+                    ch = NextChar();
+                    if (ch == 'e') {
+                        if (NextChar() == 'c' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordExecToken;
+                        }
+                    } else if (ch == 'c') {
+                        if (NextChar() == 'e' && NextChar() == 'p' && NextChar() == 't' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordExceptToken;
+                        }
+                    }
+                } else if (ch == 'l') {
+                    ch = NextChar();
+                    if (ch == 's') {
+                        if (NextChar() == 'e' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordElseToken;
+                        }
+                    } else if (ch == 'i') {
+                        if (NextChar() == 'f' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordElseIfToken;
+                        }
+                    }
+                }
+            } else if (ch == 'd') {
+                ch = NextChar();
+                if (ch == 'e') {
+                    ch = NextChar();
+                    if (ch == 'l') {
+                        if (!IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordDelToken;
+                        }
+                    } else if (ch == 'f') {
+                        if (!IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordDefToken;
+                        }
+                    }
+                }
+            } else if (ch == 'c') {
+                ch = NextChar();
+                if (ch == 'l') {
+                    if (NextChar() == 'a' && NextChar() == 's' && NextChar() == 's' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordClassToken;
+                    }
+                } else if (ch == 'o') {
+                    if (NextChar() == 'n' && NextChar() == 't' && NextChar() == 'i' && NextChar() == 'n' && NextChar() == 'u' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordContinueToken;
+                    }
+                }
+            } else if (ch == 'b') {
+                if (NextChar() == 'r' && NextChar() == 'e' && NextChar() == 'a' && NextChar() == 'k' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordBreakToken;
+                }
+            } else if (ch == 'a') {
+                ch = NextChar();
+                if (ch == 'n') {
+                    if (NextChar() == 'd' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordAndToken;
+                    }
+                } else if (ch == 's') {
+                    if (!IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordAsToken;
+                    }
+                    if (NextChar() == 's' && NextChar() == 'e' && NextChar() == 'r' && NextChar() == 't' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordAssertToken;
+                    }
+                }
+            } else if (ch == 'y') {
+                if (NextChar() == 'i' && NextChar() == 'e' && NextChar() == 'l' && NextChar() == 'd' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordYieldToken;
+                }
+            } else if (ch == 'o') {
+                if (NextChar() == 'r' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordOrToken;
+                }
+            } else if (ch == 'n') {
+                if (NextChar() == 'o' && NextChar() == 't' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordNotToken;
+                }
+            } else if (ch == 'N') {
+                if (NextChar() == 'o' && NextChar() == 'n' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.NoneToken;
+                }
+            } else if (ch == 'l') {
+                if (NextChar() == 'a' && NextChar() == 'm' && NextChar() == 'b' && NextChar() == 'd' && NextChar() == 'a' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordLambdaToken;
                 }
             }
 
-            return new NameToken(name);
+            // *** END GENERATED CODE ***
+
+            #endregion
+
+
+            BufferBack();
+            ch = NextChar();
+
+            while (IsNamePart(ch)) {
+                ch = NextChar();
+            }
+            BufferBack();
+
+            MarkTokenEnd();
+            NameToken token;
+            if (!_names.TryGetValue(_currentName, out token)) {
+                string name = GetTokenString();
+                token = _names[name] = new NameToken(name);
+            }
+            
+            return token;
+        }
+
+        /// <summary>
+        /// Equality comparer that can compare strings to our current token w/o creating a new string first.
+        /// </summary>
+        class TokenEqualityComparer : IEqualityComparer<object> {
+            private readonly Tokenizer _tokenizer;
+
+            public TokenEqualityComparer(Tokenizer tokenizer) {
+                _tokenizer = tokenizer;
+            }
+
+            #region IEqualityComparer<object> Members
+
+            bool IEqualityComparer<object>.Equals(object x, object y) {
+                if (x == _currentName) {
+                    if (y == _currentName) {
+                        return true;
+                    }
+
+                    return Equals((string)y);
+                } else if (y == _currentName) {
+                    return Equals((string)x);
+                } else {
+                    return (string)x == (string)y;
+                }
+            }
+
+            public int GetHashCode(object obj) {
+                int result = 5381;
+                if (obj == _currentName) {
+                    char[] buffer = _tokenizer._buffer;
+                    int start = _tokenizer._start, end = _tokenizer._tokenEnd;                    
+                    for (int i = start; i < end; i++) {
+                        int c = buffer[i];
+                        result = unchecked(((result << 5) + result) ^ c);
+                    }
+                } else {
+                    string str = (string)obj;
+                    for (int i = 0; i < str.Length; i++) {
+                        int c = str[i];
+                        result = unchecked(((result << 5) + result) ^ c);
+                    }
+                }
+                return result;
+            }
+
+            private bool Equals(string value) {
+                int len = _tokenizer._tokenEnd - _tokenizer._start;
+                if (len != value.Length) {
+                    return false;
+                }
+
+                var buffer = _tokenizer._buffer;
+                for (int i = 0, bufferIndex = _tokenizer._start; i < value.Length; i++, bufferIndex++) {
+                    if (value[i] != buffer[bufferIndex]) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            #endregion
         }
 
         public int GroupingLevel {
@@ -1224,7 +1481,7 @@ namespace IronPython.Compiler {
             } catch (ArgumentException e) {
                 ReportSyntaxError(BufferTokenSpan, e.Message, ErrorCodes.SyntaxError);
             }
-            return 0;
+            return ScriptingRuntimeHelpers.Int32ToObject(0);
         }
 
         private object ParseFloat(string s) {
@@ -1303,14 +1560,66 @@ namespace IronPython.Compiler {
             return _newLineLocations.ToArray();
         }
 
-        // TODO: Make this private after two of these objects can be compared from Python code.
         [Serializable]
-        public struct State : IEquatable<State> {
+        class IncompleteString : IEquatable<IncompleteString> {
+            public readonly bool IsRaw, IsUnicode, IsTripleQuoted, IsSingleTickQuote;
+
+            public IncompleteString(bool isSingleTickQuote, bool isRaw, bool isUnicode, bool isTriple) {
+                IsRaw = isRaw;
+                IsUnicode = isUnicode;
+                IsTripleQuoted = isTriple;
+                IsSingleTickQuote = isSingleTickQuote;
+            }
+
+            public override bool Equals(object obj) {
+                IncompleteString oth = obj as IncompleteString;
+                if (oth != null) {
+                    return Equals(oth);
+                }
+                return false;
+            }
+
+            public override int GetHashCode() {
+                return (IsRaw ? 0x01 : 0) |
+                    (IsUnicode ? 0x02 : 0) |
+                    (IsTripleQuoted ? 0x04 : 0) |
+                    (IsSingleTickQuote ? 0x08 : 0);
+            }
+
+            public static bool operator ==(IncompleteString left, IncompleteString right) {
+                if ((object)left == null) return (object)right == null;
+
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(IncompleteString left, IncompleteString right) {
+                return !(left == right);
+            }
+
+            #region IEquatable<State> Members
+
+            public bool Equals(IncompleteString other) {
+                if (other == null) {
+                    return false;
+                }
+
+                return IsRaw == other.IsRaw &&
+                    IsUnicode == other.IsUnicode &&
+                    IsTripleQuoted== other.IsTripleQuoted &&
+                    IsSingleTickQuote == other.IsSingleTickQuote;
+            }
+
+            #endregion
+        }
+
+        [Serializable]
+        struct State : IEquatable<State> {
             // indentation state
             public int[] Indent;
             public int IndentLevel;
             public int PendingDedents;
             public bool LastNewLine;        // true if the last token we emitted was a new line.
+            public IncompleteString IncompleteString;
 
             // Indentation state used only when we're reporting on inconsistent identation format.
             public StringBuilder[] IndentFormat;
@@ -1327,6 +1636,7 @@ namespace IronPython.Compiler {
                 PendingDedents = state.PendingDedents;
                 IndentLevel = state.IndentLevel;
                 IndentFormat = (state.IndentFormat != null) ? (StringBuilder[])state.IndentFormat.Clone() : null;
+                IncompleteString = state.IncompleteString;
             }
 
             public State(object dummy) {
@@ -1334,6 +1644,7 @@ namespace IronPython.Compiler {
                 LastNewLine = false;
                 BracketLevel = ParenLevel = BraceLevel = PendingDedents = IndentLevel = 0;
                 IndentFormat = null;
+                IncompleteString = null;
             }
 
             public override bool Equals(object obj) {
@@ -1357,7 +1668,8 @@ namespace IronPython.Compiler {
                        left.IndentLevel == right.IndentLevel &&
                        left.ParenLevel == right.ParenLevel &&
                        left.PendingDedents == right.PendingDedents &&
-                       left.LastNewLine == right.LastNewLine;
+                       left.LastNewLine == right.LastNewLine &&
+                       left.IncompleteString == right.IncompleteString;
             }
 
             public static bool operator !=(State left, State right) {

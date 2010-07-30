@@ -1002,7 +1002,7 @@ namespace IronPython.Modules {
             }
 
             public override object timetuple() {
-                return PythonTime.GetDateTimeTuple(InternalDateTime, _tz);
+                return PythonTime.GetDateTimeTuple(InternalDateTime, null, _tz);
             }
 
             public object utctimetuple() {

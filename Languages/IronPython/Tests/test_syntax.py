@@ -749,7 +749,7 @@ def x(self):
 	if x is None:
 		x = 
 
-	def x(self): pass""", ['invalid syntax'])
+	def x(self): pass""", ["unexpected token '<newline>'"])
 
     TestErrors("""class X:
     

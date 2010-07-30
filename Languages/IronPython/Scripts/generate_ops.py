@@ -370,6 +370,73 @@ def tokenkinds_generator(cw):
         cw.write("Keyword%s = %d," % (keywordToFriendly(kw), i))
         i += 1
 
+def gen_mark_end(cw, keyword):
+    if keyword == 'print': cw.enter_block('if (!_printFunction)')
+        
+    cw.write('MarkTokenEnd();')
+    if keyword == 'None':
+        cw.write('return Tokens.NoneToken;')
+    else:
+        cw.write('return Tokens.Keyword%sToken;' % keywordToFriendly(keyword))
+    cw.exit_block()
+    
+    if keyword == 'print': cw.exit_block()
+
+def gen_token_tree(cw, tree, keyword):
+    cw.write('ch = NextChar();')
+    for i, (k, (v, end)) in enumerate(tree.iteritems()):
+        if i == 0:
+            cw.enter_block("if (ch == '%c')" % k)            
+        else:
+            cw.else_block("if (ch == '%c')" % k)
+            
+        if end and v:
+            cw.enter_block('if (!IsNamePart(Peek()))')
+            gen_mark_end(cw, keyword + k)
+        
+        if not v:
+            cw.enter_block('if (!IsNamePart(Peek()))')
+            gen_mark_end(cw, keyword + k)
+        else:
+            cur_tree = v
+            word = []
+            while True:
+                if not cur_tree:
+                    cw.enter_block("if (" + ' && '.join(["NextChar() == '%c'" % letter for letter in word]) + ' && !IsNamePart(Peek()))')
+                    gen_mark_end(cw, keyword + k + ''.join(word))
+                    break
+                elif len(cur_tree) == 1:
+                    word.append(cur_tree.keys()[0])
+                    cur_tree = cur_tree.values()[0][0]
+                else:
+                    gen_token_tree(cw, v, keyword + k)
+                    break
+                
+    cw.exit_block()
+    
+def keyword_lookup_generator(cw):
+    cw.write('int ch;')
+    cw.write('BufferBack();')
+    
+    keyword_list = list(kwlist)
+    keyword_list.append('None')
+    keyword_list.sort()
+    
+    tree = {}
+    for kw in keyword_list:
+        prev = cur = tree
+        for letter in kw:
+            val = cur.get(letter)
+            if val is None:
+                val = cur[letter] = ({}, False)
+                
+            prev = cur
+            cur = val[0]
+        prev[kw[-1:]] = (cur, True)
+    
+    gen_token_tree(cw, tree, '')
+    return
+
 def tokens_generator(cw):
     uc = unique_checker()
     for op in ops:
@@ -399,16 +466,11 @@ def tokens_generator(cw):
     keyword_list = list(kwlist)
     keyword_list.sort()
 
-    dict_init = []
-
     for kw in keyword_list:
         creator = 'new SymbolToken(TokenKind.Keyword%s, "%s")' % (
             keywordToFriendly(kw), kw)
         cw.write("private static readonly Token kw%sToken = %s;" %
                (keywordToFriendly(kw), creator))
-
-        dict_init.append("Keywords[\"%s\"] = kw%sToken;" %
-                         (kw, keywordToFriendly(kw)))
 
     cw.write("")
     cw.write("")
@@ -417,18 +479,8 @@ def tokens_generator(cw):
         cw.write("get { return kw%sToken; }" % keywordToFriendly(kw))
         cw.exit_block()
         cw.write("")
-        
-    cw.writeline()
-    cw.write("private static readonly Dictionary<string, Token> kws = new Dictionary<string, Token>(StringComparer.Ordinal);");
-    cw.writeline()
-    cw.enter_block("public static IDictionary<string, Token> Keywords")
-    cw.write("get { return kws; }")
-    cw.exit_block()
 
-    cw.writeline('[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]')
-    cw.enter_block("static Tokens()")
-    for l in dict_init: cw.write(l)
-    cw.exit_block()
+    cw.write("")
 
 UBINOP = """
 public static object %(name)s(object x, object y) {
@@ -599,6 +651,7 @@ def gen_constant_folding(cw):
     
 def main():
     return generate(
+        ("Python Keyword Lookup", keyword_lookup_generator),
         ("Python Constant Folding", gen_constant_folding),
         ("Python Fast Ops RetBool Chooser", fast_op_ret_bool_chooser),
         ("Python Fast Ops Ret Bool", fast_op_ret_bool),

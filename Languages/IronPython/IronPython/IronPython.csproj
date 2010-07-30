@@ -610,5 +610,8 @@
   <ItemGroup>
     <None Include="IronPython.ruleset" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
 </Project>

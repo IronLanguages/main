@@ -87,7 +87,7 @@ def test_strptime():
     AreEqual((1942, 1, 1, 0, 0, 0, 3, 1, -1), time.strptime("%1942", "%%%Y"))
     AreEqual((1900, 1, 6, 0, 0, 0, 5, 6, -1), time.strptime("%6", "%%%d"))
         
-    
+    AreEqual((1900, 7, 9, 19, 30, 0, 4, 190, -1), time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p'))
     # CPY & IPY differ on daylight savings time for this parse
         
     AssertError(ValueError, time.strptime, "July 3, 2006 At 0724 GMT", "%B %x, %Y At %H%M GMT")
@@ -153,5 +153,6 @@ def test_asctime():
     AreEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 0)), 'Fri Sep 04 14:57:11 2009')
     AreEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 1)), 'Fri Sep 04 14:57:11 2009')
     AreEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, -1)), 'Fri Sep 04 14:57:11 2009')
+
 
 run_test(__name__)
