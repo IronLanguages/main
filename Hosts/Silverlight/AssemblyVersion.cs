@@ -17,5 +17,5 @@ using System;
 using System.Reflection;
 
 #if !SILVERLIGHT
-[assembly: AssemblyVersion("2.7.1300.1")]
+[assembly: AssemblyVersion("2.7.1300.10")]
 #endif

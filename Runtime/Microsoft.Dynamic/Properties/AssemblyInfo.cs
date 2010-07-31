@@ -65,8 +65,8 @@ using System.Security.Permissions;
 #endif
 
 #if !SILVERLIGHT
-[assembly: AssemblyVersion("1.1.0.1")]
-[assembly: AssemblyFileVersion("1.1.0.1")]
+[assembly: AssemblyVersion("1.1.0.10")]
+[assembly: AssemblyFileVersion("1.1.0.10")]
 [assembly: AssemblyInformationalVersion("1.1")]
 [assembly: AllowPartiallyTrustedCallers]
 [assembly: TypeForwardedTo(typeof(Microsoft.Scripting.Runtime.DynamicStackFrame))]
