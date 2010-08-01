@@ -151,6 +151,10 @@ namespace IronRuby.Builtins {
             get { return _mode.IsClosed(); }
         }
 
+        public bool Initialized {
+            get { return Closed || _stream != null; }
+        }
+
         public bool PreserveEndOfLines {
             get { 
                 return (_mode & IOMode.PreserveEndOfLines) != 0; 
@@ -178,16 +182,19 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateIOError("closed stream");
             }
 
-            if (_stream == null) {
-                throw RubyExceptions.CreateIOError("uninitialized stream");
-            }
-
+            RequireInitialized();
             return _stream;
         }
 
         public void SetStream(Stream/*!*/ stream) {
             ContractUtils.RequiresNotNull(stream, "stream");
             _stream = new RubyBufferedStream(stream, _context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19);
+        }
+
+        public void RequireInitialized() {
+            if (!Closed && _stream == null) {
+                throw RubyExceptions.CreateIOError("uninitialized stream");
+            }
         }
 
         public void RequireOpen() {
