@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -200,8 +200,13 @@ namespace Microsoft.Scripting.Generation {
             // first try and get it from the base type we're overriding...
             MethodInfo baseMethod = method.GetBaseDefinition();
 
-            if (baseMethod.DeclaringType.IsVisible) return baseMethod;
-            if (baseMethod.DeclaringType.IsInterface) return baseMethod;
+            if (baseMethod.DeclaringType.IsVisible || baseMethod.DeclaringType.IsInterface) {
+                // We need to instantiate the method as GetBaseDefinition might return a generic definition of the base method:
+                if (baseMethod.IsGenericMethodDefinition) {
+                    baseMethod = baseMethod.MakeGenericMethod(method.GetGenericArguments());
+                }
+                return baseMethod;
+            }
 
             // maybe we can get it from an interface on the type this
             // method came from...
@@ -216,7 +221,7 @@ namespace Microsoft.Scripting.Generation {
                 }
             }
 
-            return baseMethod;
+            return method;
         }
 
         /// <summary>

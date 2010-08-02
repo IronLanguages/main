@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -264,7 +264,7 @@ namespace IronRuby.Runtime.Conversions {
 
                     // respond_to?()
                     Methods.IsTrue.OpCall(
-                    AstUtils.LightDynamic(
+                        AstUtils.LightDynamic(
                             RubyCallAction.Make(args.RubyContext, Symbols.RespondTo, RubyCallSignature.WithImplicitSelf(1)),
                             args.TargetExpression, 
                             Ast.Constant(args.RubyContext.CreateSymbol(toMethodName, RubyEncoding.Binary))
@@ -300,7 +300,7 @@ namespace IronRuby.Runtime.Conversions {
             metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(targetClassNameConstant, AstUtils.Constant(TargetTypeName)));            
         }
 
-        private Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
+        protected virtual Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
             var validator = ConversionResultValidator;
             return (validator != null) ? validator.OpCall(targetClassNameConstant, AstUtils.Box(result)) : result;
         }
@@ -386,7 +386,7 @@ namespace IronRuby.Runtime.Conversions {
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToProcValidator; } }
     }
 
-    #region String, Symbol, Regex
+    #region String, Path, Symbol, Regex
 
     public sealed class ConvertToStrAction : ConvertToReferenceTypeAction<ConvertToStrAction, MutableString> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
@@ -397,6 +397,16 @@ namespace IronRuby.Runtime.Conversions {
             out MethodInfo postConverter) {
             postConverter = Methods.StringToMutableString;
             return context.MetaBinderFactory.InteropConvert(typeof(string), true);
+        }
+    }
+
+    public sealed class ConvertToPathAction : ConvertToReferenceTypeAction<ConvertToPathAction, MutableString> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToPath; } }
+        protected override string/*!*/ TargetTypeName { get { return "String"; } }
+        protected override MethodInfo ConversionResultValidator { get { return null; } }
+        
+        protected override Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
+            return AstUtils.LightDynamic(ConvertToStrAction.Make(args.RubyContext), AstUtils.Box(result));
         }
     }
 
@@ -439,7 +449,7 @@ namespace IronRuby.Runtime.Conversions {
             }
 
             if (target is int) {
-                metaBuilder.Result = Methods.ConvertSymbolIdToClrString.OpCall(
+                metaBuilder.Result = Methods.ConvertRubySymbolToClrString.OpCall(
                     AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
                     AstUtils.Convert(targetExpression, typeof(int))
                 );

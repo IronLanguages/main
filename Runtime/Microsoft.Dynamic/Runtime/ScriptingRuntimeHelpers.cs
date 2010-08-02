@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -234,27 +234,23 @@ namespace Microsoft.Scripting.Runtime {
             return Error.UnexpectedType("StrongBox<" + type.Name + ">", CompilerHelpers.GetType(received).Name);
         }
         
-        public static void InitializeSymbols(Type t) {
-            foreach (FieldInfo fi in t.GetFields()) {
-                if (fi.FieldType == typeof(SymbolId)) {
-                    Debug.Assert(((SymbolId)fi.GetValue(null)) == SymbolId.Empty);
-                    fi.SetValue(null, SymbolTable.StringToId(fi.Name));
-                }
-            }
-        }
-
         /// <summary>
         /// Provides the test to see if an interpreted call site should switch over to being compiled.
         /// </summary>
         public static bool InterpretedCallSiteTest(bool restrictionResult, object bindingInfo) {
             if (restrictionResult) {
                 CachedBindingInfo bindInfo = (CachedBindingInfo)bindingInfo;
-                if (bindInfo.CountDown >= 0) {
+                if (bindInfo.CompilationThreshold >= 0) {
                     // still interpreting...
-                    bindInfo.CountDown--;
+                    bindInfo.CompilationThreshold--;
                     return true;
                 }
-
+#if SILVERLIGHT
+                if (PlatformAdaptationLayer.IsCompactFramework) {
+                    bindInfo.CompilationThreshold = Int32.MaxValue;
+                    return true;
+                }
+#endif
                 return bindInfo.CheckCompiled();
             }
             return false;

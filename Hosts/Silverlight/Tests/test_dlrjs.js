@@ -16,7 +16,7 @@ $(document).ready(function() {
 
   test("default options", function() {
     equals(DLR.autoAdd, true);
-    equals(DLR.path, "../dlr"); 
+    equals(DLR.path, "/dlr-build"); 
   });
 
   test("default settings", function() {
@@ -24,7 +24,7 @@ $(document).ready(function() {
     equals(ds.width, 1)
     equals(ds.height, 1)
     equals(ds.reportErrors, 'errorLocation')
-    equals(ds.source, '../dlr/dlr.xap')
+    equals(ds.source, '/dlr-build/dlr.xap')
     equals(ds.onError, 'Silverlight.default_error_handler')
     equals(ds.id, 'silverlightDlrObject_DOMOnly')
     equals(ds.enableHtmlAccess, 'true')
@@ -75,8 +75,8 @@ $(document).ready(function() {
   })
 
     test('DLR.path changes defaultSettings.source', function() {
-      equals(DLR.path, "../dlr");
-      equals(DLR.defaultSettings().source, '../dlr/dlr.xap');
+      equals(DLR.path, "/dlr-build");
+      equals(DLR.defaultSettings().source, '/dlr-build/dlr.xap');
       DLR.path = ".."
       equals(DLR.defaultSettings().source, "../dlr.xap");
       DLR.path = null 

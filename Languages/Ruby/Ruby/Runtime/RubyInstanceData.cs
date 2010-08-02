@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -23,7 +23,7 @@ using System;
 
 namespace IronRuby.Runtime {
     /// <summary>
-    /// Stores the per-instance data that all Ruby objects need (frozen?, tainted?, instance_variables, etc)
+    /// Stores the per-instance data that all Ruby objects need (frozen?, tainted?, untrusted?, instance_variables, etc)
     /// Stored in a lookaside weak hashtable for types that don't implement IRubyObject (i.e. .NET types).
     /// </summary>
     public sealed class RubyInstanceData {
@@ -32,13 +32,18 @@ namespace IronRuby.Runtime {
         // These need to be seperate fields so we get atomic access to them
         // (which means no synchronization is needed for get/set operations)
         private int _objectId;
-        private bool _frozen, _tainted;
+        private bool _frozen, _tainted, _untrusted;
         private Dictionary<string, object> _instanceVars;
         private RubyClass _immediateClass;
          
         internal bool Tainted {
             get { return _tainted; }
             set { _tainted = value; }
+        }
+
+        internal bool Untrusted {
+            get { return _untrusted; }
+            set { _untrusted = value; }
         }
 
         internal bool Frozen {

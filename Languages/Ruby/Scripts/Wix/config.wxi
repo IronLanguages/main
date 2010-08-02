@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Include>
-<?define ProductShortName = "IronRuby" ?>
-<?define ProductVersion = "1.0.0.0" ?>
-<?define ProductVersionText = "1.0" ?>
-<?define EnvVariableName="IRONRUBY_10_20" ?>
-<?define Manufacturer = "Microsoft Corporation" ?>
-<?define UpgradeCode = "AC5205E2-8D34-446E-9CE4-BF9D8F65AF93" ?>
-</Include>

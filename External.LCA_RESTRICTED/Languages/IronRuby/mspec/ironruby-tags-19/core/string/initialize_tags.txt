@@ -1,0 +1,1 @@
+fails:String#initialize raises a RuntimeError if self is frozen

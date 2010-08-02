@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -87,7 +87,6 @@ namespace Microsoft.Scripting {
             AddAssemblyMappings(languageKeyVer, 
                 "Microsoft.Scripting",
                 "Microsoft.Dynamic",
-                "Microsoft.Scripting.ExtensionAttribute",
                 "Microsoft.Scripting.Core",
                 "Microsoft.Scripting.Silverlight",
                 "IronPython",
@@ -236,24 +235,12 @@ namespace Microsoft.Scripting {
 #endif
         }
 
-        [Obsolete("Use GetFileSystemEntries instead")]
-        public virtual string[] GetFiles(string path, string searchPattern) {
-#if !SILVERLIGHT
-            return Directory.GetFiles(path, searchPattern);
-            // TODO: return GetFileSystemEntries(path, searchPattern, true, false);
-#else
-            throw new NotImplementedException();
-#endif
+        public string[] GetFiles(string path, string searchPattern) {
+            return GetFileSystemEntries(path, searchPattern, true, false);
         }
 
-        [Obsolete("Use GetFileSystemEntries instead")]
-        public virtual string[] GetDirectories(string path, string searchPattern) {
-#if !SILVERLIGHT
-            return Directory.GetDirectories(path, searchPattern);
-            // TODO: return GetFileSystemEntries(path, searchPattern, false, true);
-#else
-            throw new NotImplementedException();
-#endif
+        public string[] GetDirectories(string path, string searchPattern) {
+            return GetFileSystemEntries(path, searchPattern, false, true);
         }
 
         public string[] GetFileSystemEntries(string path, string searchPattern) {
@@ -262,27 +249,15 @@ namespace Microsoft.Scripting {
 
         public virtual string[] GetFileSystemEntries(string path, string searchPattern, bool includeFiles, bool includeDirectories) {
 #if !SILVERLIGHT
-#pragma warning disable 618
             if (includeFiles && includeDirectories) {
-                return ArrayUtils.AppendRange(GetDirectories(path, searchPattern), GetFiles(path, searchPattern));
+                return Directory.GetFileSystemEntries(path, searchPattern);
             }
             if (includeFiles) {
-                return GetFiles(path, searchPattern);
+                return Directory.GetFiles(path, searchPattern);
             }
             if (includeDirectories) {
-                return GetDirectories(path, searchPattern);
+                return Directory.GetDirectories(path, searchPattern);
             }
-#pragma warning restore 618
-            // TODO: remove virtual GetFiles/GetDirectories and use this code:
-            //if (includeFiles && includeDirectories) {
-            //    return Directory.GetFileSystemEntries(path, searchPattern);
-            //}
-            //if (includeFiles) {
-            //    return Directory.GetFiles(path, searchPattern);
-            //}
-            //if (includeDirectories) {
-            //    return Directory.GetDirectories(path, searchPattern);
-            //}
             return ArrayUtils.EmptyStrings;
 #else
             throw new NotImplementedException();

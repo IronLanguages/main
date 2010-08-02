@@ -1,8 +1,6 @@
 =begin
 
 Output matches Ruby 1.8 except for 
- - [allocate, superclass, new] on high-order singletons
- - inherited == false ==> [allocate, constants, nesting, new, superclass] are not included (they might be only on dummy singleton)
  - methods on singletons next to the dummy singletons (S3)
 
 =end
@@ -16,8 +14,8 @@ def dump ms
   if $all then
     ((ms - $clr_only).sort).inspect
   else
-    ms.delete_if { |name| name.index("f_") != 0}
-    ms.sort.inspect
+    ms.delete_if { |name| name.to_s.index("f_") != 0}
+    ms.sort.map { |x| x.to_s }.inspect
   end  
 end
 

@@ -78,7 +78,7 @@ def updatecache(filename, module_globals=None):
     fullname = filename
     try:
         stat = os.stat(fullname)
-    except os.error, msg:
+    except (os.error, SystemError), msg:
         basename = os.path.split(filename)[1]
 
         # Try for a __loader__, if available
@@ -117,7 +117,7 @@ def updatecache(filename, module_globals=None):
                 try:
                     stat = os.stat(fullname)
                     break
-                except os.error:
+                except (os.error, SystemError):
                     pass
         else:
             # No luck

@@ -5,7 +5,7 @@
 
   <script src="jslib/jquery.js"></script>
   <link rel="stylesheet" href="jslib/qunit/testsuite.css" type="text/css" media="screen" />
-  <script src="dlr.js"></script>
+  <script src="/dlr-build/dlr.js"></script>
   <script src="jslib/util.js"></script>
   <script src="test_dlrjs.js"></script>
 
@@ -21,6 +21,14 @@
   <div id="main"></div>
 
   <script type="text/javascript" src="jslib/qunit/testrunner.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      QUnit.done = function (failures, total) {
+        reportTestResults(failures, total);
+      }
+    });
+  </script>
 
 </body>
 </html>

@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -50,10 +50,6 @@ namespace Microsoft.Scripting.Actions {
         /// updates the associated module to mark the package as imported.
         /// </summary>
         public NamespaceTracker TryGetPackage(string name) {
-            return TryGetPackage(SymbolTable.StringToId(name));
-        }
-
-        public NamespaceTracker TryGetPackage(SymbolId name) {
             NamespaceTracker pm = TryGetPackageAny(name) as NamespaceTracker;
             if (pm != null) {
                 return pm;
@@ -62,10 +58,6 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public MemberTracker TryGetPackageAny(string name) {
-            return TryGetPackageAny(SymbolTable.StringToId(name));
-        }
-
-        public MemberTracker TryGetPackageAny(SymbolId name) {
             MemberTracker ret;
             if (TryGetValue(name, out ret)) {
                 return ret;
@@ -73,10 +65,10 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        public MemberTracker TryGetPackageLazy(SymbolId name) {
+        public MemberTracker TryGetPackageLazy(string name) {
             lock (HierarchyLock) {
                 MemberTracker ret;
-                if (_dict.TryGetValue(SymbolTable.IdToString(name), out ret)) {
+                if (_dict.TryGetValue(name, out ret)) {
                     return ret;
                 }
                 return null;

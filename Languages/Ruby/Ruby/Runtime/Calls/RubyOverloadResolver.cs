@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -58,6 +58,9 @@ namespace IronRuby.Runtime.Calls {
         private ParameterExpression _listVariable;
         private IList _list;
 
+        // An optional list of assumptions upon arguments that were made during resolution.
+        private List<Key<int, NarrowingLevel, Expression>> _argumentAssumptions;
+
         internal RubyContext/*!*/ Context {
             get { return _args.RubyContext; }
         }
@@ -107,7 +110,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
                 if (method.IsStatic) {
-                    Debug.Assert(RubyUtils.IsOperator(method) || RubyUtils.IsExtension(method));
+                    Debug.Assert(RubyUtils.IsOperator(method) || method.IsExtension);
 
                     // receiver maps to the first parameter:
                     AddSimpleHiddenMapping(mapping, infos[i], true);
@@ -195,7 +198,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (callConvention == SelfCallConvention.SelfIsInstance) {
                 if (method.IsStatic) {
-                    Debug.Assert(RubyUtils.IsOperator(method) || RubyUtils.IsExtension(method));
+                    Debug.Assert(RubyUtils.IsOperator(method) || method.IsExtension);
                     i++;
                 }
             }
@@ -415,6 +418,14 @@ namespace IronRuby.Runtime.Calls {
             if (splatCondition != null) {
                 metaBuilder.AddCondition(splatCondition);
             }
+
+            if (_argumentAssumptions != null) {
+                foreach (var assumption in _argumentAssumptions) {
+                    if (assumption.Second == bindingTarget.NarrowingLevel) {
+                        metaBuilder.AddCondition(assumption.Third);
+                    }
+                }
+            }
         }
 
         #endregion
@@ -425,13 +436,25 @@ namespace IronRuby.Runtime.Calls {
         /// Returns true if fromArg of type fromType can be assigned to toParameter with a conversion on given narrowing level.
         /// </summary>
         public override bool CanConvertFrom(Type/*!*/ fromType, DynamicMetaObject fromArg, ParameterWrapper/*!*/ toParameter, NarrowingLevel level) {
-            return Converter.CanConvertFrom(fromArg, fromType, toParameter.Type, toParameter.ProhibitNull, level, 
+            var result = Converter.CanConvertFrom(fromArg, fromType, toParameter.Type, toParameter.ProhibitNull, level, 
                 HasExplicitProtocolConversion(toParameter), _implicitProtocolConversions
             );
+
+            if (result.Assumption != null) {
+                if (_argumentAssumptions == null) {
+                    _argumentAssumptions = new List<Key<int, NarrowingLevel, Ast>>();
+                }
+
+                if (_argumentAssumptions.FindIndex((k) => k.First == toParameter.ParameterInfo.Position && k.Second == level) < 0) {
+                    _argumentAssumptions.Add(Key.Create(toParameter.ParameterInfo.Position, level, result.Assumption));
+                }
+            }
+
+            return result.IsConvertible;
         }
 
         public override bool CanConvertFrom(ParameterWrapper/*!*/ fromParameter, ParameterWrapper/*!*/ toParameter) {
-            return Converter.CanConvertFrom(null, fromParameter.Type, toParameter.Type, toParameter.ProhibitNull, NarrowingLevel.None, false, false);
+            return Converter.CanConvertFrom(null, fromParameter.Type, toParameter.Type, toParameter.ProhibitNull, NarrowingLevel.None, false, false).IsConvertible;
         }
 
         private bool HasExplicitProtocolConversion(ParameterWrapper/*!*/ parameter) {
@@ -532,7 +555,7 @@ namespace IronRuby.Runtime.Calls {
 
                 // if there is a simple conversion from restricted type, convert the expression to the restricted type and use that conversion:
                 Type visibleRestrictedType = CompilerHelpers.GetVisibleType(restrictedType);
-                if (Converter.CanConvertFrom(metaObject, visibleRestrictedType, toType, false, NarrowingLevel.None, false, false)) {
+                if (Converter.CanConvertFrom(metaObject, visibleRestrictedType, toType, false, NarrowingLevel.None, false, false).IsConvertible) {
                     expr = AstUtils.Convert(expr, visibleRestrictedType);
                 }
             }
@@ -635,10 +658,6 @@ namespace IronRuby.Runtime.Calls {
 
             protected override Expression/*!*/ ToExpression(ref MethodInfo/*!*/ method, OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
                 return ((RubyOverloadResolver)resolver)._args.TargetExpression;
-            }
-
-            protected override Func<object[], object> ToDelegate(ref MethodInfo/*!*/ method, OverloadResolver/*!*/ resolver, RestrictedArguments/*!*/ args, bool[]/*!*/ hasBeenUsed) {
-                return null;
             }
         }
 

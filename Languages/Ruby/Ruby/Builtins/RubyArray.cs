@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -42,6 +42,7 @@ namespace IronRuby.Builtins {
         private uint _flags;
         private const uint IsFrozenFlag = 1;
         private const uint IsTaintedFlag = 2;
+        private const uint IsUntrustedFlag = 4;
 
         [Conditional("DEBUG")]
         private void ObjectInvariant() {
@@ -154,6 +155,16 @@ namespace IronRuby.Builtins {
             }
         }
 
+        public bool IsUntrusted {
+            get {
+                return (_flags & IsUntrustedFlag) != 0;
+            }
+            set {
+                Mutate();
+                _flags = (_flags & ~IsUntrustedFlag) | (value ? IsUntrustedFlag : 0);
+            }
+        }
+
         public bool IsFrozen {
             get {
                 return (_flags & IsFrozenFlag) != 0;
@@ -206,15 +217,15 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
-            using (IDisposable handle = _EqualsTracker.TrackObject(self)) {
-                if (handle == null) {
-                    // hashing of recursive array
-                    return false;
+            using (IDisposable handleSelf = _EqualsTracker.TrackObject(self), handleOther = _EqualsTracker.TrackObject(other)) {
+                if (handleSelf == null && handleOther == null) {
+                    // both arrays went recursive:
+                    return true;
                 }
 
                 var site = eqlStorage.GetCallSite("eql?");
                 for (int i = 0; i < self.Count; i++) {
-                    if (!Protocols.IsTrue(site.Target(site, self[i], other[i]))) {
+                    if (!Protocols.IsEqual(site, self[i], other[i])) {
                         return false;
                     }
                 }

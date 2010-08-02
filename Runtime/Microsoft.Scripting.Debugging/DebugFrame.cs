@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -39,7 +39,7 @@ namespace Microsoft.Scripting.Debugging {
         private Dictionary<IList<VariableInfo>, ScopeData> _variables;
 
         // Symbol used to set "$exception" variable when exceptions are thrown
-        private static readonly SymbolId _exceptionVariableSymbol = SymbolTable.StringToId("$exception");
+        private const string _exceptionVariableSymbol = "$exception";
 
         internal DebugFrame(
             DebugThread thread,
@@ -279,19 +279,19 @@ namespace Microsoft.Scripting.Debugging {
             ((IEnumerator)_generator).MoveNext();
         }
 
-        internal IAttributesCollection GetLocalsScope() {
+        internal IDictionary<object, object> GetLocalsScope() {
             ScopeData scopeData = CurrentScopeData;
-            IAttributesCollection scope = scopeData.Scope;
+            IDictionary<object, object> scope = scopeData.Scope;
             if (scope == null) {
                 Debug.Assert(_liftedLocals != null);
 
-                List<SymbolId> visibleSymbols = new List<SymbolId>();
+                List<string> visibleSymbols = new List<string>();
                 List<VariableInfo> visibleLocals = new List<VariableInfo>();
 
                 // Add parameters
                 for (int i = 0; i < _funcInfo.Variables.Count; i++) {
                     if (_funcInfo.Variables[i].IsParameter && !_funcInfo.Variables[i].Hidden) {
-                        visibleSymbols.Add(_funcInfo.Variables[i].Symbol);
+                        visibleSymbols.Add(_funcInfo.Variables[i].Name);
                         visibleLocals.Add(_funcInfo.Variables[i]);
                     }
                 }
@@ -299,7 +299,7 @@ namespace Microsoft.Scripting.Debugging {
                 // Add locals
                 foreach (VariableInfo varInfo in LocalsInCurrentScope) {
                     if (!varInfo.Hidden) {
-                        visibleSymbols.Add(varInfo.Symbol);
+                        visibleSymbols.Add(varInfo.Name);
                         visibleLocals.Add(varInfo);
                     }
                 }
@@ -409,7 +409,7 @@ namespace Microsoft.Scripting.Debugging {
         private class ScopeData {
             public VariableInfo[] VarInfos;
             public VariableInfo[] VarInfosWithException;
-            public IAttributesCollection Scope;
+            public IDictionary<object, object> Scope;
         }
     }
 }

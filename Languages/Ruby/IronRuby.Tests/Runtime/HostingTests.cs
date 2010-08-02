@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -337,7 +337,7 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
             var newSetup = new ScriptRuntimeSetup();
             newSetup.AddRubySetup((s) => {
                 s.Options["Compatibility"] = RubyCompatibility.Ruby19;
-                s.Options["LibraryPaths"] = ls.Options["LibraryPaths"];
+                s.Options["LibraryPaths19"] = ls.Options["LibraryPaths19"];
             });
 
             ScriptRuntime runtime = ScriptRuntime.CreateRemote(domain, newSetup);
@@ -355,6 +355,24 @@ scope.y = 2
 p scope.x + scope.y
 ", @"
 3
+");
+        }
+
+        public void RubyHosting_Scopes2() {
+            var s = Engine.CreateScope();
+            Context.ObjectClass.SetConstant("S", s);
+            s.SetVariable("FooBar", 123);
+
+            TestOutput(@"
+p S.get_variable('FooBar')
+p S.get_variable('foo_bar')
+p S.GetVariable('FooBar')
+p S.GetVariable('foo_bar')
+", @"
+123
+123
+123
+123
 ");
         }
 
@@ -436,16 +454,14 @@ C = IronRuby.create_engine.execute <<end
   C
 end
 ");
-            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; def foo; end; end"));
-            
-            // alias operates in the runtime of the class within which scope it is used:
-            Engine.Execute("class C; alias foo bar; end");
+            // can't define a method on a foreign class:
+            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("C.send(:define_method, :foo) {}"));
 
-            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; define_method(:goo) {}; end"));
-            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute(@"
-module M; end
-class C; include M; end
-"));
+            // can't open a scope of a foreign class:
+            AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; end"));
+
+            // alias operates in the runtime of the class within which scope it is used:
+            Engine.Execute("C.send(:alias_method, :foo, :bar); C.new.foo");
         }
         
         public void ObjectOperations1() {

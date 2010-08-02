@@ -13,13 +13,13 @@ module Rack
         IronRuby.dll
         IronRuby.Libraries.dll
         IronRuby.Libraries.Yaml.dll
-        Microsoft.Scripting.dll
         Microsoft.Dynamic.dll
+        Microsoft.Scripting.dll
+        Microsoft.Scripting.Metadata.dll
         ir.exe
       )
       IRONRUBY_BINARIES_CLR2 = %W(
         Microsoft.Scripting.Core.dll 
-        Microsoft.Scripting.ExtensionAttribute.dll
       )
       RACK_BINARIES = %W(
         IronRuby.Rack.dll

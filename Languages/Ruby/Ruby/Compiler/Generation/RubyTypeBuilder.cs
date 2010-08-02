@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -365,6 +365,23 @@ namespace IronRuby.Compiler.Generation {
             il.EmitFieldAddress(InstanceDataField);
             il.EmitLoadArg(1);
             il.EmitCall(Methods.SetObjectTaint);
+            il.Emit(OpCodes.Ret);
+
+            // bool IRubyObject.IsUntrusted { 
+            //   get { return RubyOps.IsObjectUntrusted(_instanceData); }
+            //   set { return RubyOps.SetObjectTaint(ref _instanceData, value); }
+            // }
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObjectState_get_IsUntrusted);
+            il.EmitLoadArg(0);
+            il.EmitFieldGet(InstanceDataField);
+            il.EmitCall(Methods.IsObjectUntrusted);
+            il.Emit(OpCodes.Ret);
+
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObjectState_set_IsUntrusted);
+            il.EmitLoadArg(0);
+            il.EmitFieldAddress(InstanceDataField);
+            il.EmitLoadArg(1);
+            il.EmitCall(Methods.SetObjectTrustiness);
             il.Emit(OpCodes.Ret);
 
             // TODO: can we merge this with #base#GetHashCode/Equals/ToString?

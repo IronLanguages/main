@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -423,6 +423,7 @@ namespace IronRuby.Tests {
                 RubyHosting4,
                 RubyHosting5,
                 RubyHosting_Scopes1,
+                RubyHosting_Scopes2,
                 CrossRuntime1,
                 CrossRuntime2,
 
@@ -466,17 +467,27 @@ namespace IronRuby.Tests {
                 ClrMembers1,
                 ClrVisibility1,
                 ClrVisibility2,
+                ClrExtensionMethods0,
+                ClrExtensionMethods1,
+                ClrExtensionMethods2,
+                ClrExtensionMethods3,
+                ClrExtensionMethods4,
                 ClrOverloadInheritance1,
                 ClrOverloadInheritance2,
                 ClrOverloadInheritance3,
                 ClrOverloadInheritance4,
                 ClrOverloadInheritance5,
                 ClrOverloadInheritance6,
+                ClrOverloadInheritance7,
+                ClrOverloadInheritance_ClrMembers1,
+                ClrOverloadInheritance_ExtensionMethods1,
+                ClrOverloadInheritance_ExtensionMethods2,
                 ClrMethodEnumeration1,
                 ClrMethodEnumeration2,
                 ClrMethodEnumeration_InvalidNames1,
                 ClrIndexers1,
                 ClrGenericMethods1,
+                ClrGenericMethods2,
                 ClrGenericParametersInference1,
                 ClrOverloadSelection1,
                 ClrOverloadSelection2,

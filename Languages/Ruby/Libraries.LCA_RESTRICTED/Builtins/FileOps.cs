@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -37,6 +37,8 @@ namespace IronRuby.Builtins {
     public static class RubyFileOps {
 
         #region Construction
+
+        // TODO: descriptorOrPath -> to_int, to_hash, to_path, to_str
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, 
@@ -159,22 +161,190 @@ namespace IronRuby.Builtins {
         internal const int WriteModeMask = 0x80; // Oct 0200
         internal const int ReadWriteMode = 0x1B6; // Oct 0666
 
-        #region Public Singleton Methods
-
         [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
         public static RuleGenerator/*!*/ Open() {
             return RubyIOOps.Open();
         }
 
-        [RubyMethod("atime", RubyMethodAttributes.PublicSingleton)]
-        public static RubyTime AccessTime(RubyClass/*!*/ self, [DefaultProtocol]MutableString/*!*/ path) {
-            return RubyStatOps.AccessTime(RubyStatOps.Create(self.Context, path));
+        #region chmod, chown, lchmod, lchown, umask
+
+        [RubyMethod("chmod")]
+        public static int Chmod(RubyFile/*!*/ self, [DefaultProtocol]int permission) {
+            Chmod(self.Path, permission);
+            return 0;
+        }
+
+        [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
+        public static int Chmod(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, [DefaultProtocol]int permission, object path) {
+            Chmod(self.Context.DecodePath(Protocols.CastToPath(toPath, path)), permission);
+            return 1;
+        }
+
+        internal static void Chmod(string/*!*/ path, int permission) {
+#if !SILVERLIGHT
+            FileAttributes oldAttributes = File.GetAttributes(path);
+            if ((permission & WriteModeMask) == 0) {
+                File.SetAttributes(path, oldAttributes | FileAttributes.ReadOnly);
+            } else {
+                File.SetAttributes(path, oldAttributes & ~FileAttributes.ReadOnly);
+            }
+#endif
+        }
+
+        [RubyMethod("chown")]
+        public static int ChangeOwner(RubyFile/*!*/ self, [DefaultProtocol]int owner, [DefaultProtocol]int group) {
+            return 0;
+        }
+
+        [RubyMethod("chown")]
+        public static int ChangeOwner(RubyContext/*!*/ context, RubyFile/*!*/ self, object owner, object group) {
+            if ((owner == null || owner is int) && (group == null || group is int)) {
+                return 0;
+            }
+            throw RubyExceptions.CreateUnexpectedTypeError(context, owner, "Fixnum");
+        }
+
+        [RubyMethod("chown", RubyMethodAttributes.PublicSingleton)]
+        public static int ChangeOwner(RubyClass/*!*/ self, [DefaultProtocol]int owner, [DefaultProtocol]int group, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            return 0;
+        }
+
+        [RubyMethod("chown", RubyMethodAttributes.PublicSingleton)]
+        public static int ChangeOwner(RubyContext/*!*/ context, RubyClass/*!*/ self, object owner, object group, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            if ((owner == null || owner is int) && (group == null || group is int)) {
+                return 0;
+            }
+            throw RubyExceptions.CreateUnexpectedTypeError(context, owner, "Fixnum");
+        }
+
+        //lchmod
+        //lchown
+
+        internal static readonly object UmaskKey = new object();
+
+        [RubyMethod("umask", RubyMethodAttributes.PublicSingleton)]
+        public static int GetUmask(RubyClass/*!*/ self, [DefaultProtocol]int mask) {
+            int result = (int)self.Context.GetOrCreateLibraryData(UmaskKey, () => 0);
+            self.Context.TrySetLibraryData(UmaskKey, CalculateUmask(mask));
+            return result;
+        }
+
+        [RubyMethod("umask", RubyMethodAttributes.PublicSingleton)]
+        public static int GetUmask(RubyClass/*!*/ self) {
+            return (int)self.Context.GetOrCreateLibraryData(UmaskKey, () => 0);
+        }
+
+        private static int CalculateUmask(int mask) {
+            return (mask % 512) / 128 * 128;
+        }
+        
+        #endregion
+
+        #region delete, unlink, truncate, rename
+
+        [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
+        public static int Delete(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            string strPath = self.Context.DecodePath(Protocols.CastToPath(toPath, path));
+            if (!self.Context.Platform.FileExists(strPath)) {
+                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", strPath);
+            }
+
+            Delete(self.Context, strPath);     
+            return 1;
+        }
+
+        internal static void Delete(RubyContext/*!*/ context, string/*!*/ path) {
+            try {
+                context.Platform.DeleteFile(path, true);
+            } catch (DirectoryNotFoundException) {
+                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", path);
+            } catch (IOException e) {
+                throw Errno.CreateEACCES(e.Message, e);
+            }
+        }
+
+        [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
+        public static int Delete(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, params object[] paths) {
+            foreach (MutableString path in paths) {
+                Delete(toPath, self, path);
+            }
+
+            return paths.Length;
+        }
+
+#if !SILVERLIGHT
+        [RubyMethod("truncate", BuildConfig = "!SILVERLIGHT")]
+        public static int Truncate(RubyFile/*!*/ self, [DefaultProtocol]int size) {
+            if (size < 0) {
+                throw new InvalidError();
+            }
+
+            self.Length = size;
+            return 0;
+        }
+
+        [RubyMethod("truncate", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static int Truncate(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path, [DefaultProtocol]int size) {
+            if (size < 0) {
+                throw new InvalidError();
+            }
+            using (RubyFile f = new RubyFile(self.Context, Protocols.CastToPath(toPath, path), IOMode.ReadWrite)) {
+                f.Length = size;
+            }
+            return 0;
+        }
+#endif
+
+        [RubyMethod("rename", RubyMethodAttributes.PublicSingleton)]
+        public static int Rename(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object oldPath, object newPath) {
+            var context = self.Context;
+
+            string strOldPath = context.DecodePath(Protocols.CastToPath(toPath, oldPath));
+            string strNewPath = context.DecodePath(Protocols.CastToPath(toPath, newPath));
+
+            if (strOldPath.Length == 0 || strNewPath.Length == 0) {
+                throw RubyExceptions.CreateENOENT();
+            }
+
+            if (!context.Platform.FileExists(strOldPath) && !context.Platform.DirectoryExists(strOldPath)) {
+                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", oldPath);
+            }
+
+            if (RubyUtils.ExpandPath(context.Platform, strOldPath) == RubyUtils.ExpandPath(context.Platform, strNewPath)) {
+                return 0;
+            }
+
+            if (context.Platform.FileExists(strNewPath)) {
+                Delete(context, strNewPath);
+            }
+
+            try {
+                context.Platform.MoveFileSystemEntry(strOldPath, strNewPath);
+            } catch (IOException e) {
+                throw Errno.CreateEACCES(e.Message, e);
+            }
+
+            return 0;
+        }
+
+        #endregion
+
+        #region path, basename, dirname, extname, expand_path, absolute_path, fnmatch
+
+        [RubyMethod("path", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString/*!*/ ToPath(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            return Protocols.CastToPath(toPath, path);
         }
 
         [RubyMethod("basename", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Basename(RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, NotNull, Optional]MutableString suffix) {
+        public static MutableString/*!*/ BaseName(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self,
+            object path, [DefaultProtocol, NotNull, Optional]MutableString suffix) {
+            return BaseName(Protocols.CastToPath(toPath, path), suffix);
+        }
 
+        private static MutableString/*!*/ BaseName(MutableString/*!*/ path, MutableString suffix) {
             if (path.IsEmpty) {
                 return path;
             }
@@ -204,7 +374,7 @@ namespace IronRuby.Builtins {
                     }
                 }
             }
-            
+
             string last = parts[parts.Length - 1];
             if (MutableString.IsNullOrEmpty(suffix)) {
                 return MutableString.CreateMutable(last, path.Encoding);
@@ -231,107 +401,12 @@ namespace IronRuby.Builtins {
             return MutableString.CreateMutable(path.Encoding).Append(last, 0, matchLength).TaintBy(path);
         }
 
-        internal static void Chmod(string/*!*/ path, int permission) {
-#if !SILVERLIGHT
-            FileAttributes oldAttributes = File.GetAttributes(path);
-            if ((permission & WriteModeMask) == 0) {
-                File.SetAttributes(path, oldAttributes | FileAttributes.ReadOnly);
-            } else {
-                File.SetAttributes(path, oldAttributes & ~FileAttributes.ReadOnly);
-            }
-#endif
-        }
-
-        [RubyMethod("chmod")]
-        public static int Chmod(RubyFile/*!*/ self, [DefaultProtocol]int permission) {
-            Chmod(self.Path, permission);
-            return 0;
-        }
-
-        [RubyMethod("chmod", RubyMethodAttributes.PublicSingleton)]
-        public static int Chmod(RubyClass/*!*/ self, [DefaultProtocol]int permission, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            Chmod(self.Context.DecodePath(path), permission);
-            return 1;
-        }
-
-        [RubyMethod("chown")]
-        public static int ChangeOwner(RubyFile/*!*/ self, [DefaultProtocol]int owner, [DefaultProtocol]int group) {
-            return 0;
-        }
-
-        [RubyMethod("chown")]
-        public static int ChangeOwner(RubyContext/*!*/ context, RubyFile/*!*/ self, object owner, object group) {
-            if ((owner == null || owner is int) && (group == null || group is int)) {
-                return 0;
-            }
-            throw RubyExceptions.CreateUnexpectedTypeError(context, owner, "Fixnum");
-        }
-
-        [RubyMethod("chown", RubyMethodAttributes.PublicSingleton)]
-        public static int ChangeOwner(RubyClass/*!*/ self, [DefaultProtocol]int owner, [DefaultProtocol]int group, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return 0;
-        }
-
-        [RubyMethod("chown", RubyMethodAttributes.PublicSingleton)]
-        public static int ChangeOwner(RubyContext/*!*/ context, RubyClass/*!*/ self, object owner, object group, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            if ((owner == null || owner is int) && (group == null || group is int)) {
-                return 0;
-            }
-            throw RubyExceptions.CreateUnexpectedTypeError(context, owner, "Fixnum");
-        }
-
-        [RubyMethod("ctime", RubyMethodAttributes.PublicSingleton)]
-        public static RubyTime CreateTime(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.CreateTime(RubyStatOps.Create(self.Context, path));
-        }
-
-        internal static bool FileExists(RubyContext/*!*/ context, MutableString/*!*/ path) {
-            return context.Platform.FileExists(context.DecodePath(path));
-        }
-
-        internal static bool DirectoryExists(RubyContext/*!*/ context, MutableString/*!*/ path) {
-            return context.Platform.DirectoryExists(context.DecodePath(path));
-        }
-
-        internal static bool Exists(RubyContext/*!*/ context, MutableString/*!*/ path) {
-            var strPath = context.DecodePath(path);
-            return context.Platform.DirectoryExists(strPath) || context.Platform.FileExists(strPath);
-        }
-
-        [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
-        public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string strPath = self.Context.DecodePath(path);
-            if (!self.Context.Platform.FileExists(strPath)) {
-                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", strPath);
-            }
-
-            Delete(self.Context, strPath);     
-            return 1;
-        }
-
-        internal static void Delete(RubyContext/*!*/ context, string/*!*/ path) {
-            try {
-                context.Platform.DeleteFile(path, true);
-            } catch (DirectoryNotFoundException) {
-                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", path);
-            } catch (IOException e) {
-                throw Errno.CreateEACCES(e.Message, e);
-            }
-        }
-
-        [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]
-        public static int Delete(RubyClass/*!*/ self, [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ paths) {
-            foreach (MutableString path in paths) {
-                Delete(self, path);
-            }
-
-            return paths.Length;
-        }
-
         [RubyMethod("dirname", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ DirName(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
+        public static MutableString/*!*/ DirName(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            return DirName(Protocols.CastToPath(toPath, path));
+        }
+
+        private static MutableString/*!*/ DirName(MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             string directoryName = strPath;
 
@@ -341,7 +416,7 @@ namespace IronRuby.Builtins {
                 // handle top-level UNC paths
                 directoryName = Path.GetDirectoryName(strPath);
                 if (directoryName == null) {
-                    return self.Context.EncodePath(strPath);
+                    return MutableString.CreateMutable(strPath, path.Encoding);
                 }
 
                 string fileName = Path.GetFileName(strPath);
@@ -355,7 +430,7 @@ namespace IronRuby.Builtins {
             }
 
             directoryName = String.IsNullOrEmpty(directoryName) ? "." : directoryName;
-            return self.Context.EncodePath(directoryName);
+            return MutableString.CreateMutable(directoryName, path.Encoding);
         }
 
         private static bool IsValidPath(string path) {
@@ -384,29 +459,64 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("extname", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ GetExtension(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return MutableString.Create(RubyUtils.GetExtension(path.ConvertToString()), path.Encoding).TaintBy(path);
+        public static MutableString/*!*/ GetExtension(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            MutableString pathStr = Protocols.CastToPath(toPath, path);
+            return MutableString.Create(RubyUtils.GetExtension(pathStr.ConvertToString()), pathStr.Encoding).TaintBy(pathStr);
         }
 
-        #region fnmatch
+        [RubyMethod("expand_path", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString/*!*/ ExpandPath(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path,
+            [DefaultParameterValue(null)]object basePath) {
+            var context = self.Context;
+
+            string result = RubyUtils.ExpandPath(
+                context.Platform,
+                context.DecodePath(Protocols.CastToPath(toPath, path)),
+                (basePath == null) ? context.Platform.CurrentDirectory : context.DecodePath(Protocols.CastToPath(toPath, basePath)),
+                true
+            );
+
+            return self.Context.EncodePath(result);
+        }
+
+        [RubyMethod("absolute_path", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString/*!*/ AbsolutePath(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path,
+            [DefaultParameterValue(null)]object basePath) {
+            var context = self.Context;
+
+            string result = RubyUtils.ExpandPath(
+                context.Platform,
+                context.DecodePath(Protocols.CastToPath(toPath, path)),
+                (basePath == null) ? context.Platform.CurrentDirectory : context.DecodePath(Protocols.CastToPath(toPath, basePath)),
+                false
+            );
+
+            return self.Context.EncodePath(result);
+        }
 
         [RubyMethod("fnmatch", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("fnmatch?", RubyMethodAttributes.PublicSingleton)]
-        public static bool FnMatch(object/*!*/ self, [NotNull]MutableString/*!*/ pattern, [NotNull]MutableString/*!*/ path, [Optional]int flags) {
-            return Glob.FnMatch(pattern.ConvertToString(), path.ConvertToString(), flags);
+        public static bool FnMatch(ConversionStorage<MutableString>/*!*/ toPath, object/*!*/ self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ pattern, object path, [Optional]int flags) {
+
+            return Glob.FnMatch(pattern.ConvertToString(), Protocols.CastToPath(toPath, path).ConvertToString(), flags);
         }
 
         #endregion
 
-        [RubyMethod("ftype", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString FileType(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.FileType(RubyStatOps.Create(self.Context, path));
+        #region split, join
+
+        [RubyMethod("split", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray Split(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            MutableString p = Protocols.CastToPath(toPath, path);
+            RubyArray result = new RubyArray(2);
+            result.Add(DirName(p));
+            result.Add(BaseName(p, null));
+            return result;
         }
 
-        #region join
-
         [RubyMethod("join", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, params object[]/*!*/ parts) {
+        public static MutableString Join(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, params object[]/*!*/ parts) {
             MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
             Dictionary<object, bool> visitedLists = null;
             var worklist = new Stack<object>();
@@ -433,7 +543,7 @@ namespace IronRuby.Builtins {
                 } else if (part == null) {
                     throw RubyExceptions.CreateTypeConversionError("NilClass", "String");
                 } else {
-                    str = Protocols.CastToString(stringCast, part);
+                    str = Protocols.CastToPath(toPath, part);
                 }
 
                 if (current > 0) {
@@ -477,138 +587,68 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region flock, readlink, link, symlink
+
 #if !SILVERLIGHT
-        [RubyMethod("expand_path", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static MutableString/*!*/ ExpandPath(
-            RubyClass/*!*/ self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ path,
-            [DefaultProtocol, Optional]MutableString basePath) {
+        //flock
 
-            var context = self.Context;
-
-            string result = RubyUtils.ExpandPath(
-                context.Platform,
-                context.DecodePath(path),
-                basePath == null ? null : context.DecodePath(basePath)
-            );
-
-            return self.Context.EncodePath(result);
-        }
-#endif
-
-        //lchmod
-        //lchown
-        //link
-
-        [RubyMethod("lstat", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("stat", RubyMethodAttributes.PublicSingleton)]
-        public static FileSystemInfo/*!*/ Stat(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.Create(self.Context, path);
-        }
-
-        [RubyMethod("mtime", RubyMethodAttributes.PublicSingleton)]
-        public static RubyTime ModifiedTime(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.ModifiedTime(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("readlink", RubyMethodAttributes.PublicSingleton)]
-        public static bool Readlink(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
+        [RubyMethod("readlink", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static bool Readlink(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
             throw new IronRuby.Builtins.NotImplementedError("readlink() function is unimplemented on this machine");
         }
 
-        [RubyMethod("rename", RubyMethodAttributes.PublicSingleton)]
-        public static int Rename(RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ oldPath, [DefaultProtocol, NotNull]MutableString/*!*/ newPath) {
-
-            if (oldPath.IsEmpty || newPath.IsEmpty) {
-                throw RubyExceptions.CreateENOENT();
-            }
-
-            var context = self.Context;
-
-            string strOldPath = context.DecodePath(oldPath);
-            if (!context.Platform.FileExists(strOldPath) && !context.Platform.DirectoryExists(strOldPath)) {
-                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", oldPath);
-            }
-
-            string strNewPath = context.DecodePath(newPath);
-            if (RubyUtils.ExpandPath(context.Platform, strOldPath) == RubyUtils.ExpandPath(context.Platform, strNewPath)) {
-                return 0;
-            }
-
-            if (context.Platform.FileExists(strNewPath)) {
-                Delete(context, strNewPath);
-            }
-
-            try {
-                context.Platform.MoveFileSystemEntry(strOldPath, strNewPath);
-            } catch (IOException e) {
-                throw Errno.CreateEACCES(e.Message, e);
-            }
-
-            return 0;
+        [RubyMethod("link", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static int Link(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object oldPath, object newPath) {
+            Protocols.CastToPath(toPath, oldPath);
+            Protocols.CastToPath(toPath, newPath);
+            throw new IronRuby.Builtins.NotImplementedError("link not implemented");
         }
 
-        [RubyMethod("split", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray Split(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            RubyArray result = new RubyArray(2);
-            result.Add(DirName(self, path));
-            result.Add(Basename(self, path, null));
-            return result;
-        }
-
-#if !SILVERLIGHT
-        [RubyMethod("truncate", BuildConfig = "!SILVERLIGHT")]
-        public static int Truncate(RubyFile/*!*/ self, [DefaultProtocol]int size) {
-            if (size < 0) {
-                throw new InvalidError();
-            }
-
-            self.Length = size;
-            return 0;
-        }
-
-        [RubyMethod("truncate", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static int Truncate(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol]int size) {
-            if (size < 0) {
-                throw new InvalidError();
-            }
-            using (RubyFile f = new RubyFile(self.Context, path, IOMode.ReadWrite)) {
-                f.Length = size;
-            }
-            return 0;
-        }
-#endif
-
-        internal static readonly object UmaskKey = new object();
-
-        [RubyMethod("umask", RubyMethodAttributes.PublicSingleton)]
-        public static int GetUmask(RubyClass/*!*/ self, [DefaultProtocol]int mask) {
-            int result = (int)self.Context.GetOrCreateLibraryData(UmaskKey, () => 0);
-            self.Context.TrySetLibraryData(UmaskKey, CalculateUmask(mask));
-            return result;
-        }
-
-        [RubyMethod("umask", RubyMethodAttributes.PublicSingleton)]
-        public static int GetUmask(RubyClass/*!*/ self) {
-            return (int)self.Context.GetOrCreateLibraryData(UmaskKey, () => 0);
-        }
-
-        private static int CalculateUmask(int mask) {
-            return (mask % 512) / 128 * 128;
-        }
-        
-#if !SILVERLIGHT
         [RubyMethod("symlink", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static object SymLink(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             throw new NotImplementedError("symlnk() function is unimplemented on this machine");
         }
+#endif
+        #endregion
 
+        #region atime, ctime, mtime, utime
+
+        [RubyMethod("atime")]
+        public static RubyTime AccessTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
+            return RubyStatOps.AccessTime(RubyStatOps.Create(context, self.Path));
+        }
+        
+        [RubyMethod("atime", RubyMethodAttributes.PublicSingleton)]
+        public static RubyTime AccessTime(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            return RubyStatOps.AccessTime(RubyStatOps.Create(self.Context, Protocols.CastToPath(toPath, path)));
+        }
+
+        [RubyMethod("ctime")]
+        public static RubyTime CreateTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
+            return RubyStatOps.CreateTime(RubyStatOps.Create(context, self.Path));
+        }
+
+        [RubyMethod("ctime", RubyMethodAttributes.PublicSingleton)]
+        public static RubyTime CreateTime(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            return RubyStatOps.CreateTime(RubyStatOps.Create(self.Context, Protocols.CastToPath(toPath, path)));
+        }
+
+        [RubyMethod("mtime")]
+        public static RubyTime ModifiedTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
+            return RubyStatOps.ModifiedTime(RubyStatOps.Create(context, self.Path));
+        }
+
+        [RubyMethod("mtime", RubyMethodAttributes.PublicSingleton)]
+        public static RubyTime ModifiedTime(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            return RubyStatOps.ModifiedTime(RubyStatOps.Create(self.Context, Protocols.CastToPath(toPath, path)));
+        }
+
+#if !SILVERLIGHT
         [RubyMethod("utime", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static int UpdateTimes(RubyClass/*!*/ self, [NotNull]RubyTime/*!*/ accessTime, [NotNull]RubyTime/*!*/ modifiedTime, 
-            [NotNull]MutableString/*!*/ path) {
+        public static int UpdateTimes(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, [NotNull]RubyTime/*!*/ accessTime, [NotNull]RubyTime/*!*/ modifiedTime,
+            object path) {
 
-            string strPath = self.Context.DecodePath(path);
+            string strPath = self.Context.DecodePath(Protocols.CastToPath(toPath, path));
             FileInfo info = new FileInfo(strPath);
             if (!info.Exists) {
                 throw RubyExceptions.CreateENOENT("No such file or directory - {0}", strPath);
@@ -619,20 +659,19 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("utime", RubyMethodAttributes.PublicSingleton)]
-        public static int UpdateTimes(RubyClass/*!*/ self, object accessTime, object modifiedTime,
-            [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ paths) {
+        public static int UpdateTimes(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object accessTime, object modifiedTime,
+            params object[]/*!*/ paths) {
 
             RubyTime atime = MakeTime(self.Context, accessTime);
             RubyTime mtime = MakeTime(self.Context, modifiedTime);
 
             foreach (MutableString path in paths) {
-                UpdateTimes(self, atime, mtime, path);
+                UpdateTimes(toPath, self, atime, mtime, path);
             }
 
             return paths.Length;
         }
 #endif
-
         private static RubyTime MakeTime(RubyContext/*!*/ context, object obj) {
             if (obj == null) {
                 return new RubyTime(DateTime.Now);
@@ -647,35 +686,26 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateTypeConversionError(name, "time");
             }
         }
-
+        
         #endregion
 
-        #region Public Instance Methods
+        #region ftype, stat, inspect, path, to_path
 
-        [RubyMethod("atime")]
-        public static RubyTime AccessTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return RubyStatOps.AccessTime(RubyStatOps.Create(context, self.Path));
+        [RubyMethod("ftype", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString FileType(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            return RubyStatOps.FileType(RubyStatOps.Create(self.Context, Protocols.CastToPath(toPath, path)));
         }
 
-        //chmod
-        //chown
-
-        [RubyMethod("ctime")]
-        public static RubyTime CreateTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return RubyStatOps.CreateTime(RubyStatOps.Create(context, self.Path));
+        [RubyMethod("lstat", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("stat", RubyMethodAttributes.PublicSingleton)]
+        public static FileSystemInfo/*!*/ Stat(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+            return RubyStatOps.Create(self.Context, Protocols.CastToPath(toPath, path));
         }
-
-        //flock
 
         [RubyMethod("lstat")]
         [RubyMethod("stat")]
         public static FileSystemInfo Stat(RubyContext/*!*/ context, RubyFile/*!*/ self) {
             return RubyStatOps.Create(context, self.Path);
-        }
-
-        [RubyMethod("mtime")]
-        public static RubyTime ModifiedTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return RubyStatOps.ModifiedTime(RubyStatOps.Create(context, self.Path));
         }
 
         [RubyMethod("inspect")]
@@ -688,11 +718,10 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("path")]
+        [RubyMethod("to_path")]
         public static MutableString GetPath(RubyFile/*!*/ self) {
             return self.Path != null ? self.Context.EncodePath(self.Path) : null;
         }
-
-        //truncate
 
         #endregion
 
@@ -736,8 +765,8 @@ namespace IronRuby.Builtins {
 
 
             [RubyConstructor]
-            public static FileSystemInfo/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-                return Create(self.Context, path);
+            public static FileSystemInfo/*!*/ Create(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
+                return Create(self.Context, Protocols.CastToPath(toPath, path));
             }
 
             [RubyMethod("<=>")]

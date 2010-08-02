@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -64,25 +64,6 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             GetCallableMethod(args, ref method);
             return resolver.Convert(args.GetObject(_index), args.GetType(_index), null, method.DeclaringType);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")] // TODO
-        internal protected virtual Func<object[], object> ToDelegate(ref MethodInfo method, OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            if (_index == -1) {
-                return (_) => null;
-            }
-
-            GetCallableMethod(args, ref method);
-
-            Func<object[], object> conv = resolver.GetConvertor(_index + 1, args.GetObject(_index), null, method.DeclaringType);
-            if (conv != null) {
-                return conv;
-            }
-
-            return (Func<object[], object>)Delegate.CreateDelegate(
-                typeof(Func<object[], object>),
-                _index + 1,
-                typeof(ArgBuilder).GetMethod("ArgumentRead"));
         }
 
         private void GetCallableMethod(RestrictedArguments args, ref MethodInfo method) {

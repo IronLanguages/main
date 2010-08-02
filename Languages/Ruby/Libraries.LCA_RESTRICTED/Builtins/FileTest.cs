@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -19,11 +19,14 @@ using Microsoft.Scripting.Runtime;
 
 #if CLR2
 using Microsoft.Scripting.Utils;
+using System;
 #else
 using System;
 #endif
 
 namespace IronRuby.Builtins {
+    // TODO: conversion: to_io, to_path, to_str
+
     [RubyModule("FileTest")]
     public static class FileTest {
         [RubyMethod("blockdev?", RubyMethodAttributes.PublicSingleton)]
@@ -41,7 +44,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("directory?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("directory?", RubyMethodAttributes.PrivateInstance)]
         public static bool IsDirectory(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.DirectoryExists(self.Context, path);
+            return DirectoryExists(self.Context, path);
         }
 
         [RubyMethod("executable?", RubyMethodAttributes.PublicSingleton)]
@@ -57,13 +60,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("exists?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("exists?", RubyMethodAttributes.PrivateInstance)]
         public static bool Exists(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.FileExists(self.Context, path) || RubyFileOps.DirectoryExists(self.Context, path);
+            return FileExists(self.Context, path) || DirectoryExists(self.Context, path);
         }
 
         [RubyMethod("file?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("file?", RubyMethodAttributes.PrivateInstance)]
         public static bool IsFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyFileOps.FileExists(self.Context, path);
+            return FileExists(self.Context, path);
         }
 
         [RubyMethod("grpowned?", RubyMethodAttributes.PublicSingleton)]
@@ -176,6 +179,19 @@ namespace IronRuby.Builtins {
             }
 
             return RubyFileOps.RubyStatOps.IsZeroLength(RubyFileOps.RubyStatOps.Create(self.Context, strPath));
+        }
+
+        internal static bool FileExists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            return context.Platform.FileExists(context.DecodePath(path));
+        }
+
+        internal static bool DirectoryExists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            return context.Platform.DirectoryExists(context.DecodePath(path));
+        }
+
+        internal static bool Exists(RubyContext/*!*/ context, MutableString/*!*/ path) {
+            var strPath = context.DecodePath(path);
+            return context.Platform.DirectoryExists(strPath) || context.Platform.FileExists(strPath);
         }
 
         private static bool RunIfFileExists(RubyContext/*!*/ context, MutableString/*!*/ path, Func<FileSystemInfo, bool> del) {

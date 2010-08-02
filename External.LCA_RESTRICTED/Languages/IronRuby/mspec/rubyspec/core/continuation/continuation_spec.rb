@@ -4,25 +4,25 @@
 #
 require File.dirname(__FILE__) + '/../../spec_helper'
 
-ruby_version_is "1.9" do
-  require 'continuation'
-end
-
-# Class methods
-#   -
-#
-# Instance methods
-#   #call             OK
-#   #[]               OK
-
-module ContinuationSpecs
-  def self.create_cc
-    Kernel.callcc { |cc| return cc }
-    :create_cc
-  end
-end
-
 not_supported_on :ironruby do
+  ruby_version_is "1.9" do
+    require 'continuation'
+  end
+
+  # Class methods
+  #   -
+  #
+  # Instance methods
+  #   #call             OK
+  #   #[]               OK
+
+  module ContinuationSpecs
+    def self.create_cc
+      Kernel.callcc { |cc| return cc }
+      :create_cc
+    end
+  end
+
   describe "Creating a Continuation object" do
     it "must be done through Kernel.callcc, no .new" do
       lambda { Continuation.new }.should raise_error(NoMethodError)
@@ -31,10 +31,7 @@ not_supported_on :ironruby do
       cont.class.should == Continuation
     end
   end
-end
 
-
-not_supported_on :ironruby do
   describe "Executing a Continuation" do
     it "using #call transfers execution to right after the Kernel.callcc block" do
       array = [:reached, :not_reached]

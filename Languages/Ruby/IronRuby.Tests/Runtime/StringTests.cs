@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -191,9 +191,10 @@ bar
         [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void Strings9() {
             // TODO:
+#if TODO
             var source = Engine.CreateScriptSource(new BinaryContentProvider(BinaryEncoding.Instance.GetBytes(@"""\u03a3""")), null, BinaryEncoding.Instance);
             AssertExceptionThrown<SyntaxErrorException>(() => source.Execute<MutableString>());
-
+#endif
             // TODO: mixing incompatible encodings at compile time (literals "foo" "bar") or runtime "foo" + "bar"
         }
 

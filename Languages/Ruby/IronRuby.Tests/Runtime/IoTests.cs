@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -190,16 +190,17 @@ hello
             RubyClass dir = Context.GetClass(typeof(RubyDir));
             Pal1 pal = (Pal1)Context.Platform;
             var sjis = RubyEncoding.KCodeSJIS.StrictEncoding.GetBytes("ﾎ");
+            var toPath = new ConversionStorage<MutableString>(Context);
             
             // transcode to UTF8 if no KCODE specified
             Context.KCode = null;
-            RubyDir.MakeDirectory(dir, MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.Binary), null);
+            RubyDir.MakeDirectory(toPath, dir, MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.Binary), null);
             Assert(pal.Entries["Σ"]);
             pal.Entries.Clear();
 
             // transcode to UTF8 if no KCODE specified
             Context.KCode = null;
-            RubyDir.MakeDirectory(dir, MutableString.CreateMutable("ﾎｱ", RubyEncoding.KCodeSJIS), null);
+            RubyDir.MakeDirectory(toPath, dir, MutableString.CreateMutable("ﾎｱ", RubyEncoding.KCodeSJIS), null);
             Assert(pal.Entries["α"]);
             Assert(FileTest.IsDirectory(Context.KernelModule, MutableString.CreateMutable("ﾎｱ", RubyEncoding.KCodeSJIS)));
             Assert(FileTest.IsDirectory(Context.KernelModule, MutableString.CreateMutable("α", RubyEncoding.KCodeUTF8)));
@@ -207,13 +208,13 @@ hello
 
             // transcode to KCODE if specified
             Context.KCode = RubyEncoding.KCodeUTF8;
-            RubyDir.MakeDirectory(dir, MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.KCodeSJIS), null);
+            RubyDir.MakeDirectory(toPath, dir, MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.KCodeSJIS), null);
             Assert(pal.Entries["Σ"]);
             pal.Entries.Clear();
 
             // transcode to KCODE if specified
             Context.KCode = RubyEncoding.KCodeSJIS;
-            RubyDir.MakeDirectory(dir, MutableString.CreateBinary(sjis, RubyEncoding.Binary), null);
+            RubyDir.MakeDirectory(toPath, dir, MutableString.CreateBinary(sjis, RubyEncoding.Binary), null);
             Assert(pal.Entries["ﾎ"]);
             pal.Entries.Clear();
 
@@ -222,7 +223,7 @@ hello
             AssertExceptionThrown<EncoderFallbackException>(() => RubyEncoding.KCodeSJIS.StrictEncoding.GetBytes("Ԋ"));
             pal.Entries["Ԋ"] = true;
             pal.Entries["ﾎ"] = true;
-            var entries = RubyDir.GetEntries(dir, MutableString.CreateEmpty());
+            var entries = RubyDir.GetEntries(toPath, dir, MutableString.CreateEmpty());
 
             Assert(entries.Count == 3);
             foreach (MutableString entry in entries) {
@@ -239,13 +240,14 @@ hello
             RubyClass dir = Context.GetClass(typeof(RubyDir));
             Pal1 pal = (Pal1)Context.Platform;
             var sjis = RubyEncoding.KCodeSJIS.StrictEncoding.GetBytes("ﾎ");
+            var toPath = new ConversionStorage<MutableString>(Context);
 
             // use the string encoding if given
-            RubyDir.MakeDirectory(dir, MutableString.CreateBinary(sjis, RubyEncoding.KCodeSJIS.RealEncoding), null);
+            RubyDir.MakeDirectory(toPath, dir, MutableString.CreateBinary(sjis, RubyEncoding.KCodeSJIS.RealEncoding), null);
             Assert(pal.Entries["ﾎ"]);
 
             // IO system returns UTF8 encoded strings:
-            var entries = RubyDir.GetEntries(dir, MutableString.CreateEmpty());
+            var entries = RubyDir.GetEntries(toPath, dir, MutableString.CreateEmpty());
             Assert(entries.Count == 3);
             Assert(((MutableString)entries[0]).Equals(MutableString.CreateAscii(".")));
             Assert(((MutableString)entries[1]).Equals(MutableString.CreateAscii("..")));

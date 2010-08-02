@@ -32,14 +32,14 @@ Will run rubyfile.rb with the IronRuby compiler.
 
 == Package
 
-  /bin              IronRuby binaries, ir.exe, iirb, irake, igem, iri, irdoc, etc.
-  /lib              Ruby standard library, including RubyGems
-  CHANGELOG.txt     Changes for each release
-  RELEASE.txt       Release notes
-  LICENSE.Ruby.txt  Ruby license
-  LICENSE.CPL.txt   Common Public License
-  LICENSE.MSPL.html Microsoft Public License
-  README.txt        This file
+  /bin                IronRuby binaries, ir.exe, iirb, irake, igem, iri, irdoc, etc.
+  /lib                Ruby standard library, including RubyGems
+  CHANGELOG.txt       Changes for each release
+  RELEASE.txt         Release notes
+  LICENSE.Ruby.txt    Ruby license
+  LICENSE.CPL.txt     Common Public License
+  LICENSE.APACHE.html Apache License, Version 2.0
+  README.txt		  This file
 
 == License
 

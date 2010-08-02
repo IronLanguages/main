@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -39,14 +39,20 @@ namespace IronRuby.Builtins {
             set { _obj.IsTainted = value; }
         }
 
-        [DebuggerDisplay("{C}", Name = "frozen?", Type = "")]
+        [DebuggerDisplay("{C}", Name = "untrusted?", Type = "")]
         public bool C {
+            get { return _obj.IsUntrusted; }
+            set { _obj.IsUntrusted = value; }
+        }
+
+        [DebuggerDisplay("{D}", Name = "frozen?", Type = "")]
+        public bool D {
             get { return _obj.IsFrozen; }
             set { if (value) { _obj.Freeze(); } }
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public object/*!*/ D {
+        public object/*!*/ E {
             get {
                 var instanceData = _obj.TryGetInstanceData();
                 if (instanceData == null) {

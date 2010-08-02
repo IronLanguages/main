@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -37,7 +37,8 @@ namespace IronRuby.Runtime.Conversions {
         ToFixnumToStr,
         ToStrToFixnum,
         ToIntToI,
-        ToAryToInt
+        ToAryToInt,
+        ToPathToStr,
     }
 
     public sealed class CompositeConversionAction : RubyConversionAction {
@@ -59,7 +60,7 @@ namespace IronRuby.Runtime.Conversions {
             get { return _resultType; }
         }
 
-        public static CompositeConversionAction Make(RubyContext context, CompositeConversion conversion) {
+        public static CompositeConversionAction/*!*/ Make(RubyContext/*!*/ context, CompositeConversion/*!*/ conversion) {
             switch (conversion) {
                 case CompositeConversion.ToFixnumToStr:
                     return new CompositeConversionAction(conversion,
@@ -79,6 +80,11 @@ namespace IronRuby.Runtime.Conversions {
                 case CompositeConversion.ToAryToInt:
                     return new CompositeConversionAction(conversion,
                         typeof(Union<IList, int>), ConvertToArrayAction.Make(context), ConvertToFixnumAction.Make(context)
+                    );
+
+                case CompositeConversion.ToPathToStr:
+                    return new CompositeConversionAction(conversion,
+                        typeof(MutableString), ConvertToPathAction.Make(context), ConvertToStrAction.Make(context)
                     );
 
                 default:

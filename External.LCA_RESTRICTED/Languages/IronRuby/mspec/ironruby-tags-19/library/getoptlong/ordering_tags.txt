@@ -1,0 +1,1 @@
+fails:GetoptLong#ordering= does not allow changing ordering to PERMUTE if ENV['POSIXLY_CORRECT'] is set

@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -115,6 +115,7 @@ namespace IronRuby.Runtime {
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             _argumentEncoding = GetOption(options, "ArgumentEncoding", RubyEncoding.Default);
 
+            _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
             _mainFile = GetOption(options, "MainFile", (string)null);
             _verbosity = GetOption(options, "Verbosity", 1);
             _debugVariable = GetOption(options, "DebugVariable", false);
@@ -123,13 +124,14 @@ namespace IronRuby.Runtime {
             _loadFromDisk = GetOption(options, "LoadFromDisk", false);
             _profile = GetOption(options, "Profile", false);
             _noAssemblyResolveHook = GetOption(options, "NoAssemblyResolveHook", false);
-            _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             _requirePaths = GetStringCollectionOption(options, "RequiredPaths", ';', ',');
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
-            _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
 
             if (_compatibility < RubyCompatibility.Ruby19) {
                 _kcode = GetKCoding(options, "KCode", null);
+                _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
+            } else {
+                _libraryPaths = GetStringCollectionOption(options, "LibraryPaths19", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             }
         }
 

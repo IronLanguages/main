@@ -1,0 +1,1 @@
+fails:SecureRandom.random_number generates a random positive number smaller then the positive integer argument

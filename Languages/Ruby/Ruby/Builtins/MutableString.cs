@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -34,7 +34,7 @@ namespace IronRuby.Builtins {
     // That's a common operation String methods do.
     [Serializable]
     [DebuggerDisplay("{GetDebugValue()}", Type = "{GetDebugType()}")]
-    public partial class MutableString : IEquatable<MutableString>, IComparable<MutableString>, IRubyObjectState, IDuplicable {
+    public partial class MutableString : IEquatable<MutableString>, IComparable<MutableString>, IComparable, IRubyObjectState, IDuplicable {
         private Content/*!*/ _content;
         private RubyEncoding/*!*/ _encoding;
         
@@ -67,6 +67,9 @@ namespace IronRuby.Builtins {
         // true if tainted:
         private const uint IsTaintedFlag = 128;
 
+        // true if untrusted:
+        private const uint IsUntrustedFlag = 256;
+        
         // The instance is frozen so that it can be shared, but it should not be used in places where
         // it will be accessible from user code as the user code could try to mutate it.
         public static readonly MutableString FrozenEmpty = CreateEmpty().Freeze();
@@ -98,6 +101,7 @@ namespace IronRuby.Builtins {
         protected MutableString(MutableString/*!*/ str) 
             : this(str._content.Clone(), str._encoding) {
             IsTainted = str.IsTainted;
+            IsUntrusted = str.IsUntrusted;
         }
 
         // mutable (doesn't make a copy of the array):
@@ -538,6 +542,20 @@ namespace IronRuby.Builtins {
             }
         }
 
+        public bool IsUntrusted {
+            get {
+                return (_flags & IsUntrustedFlag) != 0;
+            }
+            set {
+                var flags = _flags;
+                if ((flags & IsUntrustedFlag) != 0) {
+                    throw RubyExceptions.CreateObjectFrozenError();
+                }
+
+                _flags = (flags & ~IsUntrustedFlag) | (value ? IsUntrustedFlag : 0);
+            }
+        }
+
         public bool IsFrozen {
             get {
                 return (_flags & IsFrozenFlag) != 0;
@@ -580,6 +598,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         public MutableString/*!*/ TaintBy(MutableString/*!*/ str) {
             IsTainted |= str.IsTainted;
+            IsUntrusted |= str.IsUntrusted;
             return this;
         }
 
@@ -588,6 +607,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         public MutableString/*!*/ TaintBy(IRubyObjectState/*!*/ obj) {
             IsTainted |= obj.IsTainted;
+            IsUntrusted |= obj.IsUntrusted;
             return this;
         }
 
@@ -595,7 +615,10 @@ namespace IronRuby.Builtins {
         /// Makes this string tainted if the specified object is tainted.
         /// </summary>
         public MutableString/*!*/ TaintBy(object/*!*/ obj, RubyContext/*!*/ context) {
-            IsTainted |= context.IsObjectTainted(obj);
+            bool tainted, untrusted;
+            context.GetObjectTrust(obj, out tainted, out untrusted);
+            IsTainted |= tainted;
+            IsUntrusted |= untrusted;
             return this;
         }
 
@@ -603,8 +626,7 @@ namespace IronRuby.Builtins {
         /// Makes this string tainted if the specified object is tainted.
         /// </summary>
         public MutableString/*!*/ TaintBy(object/*!*/ obj, RubyScope/*!*/ scope) {
-            IsTainted |= scope.RubyContext.IsObjectTainted(obj);
-            return this;
+            return TaintBy(obj, scope.RubyContext);
         }
 
         #endregion
@@ -787,6 +809,10 @@ namespace IronRuby.Builtins {
             }
 
             return _content.OrdinalCompareTo(other._content) == 0;
+        }
+
+        public int CompareTo(object obj) {
+            return CompareTo(obj as MutableString);
         }
 
         public int CompareTo(MutableString other) {

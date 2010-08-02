@@ -75,8 +75,8 @@ rbd2    ="%DLR_ROOT%\Bin\v2Debug\ir.exe" -D $*
 rbxm    =mono "%DLR_ROOT%\Bin\Debug\ir.exe" $*
 rbrm    =mono "%DLR_ROOT%\Bin\Release\ir.exe" $*
 rbdm    =mono "%DLR_ROOT%\Bin\Debug\ir.exe" -D $*
-irb19   ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\irb.bat" $*
-ruby19  ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe" $*
+irb19   ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\irb.bat" $*
+ruby19  ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe" $*
 msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %DLR_ROOT%\Bin\Release\ir.exe $* }
 
 ;==============================================================================

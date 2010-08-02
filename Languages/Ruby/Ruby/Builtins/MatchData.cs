@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -24,6 +24,7 @@ namespace IronRuby.Builtins {
     public partial class MatchData : IDuplicable, IRubyObjectState {
         private const int FrozenFlag = 1;
         private const int TaintedFlag = 2;
+        private const int UntrustedFlag = 4;
 
         private int _flags;
         private Match/*!*/ _match;
@@ -62,6 +63,7 @@ namespace IronRuby.Builtins {
 
             _kIndices = kIndices;
             IsTainted = originalString.IsTainted;
+            IsUntrusted = originalString.IsUntrusted;
         }
 
         public MatchData() {
@@ -132,6 +134,11 @@ namespace IronRuby.Builtins {
         public bool IsTainted {
             get { return (_flags & TaintedFlag) != 0; }
             set { _flags = (_flags & ~TaintedFlag) | (value ? TaintedFlag : 0); }
+        }
+
+        public bool IsUntrusted {
+            get { return (_flags & UntrustedFlag) != 0; }
+            set { _flags = (_flags & ~UntrustedFlag) | (value ? UntrustedFlag : 0); }
         }
 
         public void Freeze() {

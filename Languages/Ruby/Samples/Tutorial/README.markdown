@@ -23,7 +23,7 @@ Running the app
 
 On the desktop:
 
-    ir.exe wpf_tutorial.rb
+    tutorial.bat
 
 On Silverlight:
 
@@ -46,13 +46,13 @@ Running the tests
 
 Both desktop and Silverlight:
 
-    tests.bat
+    tutorial-test.bat
 
 Just desktop:
 
-    ir.exe test/test_console.rb
+    rake tutorial:test:desktop
 
 Just Silverlight:
 
-    ruby %DLR_ROOT%Hosts\Silverlight\Scripts\run_tests.rb
+    rake tutorial:test:silverlight
 

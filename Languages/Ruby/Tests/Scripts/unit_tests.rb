@@ -8,7 +8,7 @@ flags = ["", "/partial", "/noadaptive", "/partial /noadaptive", "/sync0", "/sync
 if ENV['DLR_VM'] && ENV['DLR_VM'].include?("mono")
    exclude = "/exclude"
    # critical:
-   exclude += " ClrGenerics1 ClrToString1 ClrTypeVariance1 Backtrace7"
+   exclude += " ClrToString1 ClrTypeVariance1 Backtrace7"
    # failures:
    exclude += " Interpreter3 MutableString_Reverse Encoding_Host2 Dir1 RegexEncoding2 RegexEncoding2 ClrGenerics3 Scenario_RubyExceptions7 Backtrace1 Backtrace2 Backtrace3 Backtrace4 Backtrace6 Inspect1 RubyHosting5 ClrVisibility1"
 end

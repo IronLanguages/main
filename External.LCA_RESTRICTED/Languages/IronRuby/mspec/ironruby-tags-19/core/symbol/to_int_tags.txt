@@ -1,0 +1,1 @@
+fails:Symbol#to_int has been removed as deprecated

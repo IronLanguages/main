@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -26,8 +26,7 @@ namespace IronRuby.Builtins {
     [UndefineMethod("append_features")]
     [UndefineMethod("module_function")]
     public sealed class ClassOps {
-
-        #region Construction
+        #region initialize, initialize_copy, allocate, new, superclass, inherited
 
         // factory defined in on RubyClass
 
@@ -42,21 +41,7 @@ namespace IronRuby.Builtins {
         public static void InitializeCopy(RubyClass/*!*/ self, [NotNull]RubyClass/*!*/ other) {
             self.InitializeClassCopy(other);
         }
-
         
-        #endregion
-
-        #region Private Instance Methods
-
-        [RubyMethod("inherited", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
-        public static void Inherited(object/*!*/ self, object subclass) {
-            // nop
-        }
-
-        #endregion
-
-        #region Public Instance Methods
-
         [RubyMethod("allocate")]
         public static RuleGenerator/*!*/ Allocate() {
             return new RuleGenerator(RuleGenerators.InstanceAllocator);
@@ -79,6 +64,15 @@ namespace IronRuby.Builtins {
                 return self.SuperClass;
             }
         }
+
+        [RubyMethod("inherited", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
+        public static void Inherited(object/*!*/ self, object subclass) {
+            // nop
+        }
+
+        #endregion
+
+        #region IronRuby: clr_new, clr_ctor
 
         [RubyMethod("clr_new")]
         public static RuleGenerator/*!*/ ClrNew() {

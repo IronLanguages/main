@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -2628,7 +2628,7 @@ namespace IronRuby.Compiler {
                         if (c == 'u' && _compatibility >= RubyCompatibility.Ruby19) {
                             // TODO: if the string contains ascii characters only => it is ok and the encoding of the string will be UTF8
                             if (_encoding != RubyEncoding.UTF8) {
-                                ReportError(Errors.EncodingsMixed, RubyEncoding.UTF8.Name, _encoding.Name);
+                                ReportWarning(Errors.EncodingsMixed, RubyEncoding.UTF8.Name, _encoding.Name);
                                 content.Append('\\');
                                 content.Append('u');
                                 continue;

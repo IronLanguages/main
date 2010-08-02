@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -99,7 +99,7 @@ namespace System.Runtime.CompilerServices {
         public static CallSite Create(Type delegateType, CallSiteBinder binder) {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             if (_SiteCtors == null) {
                 // It's okay to just set this, worst case we're just throwing away some data
@@ -132,7 +132,7 @@ namespace System.Runtime.CompilerServices {
     /// Dynamic site type.
     /// </summary>
     /// <typeparam name="T">The delegate type.</typeparam>
-    public sealed partial class CallSite<T> : CallSite where T : class {
+    public partial class CallSite<T> : CallSite where T : class {
         /// <summary>
         /// The update delegate. Called when the dynamic site experiences cache miss.
         /// </summary>
@@ -191,6 +191,7 @@ namespace System.Runtime.CompilerServices {
         /// <returns>The new instance of dynamic call site.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static CallSite<T> Create(CallSiteBinder binder) {
+            if (!typeof(T).IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
             return new CallSite<T>(binder);
         }
 
@@ -336,7 +337,6 @@ namespace System.Runtime.CompilerServices {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomNoMatchDelegate(MethodInfo invoke) {
             var @params = invoke.GetParametersCached().Map(p => Expression.Parameter(p.ParameterType, p.Name));
-            var site = @params[0];
             return Expression.Lambda<T>(
                 Expression.Block(
                     Expression.Call(

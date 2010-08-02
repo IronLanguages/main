@@ -850,7 +850,7 @@ Gem::LoadError
 === Booting ironruby-rack at 5/16/2010 4:34:39 PM
 
 === Booting ironruby-rack at 5/16/2010 4:36:27 PM
-An error occurred creating the configuration section handler for microsoft.scripting: Could not load file or assembly 'Microsoft.Scripting, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040) (D:\D3\Hosts\IronRuby.Rack\Examples\Rack\web.config line 5)
+An error occurred creating the configuration section handler for microsoft.scripting: Could not load file or assembly 'Microsoft.Scripting, Version=1.1.0.10, Culture=neutral, PublicKeyToken=null' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040) (D:\D3\Hosts\IronRuby.Rack\Examples\Rack\web.config line 5)
        at System.Configuration.BaseConfigurationRecord.FindAndEnsureFactoryRecord(String configKey, Boolean& isRootDeclaredHere)
        at System.Configuration.BaseConfigurationRecord.GetSectionRecursive(String configKey, Boolean getLkg, Boolean checkPermission, Boolean getRuntimeObject, Boolean requestIsHere, Object& result, Object& resultRuntimeObject)
        at System.Configuration.BaseConfigurationRecord.GetSection(String configKey)

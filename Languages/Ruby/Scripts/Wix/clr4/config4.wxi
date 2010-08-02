@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Include>
-<?define ProductVersionText = "1.0v4" ?>
-<?define EnvVariableName="IRONRUBY_10_40" ?>
-<?define UpgradeCode = "66b15e9c-19c4-411a-a961-a8a03a462d72" ?>
-</Include>

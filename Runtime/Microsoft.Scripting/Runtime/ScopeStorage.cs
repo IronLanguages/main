@@ -2,11 +2,11 @@
 *
 * Copyright (c) Microsoft Corporation. 
 *
-* This source code is subject to terms and conditions of the Microsoft Public License. A 
+* This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
 * copy of the license can be found in the License.html file at the root of this distribution. If 
-* you cannot locate the Microsoft Public License, please send an email to 
+* you cannot locate the Apache License, Version 2.0, please send an email to 
 * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
-* by the terms of the Microsoft Public License.
+* by the terms of the Apache License, Version 2.0.
 *
 * You must not remove this notice, or any other, from this software.
 *
@@ -28,7 +28,7 @@ using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
     /// <summary>
-    /// Provides optimized and cachable support for scope storage.
+    /// Provides optimized and cacheable support for scope storage.
     /// 
     /// This is the default object used for storing values in a scope.
     /// 
@@ -48,7 +48,7 @@ namespace Microsoft.Scripting {
         /// </summary>
         public dynamic GetValue(string name, bool ignoreCase) {
             object res;
-            if (GetVariable(name, ignoreCase).TryGetValue(out res)) {
+            if (GetScopeVariable(name, ignoreCase).TryGetValue(out res)) {
                 return res;
             }
             throw new KeyNotFoundException("no value");
@@ -62,7 +62,7 @@ namespace Microsoft.Scripting {
         public bool TryGetValue(string name, bool ignoreCase, out dynamic value) {
             if (HasVariable(name)) {
                 object objValue;
-                if (GetVariable(name, ignoreCase).TryGetValue(out objValue)) {
+                if (GetScopeVariable(name, ignoreCase).TryGetValue(out objValue)) {
                     value = objValue;
                     return true;
                 }
@@ -76,7 +76,7 @@ namespace Microsoft.Scripting {
         /// Sets the named value in the scope optionally ignoring the case.
         /// </summary>
         public void SetValue(string name, bool ignoreCase, object value) {
-            GetVariable(name, ignoreCase).SetValue(value);
+            GetScopeVariable(name, ignoreCase).SetValue(value);
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace Microsoft.Scripting {
             if (!HasVariable(name)) {
                 return false;
             }
-            return GetVariable(name, ignoreCase).DeleteValue();
+            return GetScopeVariable(name, ignoreCase).DeleteValue();
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace Microsoft.Scripting {
             if (!HasVariable(name)) {
                 return false;
             }
-            return GetVariable(name, ignoreCase).HasValue;
+            return GetScopeVariable(name, ignoreCase).HasValue;
         }
 
         /// <summary>
@@ -105,11 +105,11 @@ namespace Microsoft.Scripting {
         /// The IScopeVariable can be held onto and get/set/deleted without performing
         /// a dictionary lookup on subsequent accesses.
         /// </summary>
-        public IScopeVariable GetVariable(string name, bool ignoreCase) {
+        public IScopeVariable GetScopeVariable(string name, bool ignoreCase) {
             if (ignoreCase) {
-                return GetVariableIgnoreCase(name);
+                return GetScopeVariableIgnoreCase(name);
             }
-            return GetVariable(name);
+            return GetScopeVariable(name);
         }
 
         /// <summary>
@@ -118,8 +118,8 @@ namespace Microsoft.Scripting {
         /// The ScopeVariable can be held onto and get/set/deleted without performing
         /// a dictionary lookup on subsequent accesses.
         /// </summary>
-        public ScopeVariable GetVariable(string name) {
-            return GetVariableIgnoreCase(name).GetCaseSensitiveStorage(name);
+        public ScopeVariable GetScopeVariable(string name) {
+            return GetScopeVariableIgnoreCase(name).GetCaseSensitiveStorage(name);
         }
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace Microsoft.Scripting {
         /// The ScopeVariable can be held onto and get/set/deleted without performing
         /// a dictionary lookup on subsequent accesses.
         /// </summary>
-        public ScopeVariableIgnoreCase GetVariableIgnoreCase(string name) {
+        public ScopeVariableIgnoreCase GetScopeVariableIgnoreCase(string name) {
             ScopeVariableIgnoreCase storageInfo;
             lock (_storage) {
                 if (!_storage.TryGetValue(name, out storageInfo)) {
@@ -169,8 +169,8 @@ namespace Microsoft.Scripting {
         /// 
         /// The list contains all available casings.
         /// </summary>
-        public IList<KeyValuePair<string, object>> GetItems() {
-            List<KeyValuePair<string, object>> res = new List<KeyValuePair<string, object>>();
+        public IList<KeyValuePair<string, dynamic>> GetItems() {
+            List<KeyValuePair<string, dynamic>> res = new List<KeyValuePair<string, dynamic>>();
             lock (_storage) {
                 foreach (var storage in _storage.Values) {
                     storage.AddItems(res);
@@ -211,7 +211,7 @@ namespace Microsoft.Scripting {
             }
 
             private DynamicMetaObject DynamicTryGetValue(string name, bool ignoreCase, Expression fallback, Func<Expression, Expression> resultOp) {
-                IScopeVariable variable = Value.GetVariable(name, ignoreCase);
+                IScopeVariable variable = Value.GetScopeVariable(name, ignoreCase);
                 var tmp = Expression.Parameter(typeof(object));
                 return new DynamicMetaObject(
                     Expression.Block(
@@ -241,7 +241,7 @@ namespace Microsoft.Scripting {
             }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
-                IScopeVariable variable = Value.GetVariable(binder.Name, binder.IgnoreCase);
+                IScopeVariable variable = Value.GetScopeVariable(binder.Name, binder.IgnoreCase);
 
                 var objExpression = ExpressionUtils.Convert(value.Expression, typeof(object));
                 return new DynamicMetaObject(
@@ -258,7 +258,7 @@ namespace Microsoft.Scripting {
             }
 
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder) {
-                IScopeVariable variable = Value.GetVariable(binder.Name, binder.IgnoreCase);
+                IScopeVariable variable = Value.GetScopeVariable(binder.Name, binder.IgnoreCase);
                 return new DynamicMetaObject(
                     Expression.Condition(
                         Expression.Call(

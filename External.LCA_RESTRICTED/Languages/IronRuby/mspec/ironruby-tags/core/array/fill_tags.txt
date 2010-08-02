@@ -1,6 +1,3 @@
 fails:Array#fill raises an ArgumentError if 3 or more arguments are passed when a block given
-fails:Array#fill with (filler, index, length) replaces all elements after the index if given an index and nil as a length
-fails:Array#fill with (filler, index, length) replaces the last (-n) elements if given an index n which is negative and nil as a length
-fails:Array#fill with (filler, index, length) makes no modifications if given an index greater than end and nil as a length
 fails:Array#fill with (filler, index, length) raises an ArgumentError or RangeError for too-large sizes
 fails:Array#fill with (filler, range) raise an exception if some of the given range lies before the first of the array

@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -109,7 +109,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region CastToString, TryCastToString, ConvertToString
+        #region CastToString, CastToPath, TryCastToString, ConvertToString
 
         /// <summary>
         /// Converts an object to string using to_str protocol (<see cref="ConvertToStrAction"/>).
@@ -117,6 +117,30 @@ namespace IronRuby.Runtime {
         public static MutableString/*!*/ CastToString(ConversionStorage<MutableString>/*!*/ stringCast, object obj) {
             var site = stringCast.GetSite(ConvertToStrAction.Make(stringCast.Context));
             return site.Target(site, obj);
+        }
+
+        /// <summary>
+        /// Converts an object to string using to_path-to_str protocol.
+        /// Protocol:
+        /// ? to_path => to_path() and to_str conversion on the result
+        /// ? to_str => to_str()
+        /// </summary>
+        public static MutableString/*!*/ CastToPath(ConversionStorage<MutableString>/*!*/ toPath, object obj) {
+            return CastToPath(toPath.GetSite(CompositeConversionAction.Make(toPath.Context, CompositeConversion.ToPathToStr)), obj);
+        }
+
+        /// <summary>
+        /// Converts an object to string using to_path-to_str protocol.
+        /// Protocol:
+        /// ? to_path => to_path() and to_str conversion on the result
+        /// ? to_str => to_str()
+        /// </summary>
+        public static MutableString/*!*/ CastToPath(CallSite<Func<CallSite, object, MutableString>>/*!*/ toPath, object obj) {
+            MutableString result = toPath.Target(toPath, obj);
+            if (result == null) {
+                throw RubyExceptions.CreateTypeConversionError("nil", "String");
+            }
+            return result;
         }
 
         /// <summary>
@@ -288,11 +312,17 @@ namespace IronRuby.Runtime {
         /// Protocol for determining value equality in Ruby (uses IsTrue protocol on result of == call)
         /// </summary>
         public static bool IsEqual(BinaryOpStorage/*!*/ equals, object lhs, object rhs) {
+            return IsEqual(equals.GetCallSite("=="), lhs, rhs);
+        }
+
+        /// <summary>
+        /// Protocol for determining value equality in Ruby (uses IsTrue protocol on result of == call)
+        /// </summary>
+        public static bool IsEqual(CallSite<Func<CallSite, object, object, object>>/*!*/ site, object lhs, object rhs) {
             // check reference equality first:
             if (lhs == rhs) {
                 return true;
             }
-            var site = equals.GetCallSite("==");
             return IsTrue(site.Target(site, lhs, rhs));
         }
 

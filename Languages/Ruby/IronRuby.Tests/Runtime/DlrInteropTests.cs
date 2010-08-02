@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -882,20 +882,42 @@ p C.methods(false)
         }
 
         public class DynamicObject2 : DynamicObject {
-            public override bool TryGetMember(GetMemberBinder binder, out object result) {
-                result = 123;
-                return binder.Name == "foo";
+            public override bool TryInvokeMember(InvokeMemberBinder binder, dynamic[] args, out dynamic result) {
+                if (binder.Name == "Foo") {
+                    result = 1;
+                    return true;
+                } else {
+                    result = null;
+                    return false;
+                }
+            }
+
+            public override bool TryGetMember(GetMemberBinder binder, out dynamic result) {
+                if (binder.Name == "Bar") {
+                    result = 2;
+                    return true;
+                } else {
+                    result = null;
+                    return false;
+                }
             }
         }
 
         public void Dlr_DynamicObject2() {
-            // TODO:
-//            Context.ObjectClass.SetConstant("C", new DynamicObject2());
-//            TestOutput(@"
-//p C.foo
-//", @"
-//123
-//");
+            Context.ObjectClass.SetConstant("C", new DynamicObject2());
+            TestOutput(@"
+p C.foo
+p C.Foo
+p C.bar
+p C.Bar
+C.xxx rescue puts $!.to_s[0, 22]
+", @"
+1
+1
+2
+2
+undefined method `xxx'
+");
         }
 
         public class DynamicObject3 : DynamicObject {

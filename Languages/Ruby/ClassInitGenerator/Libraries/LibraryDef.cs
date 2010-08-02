@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -883,11 +883,11 @@ internal class LibraryDef {
 
         // generate references:
         foreach (KeyValuePair<Type, string> moduleRef in _moduleRefs) {
-            _output.WriteLine("{0} {1} = GetModule(typeof({2}));", TypeRubyModule, moduleRef.Value, moduleRef.Key);
+            _output.WriteLine("{0} {1} = GetModule(typeof({2}));", TypeRubyModule, moduleRef.Value, TypeName(moduleRef.Key));
         }
 
         foreach (KeyValuePair<Type, string> classRef in _classRefs) {
-            _output.WriteLine("{0} {1} = GetClass(typeof({2}));", TypeRubyClass, classRef.Value, classRef.Key);
+            _output.WriteLine("{0} {1} = GetClass(typeof({2}));", TypeRubyClass, classRef.Value, TypeName(classRef.Key));
         }
 
         _output.WriteLine();

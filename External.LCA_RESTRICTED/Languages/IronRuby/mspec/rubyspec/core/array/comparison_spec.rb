@@ -85,6 +85,18 @@ describe "Array#<=>" do
       (array1 <=> array2).should == nil
     end
   end
+  
+  ruby_version_is '1.9' do
+    it "returns 0 on recursive arrays only if both arrays recurse at the same time and are otherwise equal" do
+      y = [nil, 1]
+      y[0] = y
+      
+      z = [[nil, 2], 1]
+      z[0][0] = z
+      
+      (y <=> z).should == -1
+    end
+  end
 
   it "tries to convert the passed argument to an Array using #to_ary" do
     obj = mock('to_ary')

@@ -38,7 +38,7 @@ context "Rack::Deploy::ASPNETApplication" do
     app.generate
     File.directory?(File.join(TEMP_APP, 'log')).should == true
     ['config.ru', 'web.config', 'bin/IronRuby.dll', 'bin/IronRuby.Libraries.dll',
-     'bin/IronRuby.Libraries.Yaml.dll', 'bin/IronRuby.Rack.dll', 'bin/Microsoft.Scripting.dll',
+     'bin/IronRuby.Libraries.Yaml.dll', 'bin/IronRuby.Rack.dll', 'bin/Microsoft.Scripting.dll', 'bin/Microsoft.Scripting.Metadata.dll',
      'bin/Microsoft.Dynamic.dll', 'bin/Cassini.exe', 'bin/ir.exe', 'bin/ir.exe.config'
     ].each{|f| File.exist?(File.join(TEMP_APP, f)).should == true}
   end

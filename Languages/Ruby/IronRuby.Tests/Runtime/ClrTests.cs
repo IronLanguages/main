@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -28,59 +28,8 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 #if !CLR2
 using BigInt = System.Numerics.BigInteger;
+using System.Linq.Expressions;
 #endif
-
-namespace InteropTests.Generics1 {
-    public class C {
-        public virtual int Arity { get { return 0; } }
-    }
-
-    public class C<T> {
-        public virtual int Arity { get { return 1; } }
-    }
-
-    public class C<T,S> {
-        public virtual int Arity { get { return 2; } }
-    }
-
-    public class D : C {
-        public override int Arity { get { return 10; } }
-    }
-
-    public class D<T> : C<T> {
-        public override int Arity { get { return 11; } }
-    }
-
-    public interface J<T> {
-        void MethodOnJ();
-    }
-
-    public interface I<T> : J<T> {
-        void MethodOnI();
-    }
-
-    public class E<T> : I<T>, J<T> {
-        void I<T>.MethodOnI() { }
-        void J<T>.MethodOnJ() { }
-    }
-
-    public static class Extensions {
-        public static IEnumerable<R> Select<T, R>(this IEnumerable<T> a, Func<T, R> func) {
-            foreach (var item in a) {
-                yield return func(item);
-            }
-        }
-    }
-}
-
-namespace InteropTests.Namespaces2 {
-    public class C { }
-    namespace N {
-        public class D { }
-    }
-
-    
-}
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -575,7 +524,7 @@ get_ints
 
         public void ClrGenericMethods1() {
             Context.ObjectClass.SetConstant("GM", Context.GetClass(typeof(GenericMethods)));
-            AssertOutput(() => CompilerTest(@"
+            TestOutput(@"
 m = GM.method(:M1)
 puts m.call
 puts m.of().call
@@ -583,7 +532,7 @@ puts m.of(String).call
 puts m.of(String, Fixnum).call
 puts m.call(1) rescue p $!
 puts m.of(String, String, String) rescue p $!
-"), @"
+", @"
 M1()
 M1()
 M1<MutableString>()
@@ -593,20 +542,39 @@ M1<MutableString, Int32>()
 "
             );
 
-            AssertOutput(() => CompilerTest(@"
+            TestOutput(@"
 m = GM.method(:M2)
 puts m.call(1)
 
 puts GM.method(:field).of(Fixnum) rescue p $!
 puts GM.method(:property).of(Fixnum) rescue p $!
 puts GM.method(:event).of(Fixnum) rescue p $!
-"), @"
+", @"
 M2(Fixnum)
 #<ArgumentError: wrong number of generic arguments for `field'>
 #<ArgumentError: wrong number of generic arguments for `property'>
 #<ArgumentError: wrong number of generic arguments for `event'>
 "
             );
+        }
+
+        public abstract class GenericMethods2 {
+            public abstract T Foo<T>(T arg);
+        }
+
+        internal class GenericMethods3 : GenericMethods2 {
+            public override T Foo<T>(T arg) {
+                return arg;
+            }
+        }
+
+        public void ClrGenericMethods2() {
+            Context.ObjectClass.SetConstant("GM3", new GenericMethods3());
+            TestOutput(@"
+puts GM3.foo(123)
+", @"
+123
+");
         }
 
         public class Inference1 {
@@ -630,17 +598,37 @@ M2(Fixnum)
             public int Complex<A,B,C>(ref Dictionary<List<Dictionary<Func<A, B[][,,,][], C>[], int>>, Func<Dictionary<int, A>, B, C>>[] arg) {
                 return 4;
             }
+
+            public int Where<T>(IEnumerable<T> e, Func<T, bool> f) {
+                return 5;
+            }
+
+            public int Where<T>(IEnumerable<T> e, Func<T, int, bool> f) {
+                return 6;
+            }
+
+            public int Where<T>(IEnumerable<T> e, object f) {
+                return 7;
+            }
+
+            public int Mixed<T>(T arg) {
+                return 8;
+            }
+
+            public int Mixed(object arg) {
+                return 9;
+            }
         }
 
         public void ClrGenericParametersInference1() {
             Context.ObjectClass.SetConstant("F", Context.GetClass(typeof(Func<object,string>)));
             Context.ObjectClass.SetConstant("SB", Context.GetClass(typeof(StrongBox<int>)));
             Context.ObjectClass.SetConstant("SBx",
-                new StrongBox<Dictionary<List<Dictionary<Func<int, bool[][,,,][], double>[], int>>, Func<Dictionary<int, int>, bool, double>>[]>()
+                new StrongBox<Dictionary<List<Dictionary<Func<int, bool[][,,,][], double>[], int>>, Func<Dictionary<int, int>, bool, double>>[]>(null)
             );
             Context.ObjectClass.SetConstant("I", new Inference1());
             Context.ObjectClass.SetConstant("E", Context.GetClass(typeof(InteropTests.Generics1.Extensions)));
-
+     
             TestOutput(@"
 p I.Array(System::Array[Fixnum].new(3))
 p I.Multiple([1,2,3], F.new { |x| x.to_s })
@@ -678,6 +666,222 @@ p I.DeepShape(Dictionary[Dictionary[Fixnum, System::String], Dictionary[Fixnum, 
 p I.Complex(SBx)
 ", @"
 4
+");
+  
+             TestOutput(@"
+l1 = lambda { |x| }
+l2 = lambda { |x, y| }
+l3 = lambda { |*| }
+a = System::Array[Object].new(1)
+
+p I.Where(a, l1)
+p I.Where(a, l2)
+p I.Where(a, l3) rescue puts 'ambiguous'
+p I.Where(a, 123)
+", @"
+5
+6
+ambiguous
+7
+");
+
+            // an inferred type is more specific than object:
+            TestOutput(@"
+p I.Mixed(1)
+", @"
+8
+");
+
+        }
+
+        #endregion
+
+        #region Extension Methods
+
+        public void ClrExtensionMethods0() {
+            bool expectExact = typeof(Enumerable).Assembly.FullName == "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+
+            Dictionary<string, int> expected = new Dictionary<string, int>();
+            foreach (string name in new[] {
+                "AsQueryable", "AsQueryable", "Where", "Where", "OfType", "Cast", "Select", "Select", "SelectMany", "SelectMany", "SelectMany", "SelectMany", "Join", "Join", "GroupJoin", 
+                "GroupJoin", "OrderBy", "OrderBy", "OrderByDescending", "OrderByDescending", "ThenBy", "ThenBy", "ThenByDescending", "ThenByDescending", "Take", "TakeWhile", 
+                "TakeWhile", "Skip", "SkipWhile", "SkipWhile", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "Distinct", "Distinct", 
+                "Concat", "Zip", "Union", "Union", "Intersect", "Intersect", "Except", "Except", "First", "First", "FirstOrDefault", "FirstOrDefault", "Last", "Last", 
+                "LastOrDefault", "LastOrDefault", "Single", "Single", "SingleOrDefault", "SingleOrDefault", "ElementAt", "ElementAtOrDefault", "DefaultIfEmpty", "DefaultIfEmpty", 
+                "Contains", "Contains", "Reverse", "SequenceEqual", "SequenceEqual", "Any", "Any", "All", "Count", "Count", "LongCount", "LongCount", "Min", "Min", "Max", "Max", 
+                "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Average", "Average",
+                "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average",
+                "Average", "Average", "Average", "Aggregate", "Aggregate", "Aggregate", "Where", "Where", "Select", "Select", "SelectMany", "SelectMany", "SelectMany", "SelectMany", 
+                "Take", "TakeWhile", "TakeWhile", "Skip", "SkipWhile", "SkipWhile", "Join", "Join", "GroupJoin", "GroupJoin", "OrderBy", "OrderBy", "OrderByDescending", 
+                "OrderByDescending", "ThenBy", "ThenBy", "ThenByDescending", "ThenByDescending", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", 
+                "GroupBy", "Concat", "Zip", "Distinct", "Distinct", "Union", "Union", "Intersect", "Intersect", "Except", "Except", "Reverse", "SequenceEqual", "SequenceEqual",
+                "AsEnumerable", "ToArray", "ToList", "ToDictionary", "ToDictionary", "ToDictionary", "ToDictionary", "ToLookup", "ToLookup", "ToLookup", "ToLookup", "DefaultIfEmpty", 
+                "DefaultIfEmpty", "OfType", "Cast", "First", "First", "FirstOrDefault", "FirstOrDefault", "Last", "Last", "LastOrDefault", "LastOrDefault", "Single", "Single", 
+                "SingleOrDefault", "SingleOrDefault", "ElementAt", "ElementAtOrDefault", "Any", "Any", "All", "Count", "Count", "LongCount", "LongCount", "Contains", "Contains", 
+                "Aggregate", "Aggregate", "Aggregate", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", 
+                "Sum", "Sum", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", 
+                "Min", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", 
+                "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average",
+                "Average", "Average", "Average", "Average", "Average", "AsParallel", "AsParallel", "AsOrdered", "AsOrdered", "AsUnordered", "AsParallel", "AsSequential",
+                "WithDegreeOfParallelism", "WithCancellation", "WithExecutionMode", "WithMergeOptions", "ForAll", "Where", "Where", "Select", "Select", "Zip", "Zip", "Join", "Join", 
+                "Join", "Join", "GroupJoin", "GroupJoin", "GroupJoin", "GroupJoin", "SelectMany", "SelectMany", "SelectMany", "SelectMany", "OrderBy", "OrderBy", "OrderByDescending", 
+                "OrderByDescending", "ThenBy", "ThenBy", "ThenByDescending", "ThenByDescending", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy", "GroupBy",
+                "Aggregate", "Aggregate", "Aggregate", "Aggregate", "Aggregate", "Count", "Count", "LongCount", "LongCount", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", 
+                "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Sum", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min",
+                "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Min", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max",
+                "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Max", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", 
+                "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Average", "Any", "Any", "All", "Contains", "Contains", "Take", 
+                "TakeWhile", "TakeWhile", "Skip", "SkipWhile", "SkipWhile", "Concat", "Concat", "SequenceEqual", "SequenceEqual", "SequenceEqual", "SequenceEqual", "Distinct", 
+                "Distinct", "Union", "Union", "Union", "Union", "Intersect", "Intersect", "Intersect", "Intersect", "Except", "Except", "Except", "Except", "AsEnumerable", "ToArray",
+                "ToList", "ToDictionary", "ToDictionary", "ToDictionary", "ToDictionary", "ToLookup", "ToLookup", "ToLookup", "ToLookup", "Reverse", "OfType", "Cast", "First", "First", 
+                "FirstOrDefault", "FirstOrDefault", "Last", "Last", "LastOrDefault", "LastOrDefault", "Single", "Single", "SingleOrDefault", "SingleOrDefault", "DefaultIfEmpty", 
+                "DefaultIfEmpty", "ElementAt", "ElementAtOrDefault", "Unwrap", "Unwrap", 
+            }) {
+                int count;
+                if (!expected.TryGetValue(name, out count)) {
+                    count = 0;
+                }
+                expected[name] = count + 1;
+            }
+
+            var methods = ReflectionUtils.GetVisibleExtensionMethods(typeof(Enumerable).Assembly);
+            new List<MethodInfo>(ReflectionUtils.GetVisibleExtensionMethodsSlow(typeof(Enumerable).Assembly));
+
+            Dictionary<string, int> actual = new Dictionary<string, int>();
+            foreach (MethodInfo method in methods) {
+                int count;
+                if (!actual.TryGetValue(method.Name, out count)) {
+                    count = 0;
+                }
+                actual[method.Name] = count + 1;
+            }
+
+            foreach (string name in actual.Keys) {
+                Assert(expected.ContainsKey(name));
+                Assert(expectExact ? expected[name] == actual[name] : expected[name] >= actual[name]);
+            }
+        }
+
+        public void ClrExtensionMethods1() {
+#if !CLR2
+            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
+            TestOutput(@"
+load_assembly SystemCoreAssembly
+using_clr_extensions System::Linq
+
+p System::Array[Fixnum].new([1,2,3]).first_or_default
+", @"
+1
+");
+#endif
+        }
+
+        /// <summary>
+        /// Loads an assembly that defines more extension methods in the given namespace.
+        /// </summary>
+        public void ClrExtensionMethods2() {
+#if !CLR2
+            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
+            Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).Assembly.FullName);
+            TestOutput(@"
+load_assembly DummyLinqAssembly
+
+using_clr_extensions System::Linq
+load_assembly SystemCoreAssembly
+
+p System::Array[Fixnum].new([1,2,3]).first_or_default
+", @"
+1
+");
+#endif
+        }
+
+        /// <summary>
+        /// Extension methods not available by default onlty after their declaring namespace is "used".
+        /// </summary>
+        public void ClrExtensionMethods3() {
+#pragma warning disable 162 // unreachable code
+#if CLR2
+            return;
+#else
+            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
+            Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).Assembly.FullName);
+#endif       
+            TestOutput(@"
+load_assembly DummyLinqAssembly
+load_assembly SystemCoreAssembly
+
+a = System::Array[Fixnum].new([1,2,3])
+a.first_or_default rescue p $!
+
+using_clr_extensions System::Linq
+p a.first_or_default
+", @"
+#<NoMethodError: undefined method `first_or_default' for [1, 2, 3]:System::Int32[]>
+1
+");
+#pragma warning restore 162
+        }
+
+        /// <summary>
+        /// Extension methods defined using generic parameters and constraints.
+        /// </summary>
+        public void ClrExtensionMethods4() {
+            Runtime.LoadAssembly(typeof(IronRubyTests.ExtensionMethods2.EMs).Assembly);
+
+            TestOutput(@"
+L = System::Collections::Generic::List
+D = System::Collections::Generic::Dictionary
+using_clr_extensions IronRubyTests::ExtensionMethods2
+include IronRubyTests::ExtensionMethods2
+
+puts L[X].new.f1
+L[A].new.f1 rescue puts '!f1'
+
+puts D[B, A].new.f2
+puts D[A, A].new.f2
+D[A, X].new.f2 rescue puts '!f2'
+
+puts f3 = L[X].new.method(:f3)
+puts f3.of(X, Object)[1]
+puts L[Y].new.f3(X.new)
+L[A].new.f3(X.new) rescue puts '!f3'
+
+puts S.new.f4 
+puts 1.f4
+A.new.f4 rescue puts '!f4'
+
+puts A.new.f5
+puts B.new.f5
+class A; def f5; 'Ruby f5'; end; end
+puts A.new.f5
+puts B.new.f5                           # f5 is an extension on all types (TODO)
+
+puts System::Array[A].new(1).f6
+System::Array[Fixnum].new(1).f6 rescue puts '!f6'
+puts L[System::Array[D[B, L[A]]]].new.f6
+L[System::Array[D[B, L[Fixnum]]]].new.f6 rescue puts '!f6'
+", @"
+f1
+!f1
+f2
+f2
+!f2
+#<Method: System::Collections::Generic::List[IronRubyTests::ExtensionMethods2::X]#f3>
+f3
+f3
+!f3
+f4
+f4
+!f4
+f5
+f5
+Ruby f5
+Ruby f5
+f6
+!f6
+f6
+!f6
 ");
         }
 
@@ -925,7 +1129,109 @@ f1
 ");
         }
 
-        public class OverloadInheritance6 {
+        /// <summary>
+        /// Removing an overload barrier.
+        /// </summary>
+        public void ClrOverloadInheritance6() {
+            OverloadInheritance2.Load(Context);
+
+            TestOutput(@"
+class E; def f; 'f:E'; end; end;               
+
+f = F.new
+puts f.f(1,2,3,4)                                   # creates { f4 } group on F
+
+class E; remove_method(:f); end                     # invalidates group on F
+
+puts f.f(1)
+", @"
+f4
+f1
+");
+        }
+
+        /// <summary>
+        /// Removing an overload barrier.
+        /// </summary>
+        public void ClrOverloadInheritance7() {
+            OverloadInheritance2.Load(Context);
+
+            TestOutput(@"
+D.new.f(1,2)                                        # creates A: {f1} and D: {f1, f2} groups
+
+class E; def f; 'f:E'; end; end;
+
+puts F.new.f(1,2,3,4)                               # creates { f4 } group on F, sets E#f.InvalidateOnRemoval
+
+class C; def f; 'f:C'; end; end;                    # invalidates D group, doesn't invalidate F group as it doesn't contain any overloads from above
+
+class E; remove_method :f; end;                     # invalidates group on F
+
+puts F.new.f(1,2)                                   
+puts F.new.f(1,2,3,4)
+F.new.f(1) rescue puts '!f1'
+", @"
+f4
+f2
+f4
+!f1
+");
+        }
+
+        public void ClrOverloadInheritance_ExtensionMethods1() {
+            Runtime.LoadAssembly(Assembly.GetExecutingAssembly());
+            OverloadInheritance2.Load(Context);
+
+            TestOutput(@"
+using_clr_extensions IronRubyTests::ExtensionMethods1
+d = D.new
+puts d.f(1)                               # f1 on A
+puts d.f(1,2,3,4,5)                       # e5 on C 
+puts d.f(1,2,3,4,5,6)                     # e6 on A
+
+class B; def f; end; end
+
+d.f(1) rescue p $!                        # f1 on A
+puts d.f(1,2,3,4,5)                       # e5 on C
+d.f(1,2,3,4,5,6) rescue p $!              # e6 on A 
+
+class B; remove_method :f; end
+
+puts d.f(1)                               # f1 on A
+puts d.f(1,2,3,4,5)                       # e5 on C 
+puts d.f(1,2,3,4,5,6)                     # e6 on A
+", @"
+f1
+e5
+e6
+#<ArgumentError: wrong number of arguments (1 for 2)>
+e5
+#<ArgumentError: wrong number of arguments (6 for 5)>
+f1
+e5
+e6
+"
+            );
+        }
+
+        public void ClrOverloadInheritance_ExtensionMethods2() {
+            Runtime.LoadAssembly(Assembly.GetExecutingAssembly());
+            OverloadInheritance2.Load(Context);
+
+            TestOutput(@"
+using_clr_extensions nil
+puts F.new.f(1,2,3,4,5,6,7)               # no namespace
+ 
+using_clr_extensions IronRubyTests::ExtensionMethods1
+puts F.new.f(1,2,3,4)                     # same signatures => regular method is preferred
+", @"
+e7
+f4
+"
+            );
+        }
+
+        public class OverloadInheritance_ClrMembers1 {
             public class A {
                 public int foo(int a) { return 1; }
                 public int Foo(int a) { return 2; }
@@ -958,8 +1264,8 @@ f1
         ///   - includes [foo(double), foo(int)] into the group if C.new.foo was invoked previously
         ///   - includes [Foo(bool)] into the group otherwise.
         /// </summary>
-        public void ClrOverloadInheritance6() {
-            OverloadInheritance6.Load(Context);
+        public void ClrOverloadInheritance_ClrMembers1() {
+            OverloadInheritance_ClrMembers1.Load(Context);
 
             TestOutput(@"
 p C.new.method(:foo).clr_members.size
@@ -2802,7 +3108,7 @@ false
 
         public void ClrOperators2() {
             TestOutput(@"
-p :b == true                # Symbol hides SymbolId::op_Equality
+p :b == true                
 p String == Fixnum          # Only instance operator calls are allowed (MutableString::op_Equality shound be ignored)
 
 class C < Numeric

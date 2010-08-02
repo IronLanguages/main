@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -62,20 +62,20 @@ namespace IronRuby.Compiler.Ast {
         MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal) {
             // TODO: create the regex here, not at runtime:
             return Methods.CreateRegexL.OpCall(
-                Ast.Constant(literal), gen.EncodingConstant, AstUtils.Constant(_options), AstUtils.Constant(new StrongBox<RubyRegex>())
+                Ast.Constant(literal), gen.EncodingConstant, AstUtils.Constant(_options), AstUtils.Constant(new StrongBox<RubyRegex>(null))
             );
         }
 
         MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSA.Expression/*!*/ arg) {
             return Methods.CreateRegex(opSuffix).OpCall(
-                arg, gen.EncodingConstant, AstUtils.Constant(_options), AstUtils.Constant(new StrongBox<RubyRegex>())
+                arg, gen.EncodingConstant, AstUtils.Constant(_options), AstUtils.Constant(new StrongBox<RubyRegex>(null))
             );
         }
 
         MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSAst.ExpressionCollectionBuilder/*!*/ args) {
             args.Add(gen.EncodingConstant);
             args.Add(AstUtils.Constant(_options));
-            args.Add(AstUtils.Constant(new StrongBox<RubyRegex>()));
+            args.Add(AstUtils.Constant(new StrongBox<RubyRegex>(null)));
             return Methods.CreateRegex(opSuffix).OpCall(args);
         }
 

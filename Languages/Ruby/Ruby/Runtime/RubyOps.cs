@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -95,6 +95,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static int GetProcArity(Proc/*!*/ proc) {
+            return proc.Dispatcher.Arity;
+        }
+
+        [Emitted]
         public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, string[] variableNames, 
             InterpretedFrame interpretedFrame) {
 
@@ -127,6 +132,10 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, string[] variableNames, 
             RubyScope/*!*/ parent, RubyModule/*!*/ module) {
+
+            if (parent.RubyContext != module.Context) {
+                throw RubyExceptions.CreateTypeError("Cannot open a module `{0}' defined in a foreign runtime #{1}", module.Name, module.Context.RuntimeId);
+            }
 
             RubyModuleScope scope = new RubyModuleScope(parent, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
@@ -2020,7 +2029,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] // ProtocolConversionAction
-        public static string/*!*/ ConvertSymbolIdToClrString(RubyContext/*!*/ context, int value) {
+        public static string/*!*/ ConvertRubySymbolToClrString(RubyContext/*!*/ context, int value) {
             context.ReportWarning("do not use Fixnums as Symbols");
 
             RubySymbol result = context.FindSymbol(value);
@@ -2346,6 +2355,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static bool IsObjectUntrusted(RubyInstanceData instanceData) {
+            return instanceData != null && instanceData.Untrusted;
+        }
+
+        [Emitted]
         public static void FreezeObject(ref RubyInstanceData instanceData) {
             RubyOps.GetInstanceData(ref instanceData).Freeze();
         }
@@ -2353,6 +2367,11 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static void SetObjectTaint(ref RubyInstanceData instanceData, bool value) {
             RubyOps.GetInstanceData(ref instanceData).Tainted = value;
+        }
+
+        [Emitted]
+        public static void SetObjectTrustiness(ref RubyInstanceData instanceData, bool untrusted) {
+            RubyOps.GetInstanceData(ref instanceData).Untrusted = untrusted;
         }
 
 #if !SILVERLIGHT // serialization

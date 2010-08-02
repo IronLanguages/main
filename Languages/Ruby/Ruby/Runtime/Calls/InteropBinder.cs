@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -69,7 +69,7 @@ namespace IronRuby.Runtime.Calls {
             public override DynamicMetaObject/*!*/ FallbackCreateInstance(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args,
                 DynamicMetaObject errorSuggestion) {
 
-                return InvokeMember.FallbackInvokeMember(this, "new", CallInfo, target, args, errorSuggestion);                
+                return InvokeMember.FallbackInvokeMember(this, "new", CallInfo, target, args, errorSuggestion, null);                
             }
 
             public override string/*!*/ ToString() {
@@ -165,7 +165,7 @@ namespace IronRuby.Runtime.Calls {
                     return result;
                 }
 #endif
-                return InvokeMember.FallbackInvokeMember(this, "call", CallInfo, target, args, errorSuggestion);
+                return InvokeMember.FallbackInvokeMember(this, "call", CallInfo, target, args, errorSuggestion, null);
             }
 
             public static DynamicMetaObject/*!*/ Bind(InvokeBinder/*!*/ binder,
@@ -229,30 +229,67 @@ namespace IronRuby.Runtime.Calls {
             #region Ruby -> DLR
 
             public override DynamicMetaObject/*!*/ FallbackInvokeMember(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject errorSuggestion) {
-                if (_unmangled != null) {
-                    // TODO: errorSuggestion ?
-                    return _unmangled.Bind(target, args);
-                }
-
 #if !SILVERLIGHT
                 DynamicMetaObject result;
                 if (Microsoft.Scripting.ComInterop.ComBinder.TryBindInvokeMember(this, target, InplaceConvertComArguments(args), out result)) {
                     return result;
                 }
 #endif
-                return FallbackInvokeMember(this, _originalName ?? Name, CallInfo, target, args, errorSuggestion);
+
+                return FallbackInvokeMember(this, _originalName ?? Name, CallInfo, target, args, errorSuggestion, _unmangled);
             }
 
             internal static DynamicMetaObject FallbackInvokeMember(IInteropBinder/*!*/ binder, string/*!*/ methodName, CallInfo/*!*/ callInfo,
-                DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject errorSuggestion) {
+                DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject errorSuggestion, InvokeMember alternateBinder) {
 
                 var metaBuilder = new MetaObjectBuilder(binder, target, args);
                 var callArgs = new CallArguments(binder.Context, target, args, callInfo);
 
-                if (!RubyCallAction.BuildCall(metaBuilder, methodName, callArgs, errorSuggestion == null, true)) {
-                    Debug.Assert(errorSuggestion != null);
-                    // method wasn't found so we didn't do any operation with arguments that would require restrictions converted to conditions:
-                    metaBuilder.SetMetaResult(errorSuggestion, false);
+                //
+                // If we are called with no errorSuggestion we attempt to bind the alternate name since the current binding failed 
+                // (unless we successfully bind to a COM object method or Ruby/CLR method defined on the target meta-object).
+                // If we already have an errorSuggestion we use it as it represents a valid binding and no alternate name lookups are thus necessary.
+                //
+                // For example, DynamicObject InvokeMember calls our FallbackInvokeMember 4 times:
+                //
+                // 1) binder.fallback(..., errorSuggestion: null)
+                //    -> DynamicObject.BindInvokeMember(altBinder)
+                //       2) altBinder.fallback(..., errorSuggestion: null) 
+                //          -> [[ error ]]
+                //       
+                //       3) altBinder.fallback(..., errorSuggestion: [[
+                //                                                     TryInvokeMember(altName, out result)   
+                //                                                       ? result                           
+                //                                                       : TryGetMember(altName, out result) 
+                //                                                           ? altBinder.FallbackInvoke(result)
+                //                                                           : [[ error ]]
+                //                                                   ]])
+                //          -> errorSuggestion
+                //
+                // 4) binder.fallback(..., errorSuggestion: [[
+                //                                            TryInvokeMember(name, out result)   
+                //                                              ? result                           
+                //                                              : TryGetMember(name, out result) 
+                //                                                  ? binder.FallbackInvoke(result)
+                //                                                    TryInvokeMember(altName, out result)   
+                //                                                      ? result                           
+                //                                                      : TryGetMember(altName, out result) 
+                //                                                          ? altBinder.FallbackInvoke(result)
+                //                                                          : [[ error ]]
+                //
+                //                                          ]])
+                // -> errorSuggestion
+                //
+                bool tryAlternateBinding = alternateBinder != null && errorSuggestion == null;
+
+                if (!RubyCallAction.BuildCall(metaBuilder, methodName, callArgs, errorSuggestion == null && !tryAlternateBinding, true)) {
+                    Debug.Assert(errorSuggestion != null || tryAlternateBinding);
+                    if (tryAlternateBinding) {
+                        metaBuilder.SetMetaResult(target.BindInvokeMember(alternateBinder, args), true);
+                    } else {
+                        // method wasn't found so we didn't do any operation with arguments that would require restrictions converted to conditions:
+                        metaBuilder.SetMetaResult(errorSuggestion, false);
+                    }
                 }
 
                 return metaBuilder.CreateMetaObject((DynamicMetaObjectBinder)binder);
@@ -354,11 +391,6 @@ namespace IronRuby.Runtime.Calls {
             #region Ruby -> DLR
 
             public override DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
-                if (_unmangled != null) {
-                    // TODO: errorSuggestion?
-                    return _unmangled.Bind(target, DynamicMetaObject.EmptyMetaObjects);
-                }
-
 #if !SILVERLIGHT
                 DynamicMetaObject result;
                 if (Microsoft.Scripting.ComInterop.ComBinder.TryBindGetMember(this, target, out result)) {
@@ -368,10 +400,18 @@ namespace IronRuby.Runtime.Calls {
 
                 var metaBuilder = new MetaObjectBuilder(target);
                 var callArgs = new CallArguments(_context, target, DynamicMetaObject.EmptyMetaObjects, _CallInfo);
+                
+                // See InvokeMember binder for explanation.
+                bool tryAlternateBinding = _unmangled != null && errorSuggestion == null;
 
-                if (!RubyCallAction.BuildAccess(metaBuilder, _originalName ?? Name, callArgs, errorSuggestion == null, true)) {
-                    Debug.Assert(errorSuggestion != null);
-                    metaBuilder.SetMetaResult(errorSuggestion, false);
+                if (!RubyCallAction.BuildAccess(metaBuilder, _originalName ?? Name, callArgs, errorSuggestion == null && !tryAlternateBinding, true)) {
+                    Debug.Assert(errorSuggestion != null || tryAlternateBinding);
+                    if (tryAlternateBinding) {
+                        metaBuilder.SetMetaResult(target.BindGetMember(_unmangled), true);
+                    } else {
+                        // method wasn't found so we didn't do any operation with arguments that would require restrictions converted to conditions:
+                        metaBuilder.SetMetaResult(errorSuggestion, false);
+                    }
                 }
 
                 return metaBuilder.CreateMetaObject(this);
@@ -636,7 +676,7 @@ namespace IronRuby.Runtime.Calls {
                 }
 #endif
 
-                return InvokeMember.FallbackInvokeMember(this, "[]", CallInfo, target, indexes, errorSuggestion);
+                return InvokeMember.FallbackInvokeMember(this, "[]", CallInfo, target, indexes, errorSuggestion, null);
             }
 
             #endregion
@@ -700,7 +740,7 @@ namespace IronRuby.Runtime.Calls {
                 }
 #endif
 
-                return InvokeMember.FallbackInvokeMember(this, "[]=", CallInfo, target, ArrayUtils.Append(indexes, value), errorSuggestion);
+                return InvokeMember.FallbackInvokeMember(this, "[]=", CallInfo, target, ArrayUtils.Append(indexes, value), errorSuggestion, null);
             }
 
             #endregion
@@ -805,7 +845,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             public override DynamicMetaObject/*!*/ FallbackBinaryOperation(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ arg, DynamicMetaObject errorSuggestion) {
-                return InvokeMember.FallbackInvokeMember(this, RubyUtils.MapOperator(Operation), _CallInfo, target, new[] { arg }, errorSuggestion);
+                return InvokeMember.FallbackInvokeMember(this, RubyUtils.MapOperator(Operation), _CallInfo, target, new[] { arg }, errorSuggestion, null);
             }
 
             public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, BinaryOperationBinder/*!*/ binder,
@@ -847,7 +887,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             public override DynamicMetaObject/*!*/ FallbackUnaryOperation(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
-                return InvokeMember.FallbackInvokeMember(this, RubyUtils.MapOperator(Operation), _CallInfo, target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion);
+                return InvokeMember.FallbackInvokeMember(this, RubyUtils.MapOperator(Operation), _CallInfo, target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion, null);
             }
 
             public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, UnaryOperationBinder/*!*/ binder,

@@ -43,7 +43,7 @@ describe "Ruby extensions" do
   end
 end
 
-describe "System::Windows::Browser::HtmlDocument" do
+describe "Ruby extensions for System::Windows::Browser::HtmlDocument" do
   behaves_like 'Create HTML element'
 
   it 'should get an element by id on method missing' do
@@ -59,7 +59,7 @@ describe "System::Windows::Browser::HtmlDocument" do
   end
 end
 
-describe "System::Windows::Browser::HtmlElement" do
+describe "Ruby extensions for System::Windows::Browser::HtmlElement" do
   behaves_like 'Create HTML element'
 
   before do
@@ -90,7 +90,7 @@ describe "System::Windows::Browser::HtmlElement" do
   end
 end
 
-describe "System::Windows::Browser::HtmlStyle" do
+describe "Ruby extensions for System::Windows::Browser::HtmlStyle" do
   behaves_like 'Create HTML element'
 
   before do
@@ -117,7 +117,7 @@ describe "System::Windows::Browser::HtmlStyle" do
   end
 end
 
-describe 'System::Windows::Browser::ScriptObjectCollection' do
+describe 'Ruby extensions for System::Windows::Browser::ScriptObjectCollection' do
   behaves_like 'Create HTML element'
 
   it 'behaves like an Enumerable' do
@@ -146,7 +146,7 @@ describe 'System::Windows::Browser::ScriptObjectCollection' do
   end
 end
 
-describe 'System::Windows::FrameworkElement' do
+describe 'Ruby extensions for System::Windows::FrameworkElement' do
   behaves_like 'Create XAML element'
 
   it 'can get named elements with method_missing' do

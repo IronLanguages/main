@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -122,7 +122,7 @@ namespace Microsoft.Scripting.Utils {
                 );
             }
 
-            public T/*!*/ Bind(DynamicMetaObjectBinder/*!*/ binder, int countDown, object[] args) {
+            public T/*!*/ Bind(DynamicMetaObjectBinder/*!*/ binder, int compilationThreshold, object[] args) {
                 if (CachedBindingInfo<T>.LastInterpretedFailure != null && CachedBindingInfo<T>.LastInterpretedFailure.Binder == binder) {
                     // we failed the rule because we have a compiled target available, return the compiled target
                     Debug.Assert(CachedBindingInfo<T>.LastInterpretedFailure.CompiledTarget != null);
@@ -132,7 +132,7 @@ namespace Microsoft.Scripting.Utils {
                 }
 
                 // we haven't produced a rule yet....
-                var bindingInfo = new CachedBindingInfo<T>(binder, countDown);
+                var bindingInfo = new CachedBindingInfo<T>(binder, compilationThreshold);
 
                 var targetMO = DynamicMetaObject.Create(args[0], _parameters[1]); // 1 is skipping CallSite
                 DynamicMetaObject[] argsMO = new DynamicMetaObject[args.Length - 1];
@@ -237,11 +237,11 @@ namespace Microsoft.Scripting.Utils {
     /// </summary>
     abstract class CachedBindingInfo {
         public readonly DynamicMetaObjectBinder/*!*/ Binder;
-        public int CountDown;
+        public int CompilationThreshold;
 
-        public CachedBindingInfo(DynamicMetaObjectBinder binder, int countDown) {
+        public CachedBindingInfo(DynamicMetaObjectBinder binder, int compilationThreshold) {
             Binder = binder;
-            CountDown = countDown;
+            CompilationThreshold = compilationThreshold;
         }
 
         public abstract bool CheckCompiled();
@@ -254,8 +254,8 @@ namespace Microsoft.Scripting.Utils {
         [ThreadStatic]
         public static CachedBindingInfo<T> LastInterpretedFailure;
 
-        public CachedBindingInfo(DynamicMetaObjectBinder binder, int countDown)
-            : base(binder, countDown) {
+        public CachedBindingInfo(DynamicMetaObjectBinder binder, int compilationThreshold)
+            : base(binder, compilationThreshold) {
         }
 
         public override bool CheckCompiled() {

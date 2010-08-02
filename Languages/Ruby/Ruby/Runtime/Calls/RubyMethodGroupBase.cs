@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -66,7 +66,7 @@ namespace IronRuby.Runtime.Calls {
         internal OverloadInfo/*!*/[]/*!*/ SetMethodBasesNoLock(OverloadInfo/*!*/[]/*!*/ methods) {
             Debug.Assert(
                 CollectionUtils.TrueForAll(methods, (method) => method.IsStatic || method.DeclaringType == typeof(Object)) ||
-                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || RubyUtils.IsExtension(method) || RubyUtils.IsOperator(method))
+                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || method.IsExtension || RubyUtils.IsOperator(method))
             );
 
             return _methodBases = methods;
@@ -107,7 +107,7 @@ namespace IronRuby.Runtime.Calls {
 
         public override RubyMemberInfo TryBindGenericParameters(Type/*!*/[]/*!*/ typeArguments) {
             var boundMethods = new List<OverloadInfo>();
-            foreach (var method in MethodBases) {
+            foreach (OverloadInfo method in MethodBases) {
                 if (method.IsGenericMethodDefinition) {
                     if (typeArguments.Length == method.GenericArguments.Count) {
                         boundMethods.Add(method.MakeGenericMethod(typeArguments));

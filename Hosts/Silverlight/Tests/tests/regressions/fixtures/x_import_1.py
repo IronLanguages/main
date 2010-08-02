@@ -1,0 +1,2 @@
+# expect exception
+import SomethingNotExist

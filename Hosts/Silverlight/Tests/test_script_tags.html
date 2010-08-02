@@ -4,13 +4,11 @@
 
   <title>DLR Silverlight tests - script tags</title>
 
-  <!--
-  <link rel="stylesheet" href="qunit/testsuite.css" type="text/css" media="screen" />
-  -->
+  <script type="text/javascript" src="/dlr-build/dlr.js"></script>
 
-  <script type="text/javascript" src="dlr.js"></script>
+  <script type="application/x-zip-compressed" src="lib.zip"></script>
 
-  <!-- Start of ruby script-tag fixtures -->
+  <!-- Start of script-tag fixtures -->
 
   <script type="oogieboogie/ruby">
     $script_tags_run ||= {}
@@ -80,65 +78,33 @@
     $script_tags_run['in-order-execution'] << 4
   </script>
 
-  <!-- end of ruby script-tag fixtures -->
-
-  <!-- start of python script-tag fixtures -->
-
-  <script type="application/python">  
+  <script type="text/python" src="pylib/ruby.py"></script>
+  <script type="application/python">
+    import sys
+    sys.path.append('pylib')
+    import ruby
+    ruby.execute(
+      """
+      $script_tags_run ||= {}
+      $script_tags_run['python'] = {:inline => true, :defer => false, :typed => true}
+      """
+    )
   </script>
 
-  <!-- end of python script-tag fixtures -->
-
-
-  <!--
-  <script src="jquery.js"></script>
-  <script src="util.js"></script>
-  <script src="test_script-tags.js"></script>
-  -->
+  <!-- end of script-tag fixtures -->
 
   <script type="application/ruby" src="test_script_tags.rb" defer='true'></script>
-  <script type="application/python" src="test_script_tags.py" defer='true'></script>
 
 </head>
 <body>
 
-  <!--
-  <h1>DLR Silverlight tests - script tags</h1>
-  <h2 id="banner"></h2>
-  <h2 id="userAgent"></h2>
-  <ol id="tests"></ol>
-  <div id="main"></div>
-
-  <script type="text/javascript" src="qunit/testrunner.js"></script>
-  -->
-
-  <script type="text/ruby" src="rblib/bacon_runner.rb" defer='true'></script>
   <script type="text/ruby" src="rblib/bacon.rb" defer='true'></script>
+  <script type="text/ruby" src="rblib/bacon_runner.rb" defer='true'></script>
+  <script type="text/ruby" src="rblib/test_results.rb" defer='defer'></script>
   <script type="text/ruby">
     require 'rblib/bacon_runner'
     BaconRunner.run(%W(test_script_tags))
   </script>
-  <!--
-  <script type="text/python" src="pylib/traceback.py" defer'true'></script>
-  <script type="text/python" src="pylib/linecache.py" defer'true'></script>
-  <script type="text/python" src="pylib/os.py" defer'true'></script>
-  <script type="text/python" src="pylib/ntpath.py" defer'true'></script>
-  <script type="text/python" src="pylib/stat.py" defer'true'></script>
-  <script type="text/python" src="pylib/genericpath.py" defer'true'></script>
-  <script type="text/python" src="pylib/warnings.py" defer'true'></script>
-  <script type="text/python" src="pylib/types.py" defer'true'></script>
-  <script type="text/python" src="pylib/random.py" defer'true'></script>
-  <script type="text/python" src="pylib/__future__.py" defer'true'></script>
-  <script type="text/python" src="pylib/getopt.py" defer'true'></script>
-  <script type="text/python" src="pylib/unittest.py" defer'true'></script>
-  <script type="text/python" src="pylib/unittest_runner.py" defer'true'></script>
-  <script type="text/python">
-    import sys
-    sys.path.append("pylib")
-    import unittest_runner
-    import test_script_tags
-    #unittest_runner.run(test_script_tags)
-  </script>
-  -->
+
 </body>
 </html>

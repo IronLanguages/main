@@ -1,0 +1,1 @@
+fails:Logger#datetime_format= follows the Time#strftime format

@@ -1,0 +1,1 @@
+csc /debug+ /target:library csextend.cs

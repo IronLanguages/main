@@ -105,6 +105,14 @@ describe "DLR-based script tags: end-to-end" do
     script_tag('in-order-execution').should.be in_order
   end
 
+  it 'runs python tags' do
+    script_tag('python') do |obj|
+      obj.should have_run
+      obj.should.be inline
+      obj.should.not.be deferred
+      obj.should.be typed
+    end
+  end
 end
 
 dst = Microsoft::Scripting::Silverlight::DynamicScriptTags

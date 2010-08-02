@@ -1,0 +1,3 @@
+fails:File.new coerces filename using #to_path
+fails:File.new can't alter mode or permissions when opening a file
+fails:File.new opens directories

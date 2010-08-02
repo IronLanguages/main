@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -26,6 +26,10 @@ using System.Diagnostics;
 
 namespace Microsoft.Scripting.Utils {
     public static class ContractUtils {
+        [Conditional("DEBUG")]
+        public static void Assert(bool precondition) {
+            Debug.Assert(precondition);
+        }
 
         public static void Requires(bool precondition) {
             if (!precondition) {
@@ -34,7 +38,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static void Requires(bool precondition, string paramName) {
-            Assert.NotEmpty(paramName);
+            Utils.Assert.NotEmpty(paramName);
 
             if (!precondition) {
                 throw new ArgumentException(Strings.InvalidArgumentValue, paramName);
@@ -42,7 +46,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static void Requires(bool precondition, string paramName, string message) {
-            Assert.NotEmpty(paramName);
+            Utils.Assert.NotEmpty(paramName);
 
             if (!precondition) {
                 throw new ArgumentException(message, paramName);
@@ -50,7 +54,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static void RequiresNotNull(object value, string paramName) {
-            Assert.NotEmpty(paramName);
+            Utils.Assert.NotEmpty(paramName);
 
             if (value == null) {
                 throw new ArgumentNullException(paramName);
@@ -85,7 +89,7 @@ namespace Microsoft.Scripting.Utils {
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
         public static void RequiresArrayIndex(int arraySize, int index, string indexName) {
-            Assert.NotEmpty(indexName);
+            Utils.Assert.NotEmpty(indexName);
             Debug.Assert(arraySize >= 0);
 
             if (index < 0 || index >= arraySize) throw new ArgumentOutOfRangeException(indexName);
@@ -106,7 +110,7 @@ namespace Microsoft.Scripting.Utils {
         /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
         public static void RequiresArrayInsertIndex(int arraySize, int index, string indexName) {
-            Assert.NotEmpty(indexName);
+            Utils.Assert.NotEmpty(indexName);
             Debug.Assert(arraySize >= 0);
 
             if (index < 0 || index > arraySize) throw new ArgumentOutOfRangeException(indexName);
@@ -117,7 +121,7 @@ namespace Microsoft.Scripting.Utils {
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
         public static void RequiresArrayRange<T>(IList<T> array, int offset, int count, string offsetName, string countName) {
-            Assert.NotNull(array);
+            Utils.Assert.NotNull(array);
             RequiresArrayRange(array.Count, offset, count, offsetName, countName);
         }
 
@@ -126,8 +130,8 @@ namespace Microsoft.Scripting.Utils {
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
         public static void RequiresArrayRange(int arraySize, int offset, int count, string offsetName, string countName) {
-            Assert.NotEmpty(offsetName);
-            Assert.NotEmpty(countName);
+            Utils.Assert.NotEmpty(offsetName);
+            Utils.Assert.NotEmpty(countName);
             Debug.Assert(arraySize >= 0);
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
@@ -141,9 +145,9 @@ namespace Microsoft.Scripting.Utils {
         /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
         public static void RequiresListRange(IList array, int offset, int count, string offsetName, string countName) {
-            Assert.NotEmpty(offsetName);
-            Assert.NotEmpty(countName);
-            Assert.NotNull(array);
+            Utils.Assert.NotEmpty(offsetName);
+            Utils.Assert.NotEmpty(countName);
+            Utils.Assert.NotNull(array);
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
             if (offset < 0 || array.Count - offset < count) throw new ArgumentOutOfRangeException(offsetName);
@@ -155,9 +159,9 @@ namespace Microsoft.Scripting.Utils {
         /// <exception cref="ArgumentNullException">String is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
         public static void RequiresArrayRange(string str, int offset, int count, string offsetName, string countName) {
-            Assert.NotEmpty(offsetName);
-            Assert.NotEmpty(countName);
-            Assert.NotNull(str);
+            Utils.Assert.NotEmpty(offsetName);
+            Utils.Assert.NotEmpty(countName);
+            Utils.Assert.NotNull(str);
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
             if (offset < 0 || str.Length - offset < count) throw new ArgumentOutOfRangeException(offsetName);
@@ -167,7 +171,7 @@ namespace Microsoft.Scripting.Utils {
         /// Requires the array and all its items to be non-null.
         /// </summary>
         public static void RequiresNotNullItems<T>(IList<T> array, string arrayName) {
-            Assert.NotNull(arrayName);
+            Utils.Assert.NotNull(arrayName);
             RequiresNotNull(array, arrayName);
 
             for (int i = 0; i < array.Count; i++) {
@@ -181,7 +185,7 @@ namespace Microsoft.Scripting.Utils {
         /// Requires the enumerable collection and all its items to be non-null.
         /// </summary>
         public static void RequiresNotNullItems<T>(IEnumerable<T> collection, string collectionName) {
-            Assert.NotNull(collectionName);
+            Utils.Assert.NotNull(collectionName);
             RequiresNotNull(collection, collectionName);
 
             int i = 0;

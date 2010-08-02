@@ -1,0 +1,56 @@
+require 'rbconfig'
+IR_BIN = RbConfig::CONFIG['bindir']
+IR_EXE = ::File.join(IR_BIN, 'ir.exe')
+
+require File.dirname(__FILE__) + '/../Scripts/rake_testtask'
+
+task :default => [:test]
+
+desc "Run all DLR-based Silverlight tests"
+Silverlight::TestTask.new :test => [:build_lib] do |t|
+
+  t.browsers = %W(explorer firefox)
+
+  t.sub_desc "Simple end-to-end sanity test"
+  t.sub_test :sanity => [:build_lib] do |st|
+    st.html_filename = 'test_sanity.html'
+  end
+  
+  t.sub_desc "Unit tests for Microsoft.Scripting.Silverlight"
+  t.sub_test :unit => [:build_lib] do |st|
+    st.html_filename = 'tests.html'
+    st.number_of_expected_results = 2
+  end
+  
+  t.sub_desc 'Functional tests for script-tags (Gestalt)'
+  t.sub_test :gestalt => [:build_lib] do |st|
+    st.html_filename = 'test_script_tags.html'
+  end
+  
+  t.sub_desc 'User-interface tests'
+  t.sub_test :ui => [:build_lib] do |st|
+    st.html_filename = 'test_ui.html'
+    st.number_of_expected_results = 2
+  end
+  
+  t.sub_desc 'JavaScript tests (dlr.js)'
+  t.sub_test :dlrjs => [:build_lib] do |st|
+    st.html_filename = 'test_dlrjs.html'
+  end
+  
+  # TODO Chiron
+end
+
+desc 'Build lib.zip'
+task :build_lib do
+  FileUtils.cd File.expand_path(File.dirname(__FILE__)) do
+    require '../Scripts/test_driver'
+    ChironHelper.new(nil).zip_directory 'lib'
+  end
+end
+
+desc "Removes generated/copied files"
+task :clean do
+  FileUtils.rm File.join(File.dirname(__FILE__), "lib.zip")
+  FileUtils.rm File.join(File.dirname(__FILE__), "test.log")
+end

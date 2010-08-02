@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -95,7 +95,8 @@ namespace Microsoft.Scripting.Interpreter {
             } catch (NotSupportedException) {
                 // if Delegate.CreateDelegate can't handle the method fallback to 
                 // the slow reflection version.  For example this can happen w/ 
-                // a generic method defined on an interface and implemented on a class.
+                // a generic method defined on an interface and implemented on a class or 
+                // a virtual generic method.
                 res = new MethodInfoCallInstruction(info, argumentCount);
             }
 

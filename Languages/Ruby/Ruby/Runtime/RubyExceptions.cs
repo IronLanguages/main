@@ -2,11 +2,11 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
  * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
+ * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
@@ -41,6 +41,7 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateTypeError(Exception innerException, string/*!*/ message, params object[] args) {
+            // TODO: RuntimeError in 1.9
             return new InvalidOperationException(FormatMessage(message, args), innerException);
         }
 
@@ -68,6 +69,10 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateNotClrTypeError(RubyClass/*!*/ rubyClass) {
             return CreateTypeError("`{0}' doesn't represent a CLR type", rubyClass.Name);
+        }
+
+        public static Exception/*!*/ CreateNotClrNamespaceError(RubyModule/*!*/ rubyModule) {
+            return CreateTypeError("`{0}' doesn't represent a CLR namespace", rubyModule.Name);
         }
 
         public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {

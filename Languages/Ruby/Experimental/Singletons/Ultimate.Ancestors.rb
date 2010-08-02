@@ -1,5 +1,5 @@
 require 'Ultimate.defs'
 
 $ordered_names.each { |name| 
-  puts "#{name}:\n#{p $classes[name].ancestors}"
+  puts "#{name}:\n#{$classes[name].ancestors.inspect}"
 }
