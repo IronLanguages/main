@@ -17,12 +17,13 @@
   </PropertyGroup>
   <!-- Silverlight -->
   <PropertyGroup Condition="'$(Configuration)' == 'Silverlight3Release' or '$(Configuration)' == 'Silverlight3Debug'">
-    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(SolutionDir)..\Util\Internal\Silverlight\x86ret</SilverlightPath>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(SolutionDir)..\Util\Silverlight\Runtime\3.0.50106.0</SilverlightPath>
     <SilverlightBuild>true</SilverlightBuild>
     <NoStdLib>true</NoStdLib>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Silverlight4Release' or '$(Configuration)' == 'Silverlight4Debug'">
-    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(SolutionDir)..\Util\Internal\Silverlight\v4-x86fre</SilverlightPath>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(SolutionDir)..\Util\Silverlight\Runtime\4.0.50524.0</SilverlightPath>
+    <SilverlightSdkPath Condition="'$(SilverlightSdkPath)' == ''">$(SolutionDir)..\Util\Silverlight\SDK\4.0</SilverlightSdkPath>
     <SilverlightBuild>true</SilverlightBuild>
     <NoStdLib>true</NoStdLib>
   </PropertyGroup>
