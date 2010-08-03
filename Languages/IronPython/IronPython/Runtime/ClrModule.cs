@@ -295,7 +295,7 @@ the assembly object.")]
         /// A common use for this is to enable running all REPL commands on the UI thread while the REPL
         /// continues to run on a non-UI thread.
         /// </summary>
-        public static CommandDispatcher SetCommandDispatcher(CodeContext/*!*/ context, CommandDispatcher dispatcher) {
+        public static Action<Action> SetCommandDispatcher(CodeContext/*!*/ context, Action<Action> dispatcher) {
             ContractUtils.RequiresNotNull(context, "context");
 
             return ((PythonContext)context.LanguageContext).GetSetCommandDispatcher(dispatcher);

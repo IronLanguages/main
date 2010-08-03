@@ -53,7 +53,6 @@ using PyAst = IronPython.Compiler.Ast;
 
 
 namespace IronPython.Runtime {
-    public delegate void CommandDispatcher(Delegate command);
     public delegate int HashDelegate(object o, ref HashDelegate dlg);
 
     public sealed partial class PythonContext : LanguageContext {
@@ -145,7 +144,7 @@ namespace IronPython.Runtime {
         private CompiledLoader _compiledLoader;
         internal bool _importWarningThrows;
         private bool _importedEncodings;
-        private CommandDispatcher _commandDispatcher; // can be null
+        private Action<Action> _commandDispatcher; // can be null
         private ClrModule.ReferencesList _referencesList;
         private FloatFormat _floatFormat, _doubleFormat;
         private CultureInfo _collateCulture, _ctypeCulture, _timeCulture, _monetaryCulture, _numericCulture;
@@ -3079,17 +3078,33 @@ namespace IronPython.Runtime {
 
         #region Command Dispatching
 
-        // This can be set to a method like System.Windows.Forms.Control.Invoke for Winforms scenario 
-        // to cause code to be executed on a separate thread.
-        // It will be called with a null argument to indicate that the console session should be terminated.
-        // Can be null.
-
-        internal CommandDispatcher GetSetCommandDispatcher(CommandDispatcher newDispatcher) {
+        /// <summary>
+        /// Sets the current command dispatcher for the Python command line.  The previous dispatcher
+        /// is returned.  Null can be passed to remove the current command dispatcher.
+        /// 
+        /// The command dispatcher will be called with a delegate to be executed.  The command dispatcher
+        /// should invoke the target delegate in the desired context.
+        /// 
+        /// A common use for this is to enable running all REPL commands on the UI thread while the REPL
+        /// continues to run on a non-UI thread.
+        /// 
+        /// The ipy.exe REPL will call into PythonContext.DispatchCommand to dispatch each execution to
+        /// the correct thread.  Other REPLs can do the same to support this functionality as well.
+        /// </summary>
+        public Action<Action> GetSetCommandDispatcher(Action<Action> newDispatcher) {
             return Interlocked.Exchange(ref _commandDispatcher, newDispatcher);
         }
 
-        internal void DispatchCommand(Action command) {
-            CommandDispatcher dispatcher = _commandDispatcher;
+        public Action<Action> GetCommandDispatcher() {
+            return _commandDispatcher;
+        }
+
+        /// <summary>
+        /// Dispatches the command to the current command dispatcher.  If there is no current command
+        /// dispatcher the command is executed immediately on the current thread.
+        /// </summary>
+        public void DispatchCommand(Action command) {
+            Action<Action> dispatcher = _commandDispatcher;
             if (dispatcher != null) {
                 dispatcher(command);
             } else if (command != null) {
