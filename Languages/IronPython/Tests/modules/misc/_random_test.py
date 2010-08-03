@@ -42,10 +42,10 @@ def test_getrandbits():
     AssertError(ValueError, rand.getrandbits, 0)
     AssertError(ValueError, rand.getrandbits, -50)
     
-    # might raise MemoryError, might not, but shouldn't raise anything else.
+    # might raise OverflowError, might not, but shouldn't raise anything else.
     try:
         rand.getrandbits(2147483647)
-    except MemoryError:
+    except OverflowError:
         pass
     
 #jumpahead

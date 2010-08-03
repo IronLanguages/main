@@ -1822,7 +1822,13 @@ def test_builtin_classmethod():
     AssertError(TypeError, descr.__get__, None, int)
 
 def test_classmethod():
-    AssertError(TypeError, classmethod, 1)
+    if is_ironpython: #http://ironpython.codeplex.com/workitem/27908
+        AssertError(TypeError, classmethod, 1)
+    else:
+        cm = classmethod(1)
+        AssertError(TypeError, cm.__get__, None)
+        AssertError(TypeError, cm.__get__, None, None)
+
     def foo(): pass
         
     cm = classmethod(foo)
@@ -3432,7 +3438,11 @@ def test_bad_mro_error_message():
     
     class B(A): pass
     
-    AssertErrorWithPartialMessage(TypeError, "A, B", type, "X", (A,B), {})
+    if is_ironpython: #http://ironpython.codeplex.com/workitem/27907
+        AssertErrorWithPartialMessage(TypeError, "A, B", type, "X", (A,B), {})
+    else:
+        AssertErrorWithPartialMessage(TypeError, "Cannot create a consistent method resolution\norder (MRO) for bases", 
+                                      type, "X", (A,B), {})
 
 def test_finalizer():
     """returning the same object from __new__ shouldn't cause it to be finalized"""

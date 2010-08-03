@@ -371,14 +371,20 @@ def test_rounding():
     Assert(round(123.41526375, 4) == 123.4153)
     Assert(round(123.41526375, 5) == 123.41526)
     Assert(round(123.41526375, 6) == 123.415264)
-    Assert(round(123.41526375, 7) == 123.4152638)
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28206
+        Assert(round(123.41526375, 7) == 123.4152637)
+    else:
+        Assert(round(123.41526375, 7) == 123.4152638)
     Assert(round(-123.41526375, 1) == -123.4)
     Assert(round(-123.41526375, 2) == -123.42)
     Assert(round(-123.41526375, 3) == -123.415)
     Assert(round(-123.41526375, 4) == -123.4153)
     Assert(round(-123.41526375, 5) == -123.41526)
     Assert(round(-123.41526375, 6) == -123.415264)
-    Assert(round(-123.41526375, 7) == -123.4152638)
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28206
+        Assert(round(-123.41526375, 7) == -123.4152637)
+    else:
+        Assert(round(-123.41526375, 7) == -123.4152638)
     for i in xrange(8, 307):
         # Note: We can't do exact equality here due to the inexact nature of IEEE
         # double precision floats when multiplied and later divided by huge powers of 10.

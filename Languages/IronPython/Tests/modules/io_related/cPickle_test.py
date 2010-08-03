@@ -290,10 +290,6 @@ class TestBank:
             0:'F1e-14\n.',
             1:'G=\x06\x84\x9b\x86\xa1+\x9b.',
             }),
-        (0.33333333333333331, {
-            0:'F0.33333333333333331\n.',
-            1:'G?\xd5UUUUUU.',
-            }),
         (u'hey\x00hey', {
             0:'Vhey\x00hey\np<0>\n.',
             1:'X\x07\x00\x00\x00hey\x00heyq<\x00>.',
@@ -549,6 +545,20 @@ class TestBank:
             2:'c%s\nNewClass_GetState_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>X\x06\x00\x00\x00state1q<\x04>X\x06\x00\x00\x00state2q<\x05>\x86q<\x06>b.' % (__name__,),
             }),
         ]
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28194
+        tests.append((0.33333333333333331, 
+                      {
+                       0:'F0.3333333333333333\n.',
+                       1:'G?\xd5UUUUUU.',
+                      }
+                     ))
+    else:
+        tests.append((0.33333333333333331, 
+                      {
+                       0:'F0.33333333333333331\n.',
+                       1:'G?\xd5UUUUUU.',
+                      }
+                     ))
 
 def test_pickler(module=cPickle, verbose=True):
     def get_expected(expectations, proto):

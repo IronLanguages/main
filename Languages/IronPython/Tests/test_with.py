@@ -282,7 +282,10 @@ def test_with_stmt_under_compound_stmts_no_yield():
                         events.append('deep_inner_with')
                         raise Myerr1  #try->(try->(except->(with ->fun ->(try->with->raise))))
                 finally:    #try->(try->(except->(with ->fun ->(try->(with->raise)->Finally))))
-                    AreEqual(sys.exc_info()[0], exceptions.ZeroDivisionError)
+                    if is_cpython: #http://ironpython.codeplex.com/workitem/27990/
+                        AreEqual(sys.exc_info()[0], Myerr1)
+                    else:
+                        AreEqual(sys.exc_info()[0], exceptions.ZeroDivisionError)
                     events.append('finally')
                     class ClassInFinally:
                         def __enter__(self):

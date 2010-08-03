@@ -145,7 +145,10 @@ def test_string_interning():
 def test_binary_floats():
     AreEqual(marshal.dumps(2.0, 2), 'g\x00\x00\x00\x00\x00\x00\x00@')
     AreEqual(marshal.dumps(2.0), 'g\x00\x00\x00\x00\x00\x00\x00@')
-    AreEqual(marshal.dumps(2.0, 1), 'f\x032.0')
+    if not is_cpython: #http://ironpython.codeplex.com/workitem/28195
+        AreEqual(marshal.dumps(2.0, 1), 'f\x032.0')
+    else:
+        AreEqual(marshal.dumps(2.0, 1), 'f\x012')
     AreEqual(marshal.loads(marshal.dumps(2.0, 2)), 2.0)
 
 def test_cp24547():

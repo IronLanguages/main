@@ -24,10 +24,10 @@ if DEFINED INTERNALDEV (
   set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe
 
   REM -- IronPython environment variables
-  set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib
+  set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
 
   REM -- Python environment variables
-  set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
+  set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
 ) else (
   set RUBY18_BIN=
   set RUBY18_EXE=ruby.exe

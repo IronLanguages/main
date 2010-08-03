@@ -418,7 +418,7 @@ function nodebug-helper
 {
 	$dlrexe = $args[0]
 	
-	$pyPath = $env:DLR_ROOT + "\External.LCA_RESTRICTED\Languages\IronPython\26\Lib\.*"
+	$pyPath = $env:DLR_ROOT + "\External.LCA_RESTRICTED\Languages\IronPython\27\Lib\.*"
 	$pyPath = $pyPath.Replace("\", "\\")
 	echo $pyPath
 	hello-helper $dlrexe "-D" "-X:NoDebug" $pyPath
@@ -913,9 +913,9 @@ foreach ($exe_test in $tests)
 }
 
 
-#CPython 2.6 is a special case
+#CPython is a special case
 echo "---------------------------------------------------------------------"
-test-pymodes $env:DLR_ROOT\External.LCA_RESTRICTED\Languages\IronPython\26\python.exe
+test-pymodes $env:DLR_ROOT\External.LCA_RESTRICTED\Languages\IronPython\27\python.exe
 
 $ErrorActionPreference = $old_ErrorActionPreference
 if ($global:ERRORS -gt 0)

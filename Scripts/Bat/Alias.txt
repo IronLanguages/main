@@ -8,8 +8,8 @@ rb      =cd /d %DLR_ROOT%\Languages\Ruby
 rt      =cd /d %DLR_ROOT%\Runtime
 r       =cd /d %DLR_ROOT%
 mspc    =cd /d %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\mspec
-ipl     =cd /d %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib
-cpl     =cd /d %DLR_ROOT%\External.LCA_RESTRICTED\Languages\CPython\26\Lib
+ipl     =cd /d %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
+cpl     =cd /d %DLR_ROOT%\External.LCA_RESTRICTED\Languages\CPython\27\Lib
 
 irk     =cd /d %DLR_ROOT%\Hosts\IronRuby.Rack
 rbs     =cd /d %DLR_ROOT%\Languages\Ruby\Samples

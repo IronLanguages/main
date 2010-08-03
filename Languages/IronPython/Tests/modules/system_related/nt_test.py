@@ -50,7 +50,10 @@ def test_mkdir_negative():
 
 def test_listdir():
     AssertError(TypeError, nt.listdir, None)
-    AreEqual(nt.listdir(''), nt.listdir('.'))
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28207
+        AreEqual(nt.listdir(nt.getcwd()), nt.listdir('.'))
+    else:
+        AreEqual(nt.listdir(''), nt.listdir('.'))
 
 # stat,lstat
 def test_stat():
@@ -1023,13 +1026,19 @@ def test_access():
 def test_umask():
     orig = nt.umask(0)
     try:
-        for i in [0, 1, 5, 3.14, int((2**(31))-1)]:
+       
+        if is_cpython: #http://ironpython.codeplex.com/workitem/28208
+            AssertError(TypeError, nt.umask, 3.14)
+        else:
+            AreEqual(nt.umask(3.14), 0)
+
+        for i in [0, 1, 5, int((2**(31))-1)]:
             AreEqual(nt.umask(i), 0)
             
         AssertError(OverflowError, nt.umask, 2**31)
         for i in [None,  "abc", 3j, int]:
             AssertError(TypeError, nt.umask, i)
-                    
+        
     finally:
         nt.umask(orig)
 

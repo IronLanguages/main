@@ -428,7 +428,10 @@ def test_syntax_error_exception():
         # Bug 1132
         #AreEqual(se.offset, 7)
         AreEqual(se.filename, "Error")
-        AreEqual(se.text, "else:y=")
+        if is_ironpython: #http://ironpython.codeplex.com/workitem/27989
+            AreEqual(se.text, "else:y=")
+        else:
+            AreEqual(se.text, "else:y=\n")
         if is_cli or is_silverlight:
             AreEqual(se.clsException.Line, 2)
             # Bug 1132
@@ -446,7 +449,10 @@ def test_syntax_error_exception_exec():
         # Bug 1132
         #AreEqual(se.offset, 11)
         AreEqual(se.filename, "Error")
-        AreEqual(se.text, "if 2==2: x=")
+        if is_ironpython: #http://ironpython.codeplex.com/workitem/27989
+            AreEqual(se.text, "if 2==2: x=")
+        else:
+            AreEqual(se.text, "if 2==2: x=\n")
         AreEqual(se.__dict__, {})
         AreEqual(type(se.__dict__), dict)
         
@@ -924,9 +930,14 @@ def test_module_exceptions():
         for attrName in dir(mod):
             val = getattr(mod, attrName)
             if isinstance(val, type) and issubclass(val, Exception):
-                Assert(repr(val).startswith("<class "))
-                val.x = 2
-                AreEqual(val.x, 2)
+                if "BlockingIOError" not in repr(val): 
+                    Assert(repr(val).startswith("<class "))
+                    val.x = 2
+                    AreEqual(val.x, 2)
+                elif is_cpython:
+                    Assert(repr(val).startswith("<type "))
+                else: #http://ironpython.codeplex.com/workitem/28383
+                    Assert(repr(val).startswith("<class "))
 
 def test_raise_inside_str():
     #raising an error inside the __str__ used to cause an unhandled exception.

@@ -270,7 +270,7 @@ def diff_all(cpy_path):
             
 It needs to be moved into the BUILTIN_MODULES list and a baseline should be generated using:
 
-ipy modulediff.py C:\\Python26\\python.exe %s""" % (mod, mod)
+ipy modulediff.py C:\\Python27\\python.exe %s""" % (mod, mod)
             differs = 1
     
     sys.exit(differs)
@@ -279,13 +279,13 @@ ipy modulediff.py C:\\Python26\\python.exe %s""" % (mod, mod)
 if __name__ == '__main__':
     if len(sys.argv) < 2 or not File.Exists(sys.argv[1]):
         print 'usage: '
-        print '       ipy modulediff.py C:\\Python26\\python.exe module_name [module_name ...]'
+        print '       ipy modulediff.py C:\\Python27\\python.exe module_name [module_name ...]'
         print '            generates a report for an indivdual module into the baselines directory'
         print 
-        print '       ipy modulediff.py C:\\Python26\\python.exe --'
+        print '       ipy modulediff.py C:\\Python27\\python.exe --'
         print '            generates reports for all modules into the baselines directory'
         print
-        print '       ipy modulediff.py C:\\Python26\\python.exe'
+        print '       ipy modulediff.py C:\\Python27\\python.exe'
         print '            generates reports into check directory, compares with baselines directory, if there'
         print '            are differences exits with a non-zero exit code.'
         print 

@@ -318,8 +318,13 @@ def test_eolns():
     def f3(sep): exec "exec '''x = 3$y = 5$'''".replace('$', sep)
 
     for x in [f1, f2, f3]:
-        AssertError(SyntaxError, x, '\r\n')
-        AssertError(SyntaxError, x, '\r')
+        if is_ironpython: #http://ironpython.codeplex.com/workitem/27991
+            AssertError(SyntaxError, x, '\r\n')
+            AssertError(SyntaxError, x, '\r')
+        else:
+            temp = x('\r\n')
+            temp = x('\r')
+        
         AssertError(SyntaxError, x, '\a')
         x('\n')
 

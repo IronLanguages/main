@@ -335,13 +335,19 @@ def f(a, b=2): pass
 
 AssertErrorWithMessage(TypeError, "f() takes at least 1 argument (0 given)", f)
 AssertErrorWithMessage(TypeError, "f() takes at most 2 arguments (3 given)", f, 1, 2, 3)
-AssertErrorWithMessage(TypeError, "f() takes at least 1 non-keyword argument (0 given)", f, b=2)
+if is_cpython: #CPython bug 9326
+    AssertErrorWithMessage(TypeError, "f() takes at least 1 argument (1 given)", f, b=2)
+else:
+    AssertErrorWithMessage(TypeError, "f() takes at least 1 non-keyword argument (0 given)", f, b=2)
 AssertErrorWithMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, dummy=3)
 AssertErrorWithMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, b=2, dummy=3)
 AssertErrorWithMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, 1, dummy=3)
 AssertErrorWithMessage(TypeError, "f() takes at least 1 argument (0 given)", lambda:f())
 AssertErrorWithMessage(TypeError, "f() takes at most 2 arguments (3 given)", lambda:f(1, 2, 3))
-AssertErrorWithMessage(TypeError, "f() takes at least 1 non-keyword argument (0 given)", lambda:f(b=2))
+if is_cpython: #CPython bug 9326
+    AssertErrorWithMessage(TypeError, "f() takes at least 1 argument (1 given)", lambda:f(b=2))
+else:
+    AssertErrorWithMessage(TypeError, "f() takes at least 1 non-keyword argument (0 given)", lambda:f(b=2))
 AssertErrorWithMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(dummy=3))
 AssertErrorWithMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(b=2, dummy=3))
 AssertErrorWithMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(1, dummy=3))
@@ -359,12 +365,20 @@ def f(a, **keywordDict): pass
 
 AssertErrorWithMessage(TypeError, "f() takes exactly 1 argument (0 given)", f)
 AssertErrorWithMessage(TypeError, "f() takes exactly 1 argument (3 given)", f, 1, 2, 3)
-AssertErrorWithMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", f, dummy=2)
-AssertErrorWithMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", f, dummy=2, dummy2=3)
+if is_cpython: #CPython bug 9326
+    AssertErrorWithMessage(TypeError, "f() takes exactly 1 argument (0 given)", f, dummy=2)
+    AssertErrorWithMessage(TypeError, "f() takes exactly 1 argument (0 given)", f, dummy=2, dummy2=3)
+else:
+    AssertErrorWithMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", f, dummy=2)
+    AssertErrorWithMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", f, dummy=2, dummy2=3)
 AssertErrorWithMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f())
 AssertErrorWithMessage(TypeError, "f() takes exactly 1 argument (3 given)", lambda:f(1, 2, 3))
-AssertErrorWithMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", lambda:f(dummy=2))
-AssertErrorWithMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", lambda:f(dummy=2, dummy2=3))
+if is_cpython: #CPython bug 9326
+    AssertErrorWithMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f(dummy=2))
+    AssertErrorWithMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f(dummy=2, dummy2=3))
+else:
+    AssertErrorWithMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", lambda:f(dummy=2))
+    AssertErrorWithMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", lambda:f(dummy=2, dummy2=3))
 
 AssertErrorWithMessages(TypeError, "abs() takes exactly 1 argument (0 given)",
                                    "abs() takes exactly one argument (0 given)",   abs)

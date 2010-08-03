@@ -234,9 +234,12 @@ try: #Try
                 globals()["gblvar"] += 4
                 with inherited_cxtmgr() as inherited_cxtmgr.var: #try->(try->(except->(with ->fun ->(try->with))))
                     globals()["gblvar"] += 5
-                    raise Myerr1  #try->(try->(except->(with ->fun ->(try->with->raise))))
+                    raise Myerr1()  #try->(try->(except->(with ->fun ->(try->with->raise))))
             finally:    #try->(try->(except->(with ->fun ->(try->(with->raise)->Finally))))
-                AreEqual(sys.exc_info()[0], exceptions.ZeroDivisionError)
+                if is_cpython: #http://ironpython.codeplex.com/workitem/27990/
+                    AreEqual(sys.exc_info()[0], Myerr1)
+                else:
+                    AreEqual(sys.exc_info()[0], exceptions.ZeroDivisionError)
                 globals()["gblvar"] += 6
                 class ClassInFinally:
                     def __enter__(self):
