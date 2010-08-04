@@ -27,15 +27,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RubySpec", "..\Languages\Ru
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ruby.ConsoleAny", "..\Languages\Ruby\Console\Ruby.ConsoleAny.csproj", "{6EE7A428-D803-41BC-8248-1297C3ACE369}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Debugging", "..\Runtime\Microsoft.Scripting.Debugging\Microsoft.Scripting.Debugging.csproj", "{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Silverlight", "..\Hosts\SilverLight\Microsoft.Scripting.SilverLight\Microsoft.Scripting.Silverlight.csproj", "{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chiron", "..\Hosts\SilverLight\Chiron\Chiron.csproj", "{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{77323B06-15A2-4CF4-8A7A-86EAA2B66498} = {77323B06-15A2-4CF4-8A7A-86EAA2B66498}
 		{02FF0909-F5AD-48CF-A86A-345E721B7E40} = {02FF0909-F5AD-48CF-A86A-345E721B7E40}
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF} = {ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}
 		{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4} = {2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}
 		{EB66B766-6354-4208-A3D4-AACBDCB5C3B3} = {EB66B766-6354-4208-A3D4-AACBDCB5C3B3}
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D} = {C86A7A7B-3086-4136-9B56-17E8DCB38C8D}
@@ -104,10 +101,10 @@ Global
 		SccAuxPath10 = http://vstfdevdiv:8080/devdiv
 		SccLocalPath10 = ..\\Languages\\Ruby\\Console
 		SccProvider10 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName11 = ..\\Runtime\\Microsoft.Scripting.Debugging\\Microsoft.Scripting.Debugging.csproj
-		SccProjectName11 = ../Runtime/Microsoft.Scripting.Debugging
+		SccProjectUniqueName11 = ..\\Runtime\\Microsoft.Scripting.Metadata\\Microsoft.Scripting.Metadata.csproj
+		SccProjectName11 = ../Runtime/Microsoft.Scripting.Metadata
 		SccAuxPath11 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath11 = ..\\Runtime\\Microsoft.Scripting.Debugging
+		SccLocalPath11 = ..\\Runtime\\Microsoft.Scripting.Metadata
 		SccProvider11 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccProjectUniqueName12 = ..\\Hosts\\SilverLight\\Microsoft.Scripting.SilverLight\\Microsoft.Scripting.Silverlight.csproj
 		SccProjectName12 = ../Hosts/SilverLight/Microsoft.Scripting.SilverLight
@@ -119,11 +116,6 @@ Global
 		SccAuxPath13 = http://vstfdevdiv:8080/devdiv
 		SccLocalPath13 = ..\\Hosts\\SilverLight\\Chiron
 		SccProvider13 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName14 = ..\\Runtime\\Microsoft.Scripting.Metadata\\Microsoft.Scripting.Metadata.csproj
-		SccProjectName14 = ../Runtime/Microsoft.Scripting.Metadata
-		SccAuxPath14 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath14 = ..\\Runtime\\Microsoft.Scripting.Metadata
-		SccProvider14 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -302,24 +294,6 @@ Global
 		{6EE7A428-D803-41BC-8248-1297C3ACE369}.v2Debug|Any CPU.Build.0 = v2Debug|Any CPU
 		{6EE7A428-D803-41BC-8248-1297C3ACE369}.v2Release|Any CPU.ActiveCfg = v2Release|Any CPU
 		{6EE7A428-D803-41BC-8248-1297C3ACE369}.v2Release|Any CPU.Build.0 = v2Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.FxCop|Any CPU.ActiveCfg = FxCop|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.FxCop|Any CPU.Build.0 = FxCop|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight3Debug|Any CPU.ActiveCfg = Silverlight3Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight3Debug|Any CPU.Build.0 = Silverlight3Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight3Release|Any CPU.ActiveCfg = Silverlight3Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight3Release|Any CPU.Build.0 = Silverlight3Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight4Debug|Any CPU.ActiveCfg = Silverlight4Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight4Debug|Any CPU.Build.0 = Silverlight4Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight4Release|Any CPU.ActiveCfg = Silverlight4Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight4Release|Any CPU.Build.0 = Silverlight4Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.v2Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.v2Debug|Any CPU.Build.0 = v2Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.v2Release|Any CPU.ActiveCfg = v2Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.v2Release|Any CPU.Build.0 = v2Release|Any CPU
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}.Debug|Any CPU.ActiveCfg = Silverlight4Debug|Any CPU
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}.FxCop|Any CPU.ActiveCfg = Silverlight3Release|Any CPU
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}.Release|Any CPU.ActiveCfg = Silverlight4Release|Any CPU

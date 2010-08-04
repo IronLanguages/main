@@ -231,6 +231,12 @@ namespace IronPython.Runtime {
             PythonDictionary defaultScope = new PythonDictionary();
             ModuleContext modContext = new ModuleContext(defaultScope, this);
             _defaultContext = modContext.GlobalContext;
+            
+            PythonDictionary sysDict = new PythonDictionary(_sysDict);
+            _systemState = new PythonModule(sysDict);
+            _systemState.__dict__["__name__"] = "sys";
+            _systemState.__dict__["__package__"] = null;
+
             PythonBinder binder = new PythonBinder(this, _defaultContext);
             _sharedOverloadResolverFactory = new PythonOverloadResolverFactory(binder, Expression.Constant(_defaultContext));
             _binder = binder;
@@ -243,11 +249,6 @@ namespace IronPython.Runtime {
             }
 
             InitializeBuiltins();
-
-            PythonDictionary sysDict = new PythonDictionary(_sysDict);
-            _systemState = new PythonModule(sysDict);
-            _systemState.__dict__["__name__"] = "sys";
-            _systemState.__dict__["__package__"] = null;
 
             InitializeSystemState();
 #if SILVERLIGHT
@@ -1799,7 +1800,7 @@ namespace IronPython.Runtime {
             Dictionary<string, Type> builtinTable = new Dictionary<string, Type>();
 
             // We should register builtins, if any, from IronPython.dll
-            LoadBuiltins(builtinTable, typeof(PythonContext).Assembly);
+            LoadBuiltins(builtinTable, typeof(PythonContext).Assembly, false);
 
             // Load builtins from IronPython.Modules
             Assembly ironPythonModules = null;
@@ -1811,7 +1812,7 @@ namespace IronPython.Runtime {
             }
 
             if (ironPythonModules != null) {
-                LoadBuiltins(builtinTable, ironPythonModules);
+                LoadBuiltins(builtinTable, ironPythonModules, false);
 
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     // we make our nt package show up as a posix package
@@ -1828,12 +1829,16 @@ namespace IronPython.Runtime {
             return builtinTable;
         }
 
-        internal void LoadBuiltins(Dictionary<string, Type> builtinTable, Assembly assem) {
+        internal void LoadBuiltins(Dictionary<string, Type> builtinTable, Assembly assem, bool updateSys) {
             object[] attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute), false);
             if (attrs.Length > 0) {
                 foreach (PythonModuleAttribute pma in attrs) {
                     builtinTable[pma.Name] = pma.Type;
                     BuiltinModuleNames[pma.Type] = pma.Name;
+                }
+
+                if (updateSys) {
+                    SysModule.PublishBuiltinModuleNames(this, _systemState.__dict__);
                 }
             }
         }

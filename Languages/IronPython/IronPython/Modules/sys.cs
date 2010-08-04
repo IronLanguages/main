@@ -1050,7 +1050,7 @@ namespace IronPython.Modules {
             dict["path_importer_cache"] = new PythonDictionary();
         }
 
-        private static void PublishBuiltinModuleNames(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
+        internal static void PublishBuiltinModuleNames(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             object[] keys = new object[context.BuiltinModules.Keys.Count];
             int index = 0;
             foreach (object key in context.BuiltinModules.Keys) {

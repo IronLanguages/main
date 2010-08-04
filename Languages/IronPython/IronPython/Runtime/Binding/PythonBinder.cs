@@ -851,7 +851,7 @@ namespace IronPython.Runtime.Binding {
             LoadScriptCode(_context, asm);
 
             // load any Python modules
-            _context.LoadBuiltins(_context.BuiltinModules, asm);
+            _context.LoadBuiltins(_context.BuiltinModules, asm, true);
 
             // load any cached new types
             NewTypeMaker.LoadNewTypes(asm);
