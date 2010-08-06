@@ -404,54 +404,49 @@ namespace System.Linq.Expressions {
         //         : R.HasValue 
         //             ? (T?)(T.op_BitwiseOr(L.GetValueOrDefault(), R.GetValueOrDefault()))
         //             : null
-        //     : R.HasValue 
-        //         ? (T?)(T.op_BitwiseOr(L.GetValueOrDefault(), R.GetValueOrDefault()))
-        //          : null
+        //     : null
         //
         //
-        // This is the same behavior as 3.5 and close to VB behavior with the
-        // one exception being in the null OrElse R case. In 3.5, and here, R
-        // is evaluated and returned if True.  In VB, R is not evaluated and
-        // the result of the expression is null.
+        // This is the same behavior as VB. If you think about it, it makes
+        // sense: it's combining the normal pattern for short-circuiting 
+        // operators, with the normal pattern for lifted operations: if either
+        // of the operands is null, the result is also null.
         //
         internal Expression ReduceUserdefinedLifted() {
             Debug.Assert(IsLiftedLogical);
 
             var left = Parameter(_left.Type, "left");
             var right = Parameter(Right.Type, "right");
-            var target = Label(Type);
             string opName = NodeType == ExpressionType.AndAlso ? "op_False" : "op_True";
             MethodInfo opTrueFalse = TypeUtils.GetBooleanOperator(Method.DeclaringType, opName);
             Debug.Assert(opTrueFalse != null);
 
-
-            return Label(
-                target,
-                Block(
-                    new[] {left, right},
-                    Assign(left, _left),
+            return Block(
+                new[] { left },
+                Assign(left, _left),
+                Condition(
+                    Property(left, "HasValue"),
                     Condition(
-                        Property(left, "HasValue"),
-                        Condition(
-                            Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
-                            Goto(target, left),
-                            Empty()
-                        ),
-                        NodeType == ExpressionType.AndAlso ? (Expression)Goto(target, Constant(null, Type)) : Empty()
+                        Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
+                        left,
+                        Block(
+                            new[] { right },
+                            Assign(right, _right),
+                            Condition(
+                                Property(right, "HasValue"),
+                                Convert(
+                                    Call(
+                                        Method,
+                                        Call(left, "GetValueOrDefault", null),
+                                        Call(right, "GetValueOrDefault", null)
+                                    ),
+                                    Type
+                                ),
+                                Constant(null, Type)
+                            )
+                        )
                     ),
-                    Assign(right, _right),
-                    Condition(
-                        Property(right, "HasValue"),
-                        Convert(
-                            Call(
-                                Method,
-                                Call(left, "GetValueOrDefault", null),
-                                Call(right, "GetValueOrDefault", null)
-                            ),
-                            Type
-                        ),
-                        Constant(null, Type)
-                    )
+                    Constant(null, Type)
                 )
             );
         }
