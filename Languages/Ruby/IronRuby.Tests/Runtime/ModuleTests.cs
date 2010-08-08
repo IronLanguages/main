@@ -14,6 +14,8 @@
  * ***************************************************************************/
 
 using System.IO;
+using IronRuby.Runtime;
+
 namespace IronRuby.Tests {
     public partial class Tests {
         public void ClassDuplication1() {
@@ -330,6 +332,343 @@ true
 true
 true
 true
+");
+        }
+
+        public void InstanceVariables1() {
+            TestOutput(@"
+# class with no static instance variables
+class A
+end
+
+# class with 1 static instance variable
+class B < A
+  def initialize
+    @a = 1
+  end
+end
+
+# class with 3 static instance variables (1 inherited)
+class C < B
+  def initialize
+    super
+    @b = 2
+    @d = 3
+  end
+end
+
+# class with 4 static instance variables (3 inherited)
+class D < C
+  def foo
+    @c = @a + @b
+  end
+
+  def bar
+    ""> #@d""                            # instance variable in string
+  end
+end
+
+d = D.new
+puts d.foo
+puts d.bar
+", @"
+3
+> 3
+");
+        }
+
+        public void InstanceVariables2() {
+            TestOutput(@"
+module M
+  attr_reader :m
+
+  def setm
+    @m = @a + @x
+  end
+end
+
+class C
+  include M
+
+  def initialize
+    @a, @b = 1, 2
+  end
+
+  def isdef
+    defined?(@a)
+  end
+end
+
+c = C.new
+puts c.isdef
+c.instance_variables.each { |x| p x.to_sym }
+puts c.instance_variable_get(:@a)
+
+c.instance_variable_set(:@a, 3)
+puts c.instance_variable_get(:@a)
+
+c.instance_variable_set(:@x, 10)
+puts c.instance_variable_get(:@x)
+
+c.setm
+p c.m
+
+p c.instance_variable_defined?(:@a)
+p c.instance_variable_defined?(:@x)
+p c.instance_variable_defined?(:@w)
+", @"
+instance-variable
+:@a
+:@b
+1
+3
+10
+13
+true
+true
+false
+");
+        }
+
+        /// <summary>
+        /// Instance variable removal.
+        /// </summary>
+        public void InstanceVariables3() {
+            TestOutput(@"
+module M
+  def dreport
+    puts defined?(@a), defined?(@b), defined?(@c), defined?(@d), defined?(@w)
+  end
+end
+
+class C
+  include M
+
+  def foo
+    @a, @b = 1, 2
+  end
+
+  def sreport
+    puts defined?(@a), defined?(@b)
+  end
+end
+
+c = C.new
+c.foo
+c.instance_variable_set(:@c, 3)
+c.instance_variable_set(:@d, 3)
+
+p c.send(:remove_instance_variable, :@c)
+p c.send(:remove_instance_variable, :@a)
+c.send(:remove_instance_variable, :@c) rescue p $!
+c.send(:remove_instance_variable, :@a) rescue p $!
+c.send(:remove_instance_variable, :@w) rescue p $!
+p c.instance_variable_get(:@a)
+p c.instance_variable_get(:@c)
+p c.instance_variable_get(:@w)
+puts '---'
+c.sreport
+puts '---'
+c.dreport
+", @"
+3
+1
+#<NameError: instance variable `@c' not defined>
+#<NameError: instance variable `@a' not defined>
+#<NameError: instance variable `@w' not defined>
+nil
+nil
+nil
+---
+nil
+instance-variable
+---
+nil
+instance-variable
+nil
+instance-variable
+nil
+");
+        }
+
+        /// <summary>
+        /// Object cloning.
+        /// </summary>
+        public void InstanceVariables4() {
+            TestOutput(@"
+class C 
+  def foo
+    @a, @b, @c = 1, 2, 3
+  end
+
+  def sreport
+    p [@a, @b, @c]
+  end
+
+  def dreport
+    eval('p [@a, @b, @c, @d]')
+  end
+end
+
+c = C.new
+c.foo
+
+c.dup.sreport
+c.dup.dreport
+c.instance_variable_set(:@d, 4)
+c.clone.sreport
+c.clone.dreport
+", @"
+[1, 2, 3]
+[1, 2, 3, nil]
+[1, 2, 3]
+[1, 2, 3, 4]
+");
+        }
+
+        /// <summary>
+        /// Subclasses of builtin types and CLR types.
+        /// </summary>
+        public void InstanceVariables5() {
+            XTestOutput(@"
+class R < Range
+  def foo
+    @a = 1
+    instance_variable_set(:@aa, 11)
+  end
+end
+
+class S < String
+  def foo
+    @b = 2
+    instance_variable_set(:@bb, 22)
+  end
+end
+
+class T < System::Collections::ArrayList
+  def foo
+    @c = 3
+    instance_variable_set(:@cc, 33)
+  end
+end
+
+class U
+  include System::IDisposable
+  
+  def foo
+    @d = 4
+    instance_variable_set(:@dd, 44)
+  end
+end
+
+r, s, t, u = R.new(1,2), S.new('x'), T.new, U.new
+r.foo
+s.foo
+t.foo
+u.foo
+
+u.instance_variable_get(:@d)
+#p r.instance_variable_get(:@a), s.instance_variable_get(:@b), t.instance_variable_get(:@c), u.instance_variable_get(:@d)
+#p r.instance_variable_get(:@aa), s.instance_variable_get(:@bb), t.instance_variable_get(:@cc), u.instance_variable_get(:@dd)
+", @"
+1
+2
+3
+4
+11
+22
+33
+44
+");
+        }
+
+        /// <summary>
+        /// Anonymous classes with a basse class that has static instance variables.
+        /// </summary>
+        public void InstanceVariables6() {
+            TestOutput(@"
+class C
+  def initialize 
+    @a = 1 
+  end
+end
+
+D = Class.new(C)
+p D.new.instance_variable_get(:@a)
+", @"
+1
+");
+        }
+
+        public void InstanceVariables7() {
+            TestOutput(@"
+class C
+  def initialize(value)
+    @value = value
+  end
+
+  def foo(other)
+    [@value, other.instance_eval{ @value }]
+  end
+end
+
+a, b = C.new(1), C.new(2)
+p a.foo(b)
+", @"
+[1, 2]
+");
+        }
+
+        // Fixnum doesn't have identity in Ruby
+        public void InstanceVariables10() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class Fixnum
+  def foo= a
+    @x = a
+  end
+  def foo
+    @x
+  end
+end
+
+a = 1
+b = 1
+c = 2
+
+a.foo = 1
+b.foo = 2
+c.foo = 3
+puts a.foo, b.foo, c.foo
+");
+            },
+            @"
+2
+2
+3");
+        }
+
+        // Float has an identity in Ruby
+        public void InstanceVariables20() {
+            TestOutput(@"
+class Float
+  def foo= a
+    @x = a
+  end
+  def foo
+    @x
+  end
+end
+
+a = 1.0
+b = 1.0
+
+a.foo = 1
+b.foo = 2
+puts a.foo, b.foo
+", @"
+1
+2
 ");
         }
     }

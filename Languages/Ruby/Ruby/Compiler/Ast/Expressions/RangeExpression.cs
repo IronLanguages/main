@@ -92,7 +92,7 @@ namespace IronRuby.Compiler.Ast {
             if (!IsIntegerRange(out intBegin, out intEnd)) {
                 return new RangeCondition(
                     this,
-                    currentScope.GetInnerMostTopScope().AddVariable("#FlipFlopState" + Interlocked.Increment(ref _flipFlopVariableId), Location)
+                    currentScope.GetInnermostStaticTopScope().AddVariable("#FlipFlopState" + Interlocked.Increment(ref _flipFlopVariableId), Location)
                 );
             }
             return this;

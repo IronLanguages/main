@@ -29,10 +29,13 @@ using IronRuby.Compiler.Ast;
 using IronRuby.Runtime;
 
 namespace IronRuby.Compiler {
+    /// <summary>
+    /// Represents a lexical scope in Ruby AST.
+    /// </summary>
     public abstract class LexicalScope : HybridStringDictionary<LocalVariable> {
-        // Null if there is no parent lexical scopes whose local variables are visible eto this scope.
+        // Null if there is no parent lexical scope or runtime scope.
         // Scopes:
-        // - method and module: null
+        // - method and module: non-null, local variable lookup stops here
         // - source unit: RuntimeLexicalScope if eval, null otherwise
         // - block: non-null
         private readonly LexicalScope _outerScope;
@@ -52,8 +55,9 @@ namespace IronRuby.Compiler {
         // 
         // eval('1.times { x = 1 }')  <-- x could be statically defined in the block since it is not visible outside the block
         //
-        internal LexicalScope(LexicalScope outerScope)
-            : this(outerScope, (outerScope != null) ? (outerScope.IsRuntimeScope ? -1 : outerScope._depth + 1) : 0) {
+        internal LexicalScope(LexicalScope outerScope) {
+            _outerScope = outerScope;
+            _depth = IsTop ? 0 : (outerScope.IsRuntimeScope ? -1 : outerScope._depth + 1);
         }
 
         protected LexicalScope(LexicalScope outerScope, int depth) {
@@ -73,11 +77,21 @@ namespace IronRuby.Compiler {
             get { return false; }
         }
 
-        protected virtual bool IsTop {
-            get { return false; }
+        protected virtual bool AllowsVariableDefinitions {
+            get { return true; }
         }
 
-        protected virtual bool AllowsVariableDefinitions {
+        /// <summary>
+        /// Variable lookup ends in this scope.
+        /// </summary>
+        internal virtual bool IsTop {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// The top static scope for local variable lookup.
+        /// </summary>
+        internal virtual bool IsStaticTop {
             get { return true; }
         }
 
@@ -103,23 +117,31 @@ namespace IronRuby.Compiler {
             return targetScope.AddVariable(name, location);
         }
 
+        /// <summary>
+        /// Looks the scope chain for a variable of a given name.
+        /// Includes runtime scope in the lookup if available.
+        /// </summary>
         public LocalVariable ResolveVariable(string/*!*/ name) {
             LexicalScope scope = this;
-            do {
+            while (true) {
                 LocalVariable result;
                 if (scope.TryGetValue(name, out result)) {
                     return result;
                 }
+
+                if (scope.IsTop) {
+                    break;
+                }
                 scope = scope.OuterScope;
-            } while (scope != null);
+            }
             return null;
         }
 
-        internal LexicalScope/*!*/ GetInnerMostTopScope() {
+        internal LexicalScope/*!*/ GetInnermostStaticTopScope() {
             Debug.Assert(!IsRuntimeScope);
 
             LexicalScope scope = this;
-            while (!scope.IsTop) {
+            while (!scope.IsStaticTop) {
                 scope = scope.OuterScope;
                 Debug.Assert(scope != null);
             }
@@ -143,15 +165,48 @@ namespace IronRuby.Compiler {
     }
 
     /// <summary>
-    /// Method, module, BEGIN block and source unit scopes.
+    /// BEGIN block and source unit scopes.
     /// </summary>
-    internal sealed class TopLexicalScope : LexicalScope {
-        public TopLexicalScope(LexicalScope outerScope)
+    internal sealed class TopStaticLexicalScope : LexicalScope {
+        public TopStaticLexicalScope(LexicalScope outerScope)
             : base(outerScope) {
         }
 
-        protected override bool IsTop {
-            get { return true; }
+        /// <summary>
+        /// Local variable lookup ends here if there is no runtime outer scope.
+        /// </summary>
+        internal override bool IsTop {
+            get { return OuterScope == null; }
+        }
+    }
+
+    /// <summary>
+    /// Instance method scope.
+    /// </summary>
+    internal sealed class MethodLexicalScope : LexicalScope {
+        public MethodLexicalScope(LexicalScope/*!*/ outerScope)
+            : base(outerScope) {
+            Debug.Assert(outerScope != null);
+        }
+    }
+
+    /// <summary>
+    /// Class scope.
+    /// </summary>
+    internal sealed class ClassLexicalScope : LexicalScope {
+        public ClassLexicalScope(LexicalScope/*!*/ outerScope)
+            : base(outerScope) {
+            Debug.Assert(outerScope != null);
+        }
+    }
+    
+    /// <summary>
+    /// Singleton method, singleton class and module. 
+    /// </summary>
+    internal sealed class TopLocalDefinitionLexicalScope : LexicalScope {
+        public TopLocalDefinitionLexicalScope(LexicalScope/*!*/ outerScope)
+            : base(outerScope) {
+            Debug.Assert(outerScope != null);
         }
     }
 
@@ -159,8 +214,17 @@ namespace IronRuby.Compiler {
     /// Block scope.
     /// </summary>
     internal sealed class BlockLexicalScope : LexicalScope {
-        public BlockLexicalScope(LexicalScope outerScope)
+        public BlockLexicalScope(LexicalScope/*!*/ outerScope)
             : base(outerScope) {
+            Debug.Assert(outerScope != null);
+        }
+
+        internal override bool IsTop {
+            get { return false; }
+        }
+
+        internal override bool IsStaticTop {
+            get { return false; }
         }
     }
 
@@ -168,12 +232,20 @@ namespace IronRuby.Compiler {
     /// for-loop scope.
     /// </summary>
     internal sealed class PaddingLexicalScope : LexicalScope {
-        public PaddingLexicalScope(LexicalScope outerScope) 
+        public PaddingLexicalScope(LexicalScope/*!*/ outerScope) 
             : base(outerScope) {
             Debug.Assert(outerScope != null);
         }
 
         protected override bool AllowsVariableDefinitions {
+            get { return false; }
+        }
+
+        internal override bool IsTop {
+            get { return false; }
+        }
+
+        internal override bool IsStaticTop {
             get { return false; }
         }
     }
@@ -191,6 +263,14 @@ namespace IronRuby.Compiler {
 
         protected override bool IsRuntimeScope {
             get { return true; }
+        }
+
+        internal override bool IsTop {
+            get { return true; }
+        }
+
+        internal override bool IsStaticTop {
+            get { return false; }
         }
     }
 

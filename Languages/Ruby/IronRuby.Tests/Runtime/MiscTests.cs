@@ -77,60 +77,6 @@ foo
             });
         }
 
-        // Fixnum doesn't have identity in Ruby
-        public void InstanceVariables1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class Fixnum
-  def foo= a
-    @x = a
-  end
-  def foo
-    @x
-  end
-end
-
-a = 1
-b = 1
-c = 2
-
-a.foo = 1
-b.foo = 2
-c.foo = 3
-puts a.foo, b.foo, c.foo
-");
-            },
-            @"
-2
-2
-3");
-        }
-
-        // Float has an identity in Ruby
-        public void InstanceVariables2() {
-            TestOutput(@"
-class Float
-  def foo= a
-    @x = a
-  end
-  def foo
-    @x
-  end
-end
-
-a = 1.0
-b = 1.0
-
-a.foo = 1
-b.foo = 2
-puts a.foo, b.foo
-",@"
-1
-2
-");
-        }
-
-
         public void Scenario_RubyParams1() {
             AssertOutput(delegate() {
                 CompilerTest(@"

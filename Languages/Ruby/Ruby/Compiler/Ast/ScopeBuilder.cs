@@ -86,11 +86,7 @@ namespace IronRuby.Compiler.Ast {
         private Type/*!*/ MakeLocalsTupleType() {
             // Note: The actual tuple type might be a subclass of the type used here. Accesses to the additional fields would need to down-cast.
             // This will only happen if a hidden lifted variable is defined, which is needed only for flip-flop operator so far.
-            Type[] types = new Type[LiftedVisibleVariableCount];
-            for (int i = 0; i < types.Length; i++) {
-                types[i] = typeof(object);
-            }
-            return MutableTuple.MakeTupleType(types);
+            return RubyOps.MakeObjectTupleType(LiftedVisibleVariableCount);            
         }
 
         internal ScopeBuilder Parent {
@@ -160,10 +156,10 @@ namespace IronRuby.Compiler.Ast {
             return GetVariableAccessor(GetClosure(definitionLexicalDepth), closureIndex);
         }
 
-        public MSA.Expression/*!*/ GetVariableAccessor(MSA.Expression/*!*/ tupleVariable, int closureIndex) {
+        public static MSA.Expression/*!*/ GetVariableAccessor(MSA.Expression/*!*/ tupleVariable, int tupleFieldIndex) {
             MSA.Expression accessor = tupleVariable;
 
-            foreach (var property in MutableTuple.GetAccessPath(tupleVariable.Type, closureIndex)) {
+            foreach (var property in MutableTuple.GetAccessPath(tupleVariable.Type, tupleFieldIndex)) {
                 accessor = Ast.Property(accessor, property);
             }
 
@@ -171,6 +167,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         public MSA.Expression/*!*/ MakeLocalsStorage() {
+            // TODO: use a factory instead of Ast.New to improve interpreter perf:
             MSA.Expression result = Ast.Assign(
                 _localsTuple, 
                 LiftedVisibleVariableCount == 0 ? (MSA.Expression)Ast.Constant(null, _localsTuple.Type) : Ast.New(_localsTuple.Type)
