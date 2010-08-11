@@ -1,3 +1,0 @@
-fails:Literal Regexps supports \g (named backreference)
-fails:Literal Regexps supports character class composition
-fails:Literal Regexps supports possessive quantifiers
