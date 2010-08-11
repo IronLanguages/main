@@ -340,7 +340,7 @@ namespace IronPython.Runtime.Types {
         #region ICodeFormattable members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
-            if (IsUnbound) {
+            if (IsUnbound || IsBuiltinModuleMethod) {
                 return string.Format("<built-in function {0}>", Name);
             }
 
@@ -707,7 +707,11 @@ namespace IronPython.Runtime.Types {
                 IList<MethodBase> targets = Targets;
                 for (int i = 0; i < targets.Count; i++) {
                     if (targets[i] != null) {
-                        sb.Append(DocBuilder.DocOneInfo(targets[i], Name));
+                        if (IsBuiltinModuleMethod) {
+                            sb.Append(DocBuilder.DocOneInfo(targets[i], Name, false));
+                        } else {
+                            sb.Append(DocBuilder.DocOneInfo(targets[i], Name));
+                        }
                     }
                 }
                 return sb.ToString();
@@ -716,11 +720,31 @@ namespace IronPython.Runtime.Types {
 
         public object __self__ {
             get {
+                if (IsUnbound || IsBuiltinModuleMethod) {
+                    return null;
+                }
+
+                return _instance;
+            }
+        }
+
+        /// <summary>
+        /// Returns the instance used for binding.  This differs on module functions implemented
+        /// using instance methods so the built-in functions there don't expose the instance.
+        /// </summary>
+        internal object BindingSelf {
+            get {
                 if (IsUnbound) {
                     return null;
                 }
 
                 return _instance;
+            }
+        }
+
+        private bool IsBuiltinModuleMethod {
+            get {
+                return (FunctionType & FunctionType.ModuleMethod) != 0;
             }
         }
 

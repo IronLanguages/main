@@ -1305,6 +1305,48 @@ def test_ximp_load_module():
 def test_import_string_from_list_cp26098():
     AreEqual(__import__('email.mime.application', globals(), locals(), 'MIMEApplication').__name__, 'email.mime.application')
 
+
+@skip("win32", "silverlight")
+def test_new_builtin_modules():
+    import clr
+    clr.AddReference('IronPythonTest')
+    import test_new_module
+    dir(test_new_module)
+    
+    # static members should still be accessible
+    AreEqual(test_new_module.StaticMethod(), 42)
+    AreEqual(test_new_module.StaticField, 42)
+    AreEqual(test_new_module.StaticProperty, 42)
+    
+    # built-in functions shouldn't appear to be bound
+    AreEqual(test_new_module.test_method.__doc__, 'test_method() -> object\r\n')
+    AreEqual(test_new_module.test_method.__self__, None)
+    
+    # unassigned attributes should throw as if the callee failed to look them up
+    AssertError(NameError, lambda : test_new_module.get_test_attr())
+    
+    # unassigned builtins should return the built-in as if the caller looked them up
+    AreEqual(test_new_module.get_min(), min)
+    
+    # we should be able to assign to values
+    test_new_module.test_attr = 42
+    
+    # and the built-in module should see them
+    AreEqual(test_new_module.get_test_attr(), 42)
+    AreEqual(test_new_module.test_attr, 42)
+    
+    # static members take precedence over things in globals
+    AreEqual(test_new_module.test_overlap_method(), 42)
+    AreEqual(type(test_new_module.test_overlap_type), type)
+    
+    test_new_module.inc_value()
+    AreEqual(test_new_module.get_value(), 1)
+    test_new_module.inc_value()
+    AreEqual(test_new_module.get_value(), 2)
+
+    # can't access private fields
+    AssertError(AttributeError, lambda : test_new_module._value)
+
 #------------------------------------------------------------------------------
 run_test(__name__)
 if is_silverlight==False:

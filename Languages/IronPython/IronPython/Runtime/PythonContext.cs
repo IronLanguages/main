@@ -1206,20 +1206,35 @@ namespace IronPython.Runtime {
         }
 
         internal PythonModule/*!*/ CreateBuiltinModule(string moduleName, Type type) {
-            return CreateBuiltinModule(moduleName, type, ModuleOptions.NoBuiltins);
-        }
+            PythonDictionary dict;
+            if (type.IsSubclassOf(typeof(BuiltinPythonModule))) {
+                // an optimized Python module.
+                var builtinModule = (BuiltinPythonModule)Activator.CreateInstance(type, this);
 
-        internal PythonModule/*!*/ CreateBuiltinModule(string moduleName, Type type, ModuleOptions options) {
-            PythonDictionary dict = new PythonDictionary(new ModuleDictionaryStorage(type));
+                var globals = new Dictionary<string, PythonGlobal>();
+                var globalStorage = new InstancedModuleDictionaryStorage(builtinModule, globals);
+                dict = new PythonDictionary(globalStorage);
+                
+                var names = builtinModule.GetGlobalVariableNames();
+                var codeContext = new ModuleContext(dict, this).GlobalContext;
+                foreach (var name in names) {
+                    globals[name] = new PythonGlobal(codeContext, name);
+                }
 
-            if (type == typeof(Builtin)) {
-                Builtin.PerformModuleReload(this, dict);
-            } else if (type != typeof(SysModule)) { // will be performed by hand later, see InitializeSystemState
-                MethodInfo reload = type.GetMethod("PerformModuleReload");
-                if (reload != null) {
-                    Debug.Assert(reload.IsStatic);
+                builtinModule.Initialize(codeContext, globals);
+            } else {
+                dict = new PythonDictionary(new ModuleDictionaryStorage(type));
 
-                    reload.Invoke(null, new object[] { this, dict });
+                if (type == typeof(Builtin)) {
+                    Builtin.PerformModuleReload(this, dict);
+                } else if (type != typeof(SysModule)) { // will be performed by hand later, see InitializeSystemState
+                    MethodInfo reload = type.GetMethod("PerformModuleReload");
+                    if (reload != null) {
+                        Debug.Assert(reload.IsStatic);
+
+                        reload.Invoke(null, new object[] { this, dict });
+                    }
+
                 }
             }
 

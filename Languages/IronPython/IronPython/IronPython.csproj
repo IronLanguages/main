@@ -132,6 +132,7 @@
     <Compile Include="Compiler\UncollectableCompilationMode.Generated.cs" />
     <Compile Include="Compiler\RunnableScriptCode.cs" />
     <Compile Include="Runtime\Binding\IPythonExpandable.cs" />
+    <Compile Include="Runtime\BuiltinPythonModule.cs" />
     <Compile Include="Runtime\ConstantDictionaryStorage.cs" />
     <Compile Include="Runtime\DictionaryTypeInfoAttribute.cs" />
     <Compile Include="Modules\imp.cs" />
@@ -163,6 +164,7 @@
     <Compile Include="Runtime\Exceptions\Win32Exception.cs" />
     <Compile Include="Runtime\FutureBuiltins.cs" />
     <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
+    <Compile Include="Runtime\InstancedModuleDictionaryStorage.cs" />
     <Compile Include="Runtime\Method.Generated.cs" />
     <Compile Include="Runtime\PythonDocumentationProvider.cs" />
     <Compile Include="Runtime\SequenceTypeInfoAttribute.cs" />
