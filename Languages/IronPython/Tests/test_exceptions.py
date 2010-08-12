@@ -709,6 +709,16 @@ def test_serializable_clionly():
     path = clr.GetClrType(ExceptionsTest).Assembly.Location
     mbro = System.AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(path, "IronPythonTest.EngineTest")
     AssertError(AssertionError, mbro.Run, 'raise AssertionError')
+    import exceptions
+    
+    for eh in dir(exceptions):
+        eh = getattr(exceptions, eh)
+        if isinstance(eh, type) and issubclass(eh, BaseException):
+            # unicode exceptions require more args...
+            if (eh.__name__ != 'UnicodeDecodeError' and 
+                eh.__name__ != 'UnicodeEncodeError' and 
+                eh.__name__ != 'UnicodeTranslateError'):
+                AssertError(eh, mbro.Run, 'raise ' + eh.__name__)
 
 def test_sanity():
     '''
