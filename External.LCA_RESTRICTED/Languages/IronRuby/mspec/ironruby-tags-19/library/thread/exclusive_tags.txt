@@ -1,1 +1,0 @@
-fails:Thread.exclusive should raise LocalJumpError if no block is given

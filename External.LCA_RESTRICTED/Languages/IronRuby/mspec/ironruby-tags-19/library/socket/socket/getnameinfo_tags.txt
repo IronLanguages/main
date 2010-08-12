@@ -1,2 +1,0 @@
-fails:Socket#getnameinfo gets the name information and doesn't resolve it
-fails:Socket#getnameinfo gets the name information and resolves the host

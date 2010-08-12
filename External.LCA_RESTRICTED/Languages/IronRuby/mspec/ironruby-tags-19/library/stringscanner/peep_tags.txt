@@ -1,1 +1,0 @@
-fails:StringScanner#peep warns in verbose mode that the method is obsolete
