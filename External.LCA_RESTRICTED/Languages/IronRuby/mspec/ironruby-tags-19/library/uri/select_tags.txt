@@ -1,0 +1,1 @@
+fails:URI#select raises an ArgumentError if a component is requested that isn't valid under the given scheme

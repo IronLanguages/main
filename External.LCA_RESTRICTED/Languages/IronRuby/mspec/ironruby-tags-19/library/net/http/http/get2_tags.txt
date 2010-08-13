@@ -1,0 +1,3 @@
+fails:Net::HTTP#get2 when passed no block sends a GET request to the passed path and returns the response
+fails:Net::HTTP#get2 when passed a block sends a GET request to the passed path and returns the response
+fails:Net::HTTP#get2 when passed a block yields the response to the passed block

@@ -1,0 +1,2 @@
+fails:REXML::Attribute#element= sets the parent element
+fails:"REXML::Attribute#element= sets the parent element"

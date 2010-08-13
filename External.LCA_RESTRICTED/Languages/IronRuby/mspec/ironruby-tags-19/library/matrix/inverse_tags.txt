@@ -1,0 +1,2 @@
+fails:Matrix#inverse raises a ErrDimensionMismatch if the Matrix is not square
+fails:"Matrix#inverse raises a ErrDimensionMismatch if the Matrix is not square"

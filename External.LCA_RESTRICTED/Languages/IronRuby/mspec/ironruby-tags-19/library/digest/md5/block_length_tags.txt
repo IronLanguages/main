@@ -1,0 +1,2 @@
+fails:Digest::MD5#block_length returns the length of digest block
+fails:"Digest::MD5#block_length returns the length of digest block"

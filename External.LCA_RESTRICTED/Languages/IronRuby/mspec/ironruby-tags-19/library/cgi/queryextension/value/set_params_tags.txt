@@ -1,0 +1,2 @@
+fails:CGI::QueryExtension::Value#set_params sets alternative params
+fails:"CGI::QueryExtension::Value#set_params sets alternative params"

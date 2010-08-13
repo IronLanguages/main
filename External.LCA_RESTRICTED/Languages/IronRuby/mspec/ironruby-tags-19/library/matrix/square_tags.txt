@@ -1,0 +1,2 @@
+fails:Matrix#square? returns handles empty matrices
+fails:"Matrix#square? returns handles empty matrices"

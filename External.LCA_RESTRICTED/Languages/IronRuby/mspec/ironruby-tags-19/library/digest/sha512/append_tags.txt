@@ -1,0 +1,2 @@
+fails:Digest::SHA512#<< can update
+fails:"Digest::SHA512#<< can update"

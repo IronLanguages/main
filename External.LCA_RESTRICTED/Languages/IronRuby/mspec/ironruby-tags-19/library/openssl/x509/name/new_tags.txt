@@ -1,0 +1,2 @@
+fails:OpenSSL::X509::Name.new returns a x509 Name
+fails:"OpenSSL::X509::Name.new returns a x509 Name"

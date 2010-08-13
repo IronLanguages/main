@@ -1,0 +1,4 @@
+fails:Digest::MD5#to_s returns a hexdigest
+fails:Digest::MD5#to_s does not change the internal state
+fails:"Digest::MD5#to_s returns a hexdigest"
+fails:"Digest::MD5#to_s does not change the internal state"

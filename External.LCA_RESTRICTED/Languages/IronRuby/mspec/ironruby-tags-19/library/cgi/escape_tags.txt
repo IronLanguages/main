@@ -1,0 +1,2 @@
+fails:CGI.escape url-encodes the passed argument
+fails:"CGI.escape url-encodes the passed argument"

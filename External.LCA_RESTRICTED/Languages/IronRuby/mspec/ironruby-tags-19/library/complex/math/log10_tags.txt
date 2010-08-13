@@ -1,0 +1,8 @@
+fails:Math#log10 returns the base-10 logarithm of the passed argument
+fails:Math#log10 returns the base-10 logarithm for Complex numbers
+fails:Math.log10 returns the base-10 logarithm of the passed argument
+fails:Math.log10 returns the base-10 logarithm for Complex numbers
+fails:"Math#log10 returns the base-10 logarithm of the passed argument"
+fails:"Math#log10 returns the base-10 logarithm for Complex numbers"
+fails:"Math.log10 returns the base-10 logarithm of the passed argument"
+fails:"Math.log10 returns the base-10 logarithm for Complex numbers"

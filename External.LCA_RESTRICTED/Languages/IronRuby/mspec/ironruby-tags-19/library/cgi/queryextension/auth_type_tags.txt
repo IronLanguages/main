@@ -1,0 +1,2 @@
+fails:CGI::QueryExtension#auth_type returns ENV['AUTH_TYPE']
+fails:"CGI::QueryExtension#auth_type returns ENV['AUTH_TYPE']"

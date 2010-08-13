@@ -1,0 +1,2 @@
+fails:Matrix#trace returns the sum of diagonal elements in a rectangular Matrix
+fails:"Matrix#trace returns the sum of diagonal elements in a rectangular Matrix"

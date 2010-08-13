@@ -1,0 +1,4 @@
+fails:REXML::Attributes#add adds an attribute
+fails:REXML::Attributes#add replaces an existing attribute
+fails:"REXML::Attributes#add adds an attribute"
+fails:"REXML::Attributes#add replaces an existing attribute"

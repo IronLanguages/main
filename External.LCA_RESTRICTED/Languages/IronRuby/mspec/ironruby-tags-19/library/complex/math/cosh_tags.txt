@@ -1,0 +1,8 @@
+fails:Math#cosh returns the hyperbolic cosine of the passed argument
+fails:Math#cosh returns the hyperbolic cosine for Complex numbers
+fails:Math.cosh returns the hyperbolic cosine of the passed argument
+fails:Math.cosh returns the hyperbolic cosine for Complex numbers
+fails:"Math#cosh returns the hyperbolic cosine of the passed argument"
+fails:"Math#cosh returns the hyperbolic cosine for Complex numbers"
+fails:"Math.cosh returns the hyperbolic cosine of the passed argument"
+fails:"Math.cosh returns the hyperbolic cosine for Complex numbers"

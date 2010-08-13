@@ -1,0 +1,8 @@
+fails:Math#atan returns the arctangent of the argument
+fails:Math#atan returns the arctangent for Complex numbers
+fails:Math.atan returns the arctangent of the argument
+fails:Math.atan returns the arctangent for Complex numbers
+fails:"Math#atan returns the arctangent of the argument"
+fails:"Math#atan returns the arctangent for Complex numbers"
+fails:"Math.atan returns the arctangent of the argument"
+fails:"Math.atan returns the arctangent for Complex numbers"

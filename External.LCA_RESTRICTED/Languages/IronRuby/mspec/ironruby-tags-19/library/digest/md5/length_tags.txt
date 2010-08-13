@@ -1,0 +1,2 @@
+fails:Digest::MD5#length returns the length of the digest
+fails:"Digest::MD5#length returns the length of the digest"
