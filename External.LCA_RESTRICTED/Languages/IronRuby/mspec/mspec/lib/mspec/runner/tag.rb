@@ -14,12 +14,11 @@ class SpecTag
   def unescape(str)
     return unless str
     str = str[1..-2] if str[0] == ?" and str[-1] == ?"
-    str.gsub(/\\n/, "\n")
+    str.gsub(/(\\\\)|(\\n)/) { |x| x == "\\\\" ? "\\" : "\n" }
   end
 
   def escape(str)
-    str = %["#{str.gsub(/\n/, '\n')}"] if /\n/ =~ str
-    str
+    str.gsub(/[\\\n]/) { |x| x == "\\" ? "\\\\" : "\\n" }
   end
 
   def to_s
