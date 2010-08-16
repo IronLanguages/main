@@ -1,0 +1,1 @@
+fails:String#index with object raises a TypeError if obj isn't a String, Fixnum or Regexp
