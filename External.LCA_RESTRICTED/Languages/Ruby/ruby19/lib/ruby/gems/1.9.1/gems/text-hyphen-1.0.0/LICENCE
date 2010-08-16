@@ -1,0 +1,47 @@
+Text::Hyphen is copyright (c) 2004 Austin Ziegler
+
+Licensing for Text::Hyphen is unfortunately complex because of the various
+copyrights and licences of the source hyphenation files. Some of these files
+are available only under the TeX licence and others are available only under
+the GNU GPL while others are public domain. Each language file has these
+licences embedded within the file. Please consult each file's licence to
+ensure that it is compatible with your application.
+
+The copyright on the Text::Hyphen application/library and the Ruby
+translations of hyphenation files belongs to Austin Ziegler. All other
+copyrights on original versions still stand; Text::Hyphen is a derivative
+work of these and other projects.
+
+Application and Compilation Licences
+------------------------------------
+Text::Hyphen, the application/library is licensed under the same terms as
+Ruby. Note that this specifically refers to the contents of bin/hyphen,
+lib/text/hyphen.rb, and lib/text/hyphen/language.rb.
+
+Individual language hyphenation files are NOT licensed under these terms, but
+under the following MIT-style licence and the original hyphenation pattern
+licenses. The copyright for the original TeX hyphenation files is held by the
+original authors; any mistakes in conversion of these files to Ruby is
+attributable to the contributors to the Text::Hyphen package only.
+
+The compilation package Text::Hyphen is licensed under the same terms as Ruby.
+
+Blanket Language Hyphenation File Licence
+-----------------------------------------
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

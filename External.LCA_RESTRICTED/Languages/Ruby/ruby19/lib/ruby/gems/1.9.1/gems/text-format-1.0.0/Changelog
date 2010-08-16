@@ -1,0 +1,89 @@
+== Text::Format 1.0.0
+* Changed installer: added a .gem package.
+* Changed installer: moving to a variant of setup.rb by Minero Aoki.
+* Fixed significant problems with #hard_margin wrapping and fallback issues,
+  eliminating all known possibilities for an infinite loop in wrapping. Some
+  of the formatting changes involved with this result in different and more
+  subtle wrapping and splitting of words; please read the full documentation
+  for details.
+* Clarified the API for #hyphenate_to (delineated the return value required if
+  the hyphenator cannot hyphenate the word to the specified size).
+* Changed a number of public and private API calls to work better. As long as
+  the constants provided by Text::Format have been used (and not direct access
+  to the constant values), there will be no issues presented by most of these
+  changes.
+* Changed the initialization of the Text::Format object. The documentation has
+  also been updated to be correct. Note that this will mean that some uses of
+  Text::Format will not work, as Text::Format.new now yields +self+ if a block
+  is given instead of evaluating the block with Object#instance_eval.
+* Added text numbering generators (Text::Format::Alpha, Text::Format::Number,
+  and Text::Format::Roman) to work with #tag_paragraphs and #tag_text to
+  generate numbered paragraphs.
+* #nobreak_regex must be a hash of regular expressions, not strings that are
+  converted to regular expressions. This Perlism has finally been removed.
+* The performance has been improved; the number of times that lines are joined
+  together and then split apart has been reduced.
+* Changed the dependency to Text::Hyphen from TeX::Hyphen.
+* Added auto-split capabilities to #paragraphs. See the updated documentation.
+
+== Text::Format 0.64
+* Fixed a bug where a NoMethod exception would be raised if #paragraphs was
+  called with either (" ") or ([" "]).
+
+== Text::Format 0.63
+* Fixed a bug where a crash would occur when a hyphenator returned nil instead
+  of "".
+
+== Text::Format 0.62
+* Modified the API for hyphenators. Previously, a hyphenator could only be
+  defined as an object containing a method #hyphenate_to with the signature:
+      #hyphenate_to(word, size)
+  Now, the #hyphenate_to method may be the above signature or:
+      #hyphenate_to(word, size, formatter)
+  So that the hyphenator may access information about the formatting object,
+  if necessary. Thanks to Tim Bates for suggesting a case where this would be
+  useful.
+* Fixed a bug for strings matching /\A\s*\Z/ raising a NameError.
+* Fixed a test case that failed uner 1.6.8. The following no longer works:
+      l, m1, m2 = /((?:\S+\s+){11})(.+)/.match(line)
+  This has been replaced with an explicit use of l[1] and l[2]. Thanks to Tim
+  Bates for finding this problem.
+* Changed installer to Phil Thomson's install-package wrapper.
+
+== Text::Format 0.61
+* Fixed a problem with the installer. Note that Text::Format is no longer case
+  sensitive for require purposes. It will be required as:
+      require 'text/format'
+  Versions earlier than 0.60 were case-sensitive. Please be aware of this if
+  you are installing Text::Format over an older version. It may not replace
+  the existing library in the way that you expect.
+
+== Text::Format 0.60
+* Added Symbol equivalents for the Hash initialization. Hash initialization
+  has been modified so that values are set as follows (Symbols are highest
+  priority; strings are middle; defaults are lowest):
+    @columns = arg[:columns] || arg['columns'] || @columns
+* Fixed a problem with Text::Format::RIGHT_FILL handling where a single word
+  is larger than #columns.
+* Removed Comparable mixin (<=> doesn't make sense; == does).
+* Added #hard_margins, #split_rules, #hyphenator, and #split_words. Text
+  formatted with #hard_margins will have words larger than #columns split
+  forcibly. Words forcibly split will be placed into #split_words. See the
+  documentation for important information on how this feature works.
+
+== Text::Format 0.52.2
+* Fixed the ordering of #<=> in cases of Boolean values.
+* Fixed #expand and #unexpand Array handling.
+* Added a Changelog.
+
+== Text::Format 0.52.1
+* Fixed a problem when tabs aren't counted properly.
+* Changed #abbreviations from Hash to Array to better suit Ruby's
+  capabilities.
+* Fixed problems with the way that Array arguments are handled in calls to the
+  major object types.
+
+== Text::Format 0.52
+* Initial release
+
+$Id: Changelog,v 1.6 2005/06/24 19:49:09 austin Exp $

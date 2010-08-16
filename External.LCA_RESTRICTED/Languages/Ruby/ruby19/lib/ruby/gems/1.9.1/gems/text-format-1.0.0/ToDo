@@ -1,0 +1,8 @@
+Text::Format To Do
+==================
+* Margin markers: the ability to place markers in the margin when
+  formatting.
+* Line numbering: the ability to number lines in the margin when
+  formatting, including numering lines by step (every fifth line, etc.).
+* Email attribution quoting reformatting.
+* Proportional width support for GUI formatting.

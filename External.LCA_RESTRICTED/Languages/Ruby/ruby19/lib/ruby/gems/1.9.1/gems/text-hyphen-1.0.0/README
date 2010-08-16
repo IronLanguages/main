@@ -1,0 +1,56 @@
+Text::Hyphen README
+===================
+
+Text::Hyphen will properly hyphenate various words according to the rules of
+the language the word is written in. The algorithm is based on that of the TeX
+typesetting system by Donald E. Knuth. This is originally based on the Perl
+implementation of TeX::Hyphen[1] and the Ruby port TeX::Hyphen[2]. The
+language hyphenation pattern files are based on the sources available from
+CTAN[3] as of 2004.12.19 and have been translated by Austin Ziegler.
+
+This release is 1.0, the initial release of Text::Hyphen, representing a
+significant improvement over its predecessor, TeX::Hyphen.
+
+    require 'text/hyphen'
+    hh = Text::Hyphen.new(:language => 'en_us', :left => 2, :right => 2)
+      # Defaults to the above
+    hh = TeX::Hyphen.new
+    
+    word = "representation"
+    points = hyp.hyphenate(word)  #=> [3, 5, 8, 10]
+    puts hyp.visualize(word)      #=> rep-re-sen-ta-tion
+
+Text::Hyphen is truly multilingual in nature[4]. As an example, consider the
+difference between the following:
+
+    require 'text/hyphen'
+      # Using left and right minimum values of 0 ensures that you will see all
+      # possible hyphenation points, not just those that meet the minimum
+      # width requirements.
+    en = Text::Hyphen.new(:left => 0, :right => 0)
+    fr = Text::Hyphen.new(:language = "fr", :left => 0, :right => 0)
+
+    puts en.visualise("organiser")      #=> or-gan-iser
+    puts fr.visualise("organiser")      #=> or-ga-ni-ser
+
+As you can see, the hyphenation is distinct between the two hyphenators.
+Additional improvements over TeX::Hyphen include thread safety (except for
+debug control) and support for UTF-8.
+
+It is very important to read the LICENCE file and each language file desired,
+as some languages may be held under a more strict licence than that granted by
+LICENCE.
+
+Copyright
+=========
+# Copyright 2004 Austin Ziegler <text-hyphen@halostatue.ca>
+# See the LICENCE file for more information.
+
+[1] <http://search.cpan.org/author/JANPAZ/TeX-Hyphen-0.140/lib/TeX/Hyphen.pm>
+    Maintained by Jan Pazdziora.
+[2] Available at <http://rubyforge.org/projects/text-format>.
+[3] <http://www.ctan.org>
+[4] There are some bugs and design decisions in the original Perl
+    implementation of TeX::Hyphen that make it unsuitable for most
+    multilingual implementations that carried over to the Ruby port of
+    TeX::Hyphen.

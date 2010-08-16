@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'ostruct'
+require 'socket'
+
+@options = OpenStruct.new
+@options.hostname = 'localhost'
+@options.port = 11211
+
+op = OptionParser.new do |opts|
+	opts.banner = "View memcached server statistics\nUsage: #{$0} [options]"
+	opts.separator "General Options:"
+	opts.on("-h HOSTNAME", "--hostname=HOSTNAME", "Hostname [default: localhost]") do |h|
+		@options.hostname = h
+	end
+	opts.on("-p PORT", "--port=PORT", Integer, "Port [default: 11211]") do |p|
+		@options.port = p
+	end
+	opts.on_tail("--help", "Show this message") do
+		puts opts
+		exit
+	end
+end
+op.parse!
+
+def stats_data
+  data = ''
+  sock = TCPSocket.new(@options.hostname, @options.port)
+  sock.print("stats\r\n")
+  sock.flush
+  # memcached does not close the socket once it is done writing
+  # the stats data.  We need to read line by line until we detect
+  # the END line and then stop/close on our side.
+  stats = sock.gets
+  while true
+    data += stats
+    break if stats.strip == 'END'
+    stats = sock.gets
+  end
+  sock.close
+  data
+end
+
+def parse(stats_data)
+  stats = []
+  stats_data.each_line do |line|
+    stats << "#{$1}: #{$2}" if line =~ /STAT (\w+) (\S+)/
+  end
+  stats.sort
+end
+
+stats = parse(stats_data)
+stats.each do |stat|
+  puts stat
+end
