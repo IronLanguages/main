@@ -45,5 +45,10 @@ namespace IronPython.Runtime.Types {
         /// This enables simple .NET operator methods to be mapped into the Python semantics.
         /// </summary>
         BinaryOperator = 0x0040,
+
+        /// <summary>
+        /// A method declared on a built-in module
+        /// </summary>
+        ModuleMethod = 0x0080
     }
 }

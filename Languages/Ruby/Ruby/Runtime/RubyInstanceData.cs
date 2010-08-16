@@ -58,6 +58,8 @@ namespace IronRuby.Runtime {
         /// Null - uninitialized (lazy init'd) => object doesn't have an instance singleton.
         /// Class - object doesn't have an instance singleton
         /// Singleton - object has an instance singleton
+        /// 
+        /// Not used by implementations of IRubyObject.
         /// </summary>
         internal RubyClass ImmediateClass {
             get { return _immediateClass; }

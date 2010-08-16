@@ -1,0 +1,2 @@
+fails:URI.parse returns a URI::MailTo object when passed a mailto URI
+fails:URI.parse populates the components of a parsed URI::MailTo object

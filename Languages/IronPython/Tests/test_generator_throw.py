@@ -76,7 +76,10 @@ def test_yield_lambda():
   g=f(10)
   AreEqual(g.next(), 10)
   AreEqual(g.send(9), 10*2)
-  AreEqual(g.send(5), (3+9, 5))
+  if is_cpython: #http://ironpython.codeplex.com/workitem/28219
+    AssertError(StopIteration, g.send, 5)
+  else:
+    AreEqual(g.send(5), (3+9, 5))
 
   
 # This usage of lambda expression tests a different parsing path in IPY. (old lambda expressions)

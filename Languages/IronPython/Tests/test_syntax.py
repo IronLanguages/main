@@ -184,7 +184,6 @@ compile_tests = [
     ("def f(a,a): pass", "duplicate argument 'a' in function definition", 1, False),
     ("def f((a,b),(c,b)): pass", "duplicate argument 'b' in function definition", 1, False),
     ("x = 10\nx = x[]", "unexpected token ']'", 2, True),
-    ("None = 2", "assignment to None", 1, False),
     ("break", "'break' outside loop", 1, False),
     ("if 1:\n\tbreak", "'break' outside loop", 2, False),
     ("if 1:\n\tx+y=22", "can't assign to operator", 2, False),
@@ -225,10 +224,15 @@ compile_tests = [
     #("'abc'.", "invalid syntax", 1),
 ]
 
+if is_cpython: #http://ironpython.codeplex.com/workitem/28379
+    compile_tests.append(("None = 2", "cannot assign to None", 1, False))
+else:
+    compile_tests.append(("None = 2", "assignment to None", 1, False))
+
 # different error messages, ok
 for test in compile_tests:
     run_compile_test(*test)
-        
+            
 AreEqual(float(repr(2.5)), 2.5)
 
 AreEqual(eval("1, 2, 3,"), (1, 2, 3))
@@ -571,15 +575,27 @@ class HasASyntaxException:
         print 'again'
     def MethodTwo(self)
         print 'world'""")
-        
-    function_missing_colon1 = ("def f()", "def f()")
+
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28380
+        function_missing_colon1 = ("def f()\n", "def f()")
+    else:        
+        function_missing_colon1 = ("def f()", "def f()")
     function_missing_colon2 = ("def f()\n", "def f()\n")
-    function_missing_colon3 = ("def f()\r\n", "def f()\r\n")
-    function_missing_colon4 = ("def f()\r", "def f()\r")
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28380
+        function_missing_colon3 = ("def f()\n", "def f()\r\n")
+        function_missing_colon4 = ("def f()\n", "def f()\r")
+    else:
+        function_missing_colon3 = ("def f()\r\n", "def f()\r\n")
+        function_missing_colon4 = ("def f()\r", "def f()\r")
+        
         
     function_missing_colon2a = ("def f()\n", "print 1\ndef f()\nprint 3")
-    function_missing_colon3a = ("def f()\r\n", "print 1\ndef f()\r\nprint 3")
-    function_missing_colon4a = ("def f()\rprint 3", "print 1\ndef f()\rprint 3")
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28380
+        function_missing_colon3a = ("def f()\n", "print 1\ndef f()\r\nprint 3")
+        function_missing_colon4a = ("def f()\n", "print 1\ndef f()\rprint 3")
+    else:
+        function_missing_colon3a = ("def f()\r\n", "print 1\ndef f()\r\nprint 3")
+        function_missing_colon4a = ("def f()\rprint 3", "print 1\ndef f()\rprint 3")
     
     tests = (
         method_missing_colon,

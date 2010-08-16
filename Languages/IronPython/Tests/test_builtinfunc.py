@@ -171,8 +171,15 @@ def test_map():
     AreEqual(map(lambda x:'a' + x + 'c', 'b'), ['abc'])
     
 def test_range():
-    AreEqual(range(2, 5.0), [2,3,4])
-    AreEqual(range(3, 10, 2.0), [3, 5, 7, 9])
+    if is_ironpython: #http://ironpython.codeplex.com/workitem/27902
+        AreEqual(range(2, 5.0), [2,3,4])
+        AreEqual(range(3, 10, 2.0), [3, 5, 7, 9])
+    else:
+        AssertErrorWithMessage(TypeError, "range() integer end argument expected, got float.",
+                               range, 2, 5.0)
+        AssertErrorWithMessage(TypeError, "range() integer step argument expected, got float.",
+                               range, 3, 10, 2.0)
+
     AssertErrorWithMessage(TypeError, "range() integer end argument expected, got float.", 
                            range, float(-2<<32))
     AssertErrorWithMessage(TypeError, "range() integer end argument expected, got float.", 
@@ -181,8 +188,12 @@ def test_range():
                            range, float(-2<<32), 100)
     AssertErrorWithMessage(TypeError, "range() integer step argument expected, got float.", 
                            range, 0, 100, float(-2<<32))
-    AssertErrorWithMessage(TypeError, "range() integer start argument expected, got float.", 
-                           range, float(-2<<32), float(-2<<32), float(-2<<32))
+    if is_cpython:
+        AssertErrorWithMessage(TypeError, "range() integer end argument expected, got float.", 
+                               range, float(-2<<32), float(-2<<32), float(-2<<32))
+    else:
+        AssertErrorWithMessage(TypeError, "range() integer start argument expected, got float.", 
+                               range, float(-2<<32), float(-2<<32), float(-2<<32))
 
 
 def test_sorted():

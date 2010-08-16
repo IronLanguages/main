@@ -702,9 +702,9 @@ def test_modes():
             AreEqual(x.mode, 'rFOOBAR')
             x.close()
         else:
-            AssertError(IOError, file, 'test_file', 'pU')
-            AssertError(IOError, file, 'test_file', 'pU+')
-            AssertError(IOError, file, 'test_file', 'rFOOBAR')
+            AssertError(ValueError, file, 'test_file', 'pU')
+            AssertError(ValueError, file, 'test_file', 'pU+')
+            AssertError(ValueError, file, 'test_file', 'rFOOBAR')
     finally:
         nt.unlink('test_file')
 
@@ -831,11 +831,19 @@ def test_kw_args():
 
 def test_buffering_kwparam():
     #--Positive
-    for x in [-2147483648, -1, 0, 1, 2, 1024, 2147483646, 2147483647, 3.14]:
+    for x in [-2147483648, -1, 0, 1, 2, 1024, 2147483646, 2147483647]:
         f = file(name = 'some_test_file.txt', mode = 'w', buffering=x)
         f.close()
         nt.unlink('some_test_file.txt')
     
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28214
+        AssertErrorWithMessage(TypeError, "integer argument expected, got float",
+                               file, 'some_test_file.txt', 'w', 3.14)
+    else:
+        f = file(name = 'some_test_file.txt', mode = 'w', buffering=3.14)
+        f.close()
+        nt.unlink('some_test_file.txt') 
+
     #--Negative
     for x in [None, "abc", u"", [], tuple()]:
         AssertError(TypeError, #"an integer is required",

@@ -20,16 +20,16 @@ using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     public class RubyFile : RubyIO {
-        private readonly string _path;
+        public string Path { get; set; }
 
         public RubyFile(RubyContext/*!*/ context)
             : base(context) {
-            _path = null;
+            Path = null;
         }
 
         public RubyFile(RubyContext/*!*/ context, string/*!*/ path, IOMode mode)
             : base(context, OpenFileStream(context, path, mode), mode) {
-            _path = path;
+            Path = path;
         }
 
         public RubyFile(RubyContext/*!*/ context, MutableString/*!*/ path, IOMode mode)
@@ -38,7 +38,7 @@ namespace IronRuby.Builtins {
 
         public RubyFile(RubyContext/*!*/ context, Stream/*!*/ stream, int descriptor, IOMode mode)
             : base(context, stream, descriptor, mode) {
-            _path = null;
+            Path = null;
         }
 
         public static Stream/*!*/ OpenFileStream(RubyContext/*!*/ context, string/*!*/ path, IOMode mode) {
@@ -98,12 +98,6 @@ namespace IronRuby.Builtins {
             }
 
             return stream;
-        }
-
-        public string Path {
-            get {
-                return _path; 
-            }
         }
     }
 }

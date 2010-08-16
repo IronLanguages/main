@@ -114,6 +114,10 @@ namespace IronPython.Runtime.Types {
         }
 
         public static string DocOneInfo(MethodBase info, string name) {
+            return DocOneInfo(info, name, true);
+        }
+
+        public static string DocOneInfo(MethodBase info, string name, bool includeSelf) {
             // Look for methods tagged with [Documentation("doc string for foo")]
             object[] attrs = info.GetCustomAttributes(typeof(DocumentationAttribute), false);
             if (attrs.Length > 0) {
@@ -127,7 +131,7 @@ namespace IronPython.Runtime.Types {
                 return defaultDoc;
             }
 
-            return CreateAutoDoc(info, name, 0);
+            return CreateAutoDoc(info, name, 0, includeSelf);
         }
 
         public static string CreateAutoDoc(MethodBase info) {
@@ -343,6 +347,10 @@ namespace IronPython.Runtime.Types {
         }
 
         internal static string CreateAutoDoc(MethodBase info, string name, int endParamSkip) {
+            return CreateAutoDoc(info, name, endParamSkip, true);
+        }
+
+        internal static string CreateAutoDoc(MethodBase info, string name, int endParamSkip, bool includeSelf) {
 #if !SILVERLIGHT // Console
             int lineWidth;
             try {
@@ -354,7 +362,7 @@ namespace IronPython.Runtime.Types {
 #else
             int lineWidth = 80;
 #endif
-            var docInfo = GetOverloadDoc(info, name, endParamSkip);
+            var docInfo = GetOverloadDoc(info, name, endParamSkip, includeSelf);
             StringBuilder ret = new StringBuilder();
 
             ret.Append(docInfo.Name);

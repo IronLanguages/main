@@ -202,8 +202,8 @@ hello
             Context.KCode = null;
             RubyDir.MakeDirectory(toPath, dir, MutableString.CreateMutable("ﾎｱ", RubyEncoding.KCodeSJIS), null);
             Assert(pal.Entries["α"]);
-            Assert(FileTest.IsDirectory(Context.KernelModule, MutableString.CreateMutable("ﾎｱ", RubyEncoding.KCodeSJIS)));
-            Assert(FileTest.IsDirectory(Context.KernelModule, MutableString.CreateMutable("α", RubyEncoding.KCodeUTF8)));
+            Assert(FileTest.IsDirectory(toPath, Context.KernelModule, MutableString.CreateMutable("ﾎｱ", RubyEncoding.KCodeSJIS)));
+            Assert(FileTest.IsDirectory(toPath, Context.KernelModule, MutableString.CreateMutable("α", RubyEncoding.KCodeUTF8)));
             pal.Entries.Clear();
 
             // transcode to KCODE if specified

@@ -14,7 +14,10 @@
  * ***************************************************************************/
 
 using System;
+using System.Runtime.Serialization;
+using System.Security;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Exceptions {
     /// <summary>
@@ -26,6 +29,21 @@ namespace IronPython.Runtime.Exceptions {
 
         public IndentationException(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode, Severity severity)
             : base(message, sourceUnit, span, errorCode, severity) { }
+
+        
+#if !SILVERLIGHT
+        protected IndentationException(SerializationInfo info, StreamingContext context)
+            : base(info, context) {
+        }
+
+        [SecurityCritical]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2140:TransparentMethodsMustNotReferenceCriticalCodeFxCopRule")]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context) {
+            ContractUtils.RequiresNotNull(info, "info");
+
+            base.GetObjectData(info, context);
+        }
+#endif
 
     }
 }

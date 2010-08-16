@@ -26,8 +26,12 @@ AreEqual(str(1.23456789012), "1.23456789012")
 
 # 12 significant digits near the decimal point, preceeded by upto 3 0s
 
-AreEqual(str(123456789012.00), "123456789012.0")
-AreEqual(str(123456789012.0), "123456789012.0")
+if is_cpython: #http://ironpython.codeplex.com/workitem/28215
+    AreEqual(str(123456789012.00), "1.23456789012e+11")
+    AreEqual(str(123456789012.0), "1.23456789012e+11")
+else:
+    AreEqual(str(123456789012.00), "123456789012.0")
+    AreEqual(str(123456789012.0), "123456789012.0")
 AreEqual(str(00.123456789012), "0.123456789012")
 AreEqual(str(0.000123456789012), "0.000123456789012")
 
@@ -39,13 +43,20 @@ AreEqual(str(0.0000123456789012), "1.23456789012e-05")
 # More than 12 significant digits near the decimal point, with rounding down
 
 AreEqual(str(12345678901.23), "12345678901.2")
-AreEqual(str(123456789012.3), "123456789012.0")
+if is_cpython: #http://ironpython.codeplex.com/workitem/28215
+    AreEqual(str(123456789012.3), "1.23456789012e+11")
+else:
+    AreEqual(str(123456789012.3), "123456789012.0")
 AreEqual(str(1.234567890123), "1.23456789012")
 
 # More than 12 significant digits near the decimal point, with rounding up
 
-AreEqual(str(12345678901.25), "12345678901.3")
-AreEqual(str(123456789012.5), "123456789013.0")
+if is_cpython: #http://ironpython.codeplex.com/workitem/28215
+    AreEqual(str(12345678901.25), "12345678901.2")
+    AreEqual(str(123456789012.5), "1.23456789012e+11")
+else:
+    AreEqual(str(12345678901.25), "12345678901.3")
+    AreEqual(str(123456789012.5), "123456789013.0")
 if (is_cli or is_silverlight):
     AreEqual(str(1.234567890125), "1.23456789013")
 else:
@@ -54,7 +65,10 @@ AreEqual(str(1.234567890126), "1.23456789013")
 
 # Signficiant digits away from the decimal point
 
-AreEqual(str(100000000000.0), "100000000000.0")
+if is_cpython: #http://ironpython.codeplex.com/workitem/28215
+    AreEqual(str(100000000000.0), "1e+11")
+else:
+    AreEqual(str(100000000000.0), "100000000000.0")
 AreEqual(str(1000000000000.0), "1e+12")
 AreEqual(str(0.0001), "0.0001")
 AreEqual(str(0.00001), "1e-05")
@@ -101,7 +115,6 @@ values = [
 
           # More than 6 significant digits near the decimal point, with rounding up
 
-          (123456.5, "123457"),
           (0.0001234565, "0.000123457"),
 
           # Signficiant digits away from the decimal point
@@ -110,6 +123,10 @@ values = [
           (1000000.0, "1e+06"),
           (0.0001, "0.0001"),
           (0.00001, "1e-05")]
+if is_cpython: #http://ironpython.codeplex.com/workitem/28206
+    values.append((123456.5, "123456"))
+else:
+    values.append((123456.5, "123457"))
 
 for v in values:
     AreEqual("%g" % v[0], v[1])

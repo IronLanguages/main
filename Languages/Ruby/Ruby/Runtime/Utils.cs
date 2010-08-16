@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
+using Microsoft.Scripting;
 
 namespace IronRuby.Runtime {
     public static class Utils {
@@ -917,6 +918,13 @@ namespace IronRuby.Runtime {
             }
 
             return result;
+        }
+
+        internal static void CopyTupleFields(MutableTuple/*!*/ src, MutableTuple/*!*/ dst) {
+            Debug.Assert(src.Capacity == dst.Capacity);
+            for (int i = 0; i < src.Capacity; i++) {
+                dst.SetValue(i, src.GetValue(i));
+            }
         }
 
     }

@@ -295,62 +295,11 @@ the assembly object.")]
         /// A common use for this is to enable running all REPL commands on the UI thread while the REPL
         /// continues to run on a non-UI thread.
         /// </summary>
-        public static CommandDispatcher SetCommandDispatcher(CodeContext/*!*/ context, CommandDispatcher dispatcher) {
+        public static Action<Action> SetCommandDispatcher(CodeContext/*!*/ context, Action<Action> dispatcher) {
             ContractUtils.RequiresNotNull(context, "context");
 
             return ((PythonContext)context.LanguageContext).GetSetCommandDispatcher(dispatcher);
         }
-
-#if !CLR2 && !SILVERLIGHT
-        /// <summary>
-        /// Loads XAML from the specified filename and returns the deserialized object.  Any event handlers
-        /// are bound to methods defined in the provided module.
-        /// </summary>
-        public static object LoadComponent(CodeContext context, string filename, object self) {
-            if (filename == null) {
-                throw PythonOps.TypeError("expected str, got None");
-            } else if (self == null) {
-                throw PythonOps.TypeError("expected module, got None");
-            }
-
-            return DynamicXamlReader.LoadComponent(self, context.LanguageContext.Operations, filename);
-        }
-
-        /// <summary>
-        /// Loads XAML from the specified stream and returns the deserialized object.  Any event handlers
-        /// are bound to methods defined in the provided module.
-        /// </summary>
-        public static object LoadComponent(CodeContext context, [NotNull]Stream stream, object self) {
-            if (self == null) {
-                throw PythonOps.TypeError("expected module, got None");
-            }
-
-            return DynamicXamlReader.LoadComponent(self, context.LanguageContext.Operations, stream);
-        }
-
-        /// <summary>
-        /// Loads XAML from the specified XmlReader and returns the deserialized object.  Any event handlers
-        /// are bound to methods defined in the provided module.
-        /// </summary>
-        public static object LoadComponent(CodeContext context, [NotNull]XmlReader xmlReader, object self) {
-            if (self == null) {
-                throw PythonOps.TypeError("expected module, got None");
-            }
-
-            return DynamicXamlReader.LoadComponent(self, context.LanguageContext.Operations, xmlReader);
-        }
-
-        /// <summary>
-        /// Loads XAML from the specified TextReader and returns the deserialized object.  Any event handlers
-        /// are bound to methods defined in the provided module.
-        /// </summary>
-        public static object LoadComponent(CodeContext context, [NotNull]TextReader filename, object self) {
-            if (self == null) {
-                throw PythonOps.TypeError("expected module, got None");
-            }
-            return DynamicXamlReader.LoadComponent(self, context.LanguageContext.Operations, filename);
-        }
-#endif
 
         #endregion
 

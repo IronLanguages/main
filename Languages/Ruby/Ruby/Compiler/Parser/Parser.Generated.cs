@@ -2002,7 +2002,7 @@ public partial class Parser
                     _tokenizer.ReportError(Errors.FileInitializerInMethod);
                 }
                             
-                EnterTopScope();
+                EnterFileInitializerScope();
             }
   }
 
@@ -4327,7 +4327,7 @@ public partial class Parser
       // @16 -> 
 #line 1344 "Parser.y"
 			{                
-            EnterTopScope();
+            EnterClassDefinitionScope();
         }
   }
 
@@ -4361,7 +4361,7 @@ public partial class Parser
 			{
             yyval.Integer1 = _inSingletonMethodDefinition;
             _inSingletonMethodDefinition = 0;
-            EnterTopScope();
+            EnterSingletonClassDefinitionScope();
         }
   }
 
@@ -4381,7 +4381,7 @@ public partial class Parser
       // @19 -> 
 #line 1373 "Parser.y"
 			{
-            EnterTopScope();
+            EnterModuleDefinitionScope();
         }
   }
 
@@ -4404,7 +4404,7 @@ public partial class Parser
 #line 1385 "Parser.y"
 			{
             _inInstanceMethodDefinition++;
-            EnterTopScope();
+            EnterMethodDefinitionScope();
         }
   }
 
@@ -4435,7 +4435,7 @@ public partial class Parser
 			{
             _inSingletonMethodDefinition++;
             _tokenizer.LexicalState = LexicalState.EXPR_END;
-            EnterTopScope();
+            EnterSingletonMethodDefinitionScope();
         }
   }
 

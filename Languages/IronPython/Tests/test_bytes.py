@@ -356,7 +356,10 @@ def test_partition():
         
         x = testType(b'abc')
         one, two, three = x.partition(b'd')
-        AreEqual(id(one), id(x))
+        if is_ironpython or testType==str: #http://ironpython.codeplex.com/workitem/27906
+            AreEqual(id(one), id(x))
+        else:
+            Assert(id(one)!=id(x))
     
     one, two, three = b''.partition(b'abc')
     AreEqual(id(one), id(two))
@@ -503,7 +506,10 @@ def test_rpartition():
         
         x = testType(b'abc')
         one, two, three = x.rpartition(b'd')        
-        AreEqual(id(three), id(x))
+        if is_ironpython or testType==str: #http://ironpython.codeplex.com/workitem/27906
+            AreEqual(id(three), id(x))
+        else:
+            Assert(id(three) != id(x))
         
         b = testType(b'mississippi')
         AreEqual(b.rpartition(b'i'), (b'mississipp', b'i', b''))
@@ -742,9 +748,15 @@ def test_translate():
     AreEqual(b'AAA'.translate(None, b'A'), b'')
     AreEqual(b'AAABBB'.translate(None, b'A'), b'BBB')
     AreEqual(b'AAA'.translate(None), b'AAA')
-    AssertError(TypeError, bytearray(b'AAA').translate, None, b'A')
-    AssertError(TypeError, bytearray(b'AAA').translate, None)
-    
+    if is_ironpython: #http://ironpython.codeplex.com/workitem/27904
+        AssertError(TypeError, bytearray(b'AAA').translate, None, b'A')
+        AssertError(TypeError, bytearray(b'AAA').translate, None)
+    else:
+        AreEqual(bytearray(b'AAA').translate(None, b'A'),
+                 b'')
+        AreEqual(bytearray(b'AAA').translate(None),
+                 b'AAA')
+
     b = b'abc'    
     AreEqual(id(b.translate(None)), id(b))    
     
@@ -957,20 +969,17 @@ def test_bytes_to_numeric():
         
         AreEqual(long(v), 1L)
         
+        AreEqual(float(v), 1.0)
+        AreEqual(myfloat(v), 1.0)
+        AreEqual(type(myfloat(v)), myfloat)
+
         # str in 2.6 still supports this, but not in 3.0, we have the 3.0 behavior.
         if not is_cli and testType == bytes:
             AreEqual(complex(v), 123 + 0j)
-            AreEqual(float(v), 123.0)
-            
             AreEqual(mycomplex(v), 123 + 0j)
-            AreEqual(myfloat(v), 123.0)
         else:
             AreEqual(complex(v), 1j)
-            AreEqual(float(v), 1.0)
-
             AreEqual(mycomplex(v), 1j)
-            AreEqual(myfloat(v), 1.0)
-            AreEqual(type(myfloat(v)), myfloat)
         
         class substring(testType): pass
         
@@ -1187,7 +1196,10 @@ def test_bytearray():
     AssertError(MemoryError, f)
     
     def f(): x[0:1] = sys.maxint+1
-    AssertError(TypeError, f)    
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28210
+        AssertError(OverflowError, f)   
+    else:
+        AssertError(TypeError, f)    
         
     for setval in [b'bar', bytearray(b'bar'), [b'b', b'a', b'r'], (b'b', b'a', b'r'), (98, b'a', b'r'), (Indexable(98), b'a', b'r'), (IndexableOC(98), b'a', b'r')]:
         x = bytearray(b'abc')
@@ -1431,7 +1443,12 @@ def test_bytes_hashing():
         x = hashLib(b'abc')
         x.update(b'abc')
         
-        AssertError(TypeError, hashLib, bytearray(b'abc'))
-        AssertError(TypeError, x.update, bytearray(b'abc'))
+        if is_ironpython: #http://ironpython.codeplex.com/workitem/27903
+            AssertError(TypeError, hashLib, bytearray(b'abc'))
+            AssertError(TypeError, x.update, bytearray(b'abc'))
+        else:
+            #For now just make sure this doesn't throw
+            temp = hashLib(bytearray(b'abc'))
+            x.update(bytearray(b'abc'))
 
 run_test(__name__)

@@ -68,11 +68,14 @@ def test_formatter_parser():
         AreEqual(list(format._formatter_parser()), expected)
 
 def test_format_field_name_split_errors():
-    AssertErrorWithMessage(ValueError, "empty field name", ''._formatter_field_name_split)
-    AssertErrorWithMessage(ValueError, "empty field name", '['._formatter_field_name_split)
-    AssertErrorWithMessage(ValueError, "empty field name", '.'._formatter_field_name_split)
-    AssertErrorWithMessage(ValueError, "empty field name", '[.abc'._formatter_field_name_split)
-    AssertErrorWithMessage(ValueError, "empty field name", '.abc'._formatter_field_name_split)
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28224
+        temp = ''._formatter_field_name_split() #Just ensure it doesn't throw
+    else:
+        AssertErrorWithMessage(ValueError, "empty field name", ''._formatter_field_name_split)
+        AssertErrorWithMessage(ValueError, "empty field name", '['._formatter_field_name_split)
+        AssertErrorWithMessage(ValueError, "empty field name", '.'._formatter_field_name_split)
+        AssertErrorWithMessage(ValueError, "empty field name", '[.abc'._formatter_field_name_split)
+        AssertErrorWithMessage(ValueError, "empty field name", '.abc'._formatter_field_name_split)
     
     errors = [ ("0[",              "Missing ']' in format string"),
                ("abc.",            "Empty attribute in format string"),
@@ -93,16 +96,17 @@ def test_format_field_name_split():
               ('].abc',            [']', [(True, 'abc')]]),
               ("abc[[]",           ['abc', [(False, '[')]] ),
               ("abc[[[]",          ['abc', [(False, '[[')]] ),
-              ("abc[2]#x",         ['abc', [(False, 2L)]] ),
             ]
-        
+
+    if not is_cpython: #http://ironpython.codeplex.com/workitem/28331
+        tests.append(("abc[2]#x",         ['abc', [(False, 2L)]] ))
     tests.append([allChars, [allChars, []]])
     tests.append([allChars + '.foo', [allChars, [(True, 'foo')]]])
     tests.append([allChars + '[2]', [allChars, [(False, 2L)]]])
     
     for format, expected in tests:
         res = list(format._formatter_field_name_split())
-        res[1] = list(res[1])        
+        res[1] = list(res[1])
         AreEqual(res, expected)
 
 def test_format_arg_errors():
@@ -250,7 +254,13 @@ def test_object___format___errors():
     # ensure only the s format type is recognized
     for char in allChars:
         if char != 's' and (char < '0' or char > '9'):
-            errors.append(('10' + char, "Unknown format code '%s' for object of type 'str'" % char))
+            if char==',' and is_cpython: 
+                errors.append(('10' + char, "Cannot specify ',' with 's'."))
+            elif char==',': #http://ironpython.codeplex.com/workitem/28377
+                temp = object.__format__(",")
+            else:
+                errors.append(('10' + char, "Unknown format code '%s' for object of type 'str'" % char))
+
         
     for errorFmt, errorMsg in errors:
         AssertErrorWithMessage(ValueError, errorMsg, object().__format__, errorFmt)
@@ -261,7 +271,83 @@ def test_object___format___errors():
     AssertErrorWithMessage(TestException, 'booh', bad_str().__format__, '.')
     
 def test_float___format__():
-    tests = [ (2.0,              '',         '2.0'),
+    tests = []
+    if is_cpython: #In large part due to http://ironpython.codeplex.com/workitem/28206
+        tests+= [   (2.0,              '6.1',      ' 2e+00'),
+                    (2.5,              '6.1',      ' 2e+00'),
+                    (2.25,             '6.1',      ' 2e+00'),
+                    (2.25,             '6.2',      '   2.2'),
+                    (23.0,             '.1',       '2e+01'),
+                    (23.0,             '.2',       '2.3e+01'),
+                    (230.5,            '.3',       '2.3e+02'),
+                    (11230.54,         '.5',       '1.1231e+04'),
+                    (111230.54,        '.1',       '1e+05'),
+                    (100000.0,           '.5',     '1e+05'),
+                    (230.5,            '.3g',       '230'),
+                    (230.5,            '.3n',       '230'),
+                    (0.0,              '1.1',      '0e+00'),
+                    (0.0,              '1.0',      '0e+00'),
+                    (1.0,              '.0',       '1e+00'),
+                    (1.1,              '.0',       '1e+00'),
+                    (1.1,              '.1',       '1e+00'),
+                    (10.0,             '.1',       '1e+01'),
+                    (10.0,             '.0',       '1e+01'),
+                    (100000000000.0,   '',         '1e+11'),
+                    (1000000000.12,    '1.10',     '1e+09'),
+                    (1000000000.12,    '1.3',      '1e+09'),
+                    (999999999999.9,   '1.0',      '1e+12'),
+                    (999999999999.9,   '1.2',      '1e+12'),
+                    (999999999999.0,   '',         '9.99999999999e+11'),
+                    (-999999999999.0,  '',         '-9.99999999999e+11'),
+                    (10e667,           '+',        '+inf'),
+                    (-10e667,          '+',        '-inf'),
+                    (10e667/10e667,    '+',        '+nan'),
+                    (10e667,           '-',        'inf'),
+                    (-10e667,          '-',        '-inf'),
+                    (10e667/10e667,    '-',        'nan'),
+                    (10e667,           ' ',        ' inf'),
+                    (-10e667,          ' ',        '-inf'),
+                    (10e667/10e667,    ' ',        ' nan'),
+                ]
+    else:
+        tests+= [   (2.0,              '6.1',      '   2.0'),
+                    (2.5,              '6.1',      '   3.0'),
+                    (2.25,             '6.1',      '   2.0'),
+                    (2.25,             '6.2',      '   2.3'),
+                    (23.0,             '.1',       '2.0e+01'),
+                    (23.0,             '.2',       '23.0'),
+                    (230.5,            '.3',       '231.0'),
+                    (11230.54,         '.5',       '11231.0'),
+                    (111230.54,        '.1',       '1.0e+05'),
+                    (100000.0,           '.5',     '1.0e+05'),
+                    (230.5,            '.3g',       '231'),
+                    (230.5,            '.3n',       '231'),
+                    (0.0,              '1.1',      '0.0'),
+                    (0.0,              '1.0',      '0.0'),
+                    (1.0,              '.0',       '1.0'),
+                    (1.1,              '.0',       '1.0'),
+                    (1.1,              '.1',       '1.0'),
+                    (10.0,             '.1',       '1.0e+01'),
+                    (10.0,             '.0',       '1.0e+01'),
+                    (100000000000.0,   '',         '100000000000.0'),
+                    (1000000000.12,    '1.10',     '1000000000.0'),
+                    (1000000000.12,    '1.3',      '1.0e+09'),
+                    (999999999999.9,   '1.0',      '1.0e+12'),
+                    (999999999999.9,   '1.2',      '1.0e+12'),
+                    (999999999999.0,   '',         '999999999999.0'),
+                    (-999999999999.0,  '',         '-999999999999.0'),
+                    (10e667,           '+',        '+1.0#INF'),
+                    (-10e667,          '+',        '-1.0#INF'),
+                    (10e667/10e667,    '+',        '-1.0#IND'),
+                    (10e667,           '-',        '1.0#INF'),
+                    (-10e667,          '-',        '-1.0#INF'),
+                    (10e667/10e667,    '-',        '-1.0#IND'),
+                    (10e667,           ' ',        ' 1.0#INF'),
+                    (-10e667,          ' ',        '-1.0#INF'),
+                    (10e667/10e667,    ' ',        '-1.0#IND'),
+                ]
+    
+    tests+= [ (2.0,              '',         '2.0'),
               (2.0,              'g',         '2'),
               (2.0,              'f',         '2.000000'),
               (2.5,              '',         '2.5'),
@@ -274,7 +360,6 @@ def test_float___format__():
               (2.0,              '=5',       '  2.0'),
               (2.0,              '^6',       ' 2.0  '),
               (2.0,              '6',        '   2.0'),
-              (2.0,              '6.1',      '   2.0'),
               (2.0,              'x< 10.10', ' 2.0xxxxxx'),
               (2.01,             'x< 10.10', ' 2.01xxxxx'),
               (2.0,              'x> 10.10', 'xxxxxx 2.0'),
@@ -282,31 +367,22 @@ def test_float___format__():
               (2.0,              'x^ 10.10', 'xxx 2.0xxx'),
               (2.0,              'x^ 9.10',  'xx 2.0xxx'),
               (2.0,              '\0^ 9.10', '   2.0   '),
-              (2.5,              '6.1',      '   3.0'),
-              (2.25,             '6.1',      '   2.0'),
-              (2.25,             '6.2',      '   2.3'),
               (2.23,             '6.2',      '   2.2'),
               (2.25,             '6.3',      '  2.25'),
               (2.123456789,      '2.10',     '2.123456789'),
               
-              (23.0,             '.1',       '2.0e+01'),
-              (23.0,             '.2',       '23.0'),
+              
               (230.0,            '.2',       '2.3e+02'),
               (230.1,            '.2',       '2.3e+02'),
-              (230.5,            '.3',       '231.0'),
               (230.5,            '.4',       '230.5'),
               (230.54,           '.4',       '230.5'),
               (230.54,           '.5',       '230.54'),
               (1230.54,          '.5',       '1230.5'),
-              (11230.54,         '.5',       '11231.0'),
               (111230.54,        '.5',       '1.1123e+05'),
               (111230.54,        '.4',       '1.112e+05'),
               (111230.54,        '.3',       '1.11e+05'),
               (111230.54,        '.2',       '1.1e+05'),
-              (111230.54,        '.1',       '1.0e+05'),
-              (100000.0,           '.5',     '1.0e+05'),
 
-            
               
               (23.0,             'e',        '2.300000e+01'),
               (23.0,             '.6e',      '2.300000e+01'),
@@ -407,7 +483,7 @@ def test_float___format__():
               (23.45,            '.2g',       '23'),
               (230.0,            '.2g',       '2.3e+02'),
               (230.1,            '.2g',       '2.3e+02'),
-              (230.5,            '.3g',       '231'),
+              
               (230.5,            '.4g',       '230.5'),
               (230.54,           '.4g',       '230.5'),
               (230.54,           '.5g',       '230.54'),
@@ -423,7 +499,7 @@ def test_float___format__():
               (23.0,             '.2n',       '23'),
               (230.0,            '.2n',       '2.3e+02'),
               (230.1,            '.2n',       '2.3e+02'),
-              (230.5,            '.3n',       '231'),
+              
               (230.5,            '.4n',       '230.5'),
               (230.54,           '.4n',       '230.5'),
               (230.54,           '.5n',       '230.54'),
@@ -434,56 +510,31 @@ def test_float___format__():
               (111230.54,        '.3n',       '1.11e+05'),
               (111230.54,        '.2n',       '1.1e+05'),
               (111230.54,        '.1n',       '1e+05'),
-              
               (11231.54,         'n',        '11231.5'),
               (111230.54,        'n',        '111231'),
-              (111230.54,        'g',        '111231'),
-              
+              (111230.54,        'g',        '111231'), 
               (0.0,              '',         '0.0'),
               (0.0,              '1',        '0.0'),
-              (0.0,              '1.1',      '0.0'),
-              (0.0,              '1.0',      '0.0'),
-              (1.0,              '.0',       '1.0'),
-              (1.1,              '.0',       '1.0'),
-              (1.1,              '.1',       '1.0'),
               (1.1,              '.2',       '1.1'),
-              (10.0,             '.1',       '1.0e+01'),
-              (10.0,             '.0',       '1.0e+01'),
               (1000000.0,        '',         '1000000.0'),
               (10000000.0,       '',         '10000000.0'),
               (100000000.0,      '',         '100000000.0'),
               (1000000000.0,     '',         '1000000000.0'),
               (10000000000.0,    '',         '10000000000.0'),
-              (100000000000.0,   '',         '100000000000.0'),
-              (1000000000.12,    '1.10',     '1000000000.0'),
-              (1000000000.12,    '1.3',      '1.0e+09'),
-              (999999999999.9,   '1.0',      '1.0e+12'),
-              (999999999999.9,   '1.2',      '1.0e+12'),
-              (999999999999.0,   '',         '999999999999.0'),
               (1000000000000.0,  '',         '1e+12'),
-              (-999999999999.0,  '',         '-999999999999.0'),
               (-1000000000000.0, '',         '-1e+12'),
               (-1000000000000.0, 'g',        '-1e+12'),
               (-1000000000000.0, 'G',        '-1E+12'),
               (-1000000000000.0, '.1g',      '-1e+12'),
               (-1000000000000.0, '.1G',      '-1E+12'),
-                            
               (10e667,           '',         'inf'),
               (-10e667,          '',         '-inf'),
               (10e667/10e667,    '',         'nan'),
-              (10e667,           '+',        '+1.0#INF'),
-              (-10e667,          '+',        '-1.0#INF'),
-              (10e667/10e667,    '+',        '-1.0#IND'),
-              (10e667,           '-',        '1.0#INF'),
-              (-10e667,          '-',        '-1.0#INF'),
-              (10e667/10e667,    '-',        '-1.0#IND'),
-              (10e667,           ' ',        ' 1.0#INF'),
-              (-10e667,          ' ',        '-1.0#INF'),
-              (10e667/10e667,    ' ',        '-1.0#IND'),
             ]
 
     for value, spec, result in tests:
         AreEqual(value.__format__(spec), result)
+
 
     # check locale specific formatting
     import _locale
@@ -497,13 +548,23 @@ def test_float___format__():
                   (1000.12345,          'n',         '1,000.12'),
                   (1000.5,              'n',         '1,000.5'),
                   (100000.0,            'n',         '100,000'),
-                  (100000.5,            'n',         '100,001'),
+                  
                   (100000.0,            '.5n',       '1e+05'),
                   (100000.5,            '.5n',       '1e+05'),
-                  (100000.5,            '.6n',       '100,001'),
+                  
                   (100000.5,            '.7n',       '100,000.5'),
                 ]
-        
+        if is_cpython: #http://ironpython.codeplex.com/workitem/28206
+            tests+= [
+                        (100000.5,            'n',         '100,000'),
+                        (100000.5,            '.6n',       '100,000'),
+                    ]
+        else:
+            tests+= [
+                        (100000.5,            'n',         '100,001'),
+                        (100000.5,            '.6n',       '100,001'),
+                    ]
+
         for value, spec, result in tests:
             AreEqual(value.__format__(spec), result)
     finally:
@@ -515,6 +576,8 @@ def test_float___format___errors():
     errors = []
     
     okChars = set(['\0', '%', 'E', 'F', 'G', 'e', 'f', 'g', 'n'])
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28223
+        okChars.add(',')
     # verify the okChars are actually ok
     for char in okChars:
         2.0.__format__('10' + char)
@@ -811,8 +874,8 @@ def test_int___format___errors():
                 #(-2, '%', "Sign not allowed with integer format specifier 'c'"),
              ]
     
-    okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n'])
-    
+    okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','])
+
     # verify the okChars are actually ok
     for char in okChars:
         (2).__format__('10' + char)
@@ -1107,10 +1170,14 @@ def test_long___format___errors():
                 (ValueError, 2L, ' c', "Sign not allowed with integer format specifier 'c'"),
                 (OverflowError, -2L, 'c', "%c arg not in range(0x10000)"),
                 (OverflowError, 1000000L, 'c', "%c arg not in range(0x10000)"),
-                (OverflowError, sys.maxint + 1, 'c', "long int too large to convert to int"),
              ]
     
-    okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n'])
+    if not is_cpython: #http://ironpython.codeplex.com/workitem/28373
+        errors.append((OverflowError, sys.maxint + 1, 'c', "long int too large to convert to int"))
+    else:
+        errors.append((OverflowError, sys.maxint + 1, 'c', "Python int too large to convert to C long"))
+
+    okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','])
     
     # verify the okChars are actually ok
     for char in okChars:
@@ -1123,6 +1190,7 @@ def test_long___format___errors():
     for exceptionType, value, errorFmt, errorMsg in errors:
         AssertErrorWithPartialMessage(exceptionType, errorMsg, value.__format__, errorFmt)
 
+
 def test_builtin_types_that_implement_format():
     import __builtin__
     types = [getattr(__builtin__, typeName) for typeName in dir(__builtin__) if type(getattr(__builtin__, typeName)) is type]
@@ -1132,9 +1200,9 @@ def test_builtin_types_that_implement_format():
     if is_cli:
         # no unicode
         # 'float', 'int', 'long', 
-        AreEqual(formatTypes, ['float', 'int', 'long', 'object', 'str'])
+        AreEqual(formatTypes, ['complex', 'float', 'int', 'long', 'object', 'str'])
     else:
-        AreEqual(formatTypes, ['float', 'int', 'long', 'object', 'str', 'unicode'])
+        AreEqual(formatTypes, ['complex', 'float', 'int', 'long', 'object', 'str', 'unicode'])
     
 
 def test_computed_format():

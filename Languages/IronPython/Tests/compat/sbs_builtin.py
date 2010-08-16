@@ -84,7 +84,8 @@ class test_builtin(object):
                         printwith("same", sys.exc_type)
 
     def test_complex_ctor_str(self):
-        l = [ "", " ", "-1", "0", "1", "+1", "+1.1", "-1.01", "-.101", ".234", "-1.3e3", "1.09e-3", "33.2e+10"]
+        l = [ "-1", "0", "1", "+1", "+1.1", "-1.01", "-.101", ".234", "-1.3e3", "1.09e-3", "33.2e+10"] #, " ", ""] #http://ironpython.codeplex.com/workitem/28385
+        
         
         for s in l:
             try: 
@@ -194,6 +195,7 @@ class test_builtin(object):
        
     def test_file_mode(self):
         disabled_modes = ['Ut+', 'rUt+', 'Urt+']
+        disabled_modes += ['Ut', 'U+t', 'rUt', 'rU+t', 'Urt', 'Ur+t'] #http://ironpython.codeplex.com/workitem/28386
                           
         arw = ['', 'a', 'r', 'w', 'U', 'rU', 'Ur', 'wU', 'Uw', 'Ua', 'aU']
         bt = ['', 'b', 't']

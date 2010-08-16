@@ -241,18 +241,28 @@ def test_array___reduce__():
     TODO: revisit
     '''
     x = array.array('i', [1,2,3])
-    AreEqual(repr(x.__reduce__()), 
-             "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28211
+        AreEqual(repr(x.__reduce__()), 
+                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
+    else:
+        AreEqual(repr(x.__reduce__()), 
+                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
 
 def test_array___reduce_ex__():
     '''
     TODO: revisit
     '''
     x = array.array('i', [1,2,3])
-    AreEqual(repr(x.__reduce_ex__(1)), 
-             "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
-    AreEqual(repr(x.__reduce_ex__()), 
-             "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28211
+        AreEqual(repr(x.__reduce_ex__(1)), 
+                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
+        AreEqual(repr(x.__reduce_ex__()), 
+                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
+    else:
+        AreEqual(repr(x.__reduce_ex__(1)), 
+                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
+        AreEqual(repr(x.__reduce_ex__()), 
+                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
 
 def test_array___repr__():
     '''
@@ -446,13 +456,18 @@ def test_cp9348():
                     ('I', "\x01\x00\x00\x00") : "array('I', [1L])",
                     ('l', "\x12\x34\x45\x67") : "array('l', [1732588562])",
                     ('L', "\x12\x34\x45\x67") : "array('L', [1732588562L])",
-                    ('f', "\x12\x34\x45\x67") : "array('f', [9.3126672485384569e+23])",
-                    ('d', "\x12\x34\x45\x67\x12\x34\x45\x67") : "array('d', [2.9522485325887698e+189])",
                 }
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28212
+        test_cases[('d', "\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.95224853258877e+189])"
+        test_cases[('f', "\x12\x34\x45\x67")] = "array('f', [9.312667248538457e+23])"
+    else:
+        test_cases[('d', "\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.9522485325887698e+189])"
+        test_cases[('f', "\x12\x34\x45\x67")] = "array('f', [9.3126672485384569e+23])"
+
     for key in test_cases.keys():
         type_code, param = key
         temp_val = array.array(type_code, param)
-        AreEqual(str(temp_val), test_cases[key]) 
+        AreEqual(str(temp_val), test_cases[key])
 
 
 def test_cp8736():

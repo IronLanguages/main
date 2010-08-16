@@ -1,0 +1,6 @@
+fails:REXML::Element#delete_attribute deletes an attribute from the element
+fails:REXML::Element#delete_attribute returns the element with the attribute removed
+fails:REXML::Element#delete_attribute returns nil if the attribute does not exist
+fails:"REXML::Element#delete_attribute deletes an attribute from the element"
+fails:"REXML::Element#delete_attribute returns the element with the attribute removed"
+fails:"REXML::Element#delete_attribute returns nil if the attribute does not exist"

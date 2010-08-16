@@ -1,0 +1,107 @@
+#!/usr/bin/env ruby
+# Text::Hyphen
+#   Copyright 2003 - 2004, Martin DeMello and Austin Ziegler
+#
+# Licensed under the same terms as Ruby.
+#
+# $Id: hyphen,v 1.2 2004/12/20 22:43:03 austin Exp $
+#++
+
+require 'optparse'
+require 'ostruct'
+
+begin
+  require 'text/hyphen'
+rescue LoadError
+  require 'rubygems'
+  require 'text/hyphen'
+end
+
+options = OpenStruct.new
+options.action = :visualise
+ARGV.options do |opt|
+  opt.banner = "Usage: #{File.basename($0)} [options] [mode] word+"
+  opt.separator ""
+  opt.separator "Modes"
+  opt.on('-V', '--visualise', 'Visualises the hyphenation of the word.', 'Default action.') { |mode|
+    options.action = :visualise
+  }
+  opt.on('-P', '--points', 'Shows the letters on which a word will', 'be hyphenated.') { |mode|
+    options.action = :hyphenate
+  }
+  opt.on('-H', '--hyphenate-to SIZE', Numeric, 'Hyphenates the word so that the first', 'point is at least SIZE letters.') { |size|
+    options.action = :hyphenate_to
+    options.size = size.to_i
+  }
+  opt.on("-S", "--stats", 'Shows the hyphenation statistics for the', 'current language pattern dictionary.') { |mode|
+    options.action = :stats
+  }
+
+  opt.separator ""
+  opt.separator "Options"
+  opt.on('-L', '--left SIZE', Integer, 'Sets the minimum number of letters on', 'the left side of the word.') { |left|
+    options.left = left.to_i
+  }
+  opt.on('-R', '--right SIZE', Integer, 'Sets the minimum number of letters on', 'the right side of the word.') { |right|
+    options.right = right.to_i
+  }
+  opt.on('-l', '--language LANGUAGE', 'Loads the specified language resource.') { |lang|
+    options.language = lang
+  }
+
+  opt.separator ""
+  opt.on_tail('-h', '--help', 'Shows this help') {
+    $stderr.puts opt
+    exit 0
+  }
+  opt.on_tail('-v', '--version', 'Display the program and library version.') {
+    $stderr.puts "#{File.basename($0)}: Text::Hyphen version #{Text::Hyphen::VERSION}"
+    exit 0
+  }
+  opt.parse!
+end
+
+if ARGV.empty? and options.action != :stats
+  $stderr.puts ARGV.options
+  exit 0
+end
+
+hyphenator = Text::Hyphen.new do |h|
+  h.left      = options.left  if options.left
+  h.right     = options.right if options.right
+  h.language  = options.language if options.language
+end
+
+case options.action
+when :visualise
+  size = 80
+  ARGV.each do |word|
+    vis = hyphenator.visualise(word)
+    if (size - vis.size - 1) < 0
+      puts
+      size = 80
+    end
+    size -= (vis.size + 1)
+    print "#{vis} "
+  end
+when :hyphenate
+  ARGV.each do |word|
+    hyp = hyphenator.hyphenate(word)
+    print "#{word}: "
+    hyp.each { |pt| print "#{word[pt, 1]} " }
+    puts
+  end
+when :hyphenate_to
+  size = 80
+  ARGV.each do |word|
+    vis = hyphenator.visualise_to(word, options.size)
+    if (size - vis.size - 1) < 0
+      puts
+      size = 80
+    end
+    size -= (vis.size + 1)
+    print "#{vis} "
+  end
+when :stats
+  puts hyphenator.stats
+end

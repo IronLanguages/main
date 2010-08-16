@@ -272,14 +272,22 @@ def cleanUp():
     #the following while loop is necessary as
     #the Delete call fails (ipy.exe subprocess has
     #not really released some files yet).
-    while 1:
-        try:
-            Directory.Delete(DLLS_DIR, True)
-            break
-        except:
+    for i in xrange(5):
+        threw = False
+        for file in Directory.GetFiles(DLLS_DIR):
+            if not file.endswith('IronPython.Wpf.dll'):
+                try:
+                    File.Delete(file)
+                except:
+                    print 'cannot delete', file
+                    threw = True
+                    pass
+        if threw:
             from time import sleep
             sleep(1)
             continue
+        else:
+            break
 
 
 def setUp():
@@ -289,12 +297,9 @@ def setUp():
     #if it exists, we cannot continue because we will
     #not have the correct permissions to move/remove the
     #DLLs directory
-    if Directory.Exists(DLLS_DIR):
-        print "ERROR - cannot test anything with a pre-existing DLLs directory"
-        raise Exception("Cannot move/delete DLLs which is being used by this process!")
-    
     Directory.CreateDirectory(DLLS_DIR)
     
+    cleanUp()
     File.Copy(IP_DIR + "\\IronPython.dll",
               DLLS_DIR + "\\IronPython.dll")
     

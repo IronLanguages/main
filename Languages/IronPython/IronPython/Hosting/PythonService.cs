@@ -14,6 +14,8 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.Remoting;
 using System.Security.Permissions;
 using System.Threading;
 using IronPython.Runtime;
@@ -98,7 +100,47 @@ namespace IronPython.Hosting {
             throw PythonOps.ImportError("no module named {0}", name);
         }
 
+        public string[] GetModuleFilenames() {
+            List<string> res = new List<string>();
+            PythonDictionary dict = (object)_engine.GetSysModule().GetVariable("modules") as PythonDictionary;
+            if (dict != null) {
+                foreach (var kvp in dict) {
+                    string key = kvp.Key as string;
+                    PythonModule module = kvp.Value as PythonModule;
+                    if (key != null && module != null) {
+                        var modDict = module.Get__dict__();
+                        object file;
+                        if (modDict.TryGetValue("__file__", out file) && file != null) {
+                            res.Add(key);
+                        }
+                    }
+                }
+            }
+            return res.ToArray();
+        }
+
+        public void DispatchCommand(Action command) {
+            _context.DispatchCommand(command);
+        }
+
 #if !SILVERLIGHT
+        public ObjectHandle GetSetCommandDispatcher(ObjectHandle dispatcher) {
+            var res = _context.GetSetCommandDispatcher((Action<Action>)dispatcher.Unwrap());
+            if (res != null) {
+                return new ObjectHandle(res);
+            }
+                        
+            return null;
+        }
+
+        /// <summary>
+        /// Returns an ObjectHandle to a delegate of type Action[Action] which calls the current
+        /// command dispatcher.
+        /// </summary>
+        public ObjectHandle GetLocalCommandDispatcher() {
+            return new ObjectHandle((Action<Action>)(action => _context.DispatchCommand(action)));
+        }
+
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService() {
             // track the engines lifetime

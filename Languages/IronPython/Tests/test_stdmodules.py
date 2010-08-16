@@ -43,7 +43,7 @@ def test_cp8678():
     for i in xrange(len(expected)):
         AreEqual(expected[i], actual[i])
 
-@skip("multiple_execute")
+@skip("multiple_execute", "cli")
 @retry_on_failure
 def test_cp10825():
     import urllib
@@ -104,6 +104,9 @@ def test_cp12907():
                     ("if 1:\n    print 1\n",
                         "exec", ["1\n"]),
                 ]
+
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28221
+        test_list.append(("if 1:\n    print 1", "exec", ["1\n"]))
                 
     for test_case, kind, expected in test_list:
         
@@ -131,8 +134,9 @@ def test_cp12907():
                     ("def f(n):\n    return n*n\n\nf(3)",   "single"),
                     ("def f(n):\n    return n*n\n\nf(3)\n", "single"),
                     ("if 1:\n    print 1",                  "single"),
-                    ("if 1:\n    print 1",                  "exec"),
                 ]
+    if not is_cpython: #http://ironpython.codeplex.com/workitem/28221
+        bad_test_list.append(("if 1:\n    print 1",                  "exec"))
                 
     for test_case, kind in bad_test_list:
         print test_case, kind
@@ -237,8 +241,10 @@ def test_cp20603():
 
 def test_cp21929():
     import os
-    AreEqual(os.listdir(""),
+    AreEqual(os.listdir("."),
              os.listdir(os.getcwd()))
+    if is_cpython: #http://ironpython.codeplex.com/workitem/28207
+        AssertError(WindowsError, os.listdir, "")
     
 ##MAIN#########################################################################
 run_test(__name__)

@@ -167,15 +167,15 @@ namespace IronPython.Runtime.Binding {
                 )
             );
 
-            Expression instance = Ast.Property(
+            Expression instance = Ast.Call(
+                typeof(PythonOps).GetMethod("GetBuiltinFunctionSelf"),
                 AstUtils.Convert(
                     Expression,
                     typeof(BuiltinFunction)
-                ),
-                typeof(BuiltinFunction).GetProperty("__self__")
+                )
             );
 
-              DynamicMetaObject self = GetInstance(instance, CompilerHelpers.GetType(Value.__self__));
+            DynamicMetaObject self = GetInstance(instance, CompilerHelpers.GetType(Value.BindingSelf));
                 return Value.MakeBuiltinFunctionCall(
                 call,
                 codeContext,
@@ -223,7 +223,7 @@ namespace IronPython.Runtime.Binding {
 
         private DynamicMetaObject/*!*/ GetInstance(Expression/*!*/ instance, Type/*!*/ testType) {
             Assert.NotNull(instance, testType);
-            object instanceValue = Value.__self__;
+            object instanceValue = Value.BindingSelf;
 
             BindingRestrictions restrictions = BindingRestrictionsHelpers.GetRuntimeTypeRestriction(instance, testType);
             // cast the instance to the correct type
@@ -235,7 +235,7 @@ namespace IronPython.Runtime.Binding {
                 // We could have an MBRO whos DeclaringType is completely different.  
                 // Therefore we special case it here and cast to the declaring type
 
-                Type selfType = CompilerHelpers.GetType(Value.__self__);
+                Type selfType = CompilerHelpers.GetType(Value.BindingSelf);
                 selfType = CompilerHelpers.GetVisibleType(selfType);
 
                 if (selfType == typeof(object) && Value.DeclaringType.IsInterface) {
@@ -275,8 +275,8 @@ namespace IronPython.Runtime.Binding {
 
         private MemberExpression/*!*/ ReadStrongBoxValue(Expression instance) {
             return Ast.Field(
-                AstUtils.Convert(instance, Value.__self__.GetType()),
-                Value.__self__.GetType().GetField("Value")
+                AstUtils.Convert(instance, Value.BindingSelf.GetType()),
+                Value.BindingSelf.GetType().GetField("Value")
             );
         }
 

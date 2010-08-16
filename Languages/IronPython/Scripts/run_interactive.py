@@ -18,14 +18,14 @@ import clr
 import System
 
 sys.path.append(sys.exec_prefix)
-clr.AddReference("Microsoft.Scripting.dll")
-clr.AddReference("Microsoft.Dynamic.dll")
+clr.AddReference("Microsoft.Scripting")
+clr.AddReference("Microsoft.Dynamic")
 if System.Environment.Version.Major >=4:
     clr.AddReference("System.Core")
 else:
     clr.AddReference("Microsoft.Scripting.Core")
-clr.AddReference("IronPython.dll")
-clr.AddReference("IronPython.Modules.dll")
+clr.AddReference("IronPython")
+clr.AddReference("IronPython.Modules")
 
 from Microsoft.Scripting import SourceCodeKind, ErrorSink
 from Microsoft.Scripting.Hosting import ScriptRuntime
@@ -49,7 +49,6 @@ class FileConsole(object):
         self.fileName = fileName
         self.engine = scriptEnv.GetEngine("python")        
         self.context = HostingHelpers.GetLanguageContext(self.engine) 
-        
         scriptEnv.LoadAssembly(Type.GetType("System.String").Assembly) #mscorlib.dll
         scriptEnv.LoadAssembly(UriBuilder().GetType().Assembly)  #System.dll
                 

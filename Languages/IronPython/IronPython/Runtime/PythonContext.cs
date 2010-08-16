@@ -53,7 +53,6 @@ using PyAst = IronPython.Compiler.Ast;
 
 
 namespace IronPython.Runtime {
-    public delegate void CommandDispatcher(Delegate command);
     public delegate int HashDelegate(object o, ref HashDelegate dlg);
 
     public sealed partial class PythonContext : LanguageContext {
@@ -145,7 +144,7 @@ namespace IronPython.Runtime {
         private CompiledLoader _compiledLoader;
         internal bool _importWarningThrows;
         private bool _importedEncodings;
-        private CommandDispatcher _commandDispatcher; // can be null
+        private Action<Action> _commandDispatcher; // can be null
         private ClrModule.ReferencesList _referencesList;
         private FloatFormat _floatFormat, _doubleFormat;
         private CultureInfo _collateCulture, _ctypeCulture, _timeCulture, _monetaryCulture, _numericCulture;
@@ -232,6 +231,12 @@ namespace IronPython.Runtime {
             PythonDictionary defaultScope = new PythonDictionary();
             ModuleContext modContext = new ModuleContext(defaultScope, this);
             _defaultContext = modContext.GlobalContext;
+            
+            PythonDictionary sysDict = new PythonDictionary(_sysDict);
+            _systemState = new PythonModule(sysDict);
+            _systemState.__dict__["__name__"] = "sys";
+            _systemState.__dict__["__package__"] = null;
+
             PythonBinder binder = new PythonBinder(this, _defaultContext);
             _sharedOverloadResolverFactory = new PythonOverloadResolverFactory(binder, Expression.Constant(_defaultContext));
             _binder = binder;
@@ -244,11 +249,6 @@ namespace IronPython.Runtime {
             }
 
             InitializeBuiltins();
-
-            PythonDictionary sysDict = new PythonDictionary(_sysDict);
-            _systemState = new PythonModule(sysDict);
-            _systemState.__dict__["__name__"] = "sys";
-            _systemState.__dict__["__package__"] = null;
 
             InitializeSystemState();
 #if SILVERLIGHT
@@ -1206,20 +1206,35 @@ namespace IronPython.Runtime {
         }
 
         internal PythonModule/*!*/ CreateBuiltinModule(string moduleName, Type type) {
-            return CreateBuiltinModule(moduleName, type, ModuleOptions.NoBuiltins);
-        }
+            PythonDictionary dict;
+            if (type.IsSubclassOf(typeof(BuiltinPythonModule))) {
+                // an optimized Python module.
+                var builtinModule = (BuiltinPythonModule)Activator.CreateInstance(type, this);
 
-        internal PythonModule/*!*/ CreateBuiltinModule(string moduleName, Type type, ModuleOptions options) {
-            PythonDictionary dict = new PythonDictionary(new ModuleDictionaryStorage(type));
+                var globals = new Dictionary<string, PythonGlobal>();
+                var globalStorage = new InstancedModuleDictionaryStorage(builtinModule, globals);
+                dict = new PythonDictionary(globalStorage);
+                
+                var names = builtinModule.GetGlobalVariableNames();
+                var codeContext = new ModuleContext(dict, this).GlobalContext;
+                foreach (var name in names) {
+                    globals[name] = new PythonGlobal(codeContext, name);
+                }
 
-            if (type == typeof(Builtin)) {
-                Builtin.PerformModuleReload(this, dict);
-            } else if (type != typeof(SysModule)) { // will be performed by hand later, see InitializeSystemState
-                MethodInfo reload = type.GetMethod("PerformModuleReload");
-                if (reload != null) {
-                    Debug.Assert(reload.IsStatic);
+                builtinModule.Initialize(codeContext, globals);
+            } else {
+                dict = new PythonDictionary(new ModuleDictionaryStorage(type));
 
-                    reload.Invoke(null, new object[] { this, dict });
+                if (type == typeof(Builtin)) {
+                    Builtin.PerformModuleReload(this, dict);
+                } else if (type != typeof(SysModule)) { // will be performed by hand later, see InitializeSystemState
+                    MethodInfo reload = type.GetMethod("PerformModuleReload");
+                    if (reload != null) {
+                        Debug.Assert(reload.IsStatic);
+
+                        reload.Invoke(null, new object[] { this, dict });
+                    }
+
                 }
             }
 
@@ -1800,7 +1815,7 @@ namespace IronPython.Runtime {
             Dictionary<string, Type> builtinTable = new Dictionary<string, Type>();
 
             // We should register builtins, if any, from IronPython.dll
-            LoadBuiltins(builtinTable, typeof(PythonContext).Assembly);
+            LoadBuiltins(builtinTable, typeof(PythonContext).Assembly, false);
 
             // Load builtins from IronPython.Modules
             Assembly ironPythonModules = null;
@@ -1812,7 +1827,7 @@ namespace IronPython.Runtime {
             }
 
             if (ironPythonModules != null) {
-                LoadBuiltins(builtinTable, ironPythonModules);
+                LoadBuiltins(builtinTable, ironPythonModules, false);
 
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     // we make our nt package show up as a posix package
@@ -1829,12 +1844,16 @@ namespace IronPython.Runtime {
             return builtinTable;
         }
 
-        internal void LoadBuiltins(Dictionary<string, Type> builtinTable, Assembly assem) {
+        internal void LoadBuiltins(Dictionary<string, Type> builtinTable, Assembly assem, bool updateSys) {
             object[] attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute), false);
             if (attrs.Length > 0) {
                 foreach (PythonModuleAttribute pma in attrs) {
                     builtinTable[pma.Name] = pma.Type;
                     BuiltinModuleNames[pma.Type] = pma.Name;
+                }
+
+                if (updateSys) {
+                    SysModule.PublishBuiltinModuleNames(this, _systemState.__dict__);
                 }
             }
         }
@@ -3079,17 +3098,33 @@ namespace IronPython.Runtime {
 
         #region Command Dispatching
 
-        // This can be set to a method like System.Windows.Forms.Control.Invoke for Winforms scenario 
-        // to cause code to be executed on a separate thread.
-        // It will be called with a null argument to indicate that the console session should be terminated.
-        // Can be null.
-
-        internal CommandDispatcher GetSetCommandDispatcher(CommandDispatcher newDispatcher) {
+        /// <summary>
+        /// Sets the current command dispatcher for the Python command line.  The previous dispatcher
+        /// is returned.  Null can be passed to remove the current command dispatcher.
+        /// 
+        /// The command dispatcher will be called with a delegate to be executed.  The command dispatcher
+        /// should invoke the target delegate in the desired context.
+        /// 
+        /// A common use for this is to enable running all REPL commands on the UI thread while the REPL
+        /// continues to run on a non-UI thread.
+        /// 
+        /// The ipy.exe REPL will call into PythonContext.DispatchCommand to dispatch each execution to
+        /// the correct thread.  Other REPLs can do the same to support this functionality as well.
+        /// </summary>
+        public Action<Action> GetSetCommandDispatcher(Action<Action> newDispatcher) {
             return Interlocked.Exchange(ref _commandDispatcher, newDispatcher);
         }
 
-        internal void DispatchCommand(Action command) {
-            CommandDispatcher dispatcher = _commandDispatcher;
+        public Action<Action> GetCommandDispatcher() {
+            return _commandDispatcher;
+        }
+
+        /// <summary>
+        /// Dispatches the command to the current command dispatcher.  If there is no current command
+        /// dispatcher the command is executed immediately on the current thread.
+        /// </summary>
+        public void DispatchCommand(Action command) {
+            Action<Action> dispatcher = _commandDispatcher;
             if (dispatcher != null) {
                 dispatcher(command);
             } else if (command != null) {

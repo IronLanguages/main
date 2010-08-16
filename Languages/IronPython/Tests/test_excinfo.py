@@ -476,7 +476,10 @@ def test_with_fail():
     # exit is invoked when 'with' body exits (either via exception, branch)
     def __exit__(self, t,v, tb):
       AreEqual(v[0], 15) # exception passed in as local
-      A(None) # but sys.exc_info() should not be set!!
+      if is_ironpython: #http://ironpython.codeplex.com/workitem/27990
+        A(None) # but sys.exc_info() should not be set!!
+      else:
+        A(15)
       return True # swallow exception
   #
   # With.__exit__ does not see current exception
@@ -514,7 +517,10 @@ def test_with_except_fail():
     # exit is invoked when 'with' body exits (either via exception, branch)
     def __exit__(self, t,v, tb):
       AreEqual(v[0], 34) # gets failure from With block
-      A(15) # gets failure from sys.exc_info() which is from outer except block
+      if is_ironpython: #http://ironpython.codeplex.com/workitem/27990
+        A(15) # gets failure from sys.exc_info() which is from outer except block
+      else:
+        A(34)
       return True # swallow exception
   #
   # With.__exit__ does not see current exception
@@ -525,7 +531,10 @@ def test_with_except_fail():
     with M2():
       A(15)
       raise ValueError(34)
-    A(15)
+    if is_ironpython: #http://ironpython.codeplex.com/workitem/27990
+        A(15)
+    else:
+        A(34)
 
 
 

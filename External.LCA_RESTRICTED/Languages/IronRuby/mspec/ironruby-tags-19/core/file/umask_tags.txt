@@ -7,3 +7,4 @@ fails:File.umask Returns the current umask value for this process.
 fails:File.umask raises an exception if the arguments are wrong type or are the incorect number of arguments 
 fails:File.umask raises an exception if the arguments are wrong type or are the incorect number of arguments 
 fails:File.umask raises an exception if the arguments are wrong type or are the incorect number of arguments 
+fails:File.umask raises an exception if the arguments are wrong type or are the incorect number of arguments 

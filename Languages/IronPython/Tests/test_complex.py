@@ -67,8 +67,12 @@ def test_repr():
     
 
 def test_infinite():
-    AreEqual(repr(1.0e340j),  'inf*j')
-    AreEqual(repr(-1.0e340j),'-inf*j')
+    if is_ironpython: #http://ironpython.codeplex.com/workitem/27988
+        AreEqual(repr(1.0e340j),  'inf*j')
+        AreEqual(repr(-1.0e340j),'-inf*j')
+    else:
+        AreEqual(repr(1.0e340j),  'infj')
+        AreEqual(repr(-1.0e340j),'-infj')
 
 # Test must sort alphabetically ahead of other uses of the deprecated functions
 @skip("silverlight", "multiple_execute")
@@ -88,7 +92,10 @@ def test_deprecations():
     m = trapper.messages[0:6:2]
     m = [x.split(": ", 1)[1] for x in m]
     expected = ['DeprecationWarning: complex divmod(), // and % are deprecated'] * expected_num
-    AreEqual(m, expected)
+    if is_ironpython: #CodePlex 21921
+        AreEqual(m, expected)
+    else:
+        AreEqual(m, [])
 
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)

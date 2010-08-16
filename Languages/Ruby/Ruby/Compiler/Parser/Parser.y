@@ -209,7 +209,7 @@ stmt:     alias_statement
                     _tokenizer.ReportError(Errors.FileInitializerInMethod);
                 }
                             
-                EnterTopScope();
+                EnterFileInitializerScope();
             }
           LEFT_BLOCK_BRACE compstmt RIGHT_BRACE
             {
@@ -1342,7 +1342,7 @@ block_expression:
 definition_expression:
       CLASS qualified_module_name superclass
         {                
-            EnterTopScope();
+            EnterClassDefinitionScope();
         }
       body END
         {
@@ -1361,7 +1361,7 @@ definition_expression:
         {
             $<Integer1>$ = _inSingletonMethodDefinition;
             _inSingletonMethodDefinition = 0;
-            EnterTopScope();
+            EnterSingletonClassDefinitionScope();
         }
       body END
         {
@@ -1371,7 +1371,7 @@ definition_expression:
         }
     | MODULE qualified_module_name
         {
-            EnterTopScope();
+            EnterModuleDefinitionScope();
         }
       body END
         {
@@ -1384,7 +1384,7 @@ definition_expression:
     | DEF method_name
         {
             _inInstanceMethodDefinition++;
-            EnterTopScope();
+            EnterMethodDefinitionScope();
         }
       parameters_definition body END
         {
@@ -1400,7 +1400,7 @@ definition_expression:
         {
             _inSingletonMethodDefinition++;
             _tokenizer.LexicalState = LexicalState.EXPR_END;
-            EnterTopScope();
+            EnterSingletonMethodDefinitionScope();
         }
       parameters_definition body END
         {

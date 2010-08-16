@@ -163,7 +163,7 @@ function test-stdcpymodule {
 	. $CURRPATH\stdmodules_ok.ps1
 
 	#Generate the DLL
-	pushd "$env:DLR_ROOT\External.LCA_RESTRICTED\Languages\CPython\26\lib"
+	pushd "$env:DLR_ROOT\External.LCA_RESTRICTED\Languages\CPython\27\lib"
 	IPY_CMD -X:Frames $TOOLSPATH\Pyc.py /out:cpystdlib /target:dll $STDMODULES
 	if (! $?) {
 		echo "Failed to run Pyc against the CPython standard library!"

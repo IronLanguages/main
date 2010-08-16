@@ -118,6 +118,7 @@
     <Compile Include="ProtocolTest.cs" />
     <Compile Include="StaticTest.cs" />
     <Compile Include="StringDictionaryStorage.cs" />
+    <Compile Include="TestBuiltinModule.cs" />
     <Compile Include="TypeDescriptor.cs" />
     <AppDesigner Include="Properties\" />
   </ItemGroup>

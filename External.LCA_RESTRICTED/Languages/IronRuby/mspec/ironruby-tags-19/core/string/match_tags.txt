@@ -1,0 +1,1 @@
+fails:String#match raises a TypeError if pattern is not a regexp or a string

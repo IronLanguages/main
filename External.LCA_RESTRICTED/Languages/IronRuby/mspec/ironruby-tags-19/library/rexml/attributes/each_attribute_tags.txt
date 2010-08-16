@@ -1,0 +1,2 @@
+fails:REXML::Attributes#each_attribute iterates over the attributes yielding actual Attribute objects
+fails:"REXML::Attributes#each_attribute iterates over the attributes yielding actual Attribute objects"

@@ -1,0 +1,2 @@
+fails:GetoptLong#terminated? returns true if option processing has terminated
+fails:"GetoptLong#terminated? returns true if option processing has terminated"

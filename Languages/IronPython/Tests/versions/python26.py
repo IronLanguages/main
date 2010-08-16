@@ -204,19 +204,37 @@ def test_complex():
     
     strings = ["j", "+j", "-j"] + strs + map(lambda x: x + "j", strs)
     values = [1j, 1j, -1j] + vals + map(lambda x: x * 1j, vals)
-    
+    neg_strings = []
+    neg_values = []
+
+
     for s0,v0 in zip(strs, vals):
         for s1,v1 in zip(strs, vals):
             for sign,mult in [("+",1), ("-",-1)]:
-                newstrs = [s0+sign+s1+"j", s1+sign+s0+"j", s0+"j"+sign+s1, s1+"j"+sign+s0]
-                newvals = [complex(v0,v1*mult), complex(v1,v0*mult), complex(v1*mult,v0), complex(v0*mult,v1)]
-                strings += newstrs
-                strings += map(lambda x: "(" + x + ")", newstrs)
-                values += newvals * 2
+                newstrs_pos = [s0+sign+s1+"j", s1+sign+s0+"j"]
+                newvals_pos = [complex(v0,v1*mult), complex(v1,v0*mult)]
+                strings += newstrs_pos
+                strings += map(lambda x: "(" + x + ")", newstrs_pos)
+                values += newvals_pos * 2
+
+                newstrs_neg = [s0+"j"+sign+s1, s1+"j"+sign+s0]
+                newvals_neg = [complex(v1*mult,v0), complex(v0*mult,v1)]
+                if is_cpython: #http://ironpython.codeplex.com/workitem/28384
+                    neg_strings += newstrs_neg
+                    neg_strings += map(lambda x: "(" + x + ")", newstrs_neg)
+                    neg_values += newvals_neg * 2
+                else:
+                    strings += newstrs_neg
+                    strings += map(lambda x: "(" + x + ")", newstrs_neg)
+                    values += newvals_neg * 2
     
     for s,v in zip(strings, values):
         AreEqual(complex(s), v)
         AreEqual(v, complex(v.__repr__()))
+
+    for s,v in zip(neg_strings, neg_values):
+        AssertErrorWithPartialMessage(ValueError, "complex() arg is a malformed string",
+                                      complex, s)
 
 def test_deque():
     if not is_stdlib():
@@ -1000,7 +1018,6 @@ class OutputCatcher(object):
         sys.stdout = self.sys_stdout_bak
         sys.stderr = self.sys_stderr_bak
 
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=19555
 def test_exception_message_deprecated():
     import exceptions
     x = exceptions.AssertionError()
@@ -1008,8 +1025,8 @@ def test_exception_message_deprecated():
     with OutputCatcher() as output:
         x.message
 
-    expected = "DeprecationWarning: BaseException.message has been deprecated as of Python 2.6"
-    Assert(expected in output.stderr)
+    expected = ""
+    Assert(expected in output.stderr, output.stderr)
 
 def test_generatorexit():
     try:

@@ -17,8 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using IronPython.Compiler;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -27,14 +27,31 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Enables lazy initialization of module dictionaries.
     /// </summary>
-    class ModuleDictionaryStorage : StringDictionaryStorage {
+    class ModuleDictionaryStorage : GlobalDictionaryStorage {
         private Type/*!*/ _type;
         private bool _cleared;
 
-        public ModuleDictionaryStorage(Type/*!*/ moduleType) {
+        private static readonly Dictionary<string, PythonGlobal> _emptyGlobalDict = new Dictionary<string, PythonGlobal>(0);
+        private static readonly PythonGlobal[] _emptyGlobals = new PythonGlobal[0];
+
+        public ModuleDictionaryStorage(Type/*!*/ moduleType)
+            : base(_emptyGlobalDict, _emptyGlobals) {
             Debug.Assert(moduleType != null);
 
             _type = moduleType;
+        }
+
+        public ModuleDictionaryStorage(Type/*!*/ moduleType, Dictionary<string, PythonGlobal> globals)
+            : base(globals, _emptyGlobals) {
+            Debug.Assert(moduleType != null);
+
+            _type = moduleType;
+        }
+
+        public virtual BuiltinPythonModule Instance {
+            get {
+                return null;
+            }
         }
 
         public override bool Remove(ref DictionaryStorage storage, object key) {
@@ -110,18 +127,44 @@ namespace IronPython.Runtime {
                         case MemberTypes.Field:
                             Debug.Assert(members.Length == 1);
 
-                            value = ((FieldInfo)members[0]).GetValue(null);
+                            var fieldInfo = (FieldInfo)members[0];
+                            if (fieldInfo.IsStatic) {
+                                value = ((FieldInfo)members[0]).GetValue(null);
+                            } else {
+                                throw new InvalidOperationException("instance field declared on module.  Fields should stored as PythonGlobals, should be static readonly, or marked as PythonHidden.");
+                            }
+
                             if (publish) {
                                 LazyAdd(name, value);
                             }
                             return true;
                         case MemberTypes.Method:
                             if (!((MethodInfo)members[0]).IsSpecialName) {
-                                value = BuiltinFunction.MakeFunction(
+                                var methods = new MethodInfo[members.Length];
+                                FunctionType ft = FunctionType.ModuleMethod | FunctionType.AlwaysVisible;
+                                for (int i = 0; i < members.Length; i++) {
+                                    var method = (MethodInfo)members[i];
+                                    if (method.IsStatic) {
+                                        ft |= FunctionType.Function;
+                                    } else {
+                                        ft |= FunctionType.Method;
+                                    }
+
+                                    methods[i] = method;
+                                }
+
+                                var builtinFunc = BuiltinFunction.MakeMethod(
                                     name,
-                                    ArrayUtils.ConvertAll<MemberInfo, MethodInfo>(members, delegate(MemberInfo mi) { return (MethodInfo)mi; }),
-                                    members[0].DeclaringType
-                                    );
+                                    methods,
+                                    members[0].DeclaringType,
+                                    ft
+                                );
+
+                                if ((ft & FunctionType.Method) != 0 && Instance != null) {
+                                    value = builtinFunc.BindToInstance(Instance);
+                                } else {
+                                    value = builtinFunc;
+                                }
 
                                 if (publish) {
                                     LazyAdd(name, value);
@@ -132,7 +175,12 @@ namespace IronPython.Runtime {
                         case MemberTypes.Property:
                             Debug.Assert(members.Length == 1);
 
-                            value = ((PropertyInfo)members[0]).GetValue(null, ArrayUtils.EmptyObjects);
+                            var propInfo = (PropertyInfo)members[0];
+                            if ((propInfo.GetGetMethod() ?? propInfo.GetSetMethod()).IsStatic) {
+                                value = ((PropertyInfo)members[0]).GetValue(null, ArrayUtils.EmptyObjects);
+                            } else {
+                                throw new InvalidOperationException("instance property declared on module.  Propreties should be declared as static, marked as PythonHidden, or you should use a PythonGlobal.");
+                            }
 
                             if (publish) {
                                 LazyAdd(name, value);
@@ -176,7 +224,7 @@ namespace IronPython.Runtime {
         }
 
         private MemberInfo[] GetMember(string name) {
-            return _type.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+            return _type.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | (Instance == null ? BindingFlags.Static : (BindingFlags.Instance | BindingFlags.Static)));
         }
 
         public override bool TryGetValue(object key, out object value) {

@@ -1,0 +1,13 @@
+Text::Format 1.0.0
+==================
+Text::Format is provides the ability to nicely format fixed-width text with
+knowledge of the writeable space (number of columns), margins, and indentation
+settings. Text::Format can work with either TeX::Hyphen or Text::Hyphen to
+hyphenate words when formatting.
+
+This is release 1.0, containing both feature enhancements and bug fixes over
+the previous version, 0.64.
+
+Text::Format is originally based on the Perl library of the same name by Gábor
+Egressy. It is copyright 2002 - 2005 by Austin Ziegler and is licenced under
+Ruby's licence. It is also available under the Perl Artistic licence.

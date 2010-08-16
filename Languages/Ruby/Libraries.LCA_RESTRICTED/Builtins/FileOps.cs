@@ -33,26 +33,11 @@ namespace IronRuby.Builtins {
     /// File builtin class. Derives from IO
     /// </summary>
     [RubyClass("File", Extends = typeof(RubyFile))]
-    [Includes(typeof(FileTest), Copy = true)]
     public static class RubyFileOps {
 
         #region Construction
 
         // TODO: descriptorOrPath -> to_int, to_hash, to_path, to_str
-
-        [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, 
-            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
-
-            if (descriptorOrPath.IsFixnum()) {
-                return new RubyFile(
-                    self.Context, RubyIOOps.GetDescriptorStream(self.Context, descriptorOrPath.Fixnum()), descriptorOrPath.Fixnum(), IOModeEnum.Parse(mode)
-                );
-            } else {
-                // TODO: permissions
-                return CreateFile(self, descriptorOrPath.Second, mode);
-            }
-        }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self,
@@ -61,6 +46,20 @@ namespace IronRuby.Builtins {
             if (descriptorOrPath.IsFixnum()) {
                 return new RubyFile(
                     self.Context, RubyIOOps.GetDescriptorStream(self.Context, descriptorOrPath.Fixnum()), descriptorOrPath.Fixnum(), (IOMode)mode
+                );
+            } else {
+                // TODO: permissions
+                return CreateFile(self, descriptorOrPath.Second, mode);
+            }
+        }
+
+        [RubyConstructor]
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, 
+            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
+
+            if (descriptorOrPath.IsFixnum()) {
+                return new RubyFile(
+                    self.Context, RubyIOOps.GetDescriptorStream(self.Context, descriptorOrPath.Fixnum()), descriptorOrPath.Fixnum(), IOModeEnum.Parse(mode)
                 );
             } else {
                 // TODO: permissions
@@ -81,6 +80,55 @@ namespace IronRuby.Builtins {
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, int mode) {
             return new RubyFile(self.Context, path, (IOMode)mode);
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self,
+            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, int mode, [Optional]int permission) {
+
+            // TODO: remove duplicity (constructors vs initializers)
+
+            if (descriptorOrPath.IsFixnum()) {
+                RubyIOOps.Reinitialize(self, descriptorOrPath.Fixnum(), mode);
+            } else {
+                var path = self.Context.DecodePath(descriptorOrPath.Second);
+                var stream = RubyFile.OpenFileStream(self.Context, path, (IOMode)mode);
+
+                self.Path = path;
+                self.Mode = (IOMode)mode;
+                self.SetStream(stream);
+                self.SetFileDescriptor(self.Context.AllocateFileDescriptor(stream));
+            }
+            // TODO: permission
+            return self;
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self,
+            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
+
+            return Reinitialize(self, descriptorOrPath, (int)IOModeEnum.Parse(mode), permission);
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self, [NotNull]MutableString/*!*/ path) {
+            // TODO: permission
+            Reinitialize(self, path, (int)self.Mode, 0);
+            return self;
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self, [NotNull]MutableString/*!*/ path, MutableString mode) {
+            // TODO: permission
+            Reinitialize(self, path, mode, 0);
+            return self;
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self, [NotNull]MutableString/*!*/ path, int mode) {
+            // TODO: permission
+            Reinitialize(self, path, mode, 0);
+            return self;
         }
 
         #endregion
@@ -170,6 +218,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("chmod")]
         public static int Chmod(RubyFile/*!*/ self, [DefaultProtocol]int permission) {
+            self.RequireInitialized();
+            // TODO:
+            if (self.Path == null) {
+                throw new NotSupportedException("TODO: cannot chmod for files without path");
+            }
             Chmod(self.Path, permission);
             return 0;
         }
@@ -615,7 +668,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("atime")]
         public static RubyTime AccessTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return RubyStatOps.AccessTime(RubyStatOps.Create(context, self.Path));
+            return RubyStatOps.AccessTime(RubyStatOps.Create(self));
         }
         
         [RubyMethod("atime", RubyMethodAttributes.PublicSingleton)]
@@ -625,7 +678,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("ctime")]
         public static RubyTime CreateTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return RubyStatOps.CreateTime(RubyStatOps.Create(context, self.Path));
+            return RubyStatOps.CreateTime(RubyStatOps.Create(self));
         }
 
         [RubyMethod("ctime", RubyMethodAttributes.PublicSingleton)]
@@ -635,7 +688,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("mtime")]
         public static RubyTime ModifiedTime(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return RubyStatOps.ModifiedTime(RubyStatOps.Create(context, self.Path));
+            return RubyStatOps.ModifiedTime(RubyStatOps.Create(self));
         }
 
         [RubyMethod("mtime", RubyMethodAttributes.PublicSingleton)]
@@ -704,14 +757,16 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("lstat")]
         [RubyMethod("stat")]
-        public static FileSystemInfo Stat(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return RubyStatOps.Create(context, self.Path);
+        public static FileSystemInfo Stat(RubyFile/*!*/ self) {
+            return RubyStatOps.Create(self);
         }
 
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, RubyFile/*!*/ self) {
-            return MutableString.CreateMutable(context.GetPathEncoding()).
-                Append("#<File:").
+        public static MutableString/*!*/ Inspect(RubyFile/*!*/ self) {
+            return MutableString.CreateMutable(self.Context.GetPathEncoding()).
+                Append("#<").
+                Append(self.Context.GetClassOf(self).GetName(self.Context)).
+                Append(':').
                 Append(self.Path).
                 Append(self.Closed ? " (closed)" : "").
                 Append('>');
@@ -720,6 +775,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("path")]
         [RubyMethod("to_path")]
         public static MutableString GetPath(RubyFile/*!*/ self) {
+            self.RequireInitialized();
             return self.Path != null ? self.Context.EncodePath(self.Path) : null;
         }
 
@@ -732,6 +788,15 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyClass("Stat", Extends = typeof(FileSystemInfo), Inherits = typeof(object), BuildConfig = "!SILVERLIGHT"), Includes(typeof(Comparable))]
         public class RubyStatOps {
+
+            // TODO: should work for IO and files w/o paths:
+            internal static FileSystemInfo/*!*/ Create(RubyFile/*!*/ file) {
+                file.RequireInitialized();
+                if (file.Path == null) {
+                    throw new NotSupportedException("TODO: cannot get file info for files without path");
+                }
+                return Create(file.Context, file.Path);
+            }
 
             internal static FileSystemInfo/*!*/ Create(RubyContext/*!*/ context, MutableString/*!*/ path) {
                 return Create(context, context.DecodePath(path));
@@ -1032,6 +1097,118 @@ namespace IronRuby.Builtins {
             }
 #endif
         }
+        #endregion
+
+        #region FileTest methods (public singletons only)
+
+        // TODO: conversion: to_io, to_path, to_str
+
+        [RubyMethod("blockdev?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsBlockDevice(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsBlockDevice(toPath, self, path);
+        }
+
+        [RubyMethod("chardev?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsCharDevice(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsCharDevice(toPath, self, path);
+        }
+
+        [RubyMethod("directory?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsDirectory(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsDirectory(toPath, self, path);
+        }
+
+        [RubyMethod("executable?", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("executable_real?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsExecutable(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsExecutable(toPath, self, path);
+        }
+
+        [RubyMethod("exist?", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("exists?", RubyMethodAttributes.PublicSingleton)]
+        public static bool Exists(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.Exists(toPath, self, path);
+        }
+
+        [RubyMethod("file?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsFile(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsFile(toPath, self, path);
+        }
+
+        [RubyMethod("grpowned?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsGroupOwned(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsGroupOwned(toPath, self, path);
+        }
+
+        [RubyMethod("identical?", RubyMethodAttributes.PublicSingleton)]
+        public static bool AreIdentical(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path1, object path2) {
+            return FileTest.AreIdentical(toPath, self, path1, path2);
+        }
+
+        [RubyMethod("owned?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsUserOwned(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsUserOwned(toPath, self, path);
+        }
+
+        [RubyMethod("pipe?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsPipe(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsPipe(toPath, self, path);
+        }
+
+        [RubyMethod("readable?", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("readable_real?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsReadable(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsReadable(toPath, self, path);
+        }
+
+        [RubyMethod("setgid?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsSetGid(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsSetGid(toPath, self, path);
+        }
+
+        [RubyMethod("setuid?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsSetUid(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsSetUid(toPath, self, path);
+        }
+
+        [RubyMethod("size", RubyMethodAttributes.PublicSingleton)]
+        public static int Size(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.Size(toPath, self, path);
+        }
+
+        [RubyMethod("size?", RubyMethodAttributes.PublicSingleton)]
+        public static object NullableSize(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.NullableSize(toPath, self, path);
+        }
+
+        [RubyMethod("socket?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsSocket(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsSocket(toPath, self, path);
+        }
+
+        [RubyMethod("sticky?", RubyMethodAttributes.PublicSingleton)]
+        public static object IsSticky(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsSticky(toPath, self, path);
+        }
+
+#if !SILVERLIGHT
+        [RubyMethod("symlink?", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static bool IsSymLink(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsSymLink(toPath, self, path);
+        }
+#endif
+
+        [RubyMethod("writable?", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("writable_real?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsWritable(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsWritable(toPath, self, path);
+        }
+
+        [RubyMethod("zero?", RubyMethodAttributes.PublicSingleton)]
+        public static bool IsZeroLength(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.IsZeroLength(toPath, self, path);
+        }
+
         #endregion
     }
 }

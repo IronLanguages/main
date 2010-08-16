@@ -347,6 +347,13 @@ namespace IronPython.Hosting {
             return GetPythonService(engine).CreateModule(name, filename, docString);
         }
 
+        /// <summary>
+        /// Gets the list of loaded Python module files names which are available in the provided ScriptEngine.
+        /// </summary>
+        public static string[] GetModuleFilenames(this ScriptEngine engine) {
+            return GetPythonService(engine).GetModuleFilenames();
+        }
+
         #endregion
 
         #region Private helpers

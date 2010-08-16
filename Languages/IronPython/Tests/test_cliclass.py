@@ -1756,12 +1756,9 @@ def test_xaml_support():
         </custom:InnerXamlTextObject>
     </custom:InnerXamlTextObject>
 </custom:XamlTestObject>"""
-    import clr      
-    clr.AddReference('PresentationCore')
-    clr.AddReference('PresentationFramework')
-    clr.AddReference('WindowsBase')
+    import wpf
+    import clr
     clr.AddReference('System.Xml')
-    clr.AddReference('System.Xaml')
     f = file('test.xaml', 'w')
             
     try:
@@ -1769,8 +1766,8 @@ def test_xaml_support():
         f.close()
         
         # easy negative tests
-        AssertError(TypeError, clr.LoadComponent, None)
-        AssertError(TypeError, clr.LoadComponent, 'test.xaml', None)
+        AssertError(TypeError, wpf.LoadComponent, None)
+        AssertError(TypeError, wpf.LoadComponent, None, 'test.xaml')
 
         # try it again w/ a passed in module
         class MyXamlRootObject(XamlTestObject):
@@ -1784,7 +1781,7 @@ def test_xaml_support():
             yield System.IO.StreamReader('test.xaml')
             
         for inp in inputs():
-            inst = clr.LoadComponent(inp, MyXamlRootObject())
+            inst = wpf.LoadComponent(MyXamlRootObject(), inp)
             AreEqual(inst.Method(42), 84)
             AreEqual(type(inst.Foo), InnerXamlTextObject)
             AreEqual(type(inst.Bar), InnerXamlTextObject)
@@ -1804,17 +1801,17 @@ def test_xaml_support():
                 
         for inp in inputs():
             # null input
-            AssertError(TypeError, clr.LoadComponent, None, mod)
+            AssertError(TypeError, wpf.LoadComponent, mod, None)
             
             # wrong type of root object
-            AssertError(Exception, clr.LoadComponent, inp, mod)
+            AssertError(Exception, wpf.LoadComponent, mod, inp)
             
             if isinstance(inp, System.IDisposable):
                 inp.Dispose()
                 
         for inp in inputs():
             # root object missing event handler
-            AssertError(System.Xaml.XamlObjectWriterException, clr.LoadComponent, inp, MyXamlRootObject())
+            AssertError(System.Xaml.XamlObjectWriterException, wpf.LoadComponent, MyXamlRootObject(), inp)
 
             if isinstance(inp, System.IDisposable):
                 inp.Dispose()

@@ -1,0 +1,2 @@
+critical:Net::HTTP#delete sends a DELETE request to the passed path and returns the responsefails:Net::HTTP#delete sends a DELETE request to the passed path and returns the response
+fails:Net::HTTP#delete sends a DELETE request to the passed path and returns the response

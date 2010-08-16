@@ -24,6 +24,17 @@ namespace IronPython.Runtime {
         private readonly CommonDictionaryStorage/*!*/ _storage = new CommonDictionaryStorage();
 
         public override void Add(ref DictionaryStorage storage, object key, object value) {
+            Add(key, value);
+        }
+
+        public override void AddNoLock(ref DictionaryStorage storage, object key, object value) {
+            if (key is string && TrySetExtraValue((string)key, value)) {
+                return;
+            }
+            _storage.AddNoLock(ref storage, key, value);
+        }
+
+        public void Add(object key, object value) {
             if (key is string && TrySetExtraValue((string)key, value)) {
                 return;
             }
@@ -40,6 +51,10 @@ namespace IronPython.Runtime {
         }
 
         public override bool Remove(ref DictionaryStorage storage, object key) {
+            return Remove(key);
+        }
+
+        public bool Remove(object key) {
             if (key is string) {
                 return TryRemoveExtraValue((string)key) ?? _storage.Remove(key);
 

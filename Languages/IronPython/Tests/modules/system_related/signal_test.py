@@ -69,7 +69,8 @@ def test_doc():
     Assert("The default handler for SIGINT installed by Python" in signal.default_int_handler.__doc__)
     Assert("Return the current action for the given signal" in signal.getsignal.__doc__)
     Assert("Set the action for the given signal" in signal.signal.__doc__)
-    
+
+@skip("win32") #http://bugs.python.org/issue9324
 def test_signal_signal_neg():
     def a(b, c):
         pass

@@ -98,7 +98,7 @@ else:
         # get some directories and files
         ip_root             = path_combine(rowan_root, basePyDir)
         external_dir        = path_combine(rowan_root, r'External.LCA_RESTRICTED\Languages\IronPython')
-        clean_external_dir  = path_combine(rowan_root, r'External.LCA_RESTRICTED\Languages\CPython\26')
+        clean_external_dir  = path_combine(rowan_root, r'External.LCA_RESTRICTED\Languages\CPython\27')
         public_testdir      = path_combine(ip_root, r'Tests')
         compat_testdir      = path_combine(ip_root, r'Tests\compat')
         test_inputs_dir     = path_combine(ip_root, r'Tests\Inputs')
@@ -106,8 +106,8 @@ else:
 
         math_testdir        = path_combine(external_dir, r'Math')
         parrot_testdir      = path_combine(external_dir, r'parrotbench')
-        lib_testdir         = path_combine(external_dir, r'26\Lib')
-        private_testdir     = path_combine(external_dir, r'26\Lib\test')
+        lib_testdir         = path_combine(external_dir, r'27\Lib')
+        private_testdir     = path_combine(external_dir, r'27\Lib\test')
 
         temporary_dir   = path_combine(get_temp_dir(), "IronPython")
         ensure_directory_present(temporary_dir)
@@ -116,7 +116,7 @@ else:
 
         if is_cli: 
             ipython_executable  = sys.executable
-            cpython_executable  = path_combine(external_dir, r'26\python.exe')
+            cpython_executable  = path_combine(external_dir, r'27\python.exe')
         else: 
             ipython_executable  = path_combine(sys.prefix, r'ipy.exe')
             cpython_executable  = sys.executable

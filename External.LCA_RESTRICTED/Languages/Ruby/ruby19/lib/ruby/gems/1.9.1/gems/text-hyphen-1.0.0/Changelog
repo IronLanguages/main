@@ -1,0 +1,4 @@
+== Text::Hyphen 1.0.0
+* Initial version based on TeX::Hyphen 0.4.0 (some changes have been backported
+  to TeX::Hyphen 0.5.0). 
+* Incorporated many hyphenation pattern files from CTAN.

@@ -125,6 +125,63 @@ def test_cp24113():
     AreEqual(CodePlex24113.cp24113(to), "abc")
     AreEqual(to.Prop, "hi")
 
+
+
+
+cp20519_vb_snippet = '''
+Imports System
+Imports IronPython.Hosting
+
+Module CodePlex20519
+
+    Sub Main()
+        Dim py_run = Python.CreateRuntime()
+        Dim py_eng = py_run.GetEngine("py")
+        Dim scope1 = py_run.CreateScope()
+        Dim py_code = "class C(object):" & vbNewLine & _
+                        "    def __init__(self):" & vbNewLine & _
+                        "        self.x = 42" & vbNewLine & _
+                        "o = C()"
+
+        py_eng.Execute(py_code, scope1)
+        Dim o As Object = scope1.GetVariable("o")
+        Dim o_one = o.x
+        Dim o_two = o.x()
+        If o_one <> o_two Then
+            System.Console.WriteLine(o_one.ToString() & " does not equal " & o_two.ToString())
+            System.Environment.Exit(1)
+        ElseIf o_one <> 42 Then
+            System.Console.WriteLine(o_one.ToString() & " does not equal 42")
+            System.Environment.Exit(1)
+        End If
+    End Sub
+End Module
+'''
+
+def test_cp20519():
+    import os
+    import System
+    from iptest.process_util import run_vbc
+    from iptest.assert_util import  testpath
+
+    cp20519_vb_filename = testpath.temporary_dir + r"\cp20519_vb_module.vb"
+    f = open(cp20519_vb_filename, "w")
+    f.writelines(cp20519_vb_snippet)
+    f.close()
+
+    cp20519_vb_exename  = testpath.temporary_dir + r"\cp20519_vb.exe"
+    compile_cmd = "/target:exe /out:%s %s /reference:%s /reference:%s" % (cp20519_vb_exename, 
+                                                                          cp20519_vb_filename,
+                                                                          sys.exec_prefix + r"\IronPython.dll",
+                                                                          sys.exec_prefix + r"\Microsoft.Scripting.dll")
+    AreEqual(run_vbc(compile_cmd), 0)
+    for x in [r"\IronPython.dll", r"\Microsoft.Scripting.dll", r"\Microsoft.Dynamic.dll"]:
+        System.IO.File.Copy(sys.exec_prefix + x, testpath.temporary_dir + x, True)
+    
+    AreEqual(os.system(cp20519_vb_exename), 0)
+    os.remove(cp20519_vb_exename)
+    os.remove(cp20519_vb_filename)
+
 #------------------------------------------------------------------------------
 #--Main
 run_test(__name__)

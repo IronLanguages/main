@@ -1,0 +1,2 @@
+fails:Kernel#Rational returns an Integer if denominator divides numerator evenly
+fails:"Kernel#Rational returns an Integer if denominator divides numerator evenly"

@@ -3044,6 +3044,10 @@ namespace IronPython.Runtime.Operations {
             return function.BindToInstance(target);
         }
 
+        public static object GetBuiltinFunctionSelf(BuiltinFunction function) {
+            return function.BindingSelf;
+        }
+
         /// <summary>
         /// Called from generated code.  Gets a builtin function and the BuiltinFunctionData associated
         /// with the object.  Tests to see if the function is bound and has the same data for the generated

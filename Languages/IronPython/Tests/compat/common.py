@@ -39,13 +39,13 @@ def get_environ_variable(key):
     else: return None
 
 def get_all_paths():
-    if get_environ_variable('DLR_ROOT') and file_exists(get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/26/python.exe'):
+    if get_environ_variable('DLR_ROOT') and file_exists(get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/27/python.exe'):
         #We're in the new world
         if sys.platform == "cli":
             ipython_executable = sys.executable
             compat_test_path   = get_environ_variable('DLR_ROOT') + "/Languages/IronPython/Tests/Compat/"
-            cpython_executable = get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/26/python.exe'
-            cpython_lib_path   = get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/26/Lib'
+            cpython_executable = get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/27/python.exe'
+            cpython_lib_path   = get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/27/Lib'
             
         elif sys.platform == "win32":
             dlr_bin = get_environ_variable('DLR_BIN')

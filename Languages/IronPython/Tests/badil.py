@@ -23,6 +23,7 @@ else:
 
 clr.AddReference("Microsoft.Scripting")
 clr.AddReference("IronPython")
+clr.AddReference("Microsoft.Dynamic")
 
 from Microsoft.Scripting.Generation import Snippets
 from IronPython.Compiler import CallTarget0

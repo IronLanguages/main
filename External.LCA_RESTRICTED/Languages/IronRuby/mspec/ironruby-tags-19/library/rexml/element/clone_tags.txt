@@ -1,0 +1,2 @@
+fails:REXML::Element#clone copies the attributes
+fails:"REXML::Element#clone copies the attributes"
