@@ -469,6 +469,10 @@ namespace IronPython.Modules {
             return false;
         }
 
+        public static double copysign(double x, double y) {
+            return DoubleOps.Sign(y) * Math.Abs(x);
+        }
+
         public static double copysign(object x, object y) {
             double val, sign;
             if (!Converter.TryConvertToDouble(x, out val) ||

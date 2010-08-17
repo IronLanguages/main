@@ -74,6 +74,10 @@ namespace IronPython.Runtime {
             }
         }
 
+        public void __init__(BigInteger source) {
+            __init__((int)source);
+        }
+
         public void __init__([NotNull]IList<byte>/*!*/ source) {            
             _bytes = new List<byte>(source);
         }
