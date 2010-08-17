@@ -150,11 +150,6 @@ namespace IronRuby.Runtime {
             return unwinder.ReturnValue;
         }
 
-        internal void MultipleValuesForBlockParameterWarning(int actualCount) {
-            Debug.Assert(actualCount == 0 || actualCount > 1);
-            _proc.LocalScope.RubyContext.ReportWarning(String.Format("multiple values for a block parameter ({0} for 1)", actualCount));
-        }
-
         #region Library Block Yield Helpers
 
         /// <summary>

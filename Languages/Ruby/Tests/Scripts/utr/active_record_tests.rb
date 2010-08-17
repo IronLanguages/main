@@ -34,7 +34,7 @@ class UnitTestSetup
   end
 
   def gather_files
-    sqlserver_adapter_root_dir = File.expand_path 'External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activerecord-sqlserver-adapter-2.3.5', ENV['DLR_ROOT']
+    sqlserver_adapter_root_dir = File.expand_path 'External.LCA_RESTRICTED/Languages/Ruby/ruby19/lib/ruby/gems/1.9.1/gems/activerecord-sqlserver-adapter-2.3.5', ENV['DLR_ROOT']
     activerecord_tests_dir = File.expand_path 'External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/activerecord/test', ENV['DLR_ROOT']
     $LOAD_PATH << sqlserver_adapter_root_dir + '/test'
     $LOAD_PATH << activerecord_tests_dir

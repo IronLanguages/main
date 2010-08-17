@@ -43,12 +43,14 @@ namespace IronRuby.Builtins {
         #region Singletons
 
         internal const int CodePageBinary = 0;
+        internal const int CodePageAscii = 20127;
         internal const int CodePageEUC = 51932;
         internal const int CodePageUTF8 = 65001;
         internal const int CodePageSJIS = 932;
 
         public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, null, CodePageBinary);
         public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(CreateEncoding(CodePageUTF8, false), CreateEncoding(CodePageUTF8, true), null, CodePageUTF8);
+        public static readonly RubyEncoding/*!*/ Ascii = new RubyEncoding(CreateEncoding(CodePageAscii, false), CreateEncoding(CodePageAscii, true), null, CodePageAscii);
 
         public static RubyEncoding/*!*/ KCodeUTF8 {
             get {

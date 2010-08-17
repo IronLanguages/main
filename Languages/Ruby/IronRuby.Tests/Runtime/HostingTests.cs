@@ -336,8 +336,7 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
 
             var newSetup = new ScriptRuntimeSetup();
             newSetup.AddRubySetup((s) => {
-                s.Options["Compatibility"] = RubyCompatibility.Ruby19;
-                s.Options["LibraryPaths19"] = ls.Options["LibraryPaths19"];
+                s.Options["LibraryPaths"] = ls.Options["LibraryPaths"];
             });
 
             ScriptRuntime runtime = ScriptRuntime.CreateRemote(domain, newSetup);

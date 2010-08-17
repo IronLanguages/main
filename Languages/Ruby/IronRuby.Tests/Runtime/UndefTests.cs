@@ -256,6 +256,7 @@ C
 ");
         }
 
+#if OBSOLETE
         /// <summary>
         /// Undef in define_method.
         /// </summary>
@@ -274,14 +275,14 @@ end
 d = D.new
 d.bar
 ", @"
-#<NameError: undefined method `f' for class `D'>
+<NameError: undefined method `f' for class `D'>
 ");
         }
+#endif
 
         /// <summary>
         /// Undef in define_method.
         /// </summary>
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void UndefMethodLookup6() {
             TestOutput(@"
 class D

@@ -1,5 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
+not_supported_on :ironruby do
 ruby_version_is "1.9" do
   describe "Fiber.yield" do
 
@@ -32,4 +33,5 @@ ruby_version_is "1.9" do
       lambda{ Fiber.yield }.should raise_error(FiberError)
     end  
   end
+end
 end

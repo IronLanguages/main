@@ -15,8 +15,8 @@
 
 namespace IronRuby {
     public enum RubyCompatibility {
-        Default = Ruby186,
-        Ruby186 = 0,
+        Default = Ruby19,
+        Ruby186 = 186,
         Ruby187 = 187,
         Ruby19 = 190,
         Ruby20 = 200,

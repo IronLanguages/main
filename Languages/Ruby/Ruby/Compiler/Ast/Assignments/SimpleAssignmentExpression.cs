@@ -20,6 +20,7 @@ using MSA = Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Diagnostics;
 using System.Dynamic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
@@ -32,6 +33,9 @@ namespace IronRuby.Compiler.Ast {
     /// lhs op= rhs
     /// </summary>
     public partial class SimpleAssignmentExpression : AssignmentExpression {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+        public static new SimpleAssignmentExpression[] EmptyArray = new SimpleAssignmentExpression[0];
+
         private readonly LeftValue/*!*/ _left;
         private readonly Expression/*!*/ _right;
 
@@ -46,12 +50,16 @@ namespace IronRuby.Compiler.Ast {
         public SimpleAssignmentExpression(LeftValue/*!*/ left, Expression/*!*/ right, string operation, SourceSpan location)
             : base(operation, location) {
             Assert.NotNull(left, right);
+            Debug.Assert(!(left is CompoundLeftValue));
 
             _left = left;
             _right = right;
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
+            // TODO: 
+            // {target}[{arguments}] op= rhs
+            // we need to evaluate {arguments} once: http://ironruby.codeplex.com/workitem/4525
 
             // first, read target into a temp:
             MSA.Expression transformedLeftTarget = _left.TransformTargetRead(gen);

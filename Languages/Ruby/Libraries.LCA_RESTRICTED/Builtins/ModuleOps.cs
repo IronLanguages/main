@@ -405,6 +405,14 @@ namespace IronRuby.Builtins {
         }
 
         // thread-safe:
+        [RubyMethod("attr", RubyMethodAttributes.PrivateInstance)]
+        public static void Attr(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNullItems]params string/*!*/[]/*!*/ names) {
+            foreach (string name in names) {
+                DefineAccessor(scope, self, name, true, false);
+            }
+        }
+
+        // thread-safe:
         [RubyMethod("attr_accessor", RubyMethodAttributes.PrivateInstance)]
         public static void AttrAccessor(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
             DefineAccessor(scope, self, name, true, true);
@@ -667,18 +675,11 @@ namespace IronRuby.Builtins {
         // not thread-safe
         [RubyMethod("class_variables")]
         public static RubyArray/*!*/ ClassVariables(RubyModule/*!*/ self) {
-            var visited = new Dictionary<string, bool>();
             var result = new RubyArray();
-
-            using (self.Context.ClassHierarchyLocker()) {
-                self.ForEachClassVariable(true, delegate(RubyModule/*!*/ module, string name, object value) {
-                    if (name != null && !visited.ContainsKey(name)) {
-                        result.Add(self.Context.StringifyIdentifier(name));
-                        visited.Add(name, true);
-                    }
-                    return false;
-                });
-            }
+            self.EnumerateClassVariables((module, name, value) => {
+                result.Add(self.Context.StringifyIdentifier(name));
+                return false;
+            });
             return result;
         }
 

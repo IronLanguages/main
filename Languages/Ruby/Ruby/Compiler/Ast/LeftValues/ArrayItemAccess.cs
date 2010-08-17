@@ -29,6 +29,7 @@ namespace IronRuby.Compiler.Ast {
     public partial class ArrayItemAccess : LeftValue {
         private readonly Expression/*!*/ _array;
         private readonly Arguments/*!*/ _arguments;
+        private readonly Block _block;
 
         public Expression/*!*/ Array {
             get { return _array; }
@@ -38,13 +39,18 @@ namespace IronRuby.Compiler.Ast {
             get { return _arguments; }
         }
 
-        public ArrayItemAccess(Expression/*!*/ array, Arguments/*!*/ arguments, SourceSpan location)
+        public Block Block {
+            get { return _block; }
+        }
+
+        public ArrayItemAccess(Expression/*!*/ array, Arguments arguments, Block block, SourceSpan location)
             : base(location) {
             ContractUtils.RequiresNotNull(array, "array");
-            ContractUtils.RequiresNotNull(arguments, "arguments");
 
             _array = array;
-            _arguments = arguments;
+            // no need to distinguish between no arguments and empty arguments:
+            _arguments = arguments ?? Arguments.Empty;
+            _block = block;
         }
 
         internal override MSA.Expression TransformTargetRead(AstGenerator/*!*/ gen) {
@@ -53,12 +59,12 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, MSA.Expression targetValue, bool tryRead) {
             Assert.NotNull(gen, targetValue);
-            return MethodCall.TransformRead(this, gen, false, "[]", targetValue, _arguments, null, null, null);
+            return MethodCall.TransformRead(this, gen, false, "[]", targetValue, _arguments, _block, null, null);
         }
 
         internal override MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, MSA.Expression target, MSA.Expression/*!*/ rightValue) {
             Assert.NotNull(target);
-            return MethodCall.TransformRead(this, gen, _array.NodeType == NodeTypes.SelfReference, "[]=", target, _arguments, null, null, rightValue);
+            return MethodCall.TransformRead(this, gen, _array.NodeType == NodeTypes.SelfReference, "[]=", target, _arguments, _block, null, rightValue);
         }
     }
 

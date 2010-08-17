@@ -33,6 +33,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
 
+    // TODO: remove?
     public partial class MatchExpression : Expression {
         private readonly RegularExpression/*!*/ _regex;
         private readonly Expression/*!*/ _expression;

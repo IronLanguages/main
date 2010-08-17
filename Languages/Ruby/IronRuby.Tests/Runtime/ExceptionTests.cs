@@ -548,8 +548,7 @@ puts x
         }
 
         public void Scenario_RubyRescueExpression2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def foo
   raise
 end
@@ -559,9 +558,20 @@ def bar
   puts 'unreachable'
 end
 
+def baz
+  foo rescue return
+  puts 'unreachable'
+end
+
+def bazz
+  foo rescue return 2
+  puts 'unreachable'
+end
+
 bar
-");
-            }, @"");
+baz
+bazz
+", @"");
         }
 
         public void ExceptionArg1() {
@@ -632,14 +642,17 @@ class C
 end
 
 begin
-  raise IOError
-rescue *C.new
-  puts 'ok'
+  begin
+    raise IOError
+  rescue *C.new
+    puts :a
+  end
+rescue
+  puts :b
 end
 ", @"
-?to_ary
-to_a
-ok
+?to_a
+b
 ");
         }
 
@@ -651,8 +664,8 @@ class C
     true
   end
 
-  def to_ary
-    puts 'to_ary'
+  def to_a
+    puts 'to_a'
     1
   end
 end
@@ -667,15 +680,55 @@ rescue
   p $!
 end
 ", @"
-?to_ary
-to_ary
-#<TypeError: C#to_ary should return Array>
+?to_a
+to_a
+#<TypeError: C#to_a should return Array>
+");
+        }
+
+        public void RescueSplat5() {
+            TestOutput(@"
+class E < Exception
+  
+end
+
+class C
+  def ===(other)
+    puts ""===#{other}""
+    0
+  end
+end
+
+def foo(i)
+  puts ""foo(#{i})""
+end
+
+a = []
+b = [1,2,3]
+c = 1
+
+begin
+  raise E.new
+rescue *a,*b,*[foo(0), C.new],foo(1),C.new,2 => x
+  p x
+end
+", @"
+foo(0)
+foo(1)
+===E
+#<E: E>
 ");
         }
 
         public void ExceptionMapping1() {
             TestOutput(@"
 class LoadError
+  def self.new message
+    ZeroDivisionError.new message
+  end
+end
+
+class SecurityError                 # partial trust: current directory detection
   def self.new message
     ZeroDivisionError.new message
   end
@@ -728,17 +781,28 @@ Done
             TestOutput(@"
 class LoadError
   def initialize *args
-    puts 'init'
+    puts 'initLE'
+  end
+end
+
+class SecurityError
+  def initialize *args
+    puts 'initSE'
   end
 end
 
 begin
   require 'non-existent'
+rescue SecurityError
+  puts 'Caught SecurityError'  # partial trust: current directory detection
 rescue LoadError
   puts 'Caught LoadError'
 end
-", @"
-init
+", _driver.PartialTrust ? @"
+initSE
+Caught SecurityError
+" : @"
+initLE
 Caught LoadError
 ");
         }

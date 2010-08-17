@@ -199,6 +199,7 @@
     <Compile Include="Builtins\Stubs.cs" />
     <Compile Include="Builtins\Subclasses.Generated.cs" />
     <Compile Include="Builtins\TypeDescriptor.Generated.cs" />
+    <Compile Include="Compiler\Ast\Definitions\LambdaDefinition.cs" />
     <Compile Include="Compiler\Ast\Expressions\ConditionalJumpExpression.cs" />
     <Compile Include="Compiler\Ast\Expressions\EncodingExpression.cs" />
     <Compile Include="Compiler\Ast\Expressions\FileLiteral.cs" />
@@ -210,6 +211,7 @@
     <Compile Include="Compiler\Ast\LeftValues\Placeholder.cs" />
     <Compile Include="Compiler\Ast\Instructions\ReducibleEmptyExpression.cs" />
     <Compile Include="Compiler\Ast\ScopeBuilder.cs" />
+    <Compile Include="Compiler\Ast\SplattedArgument.cs" />
     <Compile Include="Compiler\Ast\Statements.cs" />
     <Compile Include="Compiler\Ast\Statements\ConditionalStatement.cs" />
     <Compile Include="Compiler\Ast\CallSiteBuilder.cs" />
@@ -336,7 +338,6 @@
     <Compile Include="Compiler\Ast\LeftValues\LeftValue.cs" />
     <Compile Include="Compiler\Ast\LeftValues\CompoundLeftValue.cs" />
     <Compile Include="Compiler\Ast\Assignments\MemberAssignmentExpression.cs" />
-    <Compile Include="Compiler\Ast\Assignments\CompoundRightValue.cs" />
     <Compile Include="Compiler\Ast\Assignments\SimpleAssignmentExpression.cs" />
     <Compile Include="Compiler\Ast\Block.cs" />
     <Compile Include="Compiler\Ast\BlockReference.cs" />

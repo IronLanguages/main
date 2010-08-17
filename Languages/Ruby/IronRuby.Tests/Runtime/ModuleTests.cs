@@ -81,14 +81,14 @@ khg
         }
 
         /// <summary>
-        /// This is different from MRI. In MRI ancestors of a duplicated Object class are [O, Kernel].
+        /// TODO: BasicObject
         /// </summary>
         public void ClassDuplication4() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 O = Object.dup
 p O.ancestors
-p O.constants.include?('Object')
+p O.constants.include?(:Object)
 ");
             }, @"
 [O, Kernel, Object, Kernel]
@@ -100,7 +100,7 @@ true
             AssertOutput(delegate() {
                 CompilerTest(@"
 require 'mscorlib'
-p System::Collections.dup.constants.include?('IEnumerable')
+p System::Collections.dup.constants.include?(:IEnumerable)
 ");
             }, @"
 true
@@ -114,8 +114,8 @@ true
 ""default""
 1..2
 /foo/
-""""
-[""a"", ""b""]
+nil
+[:a, :b]
 ""foo""
 ";
 

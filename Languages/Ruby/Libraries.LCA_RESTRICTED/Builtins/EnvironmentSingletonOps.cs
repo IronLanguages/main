@@ -228,7 +228,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, object/*!*/ self) {
-            return HashOps.Inspect(context, ToHash(context, self));
+            return IDictionaryOps.ToMutableString(context, ToHash(context, self));
         }
 
         [RubyMethod("invert")]

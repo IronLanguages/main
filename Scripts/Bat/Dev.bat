@@ -20,7 +20,8 @@ if DEFINED INTERNALDEV (
 
   REM -- IronRuby environment variables --
   set RUBY18_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin
-  set RUBY18_EXE=%RUBY18_BIN%\ruby.exe
+  set RUBY18_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin\ruby.exe
+  set RUBY19_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin
   set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe
 
   REM -- IronPython environment variables
@@ -31,13 +32,11 @@ if DEFINED INTERNALDEV (
 ) else (
   set RUBY18_BIN=
   set RUBY18_EXE=ruby.exe
-  set RUBY19_EXE=c:\ruby19\bin\ruby.exe
+  set RUBY19_BIN=
+  set RUBY19_EXE=ruby.exe
 )
 set RUBYOPT=
-set GEM_PATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\lib\ruby\gems\1.8
-
-
-
+set GEM_PATH=%RUBY19_BIN%\..\lib\ruby\gems\1.9.1
 
 if EXIST "%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe" (
   set SN_UTIL="%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe"
@@ -113,7 +112,7 @@ if exist "%PROGRAM_FILES_32%\Microsoft.NET\SDK\v2.0\Bin\sdkvars.bat" (
 :EnvDone
 if DEFINED INTERNALDEV set PATH=%PATH%;%DLR_ROOT%\External\Tools;%DLR_ROOT%\Scripts\Bat;%DLR_ROOT%\Util\Internal\Snap\bin;%DLR_ROOT%\Util\tfpt
 
-set PATH=%PATH%;%DLR_ROOT%\Languages\Ruby\Scripts;%DLR_ROOT%\Languages\Ruby\Scripts\bin;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin;%RUBY18_BIN%
+set PATH=%PATH%;%DLR_ROOT%\Languages\Ruby\Scripts;%DLR_ROOT%\Languages\Ruby\Scripts\bin;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin;%RUBY19_BIN%
 
 REM -- Mono
 if defined DLR_VM_PATH goto MonoInitEnd

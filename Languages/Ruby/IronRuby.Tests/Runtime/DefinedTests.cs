@@ -174,7 +174,7 @@ constant
         }
 
         public void DefinedOperator_Constants3() {
-            TestOutput(@"
+            AssertOutput(() => CompilerTest(@"
 print '1' unless defined? FOO
 print '2' unless defined? FOO
 print '.' unless not (defined? Object and defined? FOO)
@@ -183,7 +183,7 @@ print '.' if defined? FOO
 print '.' if defined? FOO
 print '7' if not (defined? Object and defined? FOO)
 print '8' if defined? FOO or defined? Object
-", @"
+", 2, 0), @"
 1278
 ");
         }

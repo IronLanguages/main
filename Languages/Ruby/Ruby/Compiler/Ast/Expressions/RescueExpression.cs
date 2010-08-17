@@ -52,7 +52,7 @@ using MSA = Microsoft.Scripting.Ast;
         private Body/*!*/ ToBody(AstGenerator/*!*/ gen) {
             return new Body(
                 new Statements(_guardedExpression),
-                CollectionUtils.MakeList(new RescueClause(null, new Statements(_rescueClauseStatement), _rescueSpan)),
+                CollectionUtils.MakeList(new RescueClause(Expression.EmptyArray, null, new Statements(_rescueClauseStatement), _rescueSpan)),
             null, null, Location);
         }
 

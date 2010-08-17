@@ -333,12 +333,8 @@ p eval('x+y+z', goo)
             }, @"4");
         }
 
-        /// <summary>
-        /// "self" and arguments are passed in the proc, result is passed out.
-        /// </summary>
         public void ModuleEvalProc1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 module M
 end
 
@@ -346,9 +342,8 @@ puts M.module_eval { |*a|
   p a, self 
   'result'
 }
-");
-            }, @"
-[M]
+", @"
+[]
 M
 result
 ");
@@ -454,9 +449,7 @@ x.foo
         /// instance_eval sets public visibility flag on the evaluated block scope.
         /// </summary>
         public void InstanceEvalProc2() {
-            // TODO:
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 x = Object.new
 x.instance_eval { 
   def foo
@@ -464,10 +457,11 @@ x.instance_eval {
   end
 }
 class << x
-  puts instance_methods(false)
+  puts instance_methods(false).include?(:foo)
 end
+", @"
+true
 ");
-            }, @"foo");
         }
 
         /// <summary>

@@ -37,7 +37,7 @@ namespace IronRuby.Compiler.Ast {
 
         public ShutdownHandlerStatement(LexicalScope/*!*/ definedScope, Statements/*!*/ body, SourceSpan location)
             : base(location) {
-            _block = new BlockDefinition(definedScope, CompoundLeftValue.UnspecifiedBlockSignature, body, location);
+            _block = new BlockDefinition(definedScope, null, body, location);
         }
 
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {

@@ -26,6 +26,9 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Compiler;
 using System.Globalization;
+using IronRuby.Runtime.Conversions;
+using System.Runtime.CompilerServices;
+using System.Reflection;
 
 namespace IronRuby.Builtins {
 
@@ -37,100 +40,76 @@ namespace IronRuby.Builtins {
 
         #region Construction
 
-        // TODO: descriptorOrPath -> to_int, to_hash, to_path, to_str
-
         [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, int mode, [Optional]int permission) {
+        public static RubyFile/*!*/ CreateFile(
+            ConversionStorage<int?>/*!*/ toInt,
+            ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
+            ConversionStorage<MutableString>/*!*/ toPath,
+            ConversionStorage<MutableString>/*!*/ toStr,
+            RubyClass/*!*/ self,
+            object descriptorOrPath, 
+            [Optional]object optionsOrMode, 
+            [Optional]object optionsOrPermissions,
+            [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
 
-            if (descriptorOrPath.IsFixnum()) {
-                return new RubyFile(
-                    self.Context, RubyIOOps.GetDescriptorStream(self.Context, descriptorOrPath.Fixnum()), descriptorOrPath.Fixnum(), (IOMode)mode
-                );
-            } else {
-                // TODO: permissions
-                return CreateFile(self, descriptorOrPath.Second, mode);
+            return Reinitialize(toInt, toHash, toPath, toStr, new RubyFile(self.Context), descriptorOrPath, optionsOrMode, optionsOrPermissions, options);
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyFile/*!*/ Reinitialize(
+            ConversionStorage<int?>/*!*/ toInt,
+            ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
+            ConversionStorage<MutableString>/*!*/ toPath,
+            ConversionStorage<MutableString>/*!*/ toStr,
+            RubyFile/*!*/ self,
+            object descriptorOrPath, 
+            [Optional]object optionsOrMode, 
+            [Optional]object optionsOrPermissions,
+            [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
+
+            // options:
+            RubyIOOps.TryConvertToOptions(toHash, ref options, ref optionsOrMode, ref optionsOrPermissions);
+
+            var toIntSite = toInt.GetSite(TryConvertToFixnumAction.Make(toInt.Context));
+
+            IOMode mode = IOMode.Default;
+            if (optionsOrMode != Missing.Value) {
+                int? m = toIntSite.Target(toIntSite, optionsOrMode);
+                mode = m.HasValue ? (IOMode)m : IOModeEnum.Parse(Protocols.CastToString(toStr, optionsOrMode));
             }
-        }
 
-        [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, 
-            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
-
-            if (descriptorOrPath.IsFixnum()) {
-                return new RubyFile(
-                    self.Context, RubyIOOps.GetDescriptorStream(self.Context, descriptorOrPath.Fixnum()), descriptorOrPath.Fixnum(), IOModeEnum.Parse(mode)
-                );
-            } else {
-                // TODO: permissions
-                return CreateFile(self, descriptorOrPath.Second, mode);
+            int permissions = 0;
+            if (optionsOrPermissions != Missing.Value) {
+                int? p = toIntSite.Target(toIntSite, optionsOrPermissions);
+                if (!p.HasValue) {
+                    throw RubyExceptions.CreateTypeConversionError(self.Context.GetClassName(optionsOrPermissions), "Integer");
+                }
+                permissions = p.Value;
             }
-        }
 
-        [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
-            return new RubyFile(self.Context, path, IOMode.Default);
-        }
-
-        [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, MutableString mode) {
-            return new RubyFile(self.Context, path, IOModeEnum.Parse(mode));
-        }
-
-        [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, int mode) {
-            return new RubyFile(self.Context, path, (IOMode)mode);
-        }
-
-        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self,
-            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, int mode, [Optional]int permission) {
-
-            // TODO: remove duplicity (constructors vs initializers)
-
-            if (descriptorOrPath.IsFixnum()) {
-                RubyIOOps.Reinitialize(self, descriptorOrPath.Fixnum(), mode);
+            // TODO: use options, permissions
+            
+            // descriptor or path:
+            int? descriptor = toIntSite.Target(toIntSite, descriptorOrPath);
+            if (descriptor.HasValue) {
+                RubyIOOps.Reinitialize(self, descriptor.Value, (int)mode);
             } else {
-                var path = self.Context.DecodePath(descriptorOrPath.Second);
-                var stream = RubyFile.OpenFileStream(self.Context, path, (IOMode)mode);
-
-                self.Path = path;
-                self.Mode = (IOMode)mode;
-                self.SetStream(stream);
-                self.SetFileDescriptor(self.Context.AllocateFileDescriptor(stream));
+                Reinitialize(self, Protocols.CastToPath(toPath, descriptorOrPath), mode, permissions);
             }
-            // TODO: permission
+
             return self;
         }
 
-        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self,
-            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
+        private static void Reinitialize(RubyFile/*!*/ file, MutableString/*!*/ path, IOMode mode, int permission) {
+            var strPath = file.Context.DecodePath(path);
+            var stream = RubyFile.OpenFileStream(file.Context, strPath, (IOMode)mode);
 
-            return Reinitialize(self, descriptorOrPath, (int)IOModeEnum.Parse(mode), permission);
+            file.Path = strPath;
+            file.Mode = (IOMode)mode;
+            file.SetStream(stream);
+            file.SetFileDescriptor(file.Context.AllocateFileDescriptor(stream));
         }
-
-        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self, [NotNull]MutableString/*!*/ path) {
-            // TODO: permission
-            Reinitialize(self, path, (int)self.Mode, 0);
-            return self;
-        }
-
-        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self, [NotNull]MutableString/*!*/ path, MutableString mode) {
-            // TODO: permission
-            Reinitialize(self, path, mode, 0);
-            return self;
-        }
-
-        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static RubyFile/*!*/ Reinitialize(RubyFile/*!*/ self, [NotNull]MutableString/*!*/ path, int mode) {
-            // TODO: permission
-            Reinitialize(self, path, mode, 0);
-            return self;
-        }
-
+        
         #endregion
 
         #region Declared Constants

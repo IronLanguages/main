@@ -20,6 +20,7 @@ using MSA = Microsoft.Scripting.Ast;
 #endif
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Compiler.Ast {
 
@@ -27,19 +28,19 @@ namespace IronRuby.Compiler.Ast {
     /// [ args ]
     /// </summary>
     public partial class ArrayConstructor : Expression {
-        private readonly Arguments _arguments;
+        private readonly Arguments/*!*/ _arguments;
 
-        public Arguments Arguments {
+        public Arguments/*!*/ Arguments {
             get { return _arguments; }
         }
 
         public ArrayConstructor(Arguments arguments, SourceSpan location)
             : base(location) {
-            _arguments = arguments;
+            _arguments = arguments ?? Arguments.Empty;
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return Arguments.TransformToArray(gen, _arguments);
+            return _arguments.TransformToArray(gen);
         }
     }
 }

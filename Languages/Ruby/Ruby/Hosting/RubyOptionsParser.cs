@@ -246,20 +246,10 @@ namespace IronRuby.Hosting {
                     break;
 
                 case "-1.8.6":
-                    LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby186;
-                    break;
-
                 case "-1.8.7":
-                    LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby187;
-                    break;
-
                 case "-1.9":
-                    LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby19;
-                    break;
-
                 case "-2.0":
-                    LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby20;
-                    break;
+                    throw new InvalidOptionException(String.Format("Option `{0}' is no longer supported. The compatible Ruby version is 1.9.", optionName));
 
                 case "-X":
                     switch (optionValue) {
@@ -393,11 +383,7 @@ namespace IronRuby.Hosting {
 
                 { "-trace",                      "enable support for set_trace_func" },
                 { "-profile",                    "enable support for 'pi = IronRuby::Clr.profile { block_to_profile }'" },
-                { "-1.8.6",                      "Ruby 1.8.6 mode (default)" },
-                { "-1.8.7",                      "Ruby 1.8.7 mode" },
-                { "-1.9",                        "Ruby 1.9 mode" },
-                { "-2.0",                        "Ruby 2.0 mode" },
-
+                
                 { "-X:ExceptionDetail",          "enable ExceptionDetail mode" },
                 { "-X:NoAdaptiveCompilation",    "disable adaptive compilation - all code will be compiled" },
                 { "-X:CompilationThreshold",     "the number of iterations before the interpreter starts compiling" },

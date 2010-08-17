@@ -120,8 +120,8 @@ namespace IronRuby.Builtins {
             get { return RubyUtils.GetCallSite(ref _newSite, Context, "new", 1); }
         }
 
-        internal CallSite<Func<CallSite, object, object>>/*!*/ ToArraySplatSite {
-            get { return RubyUtils.GetCallSite(ref _toArraySplatSite, ConvertToArraySplatAction.Make(Context)); }
+        internal CallSite<Func<CallSite, object, object>>/*!*/ ToImplicitTrySplatSite {
+            get { return RubyUtils.GetCallSite(ref _toArraySplatSite, ImplicitTrySplatAction.Make(Context)); }
         }
         
         public CallSite<Func<CallSite, object, MutableString>>/*!*/ InspectResultConversionSite {
@@ -620,7 +620,7 @@ namespace IronRuby.Builtins {
             // MRI is inconsistent here, it triggers "inherited" event after the body of the method is evaluated.
             // In all other cases the order is event first, body next.
             RubyClass newClass = context.DefineClass(owner, null, superClass ?? context.ObjectClass, null);
-            return (body != null) ? RubyUtils.EvaluateInModule(newClass, body, null, newClass) : newClass;
+            return (body != null) ? RubyUtils.EvaluateInModule(newClass, body, new[] { newClass }, newClass) : newClass;
         }
 
         internal override bool ForEachAncestor(Func<RubyModule, bool>/*!*/ action) {
@@ -1299,7 +1299,7 @@ namespace IronRuby.Builtins {
         /// </summary>  
         public void BuildObjectAllocation(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName) {
             // check for empty arguments (handles splat correctly):
-            var argsBuilder = new ArgsBuilder(0, 0, 0, false);
+            var argsBuilder = new ArgsBuilder(0, 0, 0, 0, false);
             argsBuilder.AddCallArguments(metaBuilder, args);
 
             if (!metaBuilder.Error) {

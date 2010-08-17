@@ -2,7 +2,7 @@ require 'mspec/guards/guard'
 
 class ConflictsGuard < SpecGuard
   def match?
-    constants = Object.constants
+    constants = Object.constants.map { |c| c.to_s }
     @args.any? { |mod| constants.include? mod.to_s }
   end
 end

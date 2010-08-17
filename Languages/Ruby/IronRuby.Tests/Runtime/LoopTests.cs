@@ -15,9 +15,7 @@
 
 namespace IronRuby.Tests {
     public partial class Tests {
-
-
-        public void Scenario_RubyForLoop1() {
+        public void RubyForLoop1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 for a in [1,2,3]
@@ -28,21 +26,6 @@ end
 print x         # x visible here, for-loop doesn't define a scope
 ");
             }, "123ok");
-        }
-
-        public void Scenario_RubyForLoop2() {
-#if OBSOLETE
-            ScriptScope module = ScriptDomainManager.CurrentManager.CreateModule("x");
-            module.SetVariable("list", PY.Execute(module, PY.CreateScriptSourceFromString("[1,2,3]")));
-            
-            AssertOutput(delegate() {
-                RB.Execute(module, RB.CreateScriptSourceFromString(@"
-for a in list
-    print a
-end
-", SourceCodeKind.Statements));
-            }, "123");
-#endif
         }
 
         public void WhileLoop1() {

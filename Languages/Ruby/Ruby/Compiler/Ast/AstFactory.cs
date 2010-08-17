@@ -128,7 +128,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal static MSA.Expression/*!*/ YieldExpression(
             RubyContext/*!*/ context,
-            AstExpressions/*!*/ arguments, 
+            ICollection<MSA.Expression>/*!*/ arguments, 
             MSA.Expression splattedArgument,
             MSA.Expression rhsArgument,
             MSA.Expression/*!*/ bfcVariable,
@@ -150,7 +150,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             if (splattedArgument != null) {
-                args.Add(AstUtils.LightDynamic(SplatAction.Make(context), typeof(IList), splattedArgument));
+                args.Add(AstUtils.LightDynamic(ExplicitSplatAction.Make(context), typeof(IList), splattedArgument));
             }
 
             if (rhsArgument != null) {

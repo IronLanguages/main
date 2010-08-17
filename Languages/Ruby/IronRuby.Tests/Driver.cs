@@ -46,7 +46,6 @@ namespace IronRuby.Tests {
     [AttributeUsage(AttributeTargets.Method)]
     [Serializable]
     public sealed class OptionsAttribute : Attribute {
-        public RubyCompatibility Compatibility { get; set; }
         public bool PrivateBinding { get; set; }
         public bool NoRuntime { get; set; }
         public Type Pal { get; set; }
@@ -86,7 +85,6 @@ namespace IronRuby.Tests {
             languageSetup.Options["NoAdaptiveCompilation"] = _driver.NoAdaptiveCompilation;
             languageSetup.Options["CompilationThreshold"] = _driver.CompilationThreshold;
             languageSetup.Options["Verbosity"] = 2;
-            languageSetup.Options["Compatibility"] = testCase.Options.Compatibility;
 
             _runtime = Ruby.CreateRuntime(runtimeSetup);
             _engine = Ruby.GetEngine(_runtime);

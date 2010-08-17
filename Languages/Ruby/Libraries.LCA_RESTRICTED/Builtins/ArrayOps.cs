@@ -168,6 +168,8 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region to_a, to_ary, try_convert
+
         [RubyMethod("to_a")]
         public static RubyArray/*!*/ ToArray(RubyArray/*!*/ self) {
             return self is RubyArray.Subclass ? new RubyArray(self) : self;
@@ -177,6 +179,14 @@ namespace IronRuby.Builtins {
         public static RubyArray/*!*/ ToExplicitArray(RubyArray/*!*/ self) {
             return self;
         }
+
+        [RubyMethod("try_convert", RubyMethodAttributes.PublicSingleton)]
+        public static IList TryConvert(ConversionStorage<IList>/*!*/ toAry, RubyClass/*!*/ self, object obj) {
+            var site = toAry.GetSite(TryConvertToArrayAction.Make(toAry.Context));
+            return site.Target(site, obj);
+        }
+
+        #endregion
 
         #region pack
 

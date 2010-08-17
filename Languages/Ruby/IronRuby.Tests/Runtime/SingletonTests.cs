@@ -254,8 +254,7 @@ singleton 2
         }
 
         public void Scenario_ClassVariables_Singletons() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class C
 end
 
@@ -277,11 +276,10 @@ end
 p M.class_variables.sort
 p $SC.class_variables.sort
 p $Sx.class_variables.sort
-");
-            }, @"
-[""@@a"", ""@@b"", ""@@c"", ""@@em""]
-[""@@ea""]
-[""@@eb""]
+", @"
+[:@@a, :@@b, :@@c, :@@em]
+[:@@ea]
+[:@@eb]
 ");
         }
 

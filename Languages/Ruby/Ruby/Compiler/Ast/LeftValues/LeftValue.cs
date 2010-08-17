@@ -25,7 +25,8 @@ using Microsoft.Scripting;
 namespace IronRuby.Compiler.Ast {
 
     public abstract class LeftValue : Expression {
-        internal static new readonly List<LeftValue>/*!*/ EmptyList = new List<LeftValue>();
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+        internal static new readonly LeftValue[] EmptyArray = new LeftValue[0];
 
         public LeftValue(SourceSpan location)
             : base(location) {

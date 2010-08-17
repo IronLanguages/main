@@ -52,9 +52,6 @@ namespace IronRuby.Runtime.Calls {
         public MSA.SymbolDocumentInfo Document { get { return _document; } }
         public bool HasTarget { get { return _ast.Target != null; } }
         public string/*!*/ Name { get { return _ast.Name; } }
-        public int MandatoryParameterCount { get { return _ast.Parameters.MandatoryCount; } }
-        public int OptionalParameterCount { get { return _ast.Parameters.OptionalCount; } }
-        public bool HasUnsplatParameter { get { return _ast.Parameters.Array != null; } }
 
         internal Delegate GetDelegate(RubyScope/*!*/ declaringScope, RubyModule/*!*/ declaringModule) {
             if (_delegate == null) {

@@ -47,8 +47,9 @@ namespace Microsoft.Scripting.Silverlight {
     /// </summary>
     // BUG: should be internal, but Ruby is refusing to call members if so
     public abstract class BrowserPAL : PlatformAdaptationLayer {
-
         public BrowserVirtualFilesystem VirtualFilesystem { get; internal set; }
+
+        private string _currentDirectory = "";
 
         protected static BrowserPAL _PAL;
         internal static BrowserPAL PAL {
@@ -66,6 +67,15 @@ namespace Microsoft.Scripting.Silverlight {
         public object CurrentStorageUnit {
             get { return VirtualFilesystem.CurrentStorageUnit; }
             set { VirtualFilesystem.CurrentStorageUnit = value; }
+        }
+
+        public override string CurrentDirectory {
+            get {
+                return _currentDirectory;
+            }
+            set {
+                _currentDirectory = value ?? "";
+            }
         }
 
         /// <summary>
@@ -114,8 +124,7 @@ namespace Microsoft.Scripting.Silverlight {
             return result;
         }
 
-        public override Stream OpenInputFileStream
-        (string path, FileMode mode, FileAccess access, FileShare share) {
+        public override Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share) {
             if (mode != FileMode.Open || access != FileAccess.Read) {
                 throw new IOException(
                     string.Format("can only read files from the {0}",
@@ -126,8 +135,7 @@ namespace Microsoft.Scripting.Silverlight {
             return OpenInputFileStream(path);
         }
 
-        public override Stream OpenInputFileStream
-        (string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
+        public override Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
             return OpenInputFileStream(path, mode, access, share);
         }
 

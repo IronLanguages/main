@@ -335,58 +335,44 @@ namespace IronRuby.Builtins {
         private void Mutate(MutableString/*!*/ other) {
             RubyEncoding newEncoding = RequireCompatibleEncoding(other);
             Mutate();
-            if (newEncoding != null) {
-                SetEncoding(newEncoding);
-            }
+            SetEncoding(newEncoding);
         }
 
         /// <summary>
         /// Checks if the other string's encoding is compatible with this string's encoding.
-        /// If it is not an exception is thrown.
-        /// Otherwise returns the encoding that should be used for the result of the operation if it is different from this string's encoding.
-        /// (returns null if so).
+        /// If it is returns the encoding that should be used for the result of the operation.
+        /// Returns a <c>null</c> reference otherwise.
         /// </summary>
-        public RubyEncoding RequireCompatibleEncoding(MutableString/*!*/ other) {
-            if (_encoding == other.Encoding) {
-                return null;
+        public RubyEncoding GetCompatibleEncoding(MutableString/*!*/ other) {
+            return GetCompatibleEncoding(other.Encoding) ?? (other.IsAscii() ? _encoding : null);
+        }
+
+        public RubyEncoding GetCompatibleEncoding(RubyEncoding/*!*/ encoding) {
+            return GetCompatibleEncoding(_encoding, encoding) ?? (IsAscii() ? encoding : null);
+        }
+
+        public static RubyEncoding GetCompatibleEncoding(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
+            if (encoding1 == encoding2) {
+                return encoding1;
             }
 
-            // K-coded strings are in fact raw binary data which are just presented to .NET as strings (using their RealEncoding).
-            if (_encoding.IsKCoding || other.Encoding.IsKCoding) {
-                if (_encoding.RealEncoding == other.Encoding.RealEncoding) {
-                    // it makes sense to present the resulting string using the same K-coding:
-                    if (!_encoding.IsKCoding) {
-                        return other.Encoding;
-                    }
-                    return null;
-                } else {
-                    // Present the result as raw binary data.
-                    // Note: we could also preserve the K-coding for ascii strings but we don't do that to avoid additional cost.
-                    SwitchToBytes();
-
-                    // Must switch the other to bytes as well so that the operation is performed on bytes.
-                    other.SwitchToBytes();
-
-                    return RubyEncoding.Binary;
-                }
+            if (encoding1 == RubyEncoding.Ascii) {
+                return encoding2;
+            } 
+            
+            if (encoding2 == RubyEncoding.Ascii) {
+                return encoding1;
             }
 
-            // MRI implicitly changes encoding of a string that contains ascii bytes/characters only.
-            if (other.IsAscii()) {
-                if (IsBinaryEncoded && IsAscii()) {
-                    // we can safely change encoding since the string contains ascii bytes/characters only:
-                    return other.Encoding;
-                } else {
-                    return null;
-                }
-            }
+            return null;
+        }
 
-            if (IsAscii()) {
-                // we can safely change encoding since the string contains ascii bytes/characters only:
-                return other.Encoding;
+        public RubyEncoding/*!*/ RequireCompatibleEncoding(MutableString/*!*/ other) {
+            var result = GetCompatibleEncoding(other);
+            if (result == null) {
+                throw RubyExceptions.CreateEncodingCompatibilityError(_encoding, other.Encoding);
             }
-
-            throw RubyExceptions.CreateEncodingCompatibilityError(_encoding, other.Encoding);
+            return result;
         }
 
         /// <summary>
@@ -1436,7 +1422,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         public MutableString/*!*/ Concat(MutableString/*!*/ other) {
             ContractUtils.RequiresNotNull(other, "other");
-            var encoding = RequireCompatibleEncoding(other) ?? _encoding;
+            var encoding = RequireCompatibleEncoding(other);
             return new MutableString(_content.Concat(other._content), encoding);
         }
 

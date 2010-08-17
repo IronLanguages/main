@@ -24,6 +24,7 @@ using System.Diagnostics;
 using Microsoft.Scripting.Generation;
 using System.Threading;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Builtins {
 
@@ -116,6 +117,12 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
+        [RubyMethod("try_convert", RubyMethodAttributes.PublicSingleton)]
+        public static IDictionary<object, object> TryConvert(ConversionStorage<IDictionary<object, object>>/*!*/ toHash, RubyClass/*!*/ self, object obj) {
+            var site = toHash.GetSite(TryConvertToHashAction.Make(toHash.Context));
+            return site.Target(site, obj);
+        }
         
         #region Instance Methods
         
@@ -153,32 +160,6 @@ namespace IronRuby.Builtins {
         [RubyMethod("default_proc")]
         public static Proc GetDefaultProc(Hash/*!*/ self) {
             return self.DefaultProc;
-        }
-
-        [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, Hash/*!*/ self) {
-
-            using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
-                if (handle == null) {
-                    return MutableString.CreateAscii("{...}");
-                }
-
-                MutableString str = MutableString.CreateMutable(RubyEncoding.Binary);
-                str.Append('{');
-                bool first = true;
-                foreach (var entry in self) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        str.Append(", ");
-                    }
-                    str.Append(context.Inspect(CustomStringDictionary.ObjToNull(entry.Key)));
-                    str.Append("=>");
-                    str.Append(context.Inspect(entry.Value));
-                }
-                str.Append('}');
-                return str;
-            }
         }
         
         [RubyMethod("replace")]

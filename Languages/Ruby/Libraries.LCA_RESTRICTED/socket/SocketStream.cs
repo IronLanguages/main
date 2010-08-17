@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.IO;
 
 namespace IronRuby.StandardLibrary.Sockets {
     internal class SocketStream : System.IO.Stream {
@@ -109,7 +110,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             return totalBytesRead;
         }
 
-        public override long Seek(long offset, System.IO.SeekOrigin origin) {
+        public override long Seek(long offset, SeekOrigin origin) {
             throw new NotSupportedException("The method or operation is not implemented.");
         }
 

@@ -21,34 +21,38 @@ using MSA = Microsoft.Scripting.Ast;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
+    using Ast = MSA.Expression;
+
     public partial class NotExpression : Expression {
-        private readonly Expression/*!*/ _expression;
+        private readonly Expression _expression;
 
         public Expression/*!*/ Expression {
             get { return _expression; }
         }
 
-        public NotExpression(Expression/*!*/ expression, SourceSpan location) 
+        public NotExpression(Expression expression, SourceSpan location) 
             : base(location) {
-            Assert.NotNull(expression);
-
             _expression = expression;
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return _expression.TransformReadBoolean(gen, false);
+            var target = (_expression != null) ? _expression.Transform(gen) : Ast.Constant(null);
+            return MethodCall.TransformRead(this, gen, false, Symbols.Bang, target, null, null, null, null);
         }
 
         internal override MSA.Expression/*!*/ TransformReadBoolean(AstGenerator/*!*/ gen, bool positive) {
-            return _expression.TransformReadBoolean(gen, !positive);
+            return (positive ? Methods.IsTrue : Methods.IsFalse).OpCall(AstUtils.Box(TransformRead(gen)));
         }
 
         internal override Expression/*!*/ ToCondition(LexicalScope/*!*/ currentScope) {
-            var newExpression = _expression.ToCondition(currentScope);
-            if (newExpression != _expression) {
-                return new NotExpression(newExpression, Location);
+            if (_expression != null) {
+                var newExpression = _expression.ToCondition(currentScope);
+                if (newExpression != _expression) {
+                    return new NotExpression(newExpression, Location);
+                }
             }
 
             return this;

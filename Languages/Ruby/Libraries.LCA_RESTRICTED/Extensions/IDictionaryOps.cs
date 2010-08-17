@@ -347,28 +347,6 @@ namespace IronRuby.Builtins {
             return ValuesAt(context, self, keys);
         }
 
-        [RubyMethod("inspect")]
-        public static MutableString Inspect(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
-
-            using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
-                if (handle == null) {
-                    return MutableString.CreateAscii("{...}");
-                }
-                MutableString str = MutableString.CreateMutable(RubyEncoding.Binary);
-                str.Append('{');
-                foreach (KeyValuePair<object, object> pair in self) {
-                    if (str.Length != 1) {
-                        str.Append(", ");
-                    }
-                    str.Append(context.Inspect(CustomStringDictionary.ObjToNull(pair.Key)));
-                    str.Append("=>");
-                    str.Append(context.Inspect(pair.Value));
-                }
-                str.Append('}');
-                return str;
-            }
-        }
-
         [RubyMethod("invert")]
         public static Hash/*!*/ Invert(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
             // invert returns a Hash, even from subclasses
@@ -541,18 +519,32 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToMutableString(ConversionStorage<MutableString>/*!*/ tosConversion, 
-            IDictionary<object, object>/*!*/ self) {
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ ToMutableString(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
 
-            using (IDisposable handle = RubyUtils.InfiniteToSTracker.TrackObject(self)) {
+            using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 if (handle == null) {
                     return MutableString.CreateAscii("{...}");
-                } else {
-                    return IListOps.Join(tosConversion, ToArray(self));
                 }
+
+                MutableString str = MutableString.CreateMutable(RubyEncoding.Binary);
+                str.Append('{');
+                bool first = true;
+                foreach (var entry in self) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        str.Append(", ");
+                    }
+                    str.Append(context.Inspect(CustomStringDictionary.ObjToNull(entry.Key)));
+                    str.Append("=>");
+                    str.Append(context.Inspect(entry.Value));
+                }
+                str.Append('}');
+                return str;
             }
         }
-
+        
         [RubyMethod("values")]
         public static RubyArray/*!*/ GetValues(IDictionary<object, object>/*!*/ self) {
             return new RubyArray(self.Values);

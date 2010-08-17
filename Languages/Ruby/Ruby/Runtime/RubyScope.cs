@@ -563,12 +563,13 @@ namespace IronRuby.Runtime {
         internal sealed class DebugView {
             private readonly RubyScope/*!*/ _scope;
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
-            private readonly string/*!*/ _selfClassName;
+            private readonly string _selfClassName;
             
             public DebugView(RubyScope/*!*/ scope) {
                 Assert.NotNull(scope);
                 _scope = scope;
-                _selfClassName = _scope.RubyContext.GetImmediateClassOf(_scope._selfObject).GetDisplayName(_scope.RubyContext, true).ConvertToString();               
+                var name = _scope.RubyContext.GetImmediateClassOf(_scope._selfObject).GetDisplayName(_scope.RubyContext, true);
+                _selfClassName = name != null ? name.ConvertToString() : null;
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

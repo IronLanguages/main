@@ -22,6 +22,7 @@ using MSA = Microsoft.Scripting.Ast;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -33,177 +34,126 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
     using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
-    
-    public partial class Arguments : Node {
-        internal static readonly Arguments Empty = new Arguments(SourceSpan.None);
+    using ExpressionsBuilder = Microsoft.Scripting.Ast.ExpressionCollectionBuilder<MSA.Expression>;
 
-        private readonly Expression[] _expressions;
-        private readonly List<Maplet> _maplets;
-        private readonly Expression _array;
+    // TODO: remove this class
+    public class Arguments {
+        internal static readonly Arguments Empty = new Arguments();
+
+        private readonly Expression/*!*/[]/*!*/ _expressions;
         
         public bool IsEmpty {
-            get { return _expressions == null && _maplets == null && _array == null; }
+            get { return _expressions.Length == 0; }
         }
 
-        public Expression[] Expressions { get { return _expressions; } }
-        public List<Maplet> Maplets { get { return _maplets; } }
-        public Expression Array { get { return _array; } }
+        public Expression/*!*/[]/*!*/ Expressions { get { return _expressions; } }
         
-        public Arguments(SourceSpan location)
-            : base(location) {
-            _expressions = null;
-            _maplets = null;
-            _array = null;
+        public Arguments() {
+            _expressions = Expression.EmptyArray;
         }
 
-        public Arguments(Expression/*!*/ arg)
-            : base(arg.Location) {
+        public Arguments(Expression/*!*/ arg) {
             ContractUtils.RequiresNotNull(arg, "arg");
-
             _expressions = new Expression[] { arg };
-            _maplets = null;
-            _array = null;
         }
 
-        public Arguments(Expression/*!*/[] arguments, List<Maplet/*!*/> maplets, Expression array, SourceSpan location)
-            : base(location) {
-            if (arguments != null) {
-                Assert.NotNullItems(arguments);
-            }
-            if (maplets != null) {
-                Assert.NotNullItems(maplets);
+        public Arguments(Expression/*!*/[] expressions) {
+            if (expressions != null) {
+                Assert.NotNullItems(expressions);
             }
 
-            _expressions = arguments;
-            _maplets = maplets;
-            _array = array;
+            _expressions = expressions ?? Expression.EmptyArray;
         }
 
-        #region Transform to Call Expression
-
-        private AstExpressions/*!*/ MakeSimpleArgumentExpressionList(AstGenerator/*!*/ gen) {
-            var args = new AstExpressions();
-
-            if (_expressions != null) {
-                gen.TranformExpressions(_expressions, args);
-            }
-
-            if (_maplets != null) {
-                args.Add(gen.TransformToHashConstructor(_maplets));
-            }
-
-            return args;
-        }
+        #region Transform to Call/Yield Expression
 
         internal void TransformToCall(AstGenerator/*!*/ gen, CallSiteBuilder/*!*/ siteBuilder) {
-            if (_expressions != null) {
-                foreach (var arg in _expressions) {
-                    siteBuilder.Add(arg.TransformRead(gen));
-                }
-            }
-
-            if (_maplets != null) {
-                siteBuilder.Add(gen.TransformToHashConstructor(_maplets));
-            }
-
-            if (_array != null) {
-                siteBuilder.SplattedArgument = 
-                    AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), _array.TransformRead(gen));
-            }
+            siteBuilder.SplattedArgument = TransformToCallInternal(gen, siteBuilder);
         }
-
-        #endregion
-
-        #region Transform To Yield
 
         internal MSA.Expression/*!*/ TransformToYield(AstGenerator/*!*/ gen, MSA.Expression/*!*/ bfcVariable, MSA.Expression/*!*/ selfExpression) {
-            var args = (_expressions != null) ? gen.TranformExpressions(_expressions) : new AstExpressions();
+            var args = new List<MSA.Expression>();
+            var splatted = TransformToCallInternal(gen, args);
+            return AstFactory.YieldExpression(gen.Context, args, splatted, null, bfcVariable, selfExpression);
+        }
 
-            if (_maplets != null) {
-                args.Add(gen.TransformToHashConstructor(_maplets));
+        /// <summary>
+        /// Adds arguments to the given collection (result) and returns a transformed splatted argument.
+        /// </summary>
+        private MSA.Expression TransformToCallInternal(AstGenerator/*!*/ gen, ICollection<MSA.Expression>/*!*/ result) {
+            int splattedCount;
+            int firstSplatted = IndexOfSplatted(out splattedCount);
+
+            for (int i = 0; i < (firstSplatted != -1 ? firstSplatted : _expressions.Length); i++) {
+                result.Add(_expressions[i].TransformRead(gen));
             }
 
-            return AstFactory.YieldExpression(
-                gen.Context,
-                args,
-                (_array != null) ? _array.TransformRead(gen) : null,         // splatted argument
-                null,                                                        // rhs argument
-                bfcVariable,
-                selfExpression
-            );
-        }
-
-        #endregion
-
-        #region Transform Read
-
-        internal MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, bool doSplat) {
-            Assert.NotNull(gen);
-            return TransformRead(gen, 
-                MakeSimpleArgumentExpressionList(gen), 
-                (_array != null) ? _array.TransformRead(gen) : null,
-                doSplat
-            );
-        }
-
-        internal static MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, AstExpressions/*!*/ rightValues, 
-            MSA.Expression splattedValue, bool doSplat) {
-
-            Assert.NotNull(gen, rightValues);
-
-            MSA.Expression result;
-
-            // We need to distinguish various special cases here.
-            // For parallel assignment specification, see "Ruby Language.docx/Runtime/Parallel Assignment".
-            
-            // R(0,*)?
-            bool rightNoneSplat = rightValues.Count == 0 && splattedValue != null;
-
-            // R(1,-)?
-            bool rightOneNone = rightValues.Count == 1 && splattedValue == null;
-
-            if (rightNoneSplat) {
-                result = AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue);
-                if (doSplat) {
-                    result = Methods.Splat.OpCall(result);
-                }
-            } else if (rightOneNone && doSplat) {
-                result = rightValues[0];
+            // TODO: 1.9 allows multiple splats at call-site, e.g. foo(a,b,*c,*d,e,*f).
+            // Currently our call-sites only implement single splatting so we convert the arguments to such form, 
+            // e.g. foo(a,b,*[*c,*d,e,*f]).
+            if (splattedCount == 1) {
+                return _expressions[firstSplatted].TransformRead(gen);
+            } else if (splattedCount > 1) {
+                return UnsplatArguments(gen, firstSplatted);
             } else {
-                result = Methods.MakeArrayOpCall(rightValues);
+                return null;
+            }
+        }
 
-                if (splattedValue != null) {
-                    result = Methods.SplatAppend.OpCall(result, AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue));
+        internal int IndexOfSplatted(out int splattedCount) {
+            splattedCount = 0;
+            int result = -1;
+            for (int i = 0; i < _expressions.Length; i++) {
+                if (_expressions[i] is SplattedArgument) {
+                    splattedCount++;
+                    if (result == -1) {
+                        result = i;
+                    }
                 }
             }
+
             return result;
         }
+        
+        internal MSA.Expression UnsplatArguments(AstGenerator/*!*/ gen, int start) {
+            // [*array] == array, [*item] = [item]
+            if (start == _expressions.Length - 1) {
+                return Methods.Unsplat.OpCall(AstUtils.Box(_expressions[start].TransformRead(gen)));
+            }
+            
+            MSA.Expression array = Methods.MakeArray0.OpCall();
+            for (int i = start; i < _expressions.Length; i++) {
+                if (_expressions[i] is SplattedArgument) {
+                    array = Methods.AddRange.OpCall(array, _expressions[i].TransformRead(gen));
+                } else {
+                    array = Methods.AddItem.OpCall(array, AstUtils.Box(_expressions[i].TransformRead(gen)));
+                }
+                
+            }
+            return array;
+        }
 
         #endregion
 
-        #region Tranform to Return Value
+        #region Transform To Return Value or Array Initializer
 
-        private MSA.Expression/*!*/ TransformToReturnValue(AstGenerator/*!*/ gen) {
-            Assert.NotNull(gen);
-            
-            if (_maplets != null && _expressions == null && _array == null) {
-                return gen.TransformToHashConstructor(_maplets);
+        internal MSA.Expression/*!*/ TransformToArray(AstGenerator/*!*/ gen) {
+            int splattedCount;
+            int splatted = IndexOfSplatted(out splattedCount);
+            if (splatted >= 0) {
+                return UnsplatArguments(gen, 0);
             }
 
-            return TransformRead(gen, true /* Splat */);
+            // TODO: optimize big arrays
+            return Methods.MakeArrayOpCall(gen.TransformExpressions(_expressions));
         }
 
-        internal static MSA.Expression/*!*/ TransformToReturnValue(AstGenerator/*!*/ gen, Arguments arguments) {
-            return (arguments != null) ? arguments.TransformToReturnValue(gen) : AstUtils.Constant(null);
-        }
+        internal MSA.Expression/*!*/ TransformToReturnValue(AstGenerator/*!*/ gen) {
+            if (_expressions.Length == 1) {
+                return _expressions[0].TransformRead(gen);
+            }
 
-        #endregion
-
-        #region Transform To Array
-
-        internal static MSA.Expression/*!*/ TransformToArray(AstGenerator/*!*/ gen, Arguments arguments) {
-            Assert.NotNull(gen);
-            return (arguments != null) ? arguments.TransformRead(gen, false /* Unsplat */) : Methods.MakeArray0.OpCall();
+            return TransformToArray(gen);
         }
 
         #endregion

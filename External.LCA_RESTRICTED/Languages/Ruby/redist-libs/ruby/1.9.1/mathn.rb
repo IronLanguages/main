@@ -116,6 +116,9 @@ class Rational
   end
 end
 
+=begin
+IronRuby TODO: this conflicts with complex18 and rational18 implementations; uncomment when we have builtin Rational and Complex types
+
 module Math
   remove_method(:sqrt)
   def sqrt(a)
@@ -191,6 +194,7 @@ module Math
   module_function :sqrt
   module_function :rsqrt
 end
+=end
 
 class Float
   alias power! **

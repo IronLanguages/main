@@ -51,10 +51,12 @@ namespace IronRuby.Builtins {
             object result = ScriptingRuntimeHelpers.BooleanToObject(expected);
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
                 if (predicate != null) {
-                    if (predicate.Yield(item, out item)) {
-                        result = item;
-                        return selfBlock.PropagateFlow(predicate, item);
+                    object blockResult;
+                    if (predicate.Yield(item, out blockResult)) {
+                        result = blockResult;
+                        return selfBlock.PropagateFlow(predicate, blockResult);
                     }
+                    item = blockResult;
                 }
 
                 bool isTrue = Protocols.IsTrue(item);

@@ -245,6 +245,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("===")]
         public static bool CaseCompare(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyScope/*!*/ scope, RubyRegex/*!*/ self, object obj) {
+            // TODO: should try-cast to string implicitly convert symbols?
             MutableString str = Protocols.TryCastToString(stringTryCast, obj);
             return str != null && Match(scope, self, str) != null;
         }

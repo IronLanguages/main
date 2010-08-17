@@ -64,8 +64,7 @@ C::y
         }
 
         public void Scenario_MethodAliases2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class C
   private
   def foo; end
@@ -81,12 +80,11 @@ class C
   p private_instance_methods(false).sort
   p public_instance_methods(false).sort
 end
-");
-            }, @"
-[""bar"", ""foo""]
+", @"
+[:bar, :foo]
 []
-[""foo""]
-[""bar""]
+[:foo]
+[:bar]
 ");
         }
 
@@ -115,6 +113,7 @@ end
 ");
         }
 
+#if OBSOLETE
         /// <summary>
         /// Alias in define_method.
         /// </summary>
@@ -133,14 +132,14 @@ end
 d = D.new
 d.bar
 ", @"
-#<NameError: undefined method `f' for class `D'>
+<NameError: undefined method `f' for class `D'>
 ");
         }
+#endif
 
         /// <summary>
         /// Alias in define_method.
         /// </summary>
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void AliasMethodLookup3() {
             TestOutput(@"
 class D

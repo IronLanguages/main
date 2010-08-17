@@ -380,7 +380,7 @@ class Miscellaneous
     attr :ruby_callable_called
     def get_a_ruby_callable
         @ruby_callable_called = false
-        lambda { @ruby_callable_called = true }
+        proc { @ruby_callable_called = true }
     end
     
     def to_s

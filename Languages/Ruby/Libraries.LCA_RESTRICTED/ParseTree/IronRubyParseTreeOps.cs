@@ -407,17 +407,11 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 }
 
                 public override bool Enter(HashConstructor/*!*/ node) {
-                    if (node.Expressions != null) {
-                        _result = AddRange(MakeNode(NodeKind.hash, node.Expressions.Length), node.Expressions);
-                    } else if (node.Maplets != null) {
-                        _result = MakeHash(node.Maplets);
-                    } else {
-                        _result = MakeNode(NodeKind.hash);
-                    }
+                    _result = MakeHash(node.Maplets);
                     return false;
                 }
 
-                private RubyArray/*!*/ MakeHash(List<Maplet>/*!*/ maplets) {
+                private RubyArray/*!*/ MakeHash(IList<Maplet>/*!*/ maplets) {
                     var hash = MakeNode(NodeKind.hash, maplets.Count * 2);
                     foreach (var maplet in maplets) {
                         Walk(maplet.Key);
@@ -430,7 +424,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 }
 
                 public override bool Enter(ArrayConstructor/*!*/ node) {
-                    if (node.Arguments == null || node.Arguments.IsEmpty) {
+                    if (node.Arguments.IsEmpty) {
                         _result = MakeNode(NodeKind.zarray);
                     } else {
                         Walk(node.Arguments);
@@ -512,6 +506,8 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                 public override bool Enter(Arguments/*!*/ node) {
                     RubyArray exprs = VisitExpressionsAndMaplets(node);
+                    throw new NotSupportedException("TODO: argument splatting");
+#if TODO
                     if (node.Array != null) {
                         RubyArray args = MakeSplatArguments(exprs, node.Array);
 
@@ -526,8 +522,8 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     } else {
                         _result = Skip;
                     }
-
                     return false;
+#endif
                 }
 
                 private RubyArray/*!*/ MakeSplatArguments(RubyArray/*!*/ exprs, Expression/*!*/ splattedValue) {
@@ -546,21 +542,14 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 }
 
                 private RubyArray VisitExpressionsAndMaplets(Arguments/*!*/ node) {
-                    if (node.Expressions != null || node.Maplets != null) {
-                        var array = MakeNode(NodeKind.array,
-                            (node.Expressions != null ? node.Expressions.Length : 0) + 
-                            (node.Maplets != null ? 1 : 0)
-                        );
+                    if (!node.IsEmpty) {
+                        var array = MakeNode(NodeKind.array, node.Expressions.Length);
 
                         AddRange(array, node.Expressions);
 
-                        if (node.Maplets != null) {
-                            array.Add(MakeHash(node.Maplets));
-                        }
-
-                        // append RHS unless splat is present:
+                        // TDOO: 1.9? append RHS unless splat is present:
                         object rhsValue;
-                        if (node.Array == null && TryGetRhsValue(out rhsValue)) {
+                        if (TryGetRhsValue(out rhsValue)) {
                             array.Add(rhsValue);
                         }
                         
@@ -600,16 +589,12 @@ namespace IronRuby.StandardLibrary.ParseTree {
                             result.Add(call);
 
                             // block args:
-                            if (blockDef.HasSignature) {
-                                UsingRhs(BlockRhs, () => {
+                            UsingRhs(BlockRhs, () => {
 
-                                    Walk(blockDef.Parameters);
-                                    result.Add(_result);
+                                Walk(blockDef.Parameters);
+                                result.Add(_result);
 
-                                });
-                            } else {
-                                result.Add(null);
-                            }
+                            });
 
                             // block body:
                             AddRange(result, blockDef.Body);
@@ -745,14 +730,17 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     var oldRhs = _rhs;
                     _rhs = null;
 
-                    if (node.Right.SplattedValue == null && node.Right.RightValues.Length == 1 && node.Left.LeftValues.Count > 0) {
+                    // TODO: 1.9:
+                    throw new NotSupportedException("TODO: parallel assignment");
+#if TODO
+                    if (node.Right.SplattedValue == null && node.Right.RightValues.Length == 1 && node.Left.LeftValues.Length > 0) {
                         Walk(node.Right.RightValues[0]);
                         _rhs = new Rhs { InCompoundLhs = true, InTopCompoundLhs = true, Value = MakeNode(NodeKind.to_ary, _result) };
                     } else if (node.Right.SplattedValue != null && node.Right.RightValues.Length == 0) {
                         Walk(node.Right.SplattedValue);
 
                         var rvalue = MakeNode(NodeKind.splat, _result);
-                        if (node.Left.UnsplattedValue == null && node.Left.LeftValues.Count == 1) {
+                        if (node.Left.UnsplattedValue == null && node.Left.LeftValues.Length == 1) {
                             _rhs = new Rhs { Value = MakeNode(NodeKind.svalue, rvalue) };
                         } else {
                             _rhs = new Rhs { InCompoundLhs = true, InTopCompoundLhs = true, Value = rvalue };
@@ -764,8 +752,8 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         if (node.Right.SplattedValue != null) {
                             exprs = MakeSplatArguments(exprs, node.Right.SplattedValue);
                         }
-                        
-                        if (node.Left.UnsplattedValue == null && node.Left.LeftValues.Count == 1) {
+
+                        if (node.Left.UnsplattedValue == null && node.Left.LeftValues.Length == 1) {
                             _rhs = new Rhs { Value = MakeNode(NodeKind.svalue, exprs) };
                         } else {
                             _rhs = new Rhs { InCompoundLhs = true, InTopCompoundLhs = true, Value = exprs };
@@ -775,6 +763,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     Walk(node.Left);
                     _rhs = oldRhs;
                     return false;
+#endif
                 }
 
                 // RHS: [:call, ARRAY, :[], ARGUMENTS]
@@ -792,6 +781,9 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                         // add arguments:
                         AddArguments(call, node.Arguments);
+
+                        // TODO: 1.9: add block:
+                        // call.Add(node.Block);
 
                         _result = call;
                     } else {
@@ -852,13 +844,13 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     Debug.Assert(_rhs != null);
 
                     if (node.UnsplattedValue == null) {
-                        if (node.LeftValues.Count == 0) {
+                        if (node.LeftValues.Length == 0) {
                             Debug.Assert(_rhs == BlockRhs);
                             _result = ScriptingRuntimeHelpers.Int32ToObject(0);
                             return false;
                         }
 
-                        if (node.LeftValues.Count == 1) {
+                        if (node.LeftValues.Length == 1) {
                             Walk(node.LeftValues[0]);
                             return false;
                         }
@@ -867,16 +859,18 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     bool isTop = _rhs.InTopCompoundLhs;
                     _rhs.InTopCompoundLhs = false;
 
-                    var assignment = MakeNode(NodeKind.masgn, 
-                        (node.LeftValues.Count > 0 ? 1 : 0) + 
+                    var assignment = MakeNode(NodeKind.masgn,
+                        (node.LeftValues.Length > 1 ? 1 : 0) + 
                         (node.UnsplattedValue != null ? 1 : 0) +
                         (_rhs != null ? 1 : 0) +
                         (isTop ? 1 : 0) // outer most gets RHS
                     );
 
-                    if (node.LeftValues.Count > 0) {
+                    // TODO: 1.9:  leading-l-values, *, trailing-l-values
+
+                    if (node.LeftValues.Length > 1) {
                         assignment.Add(
-                            AddRange(MakeNode(NodeKind.array, node.LeftValues.Count), node.LeftValues)
+                            AddRange(MakeNode(NodeKind.array, node.LeftValues.Length), node.LeftValues)
                         );
                     }
 
@@ -1345,7 +1339,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 //     <e>
                 // ]
                 public override bool Enter(CaseExpression/*!*/ node) {
-                    var c = MakeNode(NodeKind.@case, 1 + (node.WhenClauses != null ? node.WhenClauses.Count : 0) + 1);
+                    var c = MakeNode(NodeKind.@case, 1 + node.WhenClauses.Length + 1);
 
                     if (node.Value != null) {
                         Walk(node.Value);
@@ -1358,17 +1352,15 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         foreach (var whenClause in node.WhenClauses) {
                             var when = MakeNode(NodeKind.when, 2);
 
-                            var array = MakeNode(NodeKind.array,
-                                (whenClause.Comparisons != null ? whenClause.Comparisons.Length : 0) +
-                                (whenClause.ComparisonArray != null ? 1 : 0)
-                            );
+                            var array = MakeNode(NodeKind.array, whenClause.Comparisons.Length);
 
                             AddRange(array, whenClause.Comparisons);
 
-                            if (whenClause.ComparisonArray != null) {
-                                Walk(whenClause.ComparisonArray);
-                                array.Add(MakeNode(NodeKind.when, _result, null));
-                            }
+                            // TODO: 1.9 splatting
+                            //if (whenClause.ComparisonArray != null) {
+                            //    Walk(whenClause.ComparisonArray);
+                            //    array.Add(MakeNode(NodeKind.when, _result, null));
+                            //}
 
                             when.Add(array);
                             when.Add(MakeBlock(whenClause.Statements));
@@ -1458,28 +1450,28 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     var block = MakeNode(NodeKind.block, 5);
 
                     var parameters = MakeNode(NodeKind.args, 
-                        node.Parameters.MandatoryCount + 
-                        node.Parameters.OptionalCount + 
-                        (node.Parameters.Array != null ? 1 : 0)
+                        node.Parameters.Mandatory.Length + 
+                        node.Parameters.Optional.Length + 
+                        (node.Parameters.Unsplat != null ? 1 : 0)
                     );
 
-                    if (node.Parameters.Mandatory != null) {
-                        foreach (var p in node.Parameters.Mandatory) {
-                            parameters.Add(CreateSymbol(p.Name));
-                        }
+                    // TODO: 1.9
+                    if (node.Parameters.Mandatory.Length > 0) {
+                        //foreach (var p in node.Parameters.Mandatory) {
+                        //    parameters.Add(CreateSymbol(p.Name));
+                        //}
+                        throw new NotSupportedException("TODO: compound parameters");
                     }
 
-                    if (node.Parameters.Optional != null) {
-                        foreach (var assignment in node.Parameters.Optional) {
-                            parameters.Add(CreateSymbol(((LocalVariable)assignment.Left).Name));
-                        }
+                    foreach (var assignment in node.Parameters.Optional) {
+                        parameters.Add(CreateSymbol(((LocalVariable)assignment.Left).Name));
                     }
 
-                    if (node.Parameters.Array != null) {
-                        parameters.Add(CreateSymbol("*" + node.Parameters.Array.Name));
+                    if (node.Parameters.Unsplat != null) {
+                        parameters.Add(CreateSymbol("*" + ((LocalVariable)node.Parameters.Unsplat).Name));
                     }
 
-                    if (node.Parameters.Optional != null) {
+                    if (node.Parameters.Optional.Length > 0) {
                         var paramInit = MakeNode(NodeKind.block);
                         foreach (var assignment in node.Parameters.Optional) {
                             Walk(assignment);

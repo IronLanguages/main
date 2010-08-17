@@ -125,11 +125,11 @@ namespace IronRuby.Builtins {
                 Debug.Assert(args.Target is Exception);
 
                 // 1 optional parameter (exceptionArg):
-                var argsBuilder = new ArgsBuilder(0, 0, 1, false);
+                var argsBuilder = new ArgsBuilder(0, 0, 0, 1, false);
                 argsBuilder.AddCallArguments(metaBuilder, args);
 
                 if (!metaBuilder.Error) {
-                    if (argsBuilder.ExplicitArgumentCount == 0) {
+                    if (argsBuilder.ActualArgumentCount == 0) {
                         metaBuilder.Result = args.TargetExpression;
                     } else {
                         RubyClass cls = args.RubyContext.GetClassOf(args.Target);

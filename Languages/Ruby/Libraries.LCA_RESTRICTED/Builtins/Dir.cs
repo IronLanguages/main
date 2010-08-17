@@ -125,6 +125,12 @@ namespace IronRuby.Builtins {
             throw new InvalidOperationException();
         }
 
+        [RubyMethod("exist?", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("exists?", RubyMethodAttributes.PublicSingleton)]
+        public static bool Exists(ConversionStorage<MutableString>/*!*/ toPath, RubyModule/*!*/ self, object path) {
+            return FileTest.DirectoryExists(self.Context, Protocols.CastToPath(toPath, path));
+        }
+
         [RubyMethod("delete", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("rmdir", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("unlink", RubyMethodAttributes.PublicSingleton)]

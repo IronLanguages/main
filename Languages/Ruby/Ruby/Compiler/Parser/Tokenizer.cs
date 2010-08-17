@@ -34,11 +34,13 @@ namespace IronRuby.Compiler {
         EXPR_END,			// newline significant, +/- is an operator.
         EXPR_ARG,			// newline significant, +/- is an operator.
         EXPR_CMDARG,		// newline significant, +/- is an operator, an identifier is a command name, special behavior of do keyword and left parenthesis
-        EXPR_ENDARG,		// newline significant, +/- is an operator.
+        EXPR_ENDARG,		// newline significant, +/- is an operator, unbound braces.
         EXPR_MID,			// newline significant, +/- is an operator.
         EXPR_FNAME,			// ignore newline, no reserved words.
+        EXPR_ENDFN,         // newline significant, +/- is an operator, unbound braces (1.9)
         EXPR_DOT,			// right after `.' or `::', no reserved words.
         EXPR_CLASS,			// immediate after `class', no here document.
+        EXPR_VALUE,         // alike EXPR_BEG but label is disallowed (1.9)
     };
 
     public class Tokenizer : TokenizerService {
@@ -115,22 +117,22 @@ namespace IronRuby.Compiler {
 
             // Verbatim mode only: a queue of heredocs that were started on the current line.
             // The queued heredocs will be pushed to the _nestedSequences stack at the end of the line.
-            internal List<VerbatimHeredocState> VerbatimHeredocQueue; // TODO eql, hash
+            internal List<VerbatimHeredocState> VerbatimHeredocQueue;
 
             internal LexicalState LexicalState;
 
-            // the number of unmatched left braces since the start of last string embedded code:
+            // The number of unmatched left braces since the start of last string embedded code.
             internal int OpenedBracesInEmbeddedCode;
 
-            // true if the following identifier is treated as a command name (sets LexicalState.CMDARG):
+            // True (1) if the following identifier is treated as a command name (sets LexicalState.CMDARG).
             internal byte _commandMode;
 
-            // true if the previous token is Tokens.Whitespace:
+            // True (1) if the previous token is Tokens.Whitespace.
             internal byte _whitespaceSeen;
 
-            // true if the previous token is Tokens.StringEmbeddedVariableBegin:
+            // True (1) if the previous token is Tokens.StringEmbeddedVariableBegin.
             internal byte _inStringEmbeddedVariable;
-            
+
             // Non-zero => End of the last heredoc that finished reading content.
             // While non-zero the current stream position doesn't correspond the current line and line index 
             // (the stream is ahead, we are reading from a buffer restored by the last heredoc).
@@ -140,8 +142,10 @@ namespace IronRuby.Compiler {
             internal State(State src) {
                 if (src != null) {
                     LexicalState = src.LexicalState;
+                    OpenedBracesInEmbeddedCode = src.OpenedBracesInEmbeddedCode;
                     _commandMode = src._commandMode;
                     _whitespaceSeen = src._whitespaceSeen;
+                    _inStringEmbeddedVariable = src._inStringEmbeddedVariable;
                     HeredocEndLine = src.HeredocEndLine;
                     HeredocEndLineIndex = src.HeredocEndLineIndex;
                     _currentSequence = src._currentSequence;
@@ -155,12 +159,9 @@ namespace IronRuby.Compiler {
                 } else {
                     LexicalState = LexicalState.EXPR_BEG;
                     _commandMode = 1;
-                    _whitespaceSeen = 0;
-                    HeredocEndLine = 0;
                     HeredocEndLineIndex = -1;
                     _currentSequence = TokenSequenceState.None;
                     _nestedSequences = NestedTokenSequence.EmptyArray;
-                    _nestedSequenceCount = 0;
                 }
             }
 
@@ -274,11 +275,23 @@ namespace IronRuby.Compiler {
         private bool InStringEmbeddedCode { get { return _state._nestedSequenceCount > 0; } }
         private bool InStringEmbeddedVariable { get { return _state._inStringEmbeddedVariable == 1; } set { _state._inStringEmbeddedVariable = value ? (byte)1 : (byte)0; } }
         private bool WhitespaceSeen { get { return _state._whitespaceSeen == 1; } set { _state._whitespaceSeen = value ? (byte)1 : (byte)0; } }
-        private bool CommandMode { get { return _state._commandMode == 1; } set { _state._commandMode = value ? (byte)1 : (byte)0; } } 
+        
+        // TODO: (verbatim mode) is this ok to be set by parser?
+        public bool CommandMode { get { return _state._commandMode == 1; } set { _state._commandMode = value ? (byte)1 : (byte)0; } }
 
         private State _state;
 
         #endregion
+
+        // The number of unmatched left parentheses, brackets, braces and lambda parameter definitions (->).
+        // Used to find the begining of a lambda body.
+        // The value is insignificant in verbatim mode.
+        internal int _openingCount;
+
+        // The value of _openingCount at the begining of a lambda definition.
+        // Zeroed at the start of lambda body definition.
+        // The value is insignificant in verbatim mode.
+        internal int _lambdaOpenings;
 
         // track command arguments state - used for DO/BLOCK_DO disambiguation; always 0 in verbatim mode:
         private int _commandArgsStateStack;
@@ -358,6 +371,7 @@ namespace IronRuby.Compiler {
             _state = new State(state as State);
             _commandArgsStateStack = 0;
             _loopConditionStateStack = 0;
+            _openingCount = 0;
             _input = reader;
             _lineBuffer = null;
             _lineLength = 0;
@@ -432,9 +446,30 @@ namespace IronRuby.Compiler {
             get { return _state.LexicalState; }
             set { _state.LexicalState = value; }
         }
-        
+
+        private bool IsEndLexicalState {
+            get {
+                return _state.LexicalState == LexicalState.EXPR_END 
+                    || _state.LexicalState == LexicalState.EXPR_ENDARG 
+                    || _state.LexicalState == LexicalState.EXPR_ENDFN;    // 1.9
+            }
+        }
+
+        private bool IsBeginLexicalState {
+            get {
+                return _state.LexicalState == LexicalState.EXPR_BEG
+                    || _state.LexicalState == LexicalState.EXPR_MID
+                    || _state.LexicalState == LexicalState.EXPR_CLASS
+                    || _state.LexicalState == LexicalState.EXPR_VALUE;    // 1.9
+            }
+        }
+
         private bool InArgs {
             get { return _state.LexicalState == LexicalState.EXPR_ARG || _state.LexicalState == LexicalState.EXPR_CMDARG; }
+        }
+
+        private bool InArgsNoSpace(int c) {
+            return InArgs && WhitespaceSeen && !IsWhiteSpace(c);
         }
 
         // Push(n)
@@ -484,11 +519,17 @@ namespace IronRuby.Compiler {
         }
 
         private void EnterParenthesisedExpression() {
+            _openingCount++;
             BitStackPush(ref _loopConditionStateStack, 0);
             BitStackPush(ref _commandArgsStateStack, 0);
         }
 
         internal void LeaveParenthesisedExpression() {
+            _openingCount--;
+            PopParenthesisedExpressionStack();
+        }
+
+        internal void PopParenthesisedExpressionStack() {
             BitStackOrPop(ref _commandArgsStateStack);
 
             // was: BitStackOrPop(ref _loopConditionStateStack);
@@ -510,6 +551,16 @@ namespace IronRuby.Compiler {
             return Tokens.StringEmbeddedCodeBegin;
         }
 
+        internal int EnterLambdaDefinition() {
+            int old = _lambdaOpenings;
+            _lambdaOpenings = ++_openingCount;
+            return old;
+        }
+
+        internal void LeaveLambdaDefinition(int oldLambdaOpenings) {
+            _lambdaOpenings = oldLambdaOpenings;
+        }
+
         #endregion
 
         #region Error Reporting
@@ -527,12 +578,21 @@ namespace IronRuby.Compiler {
             Report(info.GetMessage(args), info.Code, GetCurrentSpan(), Severity.Error);
         }
 
+        internal void ReportError(ErrorInfo info, SourceSpan location, params object[] args) {
+            Report(info.GetMessage(args), info.Code, location, Severity.Error);
+        }
+
         internal void ReportWarning(ErrorInfo info) {
             Report(info.GetMessage(), info.Code, GetCurrentSpan(), Severity.Warning);
         }
 
         internal void ReportWarning(ErrorInfo info, params object[] args) {
             Report(info.GetMessage(args), info.Code, GetCurrentSpan(), Severity.Warning);
+        }
+
+        // TODO:
+        private void WarnBalanced(string p, string p_2) {
+            // 1.9
         }
 
         #endregion
@@ -801,12 +861,16 @@ namespace IronRuby.Compiler {
                 Tokens token = _state.CurrentSequence.TokenizeAndMark(this);
                 DumpToken(token);
 
-                // Do not set WhitespaceSeen and ComamndMode states as they already were set by FinishVerbatimHeredoc.
+                // Do not set WhitespaceSeen and CommandMode states as they already were set by FinishVerbatimHeredoc.
                 if (token == Tokens.VerbatimHeredocEnd) {
                     // no heredoc can start on the current line:
                     Debug.Assert(_state.VerbatimHeredocQueue == null); 
                     return token;
                 }
+
+                //
+                // Skip whitespace and set/clear CommandMode for the next token.
+                //
 
                 WhitespaceSeen = token == Tokens.Whitespace;
                 switch (token) {
@@ -814,13 +878,14 @@ namespace IronRuby.Compiler {
                     case Tokens.SingleLineComment:
                     case Tokens.EndOfLine:
                     case Tokens.Whitespace:
+                        // whitespace doesn't affect CommandMode
                         // ignore the token unless in verbatim mode
                         if (_verbatim) {
                             break;
                         } else {
                             continue;
                         }
-
+                        
                     case Tokens.EndOfFile:
                         _eofReached = true;
                         CommandMode = false;
@@ -828,11 +893,15 @@ namespace IronRuby.Compiler {
 
                     case Tokens.NewLine:
                     case Tokens.Semicolon:
-                    case Tokens.LeftParenthesis:
-                    case Tokens.LeftArgParenthesis:
-                    case Tokens.LeftExprParenthesis:
+                    case Tokens.Do:
+                    case Tokens.LeftBlockArgBrace:
+                    case Tokens.LeftBlockBrace:
                         CommandMode = true;
                         break;
+
+                    // parser also sets CommandMode = true after 
+                    // block_parameters  |...| <<<
+                    // method_parameters (...) <<<
 
                     default:
                         CommandMode = false;
@@ -1053,9 +1122,30 @@ namespace IronRuby.Compiler {
             if (LexicalState == LexicalState.EXPR_BEG ||
                 LexicalState == LexicalState.EXPR_FNAME ||
                 LexicalState == LexicalState.EXPR_DOT ||
-                LexicalState == LexicalState.EXPR_CLASS) {
+                LexicalState == LexicalState.EXPR_CLASS ||
+                LexicalState == LexicalState.EXPR_VALUE) {
 
                 return Tokens.EndOfLine;
+            }
+
+            // TODO: don't do this in verbatim mode in heredoc:
+            if (!_verbatim || _state.VerbatimHeredocQueue == null) {
+                // foo
+                //   .bar
+                RefillBuffer();
+                int start = _bufferPos;
+                int c;
+                do {
+                    c = Read();
+                    if (c == '.') {
+                        if (Peek() != '.') {
+                            _bufferPos = start;
+                            return Tokens.EndOfLine;
+                        }
+                        break;
+                    }
+                } while (IsWhiteSpace(c));
+                _bufferPos = start;
             }
 
             LexicalState = LexicalState.EXPR_BEG;
@@ -1146,7 +1236,18 @@ namespace IronRuby.Compiler {
 
             // TODO: possible optimization: ~15% are keywords, ~15% are existing local variables -> we can save allocations
             string identifier = new String(_lineBuffer, start, _bufferPos - start);
-            
+
+            // 1.9 label:
+            if (InArgs || LexicalState == LexicalState.EXPR_BEG && !CommandMode) {
+                if (Peek(0) == ':' && Peek(1) != ':') {
+                    Skip(':');
+                    LexicalState = LexicalState.EXPR_BEG;
+                    SetStringToken(identifier);
+                    return Tokens.Label;
+                }
+            }
+
+            // keyword:
             if (LexicalState != LexicalState.EXPR_DOT) {
                 if (LexicalState == LexicalState.EXPR_FNAME) {
                     SetStringToken(identifier);
@@ -1158,19 +1259,17 @@ namespace IronRuby.Compiler {
                 }
             }
 
-            if (LexicalState == LexicalState.EXPR_BEG ||
-                LexicalState == LexicalState.EXPR_MID ||
-                LexicalState == LexicalState.EXPR_DOT ||
-                LexicalState == LexicalState.EXPR_ARG ||
-                LexicalState == LexicalState.EXPR_CMDARG) {
-
-                if (_localVariableResolver.IsLocalVariable(identifier)) {
+            if (IsBeginLexicalState || InArgs || LexicalState == LexicalState.EXPR_DOT) {
+                // TODO: test LexState == DOT!!
+                if (LexicalState != LexicalState.EXPR_DOT && _localVariableResolver.IsLocalVariable(identifier)) {
                     LexicalState = LexicalState.EXPR_END;
                 } else if (CommandMode) {
                     LexicalState = LexicalState.EXPR_CMDARG;
                 } else {
                     LexicalState = LexicalState.EXPR_ARG;
                 }
+            } else if (LexicalState == LexicalState.EXPR_FNAME) {
+                LexicalState = LexicalState.EXPR_ENDFN;
             } else {
                 LexicalState = LexicalState.EXPR_END;
             }
@@ -1210,7 +1309,7 @@ namespace IronRuby.Compiler {
                 case "end": return ReturnKeyword(Tokens.End, LexicalState.EXPR_END);
                 case "def": return ReturnKeyword(Tokens.Def, LexicalState.EXPR_FNAME);
                 case "for": return ReturnKeyword(Tokens.For, LexicalState.EXPR_BEG);
-                case "not": return ReturnKeyword(Tokens.Not, LexicalState.EXPR_BEG);
+                case "not": return ReturnKeyword(Tokens.Not, LexicalState.EXPR_ARG);
                 case "nil": return ReturnKeyword(Tokens.Nil, LexicalState.EXPR_END);
                 case "END": return ReturnKeyword(Tokens.UppercaseEnd, LexicalState.EXPR_END);
 
@@ -1265,7 +1364,7 @@ namespace IronRuby.Compiler {
         private Tokens ReturnKeyword(Tokens keywordInExpression, Tokens keywordModifier, LexicalState state) {
             Debug.Assert(keywordInExpression != keywordModifier);
 
-            if (LexicalState == LexicalState.EXPR_BEG) {
+            if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_VALUE) {
                 LexicalState = state;
                 return keywordInExpression;
             } else {
@@ -1275,15 +1374,21 @@ namespace IronRuby.Compiler {
         }
 
         private Tokens ReturnDoKeyword() {
+            // 1.9 lambda
+            if (_lambdaOpenings > 0 && _lambdaOpenings == _openingCount) {
+                _lambdaOpenings = 0;
+                _openingCount--;
+                return Tokens.LambdaDo;
+            }
+            
             LexicalState oldState = LexicalState;
             LexicalState = LexicalState.EXPR_BEG;
-
             // if last conditional opening is a parenthesis:
             if (InLoopCondition) {
                 return Tokens.LoopDo;
             }
 
-            if (InCommandArgs && oldState != LexicalState.EXPR_CMDARG || oldState == LexicalState.EXPR_ENDARG) {
+            if (InCommandArgs && oldState != LexicalState.EXPR_CMDARG || oldState == LexicalState.EXPR_ENDARG || oldState == LexicalState.EXPR_BEG) {
                 return Tokens.BlockDo;
             }
 
@@ -1414,10 +1519,9 @@ namespace IronRuby.Compiler {
                 return Tokens.OpAssignment;
             }
 
-            if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID ||
-                (InArgs && WhitespaceSeen && !IsWhiteSpace(c))) {
-
-                if (InArgs) {
+            bool nospace = false;
+            if (IsBeginLexicalState || (nospace = InArgsNoSpace(c))) {
+                if (nospace) {
                     ReportWarning(Errors.AmbiguousFirstArgument);
                 }
 
@@ -1430,6 +1534,7 @@ namespace IronRuby.Compiler {
                 return Tokens.UnaryPlus;
             }
 
+            WarnBalanced("+", "unary operator");
             LexicalState = LexicalState.EXPR_BEG;
             return Tokens.Plus;
         }
@@ -1438,14 +1543,10 @@ namespace IronRuby.Compiler {
         private Tokens ReadLeftParenthesis() {
             Tokens result = Tokens.LeftParenthesis;
             
-            if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID) {
+            if (IsBeginLexicalState) {
                 result = Tokens.LeftExprParenthesis;
-            } else if (WhitespaceSeen) {
-                if (LexicalState == LexicalState.EXPR_CMDARG) {
-                    result = Tokens.LeftArgParenthesis;
-                } else if (LexicalState == LexicalState.EXPR_ARG) {
-                    ReportWarning(Errors.WhitespaceBeforeArgumentParentheses);
-                }
+            } else if (InArgs && WhitespaceSeen) {
+                result = Tokens.LeftArgParenthesis;
             }
 
             EnterParenthesisedExpression();
@@ -1626,7 +1727,7 @@ namespace IronRuby.Compiler {
         // Operators: % 
         // Literals: %{... (quotation start)
         private Tokens TokenizePercent() {
-            if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID) {
+            if (IsBeginLexicalState) {
                 return TokenizeQuotationStart();
             }
 
@@ -1639,7 +1740,7 @@ namespace IronRuby.Compiler {
                 return Tokens.OpAssignment;
             }
 
-            if (InArgs && WhitespaceSeen && !IsWhiteSpace(c)) {
+            if (InArgsNoSpace(c)) {
                 return TokenizeQuotationStart();
             }
 
@@ -1654,14 +1755,15 @@ namespace IronRuby.Compiler {
                     break;
             }
 
+            WarnBalanced("%%", "string literal");
             MarkSingleLineTokenEnd();
             return Tokens.Percent;
         }
 
-        // Closing tokens: ), ]
+        // Closing tokens: ), ], }
         private Tokens TokenizeClosing(Tokens token) {
             LeaveParenthesisedExpression();
-            LexicalState = LexicalState.EXPR_END;
+            LexicalState = token == Tokens.RightParenthesis ? LexicalState.EXPR_ENDFN : LexicalState.EXPR_ENDARG; // 1.8: EXPR_END (all cases)
             MarkSingleLineTokenEnd();
             return token;
         }
@@ -1671,7 +1773,7 @@ namespace IronRuby.Compiler {
             if (_state.OpenedBracesInEmbeddedCode > 0) {
                 _state.OpenedBracesInEmbeddedCode--;
                 return TokenizeClosing(Tokens.RightBrace);
-            } 
+            }
             
             if (InStringEmbeddedCode) {
                 _state.EndStringEmbeddedCode();
@@ -1686,7 +1788,11 @@ namespace IronRuby.Compiler {
         private Tokens ReadLeftBrace() {
             Tokens result;
 
-            if (InArgs || LexicalState == LexicalState.EXPR_END) {
+            if (_lambdaOpenings > 0 && _lambdaOpenings == _openingCount) {
+                result = Tokens.LeftLambdaBrace;     // 1.9 lambda body opening
+                _lambdaOpenings = 0;
+                _openingCount--;
+            } else if (InArgs || LexicalState == LexicalState.EXPR_END || LexicalState == LexicalState.EXPR_ENDFN) {
                 result = Tokens.LeftBlockBrace;      // block (primary)
             } else if (LexicalState == LexicalState.EXPR_ENDARG) {
                 result = Tokens.LeftBlockArgBrace;   // block (expr)
@@ -1710,7 +1816,7 @@ namespace IronRuby.Compiler {
             }
 
             Tokens result;
-            if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID) {
+            if (IsBeginLexicalState) {
                 result = Tokens.LeftBracket;
             } else if (InArgs && WhitespaceSeen) {
                 result = Tokens.LeftBracket;
@@ -1728,17 +1834,9 @@ namespace IronRuby.Compiler {
             if (LexicalState == LexicalState.EXPR_FNAME || LexicalState == LexicalState.EXPR_DOT) {
                 // ~@
                 Read('@');
-            }
-
-            switch (LexicalState) {
-                case LexicalState.EXPR_FNAME:
-                case LexicalState.EXPR_DOT:
-                    LexicalState = LexicalState.EXPR_ARG; 
-                    break;
-
-                default:
-                    LexicalState = LexicalState.EXPR_BEG; 
-                    break;
+                LexicalState = LexicalState.EXPR_ARG;
+            } else {
+                LexicalState = LexicalState.EXPR_BEG; 
             }
 
             return Tokens.Tilde;
@@ -1771,7 +1869,7 @@ namespace IronRuby.Compiler {
         // Assignments: /=
         // Literals: /... (regex start)
         private Tokens ReadSlash() {
-            if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID) {
+            if (IsBeginLexicalState) {
                 _state.CurrentSequence = new StringState(StringProperties.RegularExpression | StringProperties.ExpandsEmbedded, '/');
                 return Tokens.RegexpBegin;
             }
@@ -1784,12 +1882,10 @@ namespace IronRuby.Compiler {
                 return Tokens.OpAssignment;
             }
 
-            if (InArgs && WhitespaceSeen) {
-                if (!IsWhiteSpace(c)) {
-                    ReportWarning(Errors.AmbiguousFirstArgument);
-                    _state.CurrentSequence = new StringState(StringProperties.RegularExpression | StringProperties.ExpandsEmbedded, '/');
-                    return Tokens.RegexpBegin;
-                }
+            if (InArgsNoSpace(c)) {
+                ReportWarning(Errors.AmbiguousFirstArgument);
+                _state.CurrentSequence = new StringState(StringProperties.RegularExpression | StringProperties.ExpandsEmbedded, '/');
+                return Tokens.RegexpBegin;
             }
 
             switch (LexicalState) {
@@ -1803,6 +1899,7 @@ namespace IronRuby.Compiler {
                     break;
             }
 
+            WarnBalanced("/", "regexp literal");
             return Tokens.Slash;
         }
 
@@ -1812,9 +1909,7 @@ namespace IronRuby.Compiler {
             int c = Peek();
             if (c == ':') {
                 Skip(c);
-                if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID ||
-                    LexicalState == LexicalState.EXPR_CLASS || (InArgs && WhitespaceSeen)) {
-                    
+                if (IsBeginLexicalState || InArgs && WhitespaceSeen) {
                     LexicalState = LexicalState.EXPR_BEG;
                     return Tokens.LeadingDoubleColon;
                 }
@@ -1823,7 +1918,8 @@ namespace IronRuby.Compiler {
                 return Tokens.SeparatingDoubleColon;
             }
 
-            if (LexicalState == LexicalState.EXPR_END || LexicalState == LexicalState.EXPR_ENDARG || IsWhiteSpace(c)) {
+            if (IsEndLexicalState || IsWhiteSpace(c)) {
+                WarnBalanced(":", "symbol literal");
                 LexicalState = LexicalState.EXPR_BEG;
                 return Tokens.Colon;
             }
@@ -1870,12 +1966,13 @@ namespace IronRuby.Compiler {
                 SetAsciiStringToken(Symbols.Multiply);
                 LexicalState = LexicalState.EXPR_BEG;
                 return Tokens.OpAssignment;
-            } else if (InArgs && WhitespaceSeen && !IsWhiteSpace(c)) {
+            } else if (InArgsNoSpace(c)) {
                 ReportWarning(Errors.StarInterpretedAsSplatArgument);
                 result = Tokens.Star;
-            } else if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID) {
+            } else if (IsBeginLexicalState) {
                 result = Tokens.Star;
             } else {
+                WarnBalanced("*", "argument prefix");
                 result = Tokens.Asterisk;
             }
 
@@ -1893,15 +1990,25 @@ namespace IronRuby.Compiler {
             return result;
         }
 
-        // Operators: ! != !~
+        // Operators: ! != !~ !@
         private Tokens ReadBang() {
-            LexicalState = LexicalState.EXPR_BEG;
-            
             int c = Peek();
+            if (LexicalState == LexicalState.EXPR_FNAME || LexicalState == LexicalState.EXPR_DOT) {
+                LexicalState = LexicalState.EXPR_ARG;
+                if (c == '@') {
+                    Skip(c);
+                    return Tokens.Bang;
+                }
+            } else {
+                LexicalState = LexicalState.EXPR_BEG;
+            }
+            
             if (c == '=') {
                 Skip(c);
                 return Tokens.NotEqual;
-            } else if (c == '~') {
+            } 
+            
+            if (c == '~') {
                 Skip(c);
                 return Tokens.Nmatch;
             }
@@ -1916,10 +2023,9 @@ namespace IronRuby.Compiler {
             int c = Read();
 
             if (c == '<' &&
-                LexicalState != LexicalState.EXPR_END &&
                 LexicalState != LexicalState.EXPR_DOT &&
-                LexicalState != LexicalState.EXPR_ENDARG &&
                 LexicalState != LexicalState.EXPR_CLASS && 
+                !IsEndLexicalState &&
                 (!InArgs || WhitespaceSeen)) {
 
                 Tokens token = TokenizeHeredocLabel();
@@ -1955,6 +2061,7 @@ namespace IronRuby.Compiler {
                     MarkSingleLineTokenEnd();
                     return Tokens.OpAssignment;
                 }
+                WarnBalanced("<<", "here document");
                 MarkSingleLineTokenEnd();
                 return Tokens.Lshft;
             }
@@ -2001,13 +2108,13 @@ namespace IronRuby.Compiler {
         // Operator: `
         private Tokens ReadBacktick() {
             if (LexicalState == LexicalState.EXPR_FNAME) {
-                LexicalState = LexicalState.EXPR_END;
+                LexicalState = LexicalState.EXPR_ENDFN;   // 1.8 : EXPR_END
                 return Tokens.Backtick;
             }
 
             if (LexicalState == LexicalState.EXPR_DOT) {
                 // This used to check if we are in command. There seems to be no way how we could get there.
-                // The lexical state is EXPR_BEG after inCommand is set for the next non-whitespace token. Whitespace tokens don't change the state.
+                // The lexical state is EXPR_BEG after CommandMode is set for the next non-whitespace token. Whitespace tokens don't change the state.
                 // The lexical state is EXPR_DOT after Token.SeparatingDoubleColon and Token.Dot none of which change the command state.
                 // LexicalState = (_commandMode) ? LexicalState.EXPR_CMDARG : LexicalState.EXPR_ARG;
                 Debug.Assert(!CommandMode);
@@ -2023,8 +2130,8 @@ namespace IronRuby.Compiler {
         // Literals: ?[:char:] ?{escape}
         // Errors: ?[:EOF:]
         private Tokens TokenizeQuestionmark() {
-            if (LexicalState == LexicalState.EXPR_END || LexicalState == LexicalState.EXPR_ENDARG) {
-                LexicalState = LexicalState.EXPR_BEG;
+            if (IsEndLexicalState) {
+                LexicalState = LexicalState.EXPR_VALUE; // 1.8: EXPR_BEG
                 MarkSingleLineTokenEnd();
                 return Tokens.QuestionMark;
             }
@@ -2056,10 +2163,10 @@ namespace IronRuby.Compiler {
                         ReportWarning(Errors.InvalidCharacterSyntax, (char)c2);
                     }
                 }
-                LexicalState = LexicalState.EXPR_BEG;
+                LexicalState = LexicalState.EXPR_VALUE; // 1.8: EXPR_BEG
                 MarkSingleLineTokenEnd();
                 return Tokens.QuestionMark;
-            } 
+            }
             
             // ?{identifier}
             if ((IsLetterOrDigit(c) || c == '_') && IsIdentifier(Peek(1))) {
@@ -2082,11 +2189,10 @@ namespace IronRuby.Compiler {
             }
 
             // TODO: ?x -> string in 1.9
-            c &= 0xff;
             LexicalState = LexicalState.EXPR_END;
-            _tokenValue.SetInteger(c);
+            _tokenValue.SetString(((char)c).ToString());
 
-            return Tokens.Integer;
+            return Tokens.Character;
         }
 
         // Operators: & &&
@@ -2114,13 +2220,14 @@ namespace IronRuby.Compiler {
             }
 
             Tokens result;
-            if (InArgs && WhitespaceSeen && !IsWhiteSpace(c)) {
+            if (InArgsNoSpace(c)) {
                 // we are in command argument and there is a whitespace between ampersand: "foo &bar"
                 ReportWarning(Errors.AmpersandInterpretedAsProcArgument);
                 result = Tokens.BlockReference;
-            } else if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID) {
+            } else if (IsBeginLexicalState) {
                 result = Tokens.BlockReference;
             } else {
+                WarnBalanced("&", "argument prefix");
                 result = Tokens.Ampersand;
             }
 
@@ -2190,7 +2297,7 @@ namespace IronRuby.Compiler {
             return Tokens.Dot;
         }
 
-        // Operators: - -@
+        // Operators: - -@ ->
         // Assignments: -=
         // Literals: -... (negative number sign)
         private Tokens ReadMinus() {
@@ -2207,10 +2314,15 @@ namespace IronRuby.Compiler {
                 return Tokens.OpAssignment;
             }
 
-            if (LexicalState == LexicalState.EXPR_BEG || LexicalState == LexicalState.EXPR_MID ||
-                (InArgs && WhitespaceSeen && !IsWhiteSpace(c))) {
+            if (c == '>') {
+                Skip(c);
+                LexicalState = LexicalState.EXPR_ARG;
+                return Tokens.Lambda;
+            }
 
-                if (InArgs) {
+            bool nospace = false;
+            if (IsBeginLexicalState || (nospace = InArgsNoSpace(c))) {
+                if (nospace) {
                     ReportWarning(Errors.AmbiguousFirstArgument);
                 }
 
@@ -2219,6 +2331,7 @@ namespace IronRuby.Compiler {
             }
 
             LexicalState = LexicalState.EXPR_BEG;
+            WarnBalanced("-", "unary operator");
             return Tokens.Minus;
         }
 
@@ -4164,6 +4277,7 @@ namespace IronRuby.Compiler {
                 case Tokens.Do:
                 case Tokens.LoopDo:
                 case Tokens.BlockDo:
+                case Tokens.LambdaDo:
                     result.Category = TokenCategory.Keyword;
                     result.Trigger = TokenTriggers.MatchBraces;
                     break;
@@ -4192,7 +4306,8 @@ namespace IronRuby.Compiler {
                 case Tokens.ItemSetter:            // []=
                 case Tokens.Lshft:                 // <<
                 case Tokens.Rshft:                 // >>
-                case Tokens.DoubleArrow:           // 
+                case Tokens.DoubleArrow:           // =>
+                case Tokens.Lambda:                // ->
                 case Tokens.Star:                  // *<arg>
                 case Tokens.Asterisk:              // <expr> * <expr>
                 case Tokens.BlockReference:        // &<arg>
@@ -4222,6 +4337,7 @@ namespace IronRuby.Compiler {
                 case Tokens.LeftBrace:               // {
                 case Tokens.LeftBlockArgBrace:       // {
                 case Tokens.LeftBlockBrace:          // {
+                case Tokens.LeftLambdaBrace:         // {
                 case Tokens.RightBrace:              // }
                 case Tokens.Pipe:                    // |
                 case Tokens.StringEmbeddedCodeBegin: // #{ in string
@@ -4256,6 +4372,7 @@ namespace IronRuby.Compiler {
                     result.Trigger = TokenTriggers.MemberSelect;
                     break;
 
+                case Tokens.Character:
                 case Tokens.StringEnd:
                 case Tokens.VerbatimHeredocBegin:
                 case Tokens.VerbatimHeredocEnd:
@@ -4269,6 +4386,7 @@ namespace IronRuby.Compiler {
                     break;
 
                 case Tokens.SymbolBegin:
+                case Tokens.Label:
                 case Tokens.Identifier:
                 case Tokens.FunctionIdentifier:
                 case Tokens.GlobalVariable:
@@ -4382,7 +4500,8 @@ namespace IronRuby.Compiler {
                 case Tokens.UppercaseEnd:                return "`END'";
                 case Tokens.Do:                          
                 case Tokens.LoopDo:                      
-                case Tokens.BlockDo:                     return "`do'";
+                case Tokens.BlockDo:                     
+                case Tokens.LambdaDo:                    return "`do'";
                 case Tokens.Plus:                        return "`+'";
                 case Tokens.UnaryPlus:                   return "`+@'";
                 case Tokens.Minus:                       return "`-'";
@@ -4407,6 +4526,7 @@ namespace IronRuby.Compiler {
                 case Tokens.Lshft:                       return "`<<'";
                 case Tokens.Rshft:                       return "`>>'";
                 case Tokens.DoubleArrow:                 return "`=>'";
+                case Tokens.Lambda:                      return "`->'";
                 case Tokens.Star:                        
                 case Tokens.Asterisk:                    return "`*'";
                 case Tokens.BlockReference:              
@@ -4427,7 +4547,8 @@ namespace IronRuby.Compiler {
                 case Tokens.RightBracket:                return "`]'";
                 case Tokens.LeftBrace:                   
                 case Tokens.LeftBlockArgBrace:           
-                case Tokens.LeftBlockBrace:              return "`{'";
+                case Tokens.LeftBlockBrace:              
+                case Tokens.LeftLambdaBrace:             return "`{'";
                 case Tokens.RightBrace:                  return "`}'";
                 case Tokens.Pipe:                        return "`|'";
                 case Tokens.LeftParenthesis:             
@@ -4438,11 +4559,13 @@ namespace IronRuby.Compiler {
                 case Tokens.Dot:                         return "`.'";
                 case Tokens.Semicolon:                   return "`;'";
 
+                case Tokens.Character:                   return "character escape (?...)";
                 case Tokens.NumberNegation:              return "negative number";
                 case Tokens.OpAssignment:                return "assignment with operation";
                 case Tokens.StringEmbeddedVariableBegin: return "`#@' or `#$'"; 
                 case Tokens.StringEmbeddedCodeBegin:     return "`#{'";
                 case Tokens.StringEmbeddedCodeEnd:       return "`}'";
+                case Tokens.Label:                       return "label";
                 case Tokens.Identifier:                  return "identifier";
                 case Tokens.FunctionIdentifier:          return "function name";
                 case Tokens.GlobalVariable:              return "global variable";

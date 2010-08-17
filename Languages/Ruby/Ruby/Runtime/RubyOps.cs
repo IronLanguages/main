@@ -277,12 +277,23 @@ namespace IronRuby.Runtime {
         public static Proc InstantiateBlock(RubyScope/*!*/ scope, object self, BlockDispatcher/*!*/ dispatcher) {
             return (dispatcher.Method != null) ? new Proc(ProcKind.Block, self, scope, dispatcher) : null;
         }
+        [Emitted]
+        public static Proc InstantiateLambda(RubyScope/*!*/ scope, object self, BlockDispatcher/*!*/ dispatcher) {
+            return (dispatcher.Method != null) ? new Proc(ProcKind.Lambda, self, scope, dispatcher) : null;
+        }
 
         [Emitted]
         public static Proc/*!*/ DefineBlock(RubyScope/*!*/ scope, object self, BlockDispatcher/*!*/ dispatcher, object/*!*/ clrMethod) {
             // DLR closures should not be used:
             Debug.Assert(!(((Delegate)clrMethod).Target is Closure) || ((Closure)((Delegate)clrMethod).Target).Locals == null);
             return new Proc(ProcKind.Block, self, scope, dispatcher.SetMethod(clrMethod));
+        }
+
+        [Emitted]
+        public static Proc/*!*/ DefineLambda(RubyScope/*!*/ scope, object self, BlockDispatcher/*!*/ dispatcher, object/*!*/ clrMethod) {
+            // DLR closures should not be used:
+            Debug.Assert(!(((Delegate)clrMethod).Target is Closure) || ((Closure)((Delegate)clrMethod).Target).Locals == null);
+            return new Proc(ProcKind.Lambda, self, scope, dispatcher.SetMethod(clrMethod));
         }
 
         /// <summary>
@@ -1136,6 +1147,22 @@ namespace IronRuby.Runtime {
         #region Array
 
         [Emitted]
+        public static RubyArray/*!*/ AddRange(RubyArray/*!*/ array, IList/*!*/ list) {
+            return array.AddRange(list);
+        }
+
+        [Emitted] // method call:
+        public static RubyArray/*!*/ AddSubRange(RubyArray/*!*/ result, IList/*!*/ array, int start, int count) {
+            return result.AddRange(array, start, count);
+        }
+
+        [Emitted]
+        public static RubyArray/*!*/ AddItem(RubyArray/*!*/ array, object item) {
+            array.Add(item);
+            return array;
+        }
+
+        [Emitted]
         public static IList/*!*/ SplatAppend(IList/*!*/ array, IList/*!*/ list) {
             Utils.AddRange(array, list);
             return array;
@@ -1150,6 +1177,7 @@ namespace IronRuby.Runtime {
             return list;
         }
 
+        // 1.8 behavior
         [Emitted]
         public static object SplatPair(object value, IList/*!*/ list) {
             if (list.Count == 0) {
@@ -1174,7 +1202,7 @@ namespace IronRuby.Runtime {
 
         // CaseExpression
         [Emitted]
-        public static bool ExistsUnsplat(CallSite<Func<CallSite, object, object, object>>/*!*/ comparisonSite, object splattee, object value) {
+        public static bool ExistsUnsplatCompare(CallSite<Func<CallSite, object, object, object>>/*!*/ comparisonSite, object splattee, object value) {
             var list = splattee as IList;
             if (list != null) {
                 for (int i = 0; i < list.Count; i++) {
@@ -1188,6 +1216,22 @@ namespace IronRuby.Runtime {
             }
         }
 
+        // CaseExpression
+        [Emitted]
+        public static bool ExistsUnsplat(object splattee) {
+            var list = splattee as IList;
+            if (list != null) {
+                for (int i = 0; i < list.Count; i++) {
+                    if (IsTrue(list[i])) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return IsTrue(splattee);
+            }
+        }
+
         [Emitted] // parallel assignment:
         public static object GetArrayItem(IList/*!*/ array, int index) {
             Debug.Assert(index >= 0);
@@ -1195,12 +1239,19 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] // parallel assignment:
-        public static RubyArray/*!*/ GetArraySuffix(IList/*!*/ array, int startIndex) {
-            int size = array.Count - startIndex;
+        public static object GetTrailingArrayItem(IList/*!*/ array, int index, int explicitCount) {
+            Debug.Assert(index >= 0);
+            int i = Math.Max(array.Count, explicitCount) - index;
+            return i >= 0 ? array[i] : null;
+        }
+
+        [Emitted] // parallel assignment:
+        public static RubyArray/*!*/ GetArrayRange(IList/*!*/ array, int startIndex, int explicitCount) {
+            int size = array.Count - explicitCount;
             if (size > 0) {
                 RubyArray result = new RubyArray(size);
-                for (int i = startIndex; i < array.Count; i++) {
-                    result.Add(array[i]);
+                for (int i = 0; i < size; i++) {
+                    result.Add(array[startIndex + i]);
                 }
                 return result;
             } else {
@@ -1703,11 +1754,6 @@ namespace IronRuby.Runtime {
 
         [Emitted] //RescueClause:
         public static bool CompareException(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObject) {            
-            // throw the same exception when classObject is nil
-            if (!(classObject is RubyModule)) {
-                throw RubyExceptions.CreateTypeError("class or module required for rescue clause");
-            }
-
             var context = scope.RubyContext;
             var site = comparisonStorage.GetCallSite("===");
             bool result = IsTrue(site.Target(site, classObject, context.CurrentException));
@@ -2044,6 +2090,12 @@ namespace IronRuby.Runtime {
         public static string/*!*/ ConvertMutableStringToClrString(MutableString/*!*/ value) {
             return value.ConvertToString();
         }
+
+        [Emitted] // ProtocolConversionAction
+        public static MutableString/*!*/ ConvertSymbolToMutableString(RubySymbol/*!*/ value) {
+            // TODO: this is used for DefaultProtocol conversions; we might avoid clonning in some (many?) cases
+            return value.String.Clone();
+        }
         
         [Emitted] // ProtocolConversionAction
         public static RubyRegex/*!*/ ToRegexValidator(string/*!*/ className, object obj) {
@@ -2055,6 +2107,15 @@ namespace IronRuby.Runtime {
             var result = obj as IList;
             if (result == null) {
                 throw RubyExceptions.CreateReturnTypeError(className, "to_ary", "Array");
+            }
+            return result;
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static IList/*!*/ ToAValidator(string/*!*/ className, object obj) {
+            var result = obj as IList;
+            if (result == null) {
+                throw RubyExceptions.CreateReturnTypeError(className, "to_a", "Array");
             }
             return result;
         }

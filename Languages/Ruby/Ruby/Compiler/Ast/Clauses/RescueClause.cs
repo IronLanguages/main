@@ -33,22 +33,18 @@ namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
     using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
     using AstParameters = ReadOnlyCollectionBuilder<MSA.ParameterExpression>;
+    using System;
 
-    // rescue type
+    // rescue types, *type-array, types, *type-array, ... 
     //   statements
-    // rescue type => target
-    //   statements
-    // rescue types,*type-array
-    //   statements
-    // rescue types,*type-array => target
+    // rescue types, *type-array, types, *type-array, ... => target
     //   statements
     public partial class RescueClause : Node {
-        private readonly Expression[]/*!*/ _types;   // might be empty
-        private readonly Expression _splatType;          // optional
+        private readonly Expression/*!*/[]/*!*/ _types;  // might be empty, might include SplattedArgument expressions
         private readonly LeftValue _target;		         // optional
-        private readonly Statements _statements;   // optional
+        private readonly Statements _statements;         // optional
 
-        public Expression[] Types {
+        public Expression/*!*/[]/*!*/ Types {
             get { return _types; }
         }
 
@@ -59,26 +55,11 @@ namespace IronRuby.Compiler.Ast {
         public Statements Statements {
             get { return _statements; }
         }
-
-        public RescueClause(LeftValue target, Statements statements, SourceSpan location)
-            : base(location) {
-            _target = target;
-            _types = Expression.EmptyArray;
-            _statements = statements;
-        }
         
-        public RescueClause(CompoundRightValue type, LeftValue target, Statements statements, SourceSpan location)
+        public RescueClause(Expression/*!*/[]/*!*/ types, LeftValue target, Statements statements, SourceSpan location)
             : base(location) {
-            _types = type.RightValues;
-            _splatType = type.SplattedValue;
-            _target = target;
-            _statements = statements;
-        }
-
-        public RescueClause(Expression/*!*/ type, LeftValue target, Statements statements, SourceSpan location)
-            : base(location) {
-            Assert.NotNull(type);
-            _types = new Expression[] { type };
+            Assert.NotNullItems(types);
+            _types = types;
             _target = target;
             _statements = statements;
         }
@@ -90,58 +71,35 @@ namespace IronRuby.Compiler.Ast {
         // 
         internal IfStatementTest/*!*/ Transform(AstGenerator/*!*/ gen, ResultOperation resultOperation) {
             Assert.NotNull(gen);
-
+            
             MSA.Expression condition;
-            if (_types.Length != 0 || _splatType != null) {
+            if (_types.Length != 0) {
                 var comparisonSiteStorage = Ast.Constant(new BinaryOpStorage(gen.Context));
 
-                if (_types.Length == 0) {
-                    // splat only:
-                    condition = MakeCompareSplattedExceptions(gen, comparisonSiteStorage, TransformSplatType(gen));
-                } else if (_types.Length == 1 && _splatType == null) {
-                    condition = MakeCompareException(gen, comparisonSiteStorage, _types[0].TransformRead(gen));
+                if (_types.Length == 1) {
+                    condition = MakeCompareException(gen, comparisonSiteStorage, _types[0].TransformRead(gen), _types[0] is SplattedArgument);
                 } else {
-
                     // forall{i}: <temps[i]> = evaluate type[i]
-                    var temps = new MSA.Expression[_types.Length + (_splatType != null ? 1 : 0)];
+                    var temps = new MSA.Expression[_types.Length];
                     var exprs = new BlockBuilder();
-                    
-                    int i = 0;
-                    while (i < _types.Length) {
-                        var tmp = gen.CurrentScope.DefineHiddenVariable("#type_" + i, typeof(object));
+
+                    for (int i = 0; i < _types.Length; i++) {
+                        var t = _types[i].TransformRead(gen);
+                        var tmp = gen.CurrentScope.DefineHiddenVariable("#type_" + i, t.Type);
                         temps[i] = tmp;
-                        exprs.Add(Ast.Assign(tmp, _types[i].TransformRead(gen)));
-                        i++;
+                        exprs.Add(Ast.Assign(tmp, t));
                     }
-
-                    if (_splatType != null) {
-                        var tmp = gen.CurrentScope.DefineHiddenVariable("#type_" + i, typeof(IList));
-                        temps[i] = tmp;
-                        exprs.Add(Ast.Assign(tmp, TransformSplatType(gen)));
-
-                        i++;
-                    }
-
-                    Debug.Assert(i == temps.Length);
 
                     // CompareException(<temps[0]>) || ... CompareException(<temps[n]>) || CompareSplattedExceptions(<splatTypes>)
-                    i = 0;
-                    condition = MakeCompareException(gen, comparisonSiteStorage, temps[i++]);
-                    while (i < _types.Length) {
-                        condition = Ast.OrElse(condition, MakeCompareException(gen, comparisonSiteStorage, temps[i++]));
+                    condition = MakeCompareException(gen, comparisonSiteStorage, temps[0], _types[0] is SplattedArgument);
+                    for (int i = 1; i < _types.Length; i++) {
+                        condition = Ast.OrElse(condition, MakeCompareException(gen, comparisonSiteStorage, temps[i], _types[i] is SplattedArgument));
                     }
-
-                    if (_splatType != null) {
-                        condition = Ast.OrElse(condition, MakeCompareSplattedExceptions(gen, comparisonSiteStorage, temps[i++]));
-                    }
-
-                    Debug.Assert(i == temps.Length);
 
                     // (temps[0] = type[0], ..., temps[n] == type[n], condition)
                     exprs.Add(condition);
                     condition = exprs;
                 }
-
             } else {
                 condition = Methods.CompareDefaultException.OpCall(gen.CurrentScopeVariable);
             }
@@ -159,16 +117,13 @@ namespace IronRuby.Compiler.Ast {
             );
         }
 
-        private MSA.Expression/*!*/ TransformSplatType(AstGenerator/*!*/ gen) {
-            return AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), _splatType.TransformRead(gen));
-        }
-
-        private MSA.Expression/*!*/ MakeCompareException(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {
-            return Methods.CompareException.OpCall(comparisonSiteStorage, gen.CurrentScopeVariable, AstUtils.Box(expression));
-        }
-
-        private MSA.Expression/*!*/ MakeCompareSplattedExceptions(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {
-            return Methods.CompareSplattedExceptions.OpCall(comparisonSiteStorage, gen.CurrentScopeVariable, expression);
+        private MSA.Expression/*!*/ MakeCompareException(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression, bool isSplatted) {
+            if (isSplatted) {
+                return Methods.CompareSplattedExceptions.OpCall(comparisonSiteStorage, gen.CurrentScopeVariable, expression);
+            } else {
+                return Methods.CompareException.OpCall(comparisonSiteStorage, gen.CurrentScopeVariable, AstUtils.Box(expression));
+            }
         }
     }
 }
+

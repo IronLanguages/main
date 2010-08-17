@@ -289,11 +289,11 @@ namespace IronRuby.Builtins {
         }
 
         int IComparable.CompareTo(object other) {
-            return CompareTo((RubyTime)other);
+            return CompareTo(other as RubyTime);
         }
 
         public int CompareTo(RubyTime other) {
-            return ToUniversalTime(_dateTime).CompareTo(ToUniversalTime(other._dateTime));
+            return other != null ? ToUniversalTime(_dateTime).CompareTo(ToUniversalTime(other._dateTime)) : -1;
         }
 
         public static bool operator <(RubyTime x, RubyTime y) {
@@ -321,8 +321,7 @@ namespace IronRuby.Builtins {
         }
 
         public override bool Equals(object obj) {
-            RubyTime other = obj as RubyTime;
-            return other != null && Equals(other);
+            return Equals(obj as RubyTime);
         }
 
         public bool Equals(RubyTime other) {
@@ -330,11 +329,11 @@ namespace IronRuby.Builtins {
         }
 
         public static bool operator ==(RubyTime x, RubyTime y) {
-            return x.Equals(y);
+            return ReferenceEquals(x, null) ? ReferenceEquals(y, null) : x.Equals(y);
         }
 
         public static bool operator !=(RubyTime x, RubyTime y) {
-            return x != y;
+            return !(x == y);
         }
 
         // RubyTime is less precise (+-5 ticks)

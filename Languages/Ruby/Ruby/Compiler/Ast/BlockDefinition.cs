@@ -34,7 +34,7 @@ namespace IronRuby.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
     using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
     using AstParameters = ReadOnlyCollectionBuilder<MSA.ParameterExpression>;
-    
+
     public partial class BlockDefinition : Block {
         //	{ |args| body }
 
@@ -44,11 +44,11 @@ namespace IronRuby.Compiler.Ast {
         // if the block has more parameters object[] is used:
         internal const int MaxBlockArity = BlockDispatcher.MaxBlockArity;
 
-        private readonly CompoundLeftValue/*!*/ _parameters;
+        private readonly Parameters/*!*/ _parameters;
         private readonly Statements/*!*/ _body;
         private readonly LexicalScope/*!*/ _definedScope;
 
-        public CompoundLeftValue/*!*/ Parameters {
+        public Parameters/*!*/ Parameters {
             get { return _parameters; }
         }
 
@@ -58,31 +58,42 @@ namespace IronRuby.Compiler.Ast {
 
         public sealed override bool IsDefinition { get { return true; } }
 
+        // The number of parameters excluding splat:
+        private int ParameterCount {
+            get {
+                return _parameters.Mandatory.Length + _parameters.Optional.Length + (_parameters.Block != null ? 1 : 0);
+            }
+        }
+
         private bool HasFormalParametersInArray {
-            get { return _parameters.LeftValues.Count > MaxBlockArity || HasUnsplatParameter; }
+            get {
+                return ParameterCount > MaxBlockArity || HasUnsplatParameter; 
+            }
         }
 
         private bool HasUnsplatParameter {
-            get { return _parameters.UnsplattedValue != null; }
+            get {
+                return _parameters.Unsplat != null;
+            }
         }
 
-        public bool HasSignature {
-            get { return _parameters != CompoundLeftValue.UnspecifiedBlockSignature; }
-        }
-
-        public BlockDefinition(LexicalScope/*!*/ definedScope, CompoundLeftValue/*!*/ parameters, Statements/*!*/ body, SourceSpan location)
+        public BlockDefinition(LexicalScope/*!*/ definedScope, Parameters parameters, Statements/*!*/ body, SourceSpan location)
             : base(location) {
-            Assert.NotNull(definedScope, parameters, body);
+            Assert.NotNull(definedScope, body);
 
             _definedScope = definedScope;
             _body = body;
-            _parameters = parameters;
+            _parameters = parameters ?? Parameters.Empty; 
         }
 
         private AstParameters/*!*/ DefineParameters(out MSA.ParameterExpression/*!*/ selfVariable, out MSA.ParameterExpression/*!*/ blockParamVariable) {
+            // Block signature:
+            // <proc>, <self>, <leading-mandatory>, <trailing-mandatory>, <optional>, &<block>, *<unsplat>
+            // or
+            // <proc>, <self>, object[] { <leading-mandatory>, <trailing-mandatory>, <optional>, &<block> } *<unsplat>,
             var parameters = new AstParameters(
                 HiddenParameterCount +
-                (HasFormalParametersInArray ? 1 : _parameters.LeftValues.Count) + 
+                (HasFormalParametersInArray ? 1 : ParameterCount) +
                 (HasUnsplatParameter ? 1 : 0)
             );
 
@@ -94,7 +105,7 @@ namespace IronRuby.Compiler.Ast {
             if (HasFormalParametersInArray) {
                 parameters.Add(Ast.Parameter(typeof(object[]), "#parameters"));
             } else {
-                for (int i = 0; i < _parameters.LeftValues.Count; i++) {
+                for (int i = 0; i < ParameterCount; i++) {
                     parameters.Add(Ast.Parameter(typeof(object), "#" + i));
                 }
             }
@@ -111,6 +122,10 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
+            return Transform(gen, false);
+        }
+
+        internal MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen, bool isLambda) {
             ScopeBuilder scope = DefineLocals(gen.CurrentScope);
 
             // define hidden parameters and RHS-placeholders (#1..#n will be used as RHS of a parallel assignment):
@@ -178,7 +193,7 @@ namespace IronRuby.Compiler.Ast {
 
             gen.LeaveBlockDefinition();
 
-            int parameterCount = _parameters.LeftValues.Count;
+            int parameterCount = ParameterCount;
             var attributes = _parameters.GetBlockSignatureAttributes();
 
             var dispatcher = Ast.Constant(
@@ -186,8 +201,8 @@ namespace IronRuby.Compiler.Ast {
             );
 
             return Ast.Coalesce(
-                Methods.InstantiateBlock.OpCall(gen.CurrentScopeVariable, gen.CurrentSelfVariable, dispatcher),
-                Methods.DefineBlock.OpCall(gen.CurrentScopeVariable, gen.CurrentSelfVariable, dispatcher,
+                (isLambda ? Methods.InstantiateLambda : Methods.InstantiateBlock).OpCall(gen.CurrentScopeVariable, gen.CurrentSelfVariable, dispatcher),
+                (isLambda ? Methods.DefineLambda : Methods.DefineBlock).OpCall(gen.CurrentScopeVariable, gen.CurrentSelfVariable, dispatcher,
                     BlockDispatcher.CreateLambda(
                         body,
                         RubyStackTraceBuilder.EncodeMethodName(gen.CurrentMethod.MethodName, gen.SourcePath, Location, gen.DebugMode),
@@ -199,26 +214,44 @@ namespace IronRuby.Compiler.Ast {
             );
         }
 
+        private MSA.Expression/*!*/ GetParameterAccess(AstParameters/*!*/ parameters, MSA.Expression paramsArray, int i) {
+            return (paramsArray != null) ? (MSA.Expression)Ast.ArrayAccess(paramsArray, AstUtils.Constant(i)) : parameters[HiddenParameterCount + i];
+        }
+
         private MSA.Expression/*!*/ MakeParametersInitialization(AstGenerator/*!*/ gen, AstParameters/*!*/ parameters) {
             var result = new AstExpressions(
-                _parameters.LeftValues.Count + 
-                (_parameters.UnsplattedValue != null ? 1 : 0) +
+                ParameterCount + 
+                (_parameters.Optional.Length > 0 ? 1 : 0) + 
+                (_parameters.Unsplat != null ? 1 : 0) + 
                 1
-            );
+             );
 
-            bool paramsInArray = HasFormalParametersInArray;
-            for (int i = 0; i < _parameters.LeftValues.Count; i++) {
-                var parameter = paramsInArray ? (MSA.Expression)
-                    Ast.ArrayAccess(parameters[HiddenParameterCount], AstUtils.Constant(i)) :
-                    parameters[HiddenParameterCount + i];
+            // TODO: we can skip parameters that are locals (need to be defined as parameters, not as #n):
 
-                result.Add(_parameters.LeftValues[i].TransformWrite(gen, parameter));
+            var paramsArray = HasFormalParametersInArray ? parameters[HiddenParameterCount] : null;
+
+            int parameterIndex = 0;
+            for (int i = 0; i < _parameters.Mandatory.Length; i++) {
+                result.Add(_parameters.Mandatory[i].TransformWrite(gen, GetParameterAccess(parameters, paramsArray, parameterIndex)));
+                parameterIndex++;
             }
 
-            if (_parameters.UnsplattedValue != null) {
+            if (_parameters.Optional.Length > 0) {
+                for (int i = 0; i < _parameters.Optional.Length; i++) {
+                    result.Add(_parameters.Optional[i].Left.TransformWrite(gen, GetParameterAccess(parameters, paramsArray, parameterIndex)));
+                    parameterIndex++;
+                }
+                result.Add(_parameters.TransformOptionalsInitialization(gen));
+            }
+
+            if (_parameters.Block != null) {
+                result.Add(_parameters.Block.TransformWrite(gen, GetParameterAccess(parameters, paramsArray, parameterIndex)));
+                parameterIndex++;
+            }
+
+            if (_parameters.Unsplat != null) {
                 // the last parameter is unsplat:
-                var parameter = parameters[parameters.Count - 1];
-                result.Add(_parameters.UnsplattedValue.TransformWrite(gen, parameter));
+                result.Add(_parameters.Unsplat.TransformWrite(gen, parameters[parameters.Count - 1]));
             }
 
             result.Add(AstUtils.Empty());

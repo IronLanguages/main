@@ -22,10 +22,7 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using IronRuby.Compiler;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Collections;
@@ -33,168 +30,207 @@ using System.Collections;
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
 
+    //
+    // Maps arguments to parameters.
+    //
+    // Arguments:
+    // <simple>, *<splat>, <rhs>
+    //
+    // Parameters:
+    // <implicit>, <leading-mandatory>, <trailing-mandatory>, <optional>, *<unsplat>
+    //
     public sealed class ArgsBuilder {
         private readonly Expression[]/*!*/ _arguments;
+        private readonly int _implicitParamCount;
         private readonly int _mandatoryParamCount;
+        private readonly int _leadingMandatoryParamCount;
         private readonly int _optionalParamCount;
         private readonly bool _hasUnsplatParameter;
 
-        // Actual arguments that overflow the signature of the callee and thus will be unsplatted.
-        private List<Expression> _argsToUnsplat;
+        private int _actualArgumentCount;
+        private CallArguments _callArguments;
 
-        private int _nextArgIndex;
+        // splatted argument list length and storage:
+        private int _listLength;
+        private ParameterExpression _listVariable;
 
-        // Total number of arguments explicitly passed to the call site 
-        // (whether they map to a mandatory, optional or unsplat parameter).
-        private int _explicitArgCount;
-
-        public int ExplicitArgumentCount {
-            get { return _explicitArgCount; }
+        public int ActualArgumentCount {
+            get { return _actualArgumentCount; }
         }
 
-        public int MandatoryParamCount {
-            get { return _mandatoryParamCount; }
-        }
-
-        public int OptionalParamCount {
-            get { return _optionalParamCount; }
-        }
-
-        public bool HasUnsplatParameter {
-            get { return _hasUnsplatParameter; }
-        }
-        
         public bool HasTooFewArguments {
-            get { return _explicitArgCount < _mandatoryParamCount; }
+            get { return _actualArgumentCount < _mandatoryParamCount; }
         }
 
         public bool HasTooManyArguments {
-            get { return !_hasUnsplatParameter && _explicitArgCount > _mandatoryParamCount + _optionalParamCount; }
+            get { return !_hasUnsplatParameter && _actualArgumentCount > _mandatoryParamCount + _optionalParamCount; }
+        }
+
+        public int LeadingMandatoryIndex {
+            get { return _implicitParamCount; }
+        }
+
+        public int TrailingMandatoryIndex {
+            get { return _implicitParamCount + _leadingMandatoryParamCount; }
+        }
+
+        public int OptionalParameterIndex {
+            get { return _implicitParamCount + _mandatoryParamCount; }
+        }
+
+        public int UnsplatParameterIndex {
+            get { return OptionalParameterIndex + _optionalParamCount; }
+        }
+
+        public int TrailingMandatoryCount {
+            get { return _mandatoryParamCount - _leadingMandatoryParamCount; }
         }
 
         /// <param name="implicitParamCount">Parameters for which arguments are provided implicitly, i.e. not specified by user.</param>
         /// <param name="mandatoryParamCount">Number of parameters for which an actual argument must be specified.</param>
+        /// <param name="leadingMandatoryParamCount">Number of mandatory parameters that precede any optional parameters.</param>
         /// <param name="optionalParamCount">Number of optional parameters.</param>
         /// <param name="hasUnsplatParameter">Method has * parameter (accepts any number of additional parameters).</param>
-        public ArgsBuilder(int implicitParamCount, int mandatoryParamCount, int optionalParamCount, bool hasUnsplatParameter) {
+        public ArgsBuilder(int implicitParamCount, int mandatoryParamCount, int leadingMandatoryParamCount, int optionalParamCount, bool hasUnsplatParameter) {
+            Debug.Assert(leadingMandatoryParamCount >= 0 && leadingMandatoryParamCount <= mandatoryParamCount);
+            Debug.Assert(leadingMandatoryParamCount == mandatoryParamCount || optionalParamCount > 0 || hasUnsplatParameter);
+            
             _arguments = new Expression[implicitParamCount + mandatoryParamCount + optionalParamCount + (hasUnsplatParameter ? 1 : 0)];
+            _implicitParamCount = implicitParamCount;
             _mandatoryParamCount = mandatoryParamCount;
+            _leadingMandatoryParamCount = leadingMandatoryParamCount;
             _optionalParamCount = optionalParamCount;
-            _nextArgIndex = implicitParamCount;
-            _explicitArgCount = 0;
-            _argsToUnsplat = null;
             _hasUnsplatParameter = hasUnsplatParameter;
-        }
-
-        /// <summary>
-        /// Adds explicit arguments and maps themp to parameters.
-        /// </summary>
-        public void AddRange(IList<Expression>/*!*/ values) {
-            foreach (Expression value in values) {
-                Add(value);
-            }
-        }
-
-        /// <summary>
-        /// Adds an explicit argument and maps it to a parameter.
-        /// </summary>
-        public void Add(Expression/*!*/ value) {
-            Assert.NotNull(value);
-
-            if (_explicitArgCount < _mandatoryParamCount + _optionalParamCount) {
-                Debug.Assert(_nextArgIndex < _arguments.Length);
-                _arguments[_nextArgIndex++] = value;
-            } else {
-                if (_argsToUnsplat == null) {
-                    _argsToUnsplat = new List<Expression>();
-                }
-                _argsToUnsplat.Add(value);
-            }
-
-            _explicitArgCount++;
-        }
-
-        public void SetImplicit(int index, Expression/*!*/ arg) {
-            _arguments[index] = arg;
+            _actualArgumentCount = -1;
         }
 
         public Expression this[int index] {
-            get { return _arguments[index]; }
+            get {
+                Debug.Assert(_actualArgumentCount != -1);
+                return _arguments[index];
+            }
         }
 
-        internal Expression[]/*!*/ GetArguments() {
-            Debug.Assert(_nextArgIndex == _arguments.Length);
+        internal Expression/*!*/[]/*!*/ GetArguments() {
+            Debug.Assert(_actualArgumentCount != -1);
             return _arguments;
         }
 
-        // Adds an argument expression that wraps the remaining arguments into an array.
-        public void AddUnsplat() {
-            Debug.Assert(_hasUnsplatParameter);
-            Debug.Assert(_nextArgIndex == _arguments.Length - 1);
-            _arguments[_nextArgIndex++] = (_argsToUnsplat != null) ? Methods.MakeArrayOpCall(_argsToUnsplat) : Methods.MakeArray0.OpCall();
+        public void SetImplicit(int index, Expression/*!*/ arg) {
+            Debug.Assert(_actualArgumentCount == -1);
+            _arguments[index] = arg;
         }
 
-        /// <summary>
-        /// Fills missing arguments with the missing argument placeholder (RubyOps.DefaultArgument singleton).
-        /// </summary>
-        public void FillMissingArguments() {
-            for (int i = _explicitArgCount; i < _mandatoryParamCount + _optionalParamCount; i++) {
-                // TODO: optimize field read?
-                _arguments[_nextArgIndex++] = Ast.Field(null, Fields.DefaultArgument);
+        private Expression GetArgument(int argIndex, out bool isSplatted) {
+            if (argIndex < _callArguments.SimpleArgumentCount) {
+                isSplatted = false;
+                return _callArguments.GetSimpleArgumentExpression(argIndex);
             }
-        }
 
-        public void AddSplatted(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            var arg = args.GetSplattedMetaArgument();
-
-            int listLength;
-            ParameterExpression listVariable;
-            metaBuilder.AddSplattedArgumentTest((IList)arg.Value, arg.Expression, out listLength, out listVariable);
-            if (listLength > 0) {
-                for (int i = 0; i < listLength; i++) {
-                    Add(
-                        Ast.Call(
-                            listVariable,
-                            typeof(IList).GetMethod("get_Item"),
-                            AstUtils.Constant(i)
-                        )
-                    );
-                }
+            int i = argIndex - _callArguments.SimpleArgumentCount;
+            if (i < _listLength) {
+                isSplatted = true;
+                return Ast.Call(_listVariable, Methods.IList_get_Item, AstUtils.Constant(i));
             }
+
+            if (i == _listLength && _callArguments.Signature.HasRhsArgument) {
+                isSplatted = false;
+                return _callArguments.GetRhsArgumentExpression();
+            }
+
+            isSplatted = false;
+            return null;
         }
 
         public void AddCallArguments(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            // simple args:
-            for (int i = 0; i < args.SimpleArgumentCount; i++) {
-                Add(args.GetSimpleArgumentExpression(i));
-            }
+            _callArguments = args;
 
-            // splat arg:
+            // calculate actual argument count:
+            _actualArgumentCount = args.SimpleArgumentCount;
             if (args.Signature.HasSplattedArgument) {
-                AddSplatted(metaBuilder, args);
+                var splattedArg = args.GetSplattedMetaArgument();
+                metaBuilder.AddSplattedArgumentTest((IList)splattedArg.Value, splattedArg.Expression, out _listLength, out _listVariable);
+                _actualArgumentCount += _listLength;
             }
-
-            // rhs arg:
             if (args.Signature.HasRhsArgument) {
-                Add(args.GetRhsArgumentExpression());
+                _actualArgumentCount++;
             }
 
+            // check:
             if (HasTooFewArguments) {
-                metaBuilder.SetWrongNumberOfArgumentsError(_explicitArgCount, _mandatoryParamCount);
+                metaBuilder.SetWrongNumberOfArgumentsError(_actualArgumentCount, _mandatoryParamCount);
                 return;
             }
 
             if (HasTooManyArguments) {
-                metaBuilder.SetWrongNumberOfArgumentsError(_explicitArgCount, _mandatoryParamCount);
+                metaBuilder.SetWrongNumberOfArgumentsError(_actualArgumentCount, _mandatoryParamCount);
                 return;
             }
 
-            // add optional placeholders:
-            FillMissingArguments();
+            bool isSplatted;
 
-            if (_hasUnsplatParameter) {
-                AddUnsplat();
+            // leading mandatory:
+            for (int i = 0; i < _leadingMandatoryParamCount; i++) {
+                _arguments[LeadingMandatoryIndex + i] = GetArgument(i, out isSplatted);
             }
+
+            // trailing mandatory:
+            for (int i = 0; i < TrailingMandatoryCount; i++) {
+                _arguments[TrailingMandatoryIndex + i] = GetArgument(_actualArgumentCount - TrailingMandatoryCount + i, out isSplatted);
+            }
+
+            int start = _leadingMandatoryParamCount;
+            int end = _actualArgumentCount - TrailingMandatoryCount;
+
+            // optional:
+            for (int i = 0; i < _optionalParamCount; i++) {
+                _arguments[OptionalParameterIndex + i] = (start < end) ? GetArgument(start++, out isSplatted) : Ast.Field(null, Fields.DefaultArgument);
+            }
+
+            // unsplat:
+            if (_hasUnsplatParameter) {
+                Expression array;
+                if (args.Signature.HasSplattedArgument) {
+                    // simple:
+                    var argsToUnsplat = new List<Expression>();
+                    while (start < end) {
+                        var arg = GetArgument(start, out isSplatted);
+                        if (isSplatted) {
+                            break;
+                        }
+                        argsToUnsplat.Add(AstUtils.Box(arg));
+                        start++;
+                    }
+                    array = Methods.MakeArrayOpCall(argsToUnsplat);
+                    
+                    int rangeStart = start - args.SimpleArgumentCount;
+                    int rangeLength = Math.Min(end - start, _listLength - rangeStart);
+
+                    // splatted:
+                    if (rangeLength > 0) {
+                        array = Methods.AddSubRange.OpCall(array, _listVariable, Ast.Constant(rangeStart), Ast.Constant(rangeLength));
+                        start += rangeLength;
+                    }
+
+                    // rhs:
+                    while (start < end) {
+                        array = Methods.AddItem.OpCall(array, AstUtils.Box(GetArgument(start, out isSplatted)));
+                        start++;
+                    }
+                } else {
+                    var argsToUnsplat = new List<Expression>(end - start);
+                    while (start < end) {
+                        argsToUnsplat.Add(AstUtils.Box(GetArgument(start++, out isSplatted)));
+                    }
+                    array = Methods.MakeArrayOpCall(argsToUnsplat);
+                }
+
+                _arguments[UnsplatParameterIndex] = array;
+            }
+
+            _callArguments = null;
+            _listVariable = null;
+            Debug.Assert(CollectionUtils.TrueForAll(_arguments, (e) => e != null));
         }
     }
 }

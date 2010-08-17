@@ -69,11 +69,14 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("==")]
+        public static bool IsEqual(RubyContext/*!*/ context, ClrName/*!*/ self, [NotNull]RubySymbol/*!*/ other) {
+            return other.Equals(GetRubyName(context, self));
+        }
+
+        [RubyMethod("==")]
         public static bool IsEqual(ClrName/*!*/ self, [NotNull]ClrName/*!*/ other) {
             return self.Equals(other);
         }
-
-        #region 1.9 Symbol Methods
 
         #region <=>
 
@@ -89,6 +92,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("<=>")]
         public static int Compare(RubyContext/*!*/ context, ClrName/*!*/ self, [NotNull]MutableString/*!*/ other) {
+            // TODO: do not create MS
+            return -Math.Sign(other.CompareTo(GetRubyName(context, self)));
+        }
+
+        [RubyMethod("<=>")]
+        public static int Compare(RubyContext/*!*/ context, ClrName/*!*/ self, [NotNull]RubySymbol/*!*/ other) {
             // TODO: do not create MS
             return -Math.Sign(other.CompareTo(GetRubyName(context, self)));
         }
@@ -163,8 +172,6 @@ namespace IronRuby.Builtins {
         // swapcase
         // to_proc
         // upcase
-
-        #endregion
 
         /// <summary>
         /// Converts a Ruby name to PascalCase name (e.g. "foo_bar" to "FooBar").

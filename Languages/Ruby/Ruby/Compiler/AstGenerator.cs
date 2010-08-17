@@ -681,7 +681,7 @@ namespace IronRuby.Compiler.Ast {
             }
         }
 
-        internal AstExpressions/*!*/ TranformExpressions(IList<Expression>/*!*/ arguments) {
+        internal AstExpressions/*!*/ TransformExpressions(IList<Expression>/*!*/ arguments) {
             Assert.NotNull(arguments);
             return TranformExpressions(arguments, new AstExpressions(arguments.Count));
         }

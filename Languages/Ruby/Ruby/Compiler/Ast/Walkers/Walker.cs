@@ -39,12 +39,14 @@ namespace IronRuby.Compiler.Ast {
 
         internal protected virtual void Walk(Arguments/*!*/ node) {
             if (Enter(node)) {
-                VisitOptionalList(node.Expressions);
-                VisitOptionalList(node.Maplets);
+                VisitList(node.Expressions);
+            }
+            Exit(node);
+        }
 
-                if (node.Array != null) {
-                    node.Array.Walk(this);
-                }
+        internal protected virtual void Walk(SplattedArgument/*!*/ node) {
+            if (Enter(node)) {
+                node.Argument.Walk(this);
             }
             Exit(node);
         }
@@ -84,11 +86,11 @@ namespace IronRuby.Compiler.Ast {
 
         internal protected virtual void Walk(Parameters/*!*/ node) {
             if (Enter(node)) {
-                VisitOptionalList(node.Mandatory);
-                VisitOptionalList(node.Optional);
+                VisitList(node.Mandatory);
+                VisitList(node.Optional);
 
-                if (node.Array != null) {
-                    node.Array.Walk(this);
+                if (node.Unsplat != null) {
+                    node.Unsplat.Walk(this);
                 }
 
                 if (node.Block != null) {
@@ -112,14 +114,6 @@ namespace IronRuby.Compiler.Ast {
             }
 
             Exit(node);
-        }
-
-        internal void Visit(CompoundRightValue/*!*/ node) {
-            VisitList(node.RightValues);
-
-            if (node.SplattedValue != null) {
-                node.SplattedValue.Walk(this);
-            }
         }
 
         internal protected virtual void Walk(ParallelAssignmentExpression/*!*/ node) {
@@ -160,12 +154,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal protected virtual void Walk(WhenClause/*!*/ node) {
             if (Enter(node)) {
-                VisitOptionalList(node.Comparisons);
-
-                if (node.ComparisonArray != null) {
-                    node.ComparisonArray.Walk(this);
-                }
-
+                VisitList(node.Comparisons);
                 VisitOptionalList(node.Statements);
             }
             Exit(node);
@@ -203,19 +192,6 @@ namespace IronRuby.Compiler.Ast {
             Exit(node);
         }
 
-        internal protected virtual void Walk(MethodDefinition/*!*/ node) {
-            if (Enter(node)) {
-                if (node.Target != null) {
-                    node.Target.Walk(this);
-                }
-
-                node.Parameters.Walk(this);
-
-                node.Body.Walk(this);
-            }
-            Exit(node);
-        }
-
         internal protected virtual void Walk(ModuleDefinition/*!*/ node) {
             if (Enter(node)) {
                 if (node.QualifiedName != null) {
@@ -236,6 +212,26 @@ namespace IronRuby.Compiler.Ast {
                 node.Singleton.Walk(this);
 
                 node.Body.Walk(this);
+            }
+            Exit(node);
+        }
+
+        internal protected virtual void Walk(MethodDefinition/*!*/ node) {
+            if (Enter(node)) {
+                if (node.Target != null) {
+                    node.Target.Walk(this);
+                }
+
+                node.Parameters.Walk(this);
+
+                node.Body.Walk(this);
+            }
+            Exit(node);
+        }
+
+        internal protected virtual void Walk(LambdaDefinition/*!*/ node) {
+            if (Enter(node)) {
+                node.Block.Walk(this);
             }
             Exit(node);
         }
@@ -264,9 +260,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal protected virtual void Walk(ArrayConstructor/*!*/ node) {
             if (Enter(node)) {
-                if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
-                }
+                VisitList(node.Arguments.Expressions);
             }
             Exit(node);
         }
@@ -323,8 +317,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal protected virtual void Walk(HashConstructor/*!*/ node) {
             if (Enter(node)) {
-                VisitOptionalList(node.Maplets);
-                VisitOptionalList(node.Expressions);
+                VisitList(node.Maplets);
             }
             Exit(node);
         }
@@ -370,7 +363,7 @@ namespace IronRuby.Compiler.Ast {
                 }
 
                 if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
+                    VisitList(node.Arguments.Expressions);
                 }
             }
             Exit(node);
@@ -464,7 +457,7 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(SuperCall/*!*/ node) {
             if (Enter(node)) {
                 if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
+                    VisitList(node.Arguments.Expressions);
                 }
             }
             Exit(node);
@@ -484,7 +477,7 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(YieldCall/*!*/ node) {
             if (Enter(node)) {
                 if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
+                    VisitList(node.Arguments.Expressions);
                 }
             }
             Exit(node);
@@ -493,7 +486,7 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(BreakStatement/*!*/ node) {
             if (Enter(node)) {
                 if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
+                    VisitList(node.Arguments.Expressions);
                 }
             }
             Exit(node);
@@ -502,7 +495,7 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(NextStatement/*!*/ node) {
             if (Enter(node)) {
                 if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
+                    VisitList(node.Arguments.Expressions);
                 }
             }
             Exit(node);
@@ -511,7 +504,7 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(RedoStatement/*!*/ node) {
             if (Enter(node)) {
                 if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
+                    VisitList(node.Arguments.Expressions);
                 }
             }
             Exit(node);
@@ -520,7 +513,7 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(RetryStatement/*!*/ node) {
             if (Enter(node)) {
                 if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
+                    VisitList(node.Arguments.Expressions);
                 }
             }
             Exit(node);
@@ -529,7 +522,7 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(ReturnStatement/*!*/ node) {
             if (Enter(node)) {
                 if (node.Arguments != null) {
-                    node.Arguments.Walk(this);
+                    VisitList(node.Arguments.Expressions);
                 }
             }
             Exit(node);
@@ -538,7 +531,10 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(ArrayItemAccess/*!*/ node) {
             if (Enter(node)) {
                 node.Array.Walk(this);
-                node.Arguments.Walk(this);
+                VisitList(node.Arguments.Expressions);
+                if (node.Block != null) {
+                    node.Block.Walk(this);
+                }
             }
             Exit(node);
         }
@@ -567,10 +563,6 @@ namespace IronRuby.Compiler.Ast {
         internal protected virtual void Walk(CompoundLeftValue/*!*/ node) {
             if (Enter(node)) {
                 VisitList(node.LeftValues);
-
-                if (node.UnsplattedValue != null) {
-                    node.UnsplattedValue.Walk(this);
-                }
             }
             Exit(node);
         }

@@ -49,7 +49,7 @@ popd
 echo DLR slvx files created
 
 echo Generating dlr.js
-set RUBY=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin\ruby.exe
+set RUBY=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe
 if not exist %RUBY% ( set RUBY=ruby )
 %RUBY% %~dp0generate_dlrjs.rb 1> %~dp0generate_dlrjs.log 2>&1
 if "%ERRORLEVEL%" equ "0" (

@@ -1,15 +1,15 @@
 DLR_ROOT = ENV['DLR_ROOT']
 
 # this is used in Gem.default_dir in
-# C:\M4\dlr\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\lib\ruby\gems\1.8\gems\rubygems-update-1.2.0\lib\rubygems\defaults.rb
+# C:\M4\dlr\External.LCA_RESTRICTED\Languages\Ruby\ruby19\lib\ruby\gems\1.8\gems\rubygems-update-1.2.0\lib\rubygems\defaults.rb
 RUBY_ENGINE = 'ruby'
 
 # load_gems_in loads gems:
-# C:\M4\dlr\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\lib\ruby\site_ruby\1.8\rubygems\source_index.rb
+# C:\M4\dlr\External.LCA_RESTRICTED\Languages\Ruby\ruby19\lib\ruby\site_ruby\1.8\rubygems\source_index.rb
 
 CURRENT_DIR = Dir.pwd
 MERB_APP_ROOT = DLR_ROOT + "/External.LCA_RESTRICTED/Languages/IronRuby/merb/test_app"
-ENV['GEM_HOME'] = DLR_ROOT + "/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8"
+ENV['GEM_HOME'] = DLR_ROOT + "/External.LCA_RESTRICTED/Languages/Ruby/ruby19/lib/ruby/gems/1.9.1"
 
 puts "Booting merb ..."
 
@@ -158,4 +158,4 @@ class Hash
   end
 end
 
-load DLR_ROOT + "/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/bin/merb"
+load DLR_ROOT + "/External.LCA_RESTRICTED/Languages/Ruby/ruby19/bin/merb"

@@ -79,8 +79,7 @@ nil
         }
 
         public void Scenario_ParallelAssignment4() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 ra = (a = *4)
 rb = (b = *[4])
 rc = (c = *[*4])
@@ -89,17 +88,16 @@ re = (e = 1,*[4])
 rf = (f = 1,*[*4])
 puts a.inspect,b.inspect,c.inspect,d.inspect,e.inspect,f.inspect
 puts ra.inspect,rb.inspect,rc.inspect,rd.inspect,re.inspect,rf.inspect
-");
-            }, @"
-4
-4
-4
+", @"
+[4]
+[4]
+[4]
 [1, 4]
 [1, 4]
 [1, 4]
-4
-4
-4
+[4]
+[4]
+[4]
 [1, 4]
 [1, 4]
 [1, 4]
@@ -147,14 +145,14 @@ puts x.inspect, y.inspect, '*', v.inspect, '*', w.inspect, '*', p.inspect, q.ins
 ");
             }, @"
 [1, 2]
-[[1, 2]]
+[1, 2]
 [1, 2]
 [1, 2]
 *
 1
 2
 *
-[[1, 2]]
+[1, 2]
 *
 [1, 2]
 *
@@ -167,22 +165,20 @@ puts x.inspect, y.inspect, '*', v.inspect, '*', w.inspect, '*', p.inspect, q.ins
         /// Simple LHS and splat only RHS.
         /// </summary>
         public void Scenario_ParallelAssignment7() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 a = (ax = *1)
 b = (bx = *[])
 c = (cx = *[1])
 d = (dx = *[1,2])
 
 puts a.inspect, ax.inspect, b.inspect, bx.inspect, c.inspect, cx.inspect, d.inspect, dx.inspect
-");
-            }, @"
-1
-1
-nil
-nil
-1
-1
+", @"
+[1]
+[1]
+[]
+[]
+[1]
+[1]
 [1, 2]
 [1, 2]
 ");
@@ -192,8 +188,7 @@ nil
         /// Simple RHS.
         /// </summary>
         public void Scenario_ParallelAssignment8() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 r1 = (a = [1,2])
 r2 = (b,c = [1,2])
 r3 = (d,e = *[1,2])
@@ -201,12 +196,11 @@ r4 = (f,g = 1)
 
 puts r1.inspect, r2.inspect, r3.inspect, r4.inspect
 puts b.inspect, c.inspect, d.inspect, e.inspect, f.inspect, g.inspect
-");
-            }, @"
+", @"
 [1, 2]
 [1, 2]
 [1, 2]
-[1]
+1
 1
 2
 1
@@ -220,14 +214,12 @@ nil
         /// Inner splat-only LHS.
         /// </summary>
         public void Scenario_ParallelAssignment9() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 c = ((*a),(*b) = [1,2],[3,4])
 puts a.inspect, b.inspect, c.inspect
-");
-            }, @"
-[[1, 2]]
-[[3, 4]]
+", @"
+[1, 2]
+[3, 4]
 [[1, 2], [3, 4]]
 ");
         }
@@ -236,14 +228,12 @@ puts a.inspect, b.inspect, c.inspect
         /// Recursion in L(1,-).
         /// </summary>
         public void Scenario_ParallelAssignment10() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 ra = ((a,) = *[])
 rb = ((b,) = 1,*[])
 puts a.inspect, ra.inspect
 puts b.inspect, rb.inspect
-");
-            }, @"
+", @"
 nil
 []
 1
@@ -255,8 +245,7 @@ nil
         /// ArrayItemAccess and AttributeAccess read target ones in an in-place assignment.
         /// </summary>
         public void SimpleInplaceAsignmentToIndirectLeftValues1() {
-            AssertOutput(delegate {
-                CompilerTest(@"
+            TestOutput(@"
 class Array
   def x; 1; end
   def x= value; puts 'x=' end
@@ -273,8 +262,7 @@ p foo[0] &&= 3
 p foo::x &&= 4
 p foo[0] ||= 5
 p foo::x ||= 6
-");
-            }, @"
+", @"
 foo
 1
 foo

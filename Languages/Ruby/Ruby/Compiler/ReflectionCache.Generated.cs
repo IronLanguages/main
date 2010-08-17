@@ -34,6 +34,12 @@ namespace IronRuby.Compiler {
     using Microsoft.Scripting.Utils;
     
     public static partial class Methods {
+        public static MethodInfo/*!*/ AddItem { get { return _AddItem ?? (_AddItem = CallInstruction.CacheFunc<IronRuby.Builtins.RubyArray, System.Object, IronRuby.Builtins.RubyArray>(RubyOps.AddItem)); } }
+        private static MethodInfo _AddItem;
+        public static MethodInfo/*!*/ AddRange { get { return _AddRange ?? (_AddRange = CallInstruction.CacheFunc<IronRuby.Builtins.RubyArray, System.Collections.IList, IronRuby.Builtins.RubyArray>(RubyOps.AddRange)); } }
+        private static MethodInfo _AddRange;
+        public static MethodInfo/*!*/ AddSubRange { get { return _AddSubRange ?? (_AddSubRange = CallInstruction.CacheFunc<IronRuby.Builtins.RubyArray, System.Collections.IList, System.Int32, System.Int32, IronRuby.Builtins.RubyArray>(RubyOps.AddSubRange)); } }
+        private static MethodInfo _AddSubRange;
         public static MethodInfo/*!*/ AliasGlobalVariable { get { return _AliasGlobalVariable ?? (_AliasGlobalVariable = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope, System.String, System.String>(RubyOps.AliasGlobalVariable)); } }
         private static MethodInfo _AliasGlobalVariable;
         public static MethodInfo/*!*/ AliasMethod { get { return _AliasMethod ?? (_AliasMethod = CallInstruction.CacheAction<IronRuby.Runtime.RubyScope, System.String, System.String>(RubyOps.AliasMethod)); } }
@@ -74,6 +80,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ConvertStringToFloat;
         public static MethodInfo/*!*/ ConvertSymbolToClrString { get { return _ConvertSymbolToClrString ?? (_ConvertSymbolToClrString = CallInstruction.CacheFunc<IronRuby.Builtins.RubySymbol, System.String>(RubyOps.ConvertSymbolToClrString)); } }
         private static MethodInfo _ConvertSymbolToClrString;
+        public static MethodInfo/*!*/ ConvertSymbolToMutableString { get { return _ConvertSymbolToMutableString ?? (_ConvertSymbolToMutableString = CallInstruction.CacheFunc<IronRuby.Builtins.RubySymbol, IronRuby.Builtins.MutableString>(RubyOps.ConvertSymbolToMutableString)); } }
+        private static MethodInfo _ConvertSymbolToMutableString;
         public static MethodInfo/*!*/ CreateArgumentsError { get { return _CreateArgumentsError ?? (_CreateArgumentsError = CallInstruction.CacheFunc<System.String, System.ArgumentException>(RubyOps.CreateArgumentsError)); } }
         private static MethodInfo _CreateArgumentsError;
         public static MethodInfo/*!*/ CreateArgumentsErrorForMissingBlock { get { return _CreateArgumentsErrorForMissingBlock ?? (_CreateArgumentsErrorForMissingBlock = CallInstruction.CacheFunc<System.ArgumentException>(RubyOps.CreateArgumentsErrorForMissingBlock)); } }
@@ -168,6 +176,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _DefineGlobalClass;
         public static MethodInfo/*!*/ DefineGlobalModule { get { return _DefineGlobalModule ?? (_DefineGlobalModule = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.String, IronRuby.Builtins.RubyModule>(RubyOps.DefineGlobalModule)); } }
         private static MethodInfo _DefineGlobalModule;
+        public static MethodInfo/*!*/ DefineLambda { get { return _DefineLambda ?? (_DefineLambda = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Runtime.Calls.BlockDispatcher, System.Object, IronRuby.Builtins.Proc>(RubyOps.DefineLambda)); } }
+        private static MethodInfo _DefineLambda;
         public static MethodInfo/*!*/ DefineMethod { get { return _DefineMethod ?? (_DefineMethod = CallInstruction.CacheFunc<System.Object, IronRuby.Runtime.RubyScope, IronRuby.Runtime.Calls.RubyMethodBody, System.Object>(RubyOps.DefineMethod)); } }
         private static MethodInfo _DefineMethod;
         public static MethodInfo/*!*/ DefineModule { get { return _DefineModule ?? (_DefineModule = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.Object, System.String, IronRuby.Builtins.RubyModule>(RubyOps.DefineModule)); } }
@@ -198,16 +208,18 @@ namespace IronRuby.Compiler {
         private static MethodInfo _EvalReturn;
         public static MethodInfo/*!*/ EvalYield { get { return _EvalYield ?? (_EvalYield = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, System.Object, System.Boolean>(RubyOps.EvalYield)); } }
         private static MethodInfo _EvalYield;
-        public static MethodInfo/*!*/ ExistsUnsplat { get { return _ExistsUnsplat ?? (_ExistsUnsplat = CallInstruction.CacheFunc<System.Runtime.CompilerServices.CallSite<Func<System.Runtime.CompilerServices.CallSite, System.Object, System.Object, System.Object>>, System.Object, System.Object, System.Boolean>(RubyOps.ExistsUnsplat)); } }
+        public static MethodInfo/*!*/ ExistsUnsplat { get { return _ExistsUnsplat ?? (_ExistsUnsplat = CallInstruction.CacheFunc<System.Object, System.Boolean>(RubyOps.ExistsUnsplat)); } }
         private static MethodInfo _ExistsUnsplat;
+        public static MethodInfo/*!*/ ExistsUnsplatCompare { get { return _ExistsUnsplatCompare ?? (_ExistsUnsplatCompare = CallInstruction.CacheFunc<System.Runtime.CompilerServices.CallSite<Func<System.Runtime.CompilerServices.CallSite, System.Object, System.Object, System.Object>>, System.Object, System.Object, System.Boolean>(RubyOps.ExistsUnsplatCompare)); } }
+        private static MethodInfo _ExistsUnsplatCompare;
         public static MethodInfo/*!*/ FilterBlockException { get { return _FilterBlockException ?? (_FilterBlockException = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.Exception, System.Boolean>(RubyOps.FilterBlockException)); } }
         private static MethodInfo _FilterBlockException;
         public static MethodInfo/*!*/ FreezeObject { get { return _FreezeObject ?? (_FreezeObject = GetMethod(typeof(RubyOps), "FreezeObject")); } }
         private static MethodInfo _FreezeObject;
         public static MethodInfo/*!*/ GetArrayItem { get { return _GetArrayItem ?? (_GetArrayItem = CallInstruction.CacheFunc<System.Collections.IList, System.Int32, System.Object>(RubyOps.GetArrayItem)); } }
         private static MethodInfo _GetArrayItem;
-        public static MethodInfo/*!*/ GetArraySuffix { get { return _GetArraySuffix ?? (_GetArraySuffix = CallInstruction.CacheFunc<System.Collections.IList, System.Int32, IronRuby.Builtins.RubyArray>(RubyOps.GetArraySuffix)); } }
-        private static MethodInfo _GetArraySuffix;
+        public static MethodInfo/*!*/ GetArrayRange { get { return _GetArrayRange ?? (_GetArrayRange = CallInstruction.CacheFunc<System.Collections.IList, System.Int32, System.Int32, IronRuby.Builtins.RubyArray>(RubyOps.GetArrayRange)); } }
+        private static MethodInfo _GetArrayRange;
         public static MethodInfo/*!*/ GetClassVariable { get { return _GetClassVariable ?? (_GetClassVariable = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.String, System.Object>(RubyOps.GetClassVariable)); } }
         private static MethodInfo _GetClassVariable;
         public static MethodInfo/*!*/ GetContextFromBlockParam { get { return _GetContextFromBlockParam ?? (_GetContextFromBlockParam = CallInstruction.CacheFunc<IronRuby.Runtime.BlockParam, IronRuby.Runtime.RubyContext>(RubyOps.GetContextFromBlockParam)); } }
@@ -280,6 +292,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetSelfClassVersionHandle;
         public static MethodInfo/*!*/ GetSuperCallTarget { get { return _GetSuperCallTarget ?? (_GetSuperCallTarget = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.Int32, System.Object>(RubyOps.GetSuperCallTarget)); } }
         private static MethodInfo _GetSuperCallTarget;
+        public static MethodInfo/*!*/ GetTrailingArrayItem { get { return _GetTrailingArrayItem ?? (_GetTrailingArrayItem = CallInstruction.CacheFunc<System.Collections.IList, System.Int32, System.Int32, System.Object>(RubyOps.GetTrailingArrayItem)); } }
+        private static MethodInfo _GetTrailingArrayItem;
         public static MethodInfo/*!*/ GetUnqualifiedConstant { get { return _GetUnqualifiedConstant ?? (_GetUnqualifiedConstant = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, IronRuby.Runtime.ConstantSiteCache, System.String, System.Boolean, System.Object>(RubyOps.GetUnqualifiedConstant)); } }
         private static MethodInfo _GetUnqualifiedConstant;
         public static MethodInfo/*!*/ HookupEvent { get { return _HookupEvent ?? (_HookupEvent = CallInstruction.CacheFunc<IronRuby.Runtime.Calls.RubyEventInfo, System.Object, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc>(RubyOps.HookupEvent)); } }
@@ -292,6 +306,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _InitializeScopeNoLocals;
         public static MethodInfo/*!*/ InstantiateBlock { get { return _InstantiateBlock ?? (_InstantiateBlock = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Runtime.Calls.BlockDispatcher, IronRuby.Builtins.Proc>(RubyOps.InstantiateBlock)); } }
         private static MethodInfo _InstantiateBlock;
+        public static MethodInfo/*!*/ InstantiateLambda { get { return _InstantiateLambda ?? (_InstantiateLambda = CallInstruction.CacheFunc<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Runtime.Calls.BlockDispatcher, IronRuby.Builtins.Proc>(RubyOps.InstantiateLambda)); } }
+        private static MethodInfo _InstantiateLambda;
         public static MethodInfo/*!*/ IntegerValue_ToUInt32Unchecked { get { return _IntegerValue_ToUInt32Unchecked ?? (_IntegerValue_ToUInt32Unchecked = GetMethod(typeof(IntegerValue), "ToUInt32Unchecked")); } }
         private static MethodInfo _IntegerValue_ToUInt32Unchecked;
         public static MethodInfo/*!*/ IRubyObject_BaseEquals { get { return _IRubyObject_BaseEquals ?? (_IRubyObject_BaseEquals = GetMethod(typeof(IRubyObject), "BaseEquals")); } }
@@ -492,6 +508,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _StringToMutableString;
         public static MethodInfo/*!*/ ToArrayValidator { get { return _ToArrayValidator ?? (_ToArrayValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Collections.IList>(RubyOps.ToArrayValidator)); } }
         private static MethodInfo _ToArrayValidator;
+        public static MethodInfo/*!*/ ToAValidator { get { return _ToAValidator ?? (_ToAValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Collections.IList>(RubyOps.ToAValidator)); } }
+        private static MethodInfo _ToAValidator;
         public static MethodInfo/*!*/ ToBignumValidator { get { return _ToBignumValidator ?? (_ToBignumValidator = CallInstruction.CacheFunc<System.String, System.Object, Microsoft.Scripting.Math.BigInteger>(RubyOps.ToBignumValidator)); } }
         private static MethodInfo _ToBignumValidator;
         public static MethodInfo/*!*/ ToByteValidator { get { return _ToByteValidator ?? (_ToByteValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Byte>(RubyOps.ToByteValidator)); } }

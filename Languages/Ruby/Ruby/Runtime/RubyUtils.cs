@@ -657,6 +657,7 @@ namespace IronRuby.Runtime {
                 case ExpressionType.Negate: methodName = "-@"; return 1;
                 case ExpressionType.UnaryPlus: methodName = "+@"; return 1;
                 case ExpressionType.OnesComplement: methodName = "~"; return 1;
+                case ExpressionType.Not: methodName = "!"; return 1;
             }
 
             methodName = null;
@@ -686,6 +687,7 @@ namespace IronRuby.Runtime {
                 case "-@": op = ExpressionType.Negate; return 1;
                 case "+@": op = ExpressionType.UnaryPlus; return 1;
                 case "~": op = ExpressionType.OnesComplement; return 1;
+                case "!": op = ExpressionType.Not; return 1;
             }
 
             op = default(ExpressionType);
