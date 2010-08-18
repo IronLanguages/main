@@ -13,6 +13,6 @@ REM
 REM
 REM ****************************************************************************
 
-set PYTHON_EXE=%DLR_ROOT%\bin\debug\ipy.exe
+set PYTHON_EXE=%DLR_ROOT%\Util\IronPython\ipy.exe
 %PYTHON_EXE% gen_block_ctrl_flow_first.py > template_block_ctrl_flow.rb
 %PYTHON_EXE% gen_block_ctrl_flow_long.py %*
