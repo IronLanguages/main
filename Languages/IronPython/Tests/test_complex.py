@@ -67,12 +67,8 @@ def test_repr():
     
 
 def test_infinite():
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27988
-        AreEqual(repr(1.0e340j),  'inf*j')
-        AreEqual(repr(-1.0e340j),'-inf*j')
-    else:
-        AreEqual(repr(1.0e340j),  'infj')
-        AreEqual(repr(-1.0e340j),'-infj')
+    AreEqual(repr(1.0e340j),  'infj')
+    AreEqual(repr(-1.0e340j),'-infj')
 
 # Test must sort alphabetically ahead of other uses of the deprecated functions
 @skip("silverlight", "multiple_execute")

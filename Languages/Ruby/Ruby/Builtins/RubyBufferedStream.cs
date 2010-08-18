@@ -385,20 +385,26 @@ namespace IronRuby.Builtins {
             return first;
         }
 
-        public MutableString ReadLineOrParagraph(MutableString separator, RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
-            if (separator == null) {
+        public MutableString ReadLineOrParagraph(MutableString separator, RubyEncoding/*!*/ encoding, bool preserveEndOfLines, int limit) {
+            ContractUtils.Requires(limit >= 0);
+
+            if (limit == 0) {
+                return MutableString.CreateEmpty();
+            } else if (separator == null) {
                 var result = MutableString.CreateBinary();
-                return AppendBytes(result, Int32.MaxValue, preserveEndOfLines) == 0 ? null : result;
+                return AppendBytes(result, limit, preserveEndOfLines) == 0 ? null : result;
             } else if (separator.StartsWith('\n') && separator.GetLength() == 1) {
-                return ReadLine(encoding, preserveEndOfLines);
+                return ReadLine(encoding, preserveEndOfLines, limit);
             } else if (separator.IsEmpty) {
-                return ReadParagraph(encoding, preserveEndOfLines);
+                return ReadParagraph(encoding, preserveEndOfLines, limit);
             } else {
-                return ReadLine(separator, encoding, preserveEndOfLines);
+                return ReadLine(separator, encoding, preserveEndOfLines, limit);
             }
         }
 
-        public MutableString ReadLine(RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
+        public MutableString ReadLine(RubyEncoding/*!*/ encoding, bool preserveEndOfLines, int limit) {
+            // TODO: limit
+
             if (_bufferCount == 0) {
                 if (LoadBuffer(_defaultBufferSize) == 0) {
                     return null;
@@ -466,8 +472,10 @@ namespace IronRuby.Builtins {
             return line;
         }
 
-        public MutableString ReadParagraph(RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
-            var result = ReadLine(MutableString.CreateAscii("\n\n"), encoding, preserveEndOfLines);
+        public MutableString ReadParagraph(RubyEncoding/*!*/ encoding, bool preserveEndOfLines, int limit) {
+            // TODO: limit
+
+            var result = ReadLine(MutableString.CreateAscii("\n\n"), encoding, preserveEndOfLines, limit);
 
             int c;
             while ((c = PeekByteNormalizeEoln(preserveEndOfLines)) != -1) {
@@ -480,7 +488,9 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        public MutableString ReadLine(MutableString/*!*/ separator, RubyEncoding/*!*/ encoding, bool preserveEndOfLines) {
+        public MutableString ReadLine(MutableString/*!*/ separator, RubyEncoding/*!*/ encoding, bool preserveEndOfLines, int limit) {
+            // TODO: limit
+
             int b = ReadByteNormalizeEoln(preserveEndOfLines);
             if (b == -1) {
                 return null;

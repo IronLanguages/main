@@ -14,12 +14,11 @@
  * ***************************************************************************/
 
 using System;
+using Microsoft.Scripting;
 
 namespace IronRuby.Tests {
     public partial class Tests {
-
-
-
+        
         public void Scenario_RubyHashes1A() {
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -30,11 +29,11 @@ print x[1], x[2]
         }
 
         public void Scenario_RubyHashes1B() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 puts Hash.[]()
+", @"
+{}
 ");
-            }, "");
         }
 
         public void Scenario_RubyHashes1C() {
@@ -57,18 +56,16 @@ a
         }
 
         public void Scenario_RubyHashes3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def foo(a,b,c)
   puts a, b, c
 end
 
-foo Hash.[](1 => 'a'), { 2 => 'b' }, 3 => 'c'
-");
-            }, @"
-1a
-2b
-3c
+foo Hash.[](1 => :a), { 2 => :b }, 3 => :c
+", @"
+{1=>:a}
+{2=>:b}
+{3=>:c}
 ");
         }
 
@@ -86,6 +83,26 @@ C.new[1 => 'a', 2 => 'b'] = 'c'
             }, @"abc");
         }
 
+        public void Scenario_RubyHashes5() {
+            TestOutput(@"
+h = { a: 1, b: 2 }
+puts h[:a], h[:b]
+
+def foo *args
+  p args[0][:a], args[0][:b] 
+end
+
+foo a: 1, b: 2
+", @"
+1
+2
+1
+2
+"
+);
+            // a list of expressions no longer supported:
+            AssertExceptionThrown<SyntaxErrorException>(() => Engine.Execute(@"h = {1,2,3,4}"));
+        }
 
         /// <summary>
         /// Equality comparer doesn't call 'eql?' if the values are reference-equal.

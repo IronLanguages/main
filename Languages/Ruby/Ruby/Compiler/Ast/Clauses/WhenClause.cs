@@ -22,27 +22,23 @@ namespace IronRuby.Compiler.Ast {
 
     //	when <expressions>, *<array>: <body>
     public partial class WhenClause : Node {
-        
-        private readonly Expression[] _comparisons; // optional
-        private readonly Expression _comparisonArray;
-        private readonly Statements _statements;  // optional
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+        public static readonly WhenClause[] EmptyArray = new WhenClause[0];
+
+        private readonly Expression/*!*/[]/*!*/ _comparisons;
+        private readonly Statements _statements;              // optional
 
         public Statements Statements {
             get { return _statements; }
         }
 
-        public Expression[] Comparisons {
+        public Expression/*!*/[]/*!*/ Comparisons {
             get { return _comparisons; }
         }
 
-        public Expression ComparisonArray {
-            get { return _comparisonArray; }
-        }
-
-        public WhenClause(Expression[] comparisons, Expression comparisonArray, Statements statements, SourceSpan location)
+        public WhenClause(Expression/*!*/[] comparisons, Statements statements, SourceSpan location)
             : base(location) {
-            _comparisons = comparisons;
-            _comparisonArray = comparisonArray;
+            _comparisons = comparisons ?? Expression.EmptyArray;
             _statements = statements;
         }
     }

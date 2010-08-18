@@ -16,8 +16,7 @@
 namespace IronRuby.Tests {
     public partial class Tests {
         public void Scenario_RubyBoolExpressions1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 puts '!'
 puts !false
 puts !true
@@ -36,8 +35,7 @@ puts !!!true
 puts !!!nil
 puts !!!0
 puts !!!'foo'
-");
-            }, @"
+", @"
 !
 true
 false
@@ -138,6 +136,43 @@ z
 ");
         }
 
+        public void Scenario_RubyBoolExpressions5() {
+            TestOutput(@"
+class C
+  def !
+    puts '!'
+    123
+  end
+end
+
+c = C.new
+
+if not c
+  puts 'f'
+else
+  puts 't'
+end
+
+puts 'unless' unless c
+puts 'unless not' unless not c
+
+a = !c
+b = c.!
+c = not(c)
+p a,b,c
+", @"
+!
+f
+!
+!
+!
+!
+123
+123
+123
+");
+        }
+
         public void Scenario_RubyBoolExpressionsWithReturn1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -177,8 +212,7 @@ foo
         }
 
         public void TernaryConditionalWithJumpStatements1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def foo a
   (a ? return : break) while true
   puts 'foo'
@@ -186,8 +220,7 @@ end
 
 foo true
 foo false
-");
-            }, @"
+", @"
 foo
 ");
         }

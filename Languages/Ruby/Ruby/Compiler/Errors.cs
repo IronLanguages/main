@@ -60,6 +60,10 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo InvalidClassVariableName         = new ErrorInfo(Tokenizer + 15, "`@@{0}' is not allowed as a class variable name");
         public static readonly ErrorInfo InvalidCharacterInExpression     = new ErrorInfo(Tokenizer + 16, "Invalid character '{0}' in expression");
         public static readonly ErrorInfo InvalidMultibyteCharacter        = new ErrorInfo(Tokenizer + 17, "Invalid multibyte character: {0} ({1})");
+        public static readonly ErrorInfo ForLoopVariableIsConstantVariable = new ErrorInfo(Tokenizer + 18, "For loop variable cannot be a constant");
+        public static readonly ErrorInfo ForLoopVariableIsInstanceVariable = new ErrorInfo(Tokenizer + 19, "For loop variable cannot be an instance variable");
+        public static readonly ErrorInfo ForLoopVariableIsGlobalVariable   = new ErrorInfo(Tokenizer + 20, "For loop variable cannot be a global variable");
+        public static readonly ErrorInfo ForLoopVariableIsClassVariable    = new ErrorInfo(Tokenizer + 21, "For loop variable cannot be a class variable");
         
         public static readonly ErrorInfo MatchGroupReferenceOverflow = new ErrorInfo(Tokenizer + 30, "Match group reference ${0} doesn't fit into Fixnum");
         public static readonly ErrorInfo MatchGroupReferenceReadOnly = new ErrorInfo(Tokenizer + 31, "Can't set variable ${0}");
@@ -85,6 +89,8 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo ModuleNameNotConstant = new ErrorInfo(Tokenizer + 66, "Class/module name must be a constant");
         public static readonly ErrorInfo ConstantReassigned = new ErrorInfo(Tokenizer + 67, "Constant re-assignment");
         public static readonly ErrorInfo BothBlockDefAndBlockRefGiven = new ErrorInfo(Tokenizer + 68, "both block arg and actual block given");
+        public static readonly ErrorInfo BlockGivenToYield = new ErrorInfo(Tokenizer + 69, "block given to yield");
+        
 
         // level 1 warnings:
         private const int WarningLevel1 = 0x2000;
@@ -103,9 +109,10 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo AmpersandInVoidContext = new ErrorInfo(WarningLevel2 + 4, "Useless use of & in void context"); // TODO: level 1?
         public static readonly ErrorInfo StarInterpretedAsSplatArgument = new ErrorInfo(WarningLevel2 + 5, "`*' interpreted as argument prefix"); // TODO: level 1?
         public static readonly ErrorInfo ByteOrderMarkIgnored = new ErrorInfo(WarningLevel2 + 6, "UTF-8 byte-order-mark ignored.");
-
+        public static readonly ErrorInfo ShadowingOuterLocalVariable = new ErrorInfo(WarningLevel2 + 7, "shadowing outer local variable - {0}.");
+        
         // TODO: 
-        public static readonly ErrorInfo EncodingsMixed = new ErrorInfo(Tokenizer + 7, "{0} mixed within {1} source");
+        public static readonly ErrorInfo EncodingsMixed = new ErrorInfo(WarningLevel2 + 8, "{0} mixed within {1} source");
 
         internal static bool IsVerboseWarning(int errorCode) {
             return errorCode >= WarningLevel2;

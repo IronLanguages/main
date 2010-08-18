@@ -19,6 +19,7 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,44 +38,62 @@ namespace IronRuby.Compiler.Ast {
     using AstBlock = Microsoft.Scripting.Ast.BlockBuilder;
 
     public partial class CompoundLeftValue : LeftValue {
+        // TODO: 1.9
+        
         /// <summary>
         /// Empty LHS - used by blocks.
         /// </summary>
-        internal static readonly CompoundLeftValue/*!*/ EmptyBlockSignature = new CompoundLeftValue(LeftValue.EmptyList, null, SourceSpan.None);
+        internal static readonly CompoundLeftValue/*!*/ EmptyBlockSignature = new CompoundLeftValue(LeftValue.EmptyArray);
+
+        // TODO: 1.9
 
         /// <summary>
         /// Unspecified LHS - used by blocks.
         /// </summary>
-        internal static readonly CompoundLeftValue/*!*/ UnspecifiedBlockSignature = new CompoundLeftValue(LeftValue.EmptyList, null, SourceSpan.None);
+        internal static readonly CompoundLeftValue/*!*/ UnspecifiedBlockSignature = new CompoundLeftValue(LeftValue.EmptyArray);
 
         /// <summary>
         /// List of l-values, possibly compound.
         /// </summary>
-        private readonly List<LeftValue>/*!*/ _leftValues;
+        private readonly LeftValue/*!*/[]/*!*/ _leftValues;
 
         /// <summary>
-        /// Residual l-value (l-value following the * sentinel).
+        /// The index in _leftValues of *args l-value. 
+        /// _leftValues.Length if there is none.
         /// </summary>
-        private readonly LeftValue _unsplattedValue;
+        private readonly int _unsplattedValueIndex;
 
-        public List<LeftValue>/*!*/ LeftValues {
+        public LeftValue/*!*/[]/*!*/ LeftValues {
             get { return _leftValues; }
         }
 
-        public LeftValue UnsplattedValue {
-            get { return _unsplattedValue; }
+        public int UnsplattedValueIndex {
+            get { return _unsplattedValueIndex; }
         }
 
-        public CompoundLeftValue(List<LeftValue>/*!*/ leftValues, LeftValue unsplattedValue, SourceSpan location)
-            : base(location) {
-            Assert.NotNull(leftValues);
+        public LeftValue UnsplattedValue {
+            get { return HasUnsplattedValue ? _leftValues[_unsplattedValueIndex] : null; }
+        }
 
+        public bool HasUnsplattedValue {
+            get { return _unsplattedValueIndex < _leftValues.Length; }
+        }
+
+        public CompoundLeftValue(LeftValue/*!*/[]/*!*/ leftValues)
+            : this(leftValues, leftValues.Length) {
+        }
+
+        public CompoundLeftValue(LeftValue/*!*/[]/*!*/ leftValues, int unsplattedValueIndex) 
+            : base(SourceSpan.None) {
+            Assert.NotNullItems(leftValues);
+            Debug.Assert(unsplattedValueIndex >= 0 && unsplattedValueIndex <= leftValues.Length);
             _leftValues = leftValues;
-            _unsplattedValue = unsplattedValue;
+            _unsplattedValueIndex = unsplattedValueIndex;
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, MSA.Expression targetValue, bool tryRead) {
-            throw Assert.Unreachable;
+            // called in Parameters.TransformForSuperCall
+            throw new NotSupportedException("TODO: reading compound l-value");
         }
 
         internal override MSA.Expression TransformTargetRead(AstGenerator/*!*/ gen) {
@@ -82,186 +101,98 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, MSA.Expression targetValue, MSA.Expression/*!*/ rightValue) {
+            // called when dealing with nested compound LHS, e.g. in a,(b,c),d = x,y,z this method implements (b,c) = y assignment
             Debug.Assert(targetValue == null);
-            return TransformWrite(gen, new AstExpressions { rightValue }, null);
+            return TransformWrite(gen, rightValue, true);
         }
 
-        internal MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, CompoundRightValue/*!*/ rhs) {
-            return TransformWrite(gen, gen.TranformExpressions(rhs.RightValues), (rhs.SplattedValue != null) ? rhs.SplattedValue.TransformRead(gen) : null);
-        }
+        internal MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, Arguments/*!*/ rightValues) {
+            Debug.Assert(!rightValues.IsEmpty);
+            Assert.NotEmpty(_leftValues);
 
-        private MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, AstExpressions/*!*/ rightValues, MSA.Expression splattedValue) {
-
-            // We need to distinguish various special cases here.
-            // Each of the bool variables defined below is true iff the corresponding special form of LHS/RHS occurs.
-            // These flags drive the DLR AST being produced by this method.
-            // For parallel assignment specification, see "Ruby Language.docx/Runtime/Parallel Assignment".
-
-            // L(0,-) not applicable
-            Debug.Assert(!(_leftValues.Count == 0 && _unsplattedValue == null));
-
-            // L(1,-)?
-            bool leftOneNone = _leftValues.Count == 1 && _unsplattedValue == null;
-
-            // L(0,*)?
-            bool leftNoneSplat = _leftValues.Count == 0 && _unsplattedValue != null;
-
-            // R(0,*)?
-            bool rightNoneSplat = rightValues.Count == 0 && splattedValue != null;
-
-            // R(1,-)?
-            bool rightOneNone = rightValues.Count == 1 && splattedValue == null;
-
-            // R(1,*)?
-            bool rightOneSplat = rightValues.Count == 1 && splattedValue != null;
-
-            // R(0,-) not applicable
-            Debug.Assert(!(rightValues.Count == 0 && splattedValue == null));
-
-            MSA.Expression resultExpression;
-
-            if (leftOneNone) {
-                // L(1,-):
-
-                // recurse right away (X) = RHS is equivalent to X = RHS:
+            if (_leftValues.Length == 1) {
+                // (...) = RHS is equivalent to ... = RHS:
                 CompoundLeftValue compound = _leftValues[0] as CompoundLeftValue;
                 if (compound != null) {
-                    return compound.TransformWrite(gen, rightValues, splattedValue);
+                    return compound.TransformWrite(gen, rightValues);
                 }
 
-                if (rightOneSplat) {
-                    // R(1,*)
-                    resultExpression = Methods.SplatPair.OpCall(
-                        AstUtils.Box(rightValues[0]),
-                        AstUtils.LightDynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue)
-                    );
-                } else {
-                    // case 1: R(1,-)
-                    // case 2: R(0,*) 
-                    // case 3: otherwise
-                    resultExpression = Arguments.TransformRead(gen, rightValues, splattedValue, true /* Splat */);
+                if (!HasUnsplattedValue) {
+                    return _leftValues[0].TransformWrite(gen, rightValues.TransformToArray(gen));
                 }
-
-                return _leftValues[0].TransformWrite(gen, resultExpression);
             }
 
-            bool optimizeReads = true;
-
-            if (rightOneNone && !leftNoneSplat) {
-                // R(1,-) && !L(0,*)
-                resultExpression = Methods.Unsplat.OpCall(
-                    AstUtils.LightDynamic(ConvertToArraySplatAction.Make(gen.Context), rightValues[0])
-                );
-                optimizeReads = false;
+            if (rightValues.Expressions.Length == 1) {
+                return TransformWrite(gen, rightValues.Expressions[0].TransformRead(gen), true);
             } else {
-                // case 1: R(0,*) = L
-                // case 2: otherwise
-                resultExpression = Arguments.TransformRead(gen, rightValues, splattedValue, false /* Unsplat */);
-                optimizeReads = !rightNoneSplat;
+                return TransformWrite(gen, rightValues.TransformToArray(gen), false);
             }
+        }
 
+        private MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, MSA.Expression/*!*/ transformedRight, bool isSimpleRhs) {
             var writes = new AstBlock();
+            
+            MSA.Expression rightList = gen.CurrentScope.DefineHiddenVariable("#rhs", typeof(IList));
+            MSA.Expression result;
 
-            MSA.Expression result = gen.CurrentScope.DefineHiddenVariable("#rhs", typeof(IList));
-            writes.Add(Ast.Assign(result, resultExpression));
+            if (isSimpleRhs) {
+                // 1.9 returns the RHS, not an unsplatted array, if there is just a single RHS:
+                result = gen.CurrentScope.DefineHiddenVariable("#pr", transformedRight.Type);
+                writes.Add(Ast.Assign(result, transformedRight)); 
 
-            MethodInfo itemGetter = Methods.IList_get_Item;
-            for (int i = 0; i < _leftValues.Count; i++) {
-                MSA.Expression rvalue;
-
-                if (optimizeReads) {
-                    if (i < rightValues.Count) {
-                        // unchecked get item:
-                        rvalue = Ast.Call(result, itemGetter, AstUtils.Constant(i));
-                    } else if (splattedValue != null) {
-                        // checked get item:
-                        rvalue = Methods.GetArrayItem.OpCall(result, AstUtils.Constant(i));
-                    } else {
-                        // missing item:
-                        rvalue = AstUtils.Constant(null);
-                    }
-                } else {
-                    rvalue = Methods.GetArrayItem.OpCall(result, AstUtils.Constant(i));
-                }
-
-                writes.Add(_leftValues[i].TransformWrite(gen, rvalue));
+                transformedRight = AstUtils.LightDynamic(ImplicitSplatAction.Make(gen.Context), typeof(IList), result);
+            } else {
+                result = rightList;
             }
 
-            // unsplatting the rest of rhs values into an array:
-            if (_unsplattedValue != null) {
-                // copies the rest of resulting array to the *LHS;
-                // the resulting array contains splatted *RHS - no need for additional appending:
-                MSA.Expression array = Methods.GetArraySuffix.OpCall(result, AstUtils.Constant(_leftValues.Count));
+            writes.Add(Ast.Assign(rightList, transformedRight));
 
-                // assign the array (possibly empty) to *LHS:
-                writes.Add(_unsplattedValue.TransformWrite(gen, array));
+            for (int i = 0; i < _unsplattedValueIndex; i++) {
+                writes.Add(_leftValues[i].TransformWrite(gen, Methods.GetArrayItem.OpCall(rightList, AstUtils.Constant(i))));
+            }
+
+            if (HasUnsplattedValue) {
+                MSA.Expression explicitCount = AstUtils.Constant(_leftValues.Length - 1);
+
+                // remaining RHS values:
+                MSA.Expression array = Methods.GetArrayRange.OpCall(rightList, AstUtils.Constant(_unsplattedValueIndex), explicitCount);
+                writes.Add(_leftValues[_unsplattedValueIndex].TransformWrite(gen, array));
+
+                for (int i = _unsplattedValueIndex + 1; i < _leftValues.Length; i++) {
+                    writes.Add(_leftValues[i].TransformWrite(gen, Methods.GetTrailingArrayItem.OpCall(rightList, AstUtils.Constant(_leftValues.Length - i), explicitCount)));
+                }
             }
 
             writes.Add(result);
             return writes;
         }
 
-        internal BlockSignatureAttributes GetBlockSignatureAttributes() {
-            var result = BlockSignatureAttributes.None;
-            
-            CompoundLeftValue compound;
-            
-            if (_unsplattedValue != null) {
-                result |= BlockSignatureAttributes.HasUnsplatParameter;
-                compound = this;
-            } else if (_leftValues.Count == 1 && (compound = _leftValues[0] as CompoundLeftValue) != null) {
-                result |= BlockSignatureAttributes.HasSingleCompoundParameter;
-            } else {
-                compound = this;
-            }
-
-            int arity;
-
-            if (this == UnspecifiedBlockSignature) {
-                arity = -1;
-            } else {
-                arity = compound._leftValues.Count;
-                if (compound._unsplattedValue != null) {
-                    arity = -arity - 1;
-                } else if (compound._leftValues.Count > 0 && compound._leftValues[compound._leftValues.Count - 1] is Placeholder) {
-                    arity--;
-                }
-            }
-
-            return BlockDispatcher.MakeAttributes(result, arity);
-        }
-
         public override string/*!*/ ToString() {
             var result = new StringBuilder();
             bool first = true;
-            
-            for (int i = 0; i < _leftValues.Count; i++) {
+
+            for (int i = 0; i < _leftValues.Length; i++) {
                 if (!first) {
                     result.Append(',');
                 } else {
                     first = false;
                 }
-                
-                var compound = _leftValues[i] as CompoundLeftValue;
-                if (compound != null) {
-                    result.Append('(');
-                }
 
-                result.Append(_leftValues[i].ToString());
-                
-                if (compound != null) {
-                    result.Append(')');
-                }
-            }
-
-            if (_unsplattedValue != null) {
-                if (!first) {
-                    result.Append(',');
+                if (i == _unsplattedValueIndex) {
+                    result.Append('*');
+                    result.Append(_leftValues[i].ToString());
                 } else {
-                    first = false;
+                    var compound = _leftValues[i] as CompoundLeftValue;
+                    if (compound != null) {
+                        result.Append('(');
+                    }
+
+                    result.Append(_leftValues[i].ToString());
+
+                    if (compound != null) {
+                        result.Append(')');
+                    }
                 }
-                result.Append('*');
-                result.Append(_unsplattedValue.ToString());
             }
 
             return result.ToString();

@@ -43,11 +43,18 @@ namespace IronRuby.Builtins {
 
         #region Constants
 
+        [RubyConstant]
+        public static readonly RubyEncoding US_ASCII = RubyEncoding.Ascii; 
+    
+        [RubyConstant]
+        public static readonly RubyEncoding UTF_8 = RubyEncoding.UTF8;
+
+        [RubyConstant]
+        public static readonly RubyEncoding ASCII_8BIT = RubyEncoding.Binary;
+
         // TODO:
         // Shift_JIS
         // SHIFT_JIS
-        // US_ASCII
-        // UTF_8
         // ...
 
         #endregion
@@ -58,7 +65,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("name")]
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(RubyEncoding/*!*/ self) {
-            return MutableString.CreateAscii(self.Name);
+            return MutableString.CreateAscii(self.Name.ToUpperInvariant());
         }
 
         [RubyMethod("inspect")]
@@ -68,7 +75,7 @@ namespace IronRuby.Builtins {
             result.Append("#<");
             result.Append(context.GetClassDisplayName(self));
             result.Append(':');
-            result.Append(self.Name);
+            result.Append(self.Name.ToUpperInvariant());
             result.Append('>');
             return result;
         }
@@ -120,10 +127,59 @@ namespace IronRuby.Builtins {
             return RubyEncoding.GetRubyEncoding(name.ToString());
         }
 
+        #region compatible?
+
         [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsCompatible(RubyClass/*!*/ self, [NotNull]RubyEncoding/*!*/ encoding1, [NotNull]RubyEncoding/*!*/ encoding2) {
-            throw new NotImplementedException();
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ str1, [NotNull]MutableString/*!*/ str2) {
+            return str1.GetCompatibleEncoding(str2);
         }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]RubyEncoding/*!*/ encoding1, [NotNull]RubyEncoding/*!*/ encoding2) {
+            return MutableString.GetCompatibleEncoding(encoding1, encoding2);
+        }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]RubyEncoding/*!*/ encoding, [NotNull]MutableString/*!*/ str) {
+            return str.GetCompatibleEncoding(encoding);
+        }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ str, [NotNull]RubyEncoding/*!*/ encoding) {
+            return str.GetCompatibleEncoding(encoding);
+        }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]RubyEncoding/*!*/ encoding, [NotNull]RubySymbol/*!*/ symbol) {
+            return GetCompatible(self, encoding, symbol.String);
+        }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ str, [NotNull]RubySymbol/*!*/ symbol) {
+            return GetCompatible(self, str, symbol.String);
+        }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]RubySymbol/*!*/ symbol, [NotNull]RubyEncoding/*!*/ encoding) {
+            return GetCompatible(self, symbol.String, encoding);
+        }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]RubySymbol/*!*/ symbol, [NotNull]MutableString/*!*/ str) {
+            return GetCompatible(self, symbol.String, str);
+        }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]RubySymbol/*!*/ encoding1, [NotNull]RubySymbol/*!*/ encoding2) {
+            return GetCompatible(self, encoding1.String, encoding2.String);
+        }
+
+        [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding GetCompatible(RubyClass/*!*/ self, object obj1, object obj2) {
+            return null;
+        }
+
+        #endregion
 
         [RubyMethod("_load?", RubyMethodAttributes.PublicSingleton)]
         public static bool Load(RubyClass/*!*/ self) {

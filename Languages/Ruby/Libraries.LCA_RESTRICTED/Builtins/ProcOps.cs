@@ -33,21 +33,41 @@ namespace IronRuby.Builtins {
             throw RubyExceptions.CreateAllocatorUndefinedError(self);
         }
 
-        #region Public Instance Methods
+        #region ==, eql?, hash, dup, clone
 
-        [RubyMethod("==")]
+        [RubyMethod("=="), RubyMethod("eql?")]
         public static bool Equal(Proc/*!*/ self, [NotNull]Proc/*!*/ other) {
-            return self.Dispatcher == other.Dispatcher && self.LocalScope == other.LocalScope && self.Kind == other.Kind;
+            return self.Dispatcher == other.Dispatcher && self.LocalScope == other.LocalScope;
         }
 
-        [RubyMethod("==")]
+        [RubyMethod("=="), RubyMethod("eql?")]
         public static bool Equal(Proc/*!*/ self, object other) {
             return false;
         }
-        
+
+        [RubyMethod("hash")]
+        public static int GetHash(Proc/*!*/ self) {
+            return self.Dispatcher.GetHashCode() ^ self.LocalScope.GetHashCode();
+        }
+
+        [RubyMethod("dup"), RubyMethod("clone")]
+        public static Proc/*!*/ Clone(Proc/*!*/ self) {
+            return self.Copy();
+        }
+
+
+        #endregion
+
+        #region arity, lambda?, binding, source_location
+
         [RubyMethod("arity")]
         public static int GetArity(Proc/*!*/ self) {
             return self.Dispatcher.Arity;
+        }
+
+        [RubyMethod("lambda?")]
+        public static bool IsLambda(Proc/*!*/ self) {
+            return self.Kind == ProcKind.Lambda;
         }
 
         [RubyMethod("binding")]
@@ -55,16 +75,17 @@ namespace IronRuby.Builtins {
             return new Binding(self.LocalScope);
         }
 
-        [RubyMethod("dup")]
-        [RubyMethod("clone")]
-        public static Proc/*!*/ Clone(Proc/*!*/ self) {
-            return self.Copy();
+        [RubyMethod("source_location")]
+        public static RubyArray/*!*/ GetSourceLocation(Proc/*!*/ self) {
+            return new RubyArray(2) {
+                self.LocalScope.RubyContext.EncodePath(self.Dispatcher.SourcePath),
+                self.Dispatcher.SourceLine
+            };
         }
 
-        [RubyMethod("to_proc")]
-        public static Proc/*!*/ ToProc(Proc/*!*/ self) {
-            return self;
-        }
+        #endregion
+
+        #region to_s, to_proc
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(Proc/*!*/ self) {
@@ -78,7 +99,7 @@ namespace IronRuby.Builtins {
                 str.Append(self.SourceLine.ToString(CultureInfo.InvariantCulture));
             }
 
-            if (context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19 && self.Kind == ProcKind.Lambda) {
+            if (self.Kind == ProcKind.Lambda) {
                 str.Append(" (lambda)"); 
             }
 
@@ -87,41 +108,48 @@ namespace IronRuby.Builtins {
             return str;
         }
 
+        [RubyMethod("to_proc")]
+        public static Proc/*!*/ ToProc(Proc/*!*/ self) {
+            return self;
+        }
+
         #endregion
 
-        #region call, []
+        #region call, [],  ===, yield (TODO)
+        
+        // TODO: 1.9 yield: yield and call might have different semantics with respect to control-flow!
 
-        [RubyMethod("[]"), RubyMethod("call")]
+        [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
         public static object Call(Proc/*!*/ self) {
             RequireParameterCount(self, 0);
             return self.Call();
         }
 
-        [RubyMethod("[]"), RubyMethod("call")]
+        [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
         public static object Call(Proc/*!*/ self, object arg1) {
             RequireParameterCount(self, 1);
             return self.Call(arg1);
-        }   
+        }
 
-        [RubyMethod("[]"), RubyMethod("call")]
+        [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
         public static object Call(Proc/*!*/ self, object arg1, object arg2) {
             RequireParameterCount(self, 2);
             return self.Call(arg1, arg2);
         }
 
-        [RubyMethod("[]"), RubyMethod("call")]
+        [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
         public static object Call(Proc/*!*/ self, object arg1, object arg2, object arg3) {
             RequireParameterCount(self, 3);
             return self.Call(arg1, arg2, arg3);
         }
 
-        [RubyMethod("[]"), RubyMethod("call")]
+        [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
         public static object Call(Proc/*!*/ self, object arg1, object arg2, object arg3, object arg4) {
             RequireParameterCount(self, 4);
             return self.Call(arg1, arg2, arg3, arg4);
         }
 
-        [RubyMethod("[]"), RubyMethod("call")]
+        [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
         public static object Call(Proc/*!*/ self, params object[]/*!*/ args) {
             RequireParameterCount(self, args.Length);
             return self.CallN(args);
@@ -131,10 +159,7 @@ namespace IronRuby.Builtins {
             int arity;
             if (proc.Kind == ProcKind.Lambda && argCount != (arity = proc.Dispatcher.Arity)) {
                 if (arity >= 0) {
-                    // arity 1 -> warning reported by block dispatcher
-                    if (arity != 1) {
-                        throw RubyOps.MakeWrongNumberOfArgumentsError(argCount, arity);
-                    }
+                    throw RubyOps.MakeWrongNumberOfArgumentsError(argCount, arity);
                 } else if (argCount < -arity - 1) {
                     throw RubyOps.MakeWrongNumberOfArgumentsError(argCount, -arity - 1);
                 }
@@ -143,11 +168,12 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region TODO: ===, eql?, hash, yield, curry, source_location, lambda? (1.9)
+        #region TODO: curry
+
 
         #endregion
 
-        #region Singleton Methods
+        #region new
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, object, object>>/*!*/ storage, 

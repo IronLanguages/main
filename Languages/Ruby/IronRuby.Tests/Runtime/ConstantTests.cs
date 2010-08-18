@@ -92,9 +92,9 @@ p M.constants.sort
             }, @"
 1
 2
-[""U"", ""X"", ""Y"", ""Z""]
-[""U"", ""W"", ""X"", ""Y"", ""Z""]
-[""X""]
+[:U, :X, :Y, :Z]
+[:U, :W, :X, :Y, :Z]
+[:X]
 ");
         }
 
@@ -372,7 +372,6 @@ p C.foo
         /// <summary>
         /// module_eval {} in Ruby 1.9 changes constant lookup chain.
         /// </summary>
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void ConstantCaching_Unqualified5() {
 #if TODO
             TestOutput(@"

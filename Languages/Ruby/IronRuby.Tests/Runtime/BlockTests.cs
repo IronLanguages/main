@@ -24,31 +24,43 @@ namespace IronRuby.Tests {
         }
 
         public void RubyBlocks0() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 3.times { |x| print x }
+", @"
+012
 ");
-            }, "012");
         }
 
         public void RubyBlocks_Params1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def y; yield 0,1,2,3,4,5,6,7,8,9; end
 
 y { |x0,x1,x2,x3,x4,x5,x6,x7,x8,x9| print x0,x1,x2,x3,x4,x5,x6,x7,x8,x9 }
+", @"
+0123456789
 ");
-            }, "0123456789");
         }
 
         public void RubyBlocks_Params2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def y; yield 0,1,2,3,4,5,6,7,8,9; end
 
 y { |x0,x1,x2,x3,x4,x5,x6,x7,*z| print x0,x1,x2,x3,x4,x5,x6,x7,z[0],z[1]; }
+", @"
+0123456789
 ");
-            }, "0123456789");
+        }
+
+        public void RubyBlocks_Params3() {
+            XTestOutput(@"
+l = lambda do |a,b=:b,*c,d,&e;f,g|
+  p [a,b,c,d,e.class,f,g]
+end
+
+l.(1,2) { }
+", @"
+[1, :b, [], 2, Proc, nil, nil]
+");
         }
 
         public void ProcYieldCaching1() {
@@ -77,6 +89,28 @@ $q.call
             }, @"
 1
 2
+");
+        }
+
+        public void BlockDefinition1() {
+            TestOutput(@"
+a = []
+b = []
+2.times {
+  a << -> {}
+  b << proc { }
+}
+puts a[0] == a[1], a[0].object_id == a[1].object_id, a[0].lambda?, a[1].lambda?
+puts b[0] == b[1], b[0].object_id == b[1].object_id, b[0].lambda?, b[1].lambda?
+", @"
+false
+false
+true
+true
+false
+false
+false
+false
 ");
         }
 
@@ -715,111 +749,77 @@ p f1
             Assert(StackUnwinder.InstanceCount == 1);
         }
 
-        public void Scenario_RubyBlockArgs1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def a; yield; end 
-def b; yield 1; end 
-def c; yield 1,2; end 
-def d; yield []; end 
-def e; yield [1]; end 
-def f; yield [1,2]; end 
-def g; yield *[]; end;
-
-a { |x| puts x.inspect }
-b { |x| puts x.inspect }
-c { |x| puts x.inspect }
-d { |x| puts x.inspect }
-e { |x| puts x.inspect }
-f { |x| puts x.inspect }
-g { |(x,)| puts x.inspect }
-", 1, 2); // 2 runtime warnings
-            }, @"
-nil
+        public void Scenario_RubyProcCallArgs1() {
+            TestOutput(@"
+lambda { |x| p x }.call rescue p $!
+lambda { |x| p x }.call 1
+lambda { |x| p x }.call 1,2 rescue p $!
+lambda { |x| p x }.call []
+lambda { |x| p x }.call [1]
+lambda { |x| p x }.call [1,2]
+lambda { |x| p x }.call(*[1])
+lambda { |x,| p x }.call 1
+lambda { |x,| p x }.call [1]
+lambda { |x,| p x }.call [1,2]
+lambda { |(x,y)| p [x,y] }.call [1,2]
+", @"
+#<ArgumentError: wrong number of arguments (0 for 1)>
 1
-[1, 2]
-[]
-[1]
-[1, 2]
-nil
-");
-        }
-
-        public void Scenario_RubyProcCallArgs1A() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-lambda { |x| puts x.inspect }.call
-lambda { |x| puts x.inspect }.call 1
-lambda { |x| puts x.inspect }.call 1,2
-lambda { |x| puts x.inspect }.call []
-lambda { |x| puts x.inspect }.call [1]
-lambda { |x| puts x.inspect }.call [1,2]
-lambda { |x| puts x.inspect }.call *[1]
-lambda { |(x,)| puts x.inspect }.call
-lambda { |(x,)| puts x.inspect }.call 1,2,3,4 
-lambda { |(x,y)| puts x.inspect }.call rescue puts 'error'
-", 1, 2); // 1 syntax warning, 2 runtime warnings
-            }, @"
-nil
-1
-[1, 2]
+#<ArgumentError: wrong number of arguments (2 for 1)>
 []
 [1]
 [1, 2]
 1
-nil
 1
-error
-");
-        }
-
-        public void Scenario_RubyProcCallArgs1B() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-Proc.new { |x| puts x.inspect }.call
-Proc.new { |x| puts x.inspect }.call 1
-Proc.new { |x| puts x.inspect }.call 1,2
-Proc.new { |x| puts x.inspect }.call []
-Proc.new { |x| puts x.inspect }.call [1]
-Proc.new { |x| puts x.inspect }.call [1,2]
-Proc.new { |x| puts x.inspect }.call *[1]
-Proc.new { |(x,)| puts x.inspect }.call *[]
-", 2, 2); // 2 syntax warning, 2 runtime warnings
-            }, @"
-nil
-1
+[1]
 [1, 2]
+[1, 2]
+");
+
+            TestOutput(@"
+proc { |x| p x }.call
+proc { |x| p x }.call 1
+proc { |x| p x }.call 1,2
+proc { |x| p x }.call 1,2,3
+proc { |x| p x }.call 1,2,3,4
+proc { |x| p x }.call 1,2,3,4,5
+proc { |x| p x }.call []
+proc { |x| p x }.call [1]
+proc { |x| p x }.call [1,2]
+proc { |x| p x }.call(*[])
+proc { |x| p x }.call(*[1])
+proc { |x| p x }.call(*[1,2])
+proc { |x| p x }.call(1,*[2])
+proc { |x| p x }.call(1,2,*[3])
+proc { |x| p x }.call(1,2,3,*[4])
+proc { |x| p x }.call(1,2,3,4,*[5])
+proc { |x| p x }.call(1,2,3,4,5,*[6])
+
+proc { |x,| puts x.inspect }.call 1
+proc { |x,| puts x.inspect }.call [1]
+proc { |x,| puts x.inspect }.call [1,2]
+proc { |(x,y)| puts [x,y].inspect }.call [1,2]
+", @"
+nil
+1
+1
+1
+1
+1
 []
 [1]
 [1, 2]
-1
 nil
-");
-        }
-
-        public void Scenario_RubyBlockArgs2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def a; yield; end 
-def b; yield 1; end 
-def c; yield 1,2; end 
-def d; yield []; end 
-def e; yield [1]; end 
-def f; yield [1,2]; end 
-
-a { |x,y| p [x, y] }
-b { |x,y| p [x, y] }
-c { |x,y| p [x, y] }
-d { |x,y| p [x, y] }
-e { |x,y| p [x, y] }
-f { |x,y| p [x, y] }
-");       
-            }, @"
-[nil, nil]
-[1, nil]
-[1, 2]
-[nil, nil]
-[1, nil]
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
 [1, 2]
 ");
         }
@@ -906,15 +906,23 @@ Proc.new { |x,y,z,w,u,v| p [x,y,z,w,u,v] }.call 1,2,3,4,5,6
         /// Tests MRI inconsistency in Yield1 vs YieldNoSplat1 when invoked from Call1.
         /// </summary>
         public void Scenario_RubyProcCallArgs2D() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-f = proc{|x,| x}
+            TestOutput(@"
+f = proc {|x,| x}
 p f.call(1)
 p f.call([1])
 p f.call([[1]])
 p f.call([1,2])
-");
-            }, @"
+
+f = lambda {|x,| x}
+p f.call(1)
+p f.call([1])
+p f.call([[1]])
+p f.call([1,2])
+", @"
+1
+1
+[1]
+1
 1
 [1]
 [[1]]
@@ -922,62 +930,290 @@ p f.call([1,2])
 ");
         }
 
-
         public void Scenario_RubyProcYieldArgs1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def y *a
-  yield *a
-end
+            TestOutput(@"
+def y0; yield; end
+def y1; yield 1; end
+def y2; yield 1,2; end
+def y3; yield 1,2,3; end
+def y4; yield 1,2,3,4; end
+def y5; yield 1,2,3,4,5; end
 
-y() { || p [] }
-y(1) { |x| p [x] }
-y(1,2) { |x,y| p [x,y] }
-y(1,2,3) { |x,y,z| p [x,y,z] }
-y(1,2,3,4) { |x,y,z,w| p [x,y,z,w] }
-y(1,2,3,4,5) { |x,y,z,w,u| p [x,y,z,w,u] }
-y(1,2,3,4,5,6) { |x,y,z,w,u,v| p [x,y,z,w,u,v] }
-puts '---'
-y(1,2,3,4,5,6) { || p [] }
-y(1,2,3,4,5,6) { |x| p [x] }
-y(1,2,3,4,5,6) { |x,y| p [x,y] }
-y(1,2,3,4,5,6) { |x,y,z| p [x,y,z] }
-y(1,2,3,4,5,6) { |x,y,z,w| p [x,y,z,w] }
-y(1,2,3,4,5,6) { |x,y,z,w,u| p [x,y,z,w,u] }
-y(1,2,3,4,5,6) { |x,y,z,w,u,v| p [x,y,z,w,u,v] }
-puts '---'
-y(1,2,3) { || p [] }
-y(1,2,3) { |x| p [x] }
-y(1,2,3) { |x,y| p [x,y] }
-y(1,2,3) { |x,y,z| p [x,y,z] }
-y(1,2,3) { |x,y,z,w| p [x,y,z,w] }
-y(1,2,3) { |x,y,z,w,u| p [x,y,z,w,u] }
-y(1,2,3) { |x,y,z,w,u,v| p [x,y,z,w,u,v] }
-", 1, 2);
-            }, @"
+puts '- L(0,0) -'
+y0 { || p [] }
+y1 { || p [] }
+
+puts '- L(1,0) -'
+y0 { |x| p [x] }
+y1 { |x| p [x] }
+y2 { |x| p [x] }
+y3 { |x| p [x] }
+y4 { |x| p [x] }
+y5 { |x| p [x] }
+
+puts '- L(2,0) -'
+y0 { |x,y| p [x,y] }
+y1 { |x,y| p [x,y] }
+y2 { |x,y| p [x,y] }
+y3 { |x,y| p [x,y] }
+y4 { |x,y| p [x,y] }
+y5 { |x,y| p [x,y] }
+
+puts '- L(3,0) -'
+y0 { |x,y,z| p [x,y,z] }
+y1 { |x,y,z| p [x,y,z] }
+y2 { |x,y,z| p [x,y,z] }
+y3 { |x,y,z| p [x,y,z] }
+y4 { |x,y,z| p [x,y,z] }
+y5 { |x,y,z| p [x,y,z] }
+
+puts '- L(4,0) -'
+y0 { |x,y,z,u| p [x,y,z,u] }
+y1 { |x,y,z,u| p [x,y,z,u] }
+y2 { |x,y,z,u| p [x,y,z,u] }
+y3 { |x,y,z,u| p [x,y,z,u] }
+y4 { |x,y,z,u| p [x,y,z,u] }
+y5 { |x,y,z,u| p [x,y,z,u] }
+
+puts '- L(5,0) -'
+y0 { |x,y,z,u,v| p [x,y,z,u,v] }
+y1 { |x,y,z,u,v| p [x,y,z,u,v] }
+y2 { |x,y,z,u,v| p [x,y,z,u,v] }
+y3 { |x,y,z,u,v| p [x,y,z,u,v] }
+y4 { |x,y,z,u,v| p [x,y,z,u,v] }
+y5 { |x,y,z,u,v| p [x,y,z,u,v] }
+", @"
+- L(0,0) -
 []
+[]
+- L(1,0) -
+[nil]
 [1]
+[1]
+[1]
+[1]
+[1]
+- L(2,0) -
+[nil, nil]
+[1, nil]
 [1, 2]
-[1, 2, 3]
-[1, 2, 3, 4]
-[1, 2, 3, 4, 5]
-[1, 2, 3, 4, 5, 6]
----
-[]
-[[1, 2, 3, 4, 5, 6]]
 [1, 2]
+[1, 2]
+[1, 2]
+- L(3,0) -
+[nil, nil, nil]
+[1, nil, nil]
+[1, 2, nil]
 [1, 2, 3]
+[1, 2, 3]
+[1, 2, 3]
+- L(4,0) -
+[nil, nil, nil, nil]
+[1, nil, nil, nil]
+[1, 2, nil, nil]
+[1, 2, 3, nil]
 [1, 2, 3, 4]
+[1, 2, 3, 4]
+- L(5,0) -
+[nil, nil, nil, nil, nil]
+[1, nil, nil, nil, nil]
+[1, 2, nil, nil, nil]
+[1, 2, 3, nil, nil]
+[1, 2, 3, 4, nil]
 [1, 2, 3, 4, 5]
-[1, 2, 3, 4, 5, 6]
----
+");
+        }
+
+        public void Scenario_RubyProcYieldArgs2() {
+            TestOutput(@"
+def y00; yield(*[]); end
+def y01; yield(*[1]); end
+def y02; yield(*[1,2]); end
+def y11; yield(1,*[2]); end
+def y21; yield(1,2,*[3]); end
+def y31; yield(1,2,3,*[4]); end
+def y41; yield(1,2,3,4,*[5]); end
+
+puts '- L(0,0) -'
+y00 { || p [] }
+y01 { || p [] }
+y02 { || p [] }
+y11 { || p [] }
+y21 { || p [] }
+y31 { || p [] }
+y41 { || p [] }
+
+puts '- L(1,0) -'
+y00 { |x| p [x] }
+y01 { |x| p [x] }
+y02 { |x| p [x] }
+y11 { |x| p [x] }
+y21 { |x| p [x] }
+y31 { |x| p [x] }
+y41 { |x| p [x] }
+
+puts '- L(2,0) -'
+y00 { |x,y| p [x,y] }
+y01 { |x,y| p [x,y] }
+y02 { |x,y| p [x,y] }
+y11 { |x,y| p [x,y] }
+y21 { |x,y| p [x,y] }
+y31 { |x,y| p [x,y] }
+y41 { |x,y| p [x,y] }
+
+puts '- L(3,0) -'
+y00 { |x,y,z| p [x,y,z] }
+y01 { |x,y,z| p [x,y,z] }
+y02 { |x,y,z| p [x,y,z] }
+y11 { |x,y,z| p [x,y,z] }
+y21 { |x,y,z| p [x,y,z] }
+y31 { |x,y,z| p [x,y,z] }
+y41 { |x,y,z| p [x,y,z] }
+
+puts '- L(4,0) -'
+y00 { |x,y,z,u| p [x,y,z,u] }
+y01 { |x,y,z,u| p [x,y,z,u] }
+y02 { |x,y,z,u| p [x,y,z,u] }
+y11 { |x,y,z,u| p [x,y,z,u] }
+y21 { |x,y,z,u| p [x,y,z,u] }
+y31 { |x,y,z,u| p [x,y,z,u] }
+y41 { |x,y,z,u| p [x,y,z,u] }
+
+puts '- L(5,0) -'
+y00 { |x,y,z,u,v| p [x,y,z,u,v] }
+y01 { |x,y,z,u,v| p [x,y,z,u,v] }
+y02 { |x,y,z,u,v| p [x,y,z,u,v] }
+y11 { |x,y,z,u,v| p [x,y,z,u,v] }
+y21 { |x,y,z,u,v| p [x,y,z,u,v] }
+y31 { |x,y,z,u,v| p [x,y,z,u,v] }
+y41 { |x,y,z,u,v| p [x,y,z,u,v] }
+", @"
+- L(0,0) -
 []
+[]
+[]
+[]
+[]
+[]
+[]
+- L(1,0) -
+[nil]
+[1]
+[1]
+[1]
+[1]
+[1]
+[1]
+- L(2,0) -
+[nil, nil]
+[1, nil]
+[1, 2]
+[1, 2]
+[1, 2]
+[1, 2]
+[1, 2]
+- L(3,0) -
+[nil, nil, nil]
+[1, nil, nil]
+[1, 2, nil]
+[1, 2, nil]
+[1, 2, 3]
+[1, 2, 3]
+[1, 2, 3]
+- L(4,0) -
+[nil, nil, nil, nil]
+[1, nil, nil, nil]
+[1, 2, nil, nil]
+[1, 2, nil, nil]
+[1, 2, 3, nil]
+[1, 2, 3, 4]
+[1, 2, 3, 4]
+- L(5,0) -
+[nil, nil, nil, nil, nil]
+[1, nil, nil, nil, nil]
+[1, 2, nil, nil, nil]
+[1, 2, nil, nil, nil]
+[1, 2, 3, nil, nil]
+[1, 2, 3, 4, nil]
+[1, 2, 3, 4, 5]
+");
+        }
+
+        public void Scenario_RubyProcYieldArgs3() {
+            TestOutput(@"
+def y0; yield []; end
+def y1; yield [1]; end
+def y2; yield [1,2]; end
+def y3; yield [1,2,3]; end
+def y4; yield [1,2,3,4]; end
+def y5; yield [1,2,3,4,5]; end
+
+y0 { |x|         p [x] } 
+y0 { |x,y|       p [x,y] }
+y0 { |x,y,z|     p [x,y,z] }
+y0 { |x,y,z,u|   p [x,y,z,u] }
+y0 { |x,y,z,u,v| p [x,y,z,u,v] }
+
+y1 { |x|         p [x] } 
+y1 { |x,y|       p [x,y] }
+y1 { |x,y,z|     p [x,y,z] }
+y1 { |x,y,z,u|   p [x,y,z,u] }
+y1 { |x,y,z,u,v| p [x,y,z,u,v] }
+
+y2 { |x|         p [x] } 
+y2 { |x,y|       p [x,y] }
+y2 { |x,y,z|     p [x,y,z] }
+y2 { |x,y,z,u|   p [x,y,z,u] }
+y2 { |x,y,z,u,v| p [x,y,z,u,v] }
+
+y3 { |x|         p [x] } 
+y3 { |x,y|       p [x,y] }
+y3 { |x,y,z|     p [x,y,z] }
+y3 { |x,y,z,u|   p [x,y,z,u] }
+y3 { |x,y,z,u,v| p [x,y,z,u,v] }
+
+y4 { |x|         p [x] } 
+y4 { |x,y|       p [x,y] }
+y4 { |x,y,z|     p [x,y,z] }
+y4 { |x,y,z,u|   p [x,y,z,u] }
+y4 { |x,y,z,u,v| p [x,y,z,u,v] }
+
+y5 { |x|         p [x] } 
+y5 { |x,y|       p [x,y] }
+y5 { |x,y,z|     p [x,y,z] }
+y5 { |x,y,z,u|   p [x,y,z,u] }
+y5 { |x,y,z,u,v| p [x,y,z,u,v] }
+", @"
+[[]]
+[nil, nil]
+[nil, nil, nil]
+[nil, nil, nil, nil]
+[nil, nil, nil, nil, nil]
+[[1]]
+[1, nil]
+[1, nil, nil]
+[1, nil, nil, nil]
+[1, nil, nil, nil, nil]
+[[1, 2]]
+[1, 2]
+[1, 2, nil]
+[1, 2, nil, nil]
+[1, 2, nil, nil, nil]
 [[1, 2, 3]]
 [1, 2]
 [1, 2, 3]
 [1, 2, 3, nil]
 [1, 2, 3, nil, nil]
-[1, 2, 3, nil, nil, nil]
+[[1, 2, 3, 4]]
+[1, 2]
+[1, 2, 3]
+[1, 2, 3, 4]
+[1, 2, 3, 4, nil]
+[[1, 2, 3, 4, 5]]
+[1, 2]
+[1, 2, 3]
+[1, 2, 3, 4]
+[1, 2, 3, 4, 5]
 ");
         }
 
@@ -1041,156 +1277,62 @@ y { |(x,y,*),*a| p x,y,a }
 ");
         }
 
-        /// <summary>
-        /// L(M,*) := R(N,*,=) where M is less then N.
-        /// </summary>
         public void Scenario_RubyBlockArgs5() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a,b,c,*p|
-    print a,b,c,'|',*p
-  }
+            TestOutput(@"
+c1 = class C1
+  define_method('[]=') { |a| }
+  new
 end
 
-c = C.new
-c[1,2,3,4,5,6,7,*[8]] = 9
+c2 = class C2
+  define_method('[]=') { |a,b| p [a,b] }
+  new
+end
+
+c3 = class C3
+  define_method('[]=') { |a,b,c| p [a,b,c] }
+  new
+end
+
+c4 = class C4
+  define_method('[]=') { |a,b,c,d| p [a,b,c,d] }
+  new
+end
+
+c5 = class C5
+  define_method('[]=') { |a,b,c,d,e| p [a,b,c,d,e] }
+  new
+end
+
+c6 = class C6
+  define_method('[]=') { |a,*b| p [a,b] }
+  new
+end
+
+#(c1[1] = 2) rescue p $!              # TODO: raise exception
+#(c1[1,*[]] = 2) rescue p $!          # TODO: raise exception
+#(c2[1,2] = 3) rescue p $!            # TODO: raise exception
+#(c2[*[1,2]] = 3) rescue p $!         # TODO: raise exception
+c3[1,2,*[]] = 3
+c4[1,*[2,3]] = 4
+c5[1,2,*[3,4]] = 5
+c6[1,2] = 3
+c6[1,*[2,3,4,5,6]] = 7
+", 
+// #<ArgumentError: wrong number of arguments (2 for 1)>
+// #<ArgumentError: wrong number of arguments (2 for 1)>
+// #<ArgumentError: wrong number of arguments (3 for 2)>
+// #<ArgumentError: wrong number of arguments (3 for 2)>
+@"
+[1, 2, 3]
+[1, 2, 3, 4]
+[1, 2, 3, 4, 5]
+[1, [2, 3]]
+[1, [2, 3, 4, 5, 6, 7]]
 ");
-            }, @"123|456789");
         }
 
-        /// <summary>
-        /// L(M,*) := R(N,*,=) where M is greater then N.
-        /// </summary>
         public void Scenario_RubyBlockArgs6() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a,b,c,*p|
-    print a,b,c,'|',*p
-  }
-end
-
-c = C.new
-c[1,*[2]] = 3
-");
-            }, @"123|");
-        }
-
-        /// <summary>
-        /// Wrong number of arguments.
-        /// </summary>
-        public void Scenario_RubyBlockArgs7() {
-            AssertExceptionThrown<ArgumentException>(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a,b| }
-end
-
-c = C.new
-c[1,2,*[]] = 3
-");
-            });
-        }
-
-        /// <summary>
-        /// L(1, -) := R(0,*0,=)
-        /// </summary>
-        public void Scenario_RubyBlockArgs8() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a|
-    p a
-  }
-end
-
-c = C.new
-c[*[]] = 1
-");
-            }, @"1");
-        }
-
-        /// <summary>
-        /// L(1, -) := R(N,*,=)
-        /// </summary>
-        public void Scenario_RubyBlockArgs9() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a|
-    p a
-  }
-end
-
-c = C.new
-c[1,*[2]] = 3
-", 0, 1);
-            }, @"[1, 2, 3]");
-        }
-
-        /// <summary>
-        /// L(2..5, -) := R(N,*,=)
-        /// </summary>
-        public void Scenario_RubyBlockArgs10() {
-            // L(2, -) := R(N,*,=)
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a,b|
-    print a,',',b
-  }
-end
-
-c = C.new
-c[1,*[]] = 2
-");
-            }, @"1,2");
-
-            // L(3, -) := R(N,*,=)
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a,b,c|
-    print a,',',b,',',c
-  }
-end
-
-c = C.new
-c[1,2,*[]] = 3
-");
-            }, @"1,2,3");
-
-            // L(4, -) := R(N,*,=)
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a,b,c,d|
-    print a,',',b,',',c,',',d
-  }
-end
-
-c = C.new
-c[1,*[2,3]] = 4
-");
-            }, @"1,2,3,4");
-
-            // L(5, -) := R(N,*,=)
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  define_method('[]=') { |a,b,c,d,e|
-    print a,',',b,',',c,',',d,',',e
-  }
-end
-
-c = C.new
-c[1,2,*[3,4]] = 5
-");
-            }, @"1,2,3,4,5");
-        }
-
-        public void Scenario_RubyBlockArgs11() {
             TestOutput(@"
 class C
   def to_a
@@ -1449,11 +1591,14 @@ P
 false
 ");
         }
-
+        
+        /// <summary>
+        /// TODO: 1.9 actually doesn't allow proc.binding
+        /// </summary>
         public void MethodToProc1() {
             AssertOutput(() => CompilerTest(@"
 class C
-  def foo a, b=2, *args
+  def foo a=:a, b=:b, *args
     p self, a, b, args
     123
   end
@@ -1474,15 +1619,19 @@ p D.new.instance_eval(&q)
 "), @"
 #<C:0x*>
 1
-2
+:b
 []
 123
-#<ArgumentError: wrong number of arguments (0 for 1)>
+#<C:0x*>
+:a
+:b
+[]
+123
 hello
 main
 #<C:0x*>
-#<D:0x*>
-2
+:a
+:b
 []
 123
 ", OutputFlags.Match);
@@ -1518,8 +1667,8 @@ D");
         /// define_method and class_eval change owner of the method definition.
         /// </summary>
         public void DefineMethod2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            // TODO:
+            TestOutput(@"
 module M
   $p = lambda {    
     def goo
@@ -1548,16 +1697,15 @@ c.goo
 p M.instance_methods(false).sort
 p C.instance_methods(false).sort
 p D.instance_methods(false).sort
-");
-            }, @"
-[""bar""]
-[""foo"", ""goo""]
-[""goo""]
+", @"
+#<NoMethodError: undefined method `goo' for #<C:0x24c5a00>>
+[:goo]
+[:foo]
+[:bar, :goo]
 ");
 
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void ProcPosition1() {
              AssertOutput(() => CompilerTest(@"
 def foo &q 
@@ -1582,8 +1730,7 @@ p C.new {}
         }
 
         public void BlockArity1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 puts '== -4'
 
 p Proc.new{|(a,b,c,*)|}.arity
@@ -1606,12 +1753,7 @@ puts '== 1'
 
 p Proc.new{|x|}.arity    
 p Proc.new{|x,|}.arity    
-p Proc.new{|(x,)|}.arity 
-p Proc.new{|(x,),|}.arity
-p Proc.new{|((x,))|}.arity
 p Proc.new{|((x,y))|}.arity
-p Proc.new{|((x,y,))|}.arity
-p Proc.new{|(x,y,),|}.arity
 p Proc.new{|(*),|}.arity
 p Proc.new{|(x,*),|}.arity
 
@@ -1621,23 +1763,20 @@ p Proc.new{|x,y|}.arity
 p Proc.new{|x,y,|}.arity 
 p Proc.new{|x,y,|}.arity 
 p Proc.new{|(x,y)|}.arity
-p Proc.new{|(x,y,)|}.arity
 
 puts '== 3'
 
 p Proc.new{|x,y,z|}.arity
 p Proc.new{|x,y,z,|}.arity
 p Proc.new{|(x,y,z)|}.arity
-p Proc.new{|(x,y,z,)|}.arity
-");
-            }, @"
+", @"
 == -4
--4
+1
 == -2
 -2
 == -1
--1
--1
+1
+0
 -1
 == 0
 0
@@ -1647,22 +1786,15 @@ p Proc.new{|(x,y,z,)|}.arity
 1
 1
 1
-1
-1
-1
-1
-1
 == 2
 2
 2
 2
-2
-2
+1
 == 3
 3
 3
-3
-3
+1
 ");
         }
         
@@ -2110,6 +2242,7 @@ puts '7'
 ");
         }
 
+#if OBSOLETE
         [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void BEGIN3() {
             TestOutput(@"
@@ -2153,6 +2286,7 @@ true
 true
 ");
         }
+#endif
 
         public void SymbolToProc1() {
             TestOutput(@"

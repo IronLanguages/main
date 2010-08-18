@@ -1187,7 +1187,8 @@ namespace IronRuby.Builtins {
         }
 
         private static MutableString ToMutableString(ConversionStorage<MutableString>/*!*/ stringCast, MutableStringStream/*!*/ stream, object value) {
-            var result = Protocols.CastToString(stringCast, value);
+            var site = stringCast.GetSite(ConvertToStrAction.Make(stringCast.Context));
+            var result = site.Target(site, value);
             if (result != null) {
                 stream.String.TaintBy(result);
             }

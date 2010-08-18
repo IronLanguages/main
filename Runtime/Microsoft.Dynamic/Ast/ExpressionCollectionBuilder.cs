@@ -19,6 +19,7 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +30,7 @@ using System.Reflection;
 namespace Microsoft.Scripting.Ast {
     using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
 
-    public class ExpressionCollectionBuilder<TExpression> : IEnumerable<TExpression> {
+    public class ExpressionCollectionBuilder<TExpression> : IEnumerable<TExpression>, ICollection<TExpression> {
         public TExpression Expression0 { get; private set; }
         public TExpression Expression1 { get; private set; }
         public TExpression Expression2 { get; private set; }
@@ -61,29 +62,29 @@ namespace Microsoft.Scripting.Ast {
             }
         }
 
-        public void Add(TExpression expression) {
-            if (expression == null) {
+        public void Add(TExpression item) {
+            if (item == null) {
                 return;
             }
 
             switch (_count) {
-                case 0: Expression0 = expression; break;
-                case 1: Expression1 = expression; break;
-                case 2: Expression2 = expression; break;
-                case 3: Expression3 = expression; break;
+                case 0: Expression0 = item; break;
+                case 1: Expression1 = item; break;
+                case 2: Expression2 = item; break;
+                case 3: Expression3 = item; break;
                 case 4:
                     _expressions = new ReadOnlyCollectionBuilder<TExpression> {
                         Expression0,
                         Expression1,
                         Expression2,
                         Expression3,
-                        expression
+                        item
                     };
                     break;
 
                 default:
                     Debug.Assert(_expressions != null);
-                    _expressions.Add(expression);
+                    _expressions.Add(item);
                     break;
             }
 
@@ -116,6 +117,34 @@ namespace Microsoft.Scripting.Ast {
         IEnumerator/*!*/ IEnumerable.GetEnumerator() {
             return CollectionUtils.ToCovariant<TExpression, object>((IEnumerable<TExpression>)this).GetEnumerator();
         }
+
+        #region ICollection<TExpression> Members
+
+        public void Clear() {
+            Expression0 = Expression1 = Expression2 = Expression3 = default(TExpression);
+            _expressions = null;
+            _count = 0;
+        }
+
+        public bool Contains(TExpression item) {
+            return this.Any((e) => e.Equals(item));
+        }
+
+        public void CopyTo(TExpression[] array, int arrayIndex) {
+            foreach (var expression in this) {
+                array[arrayIndex++] = expression;
+            }
+        }
+
+        public bool IsReadOnly {
+            get { return false; }
+        }
+
+        public bool Remove(TExpression item) {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 
     public class ExpressionCollectionBuilder : ExpressionCollectionBuilder<Expression> {

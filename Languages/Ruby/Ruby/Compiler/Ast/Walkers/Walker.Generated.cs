@@ -37,16 +37,20 @@ namespace IronRuby.Compiler.Ast {
         public virtual void Exit(Parameters/*!*/ node) { }
         public virtual bool Enter(Arguments/*!*/ node) { return true; }
         public virtual void Exit(Arguments/*!*/ node) { }
+        public virtual bool Enter(SplattedArgument/*!*/ node) { return true; }
+        public virtual void Exit(SplattedArgument/*!*/ node) { }
 
         // declarations:
         public virtual bool Enter(ClassDefinition/*!*/ node) { return true; }
         public virtual void Exit(ClassDefinition/*!*/ node) { }
-        public virtual bool Enter(MethodDefinition/*!*/ node) { return true; }
-        public virtual void Exit(MethodDefinition/*!*/ node) { }
         public virtual bool Enter(ModuleDefinition/*!*/ node) { return true; }
         public virtual void Exit(ModuleDefinition/*!*/ node) { }
         public virtual bool Enter(SingletonDefinition/*!*/ node) { return true; }
         public virtual void Exit(SingletonDefinition/*!*/ node) { }
+        public virtual bool Enter(MethodDefinition/*!*/ node) { return true; }
+        public virtual void Exit(MethodDefinition/*!*/ node) { }
+        public virtual bool Enter(LambdaDefinition/*!*/ node) { return true; }
+        public virtual void Exit(LambdaDefinition/*!*/ node) { }
 
         // expressions:
         public virtual bool Enter(AndExpression/*!*/ node) { return true; }

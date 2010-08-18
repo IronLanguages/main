@@ -1,4 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
+
+not_supported_on :ironruby do
 require File.dirname(__FILE__) + '/shared/resume'
 
 ruby_version_is "1.9" do
@@ -41,4 +43,5 @@ ruby_version_is "1.9" do
       end
     end  
   end
+end
 end

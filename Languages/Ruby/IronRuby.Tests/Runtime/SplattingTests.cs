@@ -70,19 +70,15 @@ C.new[1, *[2]] = 3
         }
 
         public void Scenario_RubyArgSplatting3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def foo(a,b,c)
-  print a,b,c
-  puts
+  p [a,b,c]
 end
 
 foo(1,2,*3)
-foo(1,2,*nil)
+", @"
+[1, 2, 3]
 ");
-            }, @"
-123
-12nil");
         }
 
         /// <summary>
@@ -230,19 +226,118 @@ Z1 -> 10000
             // TODO: test GetPreferredParameters with collapsed arguments
         }
 
-        public void Scenario_CaseSplatting1() {
-            AssertOutput(() => CompilerTest(@"
-[0,2,5,8,6,7,9,4].each do |x|
-  case x
-    when 0,1,*[2,3,4]: print 0
-    when *[5]: print 1
-    when *[6,7]: print 2
-    when *8: print 3
-    when *System::Array[Fixnum].new([9]): print 4
+        public void Scenario_RubyArgSplatting6() {
+            TestOutput(@"
+class Array
+  def to_a
+    [:array]
   end
 end
-"), @"
+
+class NilClass
+  def to_a
+    [:nil]
+  end
+end
+
+x = *[1, 2]
+p x
+x = *nil
+p x
+", @"
+[1, 2]
+[:nil]
+");
+        }
+
+        public void Scenario_CaseSplatting1() {
+            TestOutput(@"
+[0,2,5,8,6,7,9,4].each do |x|
+  case x
+    when 0,1,*[2],*[3,4]; print 0
+    when *[5]; print 1
+    when *[6,7]; print 2
+    when *8; print 3
+    when *System::Array[Fixnum].new([9]); print 4
+  end
+end
+", @"
 00132240
+");
+
+            TestOutput(@"
+def t(i)
+  puts ""t#{i}""
+  true
+end
+
+def f(i)
+  puts ""f#{i}""
+  false
+end
+
+case
+  when *[f(1),f(2),f(3)], *[f(4), f(5)]; puts 'a'
+  when *[t(6)]; puts 'b'
+end
+", @"
+f1
+f2
+f3
+f4
+f5
+t6
+b
+");
+        }
+
+        public void SplattingProtocol1() {
+            TestOutput(@"
+class C
+  def respond_to? name
+    p name
+    false
+  end
+  
+  def to_s
+    'c'
+  end
+end
+
+p [1,*C.new]
+p(*C.new)
+
+x,y = C.new
+p x,y
+
+proc {|a,b| p [a,b] }.call(C.new)
+
+case
+  when *C.new;
+end
+
+def foo
+  yield 1,2,*C.new
+end
+
+foo do |a,b,c|
+  p a,b,c
+end
+", @"
+:to_a
+[1, c]
+:to_a
+c
+:to_ary
+c
+nil
+:to_ary
+[c, nil]
+:to_a
+:to_a
+1
+2
+c
 ");
         }
         

@@ -20,7 +20,7 @@ using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     [Serializable]
-    public class RubySymbol : IComparable, IComparable<RubySymbol>, IEquatable<RubySymbol>, IRubyObjectState {
+    public class RubySymbol : IComparable, IComparable<RubySymbol>, IEquatable<RubySymbol>, IEquatable<MutableString>, IRubyObjectState {
         internal static int MinId = 1;
         private readonly int _id;
         private readonly int _runtimeId;
@@ -37,27 +37,50 @@ namespace IronRuby.Builtins {
         }
 
         #region Equals, GetHashCode, CompareTo
-
-        public override bool Equals(object obj) {
-            return (object)this == obj;
-        }
-
+        
         public override int GetHashCode() {
             // TODO: the same value, different encoding => different hash? different symbols?
             return _string.GetHashCode();
         }
 
         public bool Equals(RubySymbol other) {
-            return Equals((object)other);
+            return ReferenceEquals(this, other);
         }
 
-        public int CompareTo(RubySymbol other) {
+        public bool Equals(MutableString other) {
+            return other != null && _string.Equals(other);
+        }
+
+        public int CompareTo(RubySymbol/*!*/ other) {
             return _string.CompareTo(other._string);
+        }
+
+        public int CompareTo(MutableString/*!*/ other) {
+            return _string.CompareTo(other);
+        }
+
+        public override bool Equals(object other) {
+            var sym = other as RubySymbol;
+            if (sym != null) {
+                return Equals(sym);
+            }
+            var ms = other as MutableString;
+            if (ms != null) {
+                return Equals(ms);
+            }
+            return false;
         }
 
         int IComparable.CompareTo(object other) {
             var sym = other as RubySymbol;
-            return (sym != null) ? _string.CompareTo(sym._string) : -1;
+            if (sym != null) {
+                return CompareTo(sym);
+            }
+            var ms = other as MutableString;
+            if (ms != null) {
+                return CompareTo(ms);
+            }
+            return -1;
         }
 
         #endregion
@@ -76,16 +99,15 @@ namespace IronRuby.Builtins {
             get { return _string.Encoding; }
         }
 
-        internal MutableString/*!*/ MutableString {
+        /// <summary>
+        /// Returns a frozen string.
+        /// </summary>
+        public MutableString/*!*/ String {
             get { return _string; }
         }
 
         public override string/*!*/ ToString() {
             return _string.ToString();
-        }
-
-        public MutableString/*!*/ ToMutableString() {
-            return _string.Clone();
         }
 
         public bool IsEmpty {
@@ -139,7 +161,5 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
-
-        
     }
 }

@@ -266,17 +266,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string __str__(CodeContext/*!*/ context, Complex x) {
-            string j = (double.IsInfinity(x.Imaginary()) || double.IsNaN(x.Imaginary())) ? "*j" : "j";
-
             if (x.Real != 0) {
                 if (x.Imaginary() < 0 || DoubleOps.IsNegativeZero(x.Imaginary())) {
-                    return "(" + FormatComplexValue(context, x.Real) + FormatComplexValue(context, x.Imaginary()) + j + ")";
+                    return "(" + FormatComplexValue(context, x.Real) + FormatComplexValue(context, x.Imaginary()) + "j)";
                 } else /* x.Imaginary() is NaN or >= +0.0 */ {
-                    return "(" + FormatComplexValue(context, x.Real) + "+" + FormatComplexValue(context, x.Imaginary()) + j + ")";
+                    return "(" + FormatComplexValue(context, x.Real) + "+" + FormatComplexValue(context, x.Imaginary()) + "j)";
                 }
             }
 
-            return FormatComplexValue(context, x.Imaginary()) + j;
+            return FormatComplexValue(context, x.Imaginary()) + "j";
         }
 
         public static string __repr__(CodeContext/*!*/ context, Complex x) {

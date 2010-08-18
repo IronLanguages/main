@@ -34,6 +34,7 @@ namespace IronRuby.Compiler {
         public static readonly string SingletonMethodUndefined = "singleton_method_undefined";
         public static readonly string Inherited = "inherited";
         public static readonly string RespondTo = "respond_to?";
+        public static readonly string Call = "call";
         public static readonly string ToProc = "to_proc";
         public static readonly string ToS = "to_s";
         public static readonly string ToStr = "to_str";
@@ -85,9 +86,10 @@ namespace IronRuby.Compiler {
         public static readonly string Multiply = "*";
         public static readonly string Backtick = "`";
         public static readonly string Divide = "/";
+        public static readonly string Bang = "!";
 
         // variables:
-        public static readonly string CurrentException = "!";
+        public static readonly string CurrentException = Bang;
         public static readonly string CurrentExceptionBacktrace = "@";
         public static readonly string ItemSeparator = ",";
         public static readonly string StringSeparator = ";";

@@ -55,11 +55,6 @@ nil
         /// LambdaExpression gets converted to a wrapper.
         /// </summary>
         public void SimpleCall4() {
-#if !CLR2
-            // TODO: see TFS bug #862483:
-            if (_driver.NoAdaptiveCompilation && IntPtr.Size != 4) return;
-#endif
-
             TestOutput(@"
 def foo a,b,c,d,e,f,g,h,i,j
   puts 123
@@ -102,6 +97,72 @@ end
 B.new.foo
 ").ExecuteProgram();
             }, @"foo");
+        }
+
+        public void MethodParams1() {
+            TestOutput(@"
+def foo a,b,c=:c,d=:d,*e,f,g
+  p [a,b,c,d,e,f,g]
+end
+
+foo rescue p $!
+foo 1 rescue p $!
+foo 1,2 rescue p $!
+foo 1,2,3 rescue p $!
+foo 1,2,3,4
+foo 1,2,3,4,5
+foo 1,2,3,4,5,6
+foo 1,2,3,4,5,6,7
+foo 1,2,3,4,5,6,7,8
+foo 1,2,3,4,5,6,7,8,9
+foo(*[1,2,3,4])
+foo(1,*[2,3,4])
+foo(1,*[2,3],*[4,5,6,7])
+foo(1,*[2,3,4,5,6,7,8,9,10,11,12])
+", @"
+#<ArgumentError: wrong number of arguments (0 for 4)>
+#<ArgumentError: wrong number of arguments (1 for 4)>
+#<ArgumentError: wrong number of arguments (2 for 4)>
+#<ArgumentError: wrong number of arguments (3 for 4)>
+[1, 2, :c, :d, [], 3, 4]
+[1, 2, 3, :d, [], 4, 5]
+[1, 2, 3, 4, [], 5, 6]
+[1, 2, 3, 4, [5], 6, 7]
+[1, 2, 3, 4, [5, 6], 7, 8]
+[1, 2, 3, 4, [5, 6, 7], 8, 9]
+[1, 2, :c, :d, [], 3, 4]
+[1, 2, :c, :d, [], 3, 4]
+[1, 2, 3, 4, [5], 6, 7]
+[1, 2, 3, 4, [5, 6, 7, 8, 9, 10], 11, 12]
+");
+
+            TestOutput(@"
+def []=(a=:a,b=:b,*c,d,e)
+  p [a,b,c,d,e]
+end
+
+self[1,2,3,4,5] = 6
+self[1,2,*[3,4,5,6]] = 7
+self[1,*[]] = 2
+", @"
+[1, 2, [3, 4], 5, 6]
+[1, 2, [3, 4, 5], 6, 7]
+[:a, :b, [], 1, 2]
+");
+
+            TestOutput(@"
+def []=(a=:a,b=:b,c,d)
+  p [a,b,c]
+end
+
+self[1,2,3] = 6
+self[1,*[2],*[]] = 6
+self[1,*[],*[]] = 6
+", @"
+[1, 2, 3]
+[1, :b, 2]
+[:a, :b, 1]
+");
         }
         
         public void MethodCallCaching1() {
@@ -370,14 +431,12 @@ obj.f");
         /// Checks that if the same site is used twice and the first use failes on parameter conversion the second use is not affected.
         /// </summary>
         public void MethodCallCaching7() {
-            AssertOutput(delegate {
-                CompilerTest(@"
+            TestOutput(@"
 'hello'.send(:slice, nil) rescue puts 'error'
 puts 'hello'.send(:slice, 1)
-");
-            }, @"
+", @"
 error
-101
+e
 ");
 
         }
@@ -466,7 +525,7 @@ class C
 end
 ");
              }, @"
-[""foo""]
+[:foo]
 ");
         }
 
@@ -556,12 +615,13 @@ class C
 end
 
 x = C.new
-4.times do |$i|
+4.times do |i|
+  $i = i
   class C
     case $i
-      when 0: private :foo
-      when 1: public :foo
-      when 2: private :foo
+      when 0; private :foo
+      when 1; public :foo
+      when 2; private :foo
     end
   end
   x.foo  
@@ -807,8 +867,7 @@ mm
         }
 
         public void ModuleFunctionVisibility1() {
-            AssertOutput(delegate {
-                CompilerTest(@"
+            TestOutput(@"
 module M
   private
   def f
@@ -820,10 +879,9 @@ end
 p M.singleton_methods(false)
 p M.private_instance_methods(false)
 p M.public_instance_methods(false)
-");
-            }, @"
-[""f""]
-[""f""]
+", @"
+[:f]
+[:f]
 []
 ");            
         }
@@ -832,8 +890,7 @@ p M.public_instance_methods(false)
         /// module_function/private/protected/public doesn't copy a method that is already private/private/protected/public.
         /// </summary>
         public void ModuleFunctionVisibility2() {
-            AssertOutput(delegate {
-                CompilerTest(@"
+            TestOutput(@"
 module A
   private
   def pri; end
@@ -855,12 +912,11 @@ module B
   p public_instance_methods(false)
   p singleton_methods(false)
 end
-");
-            }, @"
+", @"
 []
 []
 []
-[""pri""]
+[:pri]
 ");
         }
 
@@ -868,7 +924,7 @@ end
         /// define_method copies given method and sets its visibility according to the the current scope flags.
         /// </summary>
         public void DefineMethodVisibility1() {
-            AssertOutput(() => CompilerTest(@"
+            TestOutput(@"
 class A
   def foo
     puts 'foo'
@@ -887,18 +943,19 @@ class A
 end
 
 B.new.send :foo
-"), @"
-#<NoMethodError: private method `foo' called for #<B:*>>
+", @"
 foo
-", OutputFlags.Match);
+foo
+");
         }
 
+#if OBSOLETE
         [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void DefineMethodVisibility2A() {
             Test_DefineMethodVisibility2();
         }
+#endif
 
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void DefineMethodVisibility2B() {
             Test_DefineMethodVisibility2();
         }
@@ -923,13 +980,10 @@ module N                                               # the inner module differ
   end
 end
 
-p M.public_instance_methods(false).collect { |m| m.to_s }.sort
-p M.private_instance_methods(false).collect { |m| m.to_s }.sort
-", Context.RubyOptions.Compatibility < RubyCompatibility.Ruby19 ? @"
-[""c"", ""d""]
-[""a"", ""b""]
-" : @"
-[""a"", ""b"", ""c"", ""d""]
+p M.public_instance_methods(false).sort
+p M.private_instance_methods(false).sort
+", @"
+[:a, :b, :c, :d]
 []
 ");
         }
@@ -938,7 +992,7 @@ p M.private_instance_methods(false).collect { |m| m.to_s }.sort
         /// alias, alias_method ignore the current scope visibility flags and copy methods with their visibility unmodified.
         /// </summary>
         public void AliasedMethodVisibility1() {
-            AssertOutput(() => CompilerTest(@"
+            TestOutput(@"
 class A
   def pub; end
   private
@@ -968,11 +1022,11 @@ class B < A
   p public_instance_methods(false).sort
   p private_instance_methods(false).sort
 end
-    "), @"
-[""a_pub""]
-[""a_pri""]
-[""a_pub"", ""am_pub""]
-[""a_pri"", ""am_pri""]
+", @"
+[:a_pub]
+[:a_pri]
+[:a_pub, :am_pub]
+[:a_pri, :am_pri]
 ");
         }
 
@@ -985,7 +1039,7 @@ class C
   }   
  
   m = private_instance_methods(false)
-  p m.include?('foo'), m.include?('foo=')
+  p m.include?(:foo), m.include?(:foo=)
 end
 ", @"
 true
@@ -1007,15 +1061,16 @@ B.new.f
 puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
 ";
 
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void MethodDefinitionInDefineMethod1A() {
             AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode1), "A");
         }
 
+#if OBSOLETE
         [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void MethodDefinitionInDefineMethod1B() {
             AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode1), "B");
         }
+#endif
 
         private string MethodDefinitionInDefineMethodCode2 = @"
 class B
@@ -1031,11 +1086,11 @@ A.new.m
 
 puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
 ";
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void MethodDefinitionInDefineMethod2A() {
             AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode2), "B");
         }
 
+#if OBSOLETE
         /// <summary>
         /// MRI 1.8 actually prints A. We consider it a bug that we won't copy.
         /// </summary>
@@ -1043,6 +1098,7 @@ puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
         public void MethodDefinitionInDefineMethod2B() {
             AssertOutput(() => CompilerTest(MethodDefinitionInDefineMethodCode2), "B");
         }
+#endif
 
         private string MethodDefinitionInModuleEvalCode = @"
 class A
@@ -1056,15 +1112,16 @@ end
 puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
 ";
 
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void MethodDefinitionInModuleEval1A() {
             AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "B");
         }
 
+#if OBSOLETE
         [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void MethodDefinitionInModuleEval1B() {
             AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "B");
         }
+#endif
 
         public void Scenario_ModuleOps_Methods() {
             AssertOutput(delegate() {

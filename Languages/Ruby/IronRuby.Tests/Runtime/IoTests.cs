@@ -152,7 +152,7 @@ hello
         }
 
         private void TestReadLine(RubyBufferedStream/*!*/ io, bool preserveEolns, string expected) {
-            var s = io.ReadLine(RubyEncoding.Binary, preserveEolns);
+            var s = io.ReadLine(RubyEncoding.Binary, preserveEolns, -1);
             Assert(s == null && expected == null || s.ToString() == expected);
         }
 
@@ -185,6 +185,7 @@ hello
             }
         }
 
+#if OBSOLETE // KCODE
         [Options(Pal = typeof(Pal1))]
         public void Dir1() {
             RubyClass dir = Context.GetClass(typeof(RubyDir));
@@ -234,8 +235,8 @@ hello
             Assert(((MutableString)entries[1]).Equals(MutableString.CreateAscii("..")));
             Assert(((MutableString)entries[2]).Equals(MutableString.Create("ﾎ", RubyEncoding.KCodeSJIS)));
         }
-
-        [Options(Pal = typeof(Pal1), Compatibility = RubyCompatibility.Ruby19)]
+#endif
+        [Options(Pal = typeof(Pal1))]
         public void Dir2() {
             RubyClass dir = Context.GetClass(typeof(RubyDir));
             Pal1 pal = (Pal1)Context.Platform;

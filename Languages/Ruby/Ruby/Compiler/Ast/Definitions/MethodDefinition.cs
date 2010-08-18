@@ -20,6 +20,7 @@ using MSA = Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
@@ -62,17 +63,23 @@ namespace IronRuby.Compiler.Ast {
             : base(definedScope, body, location) {
             Assert.NotNull(name);
 
+            // only for-loop block might use other than local variable for unsplat:
+            Debug.Assert(parameters.Unsplat == null || parameters.Unsplat is LocalVariable);
+                
             _target = target;
             _name = name;
             _parameters = parameters ?? Parameters.Empty;
         }
 
         private ScopeBuilder/*!*/ DefineLocals(out AstParameters/*!*/ parameters) {
+            // Method signature:
+            // <self>, &<block>, <leading-mandatory>, <trailing-mandatory>, <optional>, *<unsplat>
+            
             parameters = new AstParameters(
                 HiddenParameterCount +
-                (_parameters.Mandatory != null ? _parameters.Mandatory.Count : 0) +
-                (_parameters.Optional != null ? _parameters.Optional.Count : 0) +
-                (_parameters.Array != null ? 1 : 0)
+                _parameters.Mandatory.Length +
+                _parameters.Optional.Length +
+                (_parameters.Unsplat != null ? 1 : 0)
             );
 
             int closureIndex = 0;
@@ -87,24 +94,27 @@ namespace IronRuby.Compiler.Ast {
                 firstClosureParam++;
             }
 
-            if (_parameters.Mandatory != null) {
-                foreach (var param in _parameters.Mandatory) {
+            foreach (LeftValue lvalue in _parameters.Mandatory) {
+                var param = lvalue as LocalVariable;
+                if (param != null) {
                     parameters.Add(Ast.Parameter(typeof(object), param.Name));
                     param.SetClosureIndex(closureIndex++);
+                } else {
+                    // TODO:
+                    throw new NotSupportedException("TODO: compound parameters");
                 }
             }
 
-            if (_parameters.Optional != null) {
-                foreach (var lvalue in _parameters.Optional) {
-                    var param = (LocalVariable)lvalue.Left;
-                    parameters.Add(Ast.Parameter(typeof(object), param.Name));
-                    param.SetClosureIndex(closureIndex++);
-                }
+            foreach (var lvalue in _parameters.Optional) {
+                var param = (LocalVariable)lvalue.Left;
+                parameters.Add(Ast.Parameter(typeof(object), param.Name));
+                param.SetClosureIndex(closureIndex++);
             }
 
-            if (_parameters.Array != null) {
-                parameters.Add(Ast.Parameter(typeof(object), _parameters.Array.Name));
-                _parameters.Array.SetClosureIndex(closureIndex++);
+            if (_parameters.Unsplat != null) {
+                var unsplatLocal = (LocalVariable)_parameters.Unsplat;
+                parameters.Add(Ast.Parameter(typeof(object), unsplatLocal.Name));
+                unsplatLocal.SetClosureIndex(closureIndex++);
             }
 
             // allocate closure slots for locals:
@@ -128,7 +138,7 @@ namespace IronRuby.Compiler.Ast {
             if (_parameters.Block != null) {
                 visiblePrameterCountAndSignatureFlags |= RubyMethodScope.HasBlockFlag;
             }
-            if (_parameters.Array != null) {
+            if (_parameters.Unsplat != null) {
                 visiblePrameterCountAndSignatureFlags |= RubyMethodScope.HasUnsplatFlag;
             }
 

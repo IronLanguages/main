@@ -1805,32 +1805,90 @@ namespace IronPython.Modules {
         }
 
         /// <summary>
-        /// float overload of range - reports TypeError if the float is outside the range of normal integers.
-        /// 
-        /// The method binder would usally report an OverflowError in this case.
+        /// object overload of range - attempts to convert via __int__, and __trunc__ if arg is
+        /// an OldInstance
         /// </summary>
         [return: SequenceTypeInfo(typeof(int))]
-        public static List range(CodeContext/*!*/ context, double stop) {
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "range: integer argument expected, got float");
-            return range(GetRangeAsInt(stop, "end"));
+        public static List range(CodeContext/*!*/ context, object stop) {
+            return range(GetRangeInt(context, stop, "end"));
         }
 
         /// <summary>
-        /// float overload of range - reports TypeError if the float is outside the range of normal integers.
-        /// 
-        /// The method binder would usally report an OverflowError in this case.
+        /// object overload of range - attempts to convert via __int__, and __trunc__ if arg is
+        /// an OldInstance
         /// </summary>
         [return: SequenceTypeInfo(typeof(int))]
-        public static List range(CodeContext/*!*/ context, double start, double stop, [DefaultParameterValue(1.0)]double step) {
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "range: integer argument expected, got float");
-            return range(GetRangeAsInt(start, "start"), GetRangeAsInt(stop, "end"), GetRangeAsInt(step, "step"));
+        public static List range(CodeContext/*!*/ context, object start, object stop, [DefaultParameterValue(1)]object step) {
+            BigInteger stopInt = GetRangeInt(context, stop, "end");
+            BigInteger startInt = GetRangeInt(context, start, "start");
+            BigInteger stepInt = GetRangeInt(context, step, "step");
+
+            return range(startInt, stopInt, stepInt);
         }
 
-        private static int GetRangeAsInt(double index, string name) {
-            if (index < Int32.MinValue || index > Int32.MaxValue) {
-                throw PythonOps.TypeError("range() integer {0} argument expected, got float.", name);
+        private static bool FastGetRangeInt(object arg, out BigInteger res) {
+            if (arg is int) {
+                res = (BigInteger)(int)arg;
+                return true;
+            } else if (arg is BigInteger) {
+                res = (BigInteger)arg;
+                return true;
             }
-            return (int)index;
+            
+            Extensible<int> ei;
+            Extensible<BigInteger> ebi;
+            if ((ei = arg as Extensible<int>) != null) {
+                res = (BigInteger)ei.Value;
+                return true;
+            } else if ((ebi = arg as Extensible<BigInteger>) != null) {
+                res = ebi.Value;
+                return true;
+            }
+
+            res = BigInteger.Zero;
+            return false;
+        }
+
+        private static BigInteger GetRangeInt(CodeContext/*!*/ context, object arg, string pos) {
+            BigInteger res;
+            if (FastGetRangeInt(arg, out res)) {
+                return res;
+            }
+
+            if (arg is double || arg is Extensible<double>) {
+                throw PythonOps.TypeError(
+                    "range() integer {0} argument expected, got {1}.",
+                    pos, PythonTypeOps.GetName(arg)
+                );
+            }
+            
+            object Conversion;
+            if (PythonOps.TryGetBoundAttr(context, arg, "__int__", out Conversion)) {
+                if (!FastGetRangeInt(PythonOps.CallWithContext(context, Conversion), out res)) {
+                    throw PythonOps.TypeError("__int__ should return int object");
+                }
+                return res;
+            } else if (arg is OldInstance) {
+                if (PythonOps.TryGetBoundAttr(context, arg, "__trunc__", out Conversion)) {
+                    if (!FastGetRangeInt(PythonOps.CallWithContext(context, Conversion), out res)) {
+                        throw PythonOps.TypeError(
+                            "__trunc__ returned non-Integral (type {0})",
+                            PythonTypeOps.GetOldName(arg)
+                        );
+                    }
+                    return res;
+                }
+
+                throw PythonOps.AttributeError(
+                    "{0} instance has no attribute __trunc__",
+                    PythonTypeOps.GetOldName(arg)
+                );
+            }
+
+            throw PythonOps.TypeError(
+                "range() integer {0} argument expected, got {1}.",
+                pos, PythonTypeOps.GetName(arg)
+            );
         }
 
         public static string raw_input(CodeContext/*!*/ context) {

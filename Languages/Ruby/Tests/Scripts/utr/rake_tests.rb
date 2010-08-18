@@ -1,4 +1,7 @@
+
 class UnitTestSetup
+  Version = '0.8.7'
+  
   def initialize
     @name = "Rake"
     super
@@ -6,35 +9,17 @@ class UnitTestSetup
   
   def require_files
     require 'rubygems'
-    gem 'rake', '= 0.8.4'
+    gem 'rake', Version
     require 'rake'
   end
 
   def gather_files
-    @rake_tests_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/RakeTests", ENV["DLR_ROOT"])
-    @all_test_files = Dir.glob("#{@rake_tests_dir}/test/test*.rb") + Dir.glob("#{@rake_tests_dir}/test/contrib/test*.rb")
-
-    if RUBY_PLATFORM =~ /mswin/
-      if true
-        # The session gem uses "fork" by default, but can use popen3. However, it still does 
-        # not work on Windows. It is currently very *nix oriented. For eg, it assumes that the
-        # default shell is bash.
-        puts "(Skipping functional tests on Windows)"
-      else
-        ENV['SESSION_USE_OPEN3'] = true
-        require "open3"
-        @all_test_files += Dir.glob("#{@rake_tests_dir}/test/fun*.rb")
-      end
-    else
-      @all_test_files += Dir.glob("#{@rake_tests_dir}/test/fun*.rb")
-    end
+    @rake_tests_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/Rake-#{Version}", ENV["DLR_ROOT"])
+    @all_test_files = Dir.glob("#{@rake_tests_dir}/test/test_*.rb") + Dir.glob("#{@rake_tests_dir}/test/contrib/test_*.rb")
   end
 
   def sanity
-    # Do some sanity checks
-    sanity_size(25)
-    abort("Did not find some expected files...") unless File.exist?(@rake_tests_dir + "/test/test_rake.rb")
-    sanity_version('0.8.4', RAKEVERSION)
+    sanity_version(Version, RAKEVERSION)
 
     # Some tests load data assuming the current folder
     Dir.chdir(@rake_tests_dir)
@@ -48,18 +33,22 @@ class UnitTestSetup
   end
   
   def disable_tests
-    # http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1082
-    # TypeError: can't convert Rake::EarlyTime into Time
-    disable TestEarlyTime, :test_create    
-    disable TestFileList, :test_cloned_items_stay_frozen
-    #we're not exiting correctly from the ruby method. 
-    disable TestFileUtils, :test_ruby
-    # File.split("c:a") should return ["c:.", "a"], not ["c:", "a"]
-    disable TestPathMapExplode, :test_explode
-    # File.dirname("c:a") should be "c:.", not "c:"
-    disable TestRake, :test_each_dir_parent
-    # This failure does not happen with a later version (afer 0.8.4) of Rake tests with the same version (0.8.4) of the Rake gem.
-    # So it might be a test issue
-    disable TestTask, :test_investigation_output
+    disable_by_name %w{
+        test_finding_rakefile(TestApplication)
+        test_help(TestApplicationOptions)
+        test_file_utils_can_use_filelists(TestFileList)
+        test_string_ext(TestFileList)
+        test_ln(TestFileUtils)
+        test_ruby_with_a_single_string_argument(TestFileUtils)
+        test_sh_with_a_single_string_argument(TestFileUtils)
+        test_create(TestPackageTask)
+        test_x_returns_extension(TestPathMap)
+        test_explode(TestPathMapExplode)
+        test_each_dir_parent(TestRake)
+        test_name_lookup_with_implicit_file_tasks(TestTaskManager)
+        test_both_pattern_and_test_files(TestTestTask)
+        test_pattern(TestTestTask)
+        test_X_returns_everything_but_extension(TestPathMap)
+    }
   end
 end

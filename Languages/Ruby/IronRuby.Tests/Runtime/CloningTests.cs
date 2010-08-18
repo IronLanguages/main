@@ -100,7 +100,7 @@ Regexp
 Object
 ");
         }
-
+        
         public void StructDup1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -120,7 +120,7 @@ Y
 Z
 #<struct Z a=1, b=2>
 #<struct Z a=1, b=2>
-[""a"", ""b""]
+[:a, :b]
 ");
         }
     }

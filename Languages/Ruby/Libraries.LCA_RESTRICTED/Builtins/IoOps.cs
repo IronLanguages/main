@@ -20,11 +20,13 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Reflection;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
@@ -49,6 +51,25 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateEBADF();
             }
             return stream;
+        }
+
+        internal static void TryConvertToOptions(ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
+            ref IDictionary<object, object> options, ref object param1, ref object param2) {
+
+            if (options == null && param1 != Missing.Value) {
+                var toHashSite = toHash.GetSite(TryConvertToHashAction.Make(toHash.Context));
+                if (param2 != Missing.Value) {
+                    options = toHashSite.Target(toHashSite, param2);
+                    if (options != null) {
+                        param2 = Missing.Value;
+                    }
+                } else {
+                    options = toHashSite.Target(toHashSite, param1);
+                    if (options != null) {
+                        param1 = Missing.Value;
+                    }
+                }
+            }
         }
 
         #region Constants
@@ -541,22 +562,50 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        #region external_encoding (1.9), internal_encoding (1.9), set_encoding (1.9)
+        #region external_encoding, internal_encoding, set_encoding
 
-        // TODO: 1.9 only
         [RubyMethod("external_encoding")]
         public static RubyEncoding GetExternalEncoding(RubyIO/*!*/ self) {
             return self.ExternalEncoding;
         }
 
-        // TODO: 1.9 only
         [RubyMethod("internal_encoding")]
         public static RubyEncoding GetInternalEncoding(RubyIO/*!*/ self) {
             return self.InternalEncoding;
         }
 
-        // TODO: 1.9 only
-        // set_encoding
+        // TODO: to-str, last param to-hash
+
+        [RubyMethod("set_encoding")]
+        public static RubyIO/*!*/ SetEncodings(ConversionStorage<IDictionary<object, object>>/*!*/ toHash, ConversionStorage<MutableString>/*!*/ toStr,
+            RubyIO/*!*/ self, object external, [Optional]object @internal, [Optional]IDictionary<object, object> options) {
+
+            TryConvertToOptions(toHash, ref options, ref external, ref @internal);
+
+            // TODO: options
+
+            RubyEncoding externalEncoding = null, internalEncoding = null;
+            if (external != Missing.Value) {
+                externalEncoding = ToEncoding(toStr, external);
+            }
+            if (@internal != Missing.Value) {
+                internalEncoding = ToEncoding(toStr, @internal);
+            }
+            return SetEncodings(self, externalEncoding, internalEncoding);
+        }
+
+        private static RubyEncoding ToEncoding(ConversionStorage<MutableString>/*!*/ toStr, object obj) {
+            return (obj == null) ? null :
+                   obj as RubyEncoding ??
+                   RubyEncoding.GetRubyEncoding(Protocols.CastToString(toStr, obj).ToString()); // TODO: ToString
+        }
+
+        [RubyMethod("set_encoding")]
+        public static RubyIO/*!*/ SetEncodings(RubyIO/*!*/ self, RubyEncoding external, [DefaultParameterValue(null)]RubyEncoding @internal) {
+            self.ExternalEncoding = external ?? RubyEncoding.Default;
+            self.InternalEncoding = @internal;
+            return self;
+        }
 
         #endregion
 
@@ -735,16 +784,22 @@ namespace IronRuby.Builtins {
             return Read(self, bytes, buffer);
         }
 
-        // TODO: use Nullable<int> as parameters:
-
         [RubyMethod("read", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Read(ConversionStorage<int>/*!*/ fixnumCast, RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultParameterValue(null)]object lengthObj, 
-            [DefaultParameterValue(0)]object offsetObj) {
+        public static MutableString/*!*/ Read(
+            ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
+            ConversionStorage<int>/*!*/ fixnumCast,
+            ConversionStorage<MutableString>/*!*/ toPath,
+            RubyClass/*!*/ self,
+            object path, 
+            [Optional]object optionsOrLength, 
+            [Optional]object optionsOrOffset,
+            [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
 
+            TryConvertToOptions(toHash, ref options, ref optionsOrLength, ref optionsOrOffset);
             var site = fixnumCast.GetSite(ConvertToFixnumAction.Make(fixnumCast.Context));
-            int length = (lengthObj != null) ? site.Target(site, lengthObj) : 0;
-            int offset = (offsetObj != null) ? site.Target(site, offsetObj) : 0;
+
+            int length = (optionsOrLength != Missing.Value && optionsOrLength != null) ? site.Target(site, optionsOrLength) : 0;
+            int offset = (optionsOrOffset != Missing.Value && optionsOrOffset != null) ? site.Target(site, optionsOrOffset) : 0;
 
             if (offset < 0) {
                 throw RubyExceptions.CreateEINVAL();
@@ -754,15 +809,15 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateArgumentError("negative length {0} given", length);
             }
 
-            using (RubyIO io = new RubyFile(self.Context, path.ConvertToString(), IOMode.ReadOnly)) {
+            using (RubyIO io = new RubyFile(self.Context, Protocols.CastToPath(toPath, path), IOMode.ReadOnly)) {
                 if (offset > 0) {
                     io.Seek(offset, SeekOrigin.Begin);
                 }
 
-                if (lengthObj == null) {
-                    return Read(io);
-                } else {
+                if (optionsOrLength != Missing.Value && optionsOrLength != null) {
                     return Read(io, length, null);
+                } else {
+                    return Read(io);
                 }
             }
         }
@@ -789,14 +844,16 @@ namespace IronRuby.Builtins {
         // readbyte
 
         [RubyMethod("readline")]
-        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self) {
-            return ReadLine(scope, self, scope.RubyContext.InputSeparator);
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+            return ReadLine(scope, self, scope.RubyContext.InputSeparator, limit);
         }
 
         [RubyMethod("readline")]
-        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, 
+            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+
             // no dynamic call, modifies $_ scope variable:
-            MutableString result = Gets(scope, self, separator);
+            MutableString result = Gets(scope, self, separator, limit);
             if (result == null) {
                 throw new EOFError("end of file reached");
             }
@@ -805,17 +862,18 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("readlines")]
-        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self) {
-            return ReadLines(context, self, context.InputSeparator);
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+            return ReadLines(context, self, context.InputSeparator, limit);
         }
 
         [RubyMethod("readlines")]
-        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, 
+            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
             RubyArray result = new RubyArray();
 
             // no dynamic call, doesn't modify $_ scope variable:
             MutableString line;
-            while ((line = self.ReadLineOrParagraph(separator)) != null) {
+            while ((line = self.ReadLineOrParagraph(separator, limit)) != null) {
                 result.Add(line);
             }
 
@@ -826,17 +884,17 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("readlines", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ ReadLines(RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
 
-            return ReadLines(self, path, self.Context.InputSeparator);
+            return ReadLines(self, path, self.Context.InputSeparator, limit);
         }
 
         [RubyMethod("readlines", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray/*!*/ ReadLines(RubyClass/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString path, [DefaultProtocol]MutableString separator) {
+        public static RubyArray/*!*/ ReadLines(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString path, [DefaultProtocol]MutableString separator, 
+            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
 
             using (RubyIO io = new RubyIO(self.Context, File.OpenRead(path.ConvertToString()), IOMode.ReadOnly)) {
-                return ReadLines(self.Context, io, separator);
+                return ReadLines(self.Context, io, separator, limit);
             }
         }
 
@@ -851,14 +909,15 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("gets")]
-        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self) {
-            return Gets(scope, self, scope.RubyContext.InputSeparator);
+        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+            return Gets(scope, self, scope.RubyContext.InputSeparator, limit);
         }
 
         [RubyMethod("gets")]
-        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, 
+            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
 
-            MutableString result = self.ReadLineOrParagraph(separator);
+            MutableString result = self.ReadLineOrParagraph(separator, limit);
             if (result != null) {
                 result.IsTainted = true;
             }
@@ -882,30 +941,33 @@ namespace IronRuby.Builtins {
         #region foreach, each, each_byte, each_line
 
         [RubyMethod("foreach", RubyMethodAttributes.PublicSingleton)]
-        public static void ForEach(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            ForEach(block, self, path, self.Context.InputSeparator);
+        public static void ForEach(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path,
+            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+            ForEach(block, self, path, self.Context.InputSeparator, limit);
         }
 
         [RubyMethod("foreach", RubyMethodAttributes.PublicSingleton)]
-        public static void ForEach(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol]MutableString separator) {
+        public static void ForEach(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path,
+            [DefaultProtocol]MutableString separator, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
             using (RubyIO io = new RubyIO(self.Context, File.OpenRead(path.ConvertToString()), IOMode.ReadOnly)) {
-                Each(self.Context, block, io, separator);
+                Each(self.Context, block, io, separator, limit);
             }
         }
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
-        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self) {
-            return Each(context, block, self, context.InputSeparator);
+        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self, [DefaultProtocol,DefaultParameterValue(-1)]int limit) {
+            return Each(context, block, self, context.InputSeparator, limit);
         }
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
-        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator,
+            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
             self.RequireReadable();
 
             MutableString line;
-            while ((line = self.ReadLineOrParagraph(separator)) != null) {
+            while ((line = self.ReadLineOrParagraph(separator, limit)) != null) {
                 if (block == null) {
                     throw RubyExceptions.NoBlockGiven();
                 }

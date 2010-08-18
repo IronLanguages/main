@@ -116,7 +116,11 @@ namespace IronRuby.Runtime {
         /// </summary>
         public static MutableString/*!*/ CastToString(ConversionStorage<MutableString>/*!*/ stringCast, object obj) {
             var site = stringCast.GetSite(ConvertToStrAction.Make(stringCast.Context));
-            return site.Target(site, obj);
+            var result = site.Target(site, obj);
+            if (result == null) {
+                throw RubyExceptions.CreateTypeConversionError("nil", "String");
+            }
+            return result;
         }
 
         /// <summary>
@@ -196,8 +200,8 @@ namespace IronRuby.Runtime {
             return site.Target(site, obj);
         }
 
-        internal static IList ConvertToArraySplat(RubyContext/*!*/ context, object splattee) {
-            var site = context.GetClassOf(splattee).ToArraySplatSite;
+        internal static IList ImplicitTrySplat(RubyContext/*!*/ context, object splattee) {
+            var site = context.GetClassOf(splattee).ToImplicitTrySplatSite;
             return site.Target(site, splattee) as IList;
         }
 

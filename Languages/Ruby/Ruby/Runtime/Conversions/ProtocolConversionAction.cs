@@ -137,6 +137,10 @@ namespace IronRuby.Runtime.Conversions {
                 return (factory) => factory.Conversion<ConvertToHashAction>();
             }
 
+            if (parameterType == typeof(int?)) {
+                return (factory) => factory.Conversion<TryConvertToFixnumAction>();
+            }
+
             return null;
         }
 
@@ -393,6 +397,19 @@ namespace IronRuby.Runtime.Conversions {
         protected override string/*!*/ TargetTypeName { get { return "String"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToStringValidator; } }
 
+        protected internal override bool TryImplicitConversion(MetaObjectBuilder metaBuilder, CallArguments args) {
+            if (base.TryImplicitConversion(metaBuilder, args)) {
+                return true;
+            }
+
+            if (args.Target is RubySymbol) {
+                metaBuilder.Result = Methods.ConvertSymbolToMutableString.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubySymbol)));
+                return true;
+            }
+
+            return false;
+        }
+
         protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
             out MethodInfo postConverter) {
             postConverter = Methods.StringToMutableString;
@@ -414,6 +431,19 @@ namespace IronRuby.Runtime.Conversions {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "String"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToStringValidator; } }
+
+        protected internal override bool TryImplicitConversion(MetaObjectBuilder metaBuilder, CallArguments args) {
+            if (base.TryImplicitConversion(metaBuilder, args)) {
+                return true;
+            }
+
+            var convertedTarget = args.Target as RubySymbol;
+            if (convertedTarget != null) {
+                metaBuilder.Result = Methods.ConvertSymbolToMutableString.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubySymbol)));
+                return true;
+            }
+            return false;
+        }
     }
 
     // TODO: escaping vs. non-escaping?
@@ -424,6 +454,7 @@ namespace IronRuby.Runtime.Conversions {
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToRegexValidator; } }
     }
 
+    // TODO: remove (replace by MutableString/RubySymbol conversion)
     public sealed class ConvertToSymbolAction : ConvertToReferenceTypeAction<ConvertToSymbolAction, string> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "Symbol"; } }
@@ -489,10 +520,19 @@ namespace IronRuby.Runtime.Conversions {
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToHashValidator; } }
     }
 
-    public sealed class ConvertToArraySplatAction : ConvertToReferenceTypeAction<ConvertToArraySplatAction, IList> {
-        protected override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
+    public sealed class TryConvertToHashAction : TryConvertToReferenceTypeAction<TryConvertToHashAction, IDictionary<object, object>> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToHash; } }
+        protected override string/*!*/ TargetTypeName { get { return "Hash"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToHashValidator; } }
+    }
+
+    /// <summary>
+    /// Splats the target value. Returns the value if it cannot be splatted.
+    /// </summary>
+    public abstract class TrySplatAction<TSelf> : ConvertToReferenceTypeAction<TSelf, IList>
+        where TSelf : TrySplatAction<TSelf>, new() {
+
         protected override string/*!*/ TargetTypeName { get { return "Array"; } }
-        protected override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }
 
         public override Type/*!*/ ReturnType {
             get { return typeof(object); }
@@ -514,18 +554,15 @@ namespace IronRuby.Runtime.Conversions {
         }
     }
 
-    public sealed class SplatAction : ProtocolConversionAction<SplatAction> {
-        protected override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
+    /// <summary>
+    /// Splats the target value. Wraps the value in a RubyArray if the value cannot be splatted.
+    /// </summary>
+    public abstract class SplatAction<TSelf> : ConvertToReferenceTypeAction<TSelf, IList>
+        where TSelf : SplatAction<TSelf>, new() {
+
         protected override string/*!*/ TargetTypeName { get { return "Array"; } }
-        protected override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }
 
         protected internal override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            // *nil -> [nil]
-            if (args.Target == null) {
-                metaBuilder.Result = Methods.MakeArray1.OpCall(AstUtils.Constant(null));
-                return true;
-            }
-
             var convertedTarget = args.Target as IList;
             if (convertedTarget != null) {
                 metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(IList));
@@ -536,33 +573,58 @@ namespace IronRuby.Runtime.Conversions {
 
         // return the target object on error:
         protected override Expression/*!*/ MakeErrorExpression(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
-            return ToA(args, targetClassNameConstant);
+            return Ast.Convert(Methods.MakeArray1.OpCall(AstUtils.Box(args.TargetExpression)), typeof(IList));
         }
 
         // return the target object on error:
         protected override void SetError(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
-            metaBuilder.Result = ToA(args, targetClassNameConstant);
-        }
-
-        private Expression/*!*/ ToA(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant) {
-            return
-                // TODO(opt): We could optimize this a bit by merging the to_a call with the conversion.
-                // We could also check if to_a is implemented on Kernel. If so it only wraps the item into an array 
-                // that the subsequent splatting operation unwraps. However this only applies when unpslatting non-splattable objects 
-                // that don't implement to_ary - probably a rare case.
-                Methods.ToArrayValidator.OpCall(
-                    targetClassNameConstant,
-                    AstUtils.LightDynamic(
-                        RubyCallAction.Make(args.RubyContext, "to_a", RubyCallSignature.WithImplicitSelf(0)),
-                        args.TargetExpression
-                    )
-                );
+            metaBuilder.Result = Ast.Convert(Methods.MakeArray1.OpCall(AstUtils.Box(args.TargetExpression)), typeof(IList));
         }
 
         protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject>/*!*/ args, out MethodInfo postProcessor) {
             postProcessor = null;
             return context.MetaBinderFactory.InteropSplat();
         }
+    }
+
+    /// <summary>
+    /// Returns result of "to_a" if the object responds to "to_a" or the target object itself otherwise.
+    /// Throws an exception if "to_a" doesn't return IList.
+    /// </summary>
+    /// <seealso cref="http://redmine.ruby-lang.org/issues/show/3680"/>
+    public sealed class ExplicitTrySplatAction : TrySplatAction<ExplicitTrySplatAction> {
+        protected sealed override string/*!*/ ToMethodName { get { return Symbols.ToA; } }
+        protected sealed override MethodInfo ConversionResultValidator { get { return Methods.ToAValidator; } }
+    }
+
+    /// <summary>
+    /// Returns result of "to_ary" if the object responds to "to_ary" or the target object itself otherwise.
+    /// Throws an exception if "to_ary" doesn't return IList.
+    /// </summary>
+    /// <seealso cref="http://redmine.ruby-lang.org/issues/show/3680"/>
+    public sealed class ImplicitTrySplatAction : TrySplatAction<ImplicitTrySplatAction> {
+        protected sealed override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
+        protected sealed override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }
+    }
+
+    /// <summary>
+    /// Returns result of "to_a" if the object responds to "to_a" or the target object itself otherwise.
+    /// Throws an exception if "to_a" doesn't return IList.
+    /// </summary>
+    /// <seealso cref="http://redmine.ruby-lang.org/issues/show/3680"/>
+    public sealed class ExplicitSplatAction : SplatAction<ExplicitSplatAction> {
+        protected sealed override string/*!*/ ToMethodName { get { return Symbols.ToA; } }
+        protected sealed override MethodInfo ConversionResultValidator { get { return Methods.ToAValidator; } }
+    }
+
+    /// <summary>
+    /// Returns result of "to_ary" if the object responds to "to_ary" or the target object itself otherwise.
+    /// Throws an exception if "to_ary" doesn't return IList.
+    /// </summary>
+    /// <seealso cref="http://redmine.ruby-lang.org/issues/show/3680"/>
+    public sealed class ImplicitSplatAction : SplatAction<ImplicitSplatAction> {
+        protected sealed override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
+        protected sealed override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }
     }
 
     #endregion
@@ -582,6 +644,28 @@ namespace IronRuby.Runtime.Conversions {
             }
 
             return (metaBuilder.Result = Convert(ReturnType, args)) != null;
+        }
+    }
+
+    public class TryConvertToFixnumAction : ProtocolConversionAction<TryConvertToFixnumAction> {
+        protected override string/*!*/ TargetTypeName { get { return "Fixnum"; } }
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToInt; } }
+        public override Type/*!*/ ReturnType { get { return typeof(int?); } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToFixnumValidator; } }
+        
+        internal protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            object target = args.Target;
+            return target != null && (metaBuilder.Result = Convert(ReturnType, args)) != null;
+        }
+
+        // return null if the object doesn't handle the conversion:
+        protected override Expression/*!*/ MakeErrorExpression(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
+            return AstUtils.Constant(null, resultType);
+        }
+
+        // return null if the object doesn't handle the conversion:
+        protected override void SetError(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
+            metaBuilder.Result = AstUtils.Constant(null, resultType);
         }
     }
 

@@ -38,8 +38,6 @@ namespace IronRuby.Runtime {
         private readonly bool _profile;
         private readonly bool _hasSearchPaths;
         private readonly bool _noAssemblyResolveHook;
-        private readonly RubyCompatibility _compatibility;
-        private readonly RubyEncoding _kcode = null;
 
 #if DEBUG
         public static bool UseThreadAbortForSyncRaise;
@@ -96,11 +94,11 @@ namespace IronRuby.Runtime {
         }
 
         public RubyCompatibility Compatibility {
-            get { return _compatibility; }
+            get { return RubyCompatibility.Default; }
         }
 
         public RubyEncoding KCode {
-            get { return _kcode; }
+            get { return null; }
         }
 
         /// <summary>
@@ -115,7 +113,6 @@ namespace IronRuby.Runtime {
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             _argumentEncoding = GetOption(options, "ArgumentEncoding", RubyEncoding.Default);
 
-            _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
             _mainFile = GetOption(options, "MainFile", (string)null);
             _verbosity = GetOption(options, "Verbosity", 1);
             _debugVariable = GetOption(options, "DebugVariable", false);
@@ -126,47 +123,8 @@ namespace IronRuby.Runtime {
             _noAssemblyResolveHook = GetOption(options, "NoAssemblyResolveHook", false);
             _requirePaths = GetStringCollectionOption(options, "RequiredPaths", ';', ',');
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
+            _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
 
-            if (_compatibility < RubyCompatibility.Ruby19) {
-                _kcode = GetKCoding(options, "KCode", null);
-                _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
-            } else {
-                _libraryPaths = GetStringCollectionOption(options, "LibraryPaths19", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
-            }
-        }
-
-        private static RubyCompatibility GetCompatibility(IDictionary<string, object>/*!*/ options, string/*!*/ name, RubyCompatibility defaultValue) {
-            object value;
-            if (options != null && options.TryGetValue(name, out value)) {
-                if (value is RubyCompatibility) {
-                    return (RubyCompatibility)value;
-                }
-
-                string str = value as string;
-                if (str != null) {
-                    switch (str) {
-                        case "1.8": return RubyCompatibility.Ruby186;
-                        case "1.9": return RubyCompatibility.Ruby19;
-                        case "2.0": return RubyCompatibility.Ruby20;
-                    }
-                }
-
-                return (RubyCompatibility)Convert.ChangeType(value, typeof(RubyCompatibility), Thread.CurrentThread.CurrentCulture);
-            }
-            return defaultValue;
-        }
-
-        private static RubyEncoding GetKCoding(IDictionary<string, object>/*!*/ options, string/*!*/ name, RubyEncoding defaultValue) {
-            object value;
-            if (options != null && options.TryGetValue(name, out value)) {
-                RubyEncoding rubyEncoding = value as RubyEncoding;
-                if (rubyEncoding != null && rubyEncoding.IsKCoding) {
-                    return rubyEncoding;
-                }
-
-                throw new ArgumentException(String.Format("Invalid value for option {0}. Specify one of RubyEncoding.KCode* encodings.", name));
-            }
-            return defaultValue;
         }
     }
 }

@@ -26,21 +26,26 @@ using Microsoft.Scripting.Utils;
 namespace IronRuby.Compiler.Ast {
 
     /// <summary>
+    /// lhs = compound-rhs
+    /// compound-lhs = rhs
     /// compound-lhs = compound-rhs
     /// </summary>
     public partial class ParallelAssignmentExpression : AssignmentExpression {
+        // x1,x2,...,*y,z1,...,zn
         private readonly CompoundLeftValue/*!*/ _lhs;
-        private readonly CompoundRightValue/*!*/ _rhs;
+        
+        // [*]?a1,[*]?a2, ... [*]?an
+        private readonly Expression/*!*/[]/*!*/ _rhs;
 
         public CompoundLeftValue/*!*/ Left {
             get { return _lhs; }
         }
 
-        public CompoundRightValue/*!*/ Right {
+        public Expression/*!*/[]/*!*/ Right {
             get { return _rhs; }
         }
 
-        public ParallelAssignmentExpression(CompoundLeftValue/*!*/ lhs, CompoundRightValue/*!*/ rhs, SourceSpan location)
+        public ParallelAssignmentExpression(CompoundLeftValue/*!*/ lhs, Expression/*!*/[]/*!*/ rhs, SourceSpan location)
             : base(null, location) {
             Assert.NotNull(lhs, rhs);
 
@@ -50,7 +55,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             Assert.NotNull(gen);
-            return _lhs.TransformWrite(gen, _rhs);
+            return _lhs.TransformWrite(gen, new Arguments(_rhs));
         }
     }
 }

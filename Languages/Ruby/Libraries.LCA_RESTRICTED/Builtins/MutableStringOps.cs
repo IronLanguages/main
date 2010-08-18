@@ -402,6 +402,13 @@ namespace IronRuby.Builtins {
             return self.Concat(other).TaintBy(self).TaintBy(other);
         }
 
+        // encoding aware
+        [RubyMethod("+")]
+        public static MutableString/*!*/ Concatenate(MutableString/*!*/ self, [NotNull]RubySymbol/*!*/ other) {
+            // doesn't create a subclass:
+            return self.Concat(other.String).TaintBy(self).TaintBy(other);
+        }
+
         #endregion
 
         #region <<, concat
@@ -587,8 +594,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("[]")]
         [RubyMethod("slice")]
-        public static object GetChar(MutableString/*!*/ self, [DefaultProtocol]int index) {
-            return InExclusiveRangeNormalized(self.GetByteCount(), ref index) ? ScriptingRuntimeHelpers.Int32ToObject(self.GetByte(index)) : null;
+        public static MutableString GetChar(MutableString/*!*/ self, [DefaultProtocol]int index) {
+            return InExclusiveRangeNormalized(self.GetByteCount(), ref index) ? self.GetSlice(index, 1) : null;
         }
 
         [RubyMethod("[]")]
@@ -1205,14 +1212,32 @@ namespace IronRuby.Builtins {
         // encoding aware
         [RubyMethod("size")]
         [RubyMethod("length")]
-        public static int GetLength(MutableString/*!*/ self) {
-            return (self.Encoding.IsKCoding) ? self.GetByteCount() : self.GetCharCount();
+        public static int GetCharCount(MutableString/*!*/ self) {
+            return self.GetCharCount();
         }
 
         // encoding aware
-        [RubyMethod("encoding", Compatibility=RubyCompatibility.Ruby19)]
+        [RubyMethod("bytesize")]
+        public static int GetByteCount(MutableString/*!*/ self) {
+            return self.GetByteCount();
+        }
+
+        // encoding aware
+        [RubyMethod("encoding")]
         public static RubyEncoding/*!*/ GetEncoding(MutableString/*!*/ self) {
             return self.Encoding;
+        }
+
+        // encoding aware
+        [RubyMethod("force_encoding")]
+        public static MutableString/*!*/ ForceEncoding(MutableString/*!*/ self, [NotNull]RubyEncoding/*!*/ encoding) {
+            return self.ChangeEncoding(encoding, true);
+        }
+
+        [RubyMethod("force_encoding")]
+        public static MutableString/*!*/ ForceEncoding(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ encodingName) {
+            // TODO: encodingName.ToString
+            return ForceEncoding(self, RubyEncoding.GetRubyEncoding(encodingName.ToString()));
         }
 
         #endregion

@@ -39,7 +39,6 @@ namespace IronRuby.Compiler {
 
     public partial struct TokenValue {
         // VariableFactory + String (variable)
-        // ArgumentCount + Expression (when clause)
         // Arguments + Block (arguments)
         
         private NumericUnion _numeric;
@@ -51,15 +50,15 @@ namespace IronRuby.Compiler {
         public double Double { get { return _numeric.Double; } set { _numeric.Double = value; } }
 
         internal int VariableFactory { get { return Integer1; } set { Integer1 = value; } }
-
         public int ArgumentCount { get { return _numeric.Integer1; } set { _numeric.Integer1 = value; } }
-        
-        public Arguments Arguments { get { return (Arguments)_obj2; } set { _obj2 = value; } }
+
         public Block Block { get { return (Block)_obj1; } set { _obj1 = value; } }
+        public Arguments Arguments { get { return (Arguments)_obj2; } set { _obj2 = value; } }
 
         public Expression Expression { get { return (Expression)_obj1; } set { _obj1 = value; } }
         public List<Expression>/*!*/ Expressions { get { return (List<Expression>)_obj2; } set { _obj2 = value; } }
 
+        public Parameters Parameters { get { return (Parameters)_obj1; } set { _obj1 = value; } }
         public RubyRegexOptions RegExOptions { get { return (RubyRegexOptions)Integer1; } set { Integer1 = (int)value; } }
         public CallExpression CallExpression { get { return (CallExpression)_obj1; } set { _obj1 = value; } }
         public ElseIfClause ElseIfClause { get { return (ElseIfClause)_obj1; } set { _obj1 = value; } }
@@ -68,18 +67,17 @@ namespace IronRuby.Compiler {
         public Statements/*!*/ Statements { get { return (Statements)_obj1; } set { _obj1 = value; } }
         public BlockReference BlockReference { get { return (BlockReference)_obj1; } set { _obj1 = value; } }
         public BlockDefinition BlockDefinition { get { return (BlockDefinition)_obj1; } set { _obj1 = value; } }
+        public LambdaDefinition LambdaDefinition { get { return (LambdaDefinition)_obj1; } set { _obj1 = value; } }
         public ConstantVariable ConstantVariable { get { return (ConstantVariable)_obj1; } set { _obj1 = value; } }
         public Maplet Maplet { get { return (Maplet)_obj1; } set { _obj1 = value; } }
         public BigInteger/*!*/ BigInteger { get { return (BigInteger)_obj1; } set { _obj1 = value; } }
         public String/*!*/ String { get { return (String)_obj1; } set { _obj1 = value; } }
         public object/*!*/ StringContent { get { return (object)_obj1; } set { _obj1 = value; } }
-        public Parameters Parameters { get { return (Parameters)_obj1; } set { _obj1 = value; } }
         public LocalVariable LocalVariable { get { return (LocalVariable)_obj1; } set { _obj1 = value; } }
         public SimpleAssignmentExpression SimpleAssignmentExpression { get { return (SimpleAssignmentExpression)_obj1; } set { _obj1 = value; } }
         public LeftValue LeftValue { get { return (LeftValue)_obj1; } set { _obj1 = value; } }
         public CompoundLeftValue CompoundLeftValue { get { return (CompoundLeftValue)_obj1; } set { _obj1 = value; } }
         public Body Body { get { return (Body)_obj1; } set { _obj1 = value; } }
-        public CompoundRightValue CompoundRightValue { get { return (CompoundRightValue)_obj1; } set { _obj1 = value; } }
         public JumpStatement JumpStatement { get { return (JumpStatement)_obj1; } set { _obj1 = value; } }
         public RegexMatchReference RegexMatchReference { get { return (RegexMatchReference)_obj1; } set { _obj1 = value; } }
 
@@ -89,7 +87,6 @@ namespace IronRuby.Compiler {
         public List<WhenClause>/*!*/ WhenClauses { get { return (List<WhenClause>)_obj1; } set { _obj1 = value; } }
         public List<RescueClause> RescueClauses { get { return (List<RescueClause>)_obj1; } set { _obj1 = value; } }
         public List<Maplet> Maplets { get { return (List<Maplet>)_obj1; } set { _obj1 = value; } }
-        public List<LocalVariable>/*!*/ LocalVariables { get { return (List<LocalVariable>)_obj1; } set { _obj1 = value; } }
         public List<SimpleAssignmentExpression>/*!*/ SimpleAssignmentExpressions { get { return (List<SimpleAssignmentExpression>)_obj1; } set { _obj1 = value; } }
         
         internal void SetInteger(int value) {

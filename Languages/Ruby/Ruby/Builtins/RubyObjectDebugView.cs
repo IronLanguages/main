@@ -69,7 +69,7 @@ namespace IronRuby.Builtins {
 
         private static string GetModuleName(object module) {
             var m = (RubyModule)module;
-            return m != null ? m.GetDisplayName(m.Context, false).ToString() : String.Empty;
+            return m != null ? m.GetDisplayName(m.Context, false).ToString() : null;
         }
     }
 }

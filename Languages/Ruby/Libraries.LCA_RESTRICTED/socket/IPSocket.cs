@@ -47,12 +47,12 @@ namespace IronRuby.StandardLibrary.Sockets {
 
         [RubyMethod("addr")]
         public static RubyArray/*!*/ GetLocalAddress(RubyContext/*!*/ context, IPSocket/*!*/ self) {
-            return GetAddressArray(context, self.Socket.LocalEndPoint);
+            return self.GetAddressArray(self.Socket.LocalEndPoint);
         }
 
         [RubyMethod("peeraddr")]
         public static object/*!*/ GetPeerAddress(RubyContext/*!*/ context, IPSocket/*!*/ self) {
-            return GetAddressArray(context, self.Socket.RemoteEndPoint);
+            return self.GetAddressArray(self.Socket.RemoteEndPoint);
         }
 
         [RubyMethod("recvfrom")]
@@ -68,7 +68,7 @@ namespace IronRuby.StandardLibrary.Sockets {
 
             var context = conversionStorage.Context;
             str.IsTainted = true;
-            return RubyOps.MakeArray2(str, GetAddressArray(context, fromEP));
+            return RubyOps.MakeArray2(str, self.GetAddressArray(fromEP));
         }
         #endregion
     }

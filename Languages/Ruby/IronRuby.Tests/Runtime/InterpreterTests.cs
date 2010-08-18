@@ -51,6 +51,8 @@ namespace IronRuby.Tests {
             if (invoker == null) {
                 invoker = (a) => a();
             }
+
+            _trace.Clear();
             
             invoker(lambda.Compile());
             compiled = _trace.ToArray();

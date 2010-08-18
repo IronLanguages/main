@@ -39,7 +39,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaUserObject : MetaPythonObject, IPythonInvokable, IPythonConvertible {
+    partial class MetaUserObject : MetaPythonObject, IPythonInvokable, IPythonConvertible, IPythonOperable {
         private readonly DynamicMetaObject _baseMetaObject;            // if we're a subtype of MetaObject this is the base class MO
 
         public MetaUserObject(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, DynamicMetaObject baseMetaObject, IPythonObject value)
@@ -437,5 +437,26 @@ namespace IronPython.Runtime.Binding {
                 return (IPythonObject)base.Value;
             }
         }
+
+        #region IPythonOperable Members
+
+        DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
+            if (action.Operation == PythonOperationKind.IsCallable) {
+                DynamicMetaObject self = Restrict(Value.GetType());
+
+                return new DynamicMetaObject(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("UserObjectIsCallable"),
+                        AstUtils.Constant(PythonContext.GetPythonContext(action).SharedContext),
+                        self.Expression
+                    ),
+                    self.Restrictions
+                );
+            }
+
+            return null;
+        }
+
+        #endregion
     }
 }

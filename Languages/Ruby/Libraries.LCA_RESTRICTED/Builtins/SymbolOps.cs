@@ -30,12 +30,12 @@ namespace IronRuby.Builtins {
     [HideMethod("==")]
     public static class SymbolOps {
 
-        #region Public Instance Methods
+        #region to_s, inspect, to_sym, to_clr_string, to_proc
 
         [RubyMethod("id2name")]
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(RubySymbol/*!*/ self) {
-            return self.ToMutableString();
+            return self.String.Clone();
         }
 
         [RubyMethod("inspect")]
@@ -43,7 +43,7 @@ namespace IronRuby.Builtins {
             var str = self.ToString();
             bool allowMultiByteCharacters = context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19 || context.KCode != null;
 
-            var result = self.ToMutableString();
+            var result = self.String.Clone();
 
             // simple cases:
             if (
@@ -62,6 +62,7 @@ namespace IronRuby.Builtins {
                         // Ruby doesn't allow empty symbols, we can get one from outside though:
                         return MutableString.CreateAscii(":\"\"");
 
+                    case "!":
                     case "|":
                     case "^":
                     case "&":
@@ -69,6 +70,8 @@ namespace IronRuby.Builtins {
                     case "==":
                     case "===":
                     case "=~":
+                    case "!=":
+                    case "!~":
                     case ">":
                     case ">=":
                     case "<":
@@ -124,12 +127,6 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        [RubyMethod("to_i")]
-        [RubyMethod("to_int")]
-        public static int ToInteger(RubySymbol/*!*/ self) {
-            return self.Id;
-        }
-
         [RubyMethod("to_sym")]
         [RubyMethod("intern", Compatibility = RubyCompatibility.Ruby19)]
         public static RubySymbol/*!*/ ToSymbol(RubySymbol/*!*/ self) {
@@ -148,18 +145,50 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region 1.9 Methods
+        #region <=>, ==, ===
 
-        // => 
-        // <=>
-        // ==
+        [RubyMethod("<=>")]
+        public static int Compare(RubySymbol/*!*/ self, [NotNull]RubySymbol/*!*/ other) {
+            return Math.Sign(self.CompareTo(other));
+        }
+
+        [RubyMethod("<=>")]
+        public static int Compare(RubyContext/*!*/ context, RubySymbol/*!*/ self, [NotNull]ClrName/*!*/ other) {
+            return -ClrNameOps.Compare(context, other, self);
+        }
+
+        [RubyMethod("<=>")]
+        public static object Compare(RubySymbol/*!*/ self, object other) {
+            return null;
+        }
+
+        [RubyMethod("==")]
+        [RubyMethod("===")]
+        public static bool Equals(RubySymbol/*!*/ lhs, [NotNull]RubySymbol/*!*/ rhs) {
+            return lhs.Equals(rhs);
+        }
+
+        [RubyMethod("==")]
+        [RubyMethod("===")]
+        public static bool Equals(RubyContext/*!*/ context, RubySymbol/*!*/ lhs, [NotNull]ClrName/*!*/ rhs) {
+            return ClrNameOps.IsEqual(context, rhs, lhs);
+        }
+
+        [RubyMethod("==")]
+        [RubyMethod("===")]
+        public static bool Equals(RubySymbol/*!*/ self, object other) {
+            return false;
+        }
+
+        #endregion
+
         // casecmp
         
         #region =~, match
 
         [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
         public static object Match(RubyScope/*!*/ scope, RubySymbol/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
-            return MutableStringOps.Match(scope, self.ToMutableString(), regex);
+            return MutableStringOps.Match(scope, self.String.Clone(), regex);
         }
 
         [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
@@ -169,17 +198,17 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
         public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, RubySymbol/*!*/ self, object obj) {
-            return MutableStringOps.Match(storage, scope, self.ToMutableString(), obj);
+            return MutableStringOps.Match(storage, scope, self.String.Clone(), obj);
         }
 
         [RubyMethod("match", Compatibility = RubyCompatibility.Ruby19)]
         public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, RubySymbol/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
-            return MutableStringOps.Match(storage, scope, self.ToMutableString(), regex);
+            return MutableStringOps.Match(storage, scope, self.String.Clone(), regex);
         }
 
         [RubyMethod("match", Compatibility = RubyCompatibility.Ruby19)]
         public static object Match(BinaryOpStorageWithScope/*!*/ storage, RubyScope/*!*/ scope, RubySymbol/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ pattern) {
-            return MutableStringOps.Match(storage, scope, self.ToMutableString(), pattern);
+            return MutableStringOps.Match(storage, scope, self.String.Clone(), pattern);
         }
 
         #endregion
@@ -214,9 +243,7 @@ namespace IronRuby.Builtins {
         // capitalize
         // downcase
 
-        #endregion
-
-        #region Public Singleton Methods
+        #region all_symbols
 
         [RubyMethod("all_symbols", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetAllSymbols(RubyClass/*!*/ self) {

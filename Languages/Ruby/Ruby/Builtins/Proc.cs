@@ -258,7 +258,7 @@ namespace IronRuby.Builtins {
         #region Block helper methods
 
         public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget1/*!*/ clrMethod) {
-            return Create(context, 1, BlockDispatcher.MakeAttributes(BlockSignatureAttributes.HasSingleCompoundParameter, -1), clrMethod);
+            return Create(context, 1, BlockDispatcher.MakeAttributes(BlockSignatureAttributes.None, -1), clrMethod);
         }
 
         public static Proc/*!*/ CreateSimple(RubyContext/*!*/ context, BlockCallTarget1/*!*/ clrMethod) {

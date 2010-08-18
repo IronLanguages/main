@@ -1,14 +1,3 @@
-if RUBY_VERSION == '1.9.1' and RUBY_ENGINE == "ironruby"
-  # The 1.9 libraries are currently not included in ir.exe.config
-  $LOAD_PATH.unshift(File.expand_path('External.LCA_RESTRICTED/Languages/Ruby/ruby19/lib/ruby/1.9.1', ENV['DLR_ROOT']))
-  # We want IronRuby's version of thread.rb to get precedence
-  $LOAD_PATH.unshift(File.expand_path('Languages/Ruby/Libs', ENV['DLR_ROOT']))
-  # Rational is a core builtin type in 1.9
-  require File.expand_path('External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/1.8/rational', ENV['DLR_ROOT'])
-  # 1.9 Gems are in a different format
-  ENV['GEM_PATH'] = ENV['GEM_HOME'] = File.expand_path('gems19', ENV['TMP'])
-end
-
 class UnitTestRunner
   def self.ironruby?
     defined?(RUBY_ENGINE) and RUBY_ENGINE == "ironruby"
@@ -197,6 +186,13 @@ class UnitTestSetup
     end
   end
   
+  def disable_by_name names
+    names.each do |name|
+      /(.*)[(](.*)[)]/ =~ name
+      disable Object.const_get($2), $1
+    end
+  end
+  
   def disable_spec(context, *specifies)
     @disabled ||= 0
     @disabled += specifies.size
@@ -224,7 +220,7 @@ class UnitTestSetup
   def gather_rails_files(version = "2.3.5")
     rails_tests_dir = File.expand_path "External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-#{version}", ENV['DLR_ROOT']
     @root_dir = File.expand_path @name, rails_tests_dir
-    path_modifier = (version == '3.0.pre') ? '' : '/test'
+    path_modifier = (version == '3.0.0.rc') ? '' : '/test'
     $LOAD_PATH << @root_dir + path_modifier
     @all_test_files = Dir.glob("#{@root_dir}#{path_modifier}/**/*_test.rb").sort
   end

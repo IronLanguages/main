@@ -527,8 +527,7 @@ F");
         }
 
         public void Scenario_ClassVariables1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 module M
   @@m = 1
   
@@ -562,11 +561,11 @@ C.new.goo
 
 p C.class_variables.sort
 p D.class_variables.sort
-p M.class_variables.sort");
-            }, @"
-[""@@a"", ""@@b"", ""@@c"", ""@@m"", ""@@n""]
-[""@@a"", ""@@b"", ""@@c"", ""@@d"", ""@@m"", ""@@n""]
-[""@@m"", ""@@n""]
+p M.class_variables.sort
+", @"
+[:@@a, :@@b, :@@c]
+[:@@d]
+[:@@m, :@@n]
 ");
         }
 
@@ -589,83 +588,118 @@ foo
 ");
         }
 
-        public void Scenario_RubyReturnValues1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+
+
+        public void Return1() {
+            TestOutput(@"
+def foo()
+  return 123
+end
+
+p foo
+", @"
+123
+");
+        }
+
+        public void Return2() {
+            TestOutput(@"
+def f1
+  return *[1,2],*[3,4],5,*[6],*[],*7,*nil
+end
+
+def f2
+  return 1,2,3, a: 2, b: 3
+end
+
+def f3
+  return :a => 2, :b => 3
+end
+
+def f4
+  a = [2,3]
+  return 1, *a, :a => 2, :b => 3
+end
+
+p f1, f2, f3, f4
+", @"
+[1, 2, 3, 4, 5, 6, 7]
+[1, 2, 3, {:a=>2, :b=>3}]
+{:a=>2, :b=>3}
+[1, 2, 3, {:a=>2, :b=>3}]
+");
+        }
+        
+        public void Return3() {
+            TestOutput(@"
 x = while true do
   break 1,2,3
 end
 puts x
-");
-            }, @"
+", @"
 1
 2
 3
 ");
         }
 
-        public void Scenario_RubyReturnValues2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void Return4() {
+            TestOutput(@"
 x = while true do
   break 1 => 2, 3 => 4
 end
 puts x
+", @"
+{1=>2, 3=>4}
 ");
-            }, @"1234");
         }
 
-        public void Scenario_RubyReturnValues3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void Return5() {
+            TestOutput(@"
 x = while true do
   break 'a', 'b', 1 => 2, 3 => 4
 end
 puts x
-");
-            }, @"
+", @"
 a
 b
-1234");
+{1=>2, 3=>4}
+");
         }
 
-        public void Scenario_RubyReturnValues4() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void Return6() {
+            TestOutput(@"
 x = while true do
-  break 'a', 'b', 1 => 2, 3 => 4, *['A', 'B']
+  break 'a', 'b', *['A', 'B'], 1 => 2, 3 => 4
 end
 puts x
-");
-            }, @"
+", @"
 a
 b
-1234
 A
-B");
+B
+{1=>2, 3=>4}
+");
         }
 
-        public void Scenario_RubyReturnValues5() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void Return7() {
+            TestOutput(@"
 def foo
-  return 1,2,3, 4 => 5, *[6,7]
+  return 1,2,3, *[6,7], 4 => 5
 end
 puts foo
-");
-            }, @"
+", @"
 1
 2
 3
-45
 6
 7
+{4=>5}
 ");
         }
 
-        public void Scenario_RubyReturnValues6() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void Return8() {
+            TestOutput(@"
 def foo
   return *$x = [1,2]
 end
@@ -673,10 +707,10 @@ $y = foo
 
 puts $x.object_id == $y.object_id
 puts $x.inspect
-");
-            }, @"
+", @"
 true
-[1, 2]");
+[1, 2]
+");
         }
 
         public void Scenario_RubyClosures1() {
@@ -693,19 +727,6 @@ foo
 10
 11
 12");
-        }
-
-        public void Scenario_RubyReturn1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def foo()
-  return 'foo'
-end
-
-puts foo
-");
-            },
-            "foo");
         }
         
         public void ClassVariables1() {

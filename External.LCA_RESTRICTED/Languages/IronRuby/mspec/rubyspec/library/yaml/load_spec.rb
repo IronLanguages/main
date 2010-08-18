@@ -196,7 +196,7 @@ describe "YAML.load" do
 
   ### http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=375
   it 'accepts symbols in value' do
-    YAML.load('foo: [:a, :b]').should == {'foo', [:a, :b]}
+    YAML.load('foo: [:a, :b]').should == {'foo' => [:a, :b]}
   end
 
   ### http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=2044

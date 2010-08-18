@@ -29,6 +29,9 @@ namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
 
     public partial class LocalVariable : Variable {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+        public static new LocalVariable[] EmptyArray = new LocalVariable[0];
+
         // -1: the variable is defined in the outer runtime scope
         private readonly int _definitionLexicalDepth;
 

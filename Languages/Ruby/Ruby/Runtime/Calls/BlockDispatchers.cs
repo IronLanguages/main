@@ -35,7 +35,6 @@ namespace IronRuby.Runtime.Calls {
         public BlockDispatcher0(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
             : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-            Debug.Assert(!HasSingleCompoundParameter);
         }
 
         // R(0, -)
@@ -121,10 +120,6 @@ namespace IronRuby.Runtime.Calls {
 
         // R(0, -)
         public override object Invoke(BlockParam/*!*/ param, object self) {
-            if (!HasSingleCompoundParameter) {
-                param.MultipleValuesForBlockParameterWarning(0);
-            }
-            
             return _block(param, self, null);
         }
 
@@ -140,134 +135,59 @@ namespace IronRuby.Runtime.Calls {
 
         // R(2, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2) {
-            if (!HasSingleCompoundParameter) {
-                param.MultipleValuesForBlockParameterWarning(2);
-            }
-
-            return _block(param, self, RubyOps.MakeArray2(arg1, arg2));
+            return _block(param, self, arg1);
         }
 
         // R(3, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3) {
-            if (!HasSingleCompoundParameter) {
-                param.MultipleValuesForBlockParameterWarning(3);
-            }
-
-            return _block(param, self, RubyOps.MakeArray3(arg1, arg2, arg3));
+            return _block(param, self, arg1);
         }
 
         // R(4, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4) {
-            if (!HasSingleCompoundParameter) {
-                param.MultipleValuesForBlockParameterWarning(4);
-            }
-
-            return _block(param, self, RubyOps.MakeArray4(arg1, arg2, arg3, arg4));
+            return _block(param, self, arg1);
         }
 
         // R(N, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object[]/*!*/ args) {
             Debug.Assert(args.Length > MaxBlockArity);
-
-            if (!HasSingleCompoundParameter) {
-                param.MultipleValuesForBlockParameterWarning(args.Length);
-            }
-
-            return _block(param, self, RubyOps.MakeArrayN(args));
+            return _block(param, self, args[0]);
         }
 
         // R(0, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
-            object item;
-            switch (splattee.Count) {
-                case 0:
-                    if (!HasSingleCompoundParameter) {
-                        param.MultipleValuesForBlockParameterWarning(splattee.Count);
-                    }
-                    item = null; 
-                    break;
-
-                case 1:
-                    item = splattee[0]; 
-                    break;
-
-                default:
-                    if (!HasSingleCompoundParameter) {
-                        param.MultipleValuesForBlockParameterWarning(splattee.Count);
-                    }
-                    item = new RubyArray(splattee);
-                    break;
-            }
-
-            return _block(param, self, item);
+            return _block(param, self, (splattee.Count > 0) ? splattee[0] : null);
         }
         
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee) {
-            if (splattee.Count > 0) {
-                var array = new RubyArray(1 + splattee.Count);
-                array.Add(arg1);
-                array.AddRange(splattee);
-                arg1 = array;
-
-                if (!HasSingleCompoundParameter) {
-                    param.MultipleValuesForBlockParameterWarning(array.Count);
-                }
-            }
-
             return _block(param, self, arg1);
-        }
-
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, RubyArray/*!*/ array, IList/*!*/ splattee) {
-            Debug.Assert(array.Count >= 2);
-
-            RubyOps.SplatAppend(array, splattee);
-
-            if (!HasSingleCompoundParameter) {
-                param.MultipleValuesForBlockParameterWarning(array.Count);
-            }
-
-            return _block(param, self, array);
         }
 
         // R(2, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, RubyOps.MakeArray2(arg1, arg2), splattee);
+            return _block(param, self, arg1);
         }
 
         // R(3, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, RubyOps.MakeArray3(arg1, arg2, arg3), splattee);
+            return _block(param, self, arg1);
         }
 
         // R(4, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, RubyOps.MakeArray4(arg1, arg2, arg3, arg4), splattee);
+            return _block(param, self, arg1);
         }
         
         // R(N, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
             Debug.Assert(args.Length > MaxBlockArity);
-            return InvokeSplatInternal(param, self, RubyOps.MakeArrayN(args), splattee);
+            return _block(param, self, args[0]);
         }
 
         // R(N, *, =)
         public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
-            var array = new RubyArray(args);
-            RubyOps.SplatAppend(array, splattee);
-            array.Add(rhs);
-
-            if (array.Count == 1) {
-                return _block(param, self, rhs);
-            }
-
-            Debug.Assert(array.Count >= 2);
-
-            if (!HasSingleCompoundParameter) {
-                param.MultipleValuesForBlockParameterWarning(array.Count);
-            }
-            
-            return _block(param, self, array);
+            return _block(param, self, args.Length > 0 ? args[0] : splattee.Count > 0 ? splattee[0] : rhs);
         }
     }
 
@@ -278,7 +198,6 @@ namespace IronRuby.Runtime.Calls {
         public BlockDispatcher2(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
             : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-            Debug.Assert(!HasSingleCompoundParameter);
         }
 
         // R(0, -)
@@ -288,8 +207,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
-            // MRI calls to_ary, but not to_a (contrary to real *splatting)
-            IList list = arg1 as IList ?? Protocols.ConvertToArraySplat(param.RubyContext, arg1);
+            IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1);
             if (list != null) {
                 return InvokeSplatInternal(param, self, list);
             } else {
@@ -379,7 +297,6 @@ namespace IronRuby.Runtime.Calls {
         public BlockDispatcher3(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
             : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-            Debug.Assert(!HasSingleCompoundParameter);
         }
 
         // R(0, -)
@@ -389,8 +306,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
-            // MRI calls to_ary, but not to_a (contrary to real *splatting)
-            IList splattee = arg1 as IList ?? Protocols.ConvertToArraySplat(param.RubyContext, arg1);
+            IList splattee = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1);
             if (splattee != null) {
                 return InvokeSplatInternal(param, self, splattee);
             } else {
@@ -421,7 +337,7 @@ namespace IronRuby.Runtime.Calls {
         // R(N, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object[]/*!*/ args) {
             Debug.Assert(args.Length > MaxBlockArity);
-            return _block(param, self, args[1], args[2], args[3]);
+            return _block(param, self, args[0], args[1], args[2]);
         }
 
         // R(0, *)
@@ -485,7 +401,6 @@ namespace IronRuby.Runtime.Calls {
         public BlockDispatcher4(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
             : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-            Debug.Assert(!HasSingleCompoundParameter);
         }
 
         // R(0, -)
@@ -500,8 +415,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
-            // MRI calls to_ary, but not to_a (contrary to real *splatting)
-            IList list = arg1 as IList ?? Protocols.ConvertToArraySplat(param.RubyContext, arg1);
+            IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1);
             if (list != null) {
                 return InvokeSplatInternal(param, self, list);
             } else {
@@ -527,7 +441,7 @@ namespace IronRuby.Runtime.Calls {
         // R(N, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object[]/*!*/ args) {
             Debug.Assert(args.Length > MaxBlockArity);
-            return _block(param, self, args[1], args[2], args[3], args[4]);
+            return _block(param, self, args[0], args[1], args[2], args[3]);
         }
 
         // R(0, *)

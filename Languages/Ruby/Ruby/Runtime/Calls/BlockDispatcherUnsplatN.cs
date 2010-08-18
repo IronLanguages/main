@@ -33,7 +33,6 @@ namespace IronRuby.Runtime.Calls {
         internal BlockDispatcherUnsplatN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) 
             : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(HasUnsplatParameter);
-            Debug.Assert(!HasSingleCompoundParameter);
 
             _parameterCount = parameterCount;
         }
@@ -50,9 +49,8 @@ namespace IronRuby.Runtime.Calls {
         
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
-            // MRI calls to_ary, but not to_a (contrary to real *splatting)
             if (_parameterCount > 0) {
-                IList list = arg1 as IList ?? Protocols.ConvertToArraySplat(param.RubyContext, arg1) ?? new object[] { arg1 }; // TODO: optimize
+                IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1) ?? new object[] { arg1 }; // TODO: optimize
                 return InvokeSplatInternal(param, self, ArrayUtils.EmptyObjects, list); 
             } else {
                 return InvokeInternal(param, self, new object[] { arg1 }); // TODO: optimize

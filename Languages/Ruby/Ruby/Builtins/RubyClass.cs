@@ -120,8 +120,8 @@ namespace IronRuby.Builtins {
             get { return RubyUtils.GetCallSite(ref _newSite, Context, "new", 1); }
         }
 
-        internal CallSite<Func<CallSite, object, object>>/*!*/ ToArraySplatSite {
-            get { return RubyUtils.GetCallSite(ref _toArraySplatSite, ConvertToArraySplatAction.Make(Context)); }
+        internal CallSite<Func<CallSite, object, object>>/*!*/ ToImplicitTrySplatSite {
+            get { return RubyUtils.GetCallSite(ref _toArraySplatSite, ImplicitTrySplatAction.Make(Context)); }
         }
         
         public CallSite<Func<CallSite, object, MutableString>>/*!*/ InspectResultConversionSite {
@@ -620,7 +620,7 @@ namespace IronRuby.Builtins {
             // MRI is inconsistent here, it triggers "inherited" event after the body of the method is evaluated.
             // In all other cases the order is event first, body next.
             RubyClass newClass = context.DefineClass(owner, null, superClass ?? context.ObjectClass, null);
-            return (body != null) ? RubyUtils.EvaluateInModule(newClass, body, null, newClass) : newClass;
+            return (body != null) ? RubyUtils.EvaluateInModule(newClass, body, new[] { newClass }, newClass) : newClass;
         }
 
         internal override bool ForEachAncestor(Func<RubyModule, bool>/*!*/ action) {
@@ -1085,6 +1085,11 @@ namespace IronRuby.Builtins {
             List<ExtensionMethodInfo> extensions;
             if (_extensionMethods != null && _extensionMethods.TryGetValue(name, out extensions)) {
                 foreach (var extension in extensions) {
+                    // Don't check IsExtensionOf: the target type of an extension method stored in _extensionMethods is 
+                    // an instantiation (not parameterized), a generic parameter T (type == Object), or T[] (type == Array). 
+                    // If the method's parameter is a constrained generic parameter (T or T[]) this might yield methods that
+                    // shouldn't be available on the current type. They are filtered out in overload resolution.
+                    // TODO: these methods show up in obj.methods; we need to fix that
                     yield return extension;
                 }
             }
@@ -1299,7 +1304,7 @@ namespace IronRuby.Builtins {
         /// </summary>  
         public void BuildObjectAllocation(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ methodName) {
             // check for empty arguments (handles splat correctly):
-            var argsBuilder = new ArgsBuilder(0, 0, 0, false);
+            var argsBuilder = new ArgsBuilder(0, 0, 0, 0, false);
             argsBuilder.AddCallArguments(metaBuilder, args);
 
             if (!metaBuilder.Error) {

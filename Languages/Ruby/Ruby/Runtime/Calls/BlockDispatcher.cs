@@ -47,12 +47,8 @@ namespace IronRuby.Runtime.Calls {
     public enum BlockSignatureAttributes {
         None = 0,
 
-        // {|(...)|}
-        HasSingleCompoundParameter = 1,
-
-        // {|*|}
-        // {|...,*|}
-        HasUnsplatParameter = 2,
+        // {|...,*,...|}
+        HasUnsplatParameter = 2,        // TODO: 1.9: arity < 0 iff the block has unsplat => we can remove signature attributes enum
 
         // bits 31..3 store arity (might be different from formal parameter count)
     }
@@ -82,10 +78,6 @@ namespace IronRuby.Runtime.Calls {
         private readonly int _sourceLine;
 
         private readonly BlockSignatureAttributes _attributesAndArity;
-
-        public bool HasSingleCompoundParameter {
-            get { return (_attributesAndArity & BlockSignatureAttributes.HasSingleCompoundParameter) != 0; }
-        }
 
         public bool HasUnsplatParameter {
             get { return (_attributesAndArity & BlockSignatureAttributes.HasUnsplatParameter) != 0; }

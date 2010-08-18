@@ -513,19 +513,14 @@ namespace IronRuby.Builtins {
             foreach (var type in types) {
                 TypeTracker tracker = (NestedTypeTracker)MemberTracker.FromMemberInfo(type);
 
-                if (type.IsGenericType) {
-                    var name = ReflectionUtils.GetNormalizedTypeName(type);
-                    int index = names.IndexOf(name);
-                    if (index != -1) {
-                        trackers[index] = TypeGroup.UpdateTypeEntity(trackers[index], tracker);
-                        names[index] = name;
-                    } else {
-                        trackers.Add(tracker);
-                        names.Add(name);
-                    }
+                var name = (type.IsGenericType) ? ReflectionUtils.GetNormalizedTypeName(type) : type.Name;
+                int index = names.IndexOf(name);
+                if (index != -1) {
+                    trackers[index] = TypeGroup.UpdateTypeEntity(trackers[index], tracker);
+                    names[index] = name;
                 } else {
                     trackers.Add(tracker);
-                    names.Add(type.Name);
+                    names.Add(name);
                 }
             }
 
@@ -1878,7 +1873,7 @@ namespace IronRuby.Builtins {
             return null;
         }
 
-        private bool EnumerateClassVariables(Func<RubyModule, string, object, bool>/*!*/ action) {
+        public bool EnumerateClassVariables(Func<RubyModule, string, object, bool>/*!*/ action) {
             if (_classVariables != null) {
                 foreach (KeyValuePair<string, object> variable in _classVariables) {
                     if (action(this, variable.Key, variable.Value)) return true;
@@ -2086,7 +2081,7 @@ namespace IronRuby.Builtins {
             return context == _context ? _name : _name + "@" + _context.RuntimeId;
         }
 
-        public MutableString/*!*/ GetDisplayName(RubyContext/*!*/ context, bool showEmptyName) {
+        public MutableString GetDisplayName(RubyContext/*!*/ context, bool showEmptyName) {
             if (IsSingletonClass) {
                 RubyClass c = (RubyClass)this;
                 object singletonOf;
@@ -2120,7 +2115,7 @@ namespace IronRuby.Builtins {
                 return result.Append('>', nestings);
             } else if (_name == null) {
                 if (showEmptyName) {
-                    return MutableString.FrozenEmpty;
+                    return null;
                 } else {
                     MutableString result = MutableString.CreateMutable(context.GetIdentifierEncoding());
                     result.Append("#<");
@@ -2200,7 +2195,7 @@ namespace IronRuby.Builtins {
 
             private static string GetModuleName(object module) {
                 var m = (RubyModule)module;
-                return m != null ? m.GetDisplayName(m.Context, false).ToString() : String.Empty;
+                return m != null ? m.GetDisplayName(m.Context, false).ToString() : null;
             }
 
             #endregion

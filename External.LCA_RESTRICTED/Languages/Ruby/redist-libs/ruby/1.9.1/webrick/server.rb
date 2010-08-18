@@ -130,16 +130,22 @@ module WEBrick
           addr = s.addr
           @logger.debug("close TCPSocket(#{addr[2]}, #{addr[1]})")
         end
-        begin
-          s.shutdown
-        rescue Errno::ENOTCONN
-          # when `Errno::ENOTCONN: Socket is not connected' on some platforms,
-          # call #close instead of #shutdown.
-          # (ignore @config[:ShutdownSocketWithoutClose])
+        
+        # TODO
+        if defined? IRONRUBY_VERSION
           s.close
         else
-          unless @config[:ShutdownSocketWithoutClose]
+          begin
+            s.shutdown
+          rescue Errno::ENOTCONN
+            # when `Errno::ENOTCONN: Socket is not connected' on some platforms,
+            # call #close instead of #shutdown.
+            # (ignore @config[:ShutdownSocketWithoutClose])
             s.close
+          else
+            unless @config[:ShutdownSocketWithoutClose]
+              s.close
+            end
           end
         end
       }

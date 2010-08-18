@@ -363,7 +363,7 @@ end
 class B < A
   def def_lambda a
     1.times {
-      $p = lambda { 
+      $p = lambda { |x|
         1.times { 
           p self.class
           super
@@ -621,12 +621,12 @@ B::foo
 ");
         }
 
+#if OBSOLETE
         /// <summary>
         /// MRI 1.8: The self object captured by Kernel#binding is the receiver of the binding call.
         /// Thus the self used in eval might be different from the one the scope holds on.
         /// Super call uses the scope's self object.
         /// </summary>
-        [Options(Compatibility = RubyCompatibility.Ruby186)]
         public void SuperCallInEvalWithBinding18() {
             TestOutput(@"
 module Kernel
@@ -662,11 +662,11 @@ C
 A::m
 ");
         }
+#endif
 
         /// <summary>
         /// MRI 1.9: The self object captured by Kernel#binding is the one captured by the scope, not the receiver of the binding call.
         /// </summary>
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void SuperCallInEvalWithBinding19() {
             TestOutput(@"
 class C

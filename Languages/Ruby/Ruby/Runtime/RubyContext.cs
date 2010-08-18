@@ -53,39 +53,15 @@ namespace IronRuby.Runtime {
 
         // MRI compliance:
         public string/*!*/ MriVersion { 
-            get {
-                switch(RubyOptions.Compatibility) {
-                    case RubyCompatibility.Ruby186: return "1.8.6";
-                    case RubyCompatibility.Ruby187: return "1.8.7";
-                    case RubyCompatibility.Ruby19: return "1.9.1";
-                    case RubyCompatibility.Ruby20: return "2.0.0";
-                    default: throw new InvalidOperationException();
-                }
-            } 
+            get { return "1.9.1"; } 
         }
 
         public string/*!*/ MriReleaseDate {
-            get {
-                switch (RubyOptions.Compatibility) {
-                    case RubyCompatibility.Ruby186: return "2009-03-31";
-                    case RubyCompatibility.Ruby187: return "2009-11-02";
-                    case RubyCompatibility.Ruby19: return "2009-05-12";
-                    case RubyCompatibility.Ruby20: return "2.0.0";
-                    default: throw new InvalidOperationException();
-                }
-            }
+            get { return "2010-01-10"; }
         }
 
         public int MriPatchLevel {
-            get {
-                switch (RubyOptions.Compatibility) {
-                    case RubyCompatibility.Ruby186: return 368;
-                    case RubyCompatibility.Ruby187: return 174;
-                    case RubyCompatibility.Ruby19: return 129;
-                    case RubyCompatibility.Ruby20: return 0;
-                    default: throw new InvalidOperationException();
-                }
-            }
+            get { return 378; }
         }
 
         // IronRuby:
@@ -2086,15 +2062,6 @@ namespace IronRuby.Runtime {
         }
 
         private RubySymbol/*!*/ CreateSymbolInternal(MutableString/*!*/ mstr, bool clone) {
-            if (RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
-                if (mstr.IsEmpty) {
-                    throw RubyExceptions.CreateArgumentError("interning empty string");
-                }
-                if (mstr.IndexOf('\0') != -1) {
-                    throw RubyExceptions.CreateArgumentError("symbol string may not contain `\\0'");
-                }
-            }
-
             RubySymbol result;
             lock (SymbolsLock) {
                 if (!_symbols.TryGetValue(mstr, out result)) {

@@ -23,9 +23,6 @@ describe "Module#name" do
   end
 
   it "returns the name of self" do
-    Module.new.name.should == ""
-    Class.new.name.should == ""
-    
     ModuleSpecs.name.should == "ModuleSpecs"
     ModuleSpecs::Child.name.should == "ModuleSpecs::Child"
     ModuleSpecs::Parent.name.should == "ModuleSpecs::Parent"

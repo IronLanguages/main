@@ -76,28 +76,28 @@ class IRTest
         :ProjGenerator    => lambda { generate_build_projects },
         :BuildSilverlight => silverlight_build_runner,
         :Smoke            => safe_ruby_runner(dlr_path('Languages/Ruby/Tests/Scripts/unit_tests.rb')),
-        :Legacy           => safe_ruby_runner(dlr_path('Languages/Ruby/Tests/run.rb')),
+        #:Legacy           => safe_ruby_runner(dlr_path('Languages/Ruby/Tests/run.rb')),
         :RubySpec_A       => spec_runner(":lang :cli :netinterop :cominterop :thread :netcli"),
         :RubySpec_B       => spec_runner(":core1 :lib1"),
         :RubySpec_C       => spec_runner(":core2 :lib2"),
-        :RubyGems         => utr_runner("gem"),
+        #:RubyGems         => utr_runner("gem"),
         :TZInfo           => utr_runner("tzinfo"),
         :Rake             => utr_runner("rake"),
         :Yaml             => ruby_runner(dlr_path('External.LCA_RESTRICTED/Languages/IronRuby/yaml/YamlTest/yaml_test_suite.rb')),
         
         # TODO: get rid of .bat file
-        :Tutorial         => shell_runner("#{dlr_path('Languages/Ruby/Samples/Tutorial/tutorial.bat')} #{dlr_path('Languages/Ruby/Samples/Tutorial/test/test_console.rb')}"),
+        #:Tutorial         => shell_runner("#{dlr_path('Languages/Ruby/Samples/Tutorial/tutorial.bat')} #{dlr_path('Languages/Ruby/Samples/Tutorial/test/test_console.rb')}"),
       }
     
       if not options[:minimum]
         @all_tasks.merge!({
-          :ActionMailer   => utr_runner("action_mailer"),
-          :ActionPack     => utr_runner("action_pack"),
-          :ActiveSupport  => utr_runner("active_support"),
-          :ActiveRecord   => utr_runner("active_record"),
-          :ActiveResource => utr_runner("active_resource"),
-          :ActionPack3    => utr_runner("action_pack_3", "-1.8.7"),
-          :ActiveSupport3 => utr_runner("active_support_3", "-1.8.7"),
+          #:ActionMailer   => utr_runner("action_mailer"),
+          #:ActionPack     => utr_runner("action_pack"),
+          #:ActiveSupport  => utr_runner("active_support"),
+          #:ActiveRecord   => utr_runner("active_record"),
+          #:ActiveResource => utr_runner("active_resource"),
+          #:ActionPack3    => utr_runner("action_pack_3", "-1.8.7"),
+          #:ActiveSupport3 => utr_runner("active_support_3", "-1.8.7"),
         })
       end
     
@@ -111,9 +111,9 @@ class IRTest
     
       if not options[:minimum]
          @parallel_tasks += [
-           [:ActionPack, :ActionSupport, :ActionMailer],
-           [:ActionPack3, :ActionSupport3],
-           [:ActiveRecord, :ActiveResource],
+           #[:ActionPack, :ActionSupport, :ActionMailer],
+           #[:ActionPack3, :ActionSupport3],
+           #[:ActiveRecord, :ActiveResource],
          ]
       end 
     end

@@ -25,6 +25,7 @@ using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class JumpStatement : Expression {
         private readonly Arguments _arguments;
@@ -39,7 +40,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal MSA.Expression/*!*/ TransformReturnValue(AstGenerator/*!*/ gen) {
-            return Arguments.TransformToReturnValue(gen, _arguments); 
+            return (_arguments != null) ? _arguments.TransformToReturnValue(gen) : AstUtils.Constant(null);
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {

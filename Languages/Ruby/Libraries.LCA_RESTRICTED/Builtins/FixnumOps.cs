@@ -54,7 +54,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("id2name")]
         public static object Id2Name(RubyContext/*!*/ context, int self) {
             var symbol = context.FindSymbol(self);
-            return symbol != null ? symbol.ToMutableString() : null;
+            return symbol != null ? symbol.String.Clone() : null;
         }
 
         #endregion

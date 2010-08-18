@@ -33,5 +33,14 @@ namespace IronRuby.Builtins {
 
         [RubyConstant]
         public readonly static object NIL = null;
+
+        // TODO: this is a hack to load 1.8 impl of Rational and Complex
+        // We should implement them as builtins.
+        [RubyConstant("___Numerics__")]
+        public static object Numerics(RubyModule/*!*/ self) {
+            self.SetAutoloadedConstant("Rational", MutableString.CreateAscii("rational18.rb"));
+            self.SetAutoloadedConstant("Complex", MutableString.CreateAscii("complex18.rb"));
+            return null;
+        }
     }
 }

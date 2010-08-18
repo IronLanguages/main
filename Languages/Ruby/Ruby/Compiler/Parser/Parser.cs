@@ -195,12 +195,14 @@ namespace IronRuby.Compiler {
         }
 
         private LocalVariable/*!*/ DefineParameter(string/*!*/ name, SourceSpan location) {
-            // we are in a method:
-            Debug.Assert(CurrentScope.IsTop && !(CurrentScope is TopStaticLexicalScope));
+            // we are in a method or a block:
+            Debug.Assert(CurrentScope.IsTop && !(CurrentScope is TopStaticLexicalScope) || CurrentScope is BlockLexicalScope);
 
             LocalVariable variable;
             if (CurrentScope.TryGetValue(name, out variable)) {
-                _tokenizer.ReportError(Errors.DuplicateParameterName);
+                if (name != "_") {
+                    _tokenizer.ReportError(Errors.DuplicateParameterName);
+                }
                 return variable;
             }
 
@@ -385,16 +387,68 @@ namespace IronRuby.Compiler {
             }
         }
 
+        private ForLoopExpression/*!*/ MakeForLoopExpression(CompoundLeftValue/*!*/ lvalue, Expression/*!*/ list, Statements/*!*/ body, SourceSpan location) {
+            // MRI allows this
+            // CheckForLoopVariables(lvalue.LeftValues);
+
+            Parameters parameters;
+            if (lvalue.HasUnsplattedValue) {
+                parameters = new Parameters(
+                    ArrayUtils.RemoveAt(lvalue.LeftValues, lvalue.UnsplattedValueIndex),
+                    lvalue.UnsplattedValueIndex, 
+                    null,
+                    lvalue.UnsplattedValue, 
+                    null, 
+                    SourceSpan.None
+                );
+            } else {
+                parameters = new Parameters(lvalue.LeftValues, lvalue.LeftValues.Length, null, null, null, SourceSpan.None);
+            }
+
+            return new ForLoopExpression(CurrentScope, parameters, list, body, location);
+        }
+#if TODO // ?
+        private bool CheckForLoopVariables(LeftValue/*!*/[]/*!*/ lvalues) {
+            for (int i = 0; i < lvalues.Length; i++) {
+                switch (lvalues[i].NodeType) {
+                    case NodeTypes.LocalVariable:
+                    case NodeTypes.CompoundLeftValue:
+                    case NodeTypes.Placeholder:
+                        break;
+
+                    case NodeTypes.ConstantVariable:
+                        _tokenizer.ReportError(Errors.ForLoopVariableIsConstantVariable, lvalues[i].Location);
+                        return false;
+
+                    case NodeTypes.InstanceVariable:
+                        _tokenizer.ReportError(Errors.ForLoopVariableIsInstanceVariable, lvalues[i].Location);
+                        return false;
+
+                    case NodeTypes.GlobalVariable:
+                        _tokenizer.ReportError(Errors.ForLoopVariableIsGlobalVariable, lvalues[i].Location);
+                        return false;
+
+                    case NodeTypes.ClassVariable:
+                        _tokenizer.ReportError(Errors.ForLoopVariableIsClassVariable, lvalues[i].Location);
+                        return false;
+
+                    default:
+                        throw Assert.Unreachable;
+                }
+            }
+            return true;
+        }
+#endif
         private IfExpression/*!*/ MakeIfExpression(Expression/*!*/ condition, Statements/*!*/ body, List<ElseIfClause>/*!*/ elseIfClauses, SourceSpan location) {
             // last else-if/else clause is the first one in the list:            
             elseIfClauses.Reverse();
             return new IfExpression(condition, body, elseIfClauses, location);
         }
 
-        private ArrayConstructor/*!*/ MakeVerbatimWords(List<Expression>/*!*/ words, SourceSpan wordsLocation, SourceSpan location) {
+        private ArrayConstructor/*!*/ MakeVerbatimWords(List<Expression>/*!*/ words, SourceSpan location) {
             Debug.Assert(CollectionUtils.TrueForAll(words, (word) => word is StringLiteral), "all words are string literals");
 
-            return new ArrayConstructor(new Arguments(words.ToArray(), null, null, wordsLocation), location);
+            return new ArrayConstructor(new Arguments(words.ToArray()), location);
         }
 
         private Expression/*!*/[]/*!*/ PopHashArguments(int argumentCount, SourceSpan location) {
@@ -424,6 +478,10 @@ namespace IronRuby.Compiler {
             return new MethodCall(target, methodName, args.Arguments, block, location);
         }
 
+        private static ArrayItemAccess/*!*/ MakeArrayItemAccess(Expression/*!*/ array, TokenValue args, SourceSpan location) {
+            return new ArrayItemAccess(array, args.Arguments, args.Block, location);
+        }
+
         private static Expression/*!*/ MakeMatch(Expression/*!*/ left, Expression/*!*/ right, SourceSpan location) {
             var regex = left as RegularExpression;
             if (regex != null) {
@@ -434,8 +492,35 @@ namespace IronRuby.Compiler {
         }
 
         private static SuperCall/*!*/ MakeSuperCall(TokenValue args, SourceSpan location) {
-            Debug.Assert(args.Arguments != null);
             return new SuperCall(args.Arguments, args.Block, location);
+        }
+
+        private static CompoundLeftValue/*!*/ MakeCompoundLeftValue(List<LeftValue> leading, LeftValue/*!*/ unsplat, List<LeftValue> trailing) {
+            int leadingCount = (leading != null ? leading.Count : 0);
+            int trailingCount = (trailing != null ? trailing.Count : 0);
+            var array = new LeftValue[leadingCount + 1 + trailingCount];
+            if (leadingCount > 0) {
+                leading.CopyTo(array, 0);
+            }
+            array[leadingCount] = unsplat;
+            if (trailingCount > 0) {
+                trailing.CopyTo(array, leadingCount + 1);
+            }
+            return new CompoundLeftValue(array, leadingCount);
+        }
+
+        private static T[]/*!*/ MakeArray<T>(List<T>/*!*/ left, List<T>/*!*/ right) {
+            var array = new T[left.Count + right.Count];
+            left.CopyTo(array, 0);
+            right.CopyTo(array, left.Count);
+            return array;
+        }
+
+        private static T[]/*!*/ MakeArray<T>(List<T>/*!*/ left, T/*!*/ right) {
+            var array = new T[left.Count + 1];
+            left.CopyTo(array, 0);
+            array[array.Length - 1] = right;
+            return array;
         }
 
         private Expression[]/*!*/ _argumentStack = new Expression[10];
@@ -509,16 +594,16 @@ namespace IronRuby.Compiler {
             yyval.Block = block;
         }
 
-        // foo(expr1, ..., exprN, k1 => v1, ..., kN => vN, *a)
-        // foo(expr1, ..., exprN, k1 => v1, ..., kN => vN, *a) {}
-        // foo(expr1, ..., exprN, k1 => v1, ..., kN => vN, *a, &p)
-        private void PopAndSetArguments(int argumentCount, List<Maplet/*!*/> maplets, Expression array, Block block, SourceSpan location) {
-            yyval.Arguments = new Arguments(PopArguments(argumentCount), maplets, array, location);
+        // foo([*]?expr1, ..., [*]?exprN, k1 => v1, ..., kN => vN)
+        // foo([*]?expr1, ..., [*]?exprN, k1 => v1, ..., kN => vN) {}
+        // foo([*]?expr1, ..., [*]?exprN, k1 => v1, ..., kN => vN, &p)
+        private void PopAndSetArguments(int argumentCount, Block block) {
+            yyval.Arguments = new Arguments(PopArguments(argumentCount));
             yyval.Block = block;
         }
 
-        private void SetArguments(Expression/*!*/[] arguments, List<Maplet/*!*/> maplets, Expression array, Block block, SourceSpan location) {
-            yyval.Arguments = new Arguments(arguments, maplets, array, location);
+        private void SetArguments(Expression/*!*/[] arguments, Block block) {
+            yyval.Arguments = new Arguments(arguments);
             yyval.Block = block;
         }
 
@@ -530,13 +615,12 @@ namespace IronRuby.Compiler {
             }
         }
 
-        private void SetWhenClauseArguments(int argumentCount, Expression/*!*/ splat) {
-            yyval.ArgumentCount = argumentCount;
-            yyval.Expression = splat;
+        private LambdaDefinition/*!*/ MakeLambdaDefinition(Parameters parameters, Statements body, SourceSpan location) {
+            return new LambdaDefinition(new BlockDefinition(CurrentScope, parameters, body, location));
         }
 
-        private WhenClause/*!*/ MakeWhenClause(TokenValue whenArgs, Statements/*!*/ statements, SourceSpan location) {
-            return new WhenClause(whenArgs.ArgumentCount != 0 ? PopArguments(whenArgs.ArgumentCount) : null, whenArgs.Expression, statements, location);
+        private BlockDefinition/*!*/ MakeBlockDefinition(Parameters parameters, Statements body, SourceSpan location) {
+            return new BlockDefinition(CurrentScope, parameters, body, location);
         }
 
         private static Expression/*!*/ MakeLoopStatement(Expression/*!*/ statement, Expression/*!*/ condition, bool isWhileLoop, SourceSpan location) {

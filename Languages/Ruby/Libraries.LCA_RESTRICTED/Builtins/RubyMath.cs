@@ -109,16 +109,22 @@ namespace IronRuby.Builtins {
             return SM.Cosh(x);
         }
 
+        [RubyMethodAttribute("cbrt", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethodAttribute("cbrt", RubyMethodAttributes.PublicSingleton)]
+        public static double CubeRoot(object self, [DefaultProtocol]double x) {
+            return System.Math.Pow(x, 1.0 / 3.0);
+        }
+
         [RubyMethodAttribute("erf", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("erf", RubyMethodAttributes.PublicSingleton)]
         public static double Erf(object self, [DefaultProtocol]double x) {
-            throw new NotImplementedError("erf");
+            return MathUtils.Erf(x);
         }
 
         [RubyMethodAttribute("erfc", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("erfc", RubyMethodAttributes.PublicSingleton)]
         public static double Erfc(object self, [DefaultProtocol]double x) {
-            throw new NotImplementedError("erfc");
+            return MathUtils.ErfComplement(x);
         }
 
         [RubyMethodAttribute("exp", RubyMethodAttributes.PrivateInstance)]
@@ -127,6 +133,11 @@ namespace IronRuby.Builtins {
             return SM.Exp(x);
         }
 
+        [RubyMethodAttribute("gamma", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethodAttribute("gamma", RubyMethodAttributes.PublicSingleton)]
+        public static double Gamma(object self, [DefaultProtocol]double x) {
+            return DomainCheck(MathUtils.Gamma(x), "gamma");
+        }
 
         [RubyMethodAttribute("hypot", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("hypot", RubyMethodAttributes.PublicSingleton)]
@@ -156,6 +167,12 @@ namespace IronRuby.Builtins {
         public static double Ldexp(object self, [DefaultProtocol]double x, [DefaultProtocol]IntegerValue y) {
             return x * SM.Pow(2, y.IsFixnum ? (double)y.Fixnum : y.Bignum.ToFloat64());
         }
+
+        [RubyMethodAttribute("lgamma", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethodAttribute("lgamma", RubyMethodAttributes.PublicSingleton)]
+        public static double LogGamma(object self, [DefaultProtocol]double x) {
+            return DomainCheck(MathUtils.LogGamma(x), "lgamma");
+        }
         
         [RubyMethodAttribute("log", RubyMethodAttributes.PrivateInstance)]
         [RubyMethodAttribute("log", RubyMethodAttributes.PublicSingleton)]
@@ -167,6 +184,12 @@ namespace IronRuby.Builtins {
         [RubyMethodAttribute("log10", RubyMethodAttributes.PublicSingleton)]
         public static double Log10(object self, [DefaultProtocol]double x) {
             return DomainCheck(SM.Log10(x), "log10");
+        }
+
+        [RubyMethodAttribute("log2", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethodAttribute("log2", RubyMethodAttributes.PublicSingleton)]
+        public static double Log2(object self, [DefaultProtocol]double x) {
+            return DomainCheck(SM.Log(x)/SM.Log(2), "log2");
         }
 
         [RubyMethodAttribute("sin", RubyMethodAttributes.PrivateInstance)]

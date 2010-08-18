@@ -147,21 +147,19 @@ N+N
         }
 
         public void Strings6() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-p :""#{}"" rescue p $!
-p :""#{}#{}"" rescue p $!
-p :""#{}#{''}#{}"" rescue p $!
+            TestOutput(@"
+p :""#{}""
+p :""#{}#{}""
+p :""#{}#{''}#{}""
 
 p :""#{nil}a""
 p :""a#{nil}""
 p :""a#{nil}b""
 p :""a#{nil}b#{nil}c""
-");
-            }, @"
-#<ArgumentError: interning empty string>
-#<ArgumentError: interning empty string>
-#<ArgumentError: interning empty string>
+", @"
+:""""
+:""""
+:""""
 :a
 :a
 :ab
@@ -188,7 +186,6 @@ bar
 ");
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
         public void Strings9() {
             // TODO:
 #if TODO
@@ -262,6 +259,7 @@ SUB
             Assert(a.Equals(b));
         }
         
+#if OBSOLETE
         [Options(Compatibility = RubyCompatibility.Ruby186)]
         private void Inspect1() {
             const char sq = '\'';
@@ -312,7 +310,7 @@ SUB
             Assert(s == @"'\202\240'");
         }
 
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
+#endif
         private void Inspect2() {
             const char sq = '\'';
 

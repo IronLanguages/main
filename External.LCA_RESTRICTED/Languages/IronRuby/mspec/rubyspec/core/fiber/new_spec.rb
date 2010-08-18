@@ -1,5 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
+not_supported_on :ironruby do
 ruby_version_is "1.9" do
   describe "Fiber.new" do
     it "creates a fiber from the given block" do
@@ -45,4 +46,5 @@ ruby_version_is "1.9" do
       lambda { eval 'Fiber.new { retry; }' }.should raise_error(SyntaxError)
     end  
   end
+end
 end

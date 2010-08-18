@@ -647,7 +647,6 @@ namespace IronPython.Runtime.Operations {
             
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             return c.IndexOf(self, sub, CompareOptions.Ordinal);
-
         }
 
         public static int find(this string self, string sub, int start) {
@@ -659,6 +658,12 @@ namespace IronPython.Runtime.Operations {
             return c.IndexOf(self, sub, start, CompareOptions.Ordinal);
         }
 
+        public static int find(this string self, string sub, BigInteger start) {
+            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
+            if (start > self.Length) return -1;
+            return find(self, sub, (int)start);
+        }
+
         public static int find(this string self, string sub, int start, int end) {
             if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (start > self.Length) return -1;
@@ -668,6 +673,12 @@ namespace IronPython.Runtime.Operations {
 
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             return c.IndexOf(self, sub, start, end - start, CompareOptions.Ordinal);
+        }
+
+        public static int find(this string self, string sub, BigInteger start, BigInteger end) {
+            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
+            if (start > self.Length) return -1;
+            return find(self, sub, (int)start, (int)end);
         }
 
         public static int find(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {
@@ -962,6 +973,12 @@ namespace IronPython.Runtime.Operations {
             return rfind(self, sub, start, self.Length);
         }
 
+        public static int rfind(this string self, string sub, BigInteger start) {
+            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
+            if (start > self.Length) return -1;
+            return rfind(self, sub, (int)start, self.Length);
+        }
+
         public static int rfind(this string self, string sub, int start, int end) {
             if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (start > self.Length) return -1;
@@ -975,6 +992,12 @@ namespace IronPython.Runtime.Operations {
 
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             return c.LastIndexOf(self, sub, end - 1, end - start, CompareOptions.Ordinal);
+        }
+
+        public static int rfind(this string self, string sub, BigInteger start, BigInteger end) {
+            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
+            if (start > self.Length) return -1;
+            return rfind(self, sub, (int)start, (int)end);
         }
 
         public static int rfind(this string self, string sub, object start, [DefaultParameterValue(null)]object end) {

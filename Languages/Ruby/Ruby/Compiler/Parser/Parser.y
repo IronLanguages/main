@@ -35,20 +35,23 @@ using IronRuby.Compiler.Ast;
 %token SINGLE_LINE_COMMENT MULTI_LINE_COMMENT WHITESPACE END_OF_LINE INVALID_CHARACTER POUND AT DOLLAR BACKSLASH 
 %token WORD_SEPARATOR NEW_LINE
 %token CLASS MODULE DEF UNDEF BEGIN RESCUE ENSURE END IF UNLESS THEN ELSIF ELSE
-%token CASE WHEN WHILE UNTIL FOR BREAK NEXT REDO RETRY IN DO LOOP_DO BLOCK_DO
+%token CASE WHEN WHILE UNTIL FOR BREAK NEXT REDO RETRY IN DO LOOP_DO BLOCK_DO LAMBDA_DO
 %token RETURN YIELD SUPER SELF NIL TRUE FALSE AND OR NOT IF_MOD UNLESS_MOD
 %token WHILE_MOD UNTIL_MOD RESCUE_MOD ALIAS DEFINED UPPERCASE_BEGIN UPPERCASE_END LINE FILE ENCODING
 %token UNARY_PLUS UNARY_MINUS POW CMP EQUAL STRICT_EQUAL NOT_EQUAL GREATER_OR_EQUAL LESS_OR_EQUAL LOGICAL_AND LOGICAL_OR MATCH NMATCH
 %token DOUBLE_DOT TRIPLE_DOT ITEM_GETTER ITEM_SETTER LSHFT RSHFT SEPARATING_DOUBLE_COLON LEADING_DOUBLE_COLON DOUBLE_ARROW
-%token SEMICOLON COMMA DOT STAR BLOCK_REFERENCE AMPERSAND BACKTICK
+%token SEMICOLON COMMA DOT STAR BLOCK_REFERENCE AMPERSAND BACKTICK 
+%token LAMBDA
 %token LEFT_PARENTHESIS LEFT_EXPR_PARENTHESIS LEFT_ARG_PARENTHESIS RIGHT_PARENTHESIS
-%token LEFT_BLOCK_BRACE LEFT_BRACE LEFT_BLOCK_ARG_BRACE RIGHT_BRACE
+%token LEFT_BRACE LEFT_BLOCK_BRACE LEFT_BLOCK_ARG_BRACE LEFT_LAMBDA_BRACE RIGHT_BRACE
 %token LEFT_BRACKET LEFT_INDEXING_BRACKET RIGHT_BRACKET
 %token STRING_EMBEDDED_VARIABLE_BEGIN STRING_EMBEDDED_CODE_BEGIN STRING_EMBEDDED_CODE_END 
 %token VERBATIM_HEREDOC_BEGIN VERBATIM_HEREDOC_END
 %token STRING_BEGIN REGEXP_BEGIN SHELL_STRING_BEGIN WORDS_BEGIN VERBATIM_WORDS_BEGIN SYMBOL_BEGIN STRING_END
 
 %token<String> IDENTIFIER FUNCTION_IDENTIFIER GLOBAL_VARIABLE INSTANCE_VARIABLE CONSTANT_IDENTIFIER CLASS_VARIABLE OP_ASSIGNMENT 
+%token<String> LABEL                               // 1.9  
+%token<String> CHARACTER                           // 1.9
 %token<Integer1> INTEGER 
 %token<BigInteger> BIG_INTEGER
 %token<Double> FLOAT 
@@ -59,14 +62,14 @@ using IronRuby.Compiler.Ast;
 %type<AbstractSyntaxTree> program
 
 %type<Expression> stmt
-%type<Statements> stmts compstmt ensure_opt
+%type<Statements> stmts compstmt lambda_body ensure_opt
 %type<JumpStatement> jump_statement jump_statement_with_parameters jump_statement_parameterless
 %type<Expression> alias_statement
 %type<Expression> conditional_statement
 
 %type<Expression> primary expr expression_statement superclass var_ref singleton case_expression
-%type<Expression> arg
-%type<ArgumentCount> args
+%type<Expression> arg                              
+%type<ArgumentCount> args compound_rhs             // arguments pushed to the argument stack
 %type<Expression> block_expression                 // (Expression | BlockExpression | Body)
 %type<Expression> definition_expression            // DefinitionExpression
 %type<Body> body
@@ -77,15 +80,14 @@ using IronRuby.Compiler.Ast;
 %type<ElseIfClause> else_opt 
 %type<ElseIfClauses> if_tail
 %type<Identifiers> undef_list 
-%type<BlockReference> block_reference opt_block_reference 
+%type<BlockReference> block_reference block_reference_opt 
 %type<BlockDefinition> cmd_brace_block brace_block do_block 
+%type<LambdaDefinition> lambda 
 
-%type<Arguments> array_key 
-%type when_args                                                             // (ArgumentCount & Expression?)
-%type paren_args open_args closed_args command_args command_args_content    // (Arguments & Block?)
-%type opt_paren_args                                                        // (Arguments? & Block?)
+%type<Arguments> array_items                                       // (Arguments! & Block == null)
+%type parenthesized_args                                           // (Arguments! & Block?)
+%type parenthesized_args_opt call_args call_args_opt command_args  // (Arguments? & Block?)
 
-%type<CompoundRightValue> compound_rhs
 %type<ConstantVariable> qualified_module_name 
 
 %type<RescueClauses> rescue_clauses rescue_clauses_opt
@@ -97,23 +99,15 @@ using IronRuby.Compiler.Ast;
 %type<Maplets> maplets 
 %type<Maplet> maplet 
 
-%type<Parameters> parameters_definition parameters
-%type<LocalVariables> parameter_list
-%type<LocalVariable> parameter array_parameter block_parameter block_parameter_opt
-%type<SimpleAssignmentExpressions> default_parameter_list 
-%type<SimpleAssignmentExpression> default_parameter 
-
-%type<Expression> string_embedded_variable              // string embedded variable
-%type<Expression> string_content                        // string piece - literal, string embedded code/variable
-%type<Expressions> string_contents                      // list of string pieces
-%type<Expressions> string                               // quoted string constructor taking list of string pieces "#{foo}bar#{baz}"
-%type<Expressions> string_concatenation                 // string constructor taking a list of quoted strings "foo" 'bar' "baz"
-
-%type<Expression> shell_string                          // shell string constructor taking list of string pieces `#{foo}bar#{baz}`
-
-%type<Expressions> word                                 // concatenation of string pieces
-%type<Expressions> word_list verbatim_word_list         // list of words separated by space
-%type<Expression> words verbatim_words                  // array constructor taking a list of words
+%type<Expression> string_embedded_variable                    // string embedded variable
+%type<Expression> string_content                              // string piece - literal, string embedded code/variable
+%type<Expressions> string_contents                            // list of string pieces
+%type<Expressions> string                                     // quoted string constructor taking list of string pieces "#{foo}bar#{baz}"
+%type<Expressions> string_concatenation                       // string constructor taking a list of quoted strings "foo" 'bar' "baz"
+%type<Expression> shell_string                                // shell string constructor taking list of string pieces `#{foo}bar#{baz}`
+%type<Expressions> word                                       // concatenation of string pieces
+%type<Expressions> word_list verbatim_word_list               // list of words separated by space
+%type<Expression> words verbatim_words                        // array constructor taking a list of words
 
 %type<Expression> regexp 
 %type<Expression> numeric_literal 
@@ -122,14 +116,30 @@ using IronRuby.Compiler.Ast;
 
 %type<String> operation variable sym operation2 operation3 module_name op method_name symbol method_name_or_symbol
 
+%type<Parameters> block_parameters block_parameters_opt lambda_parameters  // Parameters?
+%type<Parameters> method_parameters block_parameter_list parameters
+%type block_variables block_variables_opt                   // 1.9
+
+%type<SimpleAssignmentExpressions> default_parameter_list default_block_parameter_list
+%type<SimpleAssignmentExpression> default_parameter default_block_parameter
+
+%type<CompoundLeftValue> for_parameters                        
+
+%type<LocalVariable> parameter parameter_array block_parameter block_parameter_opt
+
+%type<CompoundLeftValue> compound_parameters                // 1.9
+%type<LeftValues> parameter_list 
+%type<LeftValues> compound_parameter_list                   // 1.9
+%type<LeftValue> compound_parameter parenthesized_parameter // 1.9
+
 %type<CompoundLeftValue> compound_lhs
-%type<LeftValues> compound_lhs_head
-%type<LeftValue> compound_lhs_item compound_lhs_tail
-%type<LeftValue> compound_lhs_node
+%type<LeftValues> compound_lhs_nodes
+%type<LeftValues> compound_lhs_tail                         // 1.9
+%type<LeftValue> compound_lhs_node                          
+%type<LeftValue> compound_lhs_leaf                          // 1.9
 
 %type<LeftValue> var_lhs 
 %type<LeftValue> lhs 
-%type<CompoundLeftValue> block_parameters block_parameters_opt 
 %type<LeftValue> exc_var
 
 %nonassoc LOWEST
@@ -169,15 +179,15 @@ program:
 ;
 
 compstmt:
-      opt_terms
+      terms_opt
         {
             $$ = Statements.Empty; 
         } 
-    | terms stmts opt_terms
+    | terms stmts terms_opt
         {
             $$ = $2; 
         } 
-    | stmts opt_terms
+    | stmts terms_opt
         {
             $$ = $1; 
         }
@@ -198,55 +208,52 @@ stmts:
         }
 ;
 
-stmt:     alias_statement
-        | UNDEF undef_list
-            {
-                $$ = new UndefineStatement($2, @$);
-            }
-        | UPPERCASE_BEGIN
-            {
-                if (InMethod) {
-                    _tokenizer.ReportError(Errors.FileInitializerInMethod);
-                }
-                            
-                EnterFileInitializerScope();
-            }
-          LEFT_BLOCK_BRACE compstmt RIGHT_BRACE
-            {
-                $$ = AddInitializer(new FileInitializerStatement(CurrentScope, $4, @$));
-                LeaveScope();
-            }
-        | UPPERCASE_END
-            {
-                if (InMethod) {
-                    _tokenizer.ReportWarning(Errors.ShutdownHandlerInMethod);
-                }
-                
-                // END block behaves like a block definition (allows variable closures, super, etc):
-                EnterNestedScope();
-            } 
-          LEFT_BLOCK_BRACE compstmt RIGHT_BRACE
-            {                    
-                $$ = new ShutdownHandlerStatement(CurrentScope, $4, @$);
-                LeaveScope();
-            }        
-        | match_reference OP_ASSIGNMENT command_call
-            {
-                MatchReferenceReadOnlyError($1);
-                $$ = new ErrorExpression(@$);
-            } 
-        | jump_statement
-            {
-                $$ = $1;
-            }
-        | conditional_statement
-            {
-                $$ = $1;
-            }
-        | expression_statement
-            {
-                $$ = $1;
-            }
+stmt:
+       alias_statement
+     | UNDEF undef_list
+         {
+             $$ = new UndefineStatement($2, @$);
+         }
+     | UPPERCASE_BEGIN           // TODO: 1.9 move to top_stmt
+         {
+             if (InMethod) {
+                 _tokenizer.ReportError(Errors.FileInitializerInMethod);
+             }
+                         
+             EnterFileInitializerScope();
+         }
+       LEFT_BLOCK_BRACE compstmt RIGHT_BRACE
+         {
+             $$ = AddInitializer(new FileInitializerStatement(CurrentScope, $4, @$));
+             LeaveScope();
+         }
+     | UPPERCASE_END
+         {
+             if (InMethod) {
+                 _tokenizer.ReportWarning(Errors.ShutdownHandlerInMethod);
+             }
+             
+             // END block behaves like a block definition (allows variable closures, super, etc):
+             EnterNestedScope();
+         } 
+       LEFT_BLOCK_BRACE compstmt RIGHT_BRACE
+         {                    
+             $$ = new ShutdownHandlerStatement(CurrentScope, $4, @$);
+             LeaveScope();
+         }        
+     | match_reference OP_ASSIGNMENT command_call
+         {
+             MatchReferenceReadOnlyError($1);
+             $$ = new ErrorExpression(@$);
+         } 
+     | conditional_statement
+         {
+             $$ = $1;
+         }
+     | expression_statement
+         {
+             $$ = $1;
+         }
 ;
 
 alias_statement:
@@ -280,15 +287,15 @@ jump_statement:
 ;
 
 jump_statement_with_parameters:
-      RETURN open_args
+      RETURN call_args
         {
             $$ = new ReturnStatement(RequireNoBlockArg($2), @$);
         }
-    | BREAK open_args
+    | BREAK call_args
         {
             $$ = new BreakStatement(RequireNoBlockArg($2), @$);
         }
-    | NEXT open_args
+    | NEXT call_args
         {
             $$ = new NextStatement(RequireNoBlockArg($2), @$);
         }
@@ -318,7 +325,11 @@ jump_statement_parameterless:
 ;
 
 expression_statement: 
-      expr
+      expr 
+        {
+            $$ = $1;
+        } 
+    | jump_statement                       
         {
             $$ = $1;
         }
@@ -328,15 +339,15 @@ expression_statement:
         }
     | compound_lhs ASSIGNMENT command_call
         {
-            $$ = new ParallelAssignmentExpression($1, new CompoundRightValue(new Expression[] { $3 }, null), @$);
+            $$ = new ParallelAssignmentExpression($1, new Expression[] { $3 }, @$);
         }
     | var_lhs OP_ASSIGNMENT command_call
         {
             $$ = new SimpleAssignmentExpression($1, $3, $2, @$);
         }
-    | primary LEFT_INDEXING_BRACKET array_key RIGHT_BRACKET OP_ASSIGNMENT command_call
+    | primary LEFT_INDEXING_BRACKET call_args_opt closing_bracket OP_ASSIGNMENT command_call      // 1.9 change
         {                
-            $$ = new SimpleAssignmentExpression(new ArrayItemAccess($1, $3, @2), $6, $5, @$);
+            $$ = new SimpleAssignmentExpression(MakeArrayItemAccess($1, $3, @2), $6, $5, @$);
         }
     | primary DOT IDENTIFIER OP_ASSIGNMENT command_call
         {
@@ -346,29 +357,26 @@ expression_statement:
         {
             $$ = new MemberAssignmentExpression($1, $3, $4, $5, @$);
         }
+    | primary SEPARATING_DOUBLE_COLON CONSTANT_IDENTIFIER OP_ASSIGNMENT command_call
+        {
+            _tokenizer.ReportError(Errors.ConstantReassigned);
+            $$ = new MemberAssignmentExpression($1, $3, $4, $5, @$);
+        }
     | primary SEPARATING_DOUBLE_COLON IDENTIFIER OP_ASSIGNMENT command_call
         {
             $$ = new MemberAssignmentExpression($1, $3, $4, $5, @$);
         }
     | lhs ASSIGNMENT compound_rhs
         {
-            $$ = new ParallelAssignmentExpression(new CompoundLeftValue(CollectionUtils.MakeList<LeftValue>($1), null, @1), $3, @$);
+            $$ = new ParallelAssignmentExpression(new CompoundLeftValue(new LeftValue[] { $1 }), PopArguments($3), @$);
         }
     | compound_lhs ASSIGNMENT arg
         {
-            $$ = new ParallelAssignmentExpression($1, new CompoundRightValue(new Expression[] { $3 }, null), @$);
+            $$ = new ParallelAssignmentExpression($1, new Expression[] { $3 }, @$);
         }
     | compound_lhs ASSIGNMENT compound_rhs
         {
-            $$ = new ParallelAssignmentExpression($1, $3, @$);
-        }
-    | arg QUESTION_MARK jump_statement_parameterless COLON arg
-        {
-            $$ = new ConditionalJumpExpression(ToCondition($1), $3, false, $5, @$);
-        }
-    | arg QUESTION_MARK arg COLON jump_statement_parameterless
-        {
-            $$ = new ConditionalJumpExpression(ToCondition($1), $5, true, $3, @$);
+            $$ = new ParallelAssignmentExpression($1, PopArguments($3), @$);
         }
 ;
 
@@ -393,27 +401,8 @@ conditional_statement:
         {
             $$ = new RescueExpression($1, $3, MergeLocations(@2, @3), @$);
         }
-    | arg QUESTION_MARK jump_statement_parameterless COLON jump_statement_parameterless
-        {
-            $$ = new ConditionalStatement(ToCondition($1), false, $3, $5, @$);
-        }
 ;
 
-compound_rhs: 
-      args COMMA arg
-        {
-            $$ = new CompoundRightValue(PopArguments($1, $3), null);
-        }
-    | args COMMA STAR arg
-        {
-            $$ = new CompoundRightValue(PopArguments($1), $4);
-        }
-    | STAR arg
-        {
-            $$ = new CompoundRightValue(Expression.EmptyArray, $2);
-        }
-;
-            
 expr: 
       command_call
     | expr AND expr
@@ -432,14 +421,12 @@ expr:
         {
             $$ = new ConditionalJumpExpression($1, $3, true, null, @$);
         }
-    | NOT expr
+    | NOT new_line_opt expr                                      // 1.9 added new_line_opt
         {
-            // TODO: warning: string literal in condition
-            $$ = new NotExpression($2, @$);
+            $$ = new NotExpression($3, @$);
         }
     | BANG command_call
         {
-            // TODO: warning: string literal in condition
             $$ = new NotExpression($2, @$);
         }
     | arg
@@ -478,7 +465,7 @@ cmd_brace_block:
         }
       block_parameters_opt compstmt RIGHT_BRACE
         {
-            $$ = new BlockDefinition(CurrentScope, $3, $4, @$);
+            $$ = MakeBlockDefinition($3, $4, @$);
             LeaveScope();
         }
 ;
@@ -518,72 +505,97 @@ command:
         }
 ;
 
-compound_lhs: 
-      compound_lhs_head compound_lhs_item
+compound_lhs:                                                           // 1.9 change
+      LEFT_EXPR_PARENTHESIS compound_lhs closing_parenthesis
+        {
+            $$ = new CompoundLeftValue(new LeftValue[] { $2 });
+        }
+    | compound_lhs_nodes 
+        {
+            // the list ends with COMMA:
+            $1.Add(Placeholder.Singleton);
+            $$ = new CompoundLeftValue($1.ToArray());
+        }
+    | compound_lhs_nodes compound_lhs_node
         {
             $1.Add($2);
-            $$ = new CompoundLeftValue($1, null, @$);
+            $$ = new CompoundLeftValue($1.ToArray());
         }
-    | compound_lhs_head 
+    | compound_lhs_nodes STAR compound_lhs_leaf
         {
-              $1.Add(Placeholder.Singleton);
-              $$ = new CompoundLeftValue($1, null, @$);
+            $$ = MakeCompoundLeftValue($1, $3, null);
         }
-    | LEFT_EXPR_PARENTHESIS compound_lhs RIGHT_PARENTHESIS
+    | compound_lhs_nodes STAR compound_lhs_leaf COMMA compound_lhs_tail
         {
-            $$ = new CompoundLeftValue(CollectionUtils.MakeList<LeftValue>($2), null, @$);
+            $$ = MakeCompoundLeftValue($1, $3, $5);
         }
-    | compound_lhs_head compound_lhs_tail
+    | compound_lhs_nodes STAR
         {
-            $$ = new CompoundLeftValue($1, $2, @$);
+            $$ = MakeCompoundLeftValue($1, Placeholder.Singleton, null);
         }
-    | compound_lhs_tail
+    | compound_lhs_nodes STAR COMMA compound_lhs_tail
         {
-            $$ = new CompoundLeftValue(LeftValue.EmptyList, $1, @$);
+            $$ = MakeCompoundLeftValue($1, Placeholder.Singleton, $4);
         }
-;
-
-compound_lhs_tail:
-      STAR compound_lhs_node
+    | STAR compound_lhs_leaf COMMA compound_lhs_tail
         {
-            $$ = $2;
+            $$ = MakeCompoundLeftValue(null, $2, $4);
+        }
+    | STAR COMMA compound_lhs_tail
+        {
+            $$ = MakeCompoundLeftValue(null, Placeholder.Singleton, $3);
+        }
+    | STAR compound_lhs_leaf
+        {
+            $$ = new CompoundLeftValue(new LeftValue[] { $2 }, 0);
         }
     | STAR
         {
-            $$ = Placeholder.Singleton;
+            $$ = new CompoundLeftValue(new LeftValue[] { Placeholder.Singleton }, 0);
         }
 ;
 
-compound_lhs_head:
-      compound_lhs_head compound_lhs_item COMMA
+compound_lhs_nodes:
+      compound_lhs_nodes compound_lhs_node COMMA
         {
             ($$ = $1).Add($2);
         }
-    | compound_lhs_item COMMA
+    | compound_lhs_node COMMA
         {
             $$ = CollectionUtils.MakeList($1);
         }
 ;
 
-compound_lhs_item:
-      compound_lhs_node
+compound_lhs_tail:                                                // 1.9
+      compound_lhs_tail COMMA compound_lhs_node
+        {
+            ($$ = $1).Add($3);
+        }
+     | compound_lhs_node
+        {
+            $$ = CollectionUtils.MakeList($1);
+        }
+;
+
+compound_lhs_node:
+      compound_lhs_leaf
         {
             $$ = $1;
         }
-    | LEFT_EXPR_PARENTHESIS compound_lhs RIGHT_PARENTHESIS
+    | LEFT_EXPR_PARENTHESIS compound_lhs closing_parenthesis     // 1.9 change
         {
             $$ = $2;
         }
 ;
 
-compound_lhs_node: 
+compound_lhs_leaf:                                               // 1.9, the same as lhs
       variable
         {
             $$ = VariableFactory.MakeLeftValue($<VariableFactory>1, this, $<String>1, @$);
         }
-    | primary LEFT_INDEXING_BRACKET array_key RIGHT_BRACKET
+    | primary LEFT_INDEXING_BRACKET call_args_opt closing_bracket        
         {
-            $$ = new ArrayItemAccess($1, $3, @$);
+            $$ = MakeArrayItemAccess($1, $3, @$);
         }
     | primary DOT IDENTIFIER
         {
@@ -612,14 +624,13 @@ compound_lhs_node:
         }
 ;
 
-
 lhs: variable
         {
             $$ = VariableFactory.MakeLeftValue($<VariableFactory>1, this, $<String>1, @$);
         }
-    | primary LEFT_INDEXING_BRACKET array_key RIGHT_BRACKET
+    | primary LEFT_INDEXING_BRACKET call_args_opt closing_bracket             // 1.9 change
         {
-            $$ = new ArrayItemAccess($1, $3, @$);
+            $$ = MakeArrayItemAccess($1, $3, @$);
         }
     | primary DOT IDENTIFIER
         {
@@ -690,12 +701,12 @@ method_name:
         }        
     | op
         {
-            _tokenizer.LexicalState = LexicalState.EXPR_END;
+            _tokenizer.LexicalState = LexicalState.EXPR_ENDFN; // 1.8: EXPR_END
             $$ = $1;
         }
     | reswords
         {
-            _tokenizer.LexicalState = LexicalState.EXPR_END;
+            _tokenizer.LexicalState = LexicalState.EXPR_ENDFN; // 1.8: EXPR_END
             $$ = $<String>1;
     }
 ;
@@ -734,10 +745,12 @@ op:
     | EQUAL             { $$ = Symbols.Equal; }
     | STRICT_EQUAL      { $$ = Symbols.StrictEqual; }
     | MATCH             { $$ = Symbols.Match; }
+    | NMATCH            { $$ = Symbols.NotMatch; }      // 1.9
     | GREATER           { $$ = Symbols.GreaterThan; }
     | GREATER_OR_EQUAL  { $$ = Symbols.GreaterEqual; }
     | LESS              { $$ = Symbols.LessThan; }
     | LESS_OR_EQUAL     { $$ = Symbols.LessEqual; }
+    | NOT_EQUAL         { $$ = Symbols.NotEqual; }      // 1.9
     | LSHFT             { $$ = Symbols.LeftShift; }
     | RSHFT             { $$ = Symbols.RightShift; }
     | PLUS              { $$ = Symbols.Plus; }
@@ -747,6 +760,7 @@ op:
     | SLASH             { $$ = Symbols.Divide; }
     | PERCENT           { $$ = Symbols.Mod; }
     | POW               { $$ = Symbols.Power; }
+    | BANG              { $$ = Symbols.Bang; }
     | TILDE             { $$ = Symbols.BitwiseNot; }
     | UNARY_PLUS        { $$ = Symbols.UnaryPlus; }
     | UNARY_MINUS       { $$ = Symbols.UnaryMinus; }
@@ -782,9 +796,9 @@ arg:
         {
             $$ = new SimpleAssignmentExpression($1, $3, $2, @$);
         }
-    | primary LEFT_INDEXING_BRACKET array_key RIGHT_BRACKET OP_ASSIGNMENT arg
+    | primary LEFT_INDEXING_BRACKET call_args_opt closing_bracket OP_ASSIGNMENT arg    // 1.9 change
         {
-            $$ = new SimpleAssignmentExpression(new ArrayItemAccess($1, $3, @2), $6, $5, @$);
+            $$ = new SimpleAssignmentExpression(MakeArrayItemAccess($1, $3, @2), $6, $5, @$);
         }
     | primary DOT IDENTIFIER OP_ASSIGNMENT arg
         {
@@ -900,19 +914,19 @@ arg:
         }
     | arg NOT_EQUAL arg
         {
-            $$ = new NotExpression(new MethodCall($1, Symbols.Equal, new Arguments($3), @$), @$);
+            $$ = new MethodCall($1, Symbols.NotEqual, new Arguments($3), @$);
         }
     | arg MATCH arg
         {
+            // TODO: MRI inconsistent (NMATCH vs MATCH):
             $$ = MakeMatch($1, $3, @$);
         }
     | arg NMATCH arg
         {
-            $$ = new NotExpression(MakeMatch($1, $3, @2), @$);
+            $$ = new MethodCall($1, Symbols.NotMatch, new Arguments($3), @$);
         }
     | BANG arg
         {
-            // TODO: warning: string literal in condition
             $$ = new NotExpression($2, @$);
         }
     | TILDE arg
@@ -951,13 +965,25 @@ arg:
         {
             $$ = new RangeExpression($1, $3, true, @$);
         }
-    | DEFINED opt_nl arg
+    | DEFINED new_line_opt arg
         {
             $$ = new IsDefinedExpression($3, @$);
         }
-    | arg QUESTION_MARK arg COLON arg
+    | arg QUESTION_MARK arg new_line_opt COLON arg
         {
-            $$ = new ConditionalExpression(ToCondition($1), $3, $5, @$);
+            $$ = new ConditionalExpression(ToCondition($1), $3, $6, @$);
+        }
+    | arg QUESTION_MARK jump_statement_parameterless new_line_opt COLON arg
+        {
+            $$ = new ConditionalJumpExpression(ToCondition($1), $3, false, $6, @$);
+        }
+    | arg QUESTION_MARK arg new_line_opt COLON jump_statement_parameterless
+        {
+            $$ = new ConditionalJumpExpression(ToCondition($1), $6, true, $3, @$);
+        }
+    | arg QUESTION_MARK jump_statement_parameterless new_line_opt COLON jump_statement_parameterless
+        {
+            $$ = new ConditionalStatement(ToCondition($1), false, $3, $6, @$);
         }
     | primary
         {
@@ -965,95 +991,69 @@ arg:
         }
 ;
         
-array_key: 
-      /* empty */
+array_items:                              // 1.9 changes
+      /* empty */  
         {
             SetArguments();
-        }
-    | command opt_nl
-        {
-            _tokenizer.ReportWarning(Errors.ParenthesizeArguments);
-            SetArguments($1);
         }
     | args trailer
         {
-            PopAndSetArguments($1, null, null, null, @1);
+            PopAndSetArguments($1, null);
         }
-    | args COMMA STAR arg opt_nl
+    | args COMMA maplets trailer      
         {
-            PopAndSetArguments($1, null, $4, null, MergeLocations(@1, @4));
+            PushArgument($1, new HashConstructor($3.ToArray(), @3));
+            PopAndSetArguments($1 + 1, null);
         }
     | maplets trailer
         {
-            SetArguments(null, $1, null, null, @1);
-        }
-    | STAR arg opt_nl
-        {
-            SetArguments(null, null, $2, null, MergeLocations(@1, @2));
+            SetArguments(new HashConstructor($1.ToArray(), @1), null);
         }
 ;
 
-paren_args:   
-      LEFT_PARENTHESIS /* empty */ RIGHT_PARENTHESIS
+parenthesized_args:                      // 1.9 changes
+      LEFT_PARENTHESIS call_args_opt closing_parenthesis
         {
-            SetArguments();
-        }
-    | LEFT_PARENTHESIS open_args opt_nl RIGHT_PARENTHESIS
-        {
-            Debug.Assert($2.Arguments != null);
-            $$ = $2;
-        }
-    | LEFT_PARENTHESIS block_call opt_nl RIGHT_PARENTHESIS
-        {
-            _tokenizer.ReportWarning(Errors.ParenthesizeArguments);
-            SetArguments($2);
-        }
-    | LEFT_PARENTHESIS args COMMA block_call opt_nl RIGHT_PARENTHESIS
-        {
-            _tokenizer.ReportWarning(Errors.ParenthesizeArguments);    
-            SetArguments(PopArguments($2, $4), null, null, null, @$);
+            $<Arguments>$ = $<Arguments>2 ?? Arguments.Empty;
+            $<Block>$ = $<Block>2;
         }
 ;
 
-opt_paren_args: 
+parenthesized_args_opt: 
       /* empty */
         {
             SetNoArguments(null);
         }
-    | paren_args
+    | parenthesized_args
         {
             $$ = $1;
         }
 ;
 
-open_args: 
-      args opt_block_reference
+call_args_opt:                    // 1.9 changes
+      /* empty */
         {
-            PopAndSetArguments($1, null, null, $2, @$);
+            SetNoArguments(null);
         }
-    | args COMMA STAR arg opt_block_reference
+    | call_args
         {
-            PopAndSetArguments($1, null, $4, $5, @$);
+            $$ = $1;
         }
-    | maplets opt_block_reference
+;
+
+call_args:                        // 1.9 changes
+      args block_reference_opt
         {
-            SetArguments(null, $1, null, $2, @$);
+            PopAndSetArguments($1, $2);
         }
-    | maplets COMMA STAR arg opt_block_reference
+    | args COMMA maplets block_reference_opt
         {
-            SetArguments(null, $1, $4, $5, @$);
+            PushArgument($1, new HashConstructor($3.ToArray(), @3));
+            PopAndSetArguments($1 + 1, $4);
         }
-    | args COMMA maplets opt_block_reference
+    | maplets block_reference_opt
         {
-            PopAndSetArguments($1, $3, null, $4, @$);
-        }
-    | args COMMA maplets COMMA STAR arg opt_block_reference
-        {
-            PopAndSetArguments($1, $3, $6, $7, @$);
-        }
-    | STAR arg opt_block_reference
-        {
-            SetArguments(null, null, $2, $3, @$);
+            SetArguments(new HashConstructor($1.ToArray(), @1), $2);
         }
     | block_reference
         {
@@ -1061,95 +1061,17 @@ open_args:
         }
     | command
         {
-            _tokenizer.ReportWarning(Errors.ParenthesizeArguments);                
             SetArguments($1);
         }
 ;
 
-closed_args:
-      arg COMMA args opt_block_reference
-        {
-            SetArguments(PopArguments($1, $3), null, null, $4, @$);
-        }
-    | arg COMMA block_reference
-        {
-            SetArguments($1, $3);
-        }
-    | arg COMMA STAR arg opt_block_reference
-        {
-            SetArguments(new Expression[] { $1 }, null, $4, $5, @$);
-        }
-    | arg COMMA args COMMA STAR arg opt_block_reference
-        {
-            SetArguments(PopArguments($1, $3), null, $6, $7, @$);
-        }
-    | maplets opt_block_reference
-        {
-            SetArguments(null, $1, null, $2, @$);
-        }
-    | maplets COMMA STAR arg opt_block_reference
-        {
-            SetArguments(null, $1, $4, $5, @$);
-        }
-    | arg COMMA maplets opt_block_reference
-        {
-            SetArguments(new Expression[] { $1 }, $3, null, $4, @$);
-        }
-    | arg COMMA args COMMA maplets opt_block_reference
-        {
-            SetArguments(PopArguments($1, $3), $5, null, $6, @$);
-        }
-    | arg COMMA maplets COMMA STAR arg opt_block_reference
-        {
-            SetArguments(new Expression[] { $1 }, $3, $6, $7, @$);
-        }
-    | arg COMMA args COMMA maplets COMMA STAR arg opt_block_reference
-        {
-            SetArguments(PopArguments($1, $3), $5, $8, $9, @$);
-        }
-    | STAR arg opt_block_reference
-        {
-            SetArguments(Expression.EmptyArray, null, $2, $3, @$);
-        }
-    | block_reference
-        {
-            SetArguments($1);
-        }
-;
-
-command_args:
+command_args:                    // 1.9 changes
         {
             $<Integer1>$ = _tokenizer.EnterCommandArguments();
         }
-      command_args_content
+      call_args
         {
             _tokenizer.LeaveCommandArguments($<Integer1>1);
-            $$ = $2;
-        }
-;
-
-command_args_content: 
-      open_args
-        {
-            Debug.Assert($1.Arguments != null);
-            $$ = $1;
-        }
-    | LEFT_ARG_PARENTHESIS
-        {
-            _tokenizer.LexicalState = LexicalState.EXPR_ENDARG;
-        }
-      RIGHT_PARENTHESIS
-        {
-            _tokenizer.ReportWarning(Errors.WhitespaceBeforeArgumentParentheses);    
-            SetArguments();
-        }
-    | LEFT_ARG_PARENTHESIS closed_args
-        {
-            _tokenizer.LexicalState = LexicalState.EXPR_ENDARG;
-        }
-      RIGHT_PARENTHESIS
-        {
-            _tokenizer.ReportWarning(Errors.WhitespaceBeforeArgumentParentheses);    
             $$ = $2;
         }
 ;
@@ -1161,10 +1083,14 @@ block_reference:
         }
 ;
 
-opt_block_reference:
+block_reference_opt:
       COMMA block_reference
         {
             $$ = $2;
+        }
+    | COMMA                      // 1.9
+        {
+            $$ = null;
         }
     | /* empty */
         {
@@ -1177,9 +1103,24 @@ args:
         {
             PushArgument(0, $1);
         }
+    | compound_rhs
+        {
+            $$ = $1;
+        }
+;
+
+compound_rhs: 
+      STAR arg
+        {
+            PushArgument(0, new SplattedArgument($2));
+        }
     | args COMMA arg
         {
             PushArgument($1, $3);
+        }
+    | args COMMA STAR arg
+        {
+            PushArgument($1, new SplattedArgument($4));
         }
 ;
 
@@ -1215,31 +1156,23 @@ primary:
         {
             $$ = new ConstantVariable(null, $2, @$);
         }
-    | primary LEFT_INDEXING_BRACKET array_key RIGHT_BRACKET
-        {
-            $$ = new ArrayItemAccess($1, $3, @$);
-        }
-    | LEFT_BRACKET array_key RIGHT_BRACKET
+    | LEFT_BRACKET array_items RIGHT_BRACKET
         {
             $$ = new ArrayConstructor($2, @$);
         }
     | LEFT_BRACE RIGHT_BRACE
         {
-            $$ = new HashConstructor(null, null, @$);
+            $$ = new HashConstructor(Maplet.EmptyArray, @$);
         }
     | LEFT_BRACE maplets trailer RIGHT_BRACE
         {
-            $$ = new HashConstructor($2, null, @$);
-        }
-    | LEFT_BRACE args trailer RIGHT_BRACE
-        {
-            $$ = new HashConstructor(null, PopHashArguments($2, @3), @$);
-        }                        
-    | YIELD LEFT_PARENTHESIS open_args RIGHT_PARENTHESIS
+            $$ = new HashConstructor($2.ToArray(), @$);
+        }                      
+    | YIELD LEFT_PARENTHESIS call_args closing_parenthesis
         {
             $$ = new YieldCall(RequireNoBlockArg($3), @$);
         }
-    | YIELD LEFT_PARENTHESIS RIGHT_PARENTHESIS
+    | YIELD LEFT_PARENTHESIS closing_parenthesis
         {
             $$ = new YieldCall(Arguments.Empty, @$);
         }
@@ -1247,9 +1180,17 @@ primary:
         {
             $$ = new YieldCall(null, @1);
         }
-    | DEFINED opt_nl LEFT_PARENTHESIS expr RIGHT_PARENTHESIS
+    | DEFINED new_line_opt LEFT_PARENTHESIS expr closing_parenthesis
         {
             $$ = new IsDefinedExpression($4, @$);
+        }
+    | NOT LEFT_PARENTHESIS expr closing_parenthesis
+        { 
+            $$ = new NotExpression($3, @$);
+        }
+    | NOT LEFT_PARENTHESIS closing_parenthesis
+        { 
+            $$ = new NotExpression(null, @$);
         }
     | operation brace_block
         {
@@ -1294,7 +1235,7 @@ primary:
             $$ = new WhileLoopExpression(ToCondition($3), false, false, $6, @$);
         }
     | case_expression
-    | FOR block_parameters IN
+    | FOR for_parameters IN
         {
             _tokenizer.EnterLoopCondition();
         }
@@ -1305,7 +1246,7 @@ primary:
         }
       compstmt END
         {
-            $$ = new ForLoopExpression(CurrentScope, $2, $5, $8, @$);
+            $$ = MakeForLoopExpression($2, $5, $8, @$);
             LeaveScope();
         }
     | block_expression
@@ -1323,7 +1264,7 @@ block_expression:
         {
             _tokenizer.LexicalState = LexicalState.EXPR_ENDARG;
         } 
-      opt_nl RIGHT_PARENTHESIS
+      closing_parenthesis
         {
             _tokenizer.ReportWarning(Errors.InterpretedAsGroupedExpression);            
             // BlockExpression behaves like an expression, so we don't need to create one here:
@@ -1386,7 +1327,7 @@ definition_expression:
             _inInstanceMethodDefinition++;
             EnterMethodDefinitionScope();
         }
-      parameters_definition body END
+      method_parameters body END
         {
             _inInstanceMethodDefinition--;
             $$ = new MethodDefinition(CurrentScope, null, $2, $4, $5, @$);
@@ -1399,14 +1340,18 @@ definition_expression:
       method_name
         {
             _inSingletonMethodDefinition++;
-            _tokenizer.LexicalState = LexicalState.EXPR_END;
+            _tokenizer.LexicalState = LexicalState.EXPR_ENDFN; // 1.8: EXPR_END
             EnterSingletonMethodDefinitionScope();
         }
-      parameters_definition body END
+      method_parameters body END
         {
             _inSingletonMethodDefinition--;
             $$ = new MethodDefinition(CurrentScope, $2, $5, $7, $8, @$);
             LeaveScope();
+        }
+     | LAMBDA lambda                       // 1.9
+        {
+            $$ = $2;
         }
 ;
 
@@ -1418,30 +1363,24 @@ body:
 ;
 
 case_expression:
-      CASE expr opt_terms when_clauses else_opt END
+      CASE expr terms_opt when_clauses else_opt END
         {
-            $$ = new CaseExpression($2, $4, $5, @$);
+            $$ = new CaseExpression($2, $4.ToArray(), $5, @$);
         }
-    | CASE opt_terms when_clauses else_opt END
+    | CASE terms_opt when_clauses else_opt END
         {
-            $$ = new CaseExpression(null, $3, $4, @$);
-        }
-    | CASE opt_terms ELSE compstmt END
-        {
-            $$ = new CaseExpression(null, null, new ElseIfClause(null, $4, @$), @$);
-        }   
+            $$ = new CaseExpression(null, $3.ToArray(), $4, @$);
+        }  
 ;
 
-then:
+then:                    // 1.9: COLON removed
       term
-    | COLON
     | THEN
     | term THEN
 ;
 
-do: 
+do:                      // 1.9: COLON removed
       term
-    | COLON
     | LOOP_DO
 ;
 
@@ -1467,10 +1406,10 @@ else_opt: /* empty */
             }
         ;
 
-block_parameters:
+for_parameters:
       lhs 
         { 
-            $$ = new CompoundLeftValue(CollectionUtils.MakeList<LeftValue>($1), null, @1); 
+            $$ = new CompoundLeftValue(new LeftValue[] { $1 }); 
         }
     | compound_lhs 
         { 
@@ -1478,62 +1417,265 @@ block_parameters:
         }
 ;
 
-block_parameters_opt:
-      /* empty */
+parameter_list:                                  // 1.9 change
+      parenthesized_parameter
         {
-            $$ = CompoundLeftValue.UnspecifiedBlockSignature;
+            $$ = CollectionUtils.MakeList<LeftValue>($1);
         }
-    | PIPE PIPE 
+    | parameter_list COMMA parenthesized_parameter
         {
-            $$ = CompoundLeftValue.EmptyBlockSignature;
+            ($$ = $1).Add($3);
         }
-    | LOGICAL_OR
+;
+
+parenthesized_parameter:                         // 1.9
+      parameter
         {
-            $$ = CompoundLeftValue.EmptyBlockSignature;
+            $$ = $1;
         }
-    | PIPE block_parameters PIPE
+    | LEFT_EXPR_PARENTHESIS compound_parameters closing_parenthesis
         {
             $$ = $2;
         }
 ;
 
-do_block: 
+compound_parameters:                             // 1.9
+      compound_parameter_list
+        {
+            $$ = new CompoundLeftValue($1.ToArray());
+        }
+    | compound_parameter_list COMMA STAR parameter
+        {
+            $$ = MakeCompoundLeftValue($1, $4, null);
+        }
+    | compound_parameter_list COMMA STAR
+        {
+            $$ = MakeCompoundLeftValue($1, Placeholder.Singleton, null);
+        }
+    | compound_parameter_list COMMA STAR parameter COMMA compound_parameter_list
+        {
+            $$ = MakeCompoundLeftValue($1, $4, $6);
+        }
+    | compound_parameter_list COMMA STAR COMMA compound_parameter_list
+        {
+            $$ = MakeCompoundLeftValue($1, Placeholder.Singleton, $5);
+        }
+    | STAR parameter COMMA compound_parameter_list
+        {
+            $$ = MakeCompoundLeftValue(null, $2, $4);
+        }
+    | STAR COMMA compound_parameter_list
+        {
+            $$ = MakeCompoundLeftValue(null, Placeholder.Singleton, $3);
+        }
+    | STAR parameter
+        {
+            $$ = new CompoundLeftValue(new LeftValue[] { $2 }, 0);
+        }
+    | STAR
+        {
+            $$ = new CompoundLeftValue(new LeftValue[] { Placeholder.Singleton }, 0);
+        }
+;
+
+compound_parameter_list:                         // 1.9
+      compound_parameter
+        {
+            $$ = CollectionUtils.MakeList<LeftValue>($1);
+        }
+    | compound_parameter_list COMMA compound_parameter
+        {
+            ($$ = $1).Add($3);
+        }
+;
+
+compound_parameter:                              // 1.9
+      parameter
+        {
+            $$ = $1;
+        }
+    | LEFT_EXPR_PARENTHESIS compound_parameters closing_parenthesis
+        {
+            $$ = $2;
+        }
+;
+
+block_parameter_list:
+      parameter_list COMMA default_block_parameter_list COMMA parameter_array block_parameter_opt
+        {
+            $$ = new Parameters($1.ToArray(), $1.Count, $3.ToArray(), $6, $6, @$);
+        }
+    | parameter_list COMMA default_block_parameter_list COMMA parameter_array COMMA parameter_list block_parameter_opt
+        {
+            $$ = new Parameters(MakeArray($1, $7), $1.Count, $3.ToArray(), $5, $8, @$);
+        }
+    | parameter_list COMMA default_block_parameter_list block_parameter_opt
+        {
+            $$ = new Parameters($1.ToArray(), $1.Count, $3.ToArray(), null, $4, @$);
+        }
+    | parameter_list COMMA default_block_parameter_list COMMA parameter_list block_parameter_opt
+        {
+            $$ = new Parameters(MakeArray($1, $5), $1.Count, $3.ToArray(), null, $6, @$);
+        }
+    | parameter_list COMMA parameter_array block_parameter_opt
+        {
+            $$ = new Parameters($1.ToArray(), $1.Count, null, $3, $4, @$);
+        }
+    | parameter_list COMMA                                                            // missing from method parameters
+        {
+            $$ = new Parameters(MakeArray($1, Placeholder.Singleton), $1.Count, null, null, null, @$);
+        }
+    | parameter_list COMMA parameter_array COMMA parameter_list block_parameter_opt   
+        {
+            $$ = new Parameters(MakeArray($1, $5), $1.Count, null, $3, $6, @$);
+        }
+    | parameter_list block_parameter_opt
+        {
+            $$ = new Parameters($1.ToArray(), $1.Count, null, null, $2, @$);
+        }
+    | default_block_parameter_list COMMA parameter_array block_parameter_opt
+        {
+            $$ = new Parameters(null, 0, $1.ToArray(), $3, $4, @$);
+        }
+    | default_block_parameter_list COMMA parameter_array COMMA parameter_list block_parameter_opt
+        {
+            $$ = new Parameters($5.ToArray(), 0, $1.ToArray(), $3, $6, @$);
+        }
+    | default_block_parameter_list block_parameter_opt
+        {
+            $$ = new Parameters(null, 0, $1.ToArray(), null, $2, @$);
+        }
+    | default_block_parameter_list COMMA parameter_list block_parameter_opt
+        {
+            $$ = new Parameters($3.ToArray(), 0, $1.ToArray(), null, $4, @$);
+        }
+    | parameter_array block_parameter_opt
+        {
+            $$ = new Parameters(null, 0, null, $1, $2, @$);
+        }
+    | parameter_array COMMA parameter_list block_parameter_opt
+        {
+            $$ = new Parameters($3.ToArray(), 0, null, $1, $4, @$);
+        }
+    | block_parameter
+        {
+            $$ = new Parameters(null, 0, null, null, $1, @$);
+        }
+    | /* empty */
+        {
+            $$ = Parameters.Empty;
+        }
+;
+
+block_parameters_opt:                         // 1.9
+      /* empty */
+        {
+            $$ = null;
+        }
+    | block_parameters
+        {
+            _tokenizer.CommandMode = true;
+            $$ = $1;
+        }
+;
+
+block_parameters:                                 // 1.9
+      LOGICAL_OR
+        {
+            $<Parameters>$ = null;
+        }
+    | PIPE block_parameter_list block_variables_opt PIPE
+        {
+            $<Parameters>$ = $2;
+        }
+;
+
+block_variables_opt:                             // 1.9
+      /* empty */
+    | SEMICOLON block_variables
+;
+
+block_variables:                                // 1.9
+      parameter
+    | block_variables COMMA parameter
+;
+
+lambda:                                         // 1.9
+        {
+            $<Integer1>$ = _tokenizer.EnterLambdaDefinition();
+            EnterNestedScope();
+        }
+      lambda_parameters lambda_body
+        {
+            $$ = MakeLambdaDefinition($2, $3, @$);
+            _tokenizer.LeaveLambdaDefinition($<Integer1>$);
+            LeaveScope();
+        }
+;
+
+lambda_parameters:                              // 1.9
+      LEFT_PARENTHESIS parameters block_variables_opt closing_parenthesis
+		{
+            $$ = $2;
+		}
+	| parameters
+		{
+            $$ = $1;
+		}
+;
+
+lambda_body:                             // 1.9
+      LEFT_LAMBDA_BRACE compstmt RIGHT_BRACE
+        {
+            $$ = $2;
+        }
+    | LAMBDA_DO compstmt END
+        {
+            $$ = $2;
+        }
+;
+
+do_block:                                // 1.9 change
       BLOCK_DO
         {
             EnterNestedScope();
         }
-      block_parameters_opt compstmt END
+      block_parameters_opt compstmt END           
         {
-            $$ = new BlockDefinition(CurrentScope, $3, $4, @$);
+            $$ = MakeBlockDefinition($3, $4, @$);
             LeaveScope();
         }
 ;
 
 block_call: 
       command do_block
-        {                            
+        {      
+            if ($1 is YieldCall) {
+                _tokenizer.ReportError(Errors.BlockGivenToYield);
+            }
+			
             SetBlock($$ = $1, $2);
         }
-    | block_call DOT operation2 opt_paren_args
+    | block_call DOT operation2 parenthesized_args_opt
         {
             $$ = MakeMethodCall($1, $3, $4, @$);
         }
-    | block_call SEPARATING_DOUBLE_COLON operation2 opt_paren_args
+    | block_call SEPARATING_DOUBLE_COLON operation2 parenthesized_args_opt
         {
             $$ = MakeMethodCall($1, $3, $4, @$);
         }
 ;
 
 method_call: 
-      operation paren_args
+      operation parenthesized_args
         {
             $$ = MakeMethodCall(null, $1, $2, @$);
         }
-    | primary DOT operation2 opt_paren_args
+    | primary DOT operation2 parenthesized_args_opt
         {
             $$ = MakeMethodCall($1, $3, $4, @$);
         }
-    | primary SEPARATING_DOUBLE_COLON operation2 paren_args
+    | primary SEPARATING_DOUBLE_COLON operation2 parenthesized_args
         {
             $$ = MakeMethodCall($1, $3, $4, @$);
         }
@@ -1541,7 +1683,19 @@ method_call:
         {
             $$ = new MethodCall($1, $3, null, @3);
         }
-    | SUPER paren_args
+    | primary DOT parenthesized_args                                         // 1.9
+        {
+            $$ = MakeMethodCall($1, Symbols.Call, $3, @$);
+        }
+    | primary SEPARATING_DOUBLE_COLON parenthesized_args                     // 1.9
+        {
+            $$ = MakeMethodCall($1, Symbols.Call, $3, @$);
+        }
+    | primary LEFT_INDEXING_BRACKET call_args_opt closing_bracket            // 1.9
+        {
+            $$ = MakeMethodCall($1, Symbols.ArrayItemRead, $3, @$);
+        }
+    | SUPER parenthesized_args
         {
             $$ = MakeSuperCall($2, @1);
         }
@@ -1558,7 +1712,7 @@ brace_block:
         }
       block_parameters_opt compstmt RIGHT_BRACE
         {
-            $$ = new BlockDefinition(CurrentScope, $3, $4, @$);
+            $$ = MakeBlockDefinition($3, $4, @$);
             LeaveScope();
         }
     | DO
@@ -1567,7 +1721,7 @@ brace_block:
         }
       block_parameters_opt compstmt END
         {
-            $$ = new BlockDefinition(CurrentScope, $3, $4, @$);
+            $$ = MakeBlockDefinition($3, $4, @$);
             LeaveScope();
         }
 ;
@@ -1583,25 +1737,10 @@ when_clauses:
         }
 ;
 
-when_clause: 
-      WHEN when_args then compstmt
-         {
-             $$ = MakeWhenClause($2, $4, @4);
-         }
-;
-            
-when_args: 
-      args
+when_clause:
+      WHEN args then compstmt 
         {
-            SetWhenClauseArguments($1, null);
-        }
-    | args COMMA STAR arg
-        {
-            SetWhenClauseArguments($1, $4);
-        }
-    | STAR arg
-        {
-            SetWhenClauseArguments(0, $2);
+            $$ = new WhenClause(PopArguments($2), $4, @4);
         }
 ;
 
@@ -1627,15 +1766,11 @@ rescue_clauses:
 rescue_clause: 
       RESCUE exc_var then compstmt
         {
-            $$ = new RescueClause($2, $4, @$);        
+            $$ = new RescueClause(Expression.EmptyArray, $2, $4, @$);        
         }
-    | RESCUE arg exc_var then compstmt
+    | RESCUE args exc_var then compstmt
         {
-            $$ = new RescueClause($2, $3, $5, @$);        
-        }
-    | RESCUE compound_rhs exc_var then compstmt
-        {
-            $$ = new RescueClause($2, $3, $5, @$);        
+            $$ = new RescueClause(PopArguments($2), $3, $5, @$);        
         }
 ;
 
@@ -1662,7 +1797,11 @@ ensure_opt:
 ;
         
 string_concatenation: 
-      string
+      CHARACTER                                     // 1.9
+        {
+            $$ = CollectionUtils.MakeList<Expression>(new StringLiteral($1, @1));
+        }
+    | string
         {
             $$ = $1;
         }
@@ -1708,7 +1847,7 @@ words:
     | WORDS_BEGIN word_list word STRING_END
         {
             $2.Add(new StringConstructor($3, StringKind.Mutable, @3));
-            $$ = new ArrayConstructor(new Arguments($2.ToArray(), null, null, @2), @$);
+            $$ = new ArrayConstructor(new Arguments($2.ToArray()), @$);
         }
 ;
 
@@ -1742,7 +1881,7 @@ verbatim_words:
     | VERBATIM_WORDS_BEGIN verbatim_word_list STRING_CONTENT STRING_END
         {
             $2.Add(MakeStringLiteral($3, @3));
-            $$ = MakeVerbatimWords($2, @2, @$);
+            $$ = MakeVerbatimWords($2, @$);
         }
 ;
 
@@ -1782,7 +1921,7 @@ string_content:
         {
             // STRING_EMBEDDED_CODE_END leaves parenthesised expression, but command_args in compstmt restores it back to the state after 
             // STRING_EMBEDDED_CODE_BEGIN. So we need to leave it again.
-            _tokenizer.LeaveParenthesisedExpression();
+            _tokenizer.PopParenthesisedExpressionStack();
             $$ = MakeBlockExpression($2, @2);
         }
 ;
@@ -1914,12 +2053,13 @@ superclass:
         }
 ;
 
-parameters_definition:
-      LEFT_PARENTHESIS parameters opt_nl RIGHT_PARENTHESIS
-          {
-              $$ = $2;
-              _tokenizer.LexicalState = LexicalState.EXPR_BEG;
-          }
+method_parameters:
+      LEFT_PARENTHESIS parameters closing_parenthesis
+        {
+            $$ = $2;
+            _tokenizer.LexicalState = LexicalState.EXPR_BEG;
+            _tokenizer.CommandMode = true;
+        }
     | parameters term
         {
             $$ = $1;
@@ -1927,41 +2067,65 @@ parameters_definition:
 ;
 
 parameters: 
-      parameter_list COMMA default_parameter_list COMMA array_parameter block_parameter_opt
+      parameter_list COMMA default_parameter_list COMMA parameter_array block_parameter_opt
         {
-            $$ = new Parameters($1, $3, $5, $6, @$);
+            $$ = new Parameters($1.ToArray(), $1.Count, $3.ToArray(), $5, $6, @$);
+        }
+    | parameter_list COMMA default_parameter_list COMMA parameter_array COMMA parameter_list block_parameter_opt   // 1.9
+        { 
+            $$ = new Parameters(MakeArray($1, $7), $1.Count, $3.ToArray(), $5, $8, @$);
         }
     | parameter_list COMMA default_parameter_list block_parameter_opt
         {
-            $$ = new Parameters($1, $3, null, $4, @$);
+            $$ = new Parameters($1.ToArray(), $1.Count, $3.ToArray(), null, $4, @$);
         }
-    | parameter_list COMMA array_parameter block_parameter_opt
+    | parameter_list COMMA default_parameter_list COMMA parameter_list block_parameter_opt                         // 1.9
         {
-            $$ = new Parameters($1, null, $3, $4, @$);
+            $$ = new Parameters(MakeArray($1, $5), $1.Count, $3.ToArray(), null, $6, @$);
+        }
+    | parameter_list COMMA parameter_array block_parameter_opt
+        {
+            $$ = new Parameters($1.ToArray(), $1.Count, null, $3, $4, @$);
+        }
+    | parameter_list COMMA parameter_array COMMA parameter_list block_parameter_opt
+        {
+            $$ = new Parameters(MakeArray($1, $5), $1.Count, null, $3, $6, @$);
         }
     | parameter_list block_parameter_opt
         {
-            $$ = new Parameters($1, null, null, $2, @$);
+            $$ = new Parameters($1.ToArray(), $1.Count, null, null, $2, @$);
         }
-    | default_parameter_list COMMA array_parameter block_parameter_opt
+    | default_parameter_list COMMA parameter_array block_parameter_opt
         {
-            $$ = new Parameters(null, $1, $3, $4, @$);
+            $$ = new Parameters(null, 0, $1.ToArray(), $3, $4, @$);
+        }
+    | default_parameter_list COMMA parameter_array COMMA parameter_list block_parameter_opt                        // 1.9
+        {
+            $$ = new Parameters($5.ToArray(), 0, $1.ToArray(), $3, $6, @$);
         }
     | default_parameter_list block_parameter_opt
         {
-            $$ = new Parameters(null, $1, null, $2, @$);
+            $$ = new Parameters(null, 0, $1.ToArray(), null, $2, @$);
         }
-    | array_parameter block_parameter_opt
+    | default_parameter_list COMMA parameter_list block_parameter_opt                                              // 1.9
         {
-            $$ = new Parameters(null, null, $1, $2, @$);
+            $$ = new Parameters($3.ToArray(), 0, $1.ToArray(), null, $4, @$);
+        }
+    | parameter_array block_parameter_opt
+        {
+            $$ = new Parameters(null, 0, null, $1, $2, @$);
+        }
+    | parameter_array COMMA parameter_list block_parameter_opt                                                     // 1.9
+        {
+            $$ = new Parameters($3.ToArray(), 0, null, $1, $4, @$);
         }
     | block_parameter
         {
-            $$ = new Parameters(null, null, null, $1, @$);
+            $$ = new Parameters(null, 0, null, null, $1, @$);
         }
     | /* empty */ 
         {
-            $$ = new Parameters(null, null, null, null, @$);
+            $$ = Parameters.Empty;
         }
 ;
 
@@ -1992,41 +2156,50 @@ parameter:
         }
 ;
 
-parameter_list: 
-      parameter
-        {
-            $$ = CollectionUtils.MakeList<LocalVariable>($1);
-        }
-    | parameter_list COMMA parameter
-        {
-            ($$ = $1).Add($3);
+default_parameter:
+      IDENTIFIER ASSIGNMENT arg
+        {        
+            $$ = new SimpleAssignmentExpression(DefineParameter($1, @$), $3, null, @$);
         }
 ;
 
-default_parameter: 
-      parameter ASSIGNMENT arg
+// Default block parameter is different from default method parameter
+// Block parameter doesn't allow using binary expressions etc. defined by arg due to ambiguity with binary OR operator: lambda { |x=1| }
+default_block_parameter:
+      IDENTIFIER ASSIGNMENT primary                     
         {        
-            $$ = new SimpleAssignmentExpression($1, $3, null, @$);
+            $$ = new SimpleAssignmentExpression(DefineParameter($1, @$), $3, null, @$);
         }
 ;
 
 default_parameter_list: 
       default_parameter
         {
-            $$ = CollectionUtils.MakeList<SimpleAssignmentExpression>($1);
+            $$ = CollectionUtils.MakeList($1);
         }
     | default_parameter_list COMMA default_parameter
         {
             ($$ = $1).Add($3);
         }
-; 
+;
+
+default_block_parameter_list: 
+      default_block_parameter
+        {
+            $$ = CollectionUtils.MakeList($1);
+        }
+    | default_block_parameter_list COMMA default_block_parameter
+        {
+            ($$ = $1).Add($3);
+        }
+;
 
 array_parameter_mark: 
       ASTERISK
     | STAR
 ;
 
-array_parameter: 
+parameter_array: 
       array_parameter_mark parameter
         {    
             $$ = $2;
@@ -2066,7 +2239,7 @@ singleton:
        {
            _tokenizer.LexicalState = LexicalState.EXPR_BEG;
        }
-     expr opt_nl RIGHT_PARENTHESIS
+     expr closing_parenthesis
        {                        
            $$ = $3;
        }
@@ -2087,6 +2260,10 @@ maplet:
      arg DOUBLE_ARROW arg
        {
            $$ = new Maplet($1, $3, @$);
+       }
+   | LABEL arg                                      // 1.9
+       {
+           $$ = new Maplet(new SymbolLiteral($1, @1), $2, @$);
        }
 ;
 
@@ -2114,14 +2291,22 @@ dot_or_colon:
    | SEPARATING_DOUBLE_COLON
 ;
 
-opt_terms: 
+terms_opt: 
       /* empty */
     | terms
 ;
 
-opt_nl:
+new_line_opt:
       /* empty */
     | NEW_LINE
+;
+
+closing_parenthesis:
+      new_line_opt RIGHT_PARENTHESIS
+;
+
+closing_bracket:
+      new_line_opt RIGHT_BRACKET
 ;
 
 trailer: 

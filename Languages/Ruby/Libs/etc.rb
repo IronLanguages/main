@@ -21,7 +21,7 @@ module Etc
   class << self
     platform = System::PlatformID
     case System::Environment.OSVersion.Platform
-    when platform.Win32S, platform.WinCE, platform.Win32Windows, platform.Win32NT:
+    when platform.Win32S, platform.WinCE, platform.Win32Windows, platform.Win32NT
       def getlogin
         ENV['USERNAME']
       end
