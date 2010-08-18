@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -28,7 +29,6 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 #if !CLR2
 using BigInt = System.Numerics.BigInteger;
-using System.Linq.Expressions;
 #endif
 
 namespace IronRuby.Tests {
@@ -611,6 +611,10 @@ puts GM3.foo(123)
                 return 7;
             }
 
+            public int Apply<T>(IEnumerable<T> e, Action<T> f) {
+                return 8;
+            }
+
             public int Mixed<T>(T arg) {
                 return 8;
             }
@@ -684,6 +688,13 @@ p I.Where(a, 123)
 ambiguous
 7
 ");
+             // TODO:
+//             XTestOutput(@"
+//a = System::Array[Fixnum].new(1)
+//p I.Apply(a, lambda { |x| })
+//", @"
+//5
+//");
 
             // an inferred type is more specific than object:
             TestOutput(@"
@@ -763,24 +774,23 @@ p I.Mixed(1)
         }
 
         public void ClrExtensionMethods1() {
-#if !CLR2
             Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
             TestOutput(@"
 load_assembly SystemCoreAssembly
 using_clr_extensions System::Linq
 
-p System::Array[Fixnum].new([1,2,3]).first_or_default
+a = System::Array[Fixnum].new([1,2,3])
+p a.first_or_default
+#TODO: p a.method(:of_type).of(Fixnum).call.to_a #=> [1, 2, 3]
 ", @"
 1
 ");
-#endif
         }
 
         /// <summary>
         /// Loads an assembly that defines more extension methods in the given namespace.
         /// </summary>
         public void ClrExtensionMethods2() {
-#if !CLR2
             Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
             Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).Assembly.FullName);
             TestOutput(@"
@@ -793,20 +803,15 @@ p System::Array[Fixnum].new([1,2,3]).first_or_default
 ", @"
 1
 ");
-#endif
         }
 
         /// <summary>
         /// Extension methods not available by default onlty after their declaring namespace is "used".
         /// </summary>
         public void ClrExtensionMethods3() {
-#pragma warning disable 162 // unreachable code
-#if CLR2
-            return;
-#else
             Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
             Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).Assembly.FullName);
-#endif       
+            
             TestOutput(@"
 load_assembly DummyLinqAssembly
 load_assembly SystemCoreAssembly
@@ -820,7 +825,6 @@ p a.first_or_default
 #<NoMethodError: undefined method `first_or_default' for [1, 2, 3]:System::Int32[]>
 1
 ");
-#pragma warning restore 162
         }
 
         /// <summary>
@@ -849,6 +853,7 @@ L[A].new.f3(X.new) rescue puts '!f3'
 
 puts S.new.f4 
 puts 1.f4
+#TODO: A.new.method(:f4) rescue p $!
 A.new.f4 rescue puts '!f4'
 
 puts A.new.f5
@@ -883,6 +888,41 @@ f6
 f6
 !f6
 ");
+        }
+
+        /// <summary>
+        /// Extension methods are available on CLR interfaces implemented by Ruby classes.
+        /// </summary>
+        public void ClrExtensionMethods5() {
+#if TODO
+            Runtime.LoadAssembly(typeof(System.Linq.Enumerable).Assembly);
+            XTestOutput(@"
+using_clr_extensions System::Linq
+
+class Sequence
+  include System::Collections::Generic::IEnumerable[Object]
+  
+  def initialize array
+    @array = array
+  end
+  
+  def get_enumerator
+    @array.GetEnumerator()
+  end
+end
+
+class Array
+  def to_seq
+    Sequence.new self
+  end
+end
+
+a = Sequence.new [1, 2, 3]
+p a.select(lambda { |n| n * 2 })
+", @"
+[2, 3, 6]
+");
+#endif
         }
 
         #endregion
@@ -1925,12 +1965,14 @@ p T::GenericSubclass1[Fixnum].new.foo(1)
             public class D {
             }
 
-            public class C {
-                public int Id { get { return 0; } }
-            }
-
+            // the order of C<T> and C is important to test (we used to have a dependency on the order);
+            // (see http://ironruby.codeplex.com/workitem/5037)
             public class C<T> {
                 public int Id { get { return 1; } }
+            }
+
+            public class C {
+                public int Id { get { return 0; } }
             }
         }
 

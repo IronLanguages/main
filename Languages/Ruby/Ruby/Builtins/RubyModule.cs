@@ -513,19 +513,14 @@ namespace IronRuby.Builtins {
             foreach (var type in types) {
                 TypeTracker tracker = (NestedTypeTracker)MemberTracker.FromMemberInfo(type);
 
-                if (type.IsGenericType) {
-                    var name = ReflectionUtils.GetNormalizedTypeName(type);
-                    int index = names.IndexOf(name);
-                    if (index != -1) {
-                        trackers[index] = TypeGroup.UpdateTypeEntity(trackers[index], tracker);
-                        names[index] = name;
-                    } else {
-                        trackers.Add(tracker);
-                        names.Add(name);
-                    }
+                var name = (type.IsGenericType) ? ReflectionUtils.GetNormalizedTypeName(type) : type.Name;
+                int index = names.IndexOf(name);
+                if (index != -1) {
+                    trackers[index] = TypeGroup.UpdateTypeEntity(trackers[index], tracker);
+                    names[index] = name;
                 } else {
                     trackers.Add(tracker);
-                    names.Add(type.Name);
+                    names.Add(name);
                 }
             }
 

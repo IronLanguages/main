@@ -478,6 +478,7 @@ namespace IronRuby.Tests {
                 ClrExtensionMethods2,
                 ClrExtensionMethods3,
                 ClrExtensionMethods4,
+                ClrExtensionMethods5,
                 ClrOverloadInheritance1,
                 ClrOverloadInheritance2,
                 ClrOverloadInheritance3,
