@@ -49,6 +49,7 @@ class UnitTestSetup
         test_both_pattern_and_test_files(TestTestTask)
         test_pattern(TestTestTask)
         test_X_returns_everything_but_extension(TestPathMap)
+        test_running_multitasks(TestMultiTask)
     }
   end
 end

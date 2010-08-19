@@ -6,10 +6,10 @@ class UnitTestSetup
   
   def require_files
     require 'rubygems'
-    gem 'test-unit', "= 2.0.5"
-    gem 'activerecord', "= 2.3.5"
-    gem 'activesupport', "= 2.3.5"
-    gem 'activerecord-sqlserver-adapter', "=2.3.5"
+    gem 'test-unit', "= #{TestUnitVersion}"
+    gem 'activerecord', "= #{RailsVersion}"
+    gem 'activesupport', "= #{RailsVersion}"
+    gem 'activerecord-sqlserver-adapter', "= #{SqlServerAdapterVersion}"
   end
 
   def ensure_database_exists(name)
@@ -34,10 +34,7 @@ class UnitTestSetup
   end
 
   def gather_files
-    sqlserver_adapter_root_dir = File.expand_path 'External.LCA_RESTRICTED/Languages/Ruby/ruby19/lib/ruby/gems/1.9.1/gems/activerecord-sqlserver-adapter-2.3.5', ENV['DLR_ROOT']
-    activerecord_tests_dir = File.expand_path 'External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/activerecord/test', ENV['DLR_ROOT']
-    $LOAD_PATH << sqlserver_adapter_root_dir + '/test'
-    $LOAD_PATH << activerecord_tests_dir
+    gather_rails_files
 
     if UnitTestRunner.ironruby?
       $LOAD_PATH << File.expand_path('Languages/Ruby/Tests/Scripts/adonet_sqlserver', ENV['DLR_ROOT'])
@@ -58,11 +55,16 @@ class UnitTestSetup
     # Overwrite ACTIVERECORD_TEST_ROOT since aaaa_create_tables_test_sqlserver assumes a specific folder layout
     Object.const_set "ACTIVERECORD_TEST_ROOT", activerecord_tests_dir
 
-    @all_test_files = Dir.glob("#{sqlserver_adapter_root_dir}/test/cases/*_test_sqlserver.rb").sort
-    # Rails ActiveRecord tests
-    @all_test_files += Dir.glob("#{activerecord_tests_dir}/**/*_test.rb")
+    @all_test_files += Dir.glob("#{sqlserver_adapter_root_dir}/test/cases/*_test_sqlserver.rb").sort
+  end
+
+  def sanity
+    # Do some sanity checks
+    sanity_size(85)
   end
   
+=begin
+TODO: is this necessary?
   def require_tests
     # Note that the tests are registered using Kernel#at_exit, and will run during shutdown
     # The "require" statement just registers the tests for being run later...
@@ -75,11 +77,10 @@ class UnitTestSetup
       end
     }
   end
+=end
   
-  def sanity
-    # Do some sanity checks
-    sanity_size(85)
-  end
+=begin
+TODO:
 
   def disable_critical_failures
     # If this test executes, all subsequent tests start failing during setup with an exception
@@ -414,5 +415,5 @@ class UnitTestSetup
       :test_validates_length_of_using_within_utf8
 
   end
-
+=end
 end

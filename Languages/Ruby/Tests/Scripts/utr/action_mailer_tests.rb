@@ -6,8 +6,8 @@ class UnitTestSetup
   
   def require_files
     require 'rubygems'
-    gem 'test-unit', "= 2.0.5"
-    gem 'actionmailer', "= 2.3.5"
+    gem 'test-unit', "= #{TestUnitVersion}"
+    gem 'actionmailer', "= #{RailsVersion}"
     require 'action_mailer/version'
   end
 
@@ -18,14 +18,6 @@ class UnitTestSetup
   def sanity
     # Do some sanity checks
     sanity_size(5)
-    abort("Did not find some expected files...") unless File.exist?(@root_dir + "/test/mail_helper_test.rb")
-    sanity_version('2.3.5', ActionMailer::VERSION::STRING)
-  end
-
-  def disable_mri_failures
-    disable QuotingTest,
-      # RuntimeError: could not run test in sandbox
-      :test_quote_multibyte_chars
-  end
-  
+    sanity_version(RailsVersion, ActionMailer::VERSION::STRING)
+  end  
 end

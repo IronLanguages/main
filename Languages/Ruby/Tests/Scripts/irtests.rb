@@ -96,8 +96,6 @@ class IRTest
           #:ActiveSupport  => utr_runner("active_support"),
           #:ActiveRecord   => utr_runner("active_record"),
           #:ActiveResource => utr_runner("active_resource"),
-          #:ActionPack3    => utr_runner("action_pack_3", "-1.8.7"),
-          #:ActiveSupport3 => utr_runner("active_support_3", "-1.8.7"),
         })
       end
     
@@ -112,7 +110,6 @@ class IRTest
       if not options[:minimum]
          @parallel_tasks += [
            #[:ActionPack, :ActionSupport, :ActionMailer],
-           #[:ActionPack3, :ActionSupport3],
            #[:ActiveRecord, :ActiveResource],
          ]
       end 

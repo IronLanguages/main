@@ -217,12 +217,15 @@ class UnitTestSetup
 
   # Helpers for Rails tests
   
-  def gather_rails_files(version = "2.3.5")
-    rails_tests_dir = File.expand_path "External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-#{version}", ENV['DLR_ROOT']
-    @root_dir = File.expand_path @name, rails_tests_dir
-    path_modifier = (version == '3.0.0.rc') ? '' : '/test'
-    $LOAD_PATH << @root_dir + path_modifier
-    @all_test_files = Dir.glob("#{@root_dir}#{path_modifier}/**/*_test.rb").sort
+  RailsVersion = "3.0.0.rc"
+  TestUnitVersion = "2.1.1"
+  SqlServerAdapterVersion = "2.3.8"
+  
+  def gather_rails_files
+    rails_tests_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/Rails-#{RailsVersion}", ENV['DLR_ROOT'])
+    @root_dir = File.join(File.expand_path(@name, rails_tests_dir), "test")
+    $LOAD_PATH << @root_dir
+    @all_test_files = Dir.glob("#{@root_dir}/**/*_test.rb").sort
   end
 end         
 
