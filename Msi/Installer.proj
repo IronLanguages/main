@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    </PropertyGroup>
+    <ItemGroup>
+        <ProjectToBuild Include="..\Solutions\Codeplex-DLR.sln">
+            <Properties>Configuration=Silverlight4$(Configuration)</Properties>
+        </ProjectToBuild>
+        <ProjectToBuild Include="..\Solutions\Codeplex-DLR.sln">
+            <Properties>Configuration=$(Configuration)</Properties>
+        </ProjectToBuild>
+        <ProjectToBuild Include="Python\Chm\IronPython.Chm.proj">
+          <Name>IronPython.Chm</Name>
+        </ProjectToBuild>
+        <ProjectToBuild Include="Runtime\DLR.msm.wproj">
+            <Properties>Configuration=$(Configuration)</Properties>
+        </ProjectToBuild>        
+        <ProjectToBuild Include="IronStudio\IronStudio.msm.wproj">
+            <Properties>Configuration=$(Configuration)</Properties>
+        </ProjectToBuild>
+        <ProjectToBuild Include="Python\Msm\IronPython.Msm.wproj">
+            <Properties>Configuration=$(Configuration)</Properties>
+        </ProjectToBuild>
+        <ProjectToBuild Include="Python\Msi\IronPython.Msi.wproj">
+            <Properties>Configuration=$(Configuration)</Properties>
+        </ProjectToBuild>
+    </ItemGroup>
+
+    <Target Name="Build">
+        <MSBuild Projects="@(ProjectToBuild)"/>
+    </Target>
+    <Target Name="Rebuild">
+        <MSBuild Projects="@(ProjectToBuild)" Targets="Rebuild"/>
+    </Target>
+</Project>
