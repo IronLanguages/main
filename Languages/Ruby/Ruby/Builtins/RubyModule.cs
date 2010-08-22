@@ -625,7 +625,7 @@ namespace IronRuby.Builtins {
         private void Mutate() {
             Debug.Assert(!IsDummySingletonClass);
             if (IsFrozen) {
-                throw RubyExceptions.CreateTypeError(String.Format("can't modify frozen {0}", IsClass ? "class" : "module"));
+                throw RubyExceptions.CreateRuntimeError(String.Format("can't modify frozen {0}", IsClass ? "class" : "module"));
             }
         }
 
@@ -743,7 +743,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe: _instanceData cannot be unset
         internal bool IsModuleFrozen {
-            get { return _instanceData != null && _instanceData.Frozen; }
+            get { return _instanceData != null && _instanceData.IsFrozen; }
         }
 
         // thread-safe:
@@ -753,14 +753,14 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         public bool IsTainted {
-            get { return GetInstanceData().Tainted; }
-            set { GetInstanceData().Tainted = value; }
+            get { return GetInstanceData().IsTainted; }
+            set { GetInstanceData().IsTainted = value; }
         }
 
         // thread-safe:
         public bool IsUntrusted {
-            get { return GetInstanceData().Untrusted; }
-            set { GetInstanceData().Untrusted = value; }
+            get { return GetInstanceData().IsUntrusted; }
+            set { GetInstanceData().IsUntrusted = value; }
         }
 
         int IRubyObject.BaseGetHashCode() {

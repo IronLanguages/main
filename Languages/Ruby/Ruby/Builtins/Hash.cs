@@ -21,6 +21,9 @@ using IronRuby.Runtime;
 namespace IronRuby.Builtins {
 
     /// <summary>
+    /// TODO: ordered dictionary
+    /// TODO: all operations should check frozen state!
+    /// 
     /// Dictionary inherits from Object, mixes in Enumerable.
     /// Ruby hash is a Dictionary{object, object}, but it adds default value/proc
     /// </summary>
@@ -36,8 +39,21 @@ namespace IronRuby.Builtins {
         private const uint IsTaintedFlag = 2;
         private const uint IsUntrustedFlag = 4;
 
-        public Proc DefaultProc { get { return _defaultProc; } set { _defaultProc = value; } }
-        public object DefaultValue { get { return _defaultValue; } set { _defaultValue = value; } }
+        public Proc DefaultProc { 
+            get { return _defaultProc; } 
+            set {
+                Mutate();
+                _defaultProc = value;
+            }
+        }
+
+        public object DefaultValue { 
+            get { return _defaultValue; } 
+            set {
+                Mutate();
+                _defaultValue = value;
+            }
+        }
 
         #region Construction
 
@@ -99,10 +115,14 @@ namespace IronRuby.Builtins {
 
         #region Flags
 
-        public void Mutate() {
+        public void RequireNotFrozen() {
             if ((_flags & IsFrozenFlag) != 0) {
                 throw RubyExceptions.CreateObjectFrozenError();
             }
+        }
+
+        private void Mutate() {
+            RequireNotFrozen();
         }
 
         public bool IsTainted {

@@ -82,6 +82,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static Hash/*!*/ Initialize(Hash/*!*/ self) {
             Assert.NotNull(self);
+            self.RequireNotFrozen();
             return self;
         }
 
@@ -109,7 +110,6 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("initialize_copy", RubyMethodAttributes.PrivateInstance)]
         public static Hash/*!*/ InitializeCopy(RubyContext/*!*/ context, Hash/*!*/ self, [NotNull]Hash/*!*/ source) {
-            self.Mutate();
             self.DefaultProc = source.DefaultProc;
             self.DefaultValue = source.DefaultValue;
             IDictionaryOps.ReplaceData(self, source);
@@ -152,7 +152,6 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("default=")]
         public static object SetDefaultValue(RubyContext/*!*/ context, Hash/*!*/ self, object value) {
-            self.Mutate();
             self.DefaultProc = null;
             return self.DefaultValue = value;
         }
@@ -165,11 +164,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("replace")]
         public static Hash/*!*/ Replace(RubyContext/*!*/ context, Hash/*!*/ self, [DefaultProtocol, NotNull]IDictionary<object,object>/*!*/ other) {
             if (Object.ReferenceEquals(self, other)) {
+                self.RequireNotFrozen();
                 return self;
             }
 
-            self.Mutate();
-            
             Hash otherHash = other as Hash;
             if (otherHash != null) {
                 self.DefaultValue = otherHash.DefaultValue;
@@ -180,7 +178,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("shift")]
         public static object Shift(CallSiteStorage<Func<CallSite, Hash, object, object>>/*!*/ storage, Hash/*!*/ self) {
-            self.Mutate();
+            self.RequireNotFrozen();
             
             if (self.Count == 0) {
                 var site = storage.GetCallSite("default", 1);

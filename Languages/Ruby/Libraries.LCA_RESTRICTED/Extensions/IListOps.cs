@@ -115,7 +115,7 @@ namespace IronRuby.Builtins {
             ICollection<object> collection;
             if ((array = list as RubyArray) != null) {
                 array.InsertRange(index, items, start, count);
-            } else if ((listOfObject = list as List<object>) != null && ((collection = items as ICollection<object>) != null)) {
+            } else if ((listOfObject = list as List<object>) != null && ((collection = items as ICollection<object>) != null) && start == 0 && count == collection.Count) {
                 listOfObject.InsertRange(index, collection);
             } else {
                 for (int i = 0; i < count; i++) {
@@ -146,15 +146,19 @@ namespace IronRuby.Builtins {
         }
 
         internal static void AddRange(IList/*!*/ collection, IList/*!*/ items) {
+            RubyArray array;
+
             int count = items.Count;
             if (count <= 1) {
                 if (count > 0) {
                     collection.Add(items[0]);
+                } else if ((array = collection as RubyArray) != null) {
+                    array.RequireNotFrozen();
                 }
                 return;
             }
 
-            RubyArray array = collection as RubyArray;
+            array = collection as RubyArray;
             if (array != null) {
                 array.AddRange(items);
             } else {
@@ -242,7 +246,7 @@ namespace IronRuby.Builtins {
                 AddRange(result, self);
             }
 
-            allocateStorage.Context.TaintObjectBy<IList>(result, self);
+            allocateStorage.Context.TaintObjectBy(result, self);
             return result;
         }
 
@@ -684,7 +688,7 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            allocateStorage.Context.TaintObjectBy<IList>(result, self);
+            allocateStorage.Context.TaintObjectBy(result, self);
 
             return result;
         }
@@ -1135,6 +1139,13 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+
+        [RubyMethod("flatten!")]
+        public static IList FlattenInPlace(ConversionStorage<IList>/*!*/ tryToAry, RubyArray/*!*/ self) {
+            self.RequireNotFrozen();
+            return FlattenInPlace(tryToAry, (IList)self);
+        }
+        
         [RubyMethod("flatten!")]
         public static IList FlattenInPlace(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ self) {
             IList nested;
@@ -1422,6 +1433,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("insert")]
         public static IList/*!*/ Insert(IList/*!*/ self, [DefaultProtocol]int index, params object[]/*!*/ args) {
             if (args.Length == 0) {
+                var array = self as RubyArray;
+                if (array != null) {
+                    array.RequireNotFrozen();
+                }
                 return self;
             }
 
@@ -1481,9 +1496,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("unshift")]
         public static IList/*!*/ Unshift(IList/*!*/ self, params object[]/*!*/ args) {
-            if (args.Length > 0) {
-                InsertRange(self, 0, args, 0, args.Length);
-            }
+            InsertRange(self, 0, args, 0, args.Length);
             return self;
         }
 
@@ -1645,6 +1658,12 @@ namespace IronRuby.Builtins {
             
             AddUniqueItems(self, result, seen, ref nilSeen);
             return result;
+        }
+
+        [RubyMethod("uniq!")]
+        public static IList UniqueSelf(UnaryOpStorage/*!*/ hashStorage, BinaryOpStorage/*!*/ eqlStorage, RubyArray/*!*/ self) {
+            self.RequireNotFrozen();
+            return UniqueSelf(hashStorage, eqlStorage, (IList)self);
         }
 
         [RubyMethod("uniq!")]

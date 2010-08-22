@@ -94,13 +94,7 @@ namespace IronRuby.Runtime {
         public static bool HasSingletonClass(object obj) {
             return !(obj is int || obj is RubySymbol);
         }
-
-        public static void RequiresNotFrozen(RubyContext/*!*/ context, object/*!*/ obj) {
-            if (context.IsObjectFrozen(obj)) {
-                throw RubyExceptions.CreateObjectFrozenError();
-            }
-        }
-
+        
         public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
             object obj) {
 

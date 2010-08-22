@@ -142,10 +142,10 @@ namespace IronRuby.Tests {
             ((IRubyObjectState)a).Freeze();
             Assert(a.IsFrozen);
 
-            AssertExceptionThrown<InvalidOperationException>(() => a.IsTainted = true);
+            AssertExceptionThrown<RuntimeError>(() => a.IsTainted = true);
             Assert(!a.IsTainted);
-            
-            AssertExceptionThrown<InvalidOperationException>(() => a[1] = 1);
+
+            AssertExceptionThrown<RuntimeError>(() => a[1] = 1);
             Assert((int)a[0] == 1 && (int)a[1] == 5 && (int)a[2] == 8);
 
             var values = new object[] { 1, 5, 8 };
@@ -218,11 +218,11 @@ namespace IronRuby.Tests {
             AssertValueEquals(a, 1, 2, 3, 2, 3);
 
             a.Freeze();
-            AssertExceptionThrown<InvalidOperationException>(() => a.Add(1));
-            AssertExceptionThrown<InvalidOperationException>(() => a.AddCapacity(10));
-            AssertExceptionThrown<InvalidOperationException>(() => a.AddMultiple(10, 10));
-            AssertExceptionThrown<InvalidOperationException>(() => a.AddRange(new object[0]));
-            AssertExceptionThrown<InvalidOperationException>(() => a.AddRange(Enumerable(0)));
+            AssertExceptionThrown<RuntimeError>(() => a.Add(1));
+            AssertExceptionThrown<RuntimeError>(() => a.AddCapacity(10));
+            AssertExceptionThrown<RuntimeError>(() => a.AddMultiple(10, 10));
+            AssertExceptionThrown<RuntimeError>(() => a.AddRange(new object[0]));
+            AssertExceptionThrown<RuntimeError>(() => a.AddRange(Enumerable(0)));
         }
 
         [Options(NoRuntime = true)]
@@ -298,10 +298,10 @@ namespace IronRuby.Tests {
             a = new RubyArray(new[] { 1, 2, 3 });
             a.Freeze();
             Assert(!a.Remove(0));
-            AssertExceptionThrown<InvalidOperationException>(() => a.Remove(1));
-            AssertExceptionThrown<InvalidOperationException>(() => a.Clear());
-            AssertExceptionThrown<InvalidOperationException>(() => a.RemoveAt(0));
-            AssertExceptionThrown<InvalidOperationException>(() => a.RemoveRange(0, 1));
+            AssertExceptionThrown<RuntimeError>(() => a.Remove(1));
+            AssertExceptionThrown<RuntimeError>(() => a.Clear());
+            AssertExceptionThrown<RuntimeError>(() => a.RemoveAt(0));
+            AssertExceptionThrown<RuntimeError>(() => a.RemoveRange(0, 1));
         }
 
         [Options(NoRuntime = true)]
@@ -357,9 +357,9 @@ namespace IronRuby.Tests {
             AssertValueEquals(a, 10, 20, 30, -2, -1, 0, 1, 2, 0, 1, 2, 3);
             
             a.Freeze();
-            AssertExceptionThrown<InvalidOperationException>(() => a.Insert(0, 1));
-            AssertExceptionThrown<InvalidOperationException>(() => a.InsertRange(0, new object[0]));
-            AssertExceptionThrown<InvalidOperationException>(() => a.InsertRange(0, Enumerable(0)));
+            AssertExceptionThrown<RuntimeError>(() => a.Insert(0, 1));
+            AssertExceptionThrown<RuntimeError>(() => a.InsertRange(0, new object[0]));
+            AssertExceptionThrown<RuntimeError>(() => a.InsertRange(0, Enumerable(0)));
         }
 
         [Options(NoRuntime = true)]
@@ -378,8 +378,8 @@ namespace IronRuby.Tests {
             Assert(ArrayUtils.ValueEquals(a.ToArray(), new object[] { 1, 2, 3, 4, 5 }));
 
             a.Freeze();
-            AssertExceptionThrown<InvalidOperationException>(() => a.Reverse());
-            AssertExceptionThrown<InvalidOperationException>(() => a.Sort());
+            AssertExceptionThrown<RuntimeError>(() => a.Reverse());
+            AssertExceptionThrown<RuntimeError>(() => a.Sort());
         }
     }
 }

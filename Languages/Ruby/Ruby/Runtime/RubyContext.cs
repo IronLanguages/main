@@ -1763,6 +1763,14 @@ namespace IronRuby.Runtime {
             }
         }
 
+        public IRubyObjectState/*!*/ GetObjectState(object/*!*/ obj) {
+            return obj as IRubyObjectState ?? GetInstanceData(obj);
+        }
+
+        public IRubyObjectState TryGetObjectState(object/*!*/ obj) {
+            return obj as IRubyObjectState ?? TryGetInstanceData(obj);
+        }
+
         public bool IsObjectFrozen(object obj) {
             RubyInstanceData data;
             return IsObjectFrozen(obj, out data);
@@ -1776,41 +1784,24 @@ namespace IronRuby.Runtime {
             }
 
             data = TryGetInstanceData(obj);
-            return data != null ? data.Frozen : false;
+            return data != null ? data.IsFrozen : false;
         }
 
         public bool IsObjectTainted(object obj) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                return state.IsTainted;
-            }
-
-            RubyInstanceData data = TryGetInstanceData(obj);
-            return data != null ? data.Tainted : false;
+            var state = TryGetObjectState(obj);
+            return state != null ? state.IsTainted : false;
         }
 
         public bool IsObjectUntrusted(object obj) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                return state.IsUntrusted;
-            }
-
-            RubyInstanceData data = TryGetInstanceData(obj);
-            return data != null ? data.Untrusted : false;
+            var state = TryGetObjectState(obj);
+            return state != null ? state.IsUntrusted : false;
         }
 
         public void GetObjectTrust(object obj, out bool tainted, out bool untrusted) {
-            var state = obj as IRubyObjectState;
+            var state = TryGetObjectState(obj);
             if (state != null) {
                 tainted = state.IsTainted;
                 untrusted = state.IsUntrusted;
-                return;
-            }
-
-            RubyInstanceData data = TryGetInstanceData(obj);
-            if (data != null) {
-                tainted = data.Tainted;
-                untrusted = data.Untrusted;
             } else {
                 tainted = false;
                 untrusted = false; // TODO: default?
@@ -1818,42 +1809,36 @@ namespace IronRuby.Runtime {
         }
 
         public void FreezeObject(object obj) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                state.Freeze();
-            } else {
-                GetInstanceData(obj).Freeze();
-            }
+            GetObjectState(obj).Freeze();
         }
 
         public void SetObjectTaint(object obj, bool taint) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                state.IsTainted = taint;
-            } else {
-                GetInstanceData(obj).Tainted = taint;
-            }
+            GetObjectState(obj).IsTainted = taint;
         }
 
         public void SetObjectTrustiness(object obj, bool untrusted) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                state.IsUntrusted = untrusted;
-            } else {
-                GetInstanceData(obj).Untrusted = untrusted;
-            }
+            GetObjectState(obj).IsUntrusted = untrusted;
         }
 
-        public T TaintObjectBy<T>(T obj, object taintSource) {
-            if (IsObjectTainted(taintSource)) {
-                SetObjectTaint(obj, true);
+        public object TaintObjectBy(object obj, object source) {
+            var sourceState = TryGetObjectState(source);
+            if (sourceState != null) {
+                bool tainted = sourceState.IsTainted;
+                bool untrusted = sourceState.IsUntrusted;
+                if (tainted || untrusted) {
+                    var state = GetObjectState(obj);
+                    state.IsTainted |= tainted;
+                    state.IsUntrusted |= untrusted;
+                }
             }
+
             return obj;
         }
 
-        public T FreezeObjectBy<T>(T obj, object frozenStateSource) {
-            if (IsObjectFrozen(frozenStateSource)) {
-                FreezeObject(obj);
+        public object FreezeObjectBy(object obj, object source) {
+            var sourceState = TryGetObjectState(source);
+            if (sourceState != null && sourceState.IsFrozen) {
+                GetObjectState(obj).Freeze();
             }
             return obj;
         }

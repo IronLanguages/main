@@ -350,6 +350,7 @@ namespace IronRuby.Builtins {
         // Reinitialization. Not called when a factory/non-default ctor is called.
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static MutableString/*!*/ Reinitialize(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return self;
         }
 
@@ -358,7 +359,13 @@ namespace IronRuby.Builtins {
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("initialize_copy", RubyMethodAttributes.PrivateInstance)]
         public static MutableString/*!*/ Reinitialize(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString other) {
-            return Replace(self, other);
+            if (ReferenceEquals(self, other)) {
+                return self;
+            }
+
+            self.Clear();
+            self.Append(other);
+            return self.TaintBy(other);
         }
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
@@ -1042,6 +1049,7 @@ namespace IronRuby.Builtins {
             MutableString result = InternalChomp(self, separator);
 
             if (result.Equals(self) || result == null) {
+                self.RequireNotFrozen();
                 return null;
             }
 
@@ -1062,6 +1070,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("chop!")]
         public static MutableString ChopInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return self.IsEmpty ? null : ChopInteral(self);
         }
 
@@ -1531,6 +1540,7 @@ namespace IronRuby.Builtins {
 
             object blockResult;
 
+            self.RequireNotFrozen();
             self.TrackChanges();
 
             // prepare replacement in a builder:
@@ -1549,10 +1559,6 @@ namespace IronRuby.Builtins {
             }
 
             RequireNoVersionChange(self);
-
-            if (self.IsFrozen) {
-                throw RubyExceptions.CreateRuntimeError("string frozen");
-            }
 
             // replace content of self with content of the builder:
             self.Replace(0, self.Length, builder);
@@ -1772,7 +1778,7 @@ namespace IronRuby.Builtins {
         #endregion
 
 
-        #region delete, delete!
+        #region delete, delete!, clear
 
         private static MutableString/*!*/ InternalDelete(MutableString/*!*/ self, MutableString[]/*!*/ ranges) {
             BitArray map = new RangeParser(ranges).Parse();
@@ -1797,7 +1803,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("delete")]
-        public static MutableString/*!*/ Delete(RubyContext/*!*/ context, MutableString/*!*/ self, 
+        public static MutableString/*!*/ Delete(MutableString/*!*/ self, 
             [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
             if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
@@ -1806,7 +1812,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("delete!")]
-        public static MutableString/*!*/ DeleteInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
+        public static MutableString/*!*/ DeleteInPlace(MutableString/*!*/ self,
             [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
             self.RequireNotFrozen();
 
@@ -1814,6 +1820,11 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
             return InternalDeleteInPlace(self, strs);
+        }
+
+        [RubyMethod("clear")]
+        public static MutableString/*!*/ Clear(MutableString/*!*/ self) {
+            return self.Clear();
         }
 
         #endregion
@@ -2274,6 +2285,7 @@ namespace IronRuby.Builtins {
 
             // nothing to trim:
             if (remaining == self.Length) {
+                self.RequireNotFrozen();
                 return null;
             }
 
@@ -2466,6 +2478,7 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Replace(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ other) {
             // Handle case where objects are the same identity
             if (ReferenceEquals(self, other)) {
+                self.RequireNotFrozen();
                 return self;
             }
 
@@ -2481,15 +2494,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("reverse!")]
         public static MutableString/*!*/ Reverse(MutableString/*!*/ self) {
-            if (self.Encoding.IsKCoding) {
-                throw new NotImplementedException("TODO: KCODE");
-            }
-
-            if (self.Length == 0) {
+            self.RequireNotFrozen();
+            
+            if (self.IsEmpty) {
                 return self;
             }
-            self.RequireNotFrozen();
-
+            
             // TODO: MRI 1.9: allows invalid characters
             return self.Reverse();
         }

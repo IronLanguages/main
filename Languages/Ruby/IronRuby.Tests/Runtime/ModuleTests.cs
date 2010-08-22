@@ -301,7 +301,7 @@ end
 ", @"
 constant
 method
-#<TypeError: can't modify frozen module>
+#<RuntimeError: can't modify frozen module>
 ");
         }
 

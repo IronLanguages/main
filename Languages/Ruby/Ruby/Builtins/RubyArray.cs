@@ -139,10 +139,14 @@ namespace IronRuby.Builtins {
 
         #region Flags
 
-        private void Mutate() {
+        public void RequireNotFrozen() {
             if ((_flags & IsFrozenFlag) != 0) {
                 throw RubyExceptions.CreateObjectFrozenError();
             }
+        }
+
+        private void Mutate() {
+            RequireNotFrozen();
         }
 
         public bool IsTainted {

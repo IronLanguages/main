@@ -120,16 +120,30 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        // TODO: remove, frozen check should be implemented in Hash indexer
         [RubyMethod("[]=")]
         [RubyMethod("store")]
-        public static object SetElement(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object key, object value) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static object SetElement(RubyContext/*!*/ context, Hash/*!*/ self, object key, object value) {
+            self.RequireNotFrozen();
             return RubyUtils.SetHashElement(context, self, key, value);
         }
 
+        [RubyMethod("[]=")]
+        [RubyMethod("store")]
+        public static object SetElement(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object key, object value) {
+            return RubyUtils.SetHashElement(context, self, key, value);
+        }
+
+        // TODO: remove, frozen check should be implemented in Hash.Clear
         [RubyMethod("clear")]
-        public static IDictionary<object, object> Clear(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static IDictionary<object, object>/*!*/ Clear(Hash/*!*/ self) {
+            self.RequireNotFrozen();
+            self.Clear();
+            return self;
+        }
+
+        [RubyMethod("clear")]
+        public static IDictionary<object, object>/*!*/ Clear(IDictionary<object, object>/*!*/ self) {
             self.Clear();
             return self;
         }
@@ -157,9 +171,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("delete")]
-        public static object Delete(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self, object key) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static object Delete(BlockParam block, Hash/*!*/ self, object key) {
+            self.RequireNotFrozen();
+            return Delete(block, (IDictionary<object, object>)self, key);
+        }
 
+        [RubyMethod("delete")]
+        public static object Delete(BlockParam block, IDictionary<object, object>/*!*/ self, object key) {
             object value;
             if (!self.TryGetValue(CustomStringDictionary.NullToObj(key), out value)) {
                 // key not found, call the block if it was passed in
@@ -175,9 +193,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("delete_if")]
-        public static object DeleteIf(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static object DeleteIf(BlockParam block, Hash/*!*/ self) {
+            self.RequireNotFrozen();
+            return DeleteIf(block, (IDictionary<object, object>)self);
+        }
 
+        [RubyMethod("delete_if")]
+        public static object DeleteIf(BlockParam block, IDictionary<object, object>/*!*/ self) {
             if (self.Count > 0 && block == null) {
                 throw RubyExceptions.NoBlockGiven();
             }
@@ -379,18 +401,19 @@ namespace IronRuby.Builtins {
             BlockParam block, IDictionary<object, object>/*!*/ self, 
             [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ hash) {
 
-            return Update(allocateStorage.Context, block, Duplicate(initializeCopyStorage, allocateStorage, self), hash);
+            return Update(block, Duplicate(initializeCopyStorage, allocateStorage, self), hash);
         }
 
         [RubyMethod("merge!")]
         [RubyMethod("update")]
-        public static object Update(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self, 
-            [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ hash) {
+        public static object Update(BlockParam block, Hash/*!*/ self, [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ hash) {
+            self.RequireNotFrozen();
+            return Update(block, (IDictionary<object, object>)self, hash);
+        }
 
-            if (hash.Count > 0) {
-                RubyUtils.RequiresNotFrozen(context, self);
-            }
-
+        [RubyMethod("merge!")]
+        [RubyMethod("update")]
+        public static object Update(BlockParam block, IDictionary<object, object>/*!*/ self, [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ hash) {
             if (block == null) {
                 foreach (var pair in CopyKeyValuePairs(hash)) {
                     self[CustomStringDictionary.NullToObj(pair.Key)] = pair.Value;
@@ -410,8 +433,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("rehash")]
-        public static IDictionary<object, object> Rehash(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static IDictionary<object, object> Rehash(Hash/*!*/ self) {
+            self.RequireNotFrozen();
+            return Rehash((IDictionary<object, object>)self);
+        }
+
+        [RubyMethod("rehash")]
+        public static IDictionary<object, object> Rehash(IDictionary<object, object>/*!*/ self) {
             return ReplaceData(self, CopyKeyValuePairs(self));
         }
 
@@ -423,13 +451,18 @@ namespace IronRuby.Builtins {
             CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
             BlockParam block, IDictionary<object, object>/*!*/ self) {
 
-            return DeleteIf(allocateStorage.Context, block, Duplicate(initializeCopyStorage, allocateStorage, self));
+            return DeleteIf(block, Duplicate(initializeCopyStorage, allocateStorage, self));
         }
 
         // This works like delete_if, but returns nil if no elements were removed
         [RubyMethod("reject!")]
-        public static object RejectMutate(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static object RejectMutate(BlockParam block, Hash/*!*/ self) {
+            self.RequireNotFrozen();
+            return RejectMutate(block, (IDictionary<object, object>)self);
+        }
+
+        [RubyMethod("reject!")]
+        public static object RejectMutate(BlockParam block, IDictionary<object, object>/*!*/ self) {
 
             // Make a copy of the keys to delete, so we don't modify the collection
             // while iterating over it
@@ -456,7 +489,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("replace")]
         public static Hash/*!*/ Replace(RubyContext/*!*/ context, Hash/*!*/ self, [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ other) {
-            self.Mutate();
+            self.RequireNotFrozen();
             return IDictionaryOps.ReplaceData(self, other);
         }
 
@@ -480,9 +513,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("shift")]
-        public static object Shift(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
-            RubyUtils.RequiresNotFrozen(context, self);
+        public static object Shift(Hash/*!*/ self) {
+            self.RequireNotFrozen();
+            return Shift((IDictionary<object, object>)self);
+        }
 
+        [RubyMethod("shift")]
+        public static object Shift(IDictionary<object, object>/*!*/ self) {
             if (self.Count == 0) {
                 return null;
             }
