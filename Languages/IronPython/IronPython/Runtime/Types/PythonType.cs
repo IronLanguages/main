@@ -61,8 +61,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private List<WeakReference> _subtypes;              // all of the subtypes of the PythonType
         private PythonContext _pythonContext;               // the context the type was created from, or null for system types.
         private bool? _objectNew, _objectInit;              // true if the type doesn't override __new__ / __init__ from object.
-        internal Dictionary<string, FastGetBase> _cachedGets; // cached gets on user defined type instances
-        internal Dictionary<string, FastGetBase> _cachedTryGets; // cached try gets on used defined type instances
+        internal Dictionary<CachedGetKey, FastGetBase> _cachedGets; // cached gets on user defined type instances
+        internal Dictionary<CachedGetKey, FastGetBase> _cachedTryGets; // cached try gets on used defined type instances
         internal Dictionary<SetMemberKey, FastSetBase> _cachedSets; // cached sets on user defined instances
         internal Dictionary<string, TypeGetBase> _cachedTypeGets; // cached gets on types (system and user types)
         internal Dictionary<string, TypeGetBase> _cachedTypeTryGets; // cached gets on types (system and user types)
@@ -86,7 +86,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private Dictionary<CallSignature, LateBoundInitBinder> _lateBoundInitBinders;
         private string[] _optimizedInstanceNames;           // optimized names stored in a custom dictionary
         private int _optimizedInstanceVersion;
-        
+        private Dictionary<string, List<MethodInfo>> _extensionMethods;         // extension methods defined on the type
+
         private PythonSiteCache _siteCache = new PythonSiteCache();
 
         private PythonTypeSlot _lenSlot;                    // cached length slot, cleared when the type is mutated
@@ -1270,7 +1271,28 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 return res;
             }
         }
-        
+
+        internal Dictionary<string, List<MethodInfo>> ExtensionMethods {
+            get {
+                if (_extensionMethods == null) {
+                    Dictionary<string, List<MethodInfo>> extMethods = new Dictionary<string, List<MethodInfo>>();
+
+                    foreach (var method in UnderlyingSystemType.GetMethods(BindingFlags.Static | BindingFlags.Public)) {
+                        if (method.IsExtension()) {
+                            List<MethodInfo> methods;
+                            if (!extMethods.TryGetValue(method.Name, out methods)) {
+                                extMethods[method.Name] = methods = new List<MethodInfo>();
+                            }
+                            methods.Add(method);
+                        }
+                    }
+
+                    _extensionMethods = extMethods;
+                }
+                return _extensionMethods;
+            }
+        }
+
         #endregion
 
         #region Type member access
@@ -1828,6 +1850,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     PythonBinder.GetBinder(context).ResolveMemberNames(context, dt, this, keys);
                 } else {
                     AddUserTypeMembers(context, keys, dt, res);
+                }
+            }
+
+            var extMethods = context.ModuleContext.ExtensionMethods;
+            if (extMethods != ExtensionMethodSet.Empty) {
+                // add any available extension methods.
+                foreach (var method in extMethods.GetExtensionMethods(this)) {
+                    keys[method.Name] = method.Name;
                 }
             }
 
@@ -2838,8 +2868,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private readonly SlotGetValue _slotFunc;
         private readonly Func<CallSite, object, CodeContext, object> _fallback;
         private readonly int _dictVersion, _dictIndex;
+        private readonly ExtensionMethodSet _extMethods;
 
-        public GetMemberDelegates(OptimizedGetKind getKind, PythonType type, PythonGetMemberBinder binder, string name, int version, PythonTypeSlot slot, PythonTypeSlot getattrSlot, SlotGetValue slotFunc, Func<CallSite, object, CodeContext, object> fallback)
+        public GetMemberDelegates(OptimizedGetKind getKind, PythonType type, PythonGetMemberBinder binder, string name, int version, PythonTypeSlot slot, PythonTypeSlot getattrSlot, SlotGetValue slotFunc, Func<CallSite, object, CodeContext, object> fallback, ExtensionMethodSet extMethods)
             : base(binder, version) {
             _slot = slot;
             _name = name;
@@ -2847,6 +2878,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             _slotFunc = slotFunc;
             _fallback = fallback;
             _isNoThrow = binder.IsNoThrow;
+            _extMethods = extMethods;
             var optNames = type.GetOptimizedInstanceNames(); 
             
             switch (getKind) {
@@ -2895,7 +2927,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object SlotDict(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 _hitCount++;
 
                 object res;
@@ -2919,7 +2951,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object SlotDictOptimized(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 _hitCount++;
 
                 object res;
@@ -2946,7 +2978,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object SlotOnly(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 _hitCount++;
 
                 object res;
@@ -2966,7 +2998,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object UserSlotDict(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version) {
+            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res;
                 if (ipo.Dict != null && ipo.Dict.TryGetValue(_name, out res)) {
                     return res;
@@ -2980,7 +3012,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object UserSlotDictOptimized(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version) {
+            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res;
                 PythonDictionary dict = ipo.Dict;
 
@@ -2996,7 +3028,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object UserSlotOnly(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version) {
+            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
             }
 
@@ -3005,7 +3037,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object UserSlotDictGetAttr(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version) {
+            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res;
                 if (ipo.Dict != null && ipo.Dict.TryGetValue(_name, out res)) {
                     return res;
@@ -3028,7 +3060,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object UserSlotDictGetAttrOptimized(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version) {
+            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res;
                 PythonDictionary dict = ipo.Dict;
 
@@ -3053,7 +3085,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object UserSlotOnlyGetAttr(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version) {
+            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 try {
                     return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
                 } catch (MissingMemberException) {
@@ -3072,7 +3104,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public object UserSlot(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res = _slotFunc(self);
                 if (res != Uninitialized.Instance) {
                     return res;
@@ -3406,5 +3438,81 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    
+    internal abstract class CachedGetKey : IEquatable<CachedGetKey> {
+        public readonly string Name;
+
+        public CachedGetKey(string name) {
+            Name = name;
+        }
+
+        public static CachedGetKey Make(string name, ExtensionMethodSet set) {
+            if (set.Id != ExtensionMethodSet.OutOfIds) {
+                return new CachedGetIdIntExtensionMethod(name, set.Id);
+            }
+
+            return new CachedGetIdWeakRefExtensionMethod(name, new WeakReference(set));
+        }
+
+        public override bool Equals(object obj) {
+            CachedGetKey cachedKey = obj as CachedGetKey;
+            if (cachedKey == null) {
+                return false;
+            }
+
+            return this.Equals(cachedKey);
+        }
+
+        public override int GetHashCode() {
+            return Name.GetHashCode();
+        }
+
+        public abstract bool Equals(CachedGetKey key);
+    }
+
+    internal sealed class CachedGetIdIntExtensionMethod : CachedGetKey {
+        private readonly int _id;
+
+        public CachedGetIdIntExtensionMethod(string name, int id)
+            : base(name) {
+            _id = id;
+        }
+
+        public override int GetHashCode() {
+            return Name.GetHashCode() ^ _id;
+        }
+
+        #region IEquatable<CachedGetKey> Members
+
+        public override bool Equals(CachedGetKey other) {
+            var obj = other as CachedGetIdIntExtensionMethod;
+            if (obj == null) {
+                return false;
+            }
+            return obj._id == _id && obj.Name == Name;
+        }
+
+        #endregion
+    }
+
+    internal sealed class CachedGetIdWeakRefExtensionMethod : CachedGetKey {
+        private readonly WeakReference _extMethodSet;
+
+        public CachedGetIdWeakRefExtensionMethod(string name, WeakReference weakReference)
+            : base(name) {
+            _extMethodSet = weakReference;
+        }
+
+        #region IEquatable<CachedGetKey> Members
+
+        public override bool Equals(CachedGetKey other) {
+            var obj = other as CachedGetIdWeakRefExtensionMethod;
+            if (obj == null) {
+                return false;
+            }
+            return obj._extMethodSet.Target == _extMethodSet.Target && 
+                obj.Name == Name;
+        }
+
+        #endregion
+    }
 }

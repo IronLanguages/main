@@ -224,6 +224,53 @@ namespace Microsoft.Scripting.Utils {
             return result;
         }
 
+
+#if SILVERLIGHT
+        // HashSet.CreateSetComparer not available on Silverlight
+        public static IEqualityComparer<HashSet<T>> CreateSetComparer<T>() {
+            return new HashSetEqualityComparer<T>();
+        }
+
+        class HashSetEqualityComparer<T> : IEqualityComparer<HashSet<T>> {
+            private IEqualityComparer<T> _comparer;
+
+            public HashSetEqualityComparer() {
+                _comparer = EqualityComparer<T>.Default;
+            }
+
+            public bool Equals(HashSet<T> x, HashSet<T> y) {
+                if (x == y) {
+                    return true;
+                } else if (x == null || y == null || x.Count != y.Count) {
+                    return false;
+                }
+
+                foreach (T value in x) {
+                    if (!y.Contains(value)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            public int GetHashCode(HashSet<T> obj) {
+                int res = 6551;
+                if (obj != null) {
+                    foreach (T t in obj) {
+                        res = res ^ _comparer.GetHashCode(t);
+                    }
+                }
+
+                return res;
+            }
+        }
+#else
+        public static IEqualityComparer<HashSet<T>> CreateSetComparer<T>() {
+            return HashSet<T>.CreateSetComparer();
+        }
+#endif
+
         // .NET 3.5 method:
         public static IEnumerable<TSource> Concat<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second) {
             ContractUtils.RequiresNotNull(first, "first");

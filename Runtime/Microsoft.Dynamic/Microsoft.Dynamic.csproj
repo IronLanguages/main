@@ -155,6 +155,7 @@
     <Compile Include="Actions\Calls\TypeInferer.cs" />
     <Compile Include="Actions\ConversionResultKind.cs" />
     <Compile Include="Actions\DefaultBinder.Operations.cs" />
+    <Compile Include="Actions\ErrorMetaObject.cs" />
     <Compile Include="Actions\Interceptor.cs" />
     <Compile Include="Actions\DynamicSiteHelper.cs" />
     <Compile Include="Actions\ExtensionBinaryOperationBinder.cs" />

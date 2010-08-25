@@ -39,6 +39,7 @@ namespace Microsoft.Scripting.Actions {
         private readonly List<Expression> _bodies = new List<Expression>();
         private readonly List<ParameterExpression> _variables = new List<ParameterExpression>();
         private Expression _body;
+        private bool _isError;
         private BindingRestrictions _restrictions = BindingRestrictions.Empty;
 
         /// <summary>
@@ -91,6 +92,23 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
+        public void FinishError(DynamicMetaObject body) {
+            if (_conditions.Count == 0) {
+                _isError = true;
+            }
+            FinishCondition(body);
+        }
+
+        /// <summary>
+        /// Adds the non-conditional terminating node.
+        /// </summary>
+        public void FinishError(Expression body) {
+            if (_conditions.Count == 0) {
+                _isError = true;
+            }
+            FinishCondition(body);
+        }
+
         public BindingRestrictions Restrictions {
             get {
                 return _restrictions;
@@ -108,6 +126,13 @@ namespace Microsoft.Scripting.Actions {
         public DynamicMetaObject GetMetaObject(params DynamicMetaObject[] types) {
             if (_body == null) {
                 throw new InvalidOperationException("FinishCondition should have been called");
+            }
+
+            if (_isError) {
+                return new ErrorMetaObject(
+                    _body,
+                    BindingRestrictions.Combine(types).Merge(Restrictions)
+                );
             }
 
             return new DynamicMetaObject(

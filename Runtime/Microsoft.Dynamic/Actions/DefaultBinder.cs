@@ -123,12 +123,11 @@ namespace Microsoft.Scripting.Actions {
         public static DynamicMetaObject MakeError(ErrorInfo error, BindingRestrictions restrictions, Type type) {
             switch (error.Kind) {
                 case ErrorInfoKind.Error:
-                    // error meta objecT?
-                    return new DynamicMetaObject(AstUtils.Convert(error.Expression, type), restrictions);
+                    return new ErrorMetaObject(AstUtils.Convert(error.Expression, type), restrictions);
                 case ErrorInfoKind.Exception:
-                    return new DynamicMetaObject(AstUtils.Convert(Expression.Throw(error.Expression), type), restrictions);
+                    return new ErrorMetaObject(AstUtils.Convert(Expression.Throw(error.Expression), type), restrictions);
                 case ErrorInfoKind.Success:
-                    return new DynamicMetaObject(AstUtils.Convert(error.Expression, type), restrictions);
+                    return new ErrorMetaObject(AstUtils.Convert(error.Expression, type), restrictions);
                 default:
                     throw new InvalidOperationException();
             }

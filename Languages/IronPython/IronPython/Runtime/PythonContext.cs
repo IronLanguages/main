@@ -202,6 +202,7 @@ namespace IronPython.Runtime {
 
         internal readonly List<FunctionStack> _mainThreadFunctionStack;
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0LightEh;
+        private List<WeakReference> _weakExtensionMethodSets;
 
         #region Generated Python Shared Call Sites Storage
 
@@ -4047,6 +4048,37 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        internal ExtensionMethodSet UniqifyExtensions(ExtensionMethodSet newSet) {
+            int deadIndex = -1;
+
+            // we shouldn't have tons of different sets so we just run through the list of possible sets...
+            if (_weakExtensionMethodSets == null) {
+                Interlocked.CompareExchange(ref _weakExtensionMethodSets, new List<WeakReference>(), null);
+            }
+
+            lock (_weakExtensionMethodSets) {
+                for (int i = 0; i < _weakExtensionMethodSets.Count; i++) {
+                    var weakSet = _weakExtensionMethodSets[i];
+
+                    var set = (ExtensionMethodSet)weakSet.Target;
+                    if (set != null) {
+                        if (set == newSet) {
+                            return set;
+                        }
+                    } else {
+                        deadIndex = i;
+                    }
+                }
+
+                if (deadIndex == -1) {
+                    _weakExtensionMethodSets.Add(new WeakReference(newSet));
+                } else {
+                    _weakExtensionMethodSets[deadIndex].Target = newSet;
+                }
+                return newSet;
+            }
+        }
     }
 
     /// <summary>

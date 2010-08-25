@@ -88,6 +88,7 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         internal abstract class GetOrInvokeBinderHelper<TResult> {
             protected readonly IPythonObject _value;
+            protected bool _extensionMethodRestriction;
 
             public GetOrInvokeBinderHelper(IPythonObject value) {
                 _value = value;
@@ -114,9 +115,9 @@ namespace IronPython.Runtime.Binding {
                 // we'll first check the dictionary and then invoke the get descriptor.  If we have no descriptor
                 // at all we'll just check the dictionary.  If both lookups fail we'll raise an exception.
 
-                bool isOldStyle;
-                bool systemTypeResolution;
-                foundSlot = FindSlot(context, name, sdo, out isOldStyle, out systemTypeResolution);
+                bool isOldStyle, systemTypeResolution, extensionMethodResolution;
+                foundSlot = FindSlot(context, name, sdo, out isOldStyle, out systemTypeResolution, out extensionMethodResolution);
+                _extensionMethodRestriction = extensionMethodResolution;
 
                 if (!isOldStyle || foundSlot is ReflectedSlotProperty) {
                     if (sdo.PythonType.HasDictionary && (foundSlot == null || !foundSlot.IsSetDescriptor(context, sdo.PythonType))) {
@@ -287,6 +288,13 @@ namespace IronPython.Runtime.Binding {
                     ),
                     _self.Restrictions.Merge(res.Restrictions)
                 );
+
+                if (_extensionMethodRestriction) {
+                    res = new DynamicMetaObject(
+                        res.Expression,
+                        res.Restrictions.Merge(((CodeContext)_codeContext.Value).ModuleContext.ExtensionMethods.GetRestriction(_codeContext.Expression))
+                    );
+                }
 
                 return BindingHelpers.AddDynamicTestAndDefer(
                     _binder,
@@ -563,17 +571,17 @@ namespace IronPython.Runtime.Binding {
             }
             
             public FastBindResult<Func<CallSite, object, CodeContext, object>> GetBinding(CodeContext context, string name) {
-                Dictionary<string, FastGetBase> cachedGets = GetCachedGets();
-
+                var cachedGets = GetCachedGets();
+                var key = CachedGetKey.Make(name, context.ModuleContext.ExtensionMethods);
                 FastGetBase dlg;
                 lock (cachedGets) {                    
-                    if (!cachedGets.TryGetValue(name, out dlg) || !dlg.IsValid(Value.PythonType)) {
+                    if (!cachedGets.TryGetValue(key, out dlg) || !dlg.IsValid(Value.PythonType)) {
                         var binding = Bind(context, name);
                         if (binding != null) {
                             dlg = binding;
 
                             if (dlg.ShouldCache) {
-                                cachedGets[name] = dlg;
+                                cachedGets[key] = dlg;
                             }
                         }
                     }
@@ -585,24 +593,24 @@ namespace IronPython.Runtime.Binding {
                 return new FastBindResult<Func<CallSite, object, CodeContext, object>>();
             }
 
-            private Dictionary<string, FastGetBase> GetCachedGets() {
+            private Dictionary<CachedGetKey, FastGetBase> GetCachedGets() {
                 if (_binder.IsNoThrow) {
-                    Dictionary<string, FastGetBase> cachedGets = Value.PythonType._cachedTryGets;
+                    var cachedGets = Value.PythonType._cachedTryGets;
                     if (cachedGets == null) {
                         Interlocked.CompareExchange(
                             ref Value.PythonType._cachedTryGets,
-                            new Dictionary<string, FastGetBase>(),
+                            new Dictionary<CachedGetKey, FastGetBase>(),
                             null);
 
                         cachedGets = Value.PythonType._cachedTryGets;
                     }
                     return cachedGets;
                 } else {
-                    Dictionary<string, FastGetBase> cachedGets = Value.PythonType._cachedGets;
+                    var cachedGets = Value.PythonType._cachedGets;
                     if (cachedGets == null) {
                         Interlocked.CompareExchange(
                             ref Value.PythonType._cachedGets,
-                            new Dictionary<string, FastGetBase>(),
+                            new Dictionary<CachedGetKey, FastGetBase>(),
                             null);
 
                         cachedGets = Value.PythonType._cachedGets;
@@ -620,18 +628,18 @@ namespace IronPython.Runtime.Binding {
                 ReflectedSlotProperty rsp = _slot as ReflectedSlotProperty;
                 if (rsp != null) {
                     Debug.Assert(!_dictAccess); // properties for __slots__ are get/set descriptors so we should never access the dictionary.
-                    func = new GetMemberDelegates(OptimizedGetKind.PropertySlot, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, rsp.Getter, FallbackError());
+                    func = new GetMemberDelegates(OptimizedGetKind.PropertySlot, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, rsp.Getter, FallbackError(), _context.ModuleContext.ExtensionMethods);
                 } else if (_dictAccess) {
                     if (_slot is PythonTypeUserDescriptorSlot) {
-                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotDict, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotDict, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError(), _context.ModuleContext.ExtensionMethods);
                     } else {
-                        func = new GetMemberDelegates(OptimizedGetKind.SlotDict, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotDict, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError(), _context.ModuleContext.ExtensionMethods);
                     }
                 } else {
                     if (_slot is PythonTypeUserDescriptorSlot) {
-                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotOnly, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotOnly, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError(), _context.ModuleContext.ExtensionMethods);
                     } else {
-                        func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, Value.PythonType, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError(), _context.ModuleContext.ExtensionMethods);
                     }
                 }
                 return func;
@@ -818,9 +826,8 @@ namespace IronPython.Runtime.Binding {
 
                 if (!bound) {
                     // then see if we have a set descriptor
-                    bool isOldStyle;
-                    bool systemTypeResolution;
-                    dts = FindSlot(_context, name, _instance, out isOldStyle, out systemTypeResolution);
+                    bool isOldStyle,systemTypeResolution, extensionMethodResolution;
+                    dts = FindSlot(_context, name, _instance, out isOldStyle, out systemTypeResolution, out extensionMethodResolution);
 
                     ReflectedSlotProperty rsp = dts as ReflectedSlotProperty;
                     if (rsp != null) {
@@ -1396,7 +1403,7 @@ namespace IronPython.Runtime.Binding {
         /// Looks up the associated PythonTypeSlot from the object.  Indicates if the result
         /// came from a standard .NET type in which case we will fallback to the sites binder.
         /// </summary>
-        private static PythonTypeSlot FindSlot(CodeContext/*!*/ context, string/*!*/ name, IPythonObject/*!*/ sdo, out bool isOldStyle, out bool systemTypeResolution) {
+        private static PythonTypeSlot FindSlot(CodeContext/*!*/ context, string/*!*/ name, IPythonObject/*!*/ sdo, out bool isOldStyle, out bool systemTypeResolution, out bool extensionMethodResolution) {
             PythonTypeSlot foundSlot = null;
             isOldStyle = false;                // if we're mixed new-style/old-style we have to do a slower check
             systemTypeResolution = false;      // if we pick up the property from a System type we fallback
@@ -1412,6 +1419,16 @@ namespace IronPython.Runtime.Binding {
                         systemTypeResolution = pt.IsSystemType;
                     }
                     break;
+                }
+            }
+
+            extensionMethodResolution = false;
+            if (foundSlot == null) {
+                extensionMethodResolution = true;
+                var extMethods = context.ModuleContext.ExtensionMethods.GetBinder(context.LanguageContext).GetMember(MemberRequestKind.Get, sdo.PythonType.UnderlyingSystemType, name);
+
+                if (extMethods.Count > 0) {
+                    foundSlot = PythonTypeOps.GetSlot(extMethods, name, false);
                 }
             }
 

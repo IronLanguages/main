@@ -33,7 +33,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
 
-    public sealed partial class PythonBinder : DefaultBinder {
+    partial class PythonBinder : DefaultBinder {
         public DynamicMetaObject Create(CallSignature signature, DynamicMetaObject target, DynamicMetaObject[] args, Expression contextExpression) {
 
             Type t = GetTargetType(target.Value);

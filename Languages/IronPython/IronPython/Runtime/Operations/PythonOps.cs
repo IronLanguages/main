@@ -4468,6 +4468,14 @@ namespace IronPython.Runtime.Operations {
         public static BuiltinFunction GetUnicodeFuntion() {
             return UnicodeHelper.Function;
         }
+
+        public static bool IsExtensionSet(CodeContext codeContext, int id) {
+            return codeContext.ModuleContext.ExtensionMethods.Id == id;
+        }
+
+        public static object GetExtensionMethodSet(CodeContext context) {
+            return context.ModuleContext.ExtensionMethods;
+        }
     }
 
     /// <summary>

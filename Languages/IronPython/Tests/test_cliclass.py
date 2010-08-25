@@ -1820,6 +1820,109 @@ def test_xaml_support():
         #nt.unlink('test.xaml')
         pass
 
+
+@skip("silverlight")
+def test_extension_methods():
+    import clr, imp
+    clr.AddReference('System.Core')
+    
+    test_cases = [    
+"""
+# add reference via type
+from System.Linq import Enumerable
+AssertDoesNotContain(dir([]), 'Where')
+clr.ImportExtensions(Enumerable)    
+AssertContains(dir([]), 'Where')
+AreEqual(list([2,3,4].Where(lambda x: x == 2)), [2])    
+""",
+"""
+# add reference via namespace
+import System
+AssertDoesNotContain(dir([]), 'Where')
+clr.ImportExtensions(System.Linq)
+AssertContains(dir([]), 'Where')
+AreEqual(list([2,3,4].Where(lambda x: x == 2)), [2])
+""",
+"""
+# add reference via namespace, add new namespace w/ more specific type
+import System
+from IronPythonTest.ExtensionMethodTest import LinqCollision
+AssertDoesNotContain(dir([]), 'Where')
+clr.ImportExtensions(System.Linq)
+AssertContains(dir([]), 'Where')
+AreEqual(list([2,3,4].Where(lambda x: x == 2)), [2])
+clr.ImportExtensions(LinqCollision)
+AreEqual([2,3,4].Where(lambda x: x == 2), 42)
+""",
+
+"""
+class UserType(object): pass
+class UserTypeWithValue(object):
+    def __init__(self):
+        self.BaseClass = 200
+class UserTypeWithSlots(object):
+    __slots__ = 'BaseClass'
+class UserTypeWithSlotsWithValue(object):
+    __slots__ = 'BaseClass'
+    def __init__(self):
+        self.BaseClass = 100
+
+AssertError(AttributeError, lambda : UserType().BaseClass)
+AssertError(AttributeError, lambda : UserTypeWithSlots().BaseClass)
+AreEqual(UserTypeWithValue().BaseClass, 200)
+
+import clr
+from IronPythonTest.ExtensionMethodTest import ClassRelationship
+clr.ImportExtensions(ClassRelationship)
+
+AreEqual(object().BaseClass(), 23)
+AreEqual([].BaseClass(), 23)
+AreEqual({}.BaseClass(), 23)
+
+AreEqual(UserType().BaseClass(), 23)
+
+# dict takes precedence
+x = UserType()
+x.BaseClass = 100
+AreEqual(x.BaseClass, 100)
+
+# slots take precedence
+AssertError(AttributeError, lambda : UserTypeWithSlots().BaseClass())
+AreEqual(UserTypeWithSlotsWithValue().BaseClass, 100)
+
+# dict takes precedence
+AreEqual(UserTypeWithValue().BaseClass, 200)
+""",
+"""
+import clr
+from IronPythonTest.ExtensionMethodTest import ClassRelationship
+clr.ImportExtensions(ClassRelationship)
+
+AreEqual([].Interface(), 23)
+AreEqual([].GenericInterface(), 23)
+AreEqual([].GenericInterfaceAndMethod(), 23)
+AreEqual([].GenericMethod(), 23)
+
+AreEqual(System.Array[int]([2,3,4]).Array(), 23)
+AreEqual(System.Array[int]([2,3,4]).ArrayAndGenericMethod(), 23)
+AreEqual(System.Array[int]([2,3,4]).GenericMethod(), 23)
+
+AreEqual(object().GenericMethod(), 23)
+"""
+]
+    
+    for test_case in test_cases:
+        try:
+            with file('temp_module.py', 'w+') as f:
+                f.write('from iptest.assert_util import *\n')
+                f.write(test_case)
+
+            import temp_module
+            del sys.modules['temp_module']
+        finally:
+            nt.unlink('temp_module.py')
+    
+    
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)
 

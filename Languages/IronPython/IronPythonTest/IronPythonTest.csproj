@@ -87,6 +87,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AttrInjectorTest.cs" />
+    <Compile Include="ExtensionMethodTest.cs" />
     <Compile Include="LightExceptionTests.cs" />
     <Compile Include="MemberOverloadTest.cs" />
     <Compile Include="BinderTest.cs" />

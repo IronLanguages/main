@@ -24,7 +24,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
-    class TypeInferer {
+    public static class TypeInferer {
         private static ArgumentInputs EnsureInputs(Dictionary<Type, ArgumentInputs> dict, Type type) {
             ArgumentInputs res;
             if (!dict.TryGetValue(type, out res)) {
@@ -446,7 +446,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         ///   M{T}(T[] x)
         ///   M{T}(ref Dictionary{T,T}[] x)
         /// </remarks>
-        internal static Type GetInferedType(Type/*!*/ genericParameter, Type/*!*/ parameterType, Type inputType, Type/*!*/ argType, Dictionary<Type, Type>/*!*/ binding) {
+        public static Type GetInferedType(Type/*!*/ genericParameter, Type/*!*/ parameterType, Type inputType, Type/*!*/ argType, Dictionary<Type, Type>/*!*/ binding) {
             Debug.Assert(genericParameter.IsGenericParameter);
 
             if (parameterType.IsGenericParameter) {

@@ -45,11 +45,11 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    public sealed partial class PythonBinder : DefaultBinder {
+    partial class PythonBinder : DefaultBinder {
         private PythonContext/*!*/ _context;
         private SlotCache/*!*/ _typeMembers = new SlotCache();
         private SlotCache/*!*/ _resolvedMembers = new SlotCache();
-        private Dictionary<Type/*!*/, IList<Type/*!*/>/*!*/>/*!*/ _dlrExtensionTypes = MakeExtensionTypes();
+        private Dictionary<Type/*!*/, IList<Type/*!*/>/*!*/>/*!*/ _dlrExtensionTypes;
         private bool _registeredInterfaceExtensions;    // true if someone has registered extensions for interfaces
 
         [MultiRuntimeAware]
@@ -58,6 +58,7 @@ namespace IronPython.Runtime.Binding {
         public PythonBinder(PythonContext/*!*/ pythonContext, CodeContext context) {
             ContractUtils.RequiresNotNull(pythonContext, "pythonContext");
 
+            _dlrExtensionTypes = MakeExtensionTypes();
             _context = pythonContext;           
             if (context != null) {
                 context.LanguageContext.DomainManager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(DomainManager_AssemblyLoaded);
@@ -66,6 +67,14 @@ namespace IronPython.Runtime.Binding {
                     DomainManager_AssemblyLoaded(this, new AssemblyLoadedEventArgs(asm));
                 }
             }
+        }
+
+        public PythonBinder(PythonBinder binder) {
+            _context = binder._context;
+            _typeMembers = binder._typeMembers;
+            _resolvedMembers = binder._resolvedMembers;
+            _dlrExtensionTypes = binder._dlrExtensionTypes;
+            _registeredInterfaceExtensions = binder._registeredInterfaceExtensions;
         }
 
         public override Expression/*!*/ ConvertExpression(Expression/*!*/ expr, Type/*!*/ toType, ConversionResultKind kind, OverloadResolverFactory factory) {
