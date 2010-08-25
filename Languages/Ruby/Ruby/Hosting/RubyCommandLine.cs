@@ -24,6 +24,7 @@ using System.Reflection;
 using System.Threading;
 using System.IO;
 using System.Globalization;
+using System.Text;
 
 namespace IronRuby.Hosting {
    
@@ -81,12 +82,9 @@ namespace IronRuby.Hosting {
             return base.Run();
         }
 
-        // overridden to set the default encoding to KCODE/BINARY
+        // overridden to set the default encoding to -KX
         protected override int RunFile(string fileName) {
-            return RunFile(
-                Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), 
-                (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).StrictEncoding)
-            );
+            return RunFile(Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), GetSourceCodeEncoding()));
         }
 
         protected override ScriptCodeParseResult GetCommandProperties(string code) {
@@ -105,10 +103,13 @@ namespace IronRuby.Hosting {
 #if SILVERLIGHT
             return Engine.CreateScriptSourceFromString(command, kind);
 #else
-            var kcode = ((RubyContext)Language).RubyOptions.KCode;
-            var encoding = kcode != null ? kcode.Encoding : System.Console.InputEncoding;
+            var encoding = GetSourceCodeEncoding();
             return Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), sourceUnitId, encoding, kind);
 #endif
+        }
+
+        private Encoding/*!*/ GetSourceCodeEncoding() {
+            return (((RubyContext)Language).RubyOptions.DefaultEncoding ?? RubyEncoding.Ascii).Encoding;
         }
         
         protected override Scope/*!*/ CreateScope() {

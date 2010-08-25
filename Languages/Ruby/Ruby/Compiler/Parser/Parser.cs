@@ -146,7 +146,7 @@ namespace IronRuby.Compiler {
                 _sourceUnit = sourceUnit;
                 _tokenizer.Initialize(null, reader, sourceUnit, options.InitialLocation);
 
-                // Default encoding when hosted (ignore KCODE, we are reading from Unicode buffer):
+                // Default encoding when hosted:
                 _tokenizer.Encoding = (reader.Encoding != null) ? RubyEncoding.GetRubyEncoding(reader.Encoding) : RubyEncoding.UTF8;
                 _tokenizer.AllowNonAsciiIdentifiers = _tokenizer.Encoding != RubyEncoding.Binary;
                 

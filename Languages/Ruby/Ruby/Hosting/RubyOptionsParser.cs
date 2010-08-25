@@ -35,6 +35,7 @@ namespace IronRuby.Hosting {
     public sealed class RubyOptionsParser : OptionsParser<RubyConsoleOptions> {
         private readonly List<string>/*!*/ _loadPaths = new List<string>();
         private readonly List<string>/*!*/ _requiredPaths = new List<string>();
+        private RubyEncoding _defaultEncoding;
 
 #if DEBUG && !SILVERLIGHT
         private ConsoleTraceListener _debugListener;
@@ -127,7 +128,7 @@ namespace IronRuby.Hosting {
             }
 
             if (arg.StartsWith("-K", StringComparison.Ordinal)) {
-                LanguageSetup.Options["KCode"] = arg.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(arg[2]) : null;
+                _defaultEncoding = arg.Length >= 3 ? RubyEncoding.GetEncodingByNameInitial(arg[2]) : null;
                 return;
             }
 
@@ -273,13 +274,6 @@ namespace IronRuby.Hosting {
                         } else {
                             SetupOptionsForCommand();
                         }
-                        
-                        LanguageSetup.Options["ArgumentEncoding"] = 
-#if SILVERLIGHT
-                            RubyEncoding.UTF8;
-#else
-                            RubyEncoding.GetRubyEncoding(Console.InputEncoding);
-#endif
                     } 
                     break;
             }
@@ -333,6 +327,14 @@ namespace IronRuby.Hosting {
 #endif
             LanguageSetup.Options["SearchPaths"] = _loadPaths;
             LanguageSetup.Options["RequiredPaths"] = _requiredPaths;
+
+            LanguageSetup.Options["DefaultEncoding"] = _defaultEncoding;                        
+            LanguageSetup.Options["LocaleEncoding"] = _defaultEncoding ??
+#if SILVERLIGHT
+                RubyEncoding.UTF8;
+#else
+                RubyEncoding.GetRubyEncoding(Console.InputEncoding);
+#endif
 
 #if DEBUG && !SILVERLIGHT
             // Can be set to nl-BE, ja-JP, etc

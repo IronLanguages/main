@@ -202,29 +202,6 @@ namespace IronRuby.Builtins {
             return _ordinal - other._ordinal;
         }
 
-        /// <exception cref="ArgumentException">Unknown encoding.</exception>
-        public static Encoding/*!*/ GetEncodingByRubyName(string/*!*/ name) {
-            ContractUtils.RequiresNotNull(name, "name");
-
-            switch (name.ToUpperInvariant()) {
-                case "BINARY":
-                case "ASCII":
-                case "ASCII-8BIT": return BinaryEncoding.Instance;
-#if SILVERLIGHT
-                case "UTF-8": return Encoding.UTF8;
-                default: throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name));
-#else
-                // Mono doesn't recognize 'SJIS' encoding name:
-                case "SJIS": return Encoding.GetEncoding(CodePageSJIS);
-                default: return Encoding.GetEncoding(name);
-#endif
-            }
-        }
-
-        public static RubyEncoding/*!*/ GetRubyEncoding(string/*!*/ name) {
-            return GetRubyEncoding(GetEncodingByRubyName(name));
-        }
-
         public static RubyRegexOptions ToRegexOption(RubyEncoding encoding) {
             if (encoding == RubyEncoding.Binary) {
                 return RubyRegexOptions.FIXED;
@@ -268,9 +245,24 @@ namespace IronRuby.Builtins {
             }
         }
 
-        public static RubyEncoding GetKCodingByNameInitial(int initial) {
-            int codepage = KCoding.GetCodePage(initial);
-            return codepage > 0 ? TryGetKCoding(codepage) : null;
+        internal static int GetCodePage(int firstChar) {
+            switch (firstChar) {
+#if !SILVERLIGHT
+                case 'E':
+                case 'e': return CodePageEUC;
+                case 'S':
+                case 's': return CodePageSJIS;
+#endif
+                case 'U':
+                case 'u': return CodePageUTF8;
+                default:
+                    return -1;
+            }
+        }
+
+        public static RubyEncoding GetEncodingByNameInitial(int initial) {
+            int codepage = GetCodePage(initial);
+            return codepage > 0 ? GetRubyEncoding(codepage) : null;
         }
 
 #if !SILVERLIGHT

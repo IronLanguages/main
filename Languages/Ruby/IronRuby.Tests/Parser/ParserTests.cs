@@ -886,7 +886,7 @@ namespace IronRuby.Tests {
             t.Load("/foo/aib").Skip(2).Read(RubyRegexOptions.IgnoreCase).Expect(Errors.UnknownRegexOption, Errors.UnknownRegexOption);
             t.Load("/foo/9").Skip(2).Read(Tokens.RegexpEnd); // TODO: unexpected token 9
             t.Load("/foo/esuniiimmmxxxooo").Skip(2).
-                Read(RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline | RubyRegexOptions.Extended | RubyRegexOptions.Once);
+                Read(RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline | RubyRegexOptions.Extended | RubyRegexOptions.Once | RubyRegexOptions.FIXED);
 
             t.Expect();
         }
@@ -1436,11 +1436,11 @@ B")
 #endif
         // encodings suported in preamble:
         private static readonly string[] preambleEncodingNames = 
-            new[] { "ASCII-8BIT", "ASCII", "BINARY", "US-ASCII", "UTF-8", "EUC-JP", "SJIS", "SHIFT_JIS" };
+            new[] { "ASCII-8BIT", "ASCII", "BINARY", "US-ASCII", "UTF-8", "EUC-JP", "SJIS", "SHIFT_JIS", "LOCALE" };
 
         private void Encoding1() {
             foreach (var name in preambleEncodingNames) {
-                var encoding = RubyEncoding.GetEncodingByRubyName(name);
+                var encoding = Context.GetEncodingByRubyName(name);
                 Assert(encoding != null);
 
                 // the encoding must be an identity on ASCII characters:

@@ -386,8 +386,6 @@ namespace IronRuby.Runtime {
         }
         private EqualityComparer _equalityComparer;
 
-        public object Verbose { get; set; }
-
         public override Version LanguageVersion {
             get { return IronRubyVersion; }
         }
@@ -408,6 +406,20 @@ namespace IronRuby.Runtime {
             get { return _namespaces; }
         }
 
+        public object Verbose { get; set; }
+
+        private RubyEncoding/*!*/ _defaultExternalEncoding;
+
+        public RubyEncoding/*!*/ DefaultExternalEncoding {
+            get { return _defaultExternalEncoding; }
+            set {
+                ContractUtils.RequiresNotNull(value, "value");
+                _defaultExternalEncoding = value;
+            }
+        }
+
+        public RubyEncoding DefaultInternalEncoding { get; set; }
+        
         #endregion
 
         #region Initialization
@@ -432,7 +444,8 @@ namespace IronRuby.Runtime {
             _namespaceCache = new Dictionary<NamespaceTracker, RubyModule>();
             _referenceTypeInstanceData = new WeakTable<object, RubyInstanceData>();
             _valueTypeInstanceData = new Dictionary<object, RubyInstanceData>();
-            _inputProvider = new RubyInputProvider(this, _options.Arguments, _options.ArgumentEncoding);
+            _inputProvider = new RubyInputProvider(this, _options.Arguments, _options.LocaleEncoding);
+            _defaultExternalEncoding = _options.DefaultEncoding ?? _options.LocaleEncoding;
             _globalScope = DomainManager.Globals;
             _loader = new Loader(this);
             _emptyScope = new RubyTopLevelScope(this);            
@@ -445,12 +458,6 @@ namespace IronRuby.Runtime {
             _itemSeparator = null;
             _mainThread = Thread.CurrentThread;
             
-            if (_options.KCode != null) {
-                Utils.Log("Initialized to " + _options.KCode.Name, "KCODE");
-                KCode = _options.KCode;
-            }
-            
-            // uses k-coding:
             if (_options.MainFile != null) {
                 CommandLineProgramPath = EncodePath(_options.MainFile);
             }
@@ -2295,8 +2302,7 @@ namespace IronRuby.Runtime {
         }
 
         public RubyEncoding/*!*/ GetPathEncoding() {
-            // we need to force UTF8 encoding since the path can contain non-ascii characters:
-            return _options.Compatibility < RubyCompatibility.Ruby19 ? (KCode ?? RubyEncoding.KCodeUTF8) : RubyEncoding.UTF8;
+            return _options.LocaleEncoding;
         }
 
         /// <summary>
@@ -2709,6 +2715,8 @@ namespace IronRuby.Runtime {
             _loader.SaveCompiledCode();
 
             ExecuteShutdownHandlers();
+
+            _currentException = null;
         }
 
         #endregion
@@ -2821,14 +2829,10 @@ namespace IronRuby.Runtime {
 #if SILVERLIGHT
             return base.GetSourceReader(stream, defaultEncoding, path);
 #else
-            return GetSourceReader(stream, defaultEncoding, _options.Compatibility);
+            return GetSourceReader(stream, defaultEncoding);
         }
 
-        private static SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, RubyCompatibility compatibility) {
-            if (compatibility <= RubyCompatibility.Ruby186) {
-                return new SourceCodeReader(new StreamReader(stream, defaultEncoding, false), defaultEncoding);
-            }
-
+        private SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding) {
             long initialPosition = stream.Position;
             var reader = new StreamReader(stream, BinaryEncoding.Instance, true);
 
@@ -2841,7 +2845,7 @@ namespace IronRuby.Runtime {
             // header:
             string encodingName;
             if (Tokenizer.TryParseEncodingHeader(reader, out encodingName)) {
-                rubyPreambleEncoding = RubyEncoding.GetEncodingByRubyName(encodingName);
+                rubyPreambleEncoding = GetEncodingByRubyName(encodingName);
 
                 // Check if the preamble encoding is an identity on preamble bytes.
                 // If not we shouldn't allow such encoding since the encoding of the preamble would be different from the encoding of the file.
@@ -2861,6 +2865,36 @@ namespace IronRuby.Runtime {
             var encoding = rubyPreambleEncoding ?? preambleEncoding ?? defaultEncoding;
             return new SourceCodeReader(new StreamReader(stream, encoding, false), encoding);
 #endif
+        }
+
+        /// <exception cref="ArgumentException">Unknown encoding.</exception>
+        public Encoding/*!*/ GetEncodingByRubyName(string/*!*/ name) {
+            ContractUtils.RequiresNotNull(name, "name");
+
+            switch (name.ToUpperInvariant()) {
+                case "BINARY":
+                case "ASCII-8BIT": return BinaryEncoding.Instance;
+                case "LOCALE": return _options.LocaleEncoding.StrictEncoding;
+#if SILVERLIGHT
+                case "UTF-8": return Encoding.UTF8;
+                default: throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name));
+#else
+                // Mono doesn't recognize 'SJIS' encoding name:
+                case "SJIS": return Encoding.GetEncoding(RubyEncoding.CodePageSJIS);
+                default: return Encoding.GetEncoding(name);
+#endif
+            }
+        }
+
+        public RubyEncoding/*!*/ GetRubyEncoding(MutableString/*!*/ name) {
+            if (!name.IsAscii()) {
+                throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name.ToAsciiString(false)));
+            }
+            return RubyEncoding.GetRubyEncoding(GetEncodingByRubyName(name.ToString()));
+        }
+
+        public RubyEncoding/*!*/ GetRubyEncoding(string/*!*/ name) {
+            return RubyEncoding.GetRubyEncoding(GetEncodingByRubyName(name));
         }
 
         public override string/*!*/ FormatObject(DynamicOperations/*!*/ operations, object obj) {

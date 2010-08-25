@@ -24,7 +24,7 @@ namespace IronRuby.Builtins {
         Multiline = 4,
         Once = 8,
 
-        // encoding (only set in 1.8 mode)
+        // encoding
         FIXED = 16,
         EUC = 32,
         SJIS = 64,

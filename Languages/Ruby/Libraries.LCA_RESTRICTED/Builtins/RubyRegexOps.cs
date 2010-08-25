@@ -195,18 +195,6 @@ namespace IronRuby.Builtins {
             return (int)self.Options;
         }
 
-        [RubyMethod("kcode")]
-        public static MutableString GetKCode(RubyRegex/*!*/ self) {
-            switch (self.Options & RubyRegexOptions.EncodingMask) {
-                case RubyRegexOptions.NONE: return null;
-                case RubyRegexOptions.EUC: return MutableString.CreateAscii("euc");
-                case RubyRegexOptions.FIXED: return MutableString.CreateAscii("none");
-                case RubyRegexOptions.UTF8: return MutableString.CreateAscii("utf8");
-                case RubyRegexOptions.SJIS: return MutableString.CreateAscii("sjis");
-                default: throw Assert.Unreachable;
-            }
-        }
-
         [RubyMethod("encoding", Compatibility = RubyCompatibility.Ruby19)]
         public static RubyEncoding/*!*/ GetEncoding(RubyRegex/*!*/ self) {
             return self.Encoding;

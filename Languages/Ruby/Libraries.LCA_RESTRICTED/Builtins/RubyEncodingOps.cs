@@ -25,7 +25,7 @@ using Microsoft.Scripting;
 using System.Globalization;
 
 namespace IronRuby.Builtins {
-    [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), Compatibility = RubyCompatibility.Ruby19, BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), BuildConfig = "!SILVERLIGHT")]
     public static class RubyEncodingOps {
         #region Exceptions
 
@@ -59,7 +59,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Public Instance Methods
+        #region to_s, inspect, based_encoding, dummy?
 
         [RubyMethod("_dump")]
         [RubyMethod("name")]
@@ -92,7 +92,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Singleton Methods
+        #region aliases, name_list, list, find, _load?
 
         [RubyMethod("aliases", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetAliases(RubyClass/*!*/ self) {
@@ -124,8 +124,15 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("find", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding/*!*/ GetEncoding(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ name) {
-            return RubyEncoding.GetRubyEncoding(name.ToString());
+            return self.Context.GetRubyEncoding(name);
         }
+
+        [RubyMethod("_load?", RubyMethodAttributes.PublicSingleton)]
+        public static bool Load(RubyClass/*!*/ self) {
+            throw new NotImplementedException();
+        }
+
+        #endregion
 
         #region compatible?
 
@@ -181,33 +188,43 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        [RubyMethod("_load?", RubyMethodAttributes.PublicSingleton)]
-        public static bool Load(RubyClass/*!*/ self) {
-            throw new NotImplementedException();
-        }
+        #region default_external, default_internal, locale_charmap
 
         [RubyMethod("default_external", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding/*!*/ GetDefaultExternalEncoding(RubyClass/*!*/ self) {
-            // TODO:
-            return RubyEncoding.Default;
+            return self.Context.DefaultExternalEncoding;
         }
 
         [RubyMethod("default_external=", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding/*!*/ SetDefaultExternalEncoding(RubyClass/*!*/ self, RubyEncoding encoding) {
-            // TODO:
-            return RubyEncoding.Default;
+            if (encoding == null) {
+                throw RubyExceptions.CreateArgumentError("default external can not be nil");
+            }
+            var old = self.Context.DefaultExternalEncoding;
+            self.Context.DefaultExternalEncoding = encoding;
+            return old;
+        }
+
+        [RubyMethod("default_external=", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding/*!*/ SetDefaultExternalEncoding(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ encodingName) {
+            return SetDefaultExternalEncoding(self, self.Context.GetRubyEncoding(encodingName));
         }
 
         [RubyMethod("default_internal", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding/*!*/ GetDefaultInternalEncoding(RubyClass/*!*/ self) {
-            // TODO:
-            return RubyEncoding.Default;
+            return self.Context.DefaultInternalEncoding;
         }
 
         [RubyMethod("default_internal=", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding/*!*/ SetDefaultInternalEncoding(RubyClass/*!*/ self, RubyEncoding encoding) {
-            // TODO:
-            return RubyEncoding.Default;
+            var old = self.Context.DefaultInternalEncoding;
+            self.Context.DefaultInternalEncoding = encoding;
+            return old;
+        }
+
+        [RubyMethod("default_internal=", RubyMethodAttributes.PublicSingleton)]
+        public static RubyEncoding/*!*/ SetDefaultInternalEncoding(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ encodingName) {
+            return SetDefaultInternalEncoding(self, self.Context.GetRubyEncoding(encodingName));
         }
 
         [RubyMethod("locale_charmap", RubyMethodAttributes.PublicSingleton)]

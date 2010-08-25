@@ -233,14 +233,6 @@ namespace IronRuby.Runtime {
                     return;
                 
                 case GlobalVariableId.KCode:
-                    if (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
-                        // MRI calls to_str; we don't do that, it's inconsistent with other globals.
-                        // If some app depends on this behavior, it will fail gracefully:
-                        context.KCode = RubyEncoding.GetKCodingByNameInitial(RequireType<MutableString>(value, name, "String").GetFirstChar());
-                        Utils.Log(String.Format("Set to {0}", context.KCode), "KCODE");
-                        return;
-                    }
-
                     context.ReportWarning("variable $KCODE is no longer effective");
                     return;
 

@@ -597,7 +597,7 @@ namespace IronRuby.Builtins {
         private static RubyEncoding ToEncoding(ConversionStorage<MutableString>/*!*/ toStr, object obj) {
             return (obj == null) ? null :
                    obj as RubyEncoding ??
-                   RubyEncoding.GetRubyEncoding(Protocols.CastToString(toStr, obj).ToString()); // TODO: ToString
+                   toStr.Context.GetRubyEncoding(Protocols.CastToString(toStr, obj));
         }
 
         [RubyMethod("set_encoding")]

@@ -51,7 +51,7 @@ using IronRuby.Compiler.Ast;
 
 %token<String> IDENTIFIER FUNCTION_IDENTIFIER GLOBAL_VARIABLE INSTANCE_VARIABLE CONSTANT_IDENTIFIER CLASS_VARIABLE OP_ASSIGNMENT 
 %token<String> LABEL                               // 1.9  
-%token<String> CHARACTER                           // 1.9
+%token<StringContent> CHARACTER                    // 1.9
 %token<Integer1> INTEGER 
 %token<BigInteger> BIG_INTEGER
 %token<Double> FLOAT 

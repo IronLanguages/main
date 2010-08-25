@@ -1243,10 +1243,10 @@ namespace IronRuby.Builtins {
             return self.ChangeEncoding(encoding, true);
         }
 
+        // encoding aware
         [RubyMethod("force_encoding")]
-        public static MutableString/*!*/ ForceEncoding(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ encodingName) {
-            // TODO: encodingName.ToString
-            return ForceEncoding(self, RubyEncoding.GetRubyEncoding(encodingName.ToString()));
+        public static MutableString/*!*/ ForceEncoding(RubyContext/*!*/ context, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ encodingName) {
+            return ForceEncoding(self, context.GetRubyEncoding(encodingName));
         }
 
         #endregion

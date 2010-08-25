@@ -247,7 +247,8 @@ namespace IronRuby.Runtime {
                 );
 
                 try {
-                    _propertyType = GetValue(testObject).GetType();
+                    var value = GetValue(testObject);
+                    _propertyType = (value != null) ? value.GetType() : typeof(object);
                 } catch (Exception) {
                     _propertyType = typeof(object);
                 }

@@ -1072,25 +1072,9 @@ namespace IronRuby.Compiler {
 
                 default:
                     if (!IsIdentifierInitial(c, _multiByteIdentifier)) {
-                        // UTF-8 BOM detection:
-                        if (_compatibility < RubyCompatibility.Ruby19 && _currentLineIndex == 0 && _bufferPos == 1 &&
-                            (c == 0xEF && Peek() == 0xBB && Peek(1) == 0xBF)) {
-                            ReportWarning(Errors.ByteOrderMarkIgnored);
-                            // skip BOM and continue parsing as if it was whitespace:
-                            Read();
-                            Read();
-                            MarkSingleLineTokenEnd();
-                            return Tokens.Whitespace;
-                        } else {
-                            ReportError(Errors.InvalidCharacterInExpression, (char)c);
-                            MarkSingleLineTokenEnd();
-                            return Tokens.InvalidCharacter;
-                        }
-                    } else if (c == 0xfeff && _encoding == RubyEncoding.KCodeUTF8 && _currentLineIndex == 0 && _bufferPos == 1) {
-                        ReportWarning(Errors.ByteOrderMarkIgnored);
-                        // skip BOM and continue parsing as if it was whitespace:
+                        ReportError(Errors.InvalidCharacterInExpression, (char)c);
                         MarkSingleLineTokenEnd();
-                        return Tokens.Whitespace;
+                        return Tokens.InvalidCharacter;
                     }
 
                     return MarkSingleLineTokenEnd(ReadIdentifier(c));
@@ -1346,11 +1330,7 @@ namespace IronRuby.Compiler {
                 case "__LINE__": return ReturnKeyword(Tokens.Line, LexicalState.EXPR_END);
                 case "__FILE__": return ReturnKeyword(Tokens.File, LexicalState.EXPR_END);
                 case "__ENCODING__":
-                    if (_compatibility >= RubyCompatibility.Ruby19) {
-                        return ReturnKeyword(Tokens.Encoding, LexicalState.EXPR_END);
-                    } else {
-                        return Tokens.None;
-                    }
+                    return ReturnKeyword(Tokens.Encoding, LexicalState.EXPR_END);
 
                 default: return Tokens.None;
             }
@@ -2145,7 +2125,6 @@ namespace IronRuby.Compiler {
                 return Tokens.EndOfFile;
             }
 
-            // TODO: ?x, ?\u1234, ?\u{123456} -> string in 1.9
             // ?[:whitespace:]
             if (IsWhiteSpace(c)) {
                 if (!InArgs) {
@@ -2176,22 +2155,40 @@ namespace IronRuby.Compiler {
             }
 
             Skip(c);
-            
+
+            object content;
+
             // ?\{escape}
             if (c == '\\') {
-                // TODO: ?\xx, ?\u1234, ?\u{123456} -> string in 1.9
-                c = ReadEscape();
+                c = Peek();
+                if (c == 'u') {
+                    // \uFFFF, \u{xxxxxx}
+                    Skip(c);
+                    int codepoint = (Peek() == '{') ? ReadUnicodeCodePoint() : ReadUnicodeEscape();
+                    content = UnicodeCodePointToString(codepoint);
+                    MarkSingleLineTokenEnd();
+                } else {
+                    // \xXX, \M-x, ...
+                    c = ReadEscape();
+                    if (c <= 0x7f) {
+                        // ascii encoding
+                        content = new String((char)c, 1);
+                    } else {
+                        Debug.Assert(c <= 0xff);
+                        // binary encoding
+                        content = new[] { (byte)c };
+                    }
 
-                // \M-{eoln} eats the eoln:
-                MarkMultiLineTokenEnd();
+                    // \M-{eoln} eats the eoln:
+                    MarkMultiLineTokenEnd();
+                }
             } else {
+                content = new String((char)c, 1);
                 MarkSingleLineTokenEnd();
             }
 
-            // TODO: ?x -> string in 1.9
             LexicalState = LexicalState.EXPR_END;
-            _tokenValue.SetString(((char)c).ToString());
-
+            _tokenValue.StringContent = content;
             return Tokens.Character;
         }
 
@@ -2366,12 +2363,7 @@ namespace IronRuby.Compiler {
                 }
             }
 
-            // encoding is ignored in 1.9:
-            if (_compatibility < RubyCompatibility.Ruby19) {
-                return options | encoding;
-            } else {
-                return options;
-            }
+            return options | encoding;
         }
 
         #endregion
@@ -2653,6 +2645,16 @@ namespace IronRuby.Compiler {
             }
         }
 
+        private static string/*!*/ UnicodeCodePointToString(int codepoint) {
+            if (codepoint < 0x10000) {
+                // code-points [0xd800 .. 0xdffff] are not treated as invalid
+                return new String((char)codepoint, 1);
+            } else {
+                codepoint -= 0x10000;
+                return new String(new char[] { (char)((codepoint / 0x400) + 0xd800), (char)((codepoint % 0x400) + 0xdc00) });
+            }
+        }
+
         public static int ToCodePoint(int highSurrogate, int lowSurrogate) {
             return (highSurrogate - 0xd800) * 0x400 + (lowSurrogate - 0xdc00) + 0x10000;
         }
@@ -2729,7 +2731,7 @@ namespace IronRuby.Compiler {
                         }
                     } else if ((stringType & StringProperties.RegularExpression) != 0) {
                         // \uFFFF, \u{codepoint}
-                        if (c == 'u' && _compatibility >= RubyCompatibility.Ruby19) {
+                        if (c == 'u') {
                             content.Append('\\');
                             AppendEscapedUnicode(content);
                         } else {
@@ -2738,7 +2740,7 @@ namespace IronRuby.Compiler {
                         }
                         continue;
                     } else if ((stringType & StringProperties.ExpandsEmbedded) != 0) {
-                        if (c == 'u' && _compatibility >= RubyCompatibility.Ruby19) {
+                        if (c == 'u') {
                             // TODO: if the string contains ascii characters only => it is ok and the encoding of the string will be UTF8
                             if (_encoding != RubyEncoding.UTF8) {
                                 ReportWarning(Errors.EncodingsMixed, RubyEncoding.UTF8.Name, _encoding.Name);

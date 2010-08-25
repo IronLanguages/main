@@ -5206,7 +5206,7 @@ public partial class Parser
       // string_concatenation -> Character 
 #line 1801 "Parser.y"
 			{
-            yyval.Expressions = CollectionUtils.MakeList<Expression>(new StringLiteral(GetValue(1).String, GetLocation(1)));
+            yyval.Expressions = CollectionUtils.MakeList<Expression>(new StringLiteral(GetValue(1).StringContent, GetLocation(1)));
         }
   }
 
