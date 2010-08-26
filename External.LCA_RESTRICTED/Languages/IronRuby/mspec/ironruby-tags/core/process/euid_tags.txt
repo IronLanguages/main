@@ -1,2 +1,0 @@
-fails:Process.euid also goes by Process::UID.eid
-fails:Process.euid also goes by Process::Sys.geteuid

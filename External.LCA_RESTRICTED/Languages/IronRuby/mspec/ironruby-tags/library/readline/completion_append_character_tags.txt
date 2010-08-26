@@ -1,1 +1,0 @@
-fails:Readline.completion_append_character= returns the first character of the passed string

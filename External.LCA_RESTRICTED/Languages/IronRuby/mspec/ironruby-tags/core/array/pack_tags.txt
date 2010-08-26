@@ -1,2 +1,0 @@
-fails:Array#pack with format 'Z' returns the whole argument string with star parameter
-fails:Array#pack with format 'Z' comsumres only one array item per a format

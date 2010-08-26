@@ -1,5 +1,0 @@
-fails:Marshal.dump raises a TypeError if marshalling a Method instance
-fails:Marshal.dump raises a TypeError if marshalling a Proc
-fails:Marshal.dump raises a TypeError if dumping a IO/File instance
-fails:Marshal.dump raises a TypeError if dumping a MatchData instance
-fails:Marshal.dump dumps a Float 8323434.342

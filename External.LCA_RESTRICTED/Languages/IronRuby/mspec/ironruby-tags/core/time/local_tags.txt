@@ -1,2 +1,0 @@
-fails:Time.local should accept various year ranges
-fails:Time.local raises an ArgumentError for out of range values

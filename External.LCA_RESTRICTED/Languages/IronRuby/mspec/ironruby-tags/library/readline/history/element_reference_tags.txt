@@ -1,2 +1,0 @@
-fails:Readline::HISTORY.[] returns tainted objects
-fails:Readline::HISTORY.[] raises an IndexError when there is no item at the passed index

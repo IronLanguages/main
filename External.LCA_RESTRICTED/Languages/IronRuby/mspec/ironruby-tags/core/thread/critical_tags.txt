@@ -1,2 +1,0 @@
-critical:Thread.critical= can be mismatched
-fails:Thread.critical= defers exit

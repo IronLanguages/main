@@ -1,2 +1,0 @@
-fails:File.size? accepts a File argument
-fails:File.size accepts a File argument

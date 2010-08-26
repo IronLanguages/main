@@ -1,1 +1,0 @@
-fails:Net::FTP#get (binary mode) when resuming an existing file saves the remaining content of the passed remote file to the passed local file

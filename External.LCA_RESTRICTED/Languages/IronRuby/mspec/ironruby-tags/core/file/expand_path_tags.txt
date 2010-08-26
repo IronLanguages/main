@@ -1,2 +1,0 @@
-fails:File.expand_path returns file system case only for the last component of input(s)
-fails:File.expand_path converts a pathname to an absolute pathname, using ~ (home) as base

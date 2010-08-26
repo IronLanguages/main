@@ -1,1 +1,0 @@
-fails:File.zero? returns true for a directory

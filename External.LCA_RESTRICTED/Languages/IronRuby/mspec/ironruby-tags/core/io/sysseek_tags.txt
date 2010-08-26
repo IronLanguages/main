@@ -1,2 +1,0 @@
-fails:IO#sysseek on a file raises an error when called after buffered reads
-fails:IO#sysseek on a file warns if called immediately after a buffered IO#write

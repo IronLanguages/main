@@ -1,1 +1,0 @@
-fails:Kernel#require only accepts strings and objects with #to_str
