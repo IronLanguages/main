@@ -36,12 +36,14 @@ gencache  =%DLR_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd $
 ;= Silverlight Build Commands
 ;=
 
-bsrbd    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight3Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
-bsrbr    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight3Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
-bsd      =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight3Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
-bsr      =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight3Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\3.0.50106.0"
-bsd4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight4Debug" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
-bsr4     =msbuild %DLR_ROOT%\Hosts\Silverlight\Silverlight4.sln /p:Configuration="Silverlight4Release" /p:SilverlightPath="C:\Program Files\Microsoft Silverlight\4.0.41108.0 "
+bsrbd    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight4Debug"
+bsrbr    =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight4Release"
+bsipd    =msbuild %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Silverlight4Debug"
+bsipr    =msbuild %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Silverlight4Release"
+bsrbd3   =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight3Debug"
+bsrbr3   =msbuild %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Silverlight3Release"
+bsipd3   =msbuild %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Silverlight3Debug"
+bsipr3   =msbuild %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Silverlight3Release"
 
 ;==============================================================================
 ;= [Iron]Python program aliases
