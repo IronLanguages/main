@@ -29,33 +29,33 @@
     <DefineConstants>StdLib.ProjectDir=$(SolutionDir)..\Languages\IronPython\StdLib;PythonDir=$(PythonDir);$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\IronPython.Modules\IronPython.Modules.csproj">
+    <ProjectReference Include="$(PythonDir)\IronPython.Modules\IronPython.Modules.csproj">
       <Project>{155CE436-1669-4A48-8095-410F2430237F}</Project>
       <Name>IronPython.Modules</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\IronPython.Wpf\IronPython.Wpf.csproj">
+    <ProjectReference Include="$(PythonDir)\IronPython.Wpf\IronPython.Wpf.csproj">
       <Project>{65E997B7-E99B-4C83-B29E-9951429BB293}</Project>
       <Name>IronPython.Wpf</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\IronPythonConsoleAny\IronPythonConsoleAny.csproj">
+    <ProjectReference Include="$(PythonDir)\IronPythonConsoleAny\IronPythonConsoleAny.csproj">
       <Project>{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}</Project>
       <Name>IronPythonConsoleAny</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\IronPythonConsole\IronPythonConsole.csproj">
+    <ProjectReference Include="$(PythonDir)\IronPythonConsole\IronPythonConsole.csproj">
       <Project>{811AC32C-11F3-4ED8-92A7-A7E39C2BB704}</Project>
       <Name>IronPythonConsole</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\IronPythonWindowAny\IronPythonWindowAny.csproj">
+    <ProjectReference Include="$(PythonDir)\IronPythonWindowAny\IronPythonWindowAny.csproj">
       <Project>{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}</Project>
       <Name>IronPythonWindowAny</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\IronPythonWindow\IronPythonWindow.csproj">
+    <ProjectReference Include="$(PythonDir)\IronPythonWindow\IronPythonWindow.csproj">
       <Project>{81DA19C7-4FEC-47E7-981B-D9310D549F95}</Project>
       <Name>IronPythonWindow</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\IronPython\IronPython.csproj">
+    <ProjectReference Include="$(PythonDir)\IronPython\IronPython.csproj">
       <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
-      <Name>IronPython %28Languages\IronPython\IronPython%29</Name>
+      <Name>IronPython</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -64,7 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IpyRedist.wxs" />
-    <HeatProject Include="..\..\..\Languages\IronPython\StdLib\StdLib.pyproj">
+    <HeatProject Include="$(PythonDir)\StdLib\StdLib.pyproj">
         <ProjectOutputGroups>Content</ProjectOutputGroups>
     </HeatProject>
   </ItemGroup>

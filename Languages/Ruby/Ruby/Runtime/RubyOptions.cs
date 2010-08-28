@@ -86,7 +86,7 @@ namespace IronRuby.Runtime {
             get { return _noAssemblyResolveHook; }
         }
 
-        public ReadOnlyCollection<string>/*!*/ LibraryPaths {
+        public ReadOnlyCollection<string> LibraryPaths {
             get { return _libraryPaths; }
         }
 
@@ -125,7 +125,7 @@ namespace IronRuby.Runtime {
             _noAssemblyResolveHook = GetOption(options, "NoAssemblyResolveHook", false);
             _requirePaths = GetStringCollectionOption(options, "RequiredPaths", ';', ',');
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
-            _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
+            _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',');
         }
     }
 }

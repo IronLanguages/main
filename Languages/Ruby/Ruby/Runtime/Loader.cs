@@ -160,8 +160,12 @@ namespace IronRuby.Runtime {
             } catch (SecurityException) {
                 applicationBaseDir = null;
             }
-            
-            AddAbsoluteLibraryPaths(loadPaths, applicationBaseDir, options.LibraryPaths);
+
+            AddAbsoluteLibraryPaths(loadPaths, applicationBaseDir, (ICollection<string>)options.LibraryPaths ?? new[] { 
+                @"..\Lib\ironruby",
+                @"..\Lib\ruby\site_ruby\" + _context.MriVersion,
+                @"..\Lib\ruby\" + _context.MriVersion,
+            });
 #endif
             loadPaths.Add(MutableString.CreateAscii("."));
             return loadPaths;

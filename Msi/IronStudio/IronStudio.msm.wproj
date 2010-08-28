@@ -27,15 +27,15 @@
     <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Tools\IronStudio\IronStudio\IronStudio.csproj">
+    <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronStudio\IronStudio.csproj">
       <Project>{C98DE16D-417E-4079-8939-1F8C8E28E2C8}</Project>
       <Name>IronStudio</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Tools\IronStudio\IronStudioCore\IronStudioCore.csproj">
+    <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronStudioCore\IronStudioCore.csproj">
       <Project>{843716AE-38B3-4723-963C-950DD06BC4B8}</Project>
       <Name>IronStudioCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\RemoteScriptFactoryRemoteScriptFactory.csproj">
+    <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\RemoteScriptFactory\RemoteScriptFactory.csproj">
       <Project>{D10C905C-7F15-41DF-9FF9-CCE461F571FD}</Project>
       <Name>RemoteScriptFactory</Name>
     </ProjectReference>

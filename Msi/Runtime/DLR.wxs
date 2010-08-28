@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi' xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
     <Module Id='DynamicLanguageRuntime' Language='1033' Version='1.1.0.0'>
-      <Package Id='B25C469D-12C7-4327-AEF1-B2D3505E115E' Description='Dynamic Language Runtime Merge Module'
+      <Package Id='4621283F-BB38-4D6F-A7C6-FA1059E2824D' Description='Dynamic Language Runtime Merge Module'
                 Manufacturer='Microsoft Corporation' InstallerVersion='200' />
 
       <Directory Id="TARGETDIR" Name="SourceDir">

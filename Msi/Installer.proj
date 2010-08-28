@@ -4,25 +4,13 @@
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     </PropertyGroup>
     <ItemGroup>
-        <ProjectToBuild Include="..\Solutions\Codeplex-DLR.sln">
-            <Properties>Configuration=Silverlight4$(Configuration)</Properties>
-        </ProjectToBuild>
-        <ProjectToBuild Include="..\Solutions\Codeplex-DLR.sln">
-            <Properties>Configuration=$(Configuration)</Properties>
-        </ProjectToBuild>
         <ProjectToBuild Include="Python\Chm\IronPython.Chm.proj">
           <Name>IronPython.Chm</Name>
-        </ProjectToBuild>
-        <ProjectToBuild Include="Runtime\DLR.msm.wproj">
-            <Properties>Configuration=$(Configuration)</Properties>
-        </ProjectToBuild>        
-        <ProjectToBuild Include="IronStudio\IronStudio.msm.wproj">
-            <Properties>Configuration=$(Configuration)</Properties>
-        </ProjectToBuild>
-        <ProjectToBuild Include="Python\Msm\IronPython.Msm.wproj">
-            <Properties>Configuration=$(Configuration)</Properties>
-        </ProjectToBuild>
+        </ProjectToBuild>  
         <ProjectToBuild Include="Python\Msi\IronPython.Msi.wproj">
+            <Properties>Configuration=$(Configuration)</Properties>
+        </ProjectToBuild>
+        <ProjectToBuild Include="Ruby\Msi\IronRuby.Msi.wproj">
             <Properties>Configuration=$(Configuration)</Properties>
         </ProjectToBuild>
     </ItemGroup>

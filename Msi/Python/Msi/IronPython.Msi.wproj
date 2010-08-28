@@ -10,6 +10,7 @@
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
     <PythonDir>$(SolutionDir)\..\Languages\IronPython</PythonDir>
+    <TemplatesDir>$(SolutionDir)..\Tools\IronStudio\IronPythonTools\Templates</TemplatesDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <OutputPath>$(SolutionDir)..\bin\Release\</OutputPath>
@@ -26,11 +27,17 @@
     <OutputType Condition="$(OutputType)==''">Package</OutputType>
     <!-- Input path to source files  -->
     <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
-    <DefineConstants>TemplatesDir=$(OutputPath)\Templates;PythonDir=$(PythonDir);SilverlightScriptDir=$(SolutionDir)..\Hosts\SilverLight\Public\script;SilverlightDir=$(SolutionDir)..\Bin\Silverlight4$(Configuration);TutorialDir=$(PythonDir)\Public\Tutorial;ToolsDir=$(PythonDir)\Public\Tools;DocDir=$(PythonDir)\Public\Doc;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TemplatesDir=$(TemplatesDir);PythonDir=$(PythonDir);SilverlightScriptDir=$(SolutionDir)..\Hosts\SilverLight\Public\script;SilverlightDir=$(SolutionDir)..\Bin\Silverlight4$(Configuration);TutorialDir=$(PythonDir)\Public\Tutorial;ToolsDir=$(PythonDir)\Public\Tools;DocDir=$(PythonDir)\Public\Doc;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <WixExtension Include="$(WixToolPath)WixNetFxExtension.dll" />
     <WixExtension Include="$(WixToolPath)WixUIExtension.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronPythonTools\IronPythonTools.csproj">
+      <Project>{FA7BE5F5-E04F-4613-B7AC-70CE10D1BB68}</Project>
+      <Name>IronPythonTools</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Msm\IronPython.Msm.wproj">
@@ -40,9 +47,12 @@
     <ProjectReference Include="..\..\Runtime\DLR.Msm.wproj">
       <Name>DLR.Msm</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\IronStudio\IronStudio.Msm.wproj">
+      <Name>IronStudio.Msm</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <HarvestDirectory Include="$(OutputPath)\Templates" >
+    <HarvestDirectory Include="$(TemplatesDir)" >
       <DirectoryRefId>IpyToolsInstallDir</DirectoryRefId>
       <ComponentGroupName>ToolsTemplateGroup</ComponentGroupName>
       <PreprocessorVariable>var.TemplatesDir</PreprocessorVariable>
