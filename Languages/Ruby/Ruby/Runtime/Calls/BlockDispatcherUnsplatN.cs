@@ -78,12 +78,14 @@ namespace IronRuby.Runtime.Calls {
         }
 
         private object InvokeInternal(BlockParam/*!*/ param, object self, object[]/*!*/ args) {
-            // TODO
+            // TODO: optimize
             if (args.Length < _parameterCount) {
                 Array.Resize(ref args, _parameterCount);
                 return _block(param, self, args, RubyOps.MakeArray0());
             } else if (args.Length == _parameterCount) {
                 return _block(param, self, args, RubyOps.MakeArray0());
+            } else if (_parameterCount == 0) {
+                return _block(param, self, ArrayUtils.EmptyObjects, RubyOps.MakeArrayN(args));
             } else {
                 var actualArgs = new object[_parameterCount];
 

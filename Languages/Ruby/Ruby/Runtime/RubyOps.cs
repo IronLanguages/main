@@ -1125,7 +1125,9 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static RubyArray/*!*/ MakeArrayN(object[]/*!*/ items) {
             Debug.Assert(items != null);
-            return new RubyArray(items);
+            var array = new RubyArray(items.Length);
+            array.AddVector(items, 0, items.Length);
+            return array;
         }
 
         #endregion

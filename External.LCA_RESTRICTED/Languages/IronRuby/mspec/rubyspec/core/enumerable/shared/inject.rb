@@ -63,10 +63,36 @@ describe :enumerable_inject, :shared => true do
     EnumerableSpecs::EachDefiner.new('a','b','c').send(@method) {|result, i| i+result}.should == "cba"
     EnumerableSpecs::EachDefiner.new(3, 4, 5).send(@method) {|result, i| result*i}.should == 60
     EnumerableSpecs::EachDefiner.new([1], 2, 'a','b').send(@method){|r,i| r<<i}.should == [1, 2, 'a', 'b']
-
   end
-
+  
   it "returns nil when fails(legacy rubycon)" do
     EnumerableSpecs::EachDefiner.new().send(@method) {|acc,x| 999 }.should == nil 
+  end
+  
+  # TODO: is this intentional behavior or 1.8 legacy?
+  it "handles variable number of arguments yielded by a non-default each implementation" do
+    c = Class.new do
+      include Enumerable
+      
+      def each
+        yield
+        yield :a
+        yield :a,:b
+        yield :a,:b,:c
+        yield []
+        yield [:a]
+        yield [:a,:b]
+        yield [:a,:b,:c]
+      end
+    end.new
+    
+    a = []
+    i = 0
+    c.send(@method) do |*args|
+      a << args
+      i += 1
+    end
+    
+    a.should == [[nil, :a], [1, [:a, :b]], [2, [:a, :b, :c]], [3, []], [4, [:a]], [5, [:a, :b]], [6, [:a, :b, :c]]]
   end
 end

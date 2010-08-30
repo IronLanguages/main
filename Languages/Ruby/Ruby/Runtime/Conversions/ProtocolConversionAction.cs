@@ -427,6 +427,12 @@ namespace IronRuby.Runtime.Conversions {
         }
     }
 
+    public sealed class TryConvertToPathAction : TryConvertToReferenceTypeAction<TryConvertToPathAction, MutableString> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToPath; } }
+        protected override string/*!*/ TargetTypeName { get { return "String"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToStringValidator; } }
+    }
+
     public sealed class TryConvertToStrAction : TryConvertToReferenceTypeAction<TryConvertToStrAction, MutableString> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "String"; } }

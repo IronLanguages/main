@@ -347,7 +347,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private void AddVector(object[]/*!*/ items, int start, int count) {
+        internal void AddVector(object[]/*!*/ items, int start, int count) {
             int s = ResizeForAppend(count, false);
             Array.Copy(items, start, _content, s, count);
         }

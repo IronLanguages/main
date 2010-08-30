@@ -43,15 +43,8 @@ namespace IronRuby.Hosting {
             get {
                 return String.Format(CultureInfo.InvariantCulture, 
                     "IronRuby {1} on {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
-                    Environment.NewLine, RubyContext.IronRubyVersion, GetRuntime());
+                    Environment.NewLine, RubyContext.IronRubyVersion, RubyContext.MakeRuntimeDesriptionString());
             }
-        }
-
-        private static string GetRuntime() {
-            Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
-            return mono != null ?
-                (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
-                : String.Format(CultureInfo.InvariantCulture, ".NET {0}", Environment.Version);
         }
 
         protected override int? TryInteractiveAction() {
@@ -75,8 +68,7 @@ namespace IronRuby.Hosting {
             }
 
             if (Options.DisplayVersion && (Options.Command != null || Options.FileName != null)) {
-                Console.WriteLine(String.Format(CultureInfo.InvariantCulture, "IronRuby {0} on {1}", RubyContext.IronRubyVersion, GetRuntime()
-                ), Style.Out);
+                Console.WriteLine(RubyContext.MakeDescriptionString(), Style.Out);
             }
 
             return base.Run();

@@ -163,8 +163,8 @@ namespace IronRuby.Runtime {
 
             AddAbsoluteLibraryPaths(loadPaths, applicationBaseDir, (ICollection<string>)options.LibraryPaths ?? new[] { 
                 @"..\Lib\ironruby",
-                @"..\Lib\ruby\site_ruby\" + _context.MriVersion,
-                @"..\Lib\ruby\" + _context.MriVersion,
+                @"..\Lib\ruby\site_ruby\" + _context.StandardLibraryVersion,
+                @"..\Lib\ruby\" + _context.StandardLibraryVersion,
             });
 #endif
             loadPaths.Add(MutableString.CreateAscii("."));

@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -267,15 +268,33 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region inject
+        #region inject/reduce
 
+        // def inject(result = Undefined)
+        //   each do |*args|
+        //     arg = args.size <= 1 ? args[0] : args
+        //     if result == Undefined
+        //       result = arg
+        //     else
+        //       result = yield(result, arg)
+        //     end
+        //   end
+        //   result
+        // end
+        [RubyMethod("reduce")]
         [RubyMethod("inject")]
         public static object Inject(CallSiteStorage<EachSite>/*!*/ each, BlockParam operation, object self, [Optional]object initial) {
 
             object result = initial;
-            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+            Each(each, self, Proc.Create(each.Context, 0, delegate(BlockParam/*!*/ selfBlock, object _, object[] __, RubyArray/*!*/ args) {
+                Debug.Assert(__.Length == 0);
+
+                // TODO: this is weird but is actually exploited in Rack::Utils::HeaderHash
+                // TODO: Can we optimize (special dispatcher)? We allocate splatte array for each iteration.
+                object value = args.Count == 0 ? null : args.Count == 1 ? args[0] : args;
+
                 if (result == Missing.Value) {
-                    result = item;
+                    result = value;
                     return null;
                 }
 
@@ -283,7 +302,7 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.NoBlockGiven();
                 }
 
-                if (operation.Yield(result, item, out result)) {
+                if (operation.Yield(result, value, out result)) {
                     return selfBlock.PropagateFlow(operation, result);
                 }
 

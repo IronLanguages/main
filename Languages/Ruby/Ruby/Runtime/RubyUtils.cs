@@ -1436,5 +1436,20 @@ namespace IronRuby.Runtime {
         #endregion
 
         #endregion
+
+        #region Streams
+
+        /// <summary>
+        /// Writes binary content of <see cref="MutableString"/> into the given buffer.
+        /// </summary>
+        public static void Write(this Stream/*!*/ stream, MutableString/*!*/ str, int start, int count) {
+            int byteCount;
+            byte[] bytes = str.GetByteArray(out byteCount);
+            if (start < byteCount) {
+                stream.Write(bytes, start, Math.Min(byteCount - start, count));
+            }
+        }
+
+        #endregion
     }
 }

@@ -41,6 +41,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace IronRuby.Runtime {
     [ReflectionCached]
@@ -56,12 +57,16 @@ namespace IronRuby.Runtime {
             get { return "1.9.1"; } 
         }
 
+        public string/*!*/ StandardLibraryVersion {
+            get { return "1.9.1"; }
+        }
+
         public string/*!*/ MriReleaseDate {
-            get { return "2010-01-10"; }
+            get { return "2010-08-18"; }
         }
 
         public int MriPatchLevel {
-            get { return 378; }
+            get { return 0; }
         }
 
         // IronRuby:
@@ -578,6 +583,7 @@ namespace IronRuby.Runtime {
                 obj.SetConstantNoMutateNoLock("RUBY_PATCHLEVEL", MriPatchLevel);
                 obj.SetConstantNoMutateNoLock("RUBY_PLATFORM", platform);
                 obj.SetConstantNoMutateNoLock("RUBY_RELEASE_DATE", releaseDate);
+                obj.SetConstantNoMutateNoLock("RUBY_DESCRIPTION", MutableString.CreateAscii(MakeDescriptionString()));
 
                 obj.SetConstantNoMutateNoLock("VERSION", version);
                 obj.SetConstantNoMutateNoLock("PLATFORM", platform);
@@ -599,6 +605,17 @@ namespace IronRuby.Runtime {
                 // Hash
                 // SCRIPT_LINES__
             }
+        }
+
+        internal static string/*!*/ MakeDescriptionString() {
+            return String.Format(CultureInfo.InvariantCulture, "IronRuby {0} on {1}", IronRubyVersion, MakeRuntimeDesriptionString());
+        }
+
+        internal static string MakeRuntimeDesriptionString() {
+            Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
+            return mono != null ?
+                (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
+                : String.Format(CultureInfo.InvariantCulture, ".NET {0}", Environment.Version);
         }
 
         private static MutableString/*!*/ MakePlatformString() {

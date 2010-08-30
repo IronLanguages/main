@@ -14,6 +14,8 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
+using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -21,6 +23,8 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Conversions;
+using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
     [RubyClass("Regexp", Extends = typeof(RubyRegex), Inherits = typeof(Object)), Includes(typeof(Enumerable))]
@@ -265,33 +269,58 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("union", RubyMethodAttributes.PublicSingleton)]
-        public static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, params object[]/*!*/ strings) {
+        public static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<IList>/*!*/ toAry, RubyClass/*!*/ self, [NotNull]object/*!*/ obj) {
+            IList list = Protocols.TryCastToArray(toAry, obj);
+            if (list != null) {
+                return Union(stringCast, list);
+            }
 
-            if (strings.Length == 0) {
+            // TODO: to_regexp
+            RubyRegex regex = obj as RubyRegex;
+            if (regex != null) {
+                return regex;
+            }
+
+            return new RubyRegex(RubyRegex.Escape(Protocols.CastToString(stringCast, obj)), RubyRegexOptions.NONE);
+        }
+
+        [RubyMethod("union", RubyMethodAttributes.PublicSingleton)]
+        public static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]IList/*!*/ objs) {
+            return Union(stringCast, objs);
+        }
+
+        [RubyMethod("union", RubyMethodAttributes.PublicSingleton)]
+        public static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNullItems]params object/*!*/[]/*!*/ objs) {
+            return Union(stringCast, objs);
+        }
+
+        private static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, ICollection/*!*/ objs) {
+            if (objs.Count == 0) {
                 return new RubyRegex(MutableString.CreateAscii("(?!)"), RubyRegexOptions.NONE);
             }
 
             MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
-            for (int i = 0; i < strings.Length; i++) {
+            int i = 0;
+            foreach (var obj in objs) {
                 if (i > 0) {
                     result.Append('|');
                 }
 
-                RubyRegex regex = strings[i] as RubyRegex;
+                // TODO: to_regexp
+                RubyRegex regex = obj as RubyRegex;
                 if (regex != null) {
-                    if (strings.Length == 1) {
+                    if (objs.Count == 1) {
                         return regex;
                     }
 
                     regex.AppendTo(result);
                 } else {
-                    result.Append(RubyRegex.Escape(Protocols.CastToString(stringCast, strings[i])));
+                    result.Append(RubyRegex.Escape(Protocols.CastToString(stringCast, obj)));
                 }
+
+                i++;
             }
 
-            // TODO:
-            //RubyClass regexClass = RubyUtils.GetExecutionContext(context).GetClass(typeof(RubyRegex));
-            //return NewCallSite3.Invoke(context, regexClass, result, null, null);
             return new RubyRegex(result, RubyRegexOptions.NONE);
         }
     }

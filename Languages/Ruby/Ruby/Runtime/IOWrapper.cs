@@ -25,9 +25,9 @@ using IronRuby.Runtime.Calls;
 namespace IronRuby.Runtime {
 
     public class IOWrapper : Stream {
-        private readonly CallSite<Func<CallSite, object, MutableString, object>> _writeSite;
-        private readonly CallSite<Func<CallSite, object, int, object>> _readSite;
-        private readonly CallSite<Func<CallSite, object, long, int, object>> _seekSite;
+        private readonly CallSite<Func<CallSite, object, object, object>> _writeSite;
+        private readonly CallSite<Func<CallSite, object, object, object>> _readSite;
+        private readonly CallSite<Func<CallSite, object, object, object, object>> _seekSite;
         private readonly CallSite<Func<CallSite, object, object>> _tellSite;
             
 
@@ -42,18 +42,16 @@ namespace IronRuby.Runtime {
         private int _readPos;
         private int _readLen;
 
-        private const int _bufferSize = 0x1000;
-
-        public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek, bool canFlush, bool canBeClosed) {
+        public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek, bool canFlush, bool canBeClosed, int bufferSize) {
             Assert.NotNull(context);
 
-            _writeSite = CallSite<Func<CallSite, object, MutableString, object>>.Create(
+            _writeSite = CallSite<Func<CallSite, object, object, object>>.Create(
                 RubyCallAction.Make(context, "write", RubyCallSignature.WithImplicitSelf(1))
             );
-            _readSite = CallSite<Func<CallSite, object, int, object>>.Create(
+            _readSite = CallSite<Func<CallSite, object, object, object>>.Create(
                 RubyCallAction.Make(context, "read", RubyCallSignature.WithImplicitSelf(1))
             );
-            _seekSite = CallSite<Func<CallSite, object, long, int, object>>.Create(
+            _seekSite = CallSite<Func<CallSite, object, object, object, object>>.Create(
                 RubyCallAction.Make(context, "seek", RubyCallSignature.WithImplicitSelf(2))
             );
             _tellSite = CallSite<Func<CallSite, object, object>>.Create(
@@ -67,7 +65,7 @@ namespace IronRuby.Runtime {
             _canSeek = canSeek;
             _canFlush = canFlush;
             _canBeClosed = canBeClosed;
-            _buffer = new byte[_bufferSize];
+            _buffer = new byte[bufferSize];
             _writePos = 0;
             _readPos = 0;
             _readLen = 0;
@@ -154,13 +152,13 @@ namespace IronRuby.Runtime {
             int size = _readLen - _readPos;
             if (size == 0) {
                 FlushWrite();
-                if (count > _bufferSize) {
+                if (count > _buffer.Length) {
                     size = ReadFromObject(buffer, offset, count);
                     _readPos = 0;
                     _readLen = 0;
                     return size;
                 }
-                size = ReadFromObject(_buffer, 0, _bufferSize);
+                size = ReadFromObject(_buffer, 0, _buffer.Length);
                 if (size == 0) {
                     return 0;
                 }
@@ -188,7 +186,7 @@ namespace IronRuby.Runtime {
             if (_readPos == _readLen) {
                 FlushWrite();
 
-                _readLen = ReadFromObject(_buffer, 0, _bufferSize);
+                _readLen = ReadFromObject(_buffer, 0, _buffer.Length);
                 _readPos = 0;
                 if (_readLen == 0) {
                     return -1;
@@ -244,7 +242,7 @@ namespace IronRuby.Runtime {
             if (_writePos == 0) {
                 FlushRead();
             } else {
-                int size = _bufferSize - _writePos;
+                int size = _buffer.Length - _writePos;
                 if (size > 0) {
                     if (size > count) {
                         size = count;
@@ -259,7 +257,7 @@ namespace IronRuby.Runtime {
                 }
                 WriteToObject();
             }
-            if (count >= _bufferSize) {
+            if (count >= _buffer.Length) {
                 WriteToObject(buffer, offset, count);
             } else if (count > 0) {
                 Buffer.BlockCopy(buffer, offset, _buffer, 0, count);
@@ -275,7 +273,7 @@ namespace IronRuby.Runtime {
             if (_writePos == 0) {
                 FlushRead();
             }
-            if (_writePos == _bufferSize) {
+            if (_writePos == _buffer.Length) {
                 WriteToObject();
             }
             _buffer[_writePos++] = value;
@@ -287,13 +285,8 @@ namespace IronRuby.Runtime {
         }
 
         private void WriteToObject(byte[]/*!*/ buffer, int offset, int count) {
-            // TODO:
-            if (offset != 0 || count != buffer.Length) {
-                byte[] newBuffer = new byte[count];
-                Buffer.BlockCopy(buffer, offset, newBuffer, 0, count);
-                buffer = newBuffer;
-            }
-            MutableString argument = MutableString.CreateBinary(buffer);
+            MutableString argument = MutableString.CreateBinary(count);
+            argument.Append(buffer, offset, count);
             _writeSite.Target(_writeSite, _obj, argument);
         }
     }

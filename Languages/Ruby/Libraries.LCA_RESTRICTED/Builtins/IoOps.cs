@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Reflection;
@@ -1003,11 +1004,123 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region copy_stream
+
+        [RubyMethod("copy_stream", RubyMethodAttributes.PublicSingleton)]
+        public static object CopyStream(
+            ConversionStorage<MutableString>/*!*/ toPath, ConversionStorage<int>/*!*/ toInt, RespondToStorage/*!*/ respondTo,
+            BinaryOpStorage/*!*/ writeStorage, CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ readStorage,
+            RubyClass/*!*/ self, object src, object dst, [DefaultParameterValue(-1)]int count, [DefaultParameterValue(-1)]int src_offset) {
+
+            if (count < -1) {
+                throw RubyExceptions.CreateArgumentError("count should be >= -1");
+            }
+
+            if (src_offset < -1) {
+                throw RubyExceptions.CreateArgumentError("src_offset should be >= -1");
+            }
+
+            RubyIO srcIO = src as RubyIO;
+            RubyIO dstIO = dst as RubyIO;
+            Stream srcStream = null, dstStream = null;
+            var context = toPath.Context;
+            CallSite<Func<CallSite, object, object, object>> writeSite = null;
+            CallSite<Func<CallSite, object, object, object, object>> readSite = null;
+
+            try {
+                if (srcIO == null || dstIO == null) {
+                    var toPathSite = toPath.GetSite(TryConvertToPathAction.Make(toPath.Context));
+                    var srcPath = toPathSite.Target(toPathSite, src);
+                    if (srcPath != null) {
+                        srcStream = new FileStream(context.DecodePath(srcPath), FileMode.Open, FileAccess.Read);
+                    } else {
+                        readSite = readStorage.GetCallSite("read", 2);
+                    }
+
+                    var dstPath = toPathSite.Target(toPathSite, dst);
+                    if (dstPath != null) {
+                        dstStream = new FileStream(context.DecodePath(dstPath), FileMode.Truncate);
+                    } else {
+                        writeSite = writeStorage.GetCallSite("write", 1);
+                    }
+                } else {
+                    srcStream = srcIO.GetReadableStream();
+                    dstStream = dstIO.GetWritableStream();
+                }
+
+                if (src_offset != -1) {
+                    if (srcStream == null) {
+                        throw RubyExceptions.CreateArgumentError("cannot specify src_offset for non-IO");
+                    }
+                    srcStream.Seek(src_offset, SeekOrigin.Current);
+                }
+
+                MutableString userBuffer = null;
+                byte[] buffer = null;
+
+                long bytesCopied = 0;
+                long remaining = (count < 0) ? Int64.MaxValue : count;
+                int minBufferSize = 16 * 1024;
+                
+                if (srcStream != null) {
+                    buffer = new byte[Math.Min(minBufferSize, remaining)];
+                }
+
+                while (remaining > 0) {
+                    int bytesRead;
+                    int chunkSize = (int)Math.Min(minBufferSize, remaining);
+                    if (srcStream != null) {
+                        userBuffer = null;
+                        bytesRead = srcStream.Read(buffer, 0, chunkSize);
+                    } else {
+                        userBuffer = MutableString.CreateBinary();
+                        bytesRead = Protocols.CastToFixnum(toInt, readSite.Target(readSite, src, chunkSize, userBuffer));
+                    }
+                    
+                    if (bytesRead <= 0) {
+                        break;
+                    }
+
+                    if (dstStream != null) {
+                        if (userBuffer != null) {
+                            dstStream.Write(userBuffer, 0, bytesRead);
+                        } else {
+                            dstStream.Write(buffer, 0, bytesRead);
+                        }
+                    } else {
+                        if (userBuffer == null) {
+                            userBuffer = MutableString.CreateBinary(bytesRead).Append(buffer, 0, bytesRead);
+                        } else {
+                            userBuffer.SetByteCount(bytesRead);
+                        }
+                        writeSite.Target(writeSite, dst, userBuffer);
+                    }
+                    bytesCopied += bytesRead;
+                    remaining -= bytesRead;
+                }
+                return Protocols.Normalize(bytesCopied);
+
+            } finally {
+                if (srcStream != null) {
+                    srcStream.Close();
+                }
+                if (dstStream != null) {
+                    dstStream.Close();
+                }
+            }
+        }
+
+        #endregion
+
         // TODO: 1.9 only
         // bytes -> Enumerable::Enumerator
         // lines -> Enumerable::Enumerator
 
         public static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, object io, FileAccess access) {
+            return CreateIOWrapper(respondToStorage, io, access, 0x1000);
+        }
+
+        public static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, object io, FileAccess access, int bufferSize) {
             bool canRead, canWrite, canSeek, canFlush, canBeClosed;
 
             if (access == FileAccess.Read || access == FileAccess.ReadWrite) {
@@ -1026,7 +1139,7 @@ namespace IronRuby.Builtins {
             canFlush = Protocols.RespondTo(respondToStorage, io, "flush");
             canBeClosed = Protocols.RespondTo(respondToStorage, io, "close");
 
-            return new IOWrapper(respondToStorage.Context, io, canRead, canWrite, canSeek, canFlush, canBeClosed);
+            return new IOWrapper(respondToStorage.Context, io, canRead, canWrite, canSeek, canFlush, canBeClosed, bufferSize);
         }
     }
 }

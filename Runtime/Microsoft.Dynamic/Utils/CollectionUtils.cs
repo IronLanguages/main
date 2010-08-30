@@ -151,6 +151,15 @@ namespace Microsoft.Scripting.Utils {
             return res;
         }
 
+        public static IEnumerable<TRet> Select<TRet>(this IEnumerable enumerable, Func<object, TRet> selector) {
+            ContractUtils.RequiresNotNull(enumerable, "enumerable");
+            ContractUtils.RequiresNotNull(selector, "selector");
+
+            foreach (object item in enumerable) {
+                yield return selector(item);
+            }
+        }
+
         public static List<T> GetRange<T>(IList<T> list, int index, int count) {
             ContractUtils.RequiresNotNull(list, "list");
             ContractUtils.RequiresArrayRange(list, index, count, "index", "count");

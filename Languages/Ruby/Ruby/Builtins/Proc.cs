@@ -273,6 +273,10 @@ namespace IronRuby.Builtins {
             return Create(context, 3, BlockSignatureAttributes.None, clrMethod);
         }
 
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, int parameterCount, BlockCallTargetUnsplatN/*!*/ clrMethod) {
+            return Create(context, parameterCount, BlockSignatureAttributes.HasUnsplatParameter, clrMethod);
+        }
+
         public static Proc/*!*/ Create(RubyContext/*!*/ context, int parameterCount, BlockSignatureAttributes signatureAttributes, Delegate/*!*/ clrMethod) {
             // scope is used to get to the execution context:
             return new Proc(ProcKind.Block, null, context.EmptyScope,
