@@ -25,6 +25,9 @@ from   System.Diagnostics import Process, ProcessWindowStyle
 from   System.IO import File
 import clr
 
+# test case disabled - requires MAUI to run
+sys.exit(0)
+
 #------------------------------------------------------------------------------
 #--Globals
 
