@@ -122,6 +122,7 @@
     <Compile Include="Builtins\Comparable.cs" />
     <Compile Include="Builtins\Dir.cs" />
     <Compile Include="Builtins\Enumerable.cs" />
+    <Compile Include="Builtins\Enumerator.cs" />
     <Compile Include="Builtins\EnvironmentSingletonOps.cs" />
     <Compile Include="Builtins\Errno.cs" />
     <Compile Include="Builtins\ExceptionOps.cs" />
@@ -166,7 +167,6 @@
     <Compile Include="Builtins\UnboundMethod.cs" />
     <Compile Include="Builtins\RubyEncoder.cs" />
     <Compile Include="Digest\Digest.cs" />
-    <Compile Include="Enumerator\Enumerator.cs" />
     <Compile Include="Extensions\CharOps.cs" />
     <Compile Include="Extensions\ClrBigInteger.cs" />
     <Compile Include="Extensions\ClrFloat.cs" />

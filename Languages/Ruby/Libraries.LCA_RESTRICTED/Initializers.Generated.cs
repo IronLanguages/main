@@ -112,6 +112,10 @@ namespace IronRuby.Builtins {
             #if !SILVERLIGHT
             DefineGlobalClass("Encoding", typeof(IronRuby.Builtins.RubyEncoding), 0x00000007, Context.ObjectClass, LoadEncoding_Instance, LoadEncoding_Class, LoadEncoding_Constants, IronRuby.Builtins.RubyModule.EmptyArray);
             #endif
+            DefineGlobalClass("Enumerator", typeof(IronRuby.Builtins.Enumerator), 0x0000000F, Context.ObjectClass, LoadEnumerator_Instance, null, null, new IronRuby.Builtins.RubyModule[] {def39}, 
+                new Func<IronRuby.Builtins.RubyClass, System.Object, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.Enumerator.Create), 
+                new Func<IronRuby.Builtins.RubyClass, System.Object, System.String, System.Object[], IronRuby.Builtins.Enumerator>(IronRuby.Builtins.Enumerator.Create)
+            );
             IronRuby.Builtins.RubyClass def49 = Context.ExceptionClass = DefineGlobalClass("Exception", typeof(System.Exception), 0x00000007, Context.ObjectClass, LoadException_Instance, LoadException_Class, null, IronRuby.Builtins.RubyModule.EmptyArray, 
             new Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__Exception));
             Context.FalseClass = DefineGlobalClass("FalseClass", typeof(IronRuby.Builtins.FalseClass), 0x0000000F, Context.ObjectClass, LoadFalseClass_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -550,11 +554,6 @@ namespace IronRuby.Builtins {
         
         private static void LoadArray_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             LoadSystem__Collections__IList_Instance(module);
-            DefineLibraryMethod(module, "combination", 0x51, 
-                0x00020000U, 
-                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, System.Int32, System.Object>(IronRuby.Builtins.ArrayOps.EnumerateCombinations)
-            );
-            
             DefineLibraryMethod(module, "initialize", 0x52, 
                 0x00000000U, 0x00000008U, 0x00000000U, 0x00020000U, 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.Reinitialize), 
@@ -566,11 +565,6 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "pack", 0x51, 
                 0x00100020U, 
                 new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.ConversionStorage<System.Double>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyArray, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.ArrayOps.Pack)
-            );
-            
-            DefineLibraryMethod(module, "permutation", 0x51, 
-                0x00020000U, 
-                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, System.Int32, System.Object>(IronRuby.Builtins.ArrayOps.EnumeratePermutations)
             );
             
             DefineLibraryMethod(module, "reverse!", 0x51, 
@@ -996,6 +990,16 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, System.Object>>, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.Enumerable.Find)
             );
             
+            DefineLibraryMethod(module, "each_cons", 0x51, 
+                0x00040000U, 
+                new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.BlockParam, System.Object, System.Int32, System.Object>(IronRuby.Builtins.Enumerable.EachCons)
+            );
+            
+            DefineLibraryMethod(module, "each_slice", 0x51, 
+                0x00040000U, 
+                new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.BlockParam, System.Object, System.Int32, System.Object>(IronRuby.Builtins.Enumerable.EachSlice)
+            );
+            
             DefineLibraryMethod(module, "each_with_index", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.BlockParam, System.Object, System.Object>(IronRuby.Builtins.Enumerable.EachWithIndex)
@@ -1004,6 +1008,21 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "entries", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, System.Object, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.Enumerable.ToArray)
+            );
+            
+            DefineLibraryMethod(module, "enum_cons", 0x51, 
+                0x00010000U, 
+                new Func<System.Object, System.Int32, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.Enumerable.GetConsEnumerator)
+            );
+            
+            DefineLibraryMethod(module, "enum_slice", 0x51, 
+                0x00010000U, 
+                new Func<System.Object, System.Int32, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.Enumerable.GetSliceEnumerator)
+            );
+            
+            DefineLibraryMethod(module, "enum_with_index", 0x51, 
+                0x00000000U, 
+                new Func<System.Object, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.Enumerable.GetEnumeratorWithIndex)
             );
             
             DefineLibraryMethod(module, "find", 0x51, 
@@ -1089,6 +1108,20 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "zip", 0x51, 
                 0x80000000U, 
                 new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Runtime.BlockParam, System.Object, System.Object[], System.Object>(IronRuby.Builtins.Enumerable.Zip)
+            );
+            
+        }
+        
+        private static void LoadEnumerator_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
+            DefineLibraryMethod(module, "each", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Enumerator, System.Object>(IronRuby.Builtins.Enumerator.Each)
+            );
+            
+            DefineLibraryMethod(module, "initialize", 0x52, 
+                0x00000000U, 0x80020000U, 
+                new Func<IronRuby.Builtins.Enumerator, System.Object, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.Enumerator.Reinitialize), 
+                new Func<IronRuby.Builtins.Enumerator, System.Object, System.String, System.Object[], IronRuby.Builtins.Enumerator>(IronRuby.Builtins.Enumerator.Reinitialize)
             );
             
         }
@@ -3827,6 +3860,11 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, System.Object, System.Object>>, IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, IronRuby.Builtins.RubyClass, System.Object>>, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Duplicate)
             );
             
+            DefineLibraryMethod(module, "enum_for", 0x51, 
+                0x80010002U, 
+                new Func<System.Object, System.String, System.Object[], IronRuby.Builtins.Enumerator>(IronRuby.Builtins.KernelOps.Create)
+            );
+            
             DefineLibraryMethod(module, "eql?", 0x51, 
                 0x00000001U, 0x00000000U, 
                 new Func<IronRuby.Runtime.IRubyObject, System.Object, System.Boolean>(IronRuby.Builtins.KernelOps.ValueEquals), 
@@ -4235,6 +4273,11 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "throw", 0x52, 
                 0x00000000U, 
                 new Action<IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Throw)
+            );
+            
+            DefineLibraryMethod(module, "to_enum", 0x51, 
+                0x80010002U, 
+                new Func<System.Object, System.String, System.Object[], IronRuby.Builtins.Enumerator>(IronRuby.Builtins.KernelOps.Create)
             );
             
             DefineLibraryMethod(module, "to_s", 0x51, 
@@ -7285,6 +7328,11 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.CollectInPlace)
             );
             
+            DefineLibraryMethod(module, "combination", 0x51, 
+                0x00020000U, 
+                new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Nullable<System.Int32>, System.Object>(IronRuby.Builtins.IListOps.GetCombinations)
+            );
+            
             DefineLibraryMethod(module, "compact", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, IronRuby.Builtins.RubyClass, System.Object>>, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Compact)
@@ -7435,6 +7483,11 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "nitems", 0x51, 
                 0x00000000U, 
                 new Func<System.Collections.IList, System.Int32>(IronRuby.Builtins.IListOps.NumberOfNonNilItems)
+            );
+            
+            DefineLibraryMethod(module, "permutation", 0x51, 
+                0x00020000U, 
+                new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Nullable<System.Int32>, System.Object>(IronRuby.Builtins.IListOps.GetPermutations)
             );
             
             DefineLibraryMethod(module, "pop", 0x51, 
@@ -10577,70 +10630,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
     
     public sealed class EnumeratorLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
         protected override void LoadModules() {
-            IronRuby.Builtins.RubyClass classRef0 = GetClass(typeof(System.Object));
             
-            
-            IronRuby.Builtins.RubyModule def1 = DefineGlobalModule("Enumerable", typeof(IronRuby.Builtins.Enumerable), 0x00000000, LoadEnumerable_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            ExtendModule(typeof(IronRuby.Builtins.Kernel), 0x00000000, LoadIronRuby__Builtins__Kernel_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyClass def2 = DefineClass("Enumerable::Enumerator", typeof(IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator), 0x00000008, classRef0, LoadEnumerable__Enumerator_Instance, null, null, new IronRuby.Builtins.RubyModule[] {def1}, 
-                new Func<IronRuby.Builtins.RubyClass, System.Object, IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator.Create), 
-                new Func<IronRuby.Builtins.RubyClass, System.Object, System.String, System.Object[], IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator.Create)
-            );
-            SetConstant(def1, "Enumerator", def2);
-        }
-        
-        private static void LoadEnumerable_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            DefineLibraryMethod(module, "each_cons", 0x11, 
-                0x00040000U, 
-                new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.BlockParam, System.Object, System.Int32, System.Object>(IronRuby.StandardLibrary.Enumerator.Enumerable.EachCons)
-            );
-            
-            DefineLibraryMethod(module, "each_slice", 0x11, 
-                0x00040000U, 
-                new Func<IronRuby.Runtime.CallSiteStorage<Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.BlockParam, System.Object, System.Int32, System.Object>(IronRuby.StandardLibrary.Enumerator.Enumerable.EachSlice)
-            );
-            
-            DefineLibraryMethod(module, "enum_cons", 0x11, 
-                0x00010000U, 
-                new Func<System.Object, System.Int32, IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.Enumerable.GetConsEnumerator)
-            );
-            
-            DefineLibraryMethod(module, "enum_slice", 0x11, 
-                0x00010000U, 
-                new Func<System.Object, System.Int32, IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.Enumerable.GetSliceEnumerator)
-            );
-            
-            DefineLibraryMethod(module, "enum_with_index", 0x11, 
-                0x00000000U, 
-                new Func<System.Object, IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.Enumerable.GetEnumeratorWithIndex)
-            );
-            
-        }
-        
-        private static void LoadEnumerable__Enumerator_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            DefineLibraryMethod(module, "each", 0x11, 
-                0x00000000U, 
-                new Func<IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator, System.Object>(IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator.Each)
-            );
-            
-            DefineLibraryMethod(module, "initialize", 0x12, 
-                0x00000000U, 0x80020000U, 
-                new Func<IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator, System.Object, IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator.Reinitialize), 
-                new Func<IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator, System.Object, System.String, System.Object[], IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator.Reinitialize)
-            );
-            
-        }
-        
-        private static void LoadIronRuby__Builtins__Kernel_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            DefineLibraryMethod(module, "enum_for", 0x11, 
-                0x80010002U, 
-                new Func<System.Object, System.String, System.Object[], IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.EnumerableKernelOps.Create)
-            );
-            
-            DefineLibraryMethod(module, "to_enum", 0x11, 
-                0x80010002U, 
-                new Func<System.Object, System.String, System.Object[], IronRuby.StandardLibrary.Enumerator.Enumerable.Enumerator>(IronRuby.StandardLibrary.Enumerator.EnumerableKernelOps.Create)
-            );
             
         }
         

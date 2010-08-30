@@ -1691,13 +1691,198 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region zip 
+        #region zip
 
         [RubyMethod("zip")]
         public static object Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToAry, BlockParam block,
             object self, [DefaultProtocol, NotNullItems]params IList/*!*/[]/*!*/ args) {
 
             return Enumerable.Zip(each, tryToAry, block, self, args);
+        }
+
+        #endregion
+
+        #region permutation, combination
+
+        internal sealed class PermutationEnumerator : IEnumerator {
+            private struct State {
+                public readonly int i, j;
+                public State(int i, int j) { this.i = i; this.j = j; }
+            }
+
+            private readonly IList/*!*/ _list;
+            private readonly int? _size;
+
+            public PermutationEnumerator(IList/*!*/ list, int? size) {
+                _size = size;
+                _list = list;
+            }
+
+            //
+            // rec = lambda do |i|
+            //   # State "j < -1"
+            //   if i == result.length
+            //     yield result.dup
+            //     return
+            //   end
+            //
+            //   j = i
+            //   while j < values.length
+            //     values[j], values[i] = values[i], values[j]
+            //     result[i] = values[i]      
+            //     rec.(i + 1)
+            //     # State "j >= 0"
+            //     j += 1
+            //   end
+            //
+            //   while j > i
+            //     j -= 1
+            //     values[j], values[i] = values[i], values[j] 
+            //   end
+            // end
+            //
+            // rec.(0)
+            //
+            public object Each(RubyScope/*!*/ scope, BlockParam/*!*/ block) {
+                int size = _size ?? _list.Count;
+                if (size < 0 || size > _list.Count) {
+                    return _list;
+                }
+
+                var result = new object[size];
+                var values = new object[_list.Count];
+                _list.CopyTo(values, 0);
+                var stack = new Stack<State>();
+                stack.Push(new State(0, -1));
+
+                while (stack.Count > 0) {
+                    var entry = stack.Pop();
+                    int i = entry.i;
+                    int j = entry.j;
+
+                    if (j < 0) {
+                        if (i == result.Length) {
+                            object blockResult;
+                            if (block.Yield(RubyOps.MakeArrayN(result), out blockResult)) {
+                                return blockResult;
+                            }
+                        } else {
+                            result[i] = values[i];
+                            stack.Push(new State(i, i));
+                            stack.Push(new State(i + 1, -1));
+                        }
+                    } else {
+                        j++;
+                        if (j == values.Length) {
+                            while (j > i) {
+                                j--;
+                                Xchg(values, i, j);
+                            }
+                        } else {
+                            Xchg(values, i, j);
+                            result[i] = values[i];
+                            stack.Push(new State(i, j));
+                            stack.Push(new State(i + 1, -1));
+                        }
+                    }
+                }
+                return _list;
+            }
+
+            private static void Xchg(object[]/*!*/ values, int i, int j) {
+                object item = values[j];
+                values[j] = values[i];
+                values[i] = item;
+            }
+        }
+        
+        internal sealed class CombinationEnumerator : IEnumerator {
+            private struct State {
+                public readonly int i, j;
+                public readonly bool init;
+                public State(int i, int j, bool init) { this.i = i; this.j = j; this.init = init; }
+            }
+
+            private readonly IList/*!*/ _list;
+            private readonly int? _size;
+
+            public CombinationEnumerator(IList/*!*/ list, int? size) {
+                _size = size;
+                _list = list;
+            }
+
+            //   
+            // rec = lambda do |i,j|
+            //   # State "init"
+            //   if j == result.length
+            //     yield result.dup
+            //     return
+            //   end
+            //   
+            //   while i <= values.length - result.length + j
+            //     result[j] = values[i]
+            //     rec.(i + 1, j + 1)
+            //     # State "!init"
+            //     i += 1      
+            //   end
+            // end
+            //   
+            // rec.(0, 0)
+            // 
+            public object Each(RubyScope/*!*/ scope, BlockParam/*!*/ block) {
+                int size = _size ?? _list.Count;
+                if (size < 0 || size > _list.Count) {
+                    return _list;
+                }
+                var result = new object[size];
+                var values = new object[_list.Count];
+                _list.CopyTo(values, 0);
+                var stack = new Stack<State>();
+                stack.Push(new State(0, 0, true));
+
+                while (stack.Count > 0) {
+                    var entry = stack.Pop();
+                    int i = entry.i;
+                    int j = entry.j;
+
+                    if (entry.init && j == result.Length) {
+                        object blockResult;
+                        if (block.Yield(RubyOps.MakeArrayN(result), out blockResult)) {
+                            return blockResult;
+                        }
+                    } else {
+                        if (!entry.init) {
+                            i++;
+                        }
+                        if (i <= values.Length - result.Length + j) {
+                            result[j] = values[i];
+                            stack.Push(new State(i, j, false));
+                            stack.Push(new State(i + 1, j + 1, true));
+                        }
+                    }
+                }
+                return _list;
+            }
+        }
+
+        [RubyMethod("permutation")]
+        public static object GetPermutations(BlockParam block, IList/*!*/ self, [DefaultProtocol, Optional]int? size) {
+            var enumerator = new PermutationEnumerator(self, size);
+            if (block == null) {
+                return new Enumerator(enumerator);
+            }
+
+            return enumerator.Each(null, block);
+        }
+        
+        [RubyMethod("combination")]
+        public static object GetCombinations(BlockParam block, IList/*!*/ self, [DefaultProtocol, Optional]int? size) {
+            var enumerator = new CombinationEnumerator(self, size);
+            if (block == null) {
+                return new Enumerator(enumerator);
+            }
+
+            return enumerator.Each(null, block);
         }
 
         #endregion

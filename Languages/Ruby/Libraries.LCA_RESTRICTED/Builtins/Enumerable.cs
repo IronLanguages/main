@@ -542,5 +542,94 @@ namespace IronRuby.Builtins {
         #region TODO: cycle, drop, drop_while, find_index, group_by, max_by, min_by, minmax, minmax_by, reduce, take_take_while (1.9)
 
         #endregion
+
+        #region each_cons, each_slice
+
+        [RubyMethod("each_cons")]
+        public static object EachCons(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
+            return EachSlice(each, block, self, sliceSize, false, (slice) => {
+                RubyArray newSlice = new RubyArray(slice.Count);
+                for (int i = 1; i < slice.Count; i++) {
+                    newSlice.Add(slice[i]);
+                }
+                return newSlice;
+            });
+        }
+
+        [RubyMethod("each_slice")]
+        public static object EachSlice(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
+            return EachSlice(each, block, self, sliceSize, true, (slice) => null);
+        }
+
+        private static object EachSlice(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self, int sliceSize,
+            bool includeIncomplete, Func<RubyArray/*!*/, RubyArray>/*!*/ newSliceFactory) {
+
+            if (sliceSize <= 0) {
+                throw RubyExceptions.CreateArgumentError("invalid slice size");
+            }
+
+            RubyArray slice = null;
+
+            object result = null;
+
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (slice == null) {
+                    slice = new RubyArray(sliceSize);
+                }
+
+                slice.Add(item);
+
+                if (slice.Count == sliceSize) {
+                    if (block == null) {
+                        throw RubyExceptions.NoBlockGiven();
+                    }
+
+                    var completeSlice = slice;
+                    slice = newSliceFactory(slice);
+
+                    object blockResult;
+                    if (block.Yield(completeSlice, out blockResult)) {
+                        result = blockResult;
+                        return selfBlock.PropagateFlow(block, blockResult);
+                    }
+                }
+
+                return null;
+            }));
+
+            if (slice != null && includeIncomplete) {
+                if (block == null) {
+                    throw RubyExceptions.NoBlockGiven();
+                }
+
+                object blockResult;
+                if (block.Yield(slice, out blockResult)) {
+                    return blockResult;
+                }
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region enum_cons, enum_slice, enum_with_index
+
+        [RubyMethod("enum_cons")]
+        public static Enumerator/*!*/ GetConsEnumerator(object self, [DefaultProtocol]int sliceSize) {
+            return new Enumerator(self, "each_cons", sliceSize);
+        }
+
+        [RubyMethod("enum_slice")]
+        public static Enumerator/*!*/ GetSliceEnumerator(object self, [DefaultProtocol]int sliceSize) {
+            return new Enumerator(self, "each_slice", sliceSize);
+        }
+
+        [RubyMethod("enum_with_index")]
+        public static Enumerator/*!*/ GetEnumeratorWithIndex(object self) {
+            return new Enumerator(self, "each_with_index", null);
+        }
+
+        #endregion
     }
 }

@@ -292,16 +292,16 @@ Float.freeze
 puts defined? Float::EPSILON         # this should work, Float is a builtin
 puts defined? 1.2.+
 
-Enumerable.freeze
+Object.freeze
 begin
-  require 'enumerator'               # monkey-patches Enumerable
+  require 'yaml'               # monkey-patches Object
 rescue Exception
   p $!
 end
 ", @"
 constant
 method
-#<RuntimeError: can't modify frozen module>
+#<RuntimeError: can't modify frozen class>
 ");
         }
 

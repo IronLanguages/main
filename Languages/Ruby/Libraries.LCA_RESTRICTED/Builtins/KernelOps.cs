@@ -1882,5 +1882,15 @@ namespace IronRuby.Builtins {
         //untrace_var
 
         #endregion
+
+        #region to_enum
+
+        [RubyMethod("to_enum")]
+        [RubyMethod("enum_for")]
+        public static Enumerator/*!*/ Create(object self, [DefaultProtocol, NotNull]string/*!*/ enumeratorName, params object[]/*!*/ targetParameters) {
+            return new Enumerator(self, enumeratorName, targetParameters);
+        }
+
+        #endregion
     }
 }
