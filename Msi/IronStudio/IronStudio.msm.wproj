@@ -9,12 +9,8 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <OutputPath>$(SolutionDir)..\bin\Release\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <OutputPath>$(SolutionDir)..\bin\Debug\</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\$(Configuration)\</OutputPath>
+    <PrivateBinDir>$(SolutionDir)..\Tools\IronStudio\IronStudio\obj\$(Configuration)\</PrivateBinDir>
   </PropertyGroup>
   <PropertyGroup>
     <!-- The location pointing where WiX is installed -->
@@ -23,8 +19,11 @@
     <WixTasksPath>$(WixExtDir)\WixTasks.dll</WixTasksPath>
     <OutputName Condition="$(OutputName)==''">IronStudio</OutputName>
     <OutputType Condition="$(OutputType)==''">Module</OutputType>
-    <!-- Input path to source files  -->
-    <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
+    <DefineConstants>
+      PrivateBinDir=$(PrivateBinDir);
+      OutputPath=$(OutputPath);
+      $(DefineConstants)
+    </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronStudio\IronStudio.csproj">

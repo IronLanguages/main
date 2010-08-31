@@ -22,7 +22,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     <Package Id="*" Compressed="yes" Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" InstallerVersion="200" ShortNames="no" Manufacturer="$(var.Manufacturer)" />
     <Media Id="1" Cabinet="IronPy.cab" EmbedCab="yes" CompressionLevel="high" />
     
-      <!-- Major upgrade -->
+    <!-- Major upgrade -->
     <Upgrade Id="$(var.UpgradeCode)">
       <UpgradeVersion Minimum="$(var.ProductVersion)" OnlyDetect="yes" Property="NEWERVERSIONDETECTED" />
       <UpgradeVersion Minimum="0.0.0" IncludeMinimum="yes" Maximum="$(var.ProductVersion)" IncludeMaximum="no" Property="OLDERVERSIONBEINGUPGRADED" OnlyDetect="no" />
@@ -34,10 +34,6 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     <Property Id="ARPURLINFOABOUT" Value="http://www.ironpython.net" />
     <Property Id="ARPURLUPDATEINFO" Value="http://www.codeplex.com/IronPython" />
 
-    <Property Id="VSINSTALLPATH">
-      <RegistrySearch Id="VSInstallDir" Root="HKLM" Key="Software\Microsoft\VisualStudio\10.0\Setup\VS" Name="EnvironmentDirectory" Type="directory" />
-    </Property>
-
     <!-- We search for an existing file type for .py files.  If it's found we'll use it, otherwise we'll default to Python.File which matches CPython -->
     <Property Id="PYTHONFILETYPE" Value="Python.File">
       <RegistrySearch Id="PythonFileTypeSearch" Root="HKCR" Key=".py" Type="raw" />
@@ -46,6 +42,10 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     <!-- Same thing but used to decide if we should install the default info for the file type -->
     <Property Id="PYTHONFILETYPENODEFAULT" >
       <RegistrySearch Id="PythonFileTypeNoDefaultSearch" Root="HKCR" Key=".py" Type="raw" />
+    </Property>
+
+    <Property Id="VSINSTALLPATH">
+      <RegistrySearch Id="VSInstallDir" Root="HKLM" Key="Software\Microsoft\VisualStudio\10.0\Setup\VS" Name="EnvironmentDirectory" Type="directory" />
     </Property>
 
     <Property Id="VSLAUNCHER" >
@@ -63,34 +63,87 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Merge Id='DLR' Language='1033' src='DLR.msm' DiskId='1' />
       <Merge Id='IpyRedist' Language='1033' src='$(var.TargetDir)\IpyRedist.msm' DiskId='1' />
-      <Merge Id='IronStudio' Language='1033' src='IronStudio.msm' DiskId='1' />            
+      <Merge Id='IronStudio' Language='1033' src='IronStudio.msm' DiskId='1' />
 
       <Directory Id="ProgramMenuFolder" Name="PMENU">
-        <Directory Id="Dir_StartMenu" Name="$(var.ProductShortName) $(var.ProductVersionText)" />
+        <Directory Id="Dir_StartMenu" Name="$(var.ProductShortName) $(var.ProductVersionText)">
+          <Component Id="Comp_CompiledHelpShortcut" DiskId="1" Guid="F398FAC1-F78F-4A22-A91A-3BC455556224">
+            <Shortcut Id="Shortcut_CompiledHelp" Directory="Dir_StartMenu" Name="IronPython Documentation" Target="[#File_IronPython.chm]" />
+            <Shortcut Id="Shortcut_Readme" Directory="Dir_StartMenu" Name="IronPython Readme" Target="[#File_Readme.html.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
+            <Shortcut Id="NGENShortcut_Console" Directory="Dir_StartMenu" Name="IronPython Console" Target="[#NGENFile_ipy.exe.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
+            <Shortcut Id="NGEN64Shortcut_Console" Directory="Dir_StartMenu" Name="IronPython Console" Target="[#NGEN64File_ipy.exe.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
+            <Shortcut Id="NGEN6464Shortcut_Console" Directory="Dir_StartMenu" Name="IronPython 64-bit Console" Target="[#NGEN64File_ipy64.exe.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
+            
+            <RemoveFolder Id='Comp_ReadMe' On='uninstall'/>
+            <RegistryValue Root='HKCU' Key='SOFTWARE\Microsoft\IronPython\2.7\Docs' Type='string' Value='Installed' KeyPath='yes' />
+          </Component>
+        </Directory>
       </Directory>
-
+      
       <Directory Id="ProgramFilesFolder" Name="PFILES">
         <Directory Id="INSTALLDIR" Name="$(var.ProductShortName) $(var.ProductVersionText)">
-        </Directory>
+          <!-- CHM file for documentation -->
+          <Component Id="Comp_CompiledHelp" DiskId="1" Guid="61369245-1BC0-4699-93F7-C206BE678A92">
+            <File Id="File_IronPython.chm" Name="IronPython.chm" Source="$(var.TargetDir)IronPython.chm" />
+          </Component>
 
-      <Directory Id="VSINSTALLPATH" Name=".">
-        <Directory Id="ExtensionsDir" Name="Extensions" FileSource=".">
-          <Directory Id="MSDir" Name="Microsoft" FileSource=".">
-            <Directory Id="IpyToolsDir" Name="IronPython Tools for Visual Studio" FileSource=".">
-              <Directory Id="IpyToolsInstallDir" Name="0.4" FileSource=".">
-                <Directory Id="IpyToolsTemplatesDir" Name="Templates" FileSource="$(var.TargetDir)\Templates">
+          <Directory Id="Dir_Silverlight" Name="Silverlight">
+            <?include Silverlight.wxi ?>
+          </Directory>
+        </Directory>
+        
+        <!-- IronPython Tools for Visual Studio -->
+        <Directory Id="VSINSTALLPATH" Name=".">
+          <Directory Id="ExtensionsDir" Name="Extensions">
+            <Directory Id="MSDir" Name="Microsoft">
+              <Directory Id="IpyToolsDir" Name="IronPython Tools for Visual Studio">
+                <Directory Id="IpyToolsInstallDir" Name="0.4">
+                  <Directory Id="IpyToolsTemplatesDir" Name="Templates" FileSource="$(var.VsTemplatesDir)" />
+
+                  <Component Id="Comp_VSTools" DiskId="1" Guid="2DF41B37-FAEF-4FD8-A2F5-46B57FF9E951">
+                    <File Source="$(var.TargetDir)\IronPythonTools.Core.dll" />
+                    <File Source="$(var.TargetDir)\IronPythonTools.dll" />
+                    <File Source="$(var.TargetDir)\IronPythonTools.pkgdef" />
+                    <File Source="$(var.VsToolsPrivateBinDir)\extension.vsixmanifest" />
+                  </Component>
+
+                  <Component Id="Comp_PyProgRegistration" DiskId="1" Guid="A7BC75A8-F418-4133-8BF9-490A76E99108">
+                    <RegistryValue Root='HKCR' Key='.pyproj' Type='string' Name='PerceivedType' Value='text' />
+
+                    <ProgId Id="VisualStudio.Launcher.pyproj.10.0" Description="IronPython Project">
+                      <Extension Id="pyproj" ContentType="text/plain">
+                        <Verb Id="OpenPyProj" Command="Open" TargetProperty="VSLAUNCHER" Argument="&quot;%1&quot;"/>
+                      </Extension>
+                    </ProgId>
+                  </Component>
+
+                  <Component Id="Comp_PyFileRegistration" DiskId="1" Guid="517102D7-61A0-4F6F-B8C6-AA7CE3D5A620">
+                    <RegistryKey Root='HKCR' Key='[PYTHONFILETYPE]'>
+                      <RegistryValue Type='string' Value='Python source file' />
+
+                      <RegistryKey Key='shell\Edit with Visual Studio'>
+                        <RegistryValue Key='Command' Type='string' Value='[VSINSTALLPATH]devenv.exe /dde "%1"' />
+
+                        <RegistryValue Key='ddeexec' Type='string' Value='Open("%1")' />
+                        <RegistryValue Key='ddeexec\Application' Type='string' Value='VisualStudio.10.0' />
+                        <RegistryValue Key='ddeexec\Topic' Type='string' Value='system' />
+                      </RegistryKey>
+                    </RegistryKey>
+                  </Component>
+
+                  <Component Id="Comp_PyFileExistance" DiskId="1" Guid="3CCD9010-C01F-4284-B6BF-9FD92C9849FD">
+                    <!-- This is only installed if .py is not already registered.  -->
+                    <RegistryValue Root='HKCR' Key='.py' Type='string' Value='[PYTHONFILETYPE]' />
+                    <RegistryValue Root='HKCR' Key='.py' Name='Content Type' Type='string' Value='text/plain' />
+                  </Component>
                 </Directory>
               </Directory>
             </Directory>
           </Directory>
         </Directory>
-      </Directory>      
-
       </Directory>
-      
     </Directory>
     
-
     <!-- Features - listed in the UI in the same order as they appear here -->
     <Feature Id="Feature_IronPython" ConfigurableDirectory="INSTALLDIR" Absent="disallow" AllowAdvertise="no" Display="expand" Level="1" Title="IronPython">
       <Feature Id="Feature_Core" Absent="disallow" AllowAdvertise="no" Level="1" Title="IronPython" Description="IronPython binaries for the Desktop CLR.">

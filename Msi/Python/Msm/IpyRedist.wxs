@@ -46,13 +46,10 @@
                 <File Id="NGENFile_ipy.exe" Name="ipy.exe">
                   <netfx:NativeImage Id="NGEN_File_IPy.exe" Priority="1"/>
                 </File>
-                <File Id="NGENFile_ipy.exe.config" Name="ipy.exe.config" />
                 <File Id="NGENFile_ipyw.exe" Name="ipyw.exe">
                   <netfx:NativeImage Id="NGEN_File_ipyw.exe" Priority="1" />
                 </File>
-                <RegistryValue Root='HKCU' Key='SOFTWARE\Microsoft\IronPython\2.7'
-                          Type='string' Value='ipy' 
-                          KeyPath='yes' /> 
+                <RegistryValue Root='HKCU' Key='SOFTWARE\Microsoft\IronPython\2.7' Type='string' Value='ipy' KeyPath='yes' /> 
               </Component>
               
               <!--#NEGEN64 BINARIES-->
@@ -75,8 +72,6 @@
                 <File Id="NGEN64File_ipy.exe" Name="ipy.exe">
                   <netfx:NativeImage Id="NGEN64_File_IPy.exe" Priority="1" Platform="32bit" />
                 </File>
-                <File Id="NGEN64File_ipy.exe.config" Name="ipy.exe.config" />
-                <File Id="NGEN64File_ipy64.exe.config" Name="ipy64.exe.config" />
                 <File Id="NGEN64File_ipyw.exe" Name="ipyw.exe" >
                   <netfx:NativeImage Id="NGEN64_File_ipyw.exe" Priority="1" Platform="32bit"/>
                 </File>

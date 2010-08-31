@@ -9,24 +9,25 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
+    <OutputName Condition="$(OutputName)==''">IpyRedist</OutputName>
+    <OutputType Condition="$(OutputType)==''">Module</OutputType>
+
+    <!-- Paths -->
     <PythonDir>$(SolutionDir)\..\Languages\IronPython</PythonDir>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <OutputPath>$(SolutionDir)..\bin\Release\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>$(SolutionDir)..\bin\$(Configuration)\</OutputPath>
     <OutputPath>$(SolutionDir)..\bin\Debug\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- The location pointing where WiX is installed -->
     <WixToolPath>$(SolutionDir)..\Util\Wix35\</WixToolPath>
     <WixExtDir>$(SolutionDir)..\Util\Wix35\</WixExtDir>
     <WixTasksPath>$(WixExtDir)\WixTasks.dll</WixTasksPath>
-    <OutputName Condition="$(OutputName)==''">IpyRedist</OutputName>
-    <OutputType Condition="$(OutputType)==''">Module</OutputType>
+
     <!-- Input path to source files  -->
     <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
-    <DefineConstants>StdLib.ProjectDir=$(SolutionDir)..\Languages\IronPython\StdLib;PythonDir=$(PythonDir);$(DefineConstants)</DefineConstants>
+    
+    <DefineConstants>
+      StdLib.ProjectDir=$(SolutionDir)..\Languages\IronPython\StdLib;
+      PythonDir=$(PythonDir);
+      $(DefineConstants)
+    </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(PythonDir)\IronPython.Modules\IronPython.Modules.csproj">

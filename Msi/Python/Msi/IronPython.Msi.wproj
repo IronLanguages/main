@@ -9,25 +9,34 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
+    <DefineSolutionProperties>false</DefineSolutionProperties>
+    <OutputName Condition="$(OutputName)==''">IronPython</OutputName>
+    <OutputType Condition="$(OutputType)==''">Package</OutputType>
+
+    <!-- Paths -->
     <PythonDir>$(SolutionDir)\..\Languages\IronPython</PythonDir>
-    <TemplatesDir>$(SolutionDir)..\Tools\IronStudio\IronPythonTools\Templates</TemplatesDir>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <OutputPath>$(SolutionDir)..\bin\Release\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <OutputPath>$(SolutionDir)..\bin\Debug\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- The location pointing where WiX is installed -->
+    <VsToolsDir>$(SolutionDir)..\Tools\IronStudio\IronPythonTools</VsToolsDir>
+    <VsTemplatesDir>$(VsToolsDir)\Templates</VsTemplatesDir>
     <WixToolPath>$(SolutionDir)..\Util\Wix35\</WixToolPath>
     <WixExtDir>$(SolutionDir)..\Util\Wix35\</WixExtDir>
     <WixTasksPath>$(WixExtDir)\WixTasks.dll</WixTasksPath>
-    <OutputName Condition="$(OutputName)==''">IronPython</OutputName>
-    <OutputType Condition="$(OutputType)==''">Package</OutputType>
-    <!-- Input path to source files  -->
+    <OutputPath>$(SolutionDir)..\Bin\$(Configuration)</OutputPath>
+    
+    <!-- Default source path  -->
     <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
-    <DefineConstants>TemplatesDir=$(TemplatesDir);PythonDir=$(PythonDir);SilverlightScriptDir=$(SolutionDir)..\Hosts\SilverLight\Public\script;SilverlightDir=$(SolutionDir)..\Bin\Silverlight4$(Configuration);TutorialDir=$(PythonDir)\Public\Tutorial;ToolsDir=$(PythonDir)\Public\Tools;DocDir=$(PythonDir)\Public\Doc;$(DefineConstants)</DefineConstants>
+    
+    <DefineConstants>
+      PythonDir=$(PythonDir);
+      VsToolsDir=$(VsToolsDir);
+      VsTemplatesDir=$(VsTemplatesDir);
+      VsToolsPrivateBinDir=$(VsToolsDir)\obj\$(Configuration);
+      SilverlightScriptDir=$(SolutionDir)..\Hosts\SilverLight\Public\script;
+      SilverlightDir=$(SolutionDir)..\Bin\Silverlight4$(Configuration);
+      TutorialDir=$(PythonDir)\Public\Tutorial;
+      ToolsDir=$(PythonDir)\Public\Tools;
+      DocDir=$(PythonDir)\Public\Doc;
+      $(DefineConstants)
+    </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <WixExtension Include="$(WixToolPath)WixNetFxExtension.dll" />
@@ -52,10 +61,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <HarvestDirectory Include="$(TemplatesDir)" >
+    <HarvestDirectory Include="$(VsTemplatesDir)" >
       <DirectoryRefId>IpyToolsInstallDir</DirectoryRefId>
       <ComponentGroupName>ToolsTemplateGroup</ComponentGroupName>
-      <PreprocessorVariable>var.TemplatesDir</PreprocessorVariable>
+      <PreprocessorVariable>var.VsTemplatesDir</PreprocessorVariable>
       <GenerateGuidsNow>true</GenerateGuidsNow>
     </HarvestDirectory>
     <HarvestDirectory Include="$(PythonDir)\Public\Tools" >
@@ -71,7 +80,6 @@
       <GenerateGuidsNow>true</GenerateGuidsNow>
     </HarvestDirectory>
     <Compile Include="$(ProjectDir)\IronPython.wxs" />
-    <Compile Include="$(ProjectDir)\Core.wxs" />
     <Compile Include="$(ProjectDir)\Tutorial.wxs" />
   </ItemGroup>
   <Import Project="$(WixToolPath)wix2010.targets" />
