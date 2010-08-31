@@ -128,13 +128,13 @@ def check_package(package_name):
     nt.chdir(cwd + "\\" + package_name)        
     
     for x in nt.listdir("."):
-        if x.endswith(".py") and x!="__init__.py":
+        if x.endswith(".py") and x != "__init__.py":
             x = x.split(".py", 1)[0]
             mod_name = nt.getcwd().split(CPY_DIR + "\\Lib\\")[1] + "\\" + x
             mod_name = mod_name.replace("\\", ".")
         
             try:
-                import_helper(x)   
+                import_helper(mod_name)   
                 log_ok(mod_name) 
         
             except (Exception, SystemExit), e:
