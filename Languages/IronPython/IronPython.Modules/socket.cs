@@ -51,6 +51,7 @@ namespace IronPython.Modules {
         private static readonly object _defaultTimeoutKey = new object();
         private static readonly object _defaultBufsizeKey = new object();
         private const int DefaultBufferSize = 8192;
+        public static PythonTuple _delegate_methods = PythonTuple.MakeTuple("recv", "recvfrom", "recv_into", "recvfrom_into", "send", "sendto");
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
@@ -2079,13 +2080,14 @@ namespace IronPython.Modules {
         }
 
         public class ssl {
-            private readonly SslStream _sslStream;
+            private SslStream _sslStream;
             private socket _socket;
             private readonly X509Certificate2Collection _certCollection;
             private readonly X509Certificate _cert;
             private readonly int _protocol, _certsMode;
             private readonly bool _validate, _serverSide;
             private readonly CodeContext _context;
+            private readonly RemoteCertificateValidationCallback _callback;
             private Exception _validationFailure;
 
             public ssl(CodeContext context, PythonSocket.socket sock, [DefaultParameterValue(null)] string keyfile, [DefaultParameterValue(null)] string certfile) {
@@ -2137,32 +2139,48 @@ namespace IronPython.Modules {
                         throw new InvalidOperationException(String.Format("bad certs_mode: {0}", certs_mode));
                 }
 
+                _callback = callback;
+
                 if (certfile != null) {
                     _cert = PythonSsl.ReadCertificate(context, certfile);
                 }
 
-                if (server_side) {
-                    _sslStream = new SslStream(
-                        new NetworkStream(sock._socket, false),
-                        true,
-                        callback
-                    );
-                } else {
-                    _sslStream = new SslStream(
-                        new NetworkStream(sock._socket, false),
-                        true,
-                        callback,
-                        CertSelectLocal
-                    );
-                }
-
                 _socket = sock;
+
+                EnsureSslStream(false);
+
                 _certCollection = cacertsfile != null ?
                     new X509Certificate2Collection(new[] { PythonSsl.ReadCertificate(context, cacertsfile) }) :
                     new X509Certificate2Collection();
                 _protocol = protocol;
                 _validate = validate;
                 _context = context;
+            }
+
+            private void EnsureSslStream(bool throwWhenNotConnected) {
+                if (_sslStream == null && _socket._socket.Connected) {
+                    if (_serverSide) {
+                        _sslStream = new SslStream(
+                            new NetworkStream(_socket._socket, false),
+                            true,
+                            _callback
+                        );
+                    } else {
+                        _sslStream = new SslStream(
+                            new NetworkStream(_socket._socket, false),
+                            true,
+                            _callback,
+                            CertSelectLocal
+                        );
+                    }
+                }
+
+                if (throwWhenNotConnected && _sslStream == null) {
+                    var socket = _context.LanguageContext.GetBuiltinModule("socket");
+                    var socketError = PythonSocket.GetSocketError(_context.LanguageContext, socket.__dict__);
+
+                    throw PythonExceptions.CreateThrowable(socketError, 10057, "A request to send or receive data was disallowed because the socket is not connected.");
+                }
             }
 
             internal bool CertValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
@@ -2237,6 +2255,8 @@ namespace IronPython.Modules {
                     throw PythonExceptions.CreateThrowable(PythonExceptions.IOError, "socket closed before handshake");
                 }
 
+                EnsureSslStream(true);
+
                 try {
                     if (_serverSide) {
                         _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, GetProtocolTypeServer(_protocol), false);
@@ -2298,7 +2318,7 @@ namespace IronPython.Modules {
             }
 
             public PythonTuple cipher() {
-                if (_sslStream.IsAuthenticated) {
+                if (_sslStream != null && _sslStream.IsAuthenticated) {
                     return PythonTuple.MakeTuple(
                         _sslStream.CipherAlgorithm.ToString(),
                         ProtocolToPython(),
@@ -2318,13 +2338,15 @@ namespace IronPython.Modules {
             }
 
             public object peer_certificate(bool binary_form) {
-                var peerCert = _sslStream.RemoteCertificate;
+                if (_sslStream != null) {
+                    var peerCert = _sslStream.RemoteCertificate;
 
-                if (peerCert != null) {
-                    if (binary_form) {
-                        return peerCert.GetRawCertData().MakeString();
-                    } else if (_validate) {
-                        return PythonSsl.CertificateToPython(_context, peerCert, true);
+                    if (peerCert != null) {
+                        if (binary_form) {
+                            return peerCert.GetRawCertData().MakeString();
+                        } else if (_validate) {
+                            return PythonSsl.CertificateToPython(_context, peerCert, true);
+                        }
                     }
                 }
                 return null;
@@ -2337,8 +2359,8 @@ namespace IronPython.Modules {
             [Documentation("issuer() -> issuer_certificate\n\n"
                 + "Returns a string that describes the issuer of the server's certificate. Only useful for debugging purposes."
                 )]
-            public string issuer() {
-                if (_sslStream.IsAuthenticated) {
+            public string issuer() {                
+                if (_sslStream != null && _sslStream.IsAuthenticated) {
                     X509Certificate remoteCertificate = _sslStream.RemoteCertificate;
                     if (remoteCertificate != null) {
                         return remoteCertificate.Issuer;
@@ -2353,6 +2375,8 @@ namespace IronPython.Modules {
                 + "If n is present, reads up to n bytes from the SSL connection. Otherwise, reads to EOF."
                 )]
             public string read(CodeContext/*!*/ context, [DefaultParameterValue(Int32.MaxValue)] int n) {
+                EnsureSslStream(true);
+
                 try {
                     byte[] buffer = new byte[2048];
                     MemoryStream result = new MemoryStream(n);
@@ -2377,7 +2401,7 @@ namespace IronPython.Modules {
                 + "Returns a string that describes the server's certificate. Only useful for debugging purposes."
                 )]
             public string server() {
-                if (_sslStream.IsAuthenticated) {
+                if (_sslStream != null && _sslStream.IsAuthenticated) {
                     X509Certificate remoteCertificate = _sslStream.RemoteCertificate;
                     if (remoteCertificate != null) {
                         return remoteCertificate.Subject;
@@ -2390,6 +2414,8 @@ namespace IronPython.Modules {
                 + "Writes the string s through the SSL connection."
                 )]
             public int write(CodeContext/*!*/ context, string data) {
+                EnsureSslStream(true);
+
                 byte[] buffer = data.MakeByteArray();
                 try {
                     _sslStream.Write(buffer);
