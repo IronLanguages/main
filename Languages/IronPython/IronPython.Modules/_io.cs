@@ -587,7 +587,7 @@ namespace IronPython.Modules {
                 get { return null; }
             }
 
-            public object newlines {
+            public virtual object newlines {
                 get { return null; }
             }
 
@@ -1984,6 +1984,21 @@ namespace IronPython.Modules {
                 get { return _line_buffering; }
             }
 
+            public override object newlines {
+                get {
+                    if (_readUniversal && _decoder != null) {
+                        IncrementalNewlineDecoder typedDecoder = _decoder as IncrementalNewlineDecoder;
+                        if (typedDecoder != null) {
+                            return typedDecoder.newlines;
+                        } else {
+                            return PythonOps.GetBoundAttr(context, _decoder, "newlines");
+                        }
+                    }
+
+                    return null;
+                }
+            }
+
             public override bool seekable(CodeContext/*!*/ context) {
                 return _seekable;
             }
@@ -2118,20 +2133,10 @@ namespace IronPython.Modules {
                     }
                     return pos;
                 }
+                IncrementalNewlineDecoder typedDecoder = decoder as IncrementalNewlineDecoder;
 
                 // skip backwards to snapshot point
-                IncrementalNewlineDecoder typedDecoder = decoder as IncrementalNewlineDecoder;
-                int decodeFlags = 0;
-                Bytes nextInput = null;
-                if (typedDecoder != null) {
-                    typedDecoder.GetState(context, out nextInput, out decodeFlags);
-                } else {
-                    PythonTuple tuple = (PythonTuple)PythonOps.Invoke(context, decoder, "getstate");
-                    nextInput = GetBytes(tuple[0], "getstate");
-                    decodeFlags = (int)tuple[1];
-                }
-
-                pos -= nextInput.Count;
+                pos -= _nextInput.Count;
                 
                 // determine number of decoded chars used up after snapshot
                 int skip = _decodedCharsUsed;
@@ -2149,12 +2154,12 @@ namespace IronPython.Modules {
                 try {
                     // keep track of starting position
                     if (typedDecoder != null) {
-                        typedDecoder.SetState(context, Bytes.Empty, decodeFlags);
+                        typedDecoder.SetState(context, Bytes.Empty, _decodeFlags);
                     } else {
-                        PythonOps.Invoke(context, decoder, "setstate", PythonTuple.MakeTuple(Bytes.Empty, decodeFlags));
+                        PythonOps.Invoke(context, decoder, "setstate", PythonTuple.MakeTuple(Bytes.Empty, _decodeFlags));
                     }
                     BigInteger startPos = pos;
-                    int startFlags = decodeFlags;
+                    int startFlags = _decodeFlags;
                     int bytesFed = 0;
                     int charsDecoded = 0;
 
@@ -2162,8 +2167,7 @@ namespace IronPython.Modules {
                     // safe position for snapshotting, i.e. a position in the file where the
                     // decoder's buffer is empty, allowing seek() to safely start advancing from
                     // there.
-                    bool incomplete = false;
-                    foreach (byte nextByte in nextInput._bytes) {
+                    foreach (byte nextByte in _nextInput._bytes) {
                         Bytes next = new Bytes(new byte[] { nextByte });
                         bytesFed++;
                         if (typedDecoder != null) {
@@ -2174,38 +2178,34 @@ namespace IronPython.Modules {
 
                         Bytes decodeBuffer;
                         if (typedDecoder != null) {
-                            typedDecoder.GetState(context, out decodeBuffer, out decodeFlags);
+                            typedDecoder.GetState(context, out decodeBuffer, out _decodeFlags);
                         } else {
                             PythonTuple tuple = (PythonTuple)PythonOps.Invoke(context, decoder, "getstate");
                             decodeBuffer = GetBytes(tuple[0], "getstate");
-                            decodeFlags = Converter.ConvertToInt32(tuple[1]);
+                            _decodeFlags = Converter.ConvertToInt32(tuple[1]);
                         }
 
                         if ((decodeBuffer == null || decodeBuffer.Count == 0) && charsDecoded <= skip) {
                             // safe starting point
                             startPos += bytesFed;
                             skip -= charsDecoded;
-                            startFlags = decodeFlags;
+                            startFlags = _decodeFlags;
                             bytesFed = 0;
                             charsDecoded = 0;
                         }
 
                         if (charsDecoded >= skip) {
-                            incomplete = true;
-                            break;
-                        }
-                    }
+                            // not enough decoded data; signal EOF for more
+                            if (typedDecoder != null) {
+                                charsDecoded += typedDecoder.decode(context, Bytes.Empty, true).Length;
+                            } else {
+                                charsDecoded += ((string)PythonOps.Invoke(context, decoder, "decode", Bytes.Empty, true)).Length;
+                            }
 
-                    if (incomplete) {
-                        // not enough decoded data; signal EOF for more
-                        if (typedDecoder != null) {
-                            charsDecoded += typedDecoder.decode(context, Bytes.Empty, true).Length;
-                        } else {
-                            charsDecoded += ((string)PythonOps.Invoke(context, decoder, "decode", Bytes.Empty, true)).Length;
-                        }
-                        
-                        if (charsDecoded < skip) {
-                            throw PythonOps.IOError("can't reconstruct logical file position");
+                            if (charsDecoded < skip) {
+                                throw PythonOps.IOError("can't reconstruct logical file position");
+                            }
+                            break;
                         }
                     }
 
@@ -2828,7 +2828,8 @@ namespace IronPython.Modules {
                 None = 0,
                 CR = 1,
                 LF = 2,
-                CRLF = 4
+                CRLF = 4,
+                All = CR | LF | CRLF
             }
 
             private object _decoder;
@@ -2843,13 +2844,18 @@ namespace IronPython.Modules {
                 _errors = errors;
             }
 
-            public string decode(CodeContext/*!*/ context, Bytes input, [DefaultParameterValue(false)]bool final) {
-                object output = PythonOps.CallWithKeywordArgs(
-                    context,
-                    PythonOps.GetBoundAttr(context, _decoder, "decode"),
-                    new object[] { input, true },
-                    new string[] { "final" }
-                );
+            public string decode(CodeContext/*!*/ context, [NotNull]IList<byte> input, [DefaultParameterValue(false)]bool final) {
+                object output;
+                if (_decoder == null) {
+                    output = input.MakeString();
+                } else {
+                    output = PythonOps.CallWithKeywordArgs(
+                        context,
+                        PythonOps.GetBoundAttr(context, _decoder, "decode"),
+                        new object[] { input, true },
+                        new string[] { "final" }
+                    );
+                }
 
                 string decoded = output as string;
                 if (decoded == null) {
@@ -2860,7 +2866,19 @@ namespace IronPython.Modules {
                     }
                 }
 
-                if (_pendingCR && (final || decoded == "")) {
+                return DecodeWorker(context, decoded, final);
+            }
+
+            public string decode(CodeContext/*!*/ context, [NotNull]string input, [DefaultParameterValue(false)]bool final) {
+                if (_decoder == null) {
+                    return DecodeWorker(context, input, final);
+                }
+
+                return decode(context, new Bytes(input.MakeByteArray()), final);
+            }
+
+            private string DecodeWorker(CodeContext/*!*/ context, string decoded, bool final) {
+                if (_pendingCR && (final || decoded.Length > 0)) {
                     decoded = "\r" + decoded;
                     _pendingCR = false;
                 }
@@ -2870,33 +2888,34 @@ namespace IronPython.Modules {
                 }
 
                 // retain last "\r" to avoid splitting "\r\n"
-                if (decoded.Length > 1 && decoded[decoded.Length - 1] == '\r') {
+                if (!final && decoded.Length > 0 && decoded[decoded.Length - 1] == '\r') {
                     decoded = decoded.Substring(0, decoded.Length - 1);
                     _pendingCR = true;
                 }
 
-                int crlf = decoded.count("\r\n");
-                int cr = decoded.count("\r") - crlf;
-                int lf = decoded.count("\n") - crlf;
-                _seenNL |=
-                    (crlf > 0 ? LineEnding.CRLF : LineEnding.None) |
-                    (lf > 0 ? LineEnding.LF : LineEnding.None) |
-                    (cr > 0 ? LineEnding.CR : LineEnding.None);
+                if (_translate || _seenNL != LineEnding.All) {
+                    int crlf = decoded.count("\r\n");
+                    int cr = decoded.count("\r") - crlf;
 
-                if (_translate) {
-                    if (crlf > 0) {
-                        decoded = decoded.Replace("\r\n", "\n");
+                    if (_seenNL != LineEnding.All) {
+                        int lf = decoded.count("\n") - crlf;
+                        _seenNL |=
+                            (crlf > 0 ? LineEnding.CRLF : LineEnding.None) |
+                            (lf > 0 ? LineEnding.LF : LineEnding.None) |
+                            (cr > 0 ? LineEnding.CR : LineEnding.None);
                     }
-                    if (cr > 0) {
-                        decoded = decoded.Replace('\r', '\n');
+
+                    if (_translate) {
+                        if (crlf > 0) {
+                            decoded = decoded.Replace("\r\n", "\n");
+                        }
+                        if (cr > 0) {
+                            decoded = decoded.Replace('\r', '\n');
+                        }
                     }
                 }
 
                 return decoded;
-            }
-
-            public string decode(CodeContext/*!*/ context, string input, [DefaultParameterValue(false)]bool final) {
-                return decode(context, Bytes.Make(input.MakeByteArray()), final);
             }
 
             public PythonTuple getstate(CodeContext/*!*/ context) {
@@ -2952,6 +2971,8 @@ namespace IronPython.Modules {
             public object newlines {
                 get {
                     switch (_seenNL) {
+                        case LineEnding.None:
+                            return null;
                         case LineEnding.CR:
                             return "\r";
                         case LineEnding.LF:
@@ -2964,10 +2985,8 @@ namespace IronPython.Modules {
                             return PythonTuple.MakeTuple("\r", "\r\n");
                         case LineEnding.LF | LineEnding.CRLF:
                             return PythonTuple.MakeTuple("\n", "\r\n");
-                        case LineEnding.CR | LineEnding.LF | LineEnding.CRLF:
+                        default: // LineEnding.All
                             return PythonTuple.MakeTuple("\r", "\n", "\r\n");
-                        default:
-                            return null;
                     }
                 }
             }

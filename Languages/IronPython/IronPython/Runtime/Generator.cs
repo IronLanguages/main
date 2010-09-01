@@ -85,12 +85,12 @@ namespace IronPython.Runtime {
             // Python's language policy on generators is that attempting to access after it's closed (returned)
             // just continues to throw StopIteration exceptions.
             if (Closed) {
-                return LightExceptions.Throw(new StopIterationException());
+                return LightExceptions.Throw(PythonOps.StopIteration());
             }
             
             object res = NextWorker();
             if (res == OperationFailed.Value) {
-                return LightExceptions.Throw(new StopIterationException());
+                return LightExceptions.Throw(PythonOps.StopIteration());
             }
 
             return res;

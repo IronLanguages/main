@@ -38,7 +38,7 @@ def test_strings():
     AreEqual(response.replace("\r\r\n", "\n").replace("\r", ""), 
             """Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
-TypeError: exceptions must be classes or instances, not str""")
+TypeError: exceptions must be classes, or instances, not str""")
     
     # Multi-line string literal
     ipi.ExecutePartialLine("\"\"\"Hello")

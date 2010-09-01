@@ -44,6 +44,12 @@ namespace IronPython.Runtime {
             }
         }
 
+        public object __func__ {
+            get {
+                return _func;
+            }
+        }
+
         #region IDescriptor Members
 
         public object __get__(object instance) { return __get__(instance, null); }
@@ -73,6 +79,12 @@ namespace IronPython.Runtime {
         internal override bool GetAlwaysSucceeds {
             get {
                 return true;
+            }
+        }
+
+        public object __func__ {
+            get {
+                return func;
             }
         }
 

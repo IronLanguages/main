@@ -520,12 +520,14 @@ namespace IronPython.Runtime {
             }
 
             if (forceDot) {
-                FixupAltFormDot();
+                FixupAltFormDot(v);
             }
         }
 
-        private void FixupAltFormDot() {
-            _buf.Append('.');
+        private void FixupAltFormDot(double v) {
+            if (!double.IsInfinity(v) && !double.IsNaN(v)) {
+                _buf.Append('.');
+            }
             if (_opts.FieldWidth != 0) {
                 // try and remove the extra character we're adding.
                 for (int i = 0; i < _buf.Length; i++) {

@@ -858,7 +858,7 @@ namespace IronPython.Runtime {
         public PythonFile GetFileFromId(PythonContext context, int id) {
             PythonFile pf;
             if (!TryGetFileFromId(context, id, out pf)) {
-                throw PythonOps.OSError("Bad file descriptor");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
             }
 
             return pf;
@@ -887,7 +887,7 @@ namespace IronPython.Runtime {
             object o = objMapping.GetObjectFromId(id);
 
             if (o == null) {
-                throw PythonOps.OSError("Bad file descriptor");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
             }
             return o;
         }

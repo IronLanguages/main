@@ -45,11 +45,11 @@ namespace IronPython.Runtime {
             clear();
         }
 
-        public void __init__(SetCollection set) {
+        public void __init__([NotNull]SetCollection set) {
             _items = set._items.Clone();
         }
 
-        public void __init__(FrozenSetCollection set) {
+        public void __init__([NotNull]FrozenSetCollection set) {
             _items = set._items.Clone();
         }
 

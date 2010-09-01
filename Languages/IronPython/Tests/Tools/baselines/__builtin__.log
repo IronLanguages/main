@@ -11,9 +11,11 @@ Complete list of module attributes that should be removed
 from IronPython:
     __builtin__.buffer    __radd__                      # codeplex bug #23354 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23354
     __builtin__.bytearray    __radd__                      # codeplex bug #23354 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23354
+    __builtin__.classmethod    __func__                      
     __builtin__.slice    __eq__                        
     __builtin__.slice    __ge__                        
     __builtin__.slice    __gt__                        
     __builtin__.slice    __le__                        
     __builtin__.slice    __lt__                        
     __builtin__.slice    __ne__                        
+    __builtin__.staticmethod    __func__                        

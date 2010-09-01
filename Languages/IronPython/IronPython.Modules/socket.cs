@@ -562,6 +562,28 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple(bytesRead, remoteAddress);
             }
 
+            [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
+                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
+                )]
+            public PythonTuple recvfrom_into(IList<byte> buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
+                int bytesRead;
+                byte[] byteBuffer = new byte[byteBufferSize("recvfrom_into", nbytes, buffer.Count, 1)];
+                IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
+                EndPoint remoteEP = remoteIPEP;
+
+                try {
+                    bytesRead = _socket.ReceiveFrom(byteBuffer, (SocketFlags)flags, ref remoteEP);
+                } catch (Exception e) {
+                    throw MakeException(_context, e);
+                }
+
+                for (int i = 0; i < byteBuffer.Length; i++) {
+                    buffer[i] = byteBuffer[i];
+                }
+                PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
+                return PythonTuple.MakeTuple(bytesRead, remoteAddress);
+            }
+
             private static int byteBufferSize(string funcName, int nbytes, int bufLength, int itemSize) {
                 if (nbytes < 0) {
                     throw PythonOps.ValueError("negative buffersize in " + funcName);
@@ -1844,6 +1866,10 @@ namespace IronPython.Modules {
                 port = PythonContext.GetContext(context).ConvertToInt32(address[1]);
             } catch (ArgumentTypeException) {
                 throw PythonOps.TypeError("port must be integer");
+            }
+
+            if (port < 0 || port > 65535) {
+                throw PythonOps.OverflowError("getsockaddrarg: port must be 0-65535");
             }
 
             IPAddress ip = HostToAddress(context, host, family);

@@ -538,21 +538,11 @@ namespace IronPython.Modules {
         }
 
         private static double Check(double input, double output) {
-            if (double.IsInfinity(input) && double.IsInfinity(output) ||
-                double.IsNaN(input) && double.IsNaN(output)) {
-                return output;
-            } else {
-                return PythonOps.CheckMath(output);
-            }
+            return PythonOps.CheckMath(input, output);
         }
 
         private static double Check(double in0, double in1, double output) {
-            if ((double.IsInfinity(in0) || double.IsInfinity(in1)) && double.IsInfinity(output) ||
-                (double.IsNaN(in0) || double.IsNaN(in1)) && double.IsNaN(output)) {
-                return output;
-            } else {
-                return PythonOps.CheckMath(output);
-            }
+            return PythonOps.CheckMath(in0, in1, output);
         }
 
         #endregion

@@ -2640,7 +2640,7 @@ namespace IronPython.Compiler {
 
             // We pass the outermost iterable in as a parameter because Python semantics
             // say that this one piece is computed at definition time rather than iteration time
-            const string fname = "__generator_";
+            const string fname = "<genexpr>";
             Parameter parameter = new Parameter("__gen_$_parm__", 0);
             FunctionDefinition func = new FunctionDefinition(fname, new Parameter[] { parameter }, root);
             func.IsGenerator = true;

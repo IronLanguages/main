@@ -171,6 +171,10 @@ def run_compile_test(code, msg, lineno, skipCpy):
     else:
         Assert(False, "Expected exception, got none")
 
+if is_ironpython:
+    _yield_msg = "can't assign to yield expression"
+else:
+    _yield_msg = "assignment to yield expression not possible"
 compile_tests = [
     ("for x notin []:\n    pass", "unexpected token 'notin'", 1, True),
     ("global 1", "unexpected token '1'", 1, True),
@@ -203,7 +207,7 @@ compile_tests = [
     ("x = 'abc'\nx 0j", "invalid syntax", 2, False),
     ('def f():\n    del (yield 5)\n', "can't delete yield expression", 2, False),
     ('a,b,c += 1,2,3', "illegal expression for augmented assignment", 1, False),
-    ('def f():\n    a = yield 3 = yield 4', "assignment to yield expression not possible", 2, False),
+    ('def f():\n    a = yield 3 = yield 4', _yield_msg, 2, False),
     ('((yield a), 2,3) = (2,3,4)', "can't assign to yield expression", 1, False),
     ('(2,3) = (3,4)', "can't assign to literal", 1, False),
     ("def e():\n    break", "'break' outside loop", 2, False),
@@ -224,10 +228,10 @@ compile_tests = [
     #("'abc'.", "invalid syntax", 1),
 ]
 
-if is_cpython: #http://ironpython.codeplex.com/workitem/28379
-    compile_tests.append(("None = 2", "cannot assign to None", 1, False))
-else:
+if is_ironpython or float(sys.winver) < 2.7: #http://ironpython.codeplex.com/workitem/28379
     compile_tests.append(("None = 2", "assignment to None", 1, False))
+else:
+    compile_tests.append(("None = 2", "cannot assign to None", 1, False))
 
 # different error messages, ok
 for test in compile_tests:

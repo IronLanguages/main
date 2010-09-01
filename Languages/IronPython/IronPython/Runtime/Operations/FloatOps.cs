@@ -404,16 +404,49 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static double Power(double x, double y) {
-            if (x == 0.0 && y < 0.0)
+            if (x == 1.0 || y == 0.0) {
+                return 1.0;
+            } else if (double.IsNaN(x) || double.IsNaN(y)) {
+                return double.NaN;
+            } else if (x == 0.0) {
+                if (y > 0.0) {
+                    // preserve sign if y is a positive, odd int
+                    if (y % 2.0 == 1.0) {
+                        return x;
+                    }
+                    return 0.0;
+                } else if (y == 0.0) {
+                    return 1.0;
+                } else if (double.IsNegativeInfinity(y)) {
+                    return double.PositiveInfinity;
+                }
                 throw PythonOps.ZeroDivisionError("0.0 cannot be raised to a negative power");
-            if (x < 0 && (Math.Floor(y) != y)) {
+            } else if (double.IsPositiveInfinity(y)) {
+                if (x > 1.0 || x < -1.0) {
+                    return double.PositiveInfinity;
+                } else if (x == -1.0) {
+                    return 1.0;
+                }
+                return 0.0;
+            } else if (double.IsNegativeInfinity(y)) {
+                if (x > 1.0 || x < -1.0) {
+                    return 0.0;
+                } else if (x == -1.0) {
+                    return 1.0;
+                }
+                return double.PositiveInfinity;
+            } else if (double.IsNegativeInfinity(x)) {
+                // preserve negative sign if y is an odd int
+                if (Math.Abs(y % 2.0) == 1.0) {
+                    return y > 0 ? double.NegativeInfinity : NegativeZero;
+                } else {
+                    return y > 0 ? double.PositiveInfinity : 0.0;
+                }
+            } else if (x < 0 && (Math.Floor(y) != y)) {
                 throw PythonOps.ValueError("negative number cannot be raised to fraction");
             }
-            double result = Math.Pow(x, y);
-            if (double.IsInfinity(result)) {
-                throw PythonOps.OverflowError("result too large");
-            }
-            return result;
+
+            return PythonOps.CheckMath(x, y, Math.Pow(x, y));
         }
         #endregion
 
@@ -739,16 +772,16 @@ namespace IronPython.Runtime.Operations {
             string digits;
 
             if (Double.IsPositiveInfinity(self) || Double.IsNegativeInfinity(self)) {
-                if (spec.Sign == null) {
-                    digits = "inf";
+                if (spec.Type != null && char.IsUpper(spec.Type.Value)) {
+                    digits = "INF";
                 } else {
-                    digits = "1.0#INF";
+                    digits = "inf";
                 }
             } else if (Double.IsNaN(self)) {
-                if (spec.Sign == null) {
-                    digits = "nan";
+                if (spec.Type != null && char.IsUpper(spec.Type.Value)) {
+                    digits = "NAN";
                 } else {
-                    digits = "1.0#IND";
+                    digits = "nan";
                 }
             } else {
                 digits = DoubleToFormatString(context, self, spec);

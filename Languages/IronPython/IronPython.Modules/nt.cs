@@ -1306,6 +1306,14 @@ namespace IronPython.Modules {
             return PythonBinaryReader.PackDataIntoString(data, n);
         }
 
+        public static object urandom(BigInteger n) {
+            return urandom((int)n);
+        }
+
+        public static object urandom(double n) {
+            throw PythonOps.TypeError("integer argument expected, got float");
+        }
+
         private static readonly object _umaskKey = new object();
 
         public static int umask(CodeContext/*!*/ context, int mask) {
@@ -1441,6 +1449,10 @@ are defined in the signal module.")]
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
         private static Exception ToPythonException(Exception e, string filename) {
+            if (e is IPythonAwareException) {
+                return e;
+            }
+
             if (e is ArgumentException || e is ArgumentNullException || e is ArgumentTypeException) {
                 // rethrow reasonable exceptions
                 return ExceptionHelpers.UpdateForRethrow(e);

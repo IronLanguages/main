@@ -191,15 +191,26 @@ namespace Microsoft.Scripting.Utils {
         /// (This function is also needed because CoreCLR lacks this overload.)
         /// </summary>
         public static double RoundAwayFromZero(double value, int precision) {
+            if (double.IsInfinity(value) || double.IsNaN(value)) {
+                return value;
+            }
+
             if (precision >= 0) {
+                if (precision > 308) {
+                    return value;
+                }
+
                 double num = GetPowerOf10(precision);
                 return RoundAwayFromZero(value * num) / num;
-            } else {
+            } else if (precision >= -308) {
                 // Note: this code path could be merged with the precision >= 0 path,
                 // (by extending the cache to negative powers of 10)
                 // but the results seem to be more precise if we do it this way
                 double num = GetPowerOf10(-precision);
                 return RoundAwayFromZero(value / num) * num;
+            } else {
+                // Preserve the sign of the input, including +/-0.0
+                return value < 0.0 || 1.0 / value < 0.0 ? -0.0 : 0.0;
             }
         }
 

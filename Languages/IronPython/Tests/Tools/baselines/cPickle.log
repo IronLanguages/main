@@ -11,9 +11,11 @@ Complete list of module attributes that should be removed
 from IronPython:
     cPickle.__builtins__.buffer      __radd__                      # 23354: http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23354             
     cPickle.__builtins__.bytearray      __radd__                    # 23354: http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23354               
+    cPickle.__builtins__.classmethod      __func__                      
     cPickle.__builtins__.slice      __eq__                        
     cPickle.__builtins__.slice      __ge__                        
     cPickle.__builtins__.slice      __gt__                        
     cPickle.__builtins__.slice      __le__                        
     cPickle.__builtins__.slice      __lt__                        
     cPickle.__builtins__.slice      __ne__                        
+    cPickle.__builtins__.staticmethod      __func__                        
