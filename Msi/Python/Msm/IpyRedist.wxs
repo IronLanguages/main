@@ -94,6 +94,10 @@
                     <File Id="File_IronPython.Wpf.xml" Name="IronPython.Wpf.xml" />
                 </Component>
               </Directory>
+
+              <Directory Id="Dir_StdLib" Name="Lib">
+                <?include StdLib.wxi ?>
+              </Directory>
           </Directory>
         </Directory>
       </Directory>

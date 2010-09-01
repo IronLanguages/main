@@ -24,8 +24,8 @@
     <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
     
     <DefineConstants>
-      StdLib.ProjectDir=$(SolutionDir)..\Languages\IronPython\StdLib;
       PythonDir=$(PythonDir);
+      StdLibPath=$(SolutionDir)..\External.LCA_RESTRICTED/Languages/IronPython/27/Lib;
       $(DefineConstants)
     </DefineConstants>
   </PropertyGroup>
@@ -65,9 +65,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IpyRedist.wxs" />
-    <HeatProject Include="$(PythonDir)\StdLib\StdLib.pyproj">
-        <ProjectOutputGroups>Content</ProjectOutputGroups>
-    </HeatProject>
   </ItemGroup>
   <Import Project="$(WixToolPath)wix2010.targets" />
 </Project>

@@ -105,10 +105,12 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
                     <File Source="$(var.TargetDir)\IronPythonTools.dll" />
                     <File Source="$(var.TargetDir)\IronPythonTools.pkgdef" />
                     <File Source="$(var.VsToolsPrivateBinDir)\extension.vsixmanifest" />
+                    <File Source="$(var.VsToolsDir)\PythonProject.ico" />
                   </Component>
 
                   <Component Id="Comp_PyProgRegistration" DiskId="1" Guid="A7BC75A8-F418-4133-8BF9-490A76E99108">
                     <RegistryValue Root='HKCR' Key='.pyproj' Type='string' Name='PerceivedType' Value='text' />
+                    <RegistryValue Root='HKCR' Key='VisualStudio.Launcher.pyproj.10.0\DefaultIcon' Type='string' Value='[IpyToolsInstallDir]PythonProject.ico' />
 
                     <ProgId Id="VisualStudio.Launcher.pyproj.10.0" Description="IronPython Project">
                       <Extension Id="pyproj" ContentType="text/plain">
@@ -121,6 +123,10 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
                     <RegistryKey Root='HKCR' Key='[PYTHONFILETYPE]'>
                       <RegistryValue Type='string' Value='Python source file' />
 
+                      <RegistryKey Key='DefaultIcon'>
+                        <RegistryValue Type='string' Value="[IpyToolsTemplatesDir]\Files\EmptyPyFile\__TemplateIcon.ico" />
+                      </RegistryKey>
+                      
                       <RegistryKey Key='shell\Edit with Visual Studio'>
                         <RegistryValue Key='Command' Type='string' Value='[VSINSTALLPATH]devenv.exe /dde "%1"' />
 

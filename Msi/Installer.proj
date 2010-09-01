@@ -19,6 +19,15 @@
         <MSBuild Projects="@(ProjectToBuild)"/>
     </Target>
     <Target Name="Rebuild">
+        <!-- WiX deosn't clean up properly -->
+        <RemoveDir Directories="
+             IronStudio\obj;
+             Python\Msi\obj;
+             Python\Msm\obj;
+             Ruby\Msi\obj;
+             Ruby\Msm\obj;
+             Runtime\obj;
+        "/>
         <MSBuild Projects="@(ProjectToBuild)" Targets="Rebuild"/>
     </Target>
 </Project>
