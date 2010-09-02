@@ -42,11 +42,10 @@ namespace IronRuby.Builtins {
             private readonly string/*!*/ _targetName;
             private readonly object[]/*!*/ _targetArguments;
 
-            public Wrapper(object targetObject, string/*!*/ targetName, object[]/*!*/ targetArguments) {
-                Assert.NotNull(targetName, targetArguments);
+            public Wrapper(object targetObject, string targetName, object[] targetArguments) {
                 _targetObject = targetObject;
-                _targetName = targetName;
-                _targetArguments = targetArguments;
+                _targetName = targetName ?? "each";
+                _targetArguments = targetArguments ?? ArrayUtils.EmptyObjects;
             }
 
             public object Each(RubyScope/*!*/ scope, BlockParam/*!*/ block) {
@@ -70,25 +69,15 @@ namespace IronRuby.Builtins {
         }
 
         [RubyConstructor]
-        public static Enumerator/*!*/ Create(RubyClass/*!*/ self, object targetObject) {
-            return Reinitialize(new Enumerator(), targetObject, null, ArrayUtils.EmptyObjects);
-        }
-
-        [RubyConstructor]
-        public static Enumerator/*!*/ Create(RubyClass/*!*/ self, object targetObject, [DefaultProtocol]string targetName,
+        public static Enumerator/*!*/ Create(RubyClass/*!*/ self, object targetObject, [DefaultProtocol, Optional]string targetName,
             params object[]/*!*/ targetArguments) {
 
             return Reinitialize(new Enumerator(), targetObject, targetName, targetArguments);
         }
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static Enumerator/*!*/ Reinitialize(Enumerator/*!*/ self, object targetObject) {
-            return Reinitialize(self, targetObject, null, ArrayUtils.EmptyObjects);
-        }
-
-        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static Enumerator/*!*/ Reinitialize(Enumerator/*!*/ self, object targetObject, [DefaultProtocol]string targetName, 
-            params object[]/*!*/ targetArguments) {
+        public static Enumerator/*!*/ Reinitialize(Enumerator/*!*/ self, object targetObject, [DefaultProtocol, Optional]string targetName,
+            params object[] targetArguments) {
 
             self._impl = new Wrapper(targetObject, targetName, targetArguments);
             return self;

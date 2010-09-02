@@ -263,6 +263,8 @@ namespace IronRuby.Runtime {
 
         #region Errno
 
+        // TODO: initialize errno property
+
         public static string/*!*/ MakeMessage(string message, string/*!*/ baseMessage) {
             Assert.NotNull(baseMessage);
             return (message != null) ? String.Concat(baseMessage, " - ", message) : baseMessage;
@@ -300,7 +302,7 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateENOENT() {
-            return new FileNotFoundException();
+            return new FileNotFoundException("No such file or directory");
         }
 
         public static Exception/*!*/ CreateENOENT(string/*!*/ message, params object[] args) {
@@ -313,6 +315,10 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateEBADF() {
             return new BadFileDescriptorError();
+        }
+
+        public static Exception/*!*/ CreateEACCES() {
+            return new UnauthorizedAccessException();
         }
 
         #endregion

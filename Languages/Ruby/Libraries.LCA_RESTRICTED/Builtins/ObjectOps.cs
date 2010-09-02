@@ -20,9 +20,12 @@ namespace IronRuby.Builtins {
     [RubyClass("Object", Extends = typeof(object), Restrictions = ModuleRestrictions.NoNameMapping | ModuleRestrictions.NotPublished)]
     [Includes(typeof(Kernel))]
     public static class ObjectOps {
+        // RubyConstructor implemented by RubyObject ctors
+
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
-        public static void Reinitialize(object self) {
-            // nop
+        public static object Reinitialize(object self, params object[]/*!*/ args) {
+            // ignores args
+            return self;
         }
 
         [RubyConstant]

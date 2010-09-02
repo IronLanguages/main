@@ -54,7 +54,7 @@ namespace IronRuby.Runtime {
 
         // MRI compliance:
         public string/*!*/ MriVersion { 
-            get { return "1.9.1"; } 
+            get { return "1.9.2"; } 
         }
 
         public string/*!*/ StandardLibraryVersion {

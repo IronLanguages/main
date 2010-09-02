@@ -38,10 +38,21 @@ namespace IronRuby.Builtins {
         private RubyInstanceData _instanceData;
         private RubyClass/*!*/ _immediateClass;
 
+        /// <summary>
+        /// Implements Object#new.
+        /// </summary>
         public RubyObject(RubyClass/*!*/ cls) {
             Assert.NotNull(cls);
             Debug.Assert(!cls.IsSingletonClass);
             _immediateClass = cls;
+        }
+
+        /// <summary>
+        /// Implements Object#new.
+        /// </summary>
+        public RubyObject(RubyClass/*!*/ cls, params object[] args) 
+            : this(cls) {
+            // MRI: args are ignored
         }
 
         protected virtual RubyObject/*!*/ CreateInstance() {

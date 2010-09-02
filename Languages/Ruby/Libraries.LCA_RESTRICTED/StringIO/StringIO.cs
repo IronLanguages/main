@@ -715,7 +715,7 @@ namespace IronRuby.StandardLibrary.StringIO {
 
         #endregion
 
-        #region Stubs: binmode, fcntl, fileno, pid, path, fsync, sync, sync=, isatty, tty?, flush
+        #region Stubs: binmode, fcntl, fileno, pid, fsync, sync, sync=, isatty, tty?, flush
 
         [RubyMethod("binmode")]
         public static StringIO/*!*/ SetBinaryMode(StringIO/*!*/ self) {
@@ -730,7 +730,6 @@ namespace IronRuby.StandardLibrary.StringIO {
 
         [RubyMethod("fileno")]
         [RubyMethod("pid")]
-        [RubyMethod("path")]
         public static object GetDescriptor(StringIO/*!*/ self) {
             // nop
             return null;

@@ -36,21 +36,6 @@ namespace IronRuby.Builtins {
             return new UnauthorizedAccessException(message, inner);
         }
 
-        [RubyClass("EADDRINUSE"), Serializable]
-        public class AddressInUseError : ExternalException {
-            private const string/*!*/ M = "Only one usage of each socket address (protocol/network address/port) is normally permitted.";
-
-            public AddressInUseError() : this(null, null) { }
-            public AddressInUseError(string message) : this(message, null) { }
-            public AddressInUseError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
-            public AddressInUseError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected AddressInUseError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
-        }
-
         [RubyClass("EAGAIN"), Serializable]
         public class ResourceTemporarilyUnavailableError : ExternalException {
             private const string/*!*/ M = "Resource temporarily unavailable";
@@ -62,21 +47,6 @@ namespace IronRuby.Builtins {
 
 #if !SILVERLIGHT
             protected ResourceTemporarilyUnavailableError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
-        }
-
-        [RubyClass("ECONNABORTED"), Serializable]
-        public class ConnectionAbortedError : ExternalException {
-            private const string/*!*/ M = "An established connection was aborted by the software in your host machine.";
-
-            public ConnectionAbortedError() : this(null, null) { }
-            public ConnectionAbortedError(string message) : this(message, null) { }
-            public ConnectionAbortedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
-            public ConnectionAbortedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected ConnectionAbortedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
         }
@@ -211,65 +181,6 @@ namespace IronRuby.Builtins {
 #endif
         }
 
-        [RubyClass("ENOTCONN"), Serializable]
-        public class NotConnectedError : ExternalException {
-            private const string/*!*/ M = "A request to send or receive data was disallowed because the socket is not connected and (when sending on a datagram socket using a sendto call) no address was supplied.";
-
-            public NotConnectedError() : this(null, null) { }
-            public NotConnectedError(string message) : this(message, null) { }
-            public NotConnectedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
-            public NotConnectedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected NotConnectedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
-        }
-
-        [RubyClass("ECONNREFUSED"), Serializable]
-        public class ConnectionRefusedError : ExternalException {
-            private const string/*!*/ M = "No connection could be made because the target machine actively refused it.";
-
-            public ConnectionRefusedError() : this(null, null) { }
-            public ConnectionRefusedError(string message) : this(message, null) { }
-            public ConnectionRefusedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
-            public ConnectionRefusedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected ConnectionRefusedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
-        }
-
-        [RubyClass("ECONNRESET"), Serializable]
-        public class ConnectionResetError : ExternalException {
-            private const string/*!*/ M = "An existing connection was forcibly closed by the remote host.";
-
-            public ConnectionResetError() : this(null, null) { }
-            public ConnectionResetError(string message) : this(message, null) { }
-            public ConnectionResetError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
-            public ConnectionResetError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected ConnectionResetError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
-        }
-
-        [RubyClass("ECONNABORTED"), Serializable]
-        public class ConnectionAbortError : ExternalException {
-            private const string/*!*/ M = "An established connection was aborted by the software in your host machine.";
-
-            public ConnectionAbortError() : this(null, null) { }
-            public ConnectionAbortError(string message) : this(message, null) { }
-            public ConnectionAbortError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
-            public ConnectionAbortError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected ConnectionAbortError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
-        }
 
         [RubyClass("EXDEV"), Serializable]
         public class ImproperLinkError : ExternalException {
@@ -301,5 +212,106 @@ namespace IronRuby.Builtins {
 #endif
         }
 
+        #region Socket Errors
+
+        // TODO: generate 
+
+        [RubyClass("EADDRINUSE"), Serializable]
+        public class AddressInUseError : ExternalException {
+            private const string/*!*/ M = "Only one usage of each socket address (protocol/network address/port) is normally permitted.";
+            public override int ErrorCode { get { return 10048; } }
+
+            public AddressInUseError() : this(null, null) { }
+            public AddressInUseError(string message) : this(message, null) { }
+            public AddressInUseError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public AddressInUseError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected AddressInUseError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("ECONNABORTED"), Serializable]
+        public class ConnectionAbortedError : ExternalException {
+            private const string/*!*/ M = "An established connection was aborted by the software in your host machine.";
+            public override int ErrorCode { get { return 10053; } }
+
+            public ConnectionAbortedError() : this(null, null) { }
+            public ConnectionAbortedError(string message) : this(message, null) { }
+            public ConnectionAbortedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ConnectionAbortedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ConnectionAbortedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("ECONNRESET"), Serializable]
+        public class ConnectionResetError : ExternalException {
+            private const string/*!*/ M = "An existing connection was forcibly closed by the remote host.";
+            public override int ErrorCode { get { return 10054; } }
+
+            public ConnectionResetError() : this(null, null) { }
+            public ConnectionResetError(string message) : this(message, null) { }
+            public ConnectionResetError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ConnectionResetError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ConnectionResetError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("ENOTCONN"), Serializable]
+        public class NotConnectedError : ExternalException {
+            private const string/*!*/ M = "A request to send or receive data was disallowed because the socket is not connected and (when sending on a datagram socket using a sendto call) no address was supplied.";
+            public override int ErrorCode { get { return 10057; } }
+
+            public NotConnectedError() : this(null, null) { }
+            public NotConnectedError(string message) : this(message, null) { }
+            public NotConnectedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public NotConnectedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected NotConnectedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        [RubyClass("ECONNREFUSED"), Serializable]
+        public class ConnectionRefusedError : ExternalException {
+            private const string/*!*/ M = "No connection could be made because the target machine actively refused it.";
+            public override int ErrorCode { get { return 10061; } }
+
+            public ConnectionRefusedError() : this(null, null) { }
+            public ConnectionRefusedError(string message) : this(message, null) { }
+            public ConnectionRefusedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ConnectionRefusedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected ConnectionRefusedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+        
+        [RubyClass("EHOSTDOWN"), Serializable]
+        public class HostDownError : ExternalException {
+            private const string/*!*/ M = "A socket operation failed because the destination host was down.";
+            public override int ErrorCode { get { return 10064; } }
+
+            public HostDownError() : this(null, null) { }
+            public HostDownError(string message) : this(message, null) { }
+            public HostDownError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public HostDownError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected HostDownError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
+        #endregion
     }
 }

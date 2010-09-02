@@ -238,6 +238,11 @@ namespace IronRuby.Builtins {
     // special one:
     [RubyException("SystemCallError", Extends = typeof(ExternalException), Inherits = typeof(SystemException))]
     public static class SystemCallErrorOps {
+        [RubyMethod("errno")]
+        public static int Errno(ExternalException/*!*/ self) {
+            return self.ErrorCode;
+        }
+        
         [RubyConstructor]
         public static ExternalException/*!*/ Factory(RubyClass/*!*/ self, [DefaultProtocol]MutableString message) {
             ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "unknown error"));
@@ -247,10 +252,94 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static ExternalException/*!*/ Factory(RubyClass/*!*/ self, int errorCode) {
-            // TODO:
-            var message = MutableString.Create("system error #" + errorCode, RubyEncoding.UTF8);
+            switch (errorCode) {
+                // TODO:
+                //case 0: return RubyExceptions.CreateNOERROR();
+                //case 1: return RubyExceptions.CreateEPERM();
+                //case 2: return RubyExceptions.CreateENOENT(); TODO: types don't match
+                //case 3: return RubyExceptions.CreateESRCH();
+                //case 4: return RubyExceptions.CreateEINTR();
+                //case 5: return RubyExceptions.CreateEIO();
+                //case 6: return RubyExceptions.CreateENXIO();
+                //case 7: return RubyExceptions.CreateE2BIG();
+                //case 8: return RubyExceptions.CreateENOEXEC(); 
+                //case 9: return RubyExceptions.CreateEBADF();     TODO: types don't match
+                //case 10: return new Errno.ChildError();
+                //case 11: return RubyExceptions.CreateEAGAIN();
+                //case 12: return RubyExceptions.CreateENOMEM();
+                //case 13: return RubyExceptions.CreateEACCES();    TODO: types don't match
+                //case 14: return RubyExceptions.CreateEFAULT();
+                //case 15: break;
+                //case 16: return RubyExceptions.CreateEBUSY();
+                //case 17: return RubyExceptions.CreateEEXIST();    TODO: types don't match
+                //case 18: return RubyExceptions.CreateEXDEV();
+                //case 19: return RubyExceptions.CreateENODEV();
+                //case 20: return RubyExceptions.CreateENOTDIR();
+                //case 21: return RubyExceptions.CreateEISDIR();
+                //case 22: return RubyExceptions.CreateEINVAL();     TODO: types don't match
+                //case 23: return RubyExceptions.CreateENFILE();
+                //case 24: return RubyExceptions.CreateEMFILE();
+                //case 25: return RubyExceptions.CreateENOTTY();
+                //case 26: break;
+                //case 27: return RubyExceptions.CreateEFBIG();
+                //case 28: return RubyExceptions.CreateENOSPC();
+                //case 29: return RubyExceptions.CreateESPIPE();
+                //case 30: return RubyExceptions.CreateEROFS();
+                //case 31: return RubyExceptions.CreateEMLINK();
+                //case 32: return RubyExceptions.CreateEPIPE();
+                //case 33: return RubyExceptions.CreateEDOM();
+                //case 34: return RubyExceptions.CreateERANGE();
+                //case 35: break;
+                //case 36: return RubyExceptions.CreateEDEADLK();
+                //case 37: break;
+                //case 38: return RubyExceptions.CreateENAMETOOLONG();
+                //case 39: return RubyExceptions.CreateENOLCK();
+                //case 40: return RubyExceptions.CreateENOSYS();
+                //case 41: return RubyExceptions.CreateENOTEMPTY();
+                //case 42: return RubyExceptions.CreateEILSEQ();
 
-            ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "unknown error"));
+                // case 10035: return RubyExceptions.CreateEWOULDBLOCK();
+                // case 10036: return RubyExceptions.CreateEINPROGRESS();
+                // case 10037: return RubyExceptions.CreateEALREADY();
+                // case 10038: return RubyExceptions.CreateENOTSOCK();
+                // case 10039: return RubyExceptions.CreateEDESTADDRREQ();
+                // case 10040: return RubyExceptions.CreateEMSGSIZE();
+                // case 10041: return RubyExceptions.CreateEPROTOTYPE();
+                // case 10042: return RubyExceptions.CreateENOPROTOOPT();
+                // case 10043: return RubyExceptions.CreateEPROTONOSUPPORT();
+                // case 10044: return RubyExceptions.CreateESOCKTNOSUPPORT();
+                // case 10045: return RubyExceptions.CreateEOPNOTSUPP();
+                // case 10046: return RubyExceptions.CreateEPFNOSUPPORT();
+                // case 10047: return RubyExceptions.CreateEAFNOSUPPORT();
+                case 10048: return new Errno.AddressInUseError();
+                // case 10049: return RubyExceptions.CreateEADDRNOTAVAIL();
+                // case 10050: return RubyExceptions.CreateENETDOWN();
+                // case 10051: return RubyExceptions.CreateENETUNREACH();
+                // case 10052: return RubyExceptions.CreateENETRESET();
+                case 10053: return new Errno.ConnectionAbortedError();
+                case 10054: return new Errno.ConnectionResetError();
+                // case 10055: return RubyExceptions.CreateENOBUFS();
+                // case 10056: return RubyExceptions.CreateEISCONN();
+                case 10057: return new Errno.NotConnectedError();
+                // case 10058: return RubyExceptions.CreateESHUTDOWN();
+                // case 10059: return RubyExceptions.CreateETOOMANYREFS();
+                // case 10060: return RubyExceptions.CreateETIMEDOUT();
+                case 10061: return new Errno.ConnectionRefusedError();
+                // case 10062: return RubyExceptions.CreateELOOP();
+                case 10064: return new Errno.HostDownError();
+                // case 10065: return RubyExceptions.CreateEHOSTUNREACH();
+                // case 10068: return RubyExceptions.CreateEUSERS();
+                // case 10069: return RubyExceptions.CreateEDQUOT();
+                // case 10070: return RubyExceptions.CreateESTALE();
+                // case 10071: return RubyExceptions.CreateEREMOTE();
+            }
+
+            var message = MutableString.CreateAscii("Unknown Error");
+#if SILVERLIGHT
+            ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "Unknown Error"));
+#else
+            ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "Unknown Error"), errorCode);
+#endif
             RubyExceptionData.InitializeException(result, message);
             return result;
         }

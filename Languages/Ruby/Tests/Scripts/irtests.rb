@@ -173,22 +173,7 @@ class IRTest
   end
   
   def silverlight_build_runner
-    if git?
-      program_files = ENV['ProgramFiles(x86)'] ? ENV['ProgramFiles(x86)'] : ENV['ProgramFiles']
-      sl_path = Dir[File.expand_path("Microsoft Silverlight", program_files) + "/4.0.*"].first
-      sl_found = !!sl_path
-    else
-      sl_found = true
-    end
-    
-    lambda do 
-      if not sl_found
-        warn "\nSkipping Silverlight build since a Silverlight installation was not found at #{program_files} ...\n"
-        true
-      else
-        run_cmd build_cmd("Ruby", @sl_config, sl_path ? "/p:SilverlightPath=#{q sl_path}" : "")
-      end
-    end
+    lambda { run_cmd build_cmd("Ruby", @sl_config) }
   end
   
   def generate_build_projects
@@ -196,6 +181,17 @@ class IRTest
     if File.exists?(script)
       run_cmd "#{vm_shim} #{dlr_path('Util/IronPython/ipy.exe')} #{script}"
     end
+  end
+
+  def on_windows
+	case System::Environment.OSVersion.Platform
+	  when System::PlatformID.Win32S
+	  when System::PlatformID.Win32Windows
+	  when System::PlatformID.Win32NT
+		true
+	  else
+		false
+	end
   end
   
   def run
