@@ -436,9 +436,9 @@ namespace IronRuby.Builtins {
         #region ===, =~, !~, eql?, hash, to_s, inspect, to_a
 
         [RubyMethod("=~")]
-        public static bool Match(object self, object other) {
+        public static object Match(object self, object other) {
             // Default implementation of match that is overridden in descendents (notably String and Regexp)
-            return false;
+            return null;
         }
 
         [RubyMethod("!~")]

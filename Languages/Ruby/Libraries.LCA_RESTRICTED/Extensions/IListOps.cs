@@ -1477,6 +1477,26 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        [RubyMethod("pop")]
+        public static object Pop(RubyContext/*!*/ context, IList/*!*/ self, [DefaultProtocol]int count) {
+            RequireNotFrozen(self);
+
+            if (count < 0) {
+                throw RubyExceptions.CreateArgumentError("negative array size");
+            }
+
+            if (count == 0 || self.Count == 0) {
+                return new RubyArray();
+            }
+
+            var normalizedCount = count <= self.Count ? count : self.Count;
+            var index = self.Count - normalizedCount;
+
+            var result = new RubyArray(self, index, normalizedCount);
+            IListOps.RemoveRange(self, index, normalizedCount);
+            return result;
+        }
+
         [RubyMethod("shift")]
         public static object Shift(IList/*!*/ self) {
             if (self.Count == 0) {
