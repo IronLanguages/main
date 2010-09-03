@@ -164,6 +164,42 @@ namespace IronPython.Modules {
                     PythonTuple.Make(shape)
                 );
             }
+
+            #region IBufferProtocol
+
+            public override int ItemCount {
+                [PythonHidden]
+                get {
+                    return __len__();
+                }
+            }
+
+            public override BigInteger ItemSize {
+                [PythonHidden]
+                get {
+                    var curType = this.NativeType;
+                    while (curType is ArrayType) {
+                        curType = ((ArrayType)curType).ElementType;
+                    }
+
+                    return curType.Size; 
+                }
+            }
+
+            public override IList<BigInteger> Shape {
+                [PythonHidden]
+                get {
+                    List<BigInteger> shape = new List<BigInteger>();
+                    var curType = this.NativeType as ArrayType;
+                    while (curType != null) {
+                        shape.Add(curType.Length);
+                        curType = curType.ElementType as ArrayType;
+                    }
+                    return shape;
+                }
+            }
+
+            #endregion
         }
     }
 }

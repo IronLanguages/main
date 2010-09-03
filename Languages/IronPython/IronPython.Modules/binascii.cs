@@ -233,6 +233,10 @@ namespace IronPython.Modules {
             return b2a_hex(data);
         }
 
+        public static Bytes hexlify(MemoryView data) {
+            return hexlify(data.tobytes());
+        }
+
         public static Bytes hexlify(Bytes data) {
             byte[] res = new byte[data.Count * 2];
             for (int i = 0; i < data.Count; i++) {

@@ -297,9 +297,10 @@ namespace IronPython.Modules {
             if (sd != null) {
                 CTypes.SimpleType simpType = (CTypes.SimpleType)sd.NativeType;
                 if (simpType._type == CTypes.SimpleTypeKind.WCharPointer ||
-                    simpType._type == CTypes.SimpleTypeKind.CharPointer ||
-                    simpType._type == CTypes.SimpleTypeKind.Pointer) {
+                    simpType._type == CTypes.SimpleTypeKind.CharPointer) {
                     return sd.UnsafeAddress;
+                } else if (simpType._type == CTypes.SimpleTypeKind.Pointer) {
+                    return sd._memHolder.ReadIntPtr(0);
                 }
             }
 

@@ -695,6 +695,11 @@ namespace IronPython.Modules {
         }
 
         public static void SetCharArrayValue(_Array arr, object value) {
+            PythonBuffer buf = value as PythonBuffer;
+            if (buf != null && buf._object is string) {
+                value = buf.ToString();
+            }
+
             arr.NativeType.SetValue(arr._memHolder, 0, value);
         }
 
@@ -720,8 +725,17 @@ namespace IronPython.Modules {
 
         public static void SetWCharArrayRaw(_Array arr, object value) {
             PythonBuffer buf = value as PythonBuffer;
-            if (buf != null && buf._object is string) {
+            if (buf != null && (buf._object is string || buf._object is Bytes))  {
                 value = buf.ToString();
+            }
+
+            MemoryView view = value as MemoryView;
+            if (view != null) {
+                string strVal = view.tobytes().ToString();
+                if (strVal.Length > arr.__len__()) {
+                    throw PythonOps.ValueError("string too long");
+                }
+                value = strVal;
             }
 
             arr.NativeType.SetValue(arr._memHolder, 0, value);

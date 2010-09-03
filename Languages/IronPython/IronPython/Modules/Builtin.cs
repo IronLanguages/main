@@ -1085,6 +1085,12 @@ namespace IronPython.Modules {
             }
         }
 
+        public static PythonType memoryview {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(MemoryView));
+            }
+        }
+
         private static CallSite<Func<CallSite, CodeContext, T, T1, object>> MakeMapSite<T, T1>(CodeContext/*!*/ context) {
             return CallSite<Func<CallSite, CodeContext, T, T1, object>>.Create(
                 PythonContext.GetContext(context).InvokeOne

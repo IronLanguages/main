@@ -1237,6 +1237,11 @@ namespace IronPython.Modules {
                 return buf.ToString();
             }
 
+            Bytes bytes = str as Bytes;
+            if (bytes != null) {
+                return bytes.ToString();
+            }
+
 #if !CLR2 && !SILVERLIGHT
             MmapModule.mmap mmapFile = str as MmapModule.mmap;
             if (mmapFile != null) {

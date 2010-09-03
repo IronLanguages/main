@@ -609,11 +609,11 @@ namespace IronPython.Modules {
                         break;
                     case SimpleTypeKind.Double:
                         break;
-                    case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.UnsignedInt:
                     case SimpleTypeKind.UnsignedLong:
                         EmitInt32ToObject(method, value);
                         break;
+                    case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.SignedLongLong:
                         EmitInt64ToObject(method, value);
                         break;

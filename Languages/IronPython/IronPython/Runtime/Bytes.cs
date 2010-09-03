@@ -38,7 +38,7 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     [PythonType("bytes")]
-    public class Bytes : IList<byte>, ICodeFormattable, IExpressionSerializable {
+    public class Bytes : IList<byte>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
         internal byte[]/*!*/ _bytes;
         internal static Bytes/*!*/ Empty = new Bytes();
 
@@ -941,6 +941,70 @@ namespace IronPython.Runtime {
                     ArrayUtils.ConvertAll(_bytes, (b) => Expression.Constant(b))
                 )
             );
+        }
+
+        #endregion
+
+        #region IBufferProtocol Members
+        
+        Bytes IBufferProtocol.GetItem(int index) {
+            byte res = _bytes[PythonOps.FixIndex(index, _bytes.Length)];
+            return new Bytes(new byte[] { res });
+        }
+        
+        void IBufferProtocol.SetItem(int index, object value) {
+            throw new InvalidOperationException();
+        }
+
+        int IBufferProtocol.ItemCount {
+            get {
+                return _bytes.Length;
+            }
+        }
+
+        string IBufferProtocol.Format {
+            get { return "B"; }
+        }
+
+        BigInteger IBufferProtocol.ItemSize {
+            get { return 1; }
+        }
+
+        BigInteger IBufferProtocol.NumberDimensions {
+            get { return 1; }
+        }
+
+        bool IBufferProtocol.ReadOnly {
+            get { return true; }
+        }
+
+        IList<BigInteger> IBufferProtocol.Shape {
+            get { return new [] { (BigInteger)this._bytes.Length }; }
+        }
+
+        PythonTuple IBufferProtocol.Strides {
+            get { return PythonTuple.MakeTuple(this); }
+        }
+
+        object IBufferProtocol.SubOffsets {
+            get { return null; }
+        }
+
+        Bytes IBufferProtocol.ToBytes(int start, int? end) {
+            if (start == 0 && end == null) {
+                return this;
+            }
+
+            return this[new Slice(start, end)];
+        }
+
+        List IBufferProtocol.ToList(int start, int? end) {
+            List<byte> res = _bytes.Slice(new Slice(start, end));
+            if (res == null) {
+                return new List();
+            }
+
+            return new List(res.ToArray());
         }
 
         #endregion

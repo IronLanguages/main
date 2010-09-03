@@ -13,12 +13,20 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
+
+
 using System;
 using System.Diagnostics;
 using System.Threading;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
+using System.Collections.Generic;
 
 #if !SILVERLIGHT
 namespace IronPython.Modules {
@@ -43,7 +51,7 @@ namespace IronPython.Modules {
         /// Base class for all ctypes interop types.
         /// </summary>
         [PythonType("_CData"), PythonHidden]
-        public abstract class CData : IPythonBufferable {
+        public abstract class CData : IPythonBufferable, IBufferProtocol {
             internal MemoryHolder _memHolder;
 
             // members: __setstate__,  __reduce__ _b_needsfree_ __ctypes_from_outparam__ __hash__ _objects _b_base_ __doc__
@@ -99,6 +107,64 @@ namespace IronPython.Modules {
                     PythonTuple.EMPTY
                 );
             }
+
+
+            #region IBufferProtocol Members
+
+            Bytes IBufferProtocol.GetItem(int index) {
+                return new Bytes(((IPythonBufferable)this).GetBytes(index, this.NativeType.Size));
+            }
+
+            void IBufferProtocol.SetItem(int index, object value) {
+                throw new NotImplementedException();
+            }
+
+            public virtual int ItemCount {
+                [PythonHidden]
+                get {
+                    return 1;
+                }
+            }
+
+            string IBufferProtocol.Format {
+                get { return NativeType.TypeFormat; }
+            }
+
+            public virtual BigInteger ItemSize {
+                [PythonHidden]
+                get { return this.NativeType.Size; }
+            }
+
+            BigInteger IBufferProtocol.NumberDimensions {
+                get { return 0; }
+            }
+
+            bool IBufferProtocol.ReadOnly {
+                get { return false; }
+            }
+            
+            public virtual IList<BigInteger> Shape {
+                [PythonHidden]
+                get { return null; }
+            }
+
+            PythonTuple IBufferProtocol.Strides {
+                get { return null; }
+            }
+
+            object IBufferProtocol.SubOffsets {
+                get { return null; }
+            }
+
+            Bytes IBufferProtocol.ToBytes(int start, int? end) {
+                return new Bytes(((IPythonBufferable)this).GetBytes(start, this.NativeType.Size));
+            }
+
+            List IBufferProtocol.ToList(int start, int? end) {
+                return new List(((IBufferProtocol)this).ToBytes(start, end));
+            }
+
+            #endregion
         }
     }
 }

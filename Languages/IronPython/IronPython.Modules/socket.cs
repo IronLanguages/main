@@ -997,10 +997,14 @@ namespace IronPython.Modules {
             + "is used.\n"
             )]
         public static socket create_connection(CodeContext/*!*/ context, PythonTuple address, object timeout) {
+            return create_connection(context, address, timeout, null);
+        }
+
+        public static socket create_connection(CodeContext/*!*/ context, PythonTuple address, object timeout, PythonTuple source_address) {
             string msg = "getaddrinfo returns an empty list";
             string host = Converter.ConvertToString(address[0]);
             object port = address[1];
-
+            
             IEnumerator en = getaddrinfo(context, host, port, 0, SOCK_STREAM, (int)ProtocolType.IP, (int)SocketFlags.None).GetEnumerator();
             while (en.MoveNext()) {
                 PythonTuple current = (PythonTuple)en.Current;
@@ -1015,6 +1019,9 @@ namespace IronPython.Modules {
                     socket.__init__(context, family, socktype, proto, null);
                     if (timeout != _GLOBAL_DEFAULT_TIMEOUT) {
                         socket.settimeout(timeout);
+                    }
+                    if (source_address != null) {
+                        socket.bind(source_address);
                     }
                     socket.connect(sockaddress);
                     return socket;

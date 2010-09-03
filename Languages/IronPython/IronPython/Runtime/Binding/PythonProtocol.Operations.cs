@@ -2360,7 +2360,7 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.Subtract: return "-";
                 case PythonOperationKind.Power: return "**";
                 case PythonOperationKind.Multiply: return "*";
-                case PythonOperationKind.FloorDivide: return "/";
+                case PythonOperationKind.FloorDivide: return "//";
                 case PythonOperationKind.Divide: return "/";
                 case PythonOperationKind.TrueDivide: return "//";
                 case PythonOperationKind.Mod: return "%";
