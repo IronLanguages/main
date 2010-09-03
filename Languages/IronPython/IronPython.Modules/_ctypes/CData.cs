@@ -119,6 +119,10 @@ namespace IronPython.Modules {
                 throw new NotImplementedException();
             }
 
+            void IBufferProtocol.SetSlice(Slice index, object value) {
+                throw new NotImplementedException();
+            }
+
             public virtual int ItemCount {
                 [PythonHidden]
                 get {
@@ -143,9 +147,9 @@ namespace IronPython.Modules {
                 get { return false; }
             }
             
-            public virtual IList<BigInteger> Shape {
-                [PythonHidden]
-                get { return null; }
+            [PythonHidden]
+            public virtual IList<BigInteger> GetShape(int start, int? end) {
+                return null;
             }
 
             PythonTuple IBufferProtocol.Strides {

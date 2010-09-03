@@ -956,6 +956,10 @@ namespace IronPython.Runtime {
             throw new InvalidOperationException();
         }
 
+        void IBufferProtocol.SetSlice(Slice index, object value) {
+            throw new InvalidOperationException();
+        }
+
         int IBufferProtocol.ItemCount {
             get {
                 return _bytes.Length;
@@ -978,12 +982,15 @@ namespace IronPython.Runtime {
             get { return true; }
         }
 
-        IList<BigInteger> IBufferProtocol.Shape {
-            get { return new [] { (BigInteger)this._bytes.Length }; }
+        IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) {
+            if (end != null) {
+                return new[] { (BigInteger)end - start };
+            }
+            return new[] { (BigInteger)this._bytes.Length - start };
         }
 
         PythonTuple IBufferProtocol.Strides {
-            get { return PythonTuple.MakeTuple(this); }
+            get { return PythonTuple.MakeTuple(1); }
         }
 
         object IBufferProtocol.SubOffsets {

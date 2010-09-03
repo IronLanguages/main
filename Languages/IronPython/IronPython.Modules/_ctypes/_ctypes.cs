@@ -730,7 +730,7 @@ namespace IronPython.Modules {
             }
 
             MemoryView view = value as MemoryView;
-            if (view != null) {
+            if ((object)view != null) {
                 string strVal = view.tobytes().ToString();
                 if (strVal.Length > arr.__len__()) {
                     throw PythonOps.ValueError("string too long");

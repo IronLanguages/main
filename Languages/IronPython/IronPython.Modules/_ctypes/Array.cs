@@ -186,17 +186,15 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override IList<BigInteger> Shape {
-                [PythonHidden]
-                get {
-                    List<BigInteger> shape = new List<BigInteger>();
-                    var curType = this.NativeType as ArrayType;
-                    while (curType != null) {
-                        shape.Add(curType.Length);
-                        curType = curType.ElementType as ArrayType;
-                    }
-                    return shape;
+            [PythonHidden]
+            public override IList<BigInteger> GetShape(int start, int? end) {
+                List<BigInteger> shape = new List<BigInteger>();
+                var curType = this.NativeType as ArrayType;
+                while (curType != null) {
+                    shape.Add(curType.Length);
+                    curType = curType.ElementType as ArrayType;
                 }
+                return shape;
             }
 
             #endregion

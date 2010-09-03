@@ -1443,6 +1443,10 @@ namespace IronPython.Runtime {
             this[index] = value;
         }
 
+        void IBufferProtocol.SetSlice(Slice index, object value) {
+            this[index] = value;
+        }
+
         int IBufferProtocol.ItemCount {
             get {
                 return _bytes.Count;
@@ -1462,15 +1466,18 @@ namespace IronPython.Runtime {
         }
 
         bool IBufferProtocol.ReadOnly {
-            get { return true; }
+            get { return false; }
         }
 
-        IList<BigInteger> IBufferProtocol.Shape {
-            get { return new[] { (BigInteger)this._bytes.Count }; }
+        IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) {
+            if (end != null) {
+                return new[] { (BigInteger)end - start };
+            }
+            return new[] { (BigInteger)this._bytes.Count - start };
         }
 
         PythonTuple IBufferProtocol.Strides {
-            get { return PythonTuple.MakeTuple(this); }
+            get { return PythonTuple.MakeTuple(1); }
         }
 
         object IBufferProtocol.SubOffsets {

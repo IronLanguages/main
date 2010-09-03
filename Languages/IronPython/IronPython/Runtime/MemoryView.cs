@@ -20,10 +20,8 @@ using System.Numerics;
 #endif
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     [PythonType("memoryview")]
@@ -36,13 +34,16 @@ namespace IronPython.Runtime {
             _buffer = @object;
         }
 
-        private MemoryView(IBufferProtocol @object, int start, int end) {
+        private MemoryView(IBufferProtocol @object, int start, int? end) {
             _buffer =@object;
             _start = start;
             _end = end;
         }
 
         public int __len__() {
+            if (_end != null) {
+                return _end.Value - _start;
+            }
             return _buffer.ItemCount;
         }
 
@@ -64,7 +65,7 @@ namespace IronPython.Runtime {
 
         public PythonTuple shape {
             get {
-                var shape = _buffer.Shape;
+                var shape = _buffer.GetShape(_start, _end);
                 if (shape == null) {
                     return null;
                 }
@@ -90,14 +91,29 @@ namespace IronPython.Runtime {
 
         public object this[int index] {
             get {
+                index = ValidateIndex(index);
                 return _buffer.GetItem(index + _start);
             }
             set {
                 if (_buffer.ReadOnly) {
                     throw PythonOps.TypeError("cannot modify read-only memory");
                 }
+                ValidateIndex(index);
                 _buffer.SetItem(index + _start, value);
             }
+        }
+
+        private int ValidateIndex(int index) {
+            if (_end != null && (index + _start) >= _end) {
+                throw PythonOps.IndexError("index out of range ", index);
+            } else if (index < 0) {
+                int len = __len__();
+                if (index * -1 > len) {
+                    throw PythonOps.IndexError("index out of range ", index);
+                }
+                index = len + index;
+            }
+            return index;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
@@ -112,7 +128,7 @@ namespace IronPython.Runtime {
             throw new NotImplementedException();
         }
 
-        public object this[Slice slice] {
+        public object this[[NotNull]Slice slice] {
             get {
                 if (slice.step != null) {
                     throw PythonOps.NotImplementedError("");
@@ -120,13 +136,35 @@ namespace IronPython.Runtime {
 
                 return new MemoryView(
                     _buffer,
-                    slice.start == null ? _start : Converter.ConvertToInt32(slice.start) + _start,
-                    slice.stop == null ? -1 : Converter.ConvertToInt32(slice.stop)
+                    slice.start == null ? _start : (Converter.ConvertToInt32(slice.start) + _start),
+                    slice.stop == null ? _end : (Converter.ConvertToInt32(slice.stop) + _start)
                 );
             }
             set {
-                throw new NotImplementedException();
+                if (_start != 0 || _end != null) {
+                    slice = new Slice(
+                        slice.start == null ? _start : (Converter.ConvertToInt32(slice.start) + _start),
+                        slice.stop == null ? _end : (Converter.ConvertToInt32(slice.stop) + _start)
+                    );
+                }
+
+                int len = PythonOps.Length(value);
+                int start, stop, step;
+                slice.indices(PythonOps.Length(_buffer), out start, out stop, out step);
+                if (stop - start != len) {
+                    throw PythonOps.ValueError("cannot resize memory view");
+                }
+
+                _buffer.SetSlice(slice, value);
             }
+        }
+
+        public static bool operator >(MemoryView self, IBufferProtocol other) {
+            return self > new MemoryView(other);
+        }
+
+        public static bool operator >(IBufferProtocol self, MemoryView other) {
+            return new MemoryView(self) > other;
         }
 
         public static bool operator >(MemoryView self, MemoryView other) {
@@ -146,7 +184,15 @@ namespace IronPython.Runtime {
             }
             return self.tobytes() < other.tobytes();
         }
-        
+
+        public static bool operator <(MemoryView self, IBufferProtocol other) {
+            return self < new MemoryView(other);
+        }
+
+        public static bool operator <(IBufferProtocol self, MemoryView other) {
+            return new MemoryView(self) < other;
+        }
+
         public static bool operator >=(MemoryView self, MemoryView other) {
             if ((object)self == null) {
                 return (object)other == null;
@@ -154,6 +200,14 @@ namespace IronPython.Runtime {
                 return false;
             }
             return self.tobytes() >= other.tobytes();
+        }
+
+        public static bool operator >=(MemoryView self, IBufferProtocol other) {
+            return self >= new MemoryView(other);
+        }
+
+        public static bool operator >=(IBufferProtocol self, MemoryView other) {
+            return new MemoryView(self) >= other;
         }
 
         public static bool operator <=(MemoryView self, MemoryView other) {
@@ -164,7 +218,15 @@ namespace IronPython.Runtime {
             }
             return self.tobytes() <= other.tobytes();
         }
-        
+
+        public static bool operator <=(MemoryView self, IBufferProtocol other) {
+            return self <= new MemoryView(other);
+        }
+
+        public static bool operator <=(IBufferProtocol self, MemoryView other) {
+            return new MemoryView(self) <= other;
+        }
+
         public static bool operator ==(MemoryView self, MemoryView other) {
             if ((object)self == null) {
                 return (object)other == null;
@@ -172,6 +234,14 @@ namespace IronPython.Runtime {
                 return false;
             }
             return self.tobytes().Equals(other.tobytes());
+        }
+
+        public static bool operator ==(MemoryView self, IBufferProtocol other) {
+            return self == new MemoryView(other);
+        }
+
+        public static bool operator ==(IBufferProtocol self, MemoryView other) {
+            return new MemoryView(self) == other;
         }
 
         public static bool operator !=(MemoryView self, MemoryView other) {
@@ -183,11 +253,19 @@ namespace IronPython.Runtime {
             return !self.tobytes().Equals(other.tobytes());
         }
 
+        public static bool operator !=(MemoryView self, IBufferProtocol other) {
+            return self != new MemoryView(other);
+        }
+
+        public static bool operator !=(IBufferProtocol self, MemoryView other) {
+            return new MemoryView(self) != other;
+        }
+
         public const object __hash__ = null;
 
         public override bool Equals(object obj) {
             MemoryView mv = obj as MemoryView;
-            if (mv != null) {
+            if ((object)mv != null) {
                 return this == mv;
             }
             return false;

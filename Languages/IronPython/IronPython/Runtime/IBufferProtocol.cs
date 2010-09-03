@@ -29,6 +29,7 @@ namespace IronPython.Runtime {
     public interface IBufferProtocol {
         Bytes GetItem(int index);
         void SetItem(int index, object value);
+        void SetSlice(Slice index, object value);
 
         int ItemCount {
             get;
@@ -50,9 +51,7 @@ namespace IronPython.Runtime {
             get;
         }
 
-        IList<BigInteger> Shape {
-            get;
-        }
+        IList<BigInteger> GetShape(int start, int ?end);
 
         PythonTuple Strides {
             get;
