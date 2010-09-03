@@ -1,0 +1,1798 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tns="http://s.mappoint.net/mappoint-30/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" targetNamespace="http://s.mappoint.net/mappoint-30/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://s.mappoint.net/mappoint-30/">
+      <s:element name="GetVersionInfo">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetVersionInfoResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetVersionInfoResult" type="tns:ArrayOfVersionInfo" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfVersionInfo">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="VersionInfo" nillable="true" type="tns:VersionInfo" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="VersionInfo">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Component" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Version" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="CustomerInfoHeader" type="tns:CustomerInfoHeader" />
+      <s:complexType name="CustomerInfoHeader">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="CustomLogEntry" type="s:short" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="UserInfoHeader" type="tns:UserInfoHeader" />
+      <s:complexType name="UserInfoHeader">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Culture" type="tns:CultureInfo" />
+          <s:element minOccurs="1" maxOccurs="1" name="DefaultDistanceUnit" type="tns:DistanceUnit" />
+          <s:element minOccurs="0" maxOccurs="1" name="Context" type="tns:CountryRegionContext" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="CultureInfo">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="Lcid" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="DistanceUnit">
+        <s:restriction base="s:string">
+          <s:enumeration value="Kilometer" />
+          <s:enumeration value="Mile" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="CountryRegionContext">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" default="0" name="EntityID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Iso2" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetCountryRegionInfo">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="entityIDs" type="tns:ArrayOfInt" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfInt">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="int" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetCountryRegionInfoResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetCountryRegionInfoResult" type="tns:ArrayOfCountryRegionInfo" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfCountryRegionInfo">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="CountryRegionInfo" nillable="true" type="tns:CountryRegionInfo" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="CountryRegionInfo">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="EntityID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="tns:LatLong" />
+          <s:element minOccurs="0" maxOccurs="1" name="Iso2" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Iso3" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="FriendlyName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="OfficialName" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="LatLong">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" default="0" name="Latitude" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="0" name="Longitude" type="s:double" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetEntityTypes">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="dataSourceName" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetEntityTypesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetEntityTypesResult" type="tns:ArrayOfEntityType" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfEntityType">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="EntityType" nillable="true" type="tns:EntityType" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="EntityType">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="DisplayName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="ParentName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Definition" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Properties" type="tns:ArrayOfEntityProperty" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfEntityProperty">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="Property" nillable="true" type="tns:EntityProperty" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="EntityProperty">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="DisplayName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="DataType" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetDataSourceInfo">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="dataSourceNames" type="tns:ArrayOfString" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfString">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetDataSourceInfoResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetDataSourceInfoResult" type="tns:ArrayOfDataSource" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfDataSource">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="DataSource" nillable="true" type="tns:DataSource" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="DataSource">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Version" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Description" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="Capability" type="tns:DataSourceCapability" />
+          <s:element minOccurs="0" maxOccurs="1" name="EntityExtent" type="tns:ArrayOfInt" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="DataSourceCapability">
+        <s:list>
+          <s:simpleType>
+            <s:restriction base="s:string">
+              <s:enumeration value="CanDrawMaps" />
+              <s:enumeration value="CanFindPlaces" />
+              <s:enumeration value="CanFindNearby" />
+              <s:enumeration value="CanRoute" />
+              <s:enumeration value="CanFindAddress" />
+              <s:enumeration value="HasIcons" />
+              <s:enumeration value="DataServiceQuery" />
+            </s:restriction>
+          </s:simpleType>
+        </s:list>
+      </s:simpleType>
+      <s:element name="GetGreatCircleDistances">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="latLongs" type="tns:ArrayOfLatLong" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfLatLong">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="LatLong" nillable="true" type="tns:LatLong" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetGreatCircleDistancesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetGreatCircleDistancesResult" type="tns:ArrayOfDouble" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfDouble">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="double" type="s:double" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="Find">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:FindSpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="FindSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="InputPlace" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="EntityTypeNames" type="tns:ArrayOfString" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:FindOptions" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="FindOptions">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Range" type="tns:FindRange" />
+          <s:element minOccurs="1" maxOccurs="1" name="SearchContext" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="ResultMask" type="tns:FindResultMask" />
+          <s:element minOccurs="0" maxOccurs="1" default="0.85" name="ThresholdScore" type="s:double" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="FindRange">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" default="0" name="StartIndex" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" default="25" name="Count" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="FindResultMask">
+        <s:list>
+          <s:simpleType>
+            <s:restriction base="s:string">
+              <s:enumeration value="LatLongFlag" />
+              <s:enumeration value="EntityFlag" />
+              <s:enumeration value="AddressFlag" />
+              <s:enumeration value="BestMapViewFlag" />
+              <s:enumeration value="MatchDetailsFlag" />
+            </s:restriction>
+          </s:simpleType>
+        </s:list>
+      </s:simpleType>
+      <s:element name="FindResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="FindResult" type="tns:FindResults" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="FindResults">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="NumberFound" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="StartIndex" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Results" type="tns:ArrayOfFindResult" />
+          <s:element minOccurs="1" maxOccurs="1" name="TopScore" type="s:double" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfFindResult">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="FindResult" nillable="true" type="tns:FindResult" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="FindResult">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="Score" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" name="FoundLocation" type="tns:Location" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Location">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="tns:LatLong" />
+          <s:element minOccurs="0" maxOccurs="1" name="Entity" type="tns:Entity" />
+          <s:element minOccurs="0" maxOccurs="1" name="Address" type="tns:Address" />
+          <s:element minOccurs="0" maxOccurs="1" name="BestMapView" type="tns:MapViewRepresentations" />
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Entity">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="DisplayName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="TypeName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Properties" type="tns:ArrayOfEntityPropertyValue" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfEntityPropertyValue">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="Property" nillable="true" type="tns:EntityPropertyValue" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="EntityPropertyValue">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Value" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Address">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="AddressLine" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="PrimaryCity" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="SecondaryCity" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Subdivision" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="PostalCode" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="CountryRegion" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="FormattedAddress" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="MapViewRepresentations">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="ByScale" type="tns:ViewByScale" />
+          <s:element minOccurs="0" maxOccurs="1" name="ByHeightWidth" type="tns:ViewByHeightWidth" />
+          <s:element minOccurs="0" maxOccurs="1" name="ByBoundingRectangle" type="tns:ViewByBoundingRectangle" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ViewByScale">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:MapView">
+            <s:sequence>
+              <s:element minOccurs="0" maxOccurs="1" default="0" name="MapScale" type="s:double" />
+              <s:element minOccurs="0" maxOccurs="1" name="CenterPoint" type="tns:LatLong" />
+            </s:sequence>
+          </s:extension>
+        </s:complexContent>
+      </s:complexType>
+      <s:complexType name="MapView" abstract="true" />
+      <s:complexType name="ViewByBoundingLocations">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:MapView">
+            <s:sequence>
+              <s:element minOccurs="0" maxOccurs="1" name="Locations" type="tns:ArrayOfLocation" />
+            </s:sequence>
+          </s:extension>
+        </s:complexContent>
+      </s:complexType>
+      <s:complexType name="ArrayOfLocation">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="Location" nillable="true" type="tns:Location" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ViewByHeightWidth">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:MapView">
+            <s:sequence>
+              <s:element minOccurs="0" maxOccurs="1" default="0" name="Height" type="s:double" />
+              <s:element minOccurs="0" maxOccurs="1" default="0" name="Width" type="s:double" />
+              <s:element minOccurs="0" maxOccurs="1" name="CenterPoint" type="tns:LatLong" />
+            </s:sequence>
+          </s:extension>
+        </s:complexContent>
+      </s:complexType>
+      <s:complexType name="ViewByBoundingRectangle">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:MapView">
+            <s:sequence>
+              <s:element minOccurs="0" maxOccurs="1" name="BoundingRectangle" type="tns:LatLongRectangle" />
+            </s:sequence>
+          </s:extension>
+        </s:complexContent>
+      </s:complexType>
+      <s:complexType name="LatLongRectangle">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Southwest" type="tns:LatLong" />
+          <s:element minOccurs="0" maxOccurs="1" name="Northeast" type="tns:LatLong" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="MapPointConstants">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" default="6378.2" name="EarthRadiusInKilometers" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="3.1415926535897931" name="Pi" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="0.017453292519943295" name="RadiansPerDegree" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="57.295779513082323" name="DegreesPerRadian" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="0.621371192237334" name="MilesPerKilometer" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="1.609344" name="KilometersPerMile" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="0.0003048" name="KilometersPerFoot" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="3280.8398950131232" name="FeetPerKilometer" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="0.85" name="FindScoreThreshold" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="96" name="AssumedDpi" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" default="3.280839895013123" name="FeetPerMeter" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="0.3048" name="MetersPerFoot" type="s:double" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="SpatialFilter" abstract="true" />
+      <s:complexType name="LatLongSpatialFilter">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:SpatialFilter">
+            <s:sequence>
+              <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="tns:LatLong" />
+            </s:sequence>
+          </s:extension>
+        </s:complexContent>
+      </s:complexType>
+      <s:complexType name="LatLongRectangleSpatialFilter">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:SpatialFilter">
+            <s:sequence>
+              <s:element minOccurs="0" maxOccurs="1" name="BoundingRectangle" type="tns:LatLongRectangle" />
+              <s:element minOccurs="1" maxOccurs="1" name="PolygonRectangleRelation" type="tns:SpatialRelation" />
+            </s:sequence>
+          </s:extension>
+        </s:complexContent>
+      </s:complexType>
+      <s:simpleType name="SpatialRelation">
+        <s:restriction base="s:string">
+          <s:enumeration value="WithinArea" />
+          <s:enumeration value="TouchesArea" />
+        </s:restriction>
+      </s:simpleType>
+      <s:element name="CustomerInfoFindHeader" type="tns:CustomerInfoFindHeader" />
+      <s:complexType name="CustomerInfoFindHeader">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:CustomerInfoHeader" />
+        </s:complexContent>
+      </s:complexType>
+      <s:element name="UserInfoFindHeader" type="tns:UserInfoFindHeader" />
+      <s:complexType name="UserInfoFindHeader">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:UserInfoHeader" />
+        </s:complexContent>
+      </s:complexType>
+      <s:element name="FindAddress">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:FindAddressSpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="FindAddressSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="InputAddress" type="tns:Address" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:FindOptions" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="FindAddressResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="FindAddressResult" type="tns:FindResults" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ParseAddress">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="inputAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="countryRegion" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ParseAddressResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="ParseAddressResult" type="tns:Address" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetLocationInfo">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="location" type="tns:LatLong" />
+            <s:element minOccurs="0" maxOccurs="1" name="dataSourceName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="options" type="tns:GetInfoOptions" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="GetInfoOptions">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" default="true" name="IncludeAddresses" type="s:boolean" />
+          <s:element minOccurs="0" maxOccurs="1" default="true" name="IncludeAllEntityTypes" type="s:boolean" />
+          <s:element minOccurs="0" maxOccurs="1" name="EntityTypesToReturn" type="tns:ArrayOfString" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetLocationInfoResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetLocationInfoResult" type="tns:ArrayOfLocation" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="FindNearby">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:FindNearbySpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="FindNearbySpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="tns:LatLong" />
+          <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" name="Filter" type="tns:FindFilter" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:FindOptions" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="FindFilter">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="EntityTypeName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="PropertyNames" type="tns:ArrayOfString" />
+          <s:element minOccurs="0" maxOccurs="1" name="WhereClause" type="tns:WhereClause" />
+          <s:element minOccurs="0" maxOccurs="1" name="SortProperties" type="tns:ArrayOfSortProperty" />
+          <s:element minOccurs="0" maxOccurs="1" name="Expression" type="tns:FilterExpression" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="WhereClause">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="SearchProperties" type="tns:ArrayOfEntityPropertyValue" />
+          <s:element minOccurs="1" maxOccurs="1" name="SearchOperator" type="tns:SearchOperatorFlag" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="SearchOperatorFlag">
+        <s:restriction base="s:string">
+          <s:enumeration value="And" />
+          <s:enumeration value="Or" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="ArrayOfSortProperty">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="SortProperty" nillable="true" type="tns:SortProperty" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="SortProperty">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="PropertyName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="Direction" type="tns:SortDirection" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="SortDirection">
+        <s:restriction base="s:string">
+          <s:enumeration value="Ascending" />
+          <s:enumeration value="Descending" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="FilterExpression">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Text" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Parameters" type="tns:ArrayOfAnyType" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfAnyType">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="anyType" nillable="true" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="FindNearbyResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="FindNearbyResult" type="tns:FindResults" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="FindByProperty">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:FindByPropertySpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="FindByPropertySpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Filter" type="tns:FindFilter" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:FindOptions" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="FindByPropertyResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="FindByPropertyResult" type="tns:FindResults" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="FindByID">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:FindByIDSpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="FindByIDSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Filter" type="tns:FindFilter" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:FindOptions" />
+          <s:element minOccurs="0" maxOccurs="1" name="EntityIDs" type="tns:ArrayOfInt" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="FindByIDResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="FindByIDResult" type="tns:FindResults" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="FindNearRoute">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:FindNearRouteSpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="FindNearRouteSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" name="Filter" type="tns:FindFilter" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:FindOptions" />
+          <s:element minOccurs="0" maxOccurs="1" name="Route" type="tns:Route" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Route">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Specification" type="tns:RouteSpecification" />
+          <s:element minOccurs="0" maxOccurs="1" name="Itinerary" type="tns:RouteItinerary" />
+          <s:element minOccurs="0" maxOccurs="1" name="CalculatedRepresentation" type="tns:CalculatedRouteRepresentation" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="RouteSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Segments" type="tns:ArrayOfSegmentSpecification" />
+          <s:element minOccurs="1" maxOccurs="1" name="ResultMask" type="tns:RouteResultMask" />
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="DriverProfile" type="tns:DriverProfile" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfSegmentSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="SegmentSpecification" nillable="true" type="tns:SegmentSpecification" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="SegmentSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Waypoint" type="tns:Waypoint" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:SegmentOptions" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Waypoint">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Location" type="tns:Location" />
+          <s:element minOccurs="1" maxOccurs="1" name="Snap" type="tns:SnapType" />
+          <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="CalculatedLocation" type="tns:Location" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="SnapType">
+        <s:restriction base="s:string">
+          <s:enumeration value="Normal" />
+          <s:enumeration value="City" />
+          <s:enumeration value="NearestRoad" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="SegmentOptions">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="Preference" type="tns:SegmentPreference" />
+          <s:element minOccurs="0" maxOccurs="1" default="true" name="CalculateSegmentMapView" type="s:boolean" />
+          <s:element minOccurs="0" maxOccurs="1" default="true" name="CalculateDirectionMapView" type="s:boolean" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="SegmentPreference">
+        <s:restriction base="s:string">
+          <s:enumeration value="Quickest" />
+          <s:enumeration value="Shortest" />
+        </s:restriction>
+      </s:simpleType>
+      <s:simpleType name="RouteResultMask">
+        <s:list>
+          <s:simpleType>
+            <s:restriction base="s:string">
+              <s:enumeration value="Itinerary" />
+              <s:enumeration value="CalculatedRouteRepresentation" />
+            </s:restriction>
+          </s:simpleType>
+        </s:list>
+      </s:simpleType>
+      <s:complexType name="DriverProfile">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" default="-1" name="DayStartTime" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" default="-1" name="DayEndTime" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="RouteItinerary">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Segments" type="tns:ArrayOfSegment" />
+          <s:element minOccurs="1" maxOccurs="1" name="TripTime" type="s:long" />
+          <s:element minOccurs="1" maxOccurs="1" name="DrivingTime" type="s:long" />
+          <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" name="View" type="tns:MapViewRepresentations" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfSegment">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="Segment" nillable="true" type="tns:Segment" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Segment">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Waypoint" type="tns:Waypoint" />
+          <s:element minOccurs="0" maxOccurs="1" name="Directions" type="tns:ArrayOfDirection" />
+          <s:element minOccurs="1" maxOccurs="1" name="TripTime" type="s:long" />
+          <s:element minOccurs="1" maxOccurs="1" name="DrivingTime" type="s:long" />
+          <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" name="View" type="tns:MapViewRepresentations" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfDirection">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="Direction" nillable="true" type="tns:Direction" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Direction">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="tns:LatLong" />
+          <s:element minOccurs="1" maxOccurs="1" name="DirectionType" type="tns:DirectionType" />
+          <s:element minOccurs="1" maxOccurs="1" name="Action" type="tns:DirectionAction" />
+          <s:element minOccurs="1" maxOccurs="1" name="BearingOutOfTurn" type="s:float" />
+          <s:element minOccurs="1" maxOccurs="1" name="BearingIntoTurn" type="s:float" />
+          <s:element minOccurs="1" maxOccurs="1" name="Duration" type="s:long" />
+          <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" name="Towards" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Instruction" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="FormattedInstruction" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="View" type="tns:MapViewRepresentations" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="DirectionType">
+        <s:restriction base="s:string">
+          <s:enumeration value="Driving" />
+          <s:enumeration value="Border" />
+          <s:enumeration value="StartOfDay" />
+          <s:enumeration value="EndOfDay" />
+          <s:enumeration value="Warning" />
+          <s:enumeration value="Waypoint" />
+        </s:restriction>
+      </s:simpleType>
+      <s:simpleType name="DirectionAction">
+        <s:restriction base="s:string">
+          <s:enumeration value="Other" />
+          <s:enumeration value="Depart" />
+          <s:enumeration value="Arrive" />
+          <s:enumeration value="TurnLeft" />
+          <s:enumeration value="TurnRight" />
+          <s:enumeration value="BearLeft" />
+          <s:enumeration value="BearRight" />
+          <s:enumeration value="Merge" />
+          <s:enumeration value="Continue" />
+          <s:enumeration value="TurnBack" />
+          <s:enumeration value="TakeRoundabout" />
+          <s:enumeration value="ConstructionDelay" />
+          <s:enumeration value="ConstructionStop" />
+          <s:enumeration value="NameChange" />
+          <s:enumeration value="LeftLeft" />
+          <s:enumeration value="LeftRight" />
+          <s:enumeration value="RightLeft" />
+          <s:enumeration value="RightRight" />
+          <s:enumeration value="TakeRamp" />
+          <s:enumeration value="TakeRampLeft" />
+          <s:enumeration value="TakeRampRight" />
+          <s:enumeration value="KeepStraight" />
+          <s:enumeration value="KeepLeft" />
+          <s:enumeration value="KeepRight" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="CalculatedRouteRepresentation">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Bits" type="s:base64Binary" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="FindNearRouteResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="FindNearRouteResult" type="tns:FindResults" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="FindPolygon">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:FindPolygonSpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="FindPolygonSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Filter" type="tns:FindFilter" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:FindOptions" />
+          <s:element minOccurs="0" maxOccurs="1" name="SpatialFilter" type="tns:SpatialFilter" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="FindPolygonResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="FindPolygonResult" type="tns:FindResults" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CalculateSimpleRoute">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="latLongs" type="tns:ArrayOfLatLong" />
+            <s:element minOccurs="0" maxOccurs="1" name="dataSourceName" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="preference" type="tns:SegmentPreference" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CalculateSimpleRouteResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="CalculateSimpleRouteResult" type="tns:Route" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CustomerInfoRouteHeader" type="tns:CustomerInfoRouteHeader" />
+      <s:complexType name="CustomerInfoRouteHeader">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:CustomerInfoHeader" />
+        </s:complexContent>
+      </s:complexType>
+      <s:element name="UserInfoRouteHeader" type="tns:UserInfoRouteHeader" />
+      <s:complexType name="UserInfoRouteHeader">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:UserInfoHeader" />
+        </s:complexContent>
+      </s:complexType>
+      <s:element name="CalculateRoute">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:RouteSpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CalculateRouteResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="CalculateRouteResult" type="tns:Route" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetMap">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:MapSpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="MapSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Polygons" type="tns:ArrayOfPolygon" />
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="HighlightedEntityIDs" type="tns:ArrayOfInt" />
+          <s:element minOccurs="0" maxOccurs="1" name="HideEntityTypes" type="tns:ArrayOfString" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:MapOptions" />
+          <s:element minOccurs="0" maxOccurs="1" name="Pushpins" type="tns:ArrayOfPushpin" />
+          <s:element minOccurs="0" maxOccurs="1" name="Route" type="tns:Route" />
+          <s:element minOccurs="0" maxOccurs="1" name="Views" type="tns:ArrayOfMapView" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfPolygon">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="Polygon" nillable="true" type="tns:Polygon" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Polygon">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="EntityID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="BorderColor" type="tns:ElementColor" />
+          <s:element minOccurs="0" maxOccurs="1" name="FillColor" type="tns:ElementColor" />
+          <s:element minOccurs="0" maxOccurs="1" name="Label" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ElementColor">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="A" type="s:unsignedByte" />
+          <s:element minOccurs="1" maxOccurs="1" name="R" type="s:unsignedByte" />
+          <s:element minOccurs="1" maxOccurs="1" name="G" type="s:unsignedByte" />
+          <s:element minOccurs="1" maxOccurs="1" name="B" type="s:unsignedByte" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="MapOptions">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="RouteHighlightColor" type="tns:RouteHighlightColor" />
+          <s:element minOccurs="1" maxOccurs="1" name="ConstructionDelayHighlightColor" type="tns:RouteHighlightColor" />
+          <s:element minOccurs="1" maxOccurs="1" name="ConstructionClosureHighlightColor" type="tns:RouteHighlightColor" />
+          <s:element minOccurs="0" maxOccurs="1" default="Smaller" name="FontSize" type="tns:MapFontSize" />
+          <s:element minOccurs="0" maxOccurs="1" name="Format" type="tns:ImageFormat" />
+          <s:element minOccurs="0" maxOccurs="1" default="false" name="IsOverviewMap" type="s:boolean" />
+          <s:element minOccurs="0" maxOccurs="1" default="ReturnImage" name="ReturnType" type="tns:MapReturnType" />
+          <s:element minOccurs="1" maxOccurs="1" name="PanHorizontal" type="s:double" />
+          <s:element minOccurs="1" maxOccurs="1" name="PanVertical" type="s:double" />
+          <s:element minOccurs="1" maxOccurs="1" name="Style" type="tns:MapStyle" />
+          <s:element minOccurs="0" maxOccurs="1" default="1" name="Zoom" type="s:double" />
+          <s:element minOccurs="0" maxOccurs="1" default="false" name="PreventIconCollisions" type="s:boolean" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="RouteHighlightColor">
+        <s:restriction base="s:string">
+          <s:enumeration value="DefaultColor" />
+          <s:enumeration value="Green" />
+          <s:enumeration value="Yellow" />
+          <s:enumeration value="Cyan" />
+          <s:enumeration value="Red" />
+        </s:restriction>
+      </s:simpleType>
+      <s:simpleType name="MapFontSize">
+        <s:restriction base="s:string">
+          <s:enumeration value="Smallest" />
+          <s:enumeration value="Smaller" />
+          <s:enumeration value="Medium" />
+          <s:enumeration value="Larger" />
+          <s:enumeration value="Largest" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="ImageFormat">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" default="image/gif" name="MimeType" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" default="240" name="Height" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" default="296" name="Width" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="MapReturnType">
+        <s:restriction base="s:string">
+          <s:enumeration value="ReturnImage" />
+          <s:enumeration value="ReturnUrl" />
+          <s:enumeration value="ReturnSecureUrl" />
+        </s:restriction>
+      </s:simpleType>
+      <s:simpleType name="MapStyle">
+        <s:restriction base="s:string">
+          <s:enumeration value="DefaultStyle" />
+          <s:enumeration value="Locator" />
+          <s:enumeration value="Terrain" />
+          <s:enumeration value="Road" />
+          <s:enumeration value="Political" />
+          <s:enumeration value="Small" />
+          <s:enumeration value="LocatorBW" />
+          <s:enumeration value="TerrainBW" />
+          <s:enumeration value="RoadBW" />
+          <s:enumeration value="PoliticalBW" />
+          <s:enumeration value="SmallBW" />
+          <s:enumeration value="Comprehensive" />
+          <s:enumeration value="PhysicalFeatures" />
+          <s:enumeration value="Tectonic" />
+          <s:enumeration value="EarthByDay" />
+          <s:enumeration value="EarthByNight" />
+          <s:enumeration value="Ecoregions" />
+          <s:enumeration value="Climate" />
+          <s:enumeration value="TemperatureJanuary" />
+          <s:enumeration value="TemperatureJuly" />
+          <s:enumeration value="PrecipitationJanuary" />
+          <s:enumeration value="PrecipitationJuly" />
+          <s:enumeration value="PrecipitationAnnual" />
+          <s:enumeration value="Languages" />
+          <s:enumeration value="Religions" />
+          <s:enumeration value="PopulationDensity" />
+          <s:enumeration value="Parks" />
+          <s:enumeration value="TimeZones" />
+          <s:enumeration value="Outline" />
+          <s:enumeration value="Phone" />
+          <s:enumeration value="PhoneBW" />
+          <s:enumeration value="Night" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="ArrayOfPushpin">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="Pushpin" nillable="true" type="tns:Pushpin" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="Pushpin">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="IconDataSource" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="IconName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Label" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="tns:LatLong" />
+          <s:element minOccurs="0" maxOccurs="1" name="PinID" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Pixel" type="tns:PixelCoord" />
+          <s:element minOccurs="1" maxOccurs="1" name="ReturnsHotArea" type="s:boolean" />
+          <s:element minOccurs="1" maxOccurs="1" name="LabelNearbyRoads" type="s:boolean" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="PixelCoord">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="X" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="Y" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfMapView">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="MapView" nillable="true" type="tns:MapView" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="MapImage">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="HotAreas" type="tns:ArrayOfHotArea" />
+          <s:element minOccurs="0" maxOccurs="1" name="MimeData" type="tns:MimeData" />
+          <s:element minOccurs="0" maxOccurs="1" name="View" type="tns:MapViewRepresentations" />
+          <s:element minOccurs="0" maxOccurs="1" name="Url" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfHotArea">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="HotArea" nillable="true" type="tns:HotArea" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="HotArea">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="IconRectangle" type="tns:PixelRectangle" />
+          <s:element minOccurs="0" maxOccurs="1" name="LabelRectangle" type="tns:PixelRectangle" />
+          <s:element minOccurs="0" maxOccurs="1" name="PinID" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="PixelRectangle">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="Bottom" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="Left" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="Right" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="Top" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="MimeData">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Bits" type="s:base64Binary" />
+          <s:element minOccurs="0" maxOccurs="1" name="ContentID" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="MimeType" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfMapImage">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="MapImage" nillable="true" type="tns:MapImage" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetMapResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetMapResult" type="tns:ArrayOfMapImage" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CustomerInfoRenderHeader" type="tns:CustomerInfoRenderHeader" />
+      <s:complexType name="CustomerInfoRenderHeader">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:CustomerInfoHeader" />
+        </s:complexContent>
+      </s:complexType>
+      <s:element name="UserInfoRenderHeader" type="tns:UserInfoRenderHeader" />
+      <s:complexType name="UserInfoRenderHeader">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:UserInfoHeader" />
+        </s:complexContent>
+      </s:complexType>
+      <s:element name="ConvertToPoint">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="latLong" type="tns:ArrayOfLatLong" />
+            <s:element minOccurs="0" maxOccurs="1" name="view" type="tns:MapView" />
+            <s:element minOccurs="1" maxOccurs="1" name="width" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="height" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfPixelCoord">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="PixelCoord" nillable="true" type="tns:PixelCoord" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="ConvertToPointResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="ConvertToPointResult" type="tns:ArrayOfPixelCoord" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ConvertToLatLong">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="pixels" type="tns:ArrayOfPixelCoord" />
+            <s:element minOccurs="0" maxOccurs="1" name="view" type="tns:MapView" />
+            <s:element minOccurs="1" maxOccurs="1" name="width" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="height" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ConvertToLatLongResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="ConvertToLatLongResult" type="tns:ArrayOfLatLong" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetBestMapView">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="locations" type="tns:ArrayOfLocation" />
+            <s:element minOccurs="0" maxOccurs="1" name="dataSourceName" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetBestMapViewResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetBestMapViewResult" type="tns:MapViewRepresentations" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetLineDriveMap">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="specification" type="tns:LineDriveMapSpecification" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="LineDriveMapSpecification">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Route" type="tns:Route" />
+          <s:element minOccurs="0" maxOccurs="1" name="Options" type="tns:LineDriveMapOptions" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="LineDriveMapOptions">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Format" type="tns:ImageFormat" />
+          <s:element minOccurs="0" maxOccurs="1" default="ReturnImage" name="ReturnType" type="tns:MapReturnType" />
+          <s:element minOccurs="0" maxOccurs="1" default="Smaller" name="FontSize" type="tns:MapFontSize" />
+          <s:element minOccurs="1" maxOccurs="1" name="PaletteType" type="tns:PaletteType" />
+          <s:element minOccurs="0" maxOccurs="1" name="DestinationIconDataSource" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="DestinationIconName" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="PaletteType">
+        <s:restriction base="s:string">
+          <s:enumeration value="Color" />
+          <s:enumeration value="GrayScale" />
+          <s:enumeration value="Monochrome" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="LineDriveMapImage">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="MimeData" type="tns:MimeData" />
+          <s:element minOccurs="0" maxOccurs="1" name="Url" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="View" type="tns:MapViewRepresentations" />
+          <s:element minOccurs="1" maxOccurs="1" name="FirstDirectionID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="LastDirectionID" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfLineDriveMapImage">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="LineDriveMapImage" nillable="true" type="tns:LineDriveMapImage" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetLineDriveMapResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetLineDriveMapResult" type="tns:ArrayOfLineDriveMapImage" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="GetVersionInfoSoapIn">
+    <wsdl:part name="parameters" element="tns:GetVersionInfo" />
+  </wsdl:message>
+  <wsdl:message name="GetVersionInfoSoapOut">
+    <wsdl:part name="parameters" element="tns:GetVersionInfoResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetVersionInfoCustomerInfoHeader">
+    <wsdl:part name="CustomerInfoHeader" element="tns:CustomerInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetVersionInfoUserInfoHeader">
+    <wsdl:part name="UserInfoHeader" element="tns:UserInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetCountryRegionInfoSoapIn">
+    <wsdl:part name="parameters" element="tns:GetCountryRegionInfo" />
+  </wsdl:message>
+  <wsdl:message name="GetCountryRegionInfoSoapOut">
+    <wsdl:part name="parameters" element="tns:GetCountryRegionInfoResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetCountryRegionInfoCustomerInfoHeader">
+    <wsdl:part name="CustomerInfoHeader" element="tns:CustomerInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetCountryRegionInfoUserInfoHeader">
+    <wsdl:part name="UserInfoHeader" element="tns:UserInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetEntityTypesSoapIn">
+    <wsdl:part name="parameters" element="tns:GetEntityTypes" />
+  </wsdl:message>
+  <wsdl:message name="GetEntityTypesSoapOut">
+    <wsdl:part name="parameters" element="tns:GetEntityTypesResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetEntityTypesCustomerInfoHeader">
+    <wsdl:part name="CustomerInfoHeader" element="tns:CustomerInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetEntityTypesUserInfoHeader">
+    <wsdl:part name="UserInfoHeader" element="tns:UserInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetDataSourceInfoSoapIn">
+    <wsdl:part name="parameters" element="tns:GetDataSourceInfo" />
+  </wsdl:message>
+  <wsdl:message name="GetDataSourceInfoSoapOut">
+    <wsdl:part name="parameters" element="tns:GetDataSourceInfoResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetDataSourceInfoCustomerInfoHeader">
+    <wsdl:part name="CustomerInfoHeader" element="tns:CustomerInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetDataSourceInfoUserInfoHeader">
+    <wsdl:part name="UserInfoHeader" element="tns:UserInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetGreatCircleDistancesSoapIn">
+    <wsdl:part name="parameters" element="tns:GetGreatCircleDistances" />
+  </wsdl:message>
+  <wsdl:message name="GetGreatCircleDistancesSoapOut">
+    <wsdl:part name="parameters" element="tns:GetGreatCircleDistancesResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetGreatCircleDistancesCustomerInfoHeader">
+    <wsdl:part name="CustomerInfoHeader" element="tns:CustomerInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetGreatCircleDistancesUserInfoHeader">
+    <wsdl:part name="UserInfoHeader" element="tns:UserInfoHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindSoapIn">
+    <wsdl:part name="parameters" element="tns:Find" />
+  </wsdl:message>
+  <wsdl:message name="FindSoapOut">
+    <wsdl:part name="parameters" element="tns:FindResponse" />
+  </wsdl:message>
+  <wsdl:message name="FindCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindAddressSoapIn">
+    <wsdl:part name="parameters" element="tns:FindAddress" />
+  </wsdl:message>
+  <wsdl:message name="FindAddressSoapOut">
+    <wsdl:part name="parameters" element="tns:FindAddressResponse" />
+  </wsdl:message>
+  <wsdl:message name="FindAddressCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindAddressUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="ParseAddressSoapIn">
+    <wsdl:part name="parameters" element="tns:ParseAddress" />
+  </wsdl:message>
+  <wsdl:message name="ParseAddressSoapOut">
+    <wsdl:part name="parameters" element="tns:ParseAddressResponse" />
+  </wsdl:message>
+  <wsdl:message name="ParseAddressCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="ParseAddressUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetLocationInfoSoapIn">
+    <wsdl:part name="parameters" element="tns:GetLocationInfo" />
+  </wsdl:message>
+  <wsdl:message name="GetLocationInfoSoapOut">
+    <wsdl:part name="parameters" element="tns:GetLocationInfoResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetLocationInfoCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetLocationInfoUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindNearbySoapIn">
+    <wsdl:part name="parameters" element="tns:FindNearby" />
+  </wsdl:message>
+  <wsdl:message name="FindNearbySoapOut">
+    <wsdl:part name="parameters" element="tns:FindNearbyResponse" />
+  </wsdl:message>
+  <wsdl:message name="FindNearbyCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindNearbyUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindByPropertySoapIn">
+    <wsdl:part name="parameters" element="tns:FindByProperty" />
+  </wsdl:message>
+  <wsdl:message name="FindByPropertySoapOut">
+    <wsdl:part name="parameters" element="tns:FindByPropertyResponse" />
+  </wsdl:message>
+  <wsdl:message name="FindByPropertyCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindByPropertyUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindByIDSoapIn">
+    <wsdl:part name="parameters" element="tns:FindByID" />
+  </wsdl:message>
+  <wsdl:message name="FindByIDSoapOut">
+    <wsdl:part name="parameters" element="tns:FindByIDResponse" />
+  </wsdl:message>
+  <wsdl:message name="FindByIDCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindByIDUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindNearRouteSoapIn">
+    <wsdl:part name="parameters" element="tns:FindNearRoute" />
+  </wsdl:message>
+  <wsdl:message name="FindNearRouteSoapOut">
+    <wsdl:part name="parameters" element="tns:FindNearRouteResponse" />
+  </wsdl:message>
+  <wsdl:message name="FindNearRouteCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindNearRouteUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindPolygonSoapIn">
+    <wsdl:part name="parameters" element="tns:FindPolygon" />
+  </wsdl:message>
+  <wsdl:message name="FindPolygonSoapOut">
+    <wsdl:part name="parameters" element="tns:FindPolygonResponse" />
+  </wsdl:message>
+  <wsdl:message name="FindPolygonCustomerInfoFindHeader">
+    <wsdl:part name="CustomerInfoFindHeader" element="tns:CustomerInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="FindPolygonUserInfoFindHeader">
+    <wsdl:part name="UserInfoFindHeader" element="tns:UserInfoFindHeader" />
+  </wsdl:message>
+  <wsdl:message name="CalculateSimpleRouteSoapIn">
+    <wsdl:part name="parameters" element="tns:CalculateSimpleRoute" />
+  </wsdl:message>
+  <wsdl:message name="CalculateSimpleRouteSoapOut">
+    <wsdl:part name="parameters" element="tns:CalculateSimpleRouteResponse" />
+  </wsdl:message>
+  <wsdl:message name="CalculateSimpleRouteCustomerInfoRouteHeader">
+    <wsdl:part name="CustomerInfoRouteHeader" element="tns:CustomerInfoRouteHeader" />
+  </wsdl:message>
+  <wsdl:message name="CalculateSimpleRouteUserInfoRouteHeader">
+    <wsdl:part name="UserInfoRouteHeader" element="tns:UserInfoRouteHeader" />
+  </wsdl:message>
+  <wsdl:message name="CalculateRouteSoapIn">
+    <wsdl:part name="parameters" element="tns:CalculateRoute" />
+  </wsdl:message>
+  <wsdl:message name="CalculateRouteSoapOut">
+    <wsdl:part name="parameters" element="tns:CalculateRouteResponse" />
+  </wsdl:message>
+  <wsdl:message name="CalculateRouteCustomerInfoRouteHeader">
+    <wsdl:part name="CustomerInfoRouteHeader" element="tns:CustomerInfoRouteHeader" />
+  </wsdl:message>
+  <wsdl:message name="CalculateRouteUserInfoRouteHeader">
+    <wsdl:part name="UserInfoRouteHeader" element="tns:UserInfoRouteHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetMapSoapIn">
+    <wsdl:part name="parameters" element="tns:GetMap" />
+  </wsdl:message>
+  <wsdl:message name="GetMapSoapOut">
+    <wsdl:part name="parameters" element="tns:GetMapResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetMapCustomerInfoRenderHeader">
+    <wsdl:part name="CustomerInfoRenderHeader" element="tns:CustomerInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetMapUserInfoRenderHeader">
+    <wsdl:part name="UserInfoRenderHeader" element="tns:UserInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="ConvertToPointSoapIn">
+    <wsdl:part name="parameters" element="tns:ConvertToPoint" />
+  </wsdl:message>
+  <wsdl:message name="ConvertToPointSoapOut">
+    <wsdl:part name="parameters" element="tns:ConvertToPointResponse" />
+  </wsdl:message>
+  <wsdl:message name="ConvertToPointCustomerInfoRenderHeader">
+    <wsdl:part name="CustomerInfoRenderHeader" element="tns:CustomerInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="ConvertToPointUserInfoRenderHeader">
+    <wsdl:part name="UserInfoRenderHeader" element="tns:UserInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="ConvertToLatLongSoapIn">
+    <wsdl:part name="parameters" element="tns:ConvertToLatLong" />
+  </wsdl:message>
+  <wsdl:message name="ConvertToLatLongSoapOut">
+    <wsdl:part name="parameters" element="tns:ConvertToLatLongResponse" />
+  </wsdl:message>
+  <wsdl:message name="ConvertToLatLongCustomerInfoRenderHeader">
+    <wsdl:part name="CustomerInfoRenderHeader" element="tns:CustomerInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="ConvertToLatLongUserInfoRenderHeader">
+    <wsdl:part name="UserInfoRenderHeader" element="tns:UserInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetBestMapViewSoapIn">
+    <wsdl:part name="parameters" element="tns:GetBestMapView" />
+  </wsdl:message>
+  <wsdl:message name="GetBestMapViewSoapOut">
+    <wsdl:part name="parameters" element="tns:GetBestMapViewResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetBestMapViewCustomerInfoRenderHeader">
+    <wsdl:part name="CustomerInfoRenderHeader" element="tns:CustomerInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetBestMapViewUserInfoRenderHeader">
+    <wsdl:part name="UserInfoRenderHeader" element="tns:UserInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetLineDriveMapSoapIn">
+    <wsdl:part name="parameters" element="tns:GetLineDriveMap" />
+  </wsdl:message>
+  <wsdl:message name="GetLineDriveMapSoapOut">
+    <wsdl:part name="parameters" element="tns:GetLineDriveMapResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetLineDriveMapCustomerInfoRenderHeader">
+    <wsdl:part name="CustomerInfoRenderHeader" element="tns:CustomerInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:message name="GetLineDriveMapUserInfoRenderHeader">
+    <wsdl:part name="UserInfoRenderHeader" element="tns:UserInfoRenderHeader" />
+  </wsdl:message>
+  <wsdl:portType name="CommonServiceSoap">
+    <wsdl:operation name="GetVersionInfo">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Get the MapPoint Web Service version.</documentation>
+      <wsdl:input message="tns:GetVersionInfoSoapIn" />
+      <wsdl:output message="tns:GetVersionInfoSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetCountryRegionInfo">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Retrieve information about countries or national regions.</documentation>
+      <wsdl:input message="tns:GetCountryRegionInfoSoapIn" />
+      <wsdl:output message="tns:GetCountryRegionInfoSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetEntityTypes">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Retrieve the list types and their properties in a DataSource.</documentation>
+      <wsdl:input message="tns:GetEntityTypesSoapIn" />
+      <wsdl:output message="tns:GetEntityTypesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetDataSourceInfo">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Get a general description of data sources.</documentation>
+      <wsdl:input message="tns:GetDataSourceInfoSoapIn" />
+      <wsdl:output message="tns:GetDataSourceInfoSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetGreatCircleDistances">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Calculate pair-wise distances </documentation>
+      <wsdl:input message="tns:GetGreatCircleDistancesSoapIn" />
+      <wsdl:output message="tns:GetGreatCircleDistancesSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:portType name="FindServiceSoap">
+    <wsdl:operation name="Find">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Finds places based on the find options.</documentation>
+      <wsdl:input message="tns:FindSoapIn" />
+      <wsdl:output message="tns:FindSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="FindAddress">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Finds a list of addresses that match the input address.</documentation>
+      <wsdl:input message="tns:FindAddressSoapIn" />
+      <wsdl:output message="tns:FindAddressSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="ParseAddress">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Parses Address.FormattedAddress into its component Address pieces.</documentation>
+      <wsdl:input message="tns:ParseAddressSoapIn" />
+      <wsdl:output message="tns:ParseAddressSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLocationInfo">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Searches around a LatLong for nearest addresses and entities.</documentation>
+      <wsdl:input message="tns:GetLocationInfoSoapIn" />
+      <wsdl:output message="tns:GetLocationInfoSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="FindNearby">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Find a list of POI, within a circle around a lat/long.</documentation>
+      <wsdl:input message="tns:FindNearbySoapIn" />
+      <wsdl:output message="tns:FindNearbySoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="FindByProperty">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Finds points of interest based on pre-defined or custom properties. This method is independent of the location information such as distance and latitude/logitude.</documentation>
+      <wsdl:input message="tns:FindByPropertySoapIn" />
+      <wsdl:output message="tns:FindByPropertySoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="FindByID">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Finds points of interest for a given entity ID.</documentation>
+      <wsdl:input message="tns:FindByIDSoapIn" />
+      <wsdl:output message="tns:FindByIDSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="FindNearRoute">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Finds points of interest locations within a specified distance from a route.</documentation>
+      <wsdl:input message="tns:FindNearRouteSoapIn" />
+      <wsdl:output message="tns:FindNearRouteSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="FindPolygon">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Finds polygons containing a point or intersecting a rectangle.</documentation>
+      <wsdl:input message="tns:FindPolygonSoapIn" />
+      <wsdl:output message="tns:FindPolygonSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:portType name="RouteServiceSoap">
+    <wsdl:operation name="CalculateSimpleRoute">
+      <wsdl:input message="tns:CalculateSimpleRouteSoapIn" />
+      <wsdl:output message="tns:CalculateSimpleRouteSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="CalculateRoute">
+      <wsdl:input message="tns:CalculateRouteSoapIn" />
+      <wsdl:output message="tns:CalculateRouteSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:portType name="RenderServiceSoap">
+    <wsdl:operation name="GetMap">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Renders map images of the given MapViews</documentation>
+      <wsdl:input message="tns:GetMapSoapIn" />
+      <wsdl:output message="tns:GetMapSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="ConvertToPoint">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Convert individual LatLongs into PixelCoords as they would appear in the given MapView</documentation>
+      <wsdl:input message="tns:ConvertToPointSoapIn" />
+      <wsdl:output message="tns:ConvertToPointSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="ConvertToLatLong">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Convert individual PixelCoords into LatLongs as they would appear in the given MapView</documentation>
+      <wsdl:input message="tns:ConvertToLatLongSoapIn" />
+      <wsdl:output message="tns:ConvertToLatLongSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetBestMapView">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Get a MapView that encompasses the given locations</documentation>
+      <wsdl:input message="tns:GetBestMapViewSoapIn" />
+      <wsdl:output message="tns:GetBestMapViewSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLineDriveMap">
+      <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">Renders LineDrive map images of the given Route</documentation>
+      <wsdl:input message="tns:GetLineDriveMapSoapIn" />
+      <wsdl:output message="tns:GetLineDriveMapSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="CommonServiceSoap" type="tns:CommonServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document" />
+    <wsdl:operation name="GetVersionInfo">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetVersionInfo" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetVersionInfoCustomerInfoHeader" part="CustomerInfoHeader" use="literal" />
+        <soap:header message="tns:GetVersionInfoUserInfoHeader" part="UserInfoHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCountryRegionInfo">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetCountryRegionInfo" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetCountryRegionInfoCustomerInfoHeader" part="CustomerInfoHeader" use="literal" />
+        <soap:header message="tns:GetCountryRegionInfoUserInfoHeader" part="UserInfoHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetEntityTypes">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetEntityTypes" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetEntityTypesCustomerInfoHeader" part="CustomerInfoHeader" use="literal" />
+        <soap:header message="tns:GetEntityTypesUserInfoHeader" part="UserInfoHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetDataSourceInfo">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetDataSourceInfo" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetDataSourceInfoCustomerInfoHeader" part="CustomerInfoHeader" use="literal" />
+        <soap:header message="tns:GetDataSourceInfoUserInfoHeader" part="UserInfoHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetGreatCircleDistances">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetGreatCircleDistances" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetGreatCircleDistancesCustomerInfoHeader" part="CustomerInfoHeader" use="literal" />
+        <soap:header message="tns:GetGreatCircleDistancesUserInfoHeader" part="UserInfoHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="FindServiceSoap" type="tns:FindServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document" />
+    <wsdl:operation name="Find">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/Find" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:FindCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:FindUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="FindAddress">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/FindAddress" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:FindAddressCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:FindAddressUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ParseAddress">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/ParseAddress" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:ParseAddressCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:ParseAddressUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLocationInfo">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetLocationInfo" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetLocationInfoCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:GetLocationInfoUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="FindNearby">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/FindNearby" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:FindNearbyCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:FindNearbyUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="FindByProperty">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/FindByProperty" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:FindByPropertyCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:FindByPropertyUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="FindByID">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/FindByID" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:FindByIDCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:FindByIDUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="FindNearRoute">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/FindNearRoute" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:FindNearRouteCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:FindNearRouteUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="FindPolygon">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/FindPolygon" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:FindPolygonCustomerInfoFindHeader" part="CustomerInfoFindHeader" use="literal" />
+        <soap:header message="tns:FindPolygonUserInfoFindHeader" part="UserInfoFindHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="RouteServiceSoap" type="tns:RouteServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document" />
+    <wsdl:operation name="CalculateSimpleRoute">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/CalculateSimpleRoute" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:CalculateSimpleRouteCustomerInfoRouteHeader" part="CustomerInfoRouteHeader" use="literal" />
+        <soap:header message="tns:CalculateSimpleRouteUserInfoRouteHeader" part="UserInfoRouteHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CalculateRoute">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/CalculateRoute" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:CalculateRouteCustomerInfoRouteHeader" part="CustomerInfoRouteHeader" use="literal" />
+        <soap:header message="tns:CalculateRouteUserInfoRouteHeader" part="UserInfoRouteHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="RenderServiceSoap" type="tns:RenderServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document" />
+    <wsdl:operation name="GetMap">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetMap" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetMapCustomerInfoRenderHeader" part="CustomerInfoRenderHeader" use="literal" />
+        <soap:header message="tns:GetMapUserInfoRenderHeader" part="UserInfoRenderHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ConvertToPoint">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/ConvertToPoint" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:ConvertToPointCustomerInfoRenderHeader" part="CustomerInfoRenderHeader" use="literal" />
+        <soap:header message="tns:ConvertToPointUserInfoRenderHeader" part="UserInfoRenderHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ConvertToLatLong">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/ConvertToLatLong" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:ConvertToLatLongCustomerInfoRenderHeader" part="CustomerInfoRenderHeader" use="literal" />
+        <soap:header message="tns:ConvertToLatLongUserInfoRenderHeader" part="UserInfoRenderHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBestMapView">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetBestMapView" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetBestMapViewCustomerInfoRenderHeader" part="CustomerInfoRenderHeader" use="literal" />
+        <soap:header message="tns:GetBestMapViewUserInfoRenderHeader" part="UserInfoRenderHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLineDriveMap">
+      <soap:operation soapAction="http://s.mappoint.net/mappoint-30/GetLineDriveMap" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+        <soap:header message="tns:GetLineDriveMapCustomerInfoRenderHeader" part="CustomerInfoRenderHeader" use="literal" />
+        <soap:header message="tns:GetLineDriveMapUserInfoRenderHeader" part="UserInfoRenderHeader" use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="CommonService">
+    <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">The common service contains classes, methods, and properties that are common to the find, route, and render services.  The common service also provides basic utility functions that can be used in the Microsoft MapPoint Web Service applications.&lt;/p&gt;&lt;p class="intro"&gt;Read the &lt;a href="default.htm"&gt;formal description&lt;/a&gt; of the MapPoint Web Service for more information.</documentation>
+    <wsdl:port name="CommonServiceSoap" binding="tns:CommonServiceSoap">
+      <soap:address location="http://findv3.staging.mappoint.net/Find-30/Common.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+  <wsdl:service name="FindService">
+    <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">The Find service allows you to locate addresses, places, latitude/longitude coordinates, and points of interest (from either MapPoint Web Service data or your data that we host for your use).</documentation>
+    <wsdl:port name="FindServiceSoap" binding="tns:FindServiceSoap">
+      <soap:address location="http://findv3.staging.mappoint.net/Find-30/FindService.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+  <wsdl:service name="RouteService">
+    <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">The route service allows you to generate routes, driving directions, and calculated route representations (used to render a highlighted route on the map) based on locations or waypoints, set segment and route preferences, and generate map views of segments and directions.</documentation>
+    <wsdl:port name="RouteServiceSoap" binding="tns:RouteServiceSoap">
+      <soap:address location="http://routev3.staging.mappoint.net/Route-30/RouteService.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+  <wsdl:service name="RenderService">
+    <documentation xmlns="http://schemas.xmlsoap.org/wsdl/">The render service allows you to render maps of routes and found locations, place pushpins (using the MapPoint Web Service stock set of icons or your icons that we host for your use), set the map size and map view, select points on a map, get location information about points on a map, pan and zoom a rendered map, and create clickable maps.</documentation>
+    <wsdl:port name="RenderServiceSoap" binding="tns:RenderServiceSoap">
+      <soap:address location="http://renderv3.staging.mappoint.net/Render-30/RenderService.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

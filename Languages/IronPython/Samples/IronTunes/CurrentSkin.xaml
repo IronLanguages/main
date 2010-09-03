@@ -1,0 +1,113 @@
+﻿<Grid 
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid.ColumnDefinitions>
+    <ColumnDefinition Width="*" />
+  </Grid.ColumnDefinitions>
+  <Grid.RowDefinitions>
+    <RowDefinition Height="75" />
+    <RowDefinition Height="*" />
+  </Grid.RowDefinitions>
+
+  <Grid.Resources>
+
+    <DataTemplate x:Key="LibraryItemTemplate">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition />
+          <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition/>
+          <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock
+          Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2"
+          FontSize="14" FontFamily="Arial"
+          Text="{Binding Path=Title}"/>
+
+        <TextBlock
+          Grid.Column="0" Grid.Row="1"
+          Margin="5,5,5,5"
+          FontSize="11" FontFamily="Book Antiqua"
+          Text="{Binding Path=Artist}" />
+        <TextBlock
+          Grid.Column="1" Grid.Row="1"
+          Margin="5,5,5,5"
+          FontSize="11" FontFamily="Book Antiqua"
+          Text="{Binding Path=Album}" />
+        
+      </Grid>
+    </DataTemplate>
+
+  </Grid.Resources>
+
+  <Grid Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="450" />
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="250" />
+    </Grid.ColumnDefinitions>
+
+    <Grid Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="2*" />
+      </Grid.ColumnDefinitions>
+      <Button Name="Back" Grid.Column="0">Back</Button>
+      <Button Name="PlayPause" Grid.Column="1">Play/Pause</Button>
+      <Button Name="Forward" Grid.Column="2">Forward</Button>
+      <Button Name="AddFile" Grid.Column="3">Add File</Button>
+      <Button Name="AddDir" Grid.Column="4">Add Dir</Button>
+      <Slider Name="Volume" Grid.Column="5" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+              Minimum="0" Maximum="100">
+        <Slider.Value>
+          <Binding Path="player.volume" Mode="TwoWay" />
+        </Slider.Value>
+      </Slider>
+    </Grid>
+
+    <Grid Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+      </Grid.RowDefinitions>
+      
+      <Label Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0" Name="SongTitle" 
+             HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
+              HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+              FontSize="20">
+        <Binding Path="player.PlayingItem.Title" />
+      </Label>
+      <Label Grid.Column="0" Grid.Row="1" Name="SongArtist"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+        <Binding Path="player.PlayingItem.Artist" />
+      </Label>
+      <Label Grid.Column="1" Grid.Row="1" Name="SongAlbum"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+        <Binding Path="player.PlayingItem.Album" />
+      </Label>
+    </Grid>
+    <StackPanel Orientation="Horizontal" Grid.Column="2">
+      <Label>Search</Label>
+      <TextBox Name="TextBox1" Width="191" Height="27">
+        <Binding Path="library.SearchFilter.SearchString" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"/>
+      </TextBox>
+    </StackPanel>
+  </Grid>
+  <ListView Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Name="LibraryView"
+            ItemsSource="{Binding Path=library.LibraryView}"
+            ItemTemplate="{StaticResource LibraryItemTemplate}"
+            IsSynchronizedWithCurrentItem="True"
+            SelectedItem="{Binding Path=player.SelectedItem,Mode=TwoWay}"
+            SelectedIndex="{Binding Path=player.SelectedIndex,Mode=TwoWay}"
+            />
+</Grid>

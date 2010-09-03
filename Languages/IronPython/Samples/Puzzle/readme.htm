@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="../Samples.css">
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=windows-1252">
+  <title>Puzzle</title>
+  <style type="text/css">
+  .style5 {
+	margin-left: 40px;
+}
+  .style3 {
+	font-weight: normal;
+}
+.style6 {
+	font-size: large;
+}
+</style>
+</head>
+<body class="body">
+<hr>
+<p class="CopyrightText"> Information in this document is subject to
+change without notice. The example companies, organizations, products,
+people, and events depicted herein are fictitious. No association with
+any real company, organization, product, person or event is intended or
+should be inferred. Complying with all applicable copyright laws is the
+responsibility of the user. Without limiting the rights under
+copyright, no part of this document may be reproduced, stored in or
+introduced into a retrieval system, or transmitted in any form or by
+any means (electronic, mechanical, photocopying, recording, or
+otherwise), or for any purpose, without the express written permission
+of Microsoft Corporation.</p>
+<p class="CopyrightText"> &nbsp;</p>
+<p class="CopyrightText"> Microsoft may have patents, patent
+applications, trademarked, copyrights, or other intellectual property
+rights covering subject matter in this document. Except as expressly
+provided in any written license agreement from Microsoft, the
+furnishing of this document does not give you any license to these
+patents, trademarks, copyrights, or other intellectual property.</p>
+<p class="CopyrightText">
+&nbsp;</p>
+<div class="Section1">
+	<p class="CopyrightText">© Microsoft Corporation. All rights reserved.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, 
+	Active Directory, BizTalk, SQL Server, SharePoint, Outlook, PowerPoint, 
+	FrontPage, Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual 
+	SourceSafe, Visual C#, Visual J#,&nbsp; and Visual Studio are either registered 
+	trademarks or trademarks of Microsoft Corporation in the U.S.A. and/or other 
+	countries.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Other product and company names herein may be the 
+	trademarks of their respective owners.</div>
+<hr>
+<p class="body"> &nbsp;</p>
+<p class="CopyrightText">This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+<p class="CopyrightText">
+&nbsp;</p>
+<p class="body"> &nbsp;</p>
+<p class="title2"> Puzzle</p>
+<p class="body"> A slide puzzle game using Virtual Earth maps</p>
+<p class="body"> Contributor: Ravi Chugh</p>
+<p> </p>
+<p class="contentsheading"> Prerequisites</p>
+<p class="body"> The prerequisites to successfully run the Puzzle
+puzzle game are:</p>
+<ul>
+	<li class="normal">IronPython 2.6 distribution
+	<ul>
+		<li>If you are new to IronPython, please go over the tutorial
+		that comes with this distribution</li>
+		<li>Download from 
+		<a href="http://ironpython.codeplex.com/Release/ProjectReleases.aspx?ReleaseId=12482">here</a></li>
+	</ul>
+	</li>
+</ul>
+<p class="contentsheading">Getting Started<br>
+</p>
+<p class="body"><img alt="Screenshot of Puzzle" src="Screenshot.jpg"
+ style="width: 487px; height: 500px;" align="right">Please make sure
+the folder structure in the Puzzle directory is:</p>
+<blockquote>
+  <blockquote>
+    <p class="body">.\banner.bmp </p>
+    <p class="body">.\cache (Note: This is a subfolder)</p>
+    <p class="body">.\copyright.py</p>
+    <p class="body">.\icon.ico </p>
+    <p class="body">.\load.xml </p>
+    <p class="body">.\loadpanel.py </p>
+    <p class="body">.\puzzle.py </p>
+    <p class="body">.\quadkey.py </p>
+    <p class="body">.\readme.htm</p>
+    <p class="body">.\tiles.py </p>
+    <p class="body">.\winforms.py<br>
+    </p>
+    <p style="text-align: center;" class="body"><br>
+    </p>
+  </blockquote>
+</blockquote>
+<p class="body">HINT: if the folder containing the IronPython distribution
+is not already in your PATH environment variable, please add it from the command 
+prompt you'll be working in.&nbsp; By doing this you will be able to run the &quot;ipy&quot; 
+command from any arbitrary directory: </p>
+<p class="style5"><strong>s</strong><span class="style3">e<span class="typedexample"><strong>t 
+PATH=%PATH%;%ProgramFiles%\IronPython 2.6</strong></span></span></p>
+<p class="body">From the command prompt, navigate to the Puzzle
+directory and type the following: </p>
+<p class="typedexample">&gt; ipy.exe -D puzzle.py</p>
+<p class="body">At this point, Puzzle's GUI window should come up.
+You're ready to play!</p>
+<p class="body">If you launch with the ipyw.exe executable, the cmd window will 
+be free to use while the application is running.</p>
+<p class="body">&nbsp;</p>
+<p class="style6"><strong>Note</strong></p>
+<p class="body">It's very important you pass the '-D' flag to ipy.exe when 
+running the Puzzle sample.&nbsp; Due to a
+<a href="http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25404">bug</a>, 
+IronPython may not run this sample properly without use of this flag. <br>
+</p>
+<p class="contentsheading">Some Additional Features</p>
+<p class="body">Note that using any features described below from
+within the console instead of from the GUI game form itself may yield
+errors if argument values are invalid.</p>
+<p class="normal">&nbsp;</p>
+<p class="normal"><i>1) Setting the puzzle board</i></p>
+<p class="body">Instead of using the Create panel to navigate to a
+scene, you can create a puzzle using latitude/longitude directly using
+the 'SetBoard' method.</p>
+<p class="body">'SetBoard' takes 5 arguments:</p>
+<blockquote>
+  <p class="body">map types: “r” (road), “a” (aerial), and “h” (hybrid).</p>
+  <p class="body">latitude: -85 to 85</p>
+  <p class="body">longitude: -180 to 180</p>
+  <p class="body">zoom level: 1 through 19.</p>
+  <p class="body">grid size: 3x3 and 4x4.</p>
+</blockquote>
+<p class="typedexample">&gt;&gt;&gt; p.SetBoard(“a”, 50, -100, 12, 3)</p>
+<p class="body">This will create a 3x3 puzzle board of zoom level 12
+aerial images centered (as close as possible) to (50, -100).</p>
+<p class="body">&nbsp;</p>
+<p class="normal"><i>2) Saving the current game</i></p>
+<p class="body">In case you want to save the puzzle configuration you
+are currently playing:</p>
+<p class="typedexample">&gt;&gt;&gt; p.SaveCurrentGame(“caption”)</p>
+<p class="body">This will save the current puzzle, along with the
+specified caption, into load.xml so that next time you start the
+puzzle, you can choose the game you just saved from the Load panel.</p>
+<p class="body">Note that this does not save the current state of your
+puzzle pieces. It saves the puzzle so you can start from the beginning
+again.</p>
+<p class="body">&nbsp;</p>
+<p class="normal"><i>3) Resizing the puzzle pieces</i></p>
+<p class="body">The full tiles downloaded from the tile server are
+256x256. When the grid size is 3x3, the tiles are 128x128 at 50%,
+192x192 at 75%, and 256x256 at 100%. When the grid size is 4x4, the
+tiles are further reduced by 25%. So the size is 96x96 at 50%, 144x144
+at 75%, and 192x192 at 100%.</p>
+<p class="body">If you want to specify a different tile size:</p>
+<p class="typedexample">&gt;&gt;&gt; p.ResizeEverything(200)</p>
+<p class="body">This will resize the window so that in 3x3 grids, each
+tile will be 200x200, and in 4x4 grids, each tile will be 150x150.</p>
+<p class="contentsheading">Downloading tiles</p>
+<p class="body">Images for puzzle pieces are downloaded directly from
+Microsoft's Virtual Earth tile servers. There is no API for downloading
+specific images directly from the tile server, but the process for
+converting particular scenes to tiles can be seen in quadkeys.py.
+Because there is no such API, the URL structure representing
+particular images from the tile server can change at any time, breaking
+the way Puzzle downloads tiles. If it does, the GetImgUrl()
+function in tiles.py will have to be updated to match the new scheme.</p>
+<p class="body">&nbsp;</p>
+<p class="body">This sample will contact Virtual Earth when started to download 
+an initial map and then again when the user manually changes the map from either 
+the &quot;create&quot; or&nbsp; &quot;load&quot; menu options.&nbsp; Information sent to the Virtual 
+Earth servers will include your IP address along with the location and type of 
+the map requested.&nbsp; You may view the Virtual Earth terms of use and privacy 
+policy at: <a href="http://www.microsoft.com/virtualearth/control/terms.mspx">
+http://www.microsoft.com/virtualearth/control/terms.mspx</a>.</p>
+<p class="contentsheading">Caching</p>
+<p class="body">When caching is enabled, all downloaded tiles are saved
+into to the \cache folder. If a particular image request has already
+been cached, the image will be loaded from the appropriate file instead
+of downloading it again from the tile server. Note that the size of
+\cache folder can grow quickly, so keep an eye on it.</p>
+<p class="body">To get stats about the cache run the following function:</p>
+<p class="typedexample">&gt;&gt;&gt; CacheStats()</p>
+<p class="body">When you click the Clear Cache button, the files in the
+cache will get deleted once the game is closed. The handles on files
+(downloaded tiles) associated with the current puzzle pieces are not
+guaranteed to be closed when ClearCache() is called, so not all images
+in the cache get deleted. Any remaining images can be manually deleted.</p>
+</body>
+</html>
