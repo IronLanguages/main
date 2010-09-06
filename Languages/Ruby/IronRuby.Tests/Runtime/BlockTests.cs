@@ -201,15 +201,13 @@ end
         /// Break in a block.
         /// </summary>
         public void RubyBlocks7() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 x = 4.times { |x|
   puts x
   break 'foo'
 }
 puts x
-");
-            }, @"
+", @"
 0
 foo
 ");
@@ -291,7 +289,7 @@ i = 0
         /// </summary>
         public void RubyBlocks10B() {
             TestOutput(@"
-proc { retry rescue puts 'not caught here' }.call rescue p $!    # TODO: bug (should not be caught by the inner rescue
+proc { retry rescue puts 'not caught here' }.call rescue p $!    # TODO: bug (should not be caught by the inner rescue)
 ", @"
 not caught here
 ");
@@ -1250,8 +1248,7 @@ y { |*a| puts a.inspect }
         /// Anonymous unsplat parameters.
         /// </summary>
         public void Scenario_RubyBlockArgs4B() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 def y
   a = [1,2,3,4,5]
   yield a,[6]
@@ -1262,8 +1259,7 @@ puts '-'
 y { |(x,y,*a),*| p x,y,a }
 puts '-'
 y { |(x,y,*),*a| p x,y,a }
-");
-            }, @"
+", @"
 1
 2
 -
@@ -1814,6 +1810,48 @@ x[1,2] = 3
 false
 [1, 2, 3]
 false
+");
+        }
+
+        public void Block_ProcParams1() {
+            TestOutput(@"
+lambda { |&q| p [q.class] }.() {}
+lambda { |a,&q| p [a,q.class] }.(1) {}
+lambda { |a,b,&q| p [a,b,q.class] }.(1,2) {}
+lambda { |a,b,c,&q| p [a,b,c,q.class] }.(1,2,3) {}
+lambda { |a,b,c,d,&q| p [a,b,c,d,q.class] }.(1,2,3,4) {}
+lambda { |a,b,c,d,e,f,g,&q| p [a,b,c,d,e,f,g,q.class] }.(1,2,3,4,5,6,7) {}
+
+lambda { |&q| p [q.class] }.()
+lambda { |a,&q| p [a,q.class] }.(1)
+lambda { |a,b,&q| p [a,b,q.class] }.(1,2)
+lambda { |a,b,c,&q| p [a,b,c,q.class] }.(1,2,3)
+lambda { |a,b,c,d,&q| p [a,b,c,d,q.class] }.(1,2,3,4)
+lambda { |a,b,c,d,e,f,g,&q| p [a,b,c,d,e,f,g,q.class] }.(1,2,3,4,5,6,7)
+
+lambda { |a,*b,&q| p [a,b,q.class] }.(1,2)
+lambda { |a,b,*c,&q| p [a,b,c,q.class] }.(1,2,3)
+lambda { |a,b,c,*d,&q| p [a,b,c,d,q.class] }.(1,2,3,4)
+lambda { |a,b,c,d,*e,&q| p [a,b,c,d,q.class] }.(1,2,3,4)
+lambda { |a,b,c,d,e,f,*g,&q| p [a,b,c,d,e,f,g,q.class] }.(1,2,3,4,5,6,7)
+", @"
+[Proc]
+[1, Proc]
+[1, 2, Proc]
+[1, 2, 3, Proc]
+[1, 2, 3, 4, Proc]
+[1, 2, 3, 4, 5, 6, 7, Proc]
+[NilClass]
+[1, NilClass]
+[1, 2, NilClass]
+[1, 2, 3, NilClass]
+[1, 2, 3, 4, NilClass]
+[1, 2, 3, 4, 5, 6, 7, NilClass]
+[1, [2], NilClass]
+[1, 2, [3], NilClass]
+[1, 2, 3, [4], NilClass]
+[1, 2, 3, 4, NilClass]
+[1, 2, 3, 4, 5, 6, [7], NilClass]
 ");
         }
 

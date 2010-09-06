@@ -69,6 +69,10 @@ namespace IronRuby.Builtins {
         public virtual Proc/*!*/ ToProc(RubyScope/*!*/ scope) {
             ContractUtils.RequiresNotNull(scope, "scope");
 
+            // TODO: 
+            // This should pass a proc parameter (use BlockDispatcherUnsplatProcN).
+            // MRI 1.9.2 doesn't do so though (see http://redmine.ruby-lang.org/issues/show/3792).
+
             if (_procDispatcher == null) {
                 var site = CallSite<Func<CallSite, object, object, object>>.Create(
                     // TODO: use InvokeBinder

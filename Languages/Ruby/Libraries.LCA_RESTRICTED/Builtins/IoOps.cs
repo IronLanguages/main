@@ -54,25 +54,6 @@ namespace IronRuby.Builtins {
             return stream;
         }
 
-        internal static void TryConvertToOptions(ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
-            ref IDictionary<object, object> options, ref object param1, ref object param2) {
-
-            if (options == null && param1 != Missing.Value) {
-                var toHashSite = toHash.GetSite(TryConvertToHashAction.Make(toHash.Context));
-                if (param2 != Missing.Value) {
-                    options = toHashSite.Target(toHashSite, param2);
-                    if (options != null) {
-                        param2 = Missing.Value;
-                    }
-                } else {
-                    options = toHashSite.Target(toHashSite, param1);
-                    if (options != null) {
-                        param1 = Missing.Value;
-                    }
-                }
-            }
-        }
-
         #region Constants
 
         [RubyConstant]
@@ -581,29 +562,23 @@ namespace IronRuby.Builtins {
         public static RubyIO/*!*/ SetEncodings(ConversionStorage<IDictionary<object, object>>/*!*/ toHash, ConversionStorage<MutableString>/*!*/ toStr,
             RubyIO/*!*/ self, object external, [Optional]object @internal, [Optional]IDictionary<object, object> options) {
 
-            TryConvertToOptions(toHash, ref options, ref external, ref @internal);
+            Protocols.TryConvertToOptions(toHash, ref options, ref external, ref @internal);
 
             // TODO: options
 
             RubyEncoding externalEncoding = null, internalEncoding = null;
             if (external != Missing.Value) {
-                externalEncoding = ToEncoding(toStr, external);
+                externalEncoding = Protocols.ConvertToEncoding(toStr, external);
             }
             if (@internal != Missing.Value) {
-                internalEncoding = ToEncoding(toStr, @internal);
+                internalEncoding = Protocols.ConvertToEncoding(toStr, @internal);
             }
             return SetEncodings(self, externalEncoding, internalEncoding);
         }
 
-        private static RubyEncoding ToEncoding(ConversionStorage<MutableString>/*!*/ toStr, object obj) {
-            return (obj == null) ? null :
-                   obj as RubyEncoding ??
-                   toStr.Context.GetRubyEncoding(Protocols.CastToString(toStr, obj));
-        }
-
         [RubyMethod("set_encoding")]
         public static RubyIO/*!*/ SetEncodings(RubyIO/*!*/ self, RubyEncoding external, [DefaultParameterValue(null)]RubyEncoding @internal) {
-            self.ExternalEncoding = external ?? RubyEncoding.Default;
+            self.ExternalEncoding = external ?? self.Context.RubyOptions.LocaleEncoding;
             self.InternalEncoding = @internal;
             return self;
         }
@@ -796,7 +771,7 @@ namespace IronRuby.Builtins {
             [Optional]object optionsOrOffset,
             [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
 
-            TryConvertToOptions(toHash, ref options, ref optionsOrLength, ref optionsOrOffset);
+            Protocols.TryConvertToOptions(toHash, ref options, ref optionsOrLength, ref optionsOrOffset);
             var site = fixnumCast.GetSite(ConvertToFixnumAction.Make(fixnumCast.Context));
 
             int length = (optionsOrLength != Missing.Value && optionsOrLength != null) ? site.Target(site, optionsOrLength) : 0;

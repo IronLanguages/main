@@ -19,6 +19,7 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
@@ -59,24 +60,35 @@ namespace IronRuby.Compiler.Ast {
             return StringConstructor.TransformConcatentation(gen, _pattern, this);
         }
 
-        MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal) {
+        MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal, RubyEncoding/*!*/ encoding) {
             // TODO: create the regex here, not at runtime:
             return Methods.CreateRegexL.OpCall(
-                Ast.Constant(literal), gen.EncodingConstant, AstUtils.Constant(_options), AstUtils.Constant(new StrongBox<RubyRegex>(null))
+                Ast.Constant(literal), encoding.Expression, AstUtils.Constant(_options), AstUtils.Constant(new StrongBox<RubyRegex>(null))
             );
         }
 
-        MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSA.Expression/*!*/ arg) {
-            return Methods.CreateRegex(opSuffix).OpCall(
-                arg, gen.EncodingConstant, AstUtils.Constant(_options), AstUtils.Constant(new StrongBox<RubyRegex>(null))
+        MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpression(AstGenerator/*!*/ gen, byte[]/*!*/ literal, RubyEncoding/*!*/ encoding) {
+            // TODO: create the regex here, not at runtime:
+            return Methods.CreateRegexB.OpCall(
+                Ast.Constant(literal), encoding.Expression, AstUtils.Constant(_options), AstUtils.Constant(new StrongBox<RubyRegex>(null))
             );
         }
 
-        MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSAst.ExpressionCollectionBuilder/*!*/ args) {
-            args.Add(gen.EncodingConstant);
+
+        MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpressionN(AstGenerator/*!*/ gen, IEnumerable<MSA.Expression>/*!*/ args) {
+            return Methods.CreateRegex("N").OpCall(
+                Ast.NewArrayInit(typeof(MutableString), args),
+                AstUtils.Constant(_options), 
+                AstUtils.Constant(new StrongBox<RubyRegex>(null))
+            );
+        }
+
+        MSA.Expression/*!*/ StringConstructor.IFactory.CreateExpressionM(AstGenerator/*!*/ gen, MSAst.ExpressionCollectionBuilder/*!*/ args) {
+            string suffix = new String('M', args.Count);
+            args.Add(gen.Encoding.Expression);
             args.Add(AstUtils.Constant(_options));
             args.Add(AstUtils.Constant(new StrongBox<RubyRegex>(null)));
-            return Methods.CreateRegex(opSuffix).OpCall(args);
+            return Methods.CreateRegex(suffix).OpCall(args);
         }
 
         internal override Expression/*!*/ ToCondition(LexicalScope/*!*/ currentScope) {

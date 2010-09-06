@@ -24,3 +24,5 @@ p /a/e.encoding
 p ?-
 r = /\x20/u
 p r, r.encoding, r.source
+p :"x\0x"                        # zero in symbol (1.8 used to report an error)
+p "\uFFFF"                       # invalid Unicode char

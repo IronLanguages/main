@@ -30,10 +30,11 @@ namespace IronRuby.Tests {
             if (_driver.PartialTrust) return;
 
             var encodings = new object[] {
-                RubyEncoding.KCodeEUC,
-                RubyEncoding.KCodeSJIS,
+                RubyEncoding.EUC,
                 RubyEncoding.UTF8,
-                RubyEncoding.KCodeSJIS.RealEncoding,
+                RubyEncoding.SJIS,
+                RubyEncoding.Ascii,
+                RubyEncoding.Binary,
             };
 
             Assert(ArrayUtils.ValueEquals(encodings, Roundtrip(encodings)));

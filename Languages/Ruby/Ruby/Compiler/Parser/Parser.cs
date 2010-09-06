@@ -632,7 +632,11 @@ namespace IronRuby.Compiler {
         }
 
         public static StringLiteral/*!*/ MakeStringLiteral(TokenValue token, SourceSpan location) {
-            return new StringLiteral(token.StringContent, location);
+            return new StringLiteral(token.StringContent, token.Encoding, location);
+        }
+
+        public SymbolLiteral/*!*/ MakeSymbolLiteral(string/*!*/ symbol, SourceSpan location) {
+            return new SymbolLiteral(symbol, symbol.IsAscii() ? RubyEncoding.Ascii : Encoding, location);
         }
 
         private StringConstructor/*!*/ MakeSymbolConstructor(List<Expression>/*!*/ content, SourceSpan location) {

@@ -19,6 +19,7 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System.Diagnostics;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
@@ -31,13 +32,13 @@ namespace IronRuby.Compiler.Ast {
     /// Represents a symbol literal encoded by the containing source file encoding.
     /// </summary>
     public partial class SymbolLiteral : StringLiteral {
-        public SymbolLiteral(string/*!*/ value, SourceSpan location)
-            : base(value, location) {
-            Assert.NotEmpty(value);
+        public SymbolLiteral(string/*!*/ value, RubyEncoding/*!*/ encoding, SourceSpan location)
+            : base(value, encoding, location) {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return Ast.Constant(gen.Context.CreateSymbol((string)Value, gen.Encoding));
+            Debug.Assert(Value is string);
+            return Ast.Constant(gen.Context.CreateSymbol((string)Value, Encoding));
         }
     }
 }

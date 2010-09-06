@@ -1,1 +1,0 @@
-fails:Proc#call can receive block arguments

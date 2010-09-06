@@ -163,7 +163,6 @@
     <Compile Include="Builtins\CharacterMap.cs" />
     <Compile Include="Builtins\ConsoleStream.cs" />
     <None Include="Builtins\Subclasses.Generator.rb" />
-    <Compile Include="Builtins\MutableString.KBinaryContent.cs" />
     <Compile Include="Builtins\RubyIO.Subclass.cs" />
     <Compile Include="Builtins\IOMode.cs" />
     <Compile Include="Builtins\MutableStringBuilder.cs" />
@@ -224,6 +223,8 @@
     <Compile Include="Hosting\RubyService.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
+    <Compile Include="Runtime\Calls\BlockDispatcherProcN.cs" />
+    <Compile Include="Runtime\Calls\BlockDispatcherUnsplatProcN.cs" />
     <Compile Include="Runtime\Calls\RubyScopeMethodMissingInfo.cs" />
     <Compile Include="Runtime\Calls\LibraryOverloadInfo.cs" />
     <Compile Include="Runtime\ConstantSiteCache.cs" />

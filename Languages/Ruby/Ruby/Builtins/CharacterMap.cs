@@ -106,7 +106,7 @@ namespace IronRuby.Builtins {
             // TODO: max - min > threshold
 
             int min, max;
-            if (from.IsBinaryEncoded || from.Encoding.IsKCoding || from.IsAscii()) {
+            if (from.IsBinaryEncoded || from.IsAscii()) {
                 min = 0;
                 max = 255;
             } else {

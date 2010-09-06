@@ -1049,17 +1049,8 @@ namespace IronRuby.Tests {
             int[] values = new[] { 0x20, 0x102020, 0x20, 0x20, 0 };
             int[] width = new[] { 2, 6, 6, 5, 1 };
 
-            for (int i = 0; i < values.Length; i++) {
-                t.Load(@"""\u{" + i.ToString("x" + width[i]) + @"}""")[Tokens.StringBegin][Char.ConvertFromUtf32(i)][Tokens.StringEnd].EOF();
-            }
-
-            t.Load(@":""\u{123456}""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.TooLargeUnicodeCodePoint);
-            t.Load(@":""\u{0}""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.NullCharacterInSymbol);
-            t.Load(@":""\u0000""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.NullCharacterInSymbol);
             t.Load(@":""\u111""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
             t.Load(@":""\u""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
-            t.Load(@":""\u{123""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
-            t.Load(@":""\u{123g}""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
 
             // regex:
             t.Load(@"/\x20/")[Tokens.RegexpBegin][@"\x20"][Tokens.RegexpEnd].EOF();
@@ -1067,7 +1058,20 @@ namespace IronRuby.Tests {
             t.Load(@"/\u{101234}/")[Tokens.RegexpBegin][@"\u{101234}"][Tokens.RegexpEnd].EOF();
 
             // braces:
-            t.Load(@"%{{\u{05d0}}}")[Tokens.StringBegin]["{\u05d0}"][Tokens.StringEnd].EOF();
+            t.Load(@":""\u{123456}""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.TooLargeUnicodeCodePoint);
+            t.Load(@"%[{\u{05d0}}]")[Tokens.StringBegin]["{\u05d0}"][Tokens.StringEnd].EOF();
+            t.Load(@"%[\u{1 2 3 4}]")[Tokens.StringBegin]["\u0001\u0002\u0003\u0004"][Tokens.StringEnd].EOF();
+            t.Load(@"%[\u{}]")[Tokens.StringBegin][""][Tokens.StringEnd].Expect(Errors.InvalidUnicodeEscape);
+            t.Load(@"%[\u{1 }]")[Tokens.StringBegin]["\u0001"][Tokens.StringEnd].Expect(Errors.InvalidUnicodeEscape);
+            t.Load(@"%[\u{1  }]")[Tokens.StringBegin]["\u0001"][Tokens.StringEnd].Expect(Errors.InvalidUnicodeEscape);
+            t.Load(@"%[\u{FFFFFF FFFFFFFFFFFFFFFF 3 4}]")[Tokens.StringBegin]["??\u0003\u0004"][Tokens.StringEnd].Expect(Errors.TooLargeUnicodeCodePoint, Errors.TooLargeUnicodeCodePoint);
+            t.Load(@"%[\u{]")[Tokens.StringBegin][""][Tokens.StringEnd].Expect(Errors.UntermintedUnicodeEscape);
+            t.Load(@"%[\u{1]")[Tokens.StringBegin]["\u0001"][Tokens.StringEnd].Expect(Errors.UntermintedUnicodeEscape);
+            t.Load(@"%[\u{")[Tokens.StringBegin][""][Tokens.StringEnd].Expect(Errors.UntermintedUnicodeEscape, Errors.UnterminatedString);
+
+            for (int i = 0; i < values.Length; i++) {
+                t.Load(@"""\u{" + i.ToString("x" + width[i]) + @"}""")[Tokens.StringBegin][Char.ConvertFromUtf32(i)][Tokens.StringEnd].EOF();
+            }
 
             // eoln in the middle of \u escape:
             t.Load("\"\\u0020\n\"")[Tokens.StringBegin][" \n"][Tokens.StringEnd].EOF();
@@ -1084,19 +1088,23 @@ namespace IronRuby.Tests {
             t.Expect();
         }
 
-#if OBSOLETE
-        [Options(Compatibility = RubyCompatibility.Ruby186)]
-        private void UnicodeEscapes2() {
+        private void CharacterToken1() {
             AssertTokenizer t = NewAssertTokenizer();
-
-            t.Load(@":""\u{123456789}""")[Tokens.SymbolBegin][@"u{123456789}"][Tokens.StringEnd].EOF();
-            t.Load(@":""\u123456789""")[Tokens.SymbolBegin][@"u123456789"][Tokens.StringEnd].EOF();
-            t.Load(@"/\u1234/")[Tokens.RegexpBegin][@"\u1234"][Tokens.RegexpEnd].EOF();
-            t.Load(@"/\u{101234}/")[Tokens.RegexpBegin][@"\u{101234}"][Tokens.RegexpEnd].EOF();
-
-            t.Expect();
+            t.Load("?a")[Tokens.Character, "a"].EOF();
+            t.Load("?Σ")[Tokens.Character, "Σ"].EOF();
+            
+            // surrogate:
+            string u12345 = Char.ConvertFromUtf32(0x12345);
+            t.Load("?" + u12345)[Tokens.Character, u12345].EOF();
+            
+            // escapes:
+            t.Load(@"?\u{1}")[Tokens.Character, "\u0001"].EOF();
+            t.Load(@"?\u{}")[Tokens.Character, "\0"].Expect(Errors.InvalidUnicodeEscape);
+            t.Load(@"?\u{")[Tokens.Character, "\0"].Expect(Errors.UntermintedUnicodeEscape);
+            t.Load(@"?\u{1")[Tokens.Character, "\u0001"].Expect(Errors.UntermintedUnicodeEscape);
+            t.Load(@"?\u{1 2}")[Tokens.Character, "\u0001"].Expect(Errors.UntermintedUnicodeEscape);
+            t.Load(@"?\u{1123455}")[Tokens.Character, "?"].Expect(Errors.TooLargeUnicodeCodePoint);
         }
-#endif
 
         private void LexicalState1() {
             AssertTokenizer t = NewAssertTokenizer();
@@ -1368,72 +1376,6 @@ B")
             Assert(tokens.ToArray().ValueEquals(expected));
         }
 
-#if OBSOLETE
-        public void KCode1() {
-            var sjisEncoding = RubyEncoding.KCodeSJIS;
-
-            var sjisEngine = Ruby.CreateEngine((setup) => {
-                setup.Options["KCode"] = RubyEncoding.KCodeSJIS;
-            });
-            Assert(sjisEngine.Execute<object>("$KCODE").ToString() == "SJIS");
-            
-            var utf8Engine = Ruby.CreateEngine((setup) => {
-                setup.Options["KCode"] = RubyEncoding.KCodeUTF8;
-            });
-            Assert(utf8Engine.Execute<object>("$KCODE").ToString() == "UTF8");
-
-            // using default encoding (UTF8) for Unicode string source (ignoring KCODE):
-            var str = sjisEngine.Execute<MutableString>("Σ = 'Σ'");
-            Assert(str.Encoding == RubyEncoding.UTF8 && str.ToString() == "Σ");
-
-            // Use source code encoding no matter what characters are used in the string:
-            str = sjisEngine.Execute<MutableString>("'ascii'");
-            Assert(str.Encoding == RubyEncoding.UTF8 && str.ToString() == "ascii");
-
-            // Unicode source code (KCODE ignored):
-            var bytes = Encoding.UTF8.GetBytes("Σ = 'Σ'");
-            str = sjisEngine.CreateScriptSource(new BinaryContentProvider(bytes), null, Encoding.UTF8).Execute<MutableString>();
-            Assert(str.Encoding == RubyEncoding.UTF8 && str.ToString() == "Σ");
-
-            // SJIS source code (KCODE ignored):
-            bytes = sjisEncoding.Encoding.GetBytes(@"ﾎ = 'ﾎ'");
-            str = utf8Engine.CreateScriptSource(new BinaryContentProvider(bytes), null, sjisEncoding.Encoding).Execute<MutableString>();
-            Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
-
-            // eval uses KCODE (binary source, KCODE == SJIS):
-            bytes = sjisEncoding.Encoding.GetBytes(@"eval(""ﾎ = 'ﾎ'"")");
-            str = sjisEngine.CreateScriptSource(new BinaryContentProvider(bytes), null, BinaryEncoding.Instance).Execute<MutableString>();
-            Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
-
-            // eval uses KCODE (SJIS source, KCODE == SJIS):
-            bytes = sjisEncoding.Encoding.GetBytes(@"eval(""ﾎ = 'ﾎ'"")");
-            str = sjisEngine.CreateScriptSource(new BinaryContentProvider(bytes), null, sjisEncoding.Encoding).Execute<MutableString>();
-            Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
-        }
-
-        private void KCode2() {
-            if (_driver.PartialTrust) return;
-
-            var sjisEncoding = RubyEncoding.KCodeSJIS;
-
-            // change KCODE at runtime:
-            Context.SetGlobalVariable(null, "KCODE", MS("S"));
-            Assert(ReferenceEquals(Context.KCode, sjisEncoding));
-
-            // load file encoded in SJIS:
-            var tmpPath = Path.GetTempFileName();
-            try {
-                Runtime.Globals.SetVariable("TempFileName", MS(tmpPath));
-                File.WriteAllBytes(tmpPath, sjisEncoding.Encoding.GetBytes("class Cﾎ; $ﾎ = 'ﾎ'; end"));
-                Engine.Execute(@"load(TempFileName)");
-                Assert(Runtime.Globals.GetVariable("Cﾎ") is RubyClass);
-                var str = (MutableString)Context.GetGlobalVariable("ﾎ");
-                Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
-            } finally {
-                File.Delete(tmpPath);
-            }
-        }
-#endif
         // encodings suported in preamble:
         private static readonly string[] preambleEncodingNames = 
             new[] { "ASCII-8BIT", "ASCII", "BINARY", "US-ASCII", "UTF-8", "EUC-JP", "SJIS", "SHIFT_JIS", "LOCALE" };
@@ -1476,24 +1418,12 @@ p __ENCODING__
             var source2 = Context.CreateSnippet("p __ENCODING__", SourceCodeKind.Expression);
             AssertOutput(() => source2.Execute(), @"#<Encoding:UTF-8>");
         }
-
-#if OBSOLETE
-        [Options(Compatibility = RubyCompatibility.Ruby186)]
-        private void Encoding3() {
-            AssertExceptionThrown<MissingMethodException>(() =>
-                CompilerTest("__ENCODING__")
-            );
-
-            // ignores preamble:
-            Context.CreateFileUnit("foo.rb", "# enCoding = UNDEFINED_ENCODING").Execute();
-        }
-#endif
-
+        
         private void Encoding4() {
             var enc = Engine.Execute<RubyEncoding>(@"eval('# encoding: SJIS
 __ENCODING__
 ')");
-            Assert(enc == RubyEncoding.KCodeSJIS.RealEncoding);
+            Assert(enc == RubyEncoding.SJIS);
         }
 
         private void Encoding_Host1() {

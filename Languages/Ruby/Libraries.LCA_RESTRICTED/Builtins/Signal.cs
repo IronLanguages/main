@@ -49,7 +49,7 @@ namespace IronRuby.Builtins {
             Proc proc) {
 
             if ((signalId is MutableString) && ((MutableString)signalId).ConvertToString() == "INT") {
-                context.InterruptSignalHandler = delegate() { proc.Call(); };
+                context.InterruptSignalHandler = () => proc.Call(null);
             } else {
                 // TODO: For now, just ignore unknown signals. This should be changed to throw an
                 // exception. We are not doing it yet as it is close to the V1 RTM, and throwing

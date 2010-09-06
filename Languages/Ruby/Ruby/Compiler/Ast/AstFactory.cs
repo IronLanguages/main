@@ -157,6 +157,9 @@ namespace IronRuby.Compiler.Ast {
                 args.Add(AstUtils.Box(rhsArgument));
             }
 
+            // yield can't pass a block:
+            args.Add(AstFactory.NullOfProc);
+
             args.Add(AstUtils.Box(selfArgument));
             args.Add(bfcVariable);
 

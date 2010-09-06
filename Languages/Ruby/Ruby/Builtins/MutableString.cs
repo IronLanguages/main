@@ -116,13 +116,13 @@ namespace IronRuby.Builtins {
 
         // binary (doesn't make a copy of the array):
         private MutableString(byte[]/*!*/ bytes, RubyEncoding/*!*/ encoding)
-            : this(encoding.IsKCoding ? new KBinaryContent(bytes, null) : new BinaryContent(bytes, null), encoding) {
+            : this(new BinaryContent(bytes, null), encoding) {
         }
 
         // binary (doesn't make a copy of the array):
         // used by RubyBufferedStream:
         internal MutableString(byte[]/*!*/ bytes, int count, RubyEncoding/*!*/ encoding)
-            : this(encoding.IsKCoding ? new KBinaryContent(bytes, count, null) : new BinaryContent(bytes, count, null), encoding) {
+            : this(new BinaryContent(bytes, count, null), encoding) {
         }
 
         // immutable:
@@ -384,17 +384,6 @@ namespace IronRuby.Builtins {
                 return this;
             }
 
-            if ((_encoding.IsKCoding || _encoding == RubyEncoding.Binary) &&
-                (newEncoding.IsKCoding || newEncoding == RubyEncoding.Binary)) {
-
-                if (!IsAscii()) {
-                    SwitchToBytes();
-                }
-
-                SetEncoding(newEncoding);
-                return this;
-            }
-
             MutableString result;
             if (inplace) {
                 result = this;
@@ -407,7 +396,7 @@ namespace IronRuby.Builtins {
         }
 
         private void ChangeEncoding(RubyEncoding/*!*/ newEncoding) {
-            if (_encoding.RealEncoding == newEncoding.RealEncoding) {
+            if (_encoding == newEncoding) {
                 Mutate();
                 SetEncoding(newEncoding); 
                 return;
@@ -460,16 +449,11 @@ namespace IronRuby.Builtins {
             int hash;
             int binarySum;
 
-            if (_encoding.IsKCoding) {
-                // 1.8 strings don't know encodings => if 2 strings are binary equivalent they have the same hash:
-                hash = _content.GetBinaryHashCode(out binarySum);
-            } else {
-                hash = _content.GetHashCode(out binarySum);
+            hash = _content.GetHashCode(out binarySum);
 
-                // xor with the encoding if there are any non-ASCII characters in the string:
-                if (binarySum >= 0x0080 && !IsBinaryEncoded) {
-                    hash ^= _encoding.GetHashCode();
-                }
+            // xor with the encoding if there are any non-ASCII characters in the string:
+            if (binarySum >= 0x0080 && !IsBinaryEncoded) {
+                hash ^= _encoding.GetHashCode();
             }
 
             if (binarySum >= 0x0080) {
@@ -720,8 +704,6 @@ namespace IronRuby.Builtins {
             // Switch if the content is not already char based or the bytes are not the same as the equivalent characters:
             if (IsBinary && !IsBinaryEncoded && !IsAscii()) {
                 SwitchToCharacters();
-            } else if (_encoding.IsKCoding) {
-                SwitchToBytes();
             }
 
             return this;
@@ -737,8 +719,6 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ PrepareForCharacterWrite() {
             if (IsBinary) {
                 SwitchToCharacters();
-            } else if (_encoding.IsKCoding) {
-                SwitchToBytes();
             } else {
                 _content.SwitchToMutableContent();
             }
@@ -781,16 +761,9 @@ namespace IronRuby.Builtins {
             }
 
             if (_encoding != other._encoding) {
-                if (_encoding.CompareTo(other._encoding) != 0) {
-                    // only ASCII strings might compare equal if their encodings are different:
-                    if (!IsAscii() || !other.IsAscii()) {
-                        return false;
-                    }
-                } else {
-                    // we can't compare char representations if they are encoded with different k-codings:
-                    Debug.Assert(_encoding.IsKCoding || other._encoding.IsKCoding);
-                    SwitchToBytes();
-                    other.SwitchToBytes();
+                // only ASCII strings might compare equal if their encodings are different:
+                if (!IsAscii() || !other.IsAscii()) {
+                    return false;
                 }
             }
 
@@ -806,17 +779,9 @@ namespace IronRuby.Builtins {
             if (ReferenceEquals(other, null)) return 1;
 
             if (_encoding != other._encoding) {
-                int result = _encoding.CompareTo(other._encoding);
-                if (result != 0) {
-                    // only ASCII strings might compare equal if their encodings are different:
-                    if (!IsAscii() || !other.IsAscii()) {
-                        return result;
-                    }
-                } else {
-                    // we can't compare char representations if they are encoded with different k-codings:
-                    Debug.Assert(_encoding.IsKCoding || other._encoding.IsKCoding);
-                    SwitchToBytes();
-                    other.SwitchToBytes();
+                // only ASCII strings might compare equal if their encodings are different:
+                if (!IsAscii() || !other.IsAscii()) {
+                    return _encoding.CompareTo(other._encoding);
                 }
             }
 
@@ -910,7 +875,7 @@ namespace IronRuby.Builtins {
             ContractUtils.RequiresNotNull(value, "value");
 
             // TODO:
-            if (IsBinary || value.IsBinary || _encoding.IsKCoding || value.Encoding.IsKCoding) {
+            if (IsBinary || value.IsBinary) {
                 int valueLength = value.GetByteCount();
                 int offset = GetByteCount() - valueLength;
                 if (offset < 0) {

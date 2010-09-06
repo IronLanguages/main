@@ -40,6 +40,7 @@ namespace IronRuby.Compiler {
     public partial struct TokenValue {
         // VariableFactory + String (variable)
         // Arguments + Block (arguments)
+        // StringContent + Encoding (CHARACTER, STRING_CONTENT)
         
         private NumericUnion _numeric;
         private object _obj1;
@@ -54,6 +55,9 @@ namespace IronRuby.Compiler {
 
         public Block Block { get { return (Block)_obj1; } set { _obj1 = value; } }
         public Arguments Arguments { get { return (Arguments)_obj2; } set { _obj2 = value; } }
+
+        public object/*!*/ StringContent { get { return (object)_obj1; } set { _obj1 = value; } }
+        public RubyEncoding/*!*/ Encoding { get { return (RubyEncoding)_obj2; } set { _obj2 = value; } }
 
         public Expression Expression { get { return (Expression)_obj1; } set { _obj1 = value; } }
         public List<Expression>/*!*/ Expressions { get { return (List<Expression>)_obj2; } set { _obj2 = value; } }
@@ -72,7 +76,6 @@ namespace IronRuby.Compiler {
         public Maplet Maplet { get { return (Maplet)_obj1; } set { _obj1 = value; } }
         public BigInteger/*!*/ BigInteger { get { return (BigInteger)_obj1; } set { _obj1 = value; } }
         public String/*!*/ String { get { return (String)_obj1; } set { _obj1 = value; } }
-        public object/*!*/ StringContent { get { return (object)_obj1; } set { _obj1 = value; } }
         public LocalVariable LocalVariable { get { return (LocalVariable)_obj1; } set { _obj1 = value; } }
         public SimpleAssignmentExpression SimpleAssignmentExpression { get { return (SimpleAssignmentExpression)_obj1; } set { _obj1 = value; } }
         public LeftValue LeftValue { get { return (LeftValue)_obj1; } set { _obj1 = value; } }
@@ -109,6 +112,7 @@ namespace IronRuby.Compiler {
         internal void SetStringContent(MutableStringBuilder/*!*/ contentBuilder) {
             Assert.NotNull(contentBuilder);
             StringContent = contentBuilder.ToValue();
+            Encoding = contentBuilder.Encoding;
         }
 
         internal void SetRegexOptions(RubyRegexOptions value) {

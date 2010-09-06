@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -597,18 +598,18 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region [], slice
+        #region [], slice, getbyte, setbyte, ord
 
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static MutableString GetChar(MutableString/*!*/ self, [DefaultProtocol]int index) {
-            return InExclusiveRangeNormalized(self.GetByteCount(), ref index) ? self.GetSlice(index, 1) : null;
+            return InExclusiveRangeNormalized(self.GetCharCount(), ref index) ? self.GetSlice(index, 1) : null;
         }
 
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static MutableString GetSubstring(MutableString/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int count) {
-            int byteCount = self.GetByteCount();
+            int byteCount = self.GetCharCount();
             if (!NormalizeSubstringRange(byteCount, ref start, ref count)) {
                 return (start == byteCount) ? self.CreateInstance().TaintBy(self) : null;
             }
@@ -620,7 +621,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("slice")]
         public static MutableString GetSubstring(ConversionStorage<int>/*!*/ fixnumCast, MutableString/*!*/ self, [NotNull]Range/*!*/ range) {
             int begin, count;
-            if (!NormalizeSubstringRange(fixnumCast, range, self.GetByteCount(), out begin, out count)) {
+            if (!NormalizeSubstringRange(fixnumCast, range, self.GetCharCount(), out begin, out count)) {
                 return null;
             }
             return (count < 0) ? self.CreateInstance().TaintBy(self) : GetSubstring(self, begin, count);
@@ -664,9 +665,36 @@ namespace IronRuby.Builtins {
             return result != null ? result.TaintBy(regex, scope) : null;
         }
 
+        [RubyMethod("getbyte")]
+        public static object GetByte(MutableString/*!*/ self, [DefaultProtocol]int index) {
+            return InExclusiveRangeNormalized(self.GetByteCount(), ref index) ? ScriptingRuntimeHelpers.Int32ToObject(self.GetByte(index)) : null;
+        }
+
+        /// <summary>
+        /// Returns the first codepoint.
+        /// </summary>
+        [RubyMethod("ord")]
+        public static int Ord(MutableString/*!*/ str) {
+            if (str.IsEmpty) {
+                throw RubyExceptions.CreateArgumentError("empty string");
+            }
+            char c1 = str.GetChar(0);
+            if (!Char.IsSurrogate(c1)) {
+                return (int)c1;
+            }
+
+            char c2;
+            if (Tokenizer.IsHighSurrogate(c1) && str.GetCharCount() > 1 && Tokenizer.IsLowSurrogate(c2 = str.GetChar(1))) {
+                return Tokenizer.ToCodePoint(c1, c2);
+            }
+            throw RubyExceptions.CreateArgumentError("invalid byte sequence in {0}", str.Encoding);
+        }
+
         #endregion
 
         #region []=
+
+        //setbyte
 
         [RubyMethod("[]=")]
         public static MutableString/*!*/ ReplaceCharacter(MutableString/*!*/ self,
@@ -1112,7 +1140,15 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
-
+        
+        //bytes
+        //chars
+        //codepoints
+        //each_byte
+        //each_char
+        //each_codepoint
+        
+        
         #region each, each_byte, each_line
 
         // encoding aware
@@ -1210,7 +1246,10 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region empty?, size, length, encoding
+
+        #region empty?, size, bytesize, length, ascii_only?, encoding, force_encoding, encode, encode!
+
+        //valid_encoding?
 
         // encoding aware
         [RubyMethod("empty?")]
@@ -1232,6 +1271,12 @@ namespace IronRuby.Builtins {
         }
 
         // encoding aware
+        [RubyMethod("ascii_only?")]
+        public static bool IsAscii(MutableString/*!*/ self) {
+            return self.IsAscii();
+        }
+
+        // encoding aware
         [RubyMethod("encoding")]
         public static RubyEncoding/*!*/ GetEncoding(MutableString/*!*/ self) {
             return self.Encoding;
@@ -1247,6 +1292,44 @@ namespace IronRuby.Builtins {
         [RubyMethod("force_encoding")]
         public static MutableString/*!*/ ForceEncoding(RubyContext/*!*/ context, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ encodingName) {
             return ForceEncoding(self, context.GetRubyEncoding(encodingName));
+        }
+
+        [RubyMethod("encode")]
+        public static MutableString/*!*/ EncodeInPlace(
+            ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
+            ConversionStorage<MutableString>/*!*/ toStr,
+            MutableString/*!*/ self,
+            [Optional]object toEncoding,
+            [Optional]object fromEncoding,
+            [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
+
+            // TODO:
+            return Encode(toHash, toStr, self, toEncoding, fromEncoding, options);
+        }
+
+        [RubyMethod("encode!")]
+        public static MutableString/*!*/ Encode(
+            ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
+            ConversionStorage<MutableString>/*!*/ toStr,
+            MutableString/*!*/ self,
+            [Optional]object toEncoding,
+            [Optional]object fromEncoding,
+            [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
+
+            Protocols.TryConvertToOptions(toHash, ref options, ref toEncoding, ref fromEncoding);
+
+            RubyEncoding to = null, from = null;
+            if (toEncoding != Missing.Value) {
+                to = Protocols.ConvertToEncoding(toStr, toEncoding);
+            }
+            if (fromEncoding != Missing.Value) {
+                from = Protocols.ConvertToEncoding(toStr, fromEncoding);
+            }
+
+            // TODO: options
+            // TODO:
+            //return self.ChangeEncoding();
+            return self;
         }
 
         #endregion
@@ -1638,7 +1721,7 @@ namespace IronRuby.Builtins {
         public static object Index(MutableString/*!*/ self, 
             int character, [DefaultProtocol, Optional]int start) {
 
-            if (!self.IsBinaryEncoded && !self.Encoding.IsKCoding && !self.IsAscii()) {
+            if (!self.IsBinaryEncoded && !self.IsAscii()) {
                 throw RubyExceptions.CreateTypeError("type mismatch: Fixnum given");
             }
 
@@ -1708,7 +1791,7 @@ namespace IronRuby.Builtins {
         public static object LastIndexOf(MutableString/*!*/ self,
             int character, [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int start) {
 
-            if (!self.IsBinaryEncoded && !self.Encoding.IsKCoding && !self.IsAscii()) {
+            if (!self.IsBinaryEncoded && !self.IsAscii()) {
                 throw RubyExceptions.CreateTypeError("type mismatch: Fixnum given");
             }
 
@@ -2695,26 +2778,6 @@ namespace IronRuby.Builtins {
             }
             return sum;
         }
-
-        #endregion
-
-        #region Encodings (1.9)
-
-        //ascii_only?
-        //bytes
-        //bytesize
-        //chars
-        //codepoints
-        //each_byte
-        //each_char
-        //each_codepoint
-        //encode
-        //encode!
-        //encoding
-        //force_encoding
-        //getbyte
-        //setbyte
-        //valid_encoding?
 
         #endregion
 

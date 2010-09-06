@@ -936,11 +936,9 @@ namespace IronRuby.Runtime {
             block.MethodLookupModule = module;
 
             if (args != null) {
-                result = RubyOps.Yield(args, self, block);
-            } else if (module.Context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
-                result = RubyOps.Yield1(self, self, block);
+                result = RubyOps.Yield(args, null, self, block);
             } else {
-                result = RubyOps.Yield0(self, block);
+                result = RubyOps.Yield0(null, self, block);
             }
 
             return block.BlockJumped(result);

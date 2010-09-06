@@ -51,11 +51,10 @@ using IronRuby.Compiler.Ast;
 
 %token<String> IDENTIFIER FUNCTION_IDENTIFIER GLOBAL_VARIABLE INSTANCE_VARIABLE CONSTANT_IDENTIFIER CLASS_VARIABLE OP_ASSIGNMENT 
 %token<String> LABEL                               // 1.9  
-%token<StringContent> CHARACTER                    // 1.9
+%token CHARACTER STRING_CONTENT                    // (String & Encoding)
 %token<Integer1> INTEGER 
 %token<BigInteger> BIG_INTEGER
 %token<Double> FLOAT 
-%token STRING_CONTENT                              // (String & StringLiteralEncoding)
 %token<Integer1> MATCH_REFERENCE
 %token<RegExOptions>  REGEXP_END 
 
@@ -1128,7 +1127,7 @@ primary:
       numeric_literal
     | symbol
         {
-            $$ = new SymbolLiteral($1, @$);
+            $$ = MakeSymbolLiteral($1, @$);
         }
     | immutable_string
     | string_concatenation
@@ -1799,7 +1798,7 @@ ensure_opt:
 string_concatenation: 
       CHARACTER                                     // 1.9
         {
-            $$ = CollectionUtils.MakeList<Expression>(new StringLiteral($1, @1));
+            $$ = CollectionUtils.MakeList<Expression>(MakeStringLiteral($1, @1));
         }
     | string
         {
@@ -1954,14 +1953,14 @@ symbol:
 ;
 
 sym: 
-      method_name
-    | INSTANCE_VARIABLE
-    | GLOBAL_VARIABLE
+    method_name
+  | INSTANCE_VARIABLE
+  | GLOBAL_VARIABLE
       {
           $$ = "$" + $1;
       }
-    | CLASS_VARIABLE
-    | match_reference 
+  | CLASS_VARIABLE
+  | match_reference 
       {
           $$ = $1.FullName;
       }
@@ -2263,7 +2262,7 @@ maplet:
        }
    | LABEL arg                                      // 1.9
        {
-           $$ = new Maplet(new SymbolLiteral($1, @1), $2, @$);
+           $$ = new Maplet(MakeSymbolLiteral($1, @1), $2, @$);
        }
 ;
 

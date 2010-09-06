@@ -42,7 +42,7 @@ namespace IronRuby.Builtins {
             }
 
             protected BinaryContent/*!*/ WrapContent(byte[]/*!*/ bytes, int count) {
-                BinaryContent result = _owner._encoding.IsKCoding ? new KBinaryContent(bytes, count, _owner) : new BinaryContent(bytes, count, _owner);
+                BinaryContent result = new BinaryContent(bytes, count, _owner);
                 _owner.SetContent(result);
                 return result;
             }

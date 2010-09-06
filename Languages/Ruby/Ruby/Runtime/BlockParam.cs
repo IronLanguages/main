@@ -197,27 +197,27 @@ namespace IronRuby.Runtime {
         }
 
         public bool Yield(out object blockResult) {
-            return BlockJumped(blockResult = RubyOps.Yield0(Self, this));
+            return BlockJumped(blockResult = RubyOps.Yield0(null, Self, this));
         }
 
         public bool Yield(object arg1, out object blockResult) {
-            return BlockJumped(blockResult = RubyOps.Yield1(arg1, Self, this));
+            return BlockJumped(blockResult = RubyOps.Yield1(arg1, null, Self, this));
         }
 
         public bool Yield(object arg1, object arg2, out object blockResult) {
-            return BlockJumped(blockResult = RubyOps.Yield2(arg1, arg2, Self, this));
+            return BlockJumped(blockResult = RubyOps.Yield2(arg1, arg2, null, Self, this));
         }
 
         public bool Yield(object arg1, object arg2, object arg3, out object blockResult) {
-            return BlockJumped(blockResult = RubyOps.Yield3(arg1, arg2, arg3, Self, this));
+            return BlockJumped(blockResult = RubyOps.Yield3(arg1, arg2, arg3, null, Self, this));
         }
 
         public bool Yield(object arg1, object arg2, object arg3, object arg4, out object blockResult) {
-            return BlockJumped(blockResult = RubyOps.Yield4(arg1, arg2, arg3, arg4, Self, this));
+            return BlockJumped(blockResult = RubyOps.Yield4(arg1, arg2, arg3, arg4, null, Self, this));
         }
 
         public bool Yield(object[]/*!*/ args, out object blockResult) {
-            return BlockJumped(blockResult = RubyOps.Yield(args, Self, this));
+            return BlockJumped(blockResult = RubyOps.Yield(args, null, Self, this));
         }
 
         #endregion

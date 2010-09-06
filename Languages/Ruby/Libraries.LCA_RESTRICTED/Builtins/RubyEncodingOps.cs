@@ -52,6 +52,9 @@ namespace IronRuby.Builtins {
         [RubyConstant]
         public static readonly RubyEncoding ASCII_8BIT = RubyEncoding.Binary;
 
+        [RubyConstant]
+        public static readonly RubyEncoding BINARY = RubyEncoding.Binary;
+
         // TODO:
         // Shift_JIS
         // SHIFT_JIS

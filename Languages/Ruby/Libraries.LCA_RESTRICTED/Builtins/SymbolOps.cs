@@ -183,7 +183,7 @@ namespace IronRuby.Builtins {
         #endregion
 
         // casecmp
-        
+
         #region =~, match
 
         [RubyMethod("=~", Compatibility = RubyCompatibility.Ruby19)]
@@ -214,34 +214,60 @@ namespace IronRuby.Builtins {
         #endregion
 
         // []
-        
+        // slice
+
+        #region empty?, encoding, size/length
+
         // encoding aware
-        [RubyMethod("empty?", Compatibility = RubyCompatibility.Ruby19)]
+        [RubyMethod("empty?")]
         public static bool IsEmpty(RubySymbol/*!*/ self) {
             return self.IsEmpty;
         }
 
         // encoding aware
-        [RubyMethod("encoding", Compatibility = RubyCompatibility.Ruby19)]
+        [RubyMethod("encoding")]
         public static RubyEncoding/*!*/ GetEncoding(RubySymbol/*!*/ self) {
             return self.Encoding;
         }
 
         // encoding aware
-        [RubyMethod("size", Compatibility = RubyCompatibility.Ruby19)]
-        [RubyMethod("length", Compatibility = RubyCompatibility.Ruby19)]
+        [RubyMethod("size")]
+        [RubyMethod("length")]
         public static int GetLength(RubySymbol/*!*/ self) {
-            return (self.Encoding.IsKCoding) ? self.GetByteCount() : self.GetCharCount();
+            return self.GetCharCount();
         }
 
-        // next
-        // succ
-        // slice
+        #endregion
 
-        // swapcase
-        // upcase
-        // capitalize
-        // downcase
+        #region downcase, upcase, swapcase, capitalize, next/succ
+
+        [RubyMethod("downcase")]
+        public static RubySymbol/*!*/ DownCase(RubyContext/*!*/ context, RubySymbol/*!*/ self) {
+            return context.CreateSymbol(MutableStringOps.DownCase(self.String));
+        }
+
+        [RubyMethod("upcase")]
+        public static RubySymbol/*!*/ UpCase(RubyContext/*!*/ context, RubySymbol/*!*/ self) {
+            return context.CreateSymbol(MutableStringOps.UpCase(self.String));
+        }
+
+        [RubyMethod("swapcase")]
+        public static RubySymbol/*!*/ SwapCase(RubyContext/*!*/ context, RubySymbol/*!*/ self) {
+            return context.CreateSymbol(MutableStringOps.SwapCase(self.String));
+        }
+
+        [RubyMethod("capitalize")]
+        public static RubySymbol/*!*/ Capitalize(RubyContext/*!*/ context, RubySymbol/*!*/ self) {
+            return context.CreateSymbol(MutableStringOps.Capitalize(self.String));
+        }
+
+        [RubyMethod("next")]
+        [RubyMethod("succ")]
+        public static RubySymbol/*!*/ Succ(RubyContext/*!*/ context, RubySymbol/*!*/ self) {
+            return context.CreateSymbol(MutableStringOps.Succ(self.String));
+        }
+
+        #endregion
 
         #region all_symbols
 

@@ -66,8 +66,16 @@ describe "A Symbol literal" do
     }
   end
 
-  it "does not contain null in the string" do
-    lambda { eval ':"\0" ' }.should raise_error(SyntaxError)
+  ruby_version_is "" ... "1.9" do
+    it "does not contain null in the string" do
+      lambda { eval ':"\0" ' }.should raise_error(SyntaxError)
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "might contain null" do
+      lambda { eval ':"\0" ' }.should_not raise_error(SyntaxError)
+    end
   end
 end
 

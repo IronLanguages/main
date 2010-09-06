@@ -68,6 +68,15 @@ namespace IronRuby.Runtime {
             return true;
         }
 
+        public static bool IsAscii(this char[]/*!*/ str, int start, int count) {
+            for (int i = 0; i < count; i++) {
+                if (str[start + i] > 0x7f) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         internal static bool IsBinary(this string/*!*/ str) {
             for (int i = 0; i < str.Length; i++) {
                 if (str[i] > 0xff) {

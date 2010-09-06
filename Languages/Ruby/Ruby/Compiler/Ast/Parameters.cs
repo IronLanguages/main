@@ -134,6 +134,10 @@ namespace IronRuby.Compiler.Ast {
                 result |= BlockSignatureAttributes.HasUnsplatParameter;
             }
 
+            if (_block != null) {
+                result |= BlockSignatureAttributes.HasProcParameter;
+            }
+
             int arity = _mandatory.Length;
             if (_unsplat != null) {
                 arity = -(arity + 1);

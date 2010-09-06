@@ -29,7 +29,6 @@ namespace IronRuby.Tests {
                 MutableString_IsAscii,
                 MutableString_Length,
                 MutableString_CompareTo,
-                MutableString_Equals,
                 MutableString_Append_Byte,
                 MutableString_Append_Char,
                 MutableString_Append,
@@ -130,6 +129,7 @@ namespace IronRuby.Tests {
                 NumericLiterals1,
                 NumericOps1,
                 UnicodeEscapes1,
+                CharacterToken1,
 
                 Encoding1,
                 Encoding2,
@@ -174,8 +174,6 @@ namespace IronRuby.Tests {
                 RegexEscape1,
                 RegexCondition1,
                 RegexCondition2,
-                RegexEncoding1,
-                RegexEncoding2,
                 
                 Scenario_RubyScopeParsing,
                 Scenario_RubyScopes1,
@@ -307,6 +305,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyBlockArgs5,
                 Scenario_RubyBlockArgs6,
                 Proc_RhsAndBlockArguments1,
+                Block_ProcParams1,
 
                 RubyProcs1,
                 RubyProcs2,

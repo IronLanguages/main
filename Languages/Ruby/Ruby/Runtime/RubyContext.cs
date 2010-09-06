@@ -2145,7 +2145,8 @@ namespace IronRuby.Runtime {
         /// </para>
         /// </summary>
         public RubyEncoding/*!*/ GetIdentifierEncoding() {
-            return _options.Compatibility < RubyCompatibility.Ruby19 ? (KCode ?? RubyEncoding.KCodeUTF8) : RubyEncoding.UTF8;
+            // TODO:
+            return RubyEncoding.UTF8;
         }
 
         public RubySymbol/*!*/ EncodeIdentifier(string/*!*/ identifier) {
@@ -2156,11 +2157,8 @@ namespace IronRuby.Runtime {
         /// Returns an identifier encoded as MutableStrings (Ruby 1.8) or Symbols (Ruby 1.9).
         /// </summary>
         public object/*!*/ StringifyIdentifier(string/*!*/ identifier) {
-            if (_options.Compatibility >= RubyCompatibility.Ruby19) {
-                return CreateSymbol(identifier, RubyEncoding.UTF8);
-            } else {
-                return MutableString.CreateMutable(identifier, KCode ?? RubyEncoding.KCodeUTF8);
-            }
+            // TODO:
+            return CreateSymbol(identifier, RubyEncoding.UTF8);
         }
         
         /// <summary>
@@ -2346,7 +2344,7 @@ namespace IronRuby.Runtime {
                     e,
                     "Path \"{0}\" contains characters that cannot be represented in encoding {1}: {2}",
                     path.ToAsciiString(),
-                    encoding.RealEncoding.Name,
+                    encoding.Name,
                     e.Message
                 );
             }
@@ -2360,7 +2358,7 @@ namespace IronRuby.Runtime {
             try {
                 if (KCode != null) {
                     return path.ToString(KCode.StrictEncoding);
-                } else if (path.Encoding.IsKCoding || path.IsBinaryEncoded) {
+                } else if (path.IsBinaryEncoded) {
                     // force UTF8 encoding to make round-trip work:
                     return path.ToString(Encoding.UTF8);
                 } else {
@@ -2618,7 +2616,7 @@ namespace IronRuby.Runtime {
 
                 foreach (var handler in handlers) {
                     try {
-                        handler.Call();
+                        handler.Call(null);
                     } catch (SystemExit e) {
                         // Kernel#at_exit can call exit and set the exitcode. Furthermore, exit can be called 
                         // from multiple blocks registered with Kernel#at_exit.
@@ -3049,7 +3047,7 @@ namespace IronRuby.Runtime {
                 try {
                     _traceListenerSuspended = true;
 
-                    _traceListener.Call(new[] {
+                    _traceListener.Call(null, new[] {
                         MutableString.CreateAscii(operation),                                         // event
                         fileName != null ? scope.RubyContext.EncodePath(fileName) : null,             // file
                         ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                            // line

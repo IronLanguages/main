@@ -41,11 +41,16 @@ namespace IronRuby.Runtime.Calls {
     using BlockCallTarget3 = Func<BlockParam, object, object, object, object, object>;
     using BlockCallTarget4 = Func<BlockParam, object, object, object, object, object, object>;
     using BlockCallTargetN = Func<BlockParam, object, object[], object>;
+    using BlockCallTargetProcN = Func<BlockParam, object, object[], Proc, object>;
     using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
+    using BlockCallTargetUnsplatProcN = Func<BlockParam, object, object[], RubyArray, Proc, object>;
 
     [Flags]
     public enum BlockSignatureAttributes {
         None = 0,
+
+        // {|..., &b|}
+        HasProcParameter = 1,
 
         // {|...,*,...|}
         HasUnsplatParameter = 2,        // TODO: 1.9: arity < 0 iff the block has unsplat => we can remove signature attributes enum
@@ -72,6 +77,47 @@ namespace IronRuby.Runtime.Calls {
         }
     }
 
+    internal abstract class BlockDispatcherN<T> : BlockDispatcher<T> where T : class {
+        protected readonly int _parameterCount;
+
+        public override int ParameterCount { get { return _parameterCount; } }
+
+        public BlockDispatcherN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) 
+            : base(attributesAndArity, sourcePath, sourceLine) {
+            _parameterCount = parameterCount;
+        }
+
+        protected object[]/*!*/ MakeArray(object arg1) {
+            var array = new object[_parameterCount];
+            array[0] = arg1;
+            return array;
+        }
+
+        protected object[]/*!*/ MakeArray(object arg1, object arg2) {
+            var array = new object[_parameterCount];
+            array[0] = arg1;
+            array[1] = arg2;
+            return array;
+        }
+
+        protected object[]/*!*/ MakeArray(object arg1, object arg2, object arg3) {
+            var array = new object[_parameterCount];
+            array[0] = arg1;
+            array[1] = arg2;
+            array[2] = arg3;
+            return array;
+        }
+
+        protected object[]/*!*/ MakeArray(object arg1, object arg2, object arg3, object arg4) {
+            var array = new object[_parameterCount];
+            array[0] = arg1;
+            array[1] = arg2;
+            array[2] = arg3;
+            array[3] = arg4;
+            return array;
+        }
+    }
+
     public abstract class BlockDispatcher {
         // position of the block definition (opening brace):
         private readonly string _sourcePath;
@@ -81,6 +127,10 @@ namespace IronRuby.Runtime.Calls {
 
         public bool HasUnsplatParameter {
             get { return (_attributesAndArity & BlockSignatureAttributes.HasUnsplatParameter) != 0; }
+        }
+
+        public bool HasProcParameter {
+            get { return (_attributesAndArity & BlockSignatureAttributes.HasProcParameter) != 0; }
         }
 
         public int Arity {
@@ -100,22 +150,22 @@ namespace IronRuby.Runtime.Calls {
         public string SourcePath { get { return _sourcePath; } }
         public int SourceLine { get { return _sourceLine; } }
 
-        public abstract object Invoke(BlockParam/*!*/ param, object self);
-        public abstract object InvokeNoAutoSplat(BlockParam/*!*/ param, object self, object arg1);
-        public abstract object Invoke(BlockParam/*!*/ param, object self, object arg1);
-        public abstract object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2);
-        public abstract object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3);
-        public abstract object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4);
-        public abstract object Invoke(BlockParam/*!*/ param, object self, object[]/*!*/ args);
+        public abstract object Invoke(BlockParam/*!*/ param, object self, Proc procArg);
+        public abstract object InvokeNoAutoSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1);
+        public abstract object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1);
+        public abstract object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2);
+        public abstract object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3);
+        public abstract object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, object arg4);
+        public abstract object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args);
 
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args, IList/*!*/ splattee);
 
-        public abstract object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs);
+        public abstract object InvokeSplatRhs(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args, IList/*!*/ splattee, object rhs);
 
         internal const int MaxBlockArity = 4;
         internal const int HiddenParameterCount = 2;
@@ -128,32 +178,50 @@ namespace IronRuby.Runtime.Calls {
 
         internal static BlockDispatcher/*!*/ Create(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) {
             if ((attributesAndArity & BlockSignatureAttributes.HasUnsplatParameter) == 0) {
-                switch (parameterCount) {
-                    case 0: return new BlockDispatcher0(attributesAndArity, sourcePath, sourceLine);
-                    case 1: return new BlockDispatcher1(attributesAndArity, sourcePath, sourceLine);
-                    case 2: return new BlockDispatcher2(attributesAndArity, sourcePath, sourceLine);
-                    case 3: return new BlockDispatcher3(attributesAndArity, sourcePath, sourceLine);
-                    case 4: return new BlockDispatcher4(attributesAndArity, sourcePath, sourceLine);
-                    default: return new BlockDispatcherN(parameterCount, attributesAndArity, sourcePath, sourceLine);
+                if ((attributesAndArity & BlockSignatureAttributes.HasProcParameter) == 0) {
+                    switch (parameterCount) {
+                        case 0: return new BlockDispatcher0(attributesAndArity, sourcePath, sourceLine);
+                        case 1: return new BlockDispatcher1(attributesAndArity, sourcePath, sourceLine);
+                        case 2: return new BlockDispatcher2(attributesAndArity, sourcePath, sourceLine);
+                        case 3: return new BlockDispatcher3(attributesAndArity, sourcePath, sourceLine);
+                        case 4: return new BlockDispatcher4(attributesAndArity, sourcePath, sourceLine);
+                        default: return new BlockDispatcherN(parameterCount, attributesAndArity, sourcePath, sourceLine);
+                    }
+                } else {
+                    return new BlockDispatcherProcN(parameterCount, attributesAndArity, sourcePath, sourceLine);
+                }
+            } else {
+                if ((attributesAndArity & BlockSignatureAttributes.HasProcParameter) == 0) {
+                    return new BlockDispatcherUnsplatN(parameterCount, attributesAndArity, sourcePath, sourceLine);
+                } else {
+                    return new BlockDispatcherUnsplatProcN(parameterCount, attributesAndArity, sourcePath, sourceLine);
                 }
             }
-
-            return new BlockDispatcherUnsplatN(parameterCount, attributesAndArity, sourcePath, sourceLine);
         }
 
         internal static LambdaExpression/*!*/ CreateLambda(Expression body, string name, ICollection<ParameterExpression> parameters,
             int parameterCount, BlockSignatureAttributes attributes) {
+
             if ((attributes & BlockSignatureAttributes.HasUnsplatParameter) == 0) {
-                switch (parameterCount) {
-                    case 0: return Ast.Lambda<BlockCallTarget0>(body, name, parameters);
-                    case 1: return Ast.Lambda<BlockCallTarget1>(body, name, parameters);
-                    case 2: return Ast.Lambda<BlockCallTarget2>(body, name, parameters);
-                    case 3: return Ast.Lambda<BlockCallTarget3>(body, name, parameters);
-                    case 4: return Ast.Lambda<BlockCallTarget4>(body, name, parameters);
-                    default: return Ast.Lambda<BlockCallTargetN>(body, name, parameters);
+                if ((attributes & BlockSignatureAttributes.HasProcParameter) == 0) {
+                    switch (parameterCount) {
+                        case 0: return Ast.Lambda<BlockCallTarget0>(body, name, parameters);
+                        case 1: return Ast.Lambda<BlockCallTarget1>(body, name, parameters);
+                        case 2: return Ast.Lambda<BlockCallTarget2>(body, name, parameters);
+                        case 3: return Ast.Lambda<BlockCallTarget3>(body, name, parameters);
+                        case 4: return Ast.Lambda<BlockCallTarget4>(body, name, parameters);
+                        default: return Ast.Lambda<BlockCallTargetN>(body, name, parameters);
+                    }
+                } else {
+                    return Ast.Lambda<BlockCallTargetProcN>(body, name, parameters);
+                }
+            } else {
+                if ((attributes & BlockSignatureAttributes.HasProcParameter) == 0) {
+                    return Ast.Lambda<BlockCallTargetUnsplatN>(body, name, parameters);
+                } else {
+                    return Ast.Lambda<BlockCallTargetUnsplatProcN>(body, name, parameters);
                 }
             }
-            return Ast.Lambda<BlockCallTargetUnsplatN>(body, name, parameters);
         }
 
         private static void CopyArgumentsFromSplattee(object[]/*!*/ args, int initializedArgCount, int parameterCount,

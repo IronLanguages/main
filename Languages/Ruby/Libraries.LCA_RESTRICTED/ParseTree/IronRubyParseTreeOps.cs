@@ -301,12 +301,12 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 }
 
                 public override bool Enter(StringLiteral/*!*/ node) {
-                    _result = MakeNode(NodeKind.str, node.GetMutableString(_encoding));
+                    _result = MakeNode(NodeKind.str, node.GetMutableString());
                     return false;
                 }
 
                 public override bool Enter(SymbolLiteral/*!*/ node) {
-                    _result = MakeNode(NodeKind.lit, _context.CreateSymbol(node.GetMutableString(_encoding)));
+                    _result = MakeNode(NodeKind.lit, _context.CreateSymbol(node.GetMutableString()));
                     return false;
                 }
 
@@ -322,9 +322,9 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         NodeKind kind;
                         object value;
                         switch (node.Kind) {
-                            case StringKind.Symbol: kind = NodeKind.lit; value = _context.CreateSymbol(lit.GetMutableString(_encoding)); break;
-                            case StringKind.Command: kind = NodeKind.xstr; value = lit.GetMutableString(_encoding); break;
-                            case StringKind.Mutable: kind = NodeKind.str; value = lit.GetMutableString(_encoding); break;
+                            case StringKind.Symbol: kind = NodeKind.lit; value = _context.CreateSymbol(lit.GetMutableString()); break;
+                            case StringKind.Command: kind = NodeKind.xstr; value = lit.GetMutableString(); break;
+                            case StringKind.Mutable: kind = NodeKind.str; value = lit.GetMutableString(); break;
                             default: throw Assert.Unreachable;
                         }
 
@@ -356,7 +356,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         var part = parts[i];
                         lit = part as StringLiteral;
                         if (lit != null) {
-                            object value = lit.GetMutableString(_encoding);
+                            object value = lit.GetMutableString();
                             if (i > 0) {
                                 value = MakeNode(NodeKind.str, value);
                             }
@@ -375,7 +375,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     if (node.Pattern.Count == 0) {
                         _result = MakeNode(NodeKind.lit, new RubyRegex(MutableString.CreateEmpty(), node.Options));
                     } else if (node.Pattern.Count == 1 && (lit = node.Pattern[0] as StringLiteral) != null) {
-                        _result = MakeNode(NodeKind.lit, new RubyRegex(lit.GetMutableString(_encoding), node.Options));
+                        _result = MakeNode(NodeKind.lit, new RubyRegex(lit.GetMutableString(), node.Options));
                     } else {
                         var regex = VisitStringConstructor(node.Pattern, NodeKind.dregx);
                         if (node.Options != RubyRegexOptions.NONE) {

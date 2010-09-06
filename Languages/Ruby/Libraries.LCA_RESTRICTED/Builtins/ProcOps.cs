@@ -120,39 +120,39 @@ namespace IronRuby.Builtins {
         // TODO: 1.9 yield: yield and call might have different semantics with respect to control-flow!
 
         [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
-        public static object Call(Proc/*!*/ self) {
+        public static object Call(BlockParam block, Proc/*!*/ self) {
             RequireParameterCount(self, 0);
-            return self.Call();
+            return self.Call(block != null ? block.Proc : null);
         }
 
         [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
-        public static object Call(Proc/*!*/ self, object arg1) {
+        public static object Call(BlockParam block, Proc/*!*/ self, object arg1) {
             RequireParameterCount(self, 1);
-            return self.Call(arg1);
+            return self.Call(block != null ? block.Proc : null, arg1);
         }
 
         [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
-        public static object Call(Proc/*!*/ self, object arg1, object arg2) {
+        public static object Call(BlockParam block, Proc/*!*/ self, object arg1, object arg2) {
             RequireParameterCount(self, 2);
-            return self.Call(arg1, arg2);
+            return self.Call(block != null ? block.Proc : null, arg1, arg2);
         }
 
         [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
-        public static object Call(Proc/*!*/ self, object arg1, object arg2, object arg3) {
+        public static object Call(BlockParam block, Proc/*!*/ self, object arg1, object arg2, object arg3) {
             RequireParameterCount(self, 3);
-            return self.Call(arg1, arg2, arg3);
+            return self.Call(block != null ? block.Proc : null, arg1, arg2, arg3);
         }
 
         [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
-        public static object Call(Proc/*!*/ self, object arg1, object arg2, object arg3, object arg4) {
+        public static object Call(BlockParam block, Proc/*!*/ self, object arg1, object arg2, object arg3, object arg4) {
             RequireParameterCount(self, 4);
-            return self.Call(arg1, arg2, arg3, arg4);
+            return self.Call(block != null ? block.Proc : null, arg1, arg2, arg3, arg4);
         }
 
         [RubyMethod("==="), RubyMethod("[]"), RubyMethod("yield"), RubyMethod("call")]
-        public static object Call(Proc/*!*/ self, params object[]/*!*/ args) {
+        public static object Call(BlockParam block, Proc/*!*/ self, params object[]/*!*/ args) {
             RequireParameterCount(self, args.Length);
-            return self.CallN(args);
+            return self.CallN(block != null ? block.Proc : null, args);
         }
 
         private static void RequireParameterCount(Proc/*!*/ proc, int argCount) {

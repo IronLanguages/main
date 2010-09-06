@@ -83,11 +83,6 @@ namespace IronRuby.Compiler.Ast {
 
             throw Assert.Unreachable;
         }
-
-        internal static MSA.Expression/*!*/ MakeConstant(object/*!*/ value) {
-            // TODO: readonly byte[] ?
-            return AstUtils.Constant(value);
-        }
         
         internal static MSA.Expression/*!*/ MakeConversion(AstGenerator/*!*/ gen, Expression/*!*/ expression) {
             return AstUtils.LightDynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString), expression.TransformRead(gen));
@@ -95,47 +90,57 @@ namespace IronRuby.Compiler.Ast {
 
         #region Factories
 
+        // TODO:
+
         internal interface IFactory {
-            MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal);
-            MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSA.Expression/*!*/ arg);
-            MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSAst.ExpressionCollectionBuilder/*!*/ args);
+            MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal, RubyEncoding/*!*/ encoding);
+            MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, byte[]/*!*/ literal, RubyEncoding/*!*/ encoding);
+            MSA.Expression/*!*/ CreateExpressionN(AstGenerator/*!*/ gen, IEnumerable<MSA.Expression>/*!*/ args);
+            MSA.Expression/*!*/ CreateExpressionM(AstGenerator/*!*/ gen, MSAst.ExpressionCollectionBuilder/*!*/ args);
         }
 
         private sealed class StringFactory : IFactory {
-            public static readonly StringFactory Instance = new StringFactory();
-
-            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal) {
-                return Methods.CreateMutableStringL.OpCall(Ast.Constant(literal), gen.EncodingConstant);
+            public static readonly StringFactory Instance = new StringFactory();        
+            
+            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal, RubyEncoding/*!*/ encoding) {
+                return Methods.CreateMutableStringL.OpCall(Ast.Constant(literal), encoding.Expression);
             }
 
-            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSA.Expression/*!*/ arg) {
-                return Methods.CreateMutableString(opSuffix).OpCall(arg, gen.EncodingConstant);
+            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, byte[]/*!*/ literal, RubyEncoding/*!*/ encoding) {
+                return Methods.CreateMutableStringB.OpCall(Ast.Constant(literal), encoding.Expression);
             }
 
-            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSAst.ExpressionCollectionBuilder/*!*/ args) {
-                args.Add(gen.EncodingConstant);
-                return Methods.CreateMutableString(opSuffix).OpCall(args);
+            public MSA.Expression/*!*/ CreateExpressionN(AstGenerator/*!*/ gen, IEnumerable<MSA.Expression>/*!*/ args) {
+                return Methods.CreateMutableString("N").OpCall(Ast.NewArrayInit(typeof(MutableString), args));
+            }
+
+            public MSA.Expression/*!*/ CreateExpressionM(AstGenerator/*!*/ gen, MSAst.ExpressionCollectionBuilder/*!*/ args) {
+                string suffix = new String('M', args.Count);
+                args.Add(gen.Encoding.Expression);
+                return Methods.CreateMutableString(suffix).OpCall(args);
             }
         }
 
         internal sealed class SymbolFactory : IFactory {
             public static readonly SymbolFactory Instance = new SymbolFactory();
 
-            // TODO:
-            // In Ruby 1.9 encoding of ASCII symbols is always BINARY (unlike strings).
-
-            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal) {
-                return Ast.Constant(gen.Context.CreateSymbol(literal, gen.Encoding));
+            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ literal, RubyEncoding/*!*/ encoding) {
+                return Ast.Constant(gen.Context.CreateSymbol(literal, encoding));
             }
 
-            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSA.Expression/*!*/ arg) {
-                return Methods.CreateSymbol(opSuffix).OpCall(arg, gen.EncodingConstant, gen.CurrentScopeVariable);
+            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, byte[]/*!*/ literal, RubyEncoding/*!*/ encoding) {
+                return Ast.Constant(gen.Context.CreateSymbol(literal, encoding));
             }
 
-            public MSA.Expression/*!*/ CreateExpression(AstGenerator/*!*/ gen, string/*!*/ opSuffix, MSAst.ExpressionCollectionBuilder/*!*/ args) {
-                args.Add(gen.EncodingConstant);
+            public MSA.Expression/*!*/ CreateExpressionN(AstGenerator/*!*/ gen, IEnumerable<MSA.Expression>/*!*/ args) {
+                return Methods.CreateSymbol("N").OpCall(Ast.NewArrayInit(typeof(MutableString), args), gen.CurrentScopeVariable);
+            }
+
+            public MSA.Expression/*!*/ CreateExpressionM(AstGenerator/*!*/ gen, MSAst.ExpressionCollectionBuilder/*!*/ args) {
+                string suffix = new String('M', args.Count);
+                args.Add(gen.Encoding.Expression);
                 args.Add(gen.CurrentScopeVariable);
-                return Methods.CreateSymbol(opSuffix).OpCall(args);
+                return Methods.CreateSymbol(suffix).OpCall(args);
             }
         }
 
@@ -144,7 +149,7 @@ namespace IronRuby.Compiler.Ast {
         #region Literal Concatenation
 
         private sealed class LiteralConcatenation : List<object> {
-            private readonly Encoding/*!*/ _encoding;
+            private RubyEncoding/*!*/ _encoding;
             private int _length;
             private bool _isBinary;
 
@@ -152,13 +157,17 @@ namespace IronRuby.Compiler.Ast {
                 ContractUtils.Invariant(_isBinary || CollectionUtils.TrueForAll(this, (item) => item is string));
             }
 
-            public LiteralConcatenation(Encoding/*!*/ encoding) {
-                Assert.NotNull(encoding);
-                _encoding = encoding;
+            public LiteralConcatenation(RubyEncoding/*!*/ sourceEncoding) {
+                Assert.NotNull(sourceEncoding);
+                _encoding = sourceEncoding;
             }
 
             public bool IsBinary {
                 get { return _isBinary; } 
+            }
+
+            public RubyEncoding/*!*/ Encoding {
+                get { return _encoding; }
             }
 
             public new void Clear() {
@@ -166,11 +175,17 @@ namespace IronRuby.Compiler.Ast {
                 base.Clear();
             }
 
-            public void Add(StringLiteral/*!*/ literal) {
+            // Returns false if the literal can't be concatenated due to incompatible encodings.
+            public bool Add(StringLiteral/*!*/ literal) {
+                var concatEncoding = MutableString.GetCompatibleEncoding(_encoding, literal.Encoding);
+                if (concatEncoding == null) {
+                    return false;
+                }
+
                 var str = literal.Value as string;
                 if (str != null) {
                     if (_isBinary) {
-                        _length += _encoding.GetByteCount(str);
+                        _length += literal.Encoding.Encoding.GetByteCount(str);
                     } else {
                         _length += str.Length;
                     }
@@ -180,7 +195,7 @@ namespace IronRuby.Compiler.Ast {
                         _length = 0;
                         foreach (object item in this) { 
                             Debug.Assert(item is string);
-                            _length += _encoding.GetByteCount((string)item);
+                            _length += _encoding.Encoding.GetByteCount((string)item);
                         }
                         _isBinary = true;
                     }
@@ -188,7 +203,9 @@ namespace IronRuby.Compiler.Ast {
                     _length += bytes.Length;
                 }
 
+                _encoding = concatEncoding;
                 base.Add(literal.Value);
+                return true;
             }
 
             public object/*!*/ GetValue() {
@@ -209,7 +226,7 @@ namespace IronRuby.Compiler.Ast {
                             offset += bytes.Length;
                         } else {
                             string str = (string)item;
-                            offset += _encoding.GetBytes(str, 0, str.Length, result, offset);
+                            offset += _encoding.Encoding.GetBytes(str, 0, str.Length, result, offset);
                         }
                     }
 
@@ -233,58 +250,55 @@ namespace IronRuby.Compiler.Ast {
                 if (literal != null) {
                     var str = literal.Value as string;
                     if (str != null) {
-                        return factory.CreateExpression(gen, str);
+                        return factory.CreateExpression(gen, str, literal.Encoding);
+                    } else {
+                        return factory.CreateExpression(gen, (byte[])literal.Value, literal.Encoding);
                     }
                 } else {
-                    return factory.CreateExpression(gen, "M", MakeConversion(gen, parts[0]));
+                    return factory.CreateExpressionM(gen, new MSAst.ExpressionCollectionBuilder { MakeConversion(gen, parts[0]) });
                 }
             }
 
-            var opSuffix = new StringBuilder(Math.Min(parts.Count, 4));
-
-            bool anyBinary = false;
             var merged = new MSAst.ExpressionCollectionBuilder();
-            var concat = new LiteralConcatenation(gen.Encoding.Encoding);
-            ConcatLiteralsAndTransformRecursive(gen, parts, concat, merged, opSuffix, ref anyBinary);
+            var concat = new LiteralConcatenation(gen.Encoding);
+
+            if (!ConcatLiteralsAndTransformRecursive(gen, parts, concat, merged)) {
+                // TODO: we should emit Append calls directly, and not create an array first
+                // TODO: MRI reports a syntax error
+                // we can't concatenate due to encoding incompatibilities, report error at runtime:
+                return factory.CreateExpressionN(gen, CollectionUtils.ConvertAll(parts, (e) => e.Transform(gen)));
+            }
 
             // finish trailing literals:
             if (concat.Count > 0) {
-                object value = concat.GetValue();
-
-                // TODO (opt): We don't to optimize for binary strings, we can if it is needed.
-                if (!concat.IsBinary && merged.Count == 0) {
-                    return factory.CreateExpression(gen, (string)value);
-                }
-
-                merged.Add(MakeConstant(value));
-                opSuffix.Append(RubyOps.SuffixLiteral);
-                anyBinary |= concat.IsBinary;
+                merged.Add(StringLiteral.Transform(concat.GetValue(), concat.Encoding));
             }
 
-            // TODO (opt): We don't to optimize for binary strings, we can if it is needed.
-            if (!anyBinary && merged.Count <= RubyOps.MakeStringParamCount) {
+            if (merged.Count <= RubyOps.MakeStringParamCount) {
                 if (merged.Count == 0) {
-                    return factory.CreateExpression(gen, String.Empty);
+                    return factory.CreateExpression(gen, String.Empty, gen.Encoding);
                 }
 
-                return factory.CreateExpression(gen, opSuffix.ToString(), merged);
+                return factory.CreateExpressionM(gen, merged);
             } else {
-                return factory.CreateExpression(gen, "N", Ast.NewArrayInit(typeof(object), merged));
+                // TODO: we should emit Append calls directly, and not create an array first
+                return factory.CreateExpressionN(gen, merged);
             } 
         }
 
         //
         // Traverses expressions in "parts" and concats all contiguous literal strings/bytes.
         // Notes: 
-        //  - We place the string/byte[] values that can be concatenated so far in to "concat" list thats keep track of their total length. 
+        //  - We place the string/byte[] values that can be concatenated so far in to "concat" list that keeps track of their total length. 
         //    If we reach a non-literal expression and we have some literals ready in "concat" list we perform concat and clear the list.
         //  - "result" contains argument expressions to be passed to a CreateMutableString* overload.
         //  - "opName" contains the name of the operation. This method appends either "non-literal" suffix (for each expression) 
         //    or "encoding" suffix (for each concatenated literal).
-        //  - "anyBinary" keeps track of whether any iteral visited so far is binary (byte[]).
         //
-        private static void ConcatLiteralsAndTransformRecursive(AstGenerator/*!*/ gen, List<Expression>/*!*/ parts,
-            LiteralConcatenation/*!*/ concat, MSAst.ExpressionCollectionBuilder/*!*/ result, StringBuilder/*!*/ opName, ref bool anyBinary) {
+        // Returns false if the parts can't be concatenated due to encoding incompatibilities.
+        // 
+        private static bool ConcatLiteralsAndTransformRecursive(AstGenerator/*!*/ gen, List<Expression>/*!*/ parts,
+            LiteralConcatenation/*!*/ concat, MSAst.ExpressionCollectionBuilder/*!*/ result) {
 
             for (int i = 0; i < parts.Count; i++) {
                 Expression part = parts[i];
@@ -292,21 +306,24 @@ namespace IronRuby.Compiler.Ast {
                 StringConstructor ctor;
 
                 if ((literal = part as StringLiteral) != null) {
-                    concat.Add(literal);                    
+                    if (!concat.Add(literal)) {
+                        return false;
+                    }
                 } else if ((ctor = part as StringConstructor) != null) {
-                    ConcatLiteralsAndTransformRecursive(gen, ctor.Parts, concat, result, opName, ref anyBinary);
+                    if (!ConcatLiteralsAndTransformRecursive(gen, ctor.Parts, concat, result)) {
+                        return false;
+                    }
                 } else {
                     if (concat.Count > 0) {
-                        result.Add(MakeConstant(concat.GetValue()));
-                        opName.Append(RubyOps.SuffixLiteral);
-                        anyBinary |= concat.IsBinary;
+                        result.Add(StringLiteral.Transform(concat.GetValue(), concat.Encoding));
                         concat.Clear();
                     }
 
                     result.Add(MakeConversion(gen, part));
-                    opName.Append(RubyOps.SuffixMutable);
                 }
             }
+
+            return true;
         }
 
         #endregion

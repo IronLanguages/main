@@ -22,11 +22,11 @@ using IronRuby.Builtins;
 using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
-    using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
+    using BlockCallTargetUnsplatProcN = Func<BlockParam, object, object[], RubyArray, Proc, object>;
 
     // L(n, *)
-    internal sealed class BlockDispatcherUnsplatN : BlockDispatcherN<BlockCallTargetUnsplatN> {
-        internal BlockDispatcherUnsplatN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+    internal sealed class BlockDispatcherUnsplatProcN : BlockDispatcherN<BlockCallTargetUnsplatProcN> {
+        internal BlockDispatcherUnsplatProcN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) 
             : base(parameterCount, attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(HasUnsplatParameter);
         }
@@ -40,12 +40,12 @@ namespace IronRuby.Runtime.Calls {
         public override object InvokeNoAutoSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
             return InvokeInternal(param, self, procArg, new object[] { arg1 }); // TODO: optimize
         }
-        
+
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
             if (_parameterCount > 0) {
                 IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1) ?? new object[] { arg1 }; // TODO: optimize
-                return InvokeSplatInternal(param, self, procArg, ArrayUtils.EmptyObjects, list); 
+                return InvokeSplatInternal(param, self, procArg, ArrayUtils.EmptyObjects, list);
             } else {
                 return InvokeInternal(param, self, procArg, new object[] { arg1 }); // TODO: optimize
             }
@@ -75,24 +75,24 @@ namespace IronRuby.Runtime.Calls {
             // TODO: optimize
             if (args.Length < _parameterCount) {
                 Array.Resize(ref args, _parameterCount);
-                return _block(param, self, args, RubyOps.MakeArray0());
+                return _block(param, self, args, RubyOps.MakeArray0(), procArg);
             } else if (args.Length == _parameterCount) {
-                return _block(param, self, args, RubyOps.MakeArray0());
+                return _block(param, self, args, RubyOps.MakeArray0(), procArg);
             } else if (_parameterCount == 0) {
-                return _block(param, self, ArrayUtils.EmptyObjects, RubyOps.MakeArrayN(args));
+                return _block(param, self, ArrayUtils.EmptyObjects, RubyOps.MakeArrayN(args), procArg);
             } else {
                 var actualArgs = new object[_parameterCount];
 
                 for (int i = 0; i < actualArgs.Length; i++) {
                     actualArgs[i] = args[i];
                 }
-                
-                var array = new RubyArray(args.Length - _parameterCount); 
+
+                var array = new RubyArray(args.Length - _parameterCount);
                 for (int i = _parameterCount; i < args.Length; i++) {
                     array.Add(args[i]);
                 }
 
-                return _block(param, self, actualArgs, array);
+                return _block(param, self, actualArgs, array, procArg);
             }
         }
 
@@ -154,7 +154,7 @@ namespace IronRuby.Runtime.Calls {
                 array.Add(splattee[nextItem++]);
             }
 
-            return _block(param, self, args, array);
+            return _block(param, self, args, array, procArg);
         }
     }
 }

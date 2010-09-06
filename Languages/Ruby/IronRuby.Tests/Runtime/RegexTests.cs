@@ -39,14 +39,12 @@ puts t = /yy#{s}yy/.to_s
         }
 
         public void Regex2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 puts(/#{/a/}/)                     # MRI: (?-mix:a)
 puts(/#{nil}#{/a/}#{nil}/)         # MRI: (?-mix:a)
 puts(/#{/a/}b/)
 puts(/b#{/a/}/)
-");
-            }, @"
+", @"
 (?-mix:(?-mix:a))
 (?-mix:(?-mix:a))
 (?-mix:(?-mix:a)b)
@@ -221,18 +219,19 @@ puts(/foo/ =~ 'xxxfoo')
 ");
         }
         
+#if OBSOLETE //? 
         [Options(NoRuntime = true)]
         public void RegexEncoding1() {
             MatchData m;
             // the k-coding of the pattern string is irrelevant:
-            foreach (var pe in new[] { RubyEncoding.KCodeSJIS, RubyEncoding.KCodeUTF8, RubyEncoding.Binary }) {
+            foreach (var pe in new[] {  RubyEncoding.Binary }) {
                 var p = MutableString.CreateBinary(new byte[] { 0x82, 0xa0, (byte)'{', (byte)'2', (byte)'}' }, pe);
 
                 var r = new RubyRegex(p, RubyRegexOptions.NONE);
                 var rs = new RubyRegex(p, RubyRegexOptions.SJIS);
 
                 // the k-coding of the string is irrelevant:
-                foreach (var se in new[] { RubyEncoding.KCodeSJIS, RubyEncoding.KCodeUTF8, RubyEncoding.Binary }) {
+                foreach (var se in new[] { RubyEncoding.Binary }) {
                     var s = MutableString.CreateBinary(new byte[] { 0x82, 0xa0,  0xa0 }, se);
                     var t = MutableString.CreateBinary(new byte[] { 0x82, 0xa0,  0xa0,  0x82, 0xa0,  0xa0, 0xff }, se);
                     var u = MutableString.CreateBinary(new byte[] { 0x82, 0xa0,  0x82, 0xa0,  0x82, 0xa0 }, se);
@@ -355,6 +354,7 @@ puts(/foo/ =~ 'xxxfoo')
             Assert(m.GetGroupLength(3) == (l = SJIS.GetByteCount("bbb")));
             Assert(m.GetGroupEnd(3) == s + l);
         }
+#endif
     }
 }
 

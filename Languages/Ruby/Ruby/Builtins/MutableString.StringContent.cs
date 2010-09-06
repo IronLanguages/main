@@ -150,11 +150,7 @@ namespace IronRuby.Builtins {
             }
 
             public override Content/*!*/ SwitchToStringContent() {
-                if (_owner._encoding.IsKCoding) {
-                    return SwitchToBinary();
-                } else {
-                    return this;
-                }
+                return this;
             }
 
             public override Content/*!*/ SwitchToMutableContent() {

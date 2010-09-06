@@ -307,9 +307,9 @@ namespace IronRuby.Tests {
 
                 case Tokens.StringContent:
                     if (value.StringContent is string) {
-                        output.Write("String(\"{0}\")", Parser.EscapeString((string)value.StringContent));
+                        output.Write("String(\"{0}\", {1})", Parser.EscapeString((string)value.StringContent), value.Encoding);
                     } else {
-                        output.Write("String({0})", BitConverter.ToString((byte[])value.StringContent));
+                        output.Write("String({0}), {1}", BitConverter.ToString((byte[])value.StringContent), value.Encoding);
                     }
                     break;
 

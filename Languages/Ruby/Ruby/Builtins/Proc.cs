@@ -203,54 +203,54 @@ namespace IronRuby.Builtins {
 
         // Call overloads don't check parameter count, this is done by Proc#call.
 
-        public object Call() {
+        public object Call(Proc procArg) {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield0(_self, blockParam));
+            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield0(procArg, _self, blockParam));
         }
 
-        public object Call(object arg1) {
+        public object Call(Proc procArg, object arg1) {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
 
             // lambda calls are weird:
             var result = (_kind == ProcKind.Lambda) ?
-                RubyOps.YieldNoAutoSplat1(arg1, _self, blockParam) :
-                RubyOps.Yield1(arg1, _self, blockParam);
+                RubyOps.YieldNoAutoSplat1(arg1, procArg, _self, blockParam) :
+                RubyOps.Yield1(arg1, procArg, _self, blockParam);
 
             return RubyOps.MethodProcCall(blockParam, result);
         }
 
-        public object Call(object arg1, object arg2) {
+        public object Call(Proc procArg, object arg1, object arg2) {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield2(arg1, arg2, _self, blockParam));
+            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield2(arg1, arg2, procArg, _self, blockParam));
         }
 
-        public object Call(object arg1, object arg2, object arg3) {
+        public object Call(Proc procArg, object arg1, object arg2, object arg3) {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield3(arg1, arg2, arg3, _self, blockParam));
+            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield3(arg1, arg2, arg3, procArg, _self, blockParam));
         }
 
-        public object Call(object arg1, object arg2, object arg3, object arg4) {
+        public object Call(Proc procArg, object arg1, object arg2, object arg3, object arg4) {
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield4(arg1, arg2, arg3, arg4, _self, blockParam));
+            return RubyOps.MethodProcCall(blockParam, RubyOps.Yield4(arg1, arg2, arg3, arg4, procArg, _self, blockParam));
         }
 
-        public object Call(params object[]/*!*/ args) {
+        public object Call(Proc procArg, params object[]/*!*/ args) {
             switch (args.Length) {
-                case 0: return Call();
-                case 1: return Call(args[0]);
-                case 2: return Call(args[0], args[1]);
-                case 3: return Call(args[0], args[1], args[2]);
-                case 4: return Call(args[0], args[1], args[2], args[3]);
+                case 0: return Call(procArg);
+                case 1: return Call(procArg, args[0]);
+                case 2: return Call(procArg, args[0], args[1]);
+                case 3: return Call(procArg, args[0], args[1], args[2]);
+                case 4: return Call(procArg, args[0], args[1], args[2], args[3]);
             }
 
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            return RubyOps.MethodProcCall(blockParam, RubyOps.YieldN(args, _self, blockParam));
+            return RubyOps.MethodProcCall(blockParam, RubyOps.YieldN(args, procArg, _self, blockParam));
         }
 
-        public object CallN(object[]/*!*/ args) {
+        public object CallN(Proc procArg, object[]/*!*/ args) {
             Debug.Assert(args.Length > 4);
             var blockParam = RubyOps.CreateBfcForProcCall(this);
-            return RubyOps.MethodProcCall(blockParam, RubyOps.YieldN(args, _self, blockParam));
+            return RubyOps.MethodProcCall(blockParam, RubyOps.YieldN(args, procArg, _self, blockParam));
         }
 
         #endregion
@@ -295,6 +295,10 @@ namespace IronRuby.Builtins {
         /// </summary>
         public static Proc/*!*/ CreateMethodInvoker(RubyScope/*!*/ scope, string/*!*/ methodName) {
             ContractUtils.RequiresNotNull(scope, "scope");
+
+            // TODO: 
+            // This should pass a proc parameter (use BlockDispatcherUnsplatProcN).
+            // MRI 1.9.2 doesn't do so though (see http://redmine.ruby-lang.org/issues/show/3792).
 
             var site = CallSite<Func<CallSite, object, object, object, object>>.Create(
                 RubyCallAction.Make(

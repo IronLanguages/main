@@ -119,7 +119,7 @@ namespace IronRubyRack {
         public static MutableString Join(RubyArray array, string joiner) {
             return IronRuby.Builtins.IListOps.Join(
                 new IronRuby.Runtime.ConversionStorage<MutableString>(IronRubyEngine.Context),
-                array, MutableString.Create(joiner, RubyEncoding.Default)
+                array, MutableString.Create(joiner, RubyEncoding.UTF8)
             );
         }
     }

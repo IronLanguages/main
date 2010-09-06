@@ -55,18 +55,15 @@ foobarbaz
         }
 
         public void Strings2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 puts ""foo#{1;2;3}baz""
-");
-            }, @"
+", @"
 foo3baz
 ");
         }
 
         public void Strings3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class String; def to_s; 'S'; end; end
 class Fixnum; def to_s; 'N'; end; end
 
@@ -81,8 +78,7 @@ puts ""-#{1}+#{1}""
 puts ""-#{1}+#{1}-""
 
 puts ""-#{x = 'bob'}-""
-");
-            }, @"
+", @"
 """"
 N
 N-
@@ -244,7 +240,8 @@ SUB
         public void Symbols1() {
             byte[] bytes = Encoding.UTF8.GetBytes("α");
 
-            RubySymbol a, b, c, d;
+            RubySymbol a, b;
+#if OBSOLTE
             a = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.Binary));
             b = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.KCodeSJIS));
             c = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.KCodeUTF8));
@@ -253,9 +250,9 @@ SUB
             Assert(a.Equals(b));
             Assert(a.Equals(c));
             Assert(a.Equals(d));
-
+#endif
             a = Context.CreateSymbolInternal(MutableString.CreateBinary(Encoding.ASCII.GetBytes("foo"), RubyEncoding.Binary));
-            b = Context.CreateSymbolInternal(MutableString.CreateMutable("foo", RubyEncoding.KCodeUTF8));
+            b = Context.CreateSymbolInternal(MutableString.CreateMutable("foo", RubyEncoding.UTF8));
             Assert(a.Equals(b));
         }
         
@@ -314,7 +311,7 @@ SUB
         private void Inspect2() {
             const char sq = '\'';
 
-            var sjisEncoding = RubyEncoding.KCodeSJIS.RealEncoding;
+            var sjisEncoding = RubyEncoding.SJIS;
             // あ
             var sjisWide = new byte[] { 0x82, 0xa0 };
             // \u{12345} in UTF-8:

@@ -68,7 +68,7 @@ namespace IronRuby.Builtins {
             [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
 
             // options:
-            RubyIOOps.TryConvertToOptions(toHash, ref options, ref optionsOrMode, ref optionsOrPermissions);
+            Protocols.TryConvertToOptions(toHash, ref options, ref optionsOrMode, ref optionsOrPermissions);
 
             var toIntSite = toInt.GetSite(TryConvertToFixnumAction.Make(toInt.Context));
 

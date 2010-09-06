@@ -22,46 +22,45 @@ using System.Diagnostics;
 using IronRuby.Builtins;
 
 namespace IronRuby.Runtime.Calls {
-    using BlockCallTargetN = Func<BlockParam, object, object[], object>;
+    using BlockCallTargetProcN = Func<BlockParam, object, object[], Proc, object>;
 
-    // L(n > 4, -)
-    internal sealed class BlockDispatcherN : BlockDispatcherN<BlockCallTargetN> {
-        internal BlockDispatcherN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+    // L(n > 4, -, &)
+    internal sealed class BlockDispatcherProcN : BlockDispatcherN<BlockCallTargetProcN> {
+        internal BlockDispatcherProcN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
             : base(parameterCount, attributesAndArity, sourcePath, sourceLine) {
-            Debug.Assert(parameterCount > BlockDispatcher.MaxBlockArity);
             Debug.Assert(!HasUnsplatParameter);
+            Debug.Assert(HasProcParameter);
         }
 
         // R(0, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg) {
-            // TODO: warning except for L == 1 nested l-value
-            return _block(param, self, new object[_parameterCount]);
+            return _block(param, self, new object[_parameterCount], procArg);
         }
 
         // R(1, -)
         public override object InvokeNoAutoSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
-            return _block(param, self, MakeArray(arg1));
+            return _block(param, self, MakeArray(arg1), procArg);
         }
-        
+
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
-            IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1) ?? new object[] { arg1 };                
-            return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, list));
+            IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1) ?? new object[] { arg1 };
+            return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, list), procArg);
         }
 
         // R(2, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2) {
-            return _block(param, self, MakeArray(arg1, arg2));
+            return _block(param, self, MakeArray(arg1, arg2), procArg);
         }
 
         // R(3, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3) {
-            return _block(param, self, MakeArray(arg1, arg2, arg3));
+            return _block(param, self, MakeArray(arg1, arg2, arg3), procArg);
         }
 
         // R(4, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, object arg4) {
-            return _block(param, self, MakeArray(arg1, arg2, arg3, arg4));
+            return _block(param, self, MakeArray(arg1, arg2, arg3, arg4), procArg);
         }
 
         // R(N, -)
@@ -73,32 +72,32 @@ namespace IronRuby.Runtime.Calls {
                 Array.Resize(ref args, _parameterCount);
             }
 
-            return _block(param, self, args);
+            return _block(param, self, args, procArg);
         }
 
         // R(0, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
-            return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, splattee));
+            return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, splattee), procArg);
         }
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, IList/*!*/ splattee) {
-            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1), 1, splattee));
+            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1), 1, splattee), procArg);
         }
 
         // R(2, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, IList/*!*/ splattee) {
-            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2), 2, splattee));
+            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2), 2, splattee), procArg);
         }
 
         // R(3, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
-            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2, arg3), 3, splattee));
+            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2, arg3), 3, splattee), procArg);
         }
 
         // R(4, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
-            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2, arg3, arg4), 4, splattee));
+            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2, arg3, arg4), 4, splattee), procArg);
         }
 
         // R(N, *)
@@ -106,12 +105,12 @@ namespace IronRuby.Runtime.Calls {
             Debug.Assert(args.Length > MaxBlockArity);
             int i, j;
             CreateArgumentsFromSplattee(_parameterCount, out i, out j, ref args, splattee);
-            return _block(param, self, args);
+            return _block(param, self, args, procArg);
         }
 
         // R(N, *, =)
         public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
-            return _block(param, self, CreateArgumentsFromSplatteeAndRhs(_parameterCount, args, splattee, rhs));
+            return _block(param, self, CreateArgumentsFromSplatteeAndRhs(_parameterCount, args, splattee, rhs), procArg);
         }
     }
 }

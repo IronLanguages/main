@@ -2157,6 +2157,7 @@ namespace IronRuby.Compiler {
             Skip(c);
 
             object content;
+            RubyEncoding encoding;
 
             // ?\{escape}
             if (c == '\\') {
@@ -2164,31 +2165,39 @@ namespace IronRuby.Compiler {
                 if (c == 'u') {
                     // \uFFFF, \u{xxxxxx}
                     Skip(c);
-                    int codepoint = (Peek() == '{') ? ReadUnicodeCodePoint() : ReadUnicodeEscape();
-                    content = UnicodeCodePointToString(codepoint);
+                    content = UnicodeCodePointToString(Peek() == '{' ? ReadUnicodeEscape6() : ReadUnicodeEscape4());
+                    encoding = RubyEncoding.UTF8;
                     MarkSingleLineTokenEnd();
                 } else {
                     // \xXX, \M-x, ...
                     c = ReadEscape();
                     if (c <= 0x7f) {
-                        // ascii encoding
                         content = new String((char)c, 1);
+                        encoding = _encoding;
                     } else {
                         Debug.Assert(c <= 0xff);
-                        // binary encoding
                         content = new[] { (byte)c };
+                        encoding = (_encoding == RubyEncoding.Ascii) ? RubyEncoding.Binary : _encoding;
                     }
 
                     // \M-{eoln} eats the eoln:
                     MarkMultiLineTokenEnd();
                 }
             } else {
-                content = new String((char)c, 1);
+                int d;
+                if (IsHighSurrogate(c) && IsLowSurrogate(d = Peek())) {
+                    Skip(d);
+                    content = new String(new[] { (char)c, (char)d });
+                } else {
+                    content = new String((char)c, 1);
+                }
+                encoding = _encoding;
                 MarkSingleLineTokenEnd();
             }
 
             LexicalState = LexicalState.EXPR_END;
             _tokenValue.StringContent = content;
+            _tokenValue.Encoding = encoding;
             return Tokens.Character;
         }
 
@@ -2453,7 +2462,7 @@ namespace IronRuby.Compiler {
 
             switch (c) {
                 case 'x':
-                    content.Append('\\');
+                    content.AppendAscii('\\');
                     AppendEscapedHexEscape(content);
                     break;
 
@@ -2463,7 +2472,9 @@ namespace IronRuby.Compiler {
                         break;
                     }
 
-                    content.Append('\\', 'M', '-');
+                    content.AppendAscii('\\');
+                    content.AppendAscii('M');
+                    content.AppendAscii('-');
 
                     // escaped:
                     AppendRegularExpressionCompositeEscape(content, term);
@@ -2475,13 +2486,16 @@ namespace IronRuby.Compiler {
                         break;
                     }
 
-                    content.Append('\\', 'C', '-');
-
+                    content.AppendAscii('\\');
+                    content.AppendAscii('C');
+                    content.AppendAscii('-');
+                    
                     AppendRegularExpressionCompositeEscape(content, term);
                     break;
 
                 case 'c':
-                    content.Append('\\', 'c');
+                    content.AppendAscii('\\');
+                    content.AppendAscii('c');
                     AppendRegularExpressionCompositeEscape(content, term);
                     break;
                     
@@ -2491,18 +2505,18 @@ namespace IronRuby.Compiler {
 
                 default:
                     if (IsOctalDigit(c)) {
-                        content.Append('\\');
+                        content.AppendAscii('\\');
                         AppendEscapedOctalEscape(content);
                         break;
                     }
 
                     if (c != '\\' || c != term) {
-                        content.Append('\\');
+                        content.AppendAscii('\\');
                     }
 
                     // ReadEscape is not called if the backslash is followed by an eoln:
                     Debug.Assert(c != '\n' && (c != '\r' || Peek() != '\n'));
-                    content.Append((char)c);
+                    AppendCharacter(content, c);
                     break;
             }
         }
@@ -2514,7 +2528,7 @@ namespace IronRuby.Compiler {
             } else if (c == -1) {
                 InvalidEscapeCharacter();
             } else {
-                content.Append((char)c);
+                AppendCharacter(content, c);
             }
         }
 
@@ -2523,7 +2537,7 @@ namespace IronRuby.Compiler {
             ReadOctalEscape(0);
 
             Debug.Assert(IsOctalDigit(_lineBuffer[start])); // first digit
-            content.Append(_lineBuffer, start, _bufferPos - start);
+            content.AppendAscii(_lineBuffer, start, _bufferPos - start);
         }
 
         private void AppendEscapedHexEscape(MutableStringBuilder/*!*/ content) {
@@ -2531,20 +2545,20 @@ namespace IronRuby.Compiler {
             ReadHexEscape();
 
             Debug.Assert(_lineBuffer[start] == 'x');
-            content.Append(_lineBuffer, start, _bufferPos - start);
+            content.AppendAscii(_lineBuffer, start, _bufferPos - start);
         }
 
         private void AppendEscapedUnicode(MutableStringBuilder/*!*/ content) {
             int start = _bufferPos - 1;
-
             if (Peek() == '{') {
-                ReadUnicodeCodePoint();
+                // \u{codepoint codepoint ... codepoint}
+                AppendUnicodeCodePoints(null);
             } else {
-                ReadUnicodeEscape();
+                // \uFFFF
+                ReadUnicodeEscape4();
             }
-
             Debug.Assert(_lineBuffer[start] == 'u');
-            content.Append(_lineBuffer, start, _bufferPos - start);
+            content.AppendAscii(_lineBuffer, start, _bufferPos - start);
         }
 
         // Reads octal number of at most 3 digits.
@@ -2582,7 +2596,7 @@ namespace IronRuby.Compiler {
         }
 
         // Peeks exactly 4 hexadecimal characters (\uFFFF).
-        private int ReadUnicodeEscape() {
+        private int ReadUnicodeEscape4() {
             int d4 = ToDigit(Peek(0));
             int d3 = ToDigit(Peek(1));
             int d2 = ToDigit(Peek(2));
@@ -2597,52 +2611,107 @@ namespace IronRuby.Compiler {
         }
 
         // Reads {at-most-six-hexa-digits}
-        private int ReadUnicodeCodePoint() {
+        private int ReadUnicodeEscape6() {
             int c = Read();
             Debug.Assert(c == '{');
 
-            int codepoint = 0;
-            int i = 0;
-            while (true) {
-                c = Peek();
-                if (i == 6) {
-                    break;
-                }
+            bool isEmpty;
+            int codepoint = ReadUnicodeCodePoint(out isEmpty);
 
-                int digit = ToDigit(c);
-                if (digit >= 16) {
-                    break;
-                }
-
-                codepoint = (codepoint << 4) | digit;
-                i++;
-                Skip(c);
-            }
-
-            if (c == '}') {
-                Skip(c);
+            if (Peek() == '}') {
+                Skip();
             } else {
-                InvalidEscapeCharacter();
+                ReportError(Errors.UntermintedUnicodeEscape);
+                isEmpty = false;
             }
-            
-            if (codepoint > 0x10ffff) {
-                ReportError(Errors.TooLargeUnicodeCodePoint);
+
+            if (isEmpty) {
+                ReportError(Errors.InvalidUnicodeEscape);
             }
 
             return codepoint;
         }
 
-        // Reads up to 6 hex characters, treats them as a exadecimal code-point value and appends the result to the buffer.
-        private void AppendUnicodeCodePoint(MutableStringBuilder/*!*/ content, StringProperties stringType) {
-            int codepoint = ReadUnicodeCodePoint();
+        // Parses [0-9A-F]{1,6}
+        private int ReadUnicodeCodePoint(out bool isEmpty) {
+            int codepoint = 0;
+            int i = 0;
+            while (true) {
+                int digit = ToDigit(Peek());
+                if (digit >= 16) {
+                    break;
+                }
 
-            if (codepoint < 0x10000) {
-                // code-points [0xd800 .. 0xdffff] are not treated as invalid
-                AppendCharacter(content, codepoint, stringType);
-            } else {
-                codepoint -= 0x10000;
-                content.Append((char)((codepoint / 0x400) + 0xd800), (char)((codepoint % 0x400) + 0xdc00));
+                if (i < 7) {
+                    codepoint = (codepoint << 4) | digit;
+                }
+
+                i++;
+                Skip();
             }
+
+            if (codepoint > 0x10ffff) {
+                ReportError(Errors.TooLargeUnicodeCodePoint);
+                codepoint = (int)'?';
+            }
+
+            isEmpty = i == 0;
+            return codepoint;
+        }
+
+        private void AppendUnicodeCodePoints(MutableStringBuilder content) {
+            bool isEmpty;
+            Skip('{');
+            while (true) {
+                int codepoint = ReadUnicodeCodePoint(out isEmpty);
+                if (content != null && !isEmpty) {
+                    AppendUnicodeCodePoint(content, codepoint);
+                }
+
+                int c = Peek();
+                if (c == '}') {
+                    Skip();
+                    break;
+                }
+                if (c != ' ') {
+                    ReportError(Errors.UntermintedUnicodeEscape);
+                    isEmpty = false;
+                    break;
+                }
+                Skip();
+            }
+            if (isEmpty) {
+                ReportError(Errors.InvalidUnicodeEscape);
+            }
+        }
+
+        // Reads \uFFFF or \u{FFFFFF} and appends the character to the string content:
+        private void AppendUnicodeCodePoint(MutableStringBuilder/*!*/ content, int codepoint) {
+            SwitchToUtf8(content);
+            content.AppendUnicodeCodepoint(codepoint);
+        }
+
+        private void SwitchToUtf8(MutableStringBuilder/*!*/ content) {
+            if (content.IsAscii) {
+                content.Encoding = RubyEncoding.UTF8;
+            } else if (content.Encoding != RubyEncoding.UTF8) {
+                ReportError(Errors.EncodingsMixed, content.Encoding, RubyEncoding.UTF8.Name);
+            }
+        }
+        
+        private void AppendByte(MutableStringBuilder/*!*/ content, int b) {
+            if (b >= 0x80 && content.Encoding == RubyEncoding.Ascii) {
+                content.Encoding = RubyEncoding.Binary;
+            }
+            content.Append((byte)b);
+        }
+
+        private void AppendCharacter(MutableStringBuilder/*!*/ content, int c) {
+            // c is encoded via the current source encoding (__ENCODING__):
+            if (c >= 0x80 && !content.IsAscii && content.Encoding != _encoding) {
+                ReportError(Errors.EncodingsMixed, content.Encoding, _encoding);
+            }
+            content.Append((char)c);
         }
 
         private static string/*!*/ UnicodeCodePointToString(int codepoint) {
@@ -2659,6 +2728,14 @@ namespace IronRuby.Compiler {
             return (highSurrogate - 0xd800) * 0x400 + (lowSurrogate - 0xdc00) + 0x10000;
         }
 
+        public static bool IsHighSurrogate(int c) {
+            return c >= 0xd800 && c <= 0xdbff;
+        }
+
+        public static bool IsLowSurrogate(int c) {
+            return c >= 0xdc00 && c <= 0xdfff;
+        }
+        
         #endregion
 
         #region Strings
@@ -2723,16 +2800,17 @@ namespace IronRuby.Compiler {
                             if ((stringType & StringProperties.ExpandsEmbedded) != 0) {
                                 continue;
                             }
-                            content.Append('\\');
+                            content.AppendAscii('\\');
                         }
                     } else if (c == '\\') {
                         if ((stringType & StringProperties.RegularExpression) != 0) {
-                            content.Append('\\');
+                            content.AppendAscii('\\');
                         }
                     } else if ((stringType & StringProperties.RegularExpression) != 0) {
                         // \uFFFF, \u{codepoint}
                         if (c == 'u') {
-                            content.Append('\\');
+                            SwitchToUtf8(content);
+                            content.AppendAscii('\\');
                             AppendEscapedUnicode(content);
                         } else {
                             SeekRelative(-eolnWidth);
@@ -2741,53 +2819,27 @@ namespace IronRuby.Compiler {
                         continue;
                     } else if ((stringType & StringProperties.ExpandsEmbedded) != 0) {
                         if (c == 'u') {
-                            // TODO: if the string contains ascii characters only => it is ok and the encoding of the string will be UTF8
-                            if (_encoding != RubyEncoding.UTF8) {
-                                ReportWarning(Errors.EncodingsMixed, RubyEncoding.UTF8.Name, _encoding.Name);
-                                content.Append('\\');
-                                content.Append('u');
-                                continue;
-                            }
-
-                            // \uFFFF, \u{codepoint}
                             if (Peek() == '{') {
-                                AppendUnicodeCodePoint(content, stringType);
-                                continue;
+                                // \u{codepoint codepoint ... codepoint}
+                                AppendUnicodeCodePoints(content);
                             } else {
-                                c = ReadUnicodeEscape();
+                                // \uFFFF
+                                AppendUnicodeCodePoint(content, ReadUnicodeEscape4());
                             }
                         } else {
                             // other escapes:
                             SeekRelative(-eolnWidth);
-                            c = ReadEscape();
-                            Debug.Assert(c <= 0xff);
-                            AppendByte(content, (byte)c, stringType);
-                            continue;
+                            AppendByte(content, ReadEscape());
                         }
+                        continue;
                     } else if ((stringType & StringProperties.Words) != 0 && IsWhiteSpace(c)) {
-                        /* ignore backslashed spaces in %w */
+                        // ignore backslashed spaces in %w
                     } else if (c != terminator && !(openingParenthesis != 0 && c == openingParenthesis)) {
-                        content.Append('\\');
+                        content.AppendAscii('\\');
                     }
                 }
 
-                AppendCharacter(content, c, stringType);
-            }
-        }
-
-        private void AppendCharacter(MutableStringBuilder/*!*/ content, int c, StringProperties stringType) {
-            if (c == 0 && (stringType & StringProperties.Symbol) != 0) {
-                ReportError(Errors.NullCharacterInSymbol);
-            } else {
-                content.Append((char)c);
-            }
-        }
-
-        private void AppendByte(MutableStringBuilder/*!*/ content, byte b, StringProperties stringType) {
-            if (b == 0 && (stringType & StringProperties.Symbol) != 0) {
-                ReportError(Errors.NullCharacterInSymbol);
-            } else {
-                content.Append(b);
+                AppendCharacter(content, c);
             }
         }
 
@@ -2880,7 +2932,7 @@ namespace IronRuby.Compiler {
                         return StringEmbeddedCodeBegin();
                 }
                 content = new MutableStringBuilder(_encoding);
-                content.Append('#');
+                content.AppendAscii('#');
             } else {
                 content = new MutableStringBuilder(_encoding);
                 SeekRelative(-eolnWidth);
@@ -3146,7 +3198,7 @@ namespace IronRuby.Compiler {
                 }
 
                 content = new MutableStringBuilder(_encoding);
-                content.Append('#');
+                content.AppendAscii('#');
             } else {
                 content = new MutableStringBuilder(_encoding);
             }
@@ -3164,7 +3216,7 @@ namespace IronRuby.Compiler {
                 }
 
                 // append \n
-                content.Append((char)ReadNormalizeEndOfLine());
+                content.AppendAscii((char)ReadNormalizeEndOfLine());
 
                 // if we are in verbatim mode we need to yield to heredocs that were defined on the current line:
                 if (c == '\n' && _verbatim && _state.VerbatimHeredocQueue != null) {
@@ -3258,7 +3310,7 @@ namespace IronRuby.Compiler {
                 case -1:
                     _unterminatedToken = true;
                     MarkSingleLineTokenEnd();
-                    ReportError(Errors.UnterminatedQuotedString);
+                    ReportError(Errors.UnterminatedString);
                     return Tokens.EndOfFile;
 
                 case '(': terminator = ')'; break;

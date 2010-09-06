@@ -64,7 +64,7 @@ namespace IronRuby.Builtins {
             _options = options & ~RubyRegexOptions.Once;
 
             RubyEncoding encoding = RubyEncoding.GetRegexEncoding(options);
-            if (encoding != null || pattern.Encoding.IsKCoding) {
+            if (encoding != null) {
                 _pattern = MutableString.CreateBinary(pattern.ToByteArray(), encoding ?? RubyEncoding.Binary).Freeze();
             } else {
                 _pattern = pattern.PrepareForCharacterRead().Clone().Freeze();
@@ -130,8 +130,6 @@ namespace IronRuby.Builtins {
                 }
                 
                 strInput = ForceEncoding(input, encoding.Encoding, start);
-            } else if (input.Encoding.IsKCoding) {
-                strInput = input.ToString(BinaryEncoding.Instance);
             } else {
                 _pattern.RequireCompatibleEncoding(input);
                 input.PrepareForCharacterRead();
@@ -436,7 +434,7 @@ namespace IronRuby.Builtins {
             result.Append('/');
             AppendEscapeForwardSlash(result, _pattern);
             result.Append('/');
-            AppendOptionString(result, true, true);
+            AppendOptionString(result, true);
             return result;
         }
 
@@ -444,17 +442,17 @@ namespace IronRuby.Builtins {
             Assert.NotNull(result);
 
             result.Append("(?");
-            if (AppendOptionString(result, true, false) < 3) {
+            if (AppendOptionString(result, true) < 3) {
                 result.Append('-');
             }
-            AppendOptionString(result, false, false);
+            AppendOptionString(result, false);
             result.Append(':');
             AppendEscapeForwardSlash(result, _pattern);
             result.Append(')');
             return result;
         }
 
-        private int AppendOptionString(MutableString/*!*/ result, bool enabled, bool includeEncoding) {
+        private int AppendOptionString(MutableString/*!*/ result, bool enabled) {
             int count = 0;
             var options = Options;
 
@@ -473,16 +471,6 @@ namespace IronRuby.Builtins {
                 count++;
             }
 
-            if (includeEncoding) {
-                switch (options & RubyRegexOptions.EncodingMask) {
-                    case RubyRegexOptions.NONE: break;
-                    case RubyRegexOptions.EUC: result.Append('e'); break;
-                    case RubyRegexOptions.FIXED: result.Append('n'); break;
-                    case RubyRegexOptions.UTF8: result.Append('u'); break;
-                    case RubyRegexOptions.SJIS: result.Append('s'); break;
-                    default: throw Assert.Unreachable;
-                }
-            }
             return count;
         }
 
