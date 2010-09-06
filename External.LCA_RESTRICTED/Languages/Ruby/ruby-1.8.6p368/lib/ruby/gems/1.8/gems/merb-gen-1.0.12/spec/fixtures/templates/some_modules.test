@@ -1,3 +1,0 @@
-<% with_modules(["Blah", "Monkey"]) do -%>
-test
-<% end -%>

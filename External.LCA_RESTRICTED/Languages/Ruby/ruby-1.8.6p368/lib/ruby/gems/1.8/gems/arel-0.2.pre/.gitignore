@@ -1,6 +1,0 @@
-coverage/*
-config/database.yml
-spec/fixtures/*database*
-*.DS_Store
-debug.log
-pkg

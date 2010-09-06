@@ -1,2 +1,0 @@
-class TextAreaSpecs < SpecController
-end

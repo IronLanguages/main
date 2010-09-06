@@ -1,2 +1,0 @@
-class CheckBoxSpecs < SpecController
-end

@@ -1,2 +1,0 @@
-class SubmitSpecs < SpecController
-end

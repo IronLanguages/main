@@ -1,2 +1,0 @@
-class FileFieldSpecs < SpecController
-end

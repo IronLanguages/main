@@ -1,2 +1,0 @@
-class BoundCheckBoxSpecs < SpecController
-end

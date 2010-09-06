@@ -1,3 +1,0 @@
-class LabelSpecs < SpecController
-
-end

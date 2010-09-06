@@ -1,1 +1,0 @@
-# TODO: Add a view spec stub here.

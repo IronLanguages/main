@@ -1,2 +1,0 @@
-class CustomBuilderSpecs < SpecController
-end
