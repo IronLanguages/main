@@ -217,9 +217,9 @@ class UnitTestSetup
 
   # Helpers for Rails tests
   
-  RailsVersion = "3.0.0.rc"
+  RailsVersion = "3.0.0"
   TestUnitVersion = "2.1.1"
-  SqlServerAdapterVersion = "2.3.8"
+  SqlServerAdapterVersion = "3.0.0"
   
   def gather_rails_files
     rails_tests_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/Rails-#{RailsVersion}", ENV['DLR_ROOT'])

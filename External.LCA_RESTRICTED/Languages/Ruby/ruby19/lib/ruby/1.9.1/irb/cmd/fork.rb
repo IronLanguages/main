@@ -1,15 +1,15 @@
 #
-#   fork.rb - 
-#   	$Release Version: 0.9.5 $
-#   	$Revision: 14912 $
+#   fork.rb -
+#   	$Release Version: 0.9.6 $
+#   	$Revision: 27967 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
-@RCS_ID='-$Id: fork.rb 14912 2008-01-06 15:49:38Z akr $-'
+@RCS_ID='-$Id: fork.rb 27967 2010-05-23 08:48:44Z nobu $-'
 
 
 module IRB
@@ -17,8 +17,8 @@ module IRB
     class Fork<Nop
       def execute(&block)
 	pid = send ExtendCommand.irb_original_method_name("fork")
-	unless pid 
-	  class<<self
+	unless pid
+	  class << self
 	    alias_method :exit, ExtendCommand.irb_original_method_name('exit')
 	  end
 	  if iterator?

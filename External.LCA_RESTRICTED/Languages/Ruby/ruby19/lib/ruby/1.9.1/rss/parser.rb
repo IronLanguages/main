@@ -98,7 +98,7 @@ module RSS
       return rss if maybe_xml?(rss)
 
       uri = to_uri(rss)
-      
+
       if uri.respond_to?(:read)
         uri.read
       elsif !rss.tainted? and File.readable?(rss)
@@ -133,7 +133,7 @@ module RSS
         listener.raise_for_undefined_entity?
       end
     end
-    
+
     def initialize(rss)
       @listener = self.class.listener.new
       @rss = rss
@@ -196,13 +196,13 @@ module RSS
       def available_tags(uri)
         (@@accessor_bases[uri] || {}).keys
       end
-      
+
       # register uri against this name.
       def register_uri(uri, name)
         @@registered_uris[name] ||= {}
         @@registered_uris[name][uri] = nil
       end
-      
+
       # test if this uri is registered against this name
       def uri_registered?(uri, name)
         @@registered_uris[name].has_key?(uri)
@@ -228,11 +228,11 @@ module RSS
         install_accessor_base(uri, name, accessor_base)
         def_get_text_element(uri, name, *get_file_and_line_from_caller(1))
       end
-      
+
       def raise_for_undefined_entity?
         true
       end
-    
+
       private
       # set the accessor for the uri, tag_name pair
       def install_accessor_base(uri, tag_name, accessor_base)
@@ -279,7 +279,7 @@ module RSS
       @xml_element = nil
       @last_xml_element = nil
     end
-    
+
     # set instance vars for version, encoding, standalone
     def xmldecl(version, encoding, standalone)
       @version, @encoding, @standalone = version, encoding, standalone
@@ -417,7 +417,7 @@ module RSS
       end
     end
 
-    NAMESPLIT = /^(?:([\w:][-\w\d.]*):)?([\w:][-\w\d.]*)/
+    NAMESPLIT = /^(?:([\w:][-\w.]*):)?([\w:][-\w.]*)/
     def split_name(name)
       name =~ NAMESPLIT
       [$1 || '', $2]
@@ -446,7 +446,7 @@ module RSS
     def start_get_text_element(tag_name, prefix, ns, required_uri)
       pr = Proc.new do |text, tags|
         setter = self.class.setter(required_uri, tag_name)
-        if @last_element.respond_to?(setter)
+        if setter and @last_element.respond_to?(setter)
           if @do_validate
             getter = self.class.getter(required_uri, tag_name)
             if @last_element.__send__(getter)

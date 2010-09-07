@@ -54,12 +54,12 @@ module Kernel
   private
   # prints arguments in pretty form.
   #
-  # pp returns nil.
+  # pp returns argument(s).
   def pp(*objs) # :doc:
     objs.each {|obj|
       PP.pp(obj)
     }
-    nil
+    objs.size <= 1 ? objs.first : objs
   end
   module_function :pp
 end
@@ -164,13 +164,7 @@ class PP < PrettyPrint
       group(1, '#<' + obj.class.name, '>', &block)
     end
 
-    if 0x100000000.class == Bignum
-      # 32bit
-      PointerMask = 0xffffffff
-    else
-      # 64bit
-      PointerMask = 0xffffffffffffffff
-    end
+    PointerMask = (1 << ([""].pack("p").size * 8)) - 1
 
     case Object.new.inspect
     when /\A\#<Object:0x([0-9a-f]+)>\z/
@@ -270,7 +264,7 @@ class PP < PrettyPrint
   module ObjectMixin
     # 1. specific pretty_print
     # 2. specific inspect
-    # 3. specific to_s if instance variable is empty
+    # 3. specific to_s
     # 4. generic pretty_print
 
     # A default pretty printing method for general objects.
@@ -296,8 +290,7 @@ class PP < PrettyPrint
         q.text self.inspect
       elsif !inspect_method && self.respond_to?(:inspect)
         q.text self.inspect
-      elsif to_s_method && /\(Kernel\)#/ !~ to_s_method.inspect &&
-            instance_variables.empty?
+      elsif to_s_method && /\(Kernel\)#/ !~ to_s_method.inspect
         q.text self.to_s
       elsif !to_s_method && self.respond_to?(:to_s)
         q.text self.to_s
@@ -375,7 +368,7 @@ end
 
 class Struct
   def pretty_print(q)
-    q.group(1, '#<struct ' + PP.mcall(self, Kernel, :class).name, '>') {
+    q.group(1, sprintf("#<struct %s", PP.mcall(self, Kernel, :class).name), '>') {
       q.seplist(PP.mcall(self, Struct, :members), lambda { q.text "," }) {|member|
         q.breakable
         q.text member.to_s
@@ -529,4 +522,3 @@ end
     end
   }
 }
-# :enddoc:

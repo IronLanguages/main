@@ -1,15 +1,14 @@
 #
 #   help.rb - helper using ri
-#   	$Release Version: 0.9.5$
-#   	$Revision: 26019 $
+#   	$Release Version: 0.9.6$
+#   	$Revision: 27254 $
 #
 # --
 #
-#   
+#
 #
 
 require 'rdoc/ri/driver'
-require 'rdoc/ri/util'
 
 require "irb/cmd/nop.rb"
 
@@ -21,6 +20,10 @@ module IRB
       rescue SystemExit
       else
         def execute(*names)
+          if names.empty?
+            Ri.interactive
+            return
+          end
           names.each do |name|
             begin
               Ri.get_info_for(name.to_s)

@@ -201,14 +201,14 @@ module WEBrick
 
     def set_error(ex, backtrace=false)
       case ex
-      when HTTPStatus::Status 
+      when HTTPStatus::Status
         @keep_alive = false if HTTPStatus::error?(ex.code)
         self.status = ex.code
-      else 
+      else
         @keep_alive = false
         self.status = HTTPStatus::RC_INTERNAL_SERVER_ERROR
       end
-      @header['content-type'] = "text/html"
+      @header['content-type'] = "text/html; charset=ISO-8859-1"
 
       if respond_to?(:create_error_page)
         create_error_page()

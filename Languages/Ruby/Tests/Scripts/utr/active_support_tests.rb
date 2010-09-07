@@ -64,6 +64,7 @@
       test_past_with_time_current_as_time_local(TimeWithZoneTest)
       test_now(TimeZoneTest)
       test_now_enforces_spring_dst_rules(TimeZoneTest)
+      test_current_returns_time_zone_today_when_zone_default_set(DateExtCalculationsTest)
     }
   end
   

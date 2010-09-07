@@ -15,16 +15,16 @@
 #                              'expires' => Time.now, # optional
 #                              'secure'  => true      # optional
 #                             )
-# 
+#
 #   cgi.out("cookie" => [cookie1, cookie2]) { "string" }
-# 
+#
 #   name    = cookie1.name
 #   values  = cookie1.value
 #   path    = cookie1.path
 #   domain  = cookie1.domain
 #   expires = cookie1.expires
 #   secure  = cookie1.secure
-# 
+#
 #   cookie1.name    = 'name'
 #   cookie1.value   = ['value1', 'value2', ...]
 #   cookie1.path    = 'path'
@@ -32,6 +32,7 @@
 #   cookie1.expires = Time.now + 30
 #   cookie1.secure  = true
 class CGI
+  @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   class Cookie < Array
 
     # Create a new CGI::Cookie object.
@@ -48,11 +49,13 @@ class CGI
     # domain:: the domain for which this cookie applies.
     # expires:: the time at which this cookie expires, as a +Time+ object.
     # secure:: whether this cookie is a secure cookie or not (default to
-    #          false).  Secure cookies are only transmitted to HTTPS 
+    #          false).  Secure cookies are only transmitted to HTTPS
     #          servers.
     #
     # These keywords correspond to attributes of the cookie object.
     def initialize(name = "", *value)
+      @domain = nil
+      @expires = nil
       if name.kind_of?(String)
         @name = name
         %r|^(.*/)|.match(ENV["SCRIPT_NAME"])
@@ -130,7 +133,7 @@ class CGI
       next unless name and values
       name = CGI::unescape(name)
       values ||= ""
-      values = values.split('&').collect{|v| CGI::unescape(v) }
+      values = values.split('&').collect{|v| CGI::unescape(v,@@accept_charset) }
       if cookies.has_key?(name)
         values = cookies[name].value + values
       end

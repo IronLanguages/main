@@ -37,16 +37,16 @@
 #     def initialize
 #       @source = SimpleDelegator.new([])
 #     end
-#     
+#
 #     def stats( records )
 #       @source.__setobj__(records)
-#       	
+#
 #       "Elements:  #{@source.size}\n" +
 #       " Non-Nil:  #{@source.compact.size}\n" +
 #       "  Unique:  #{@source.uniq.size}\n"
 #     end
 #   end
-#   
+#
 #   s = Stats.new
 #   puts s.stats(%w{James Edward Gray II})
 #   puts
@@ -57,7 +57,7 @@
 #   Elements:  4
 #    Non-Nil:  4
 #     Unique:  4
-# 
+#
 #   Elements:  8
 #    Non-Nil:  7
 #     Unique:  6
@@ -72,19 +72,19 @@
 #
 #   class Tempfile < DelegateClass(File)
 #     # constant and class member data initialization...
-#   
+#
 #     def initialize(basename, tmpdir=Dir::tmpdir)
 #       # build up file path/name in var tmpname...
-#     
+#
 #       @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600)
-#     
+#
 #       # ...
-#     
+#
 #       super(@tmpfile)
-#     
+#
 #       # below this point, all methods of File are supported...
 #     end
-#   
+#
 #     # ...
 #   end
 #
@@ -97,15 +97,15 @@
 #        super             # pass obj to Delegator constructor, required
 #        @delegate_sd_obj = obj    # store obj for future use
 #      end
-# 
+#
 #      def __getobj__
 #        @delegate_sd_obj          # return object we are delegating to, required
 #      end
-# 
+#
 #      def __setobj__(obj)
 #        @delegate_sd_obj = obj    # change delegation object, a feature we're providing
 #      end
-# 
+#
 #      # ...
 #    end
 
@@ -114,10 +114,20 @@
 # subclasses.  Subclasses should redefine \_\_getobj\_\_.  For a concrete
 # implementation, see SimpleDelegator.
 #
-class Delegator
-  [:to_s,:inspect,:=~,:!~,:===].each do |m|
-    undef_method m
+class Delegator < BasicObject
+  kernel = ::Kernel.dup
+  kernel.class_eval do
+    [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
+      undef_method m
+    end
   end
+  include kernel
+
+  # :stopdoc:
+  def self.const_missing(n)
+    ::Object.const_get(n)
+  end
+  # :startdoc:
 
   #
   # Pass in the _obj_ to delegate method calls to.  All methods supported by
@@ -127,36 +137,75 @@ class Delegator
     __setobj__(obj)
   end
 
+  #
   # Handles the magic of delegation through \_\_getobj\_\_.
+  #
   def method_missing(m, *args, &block)
+    target = self.__getobj__
     begin
-      target = self.__getobj__
-      unless target.respond_to?(m)
-        super(m, *args, &block)
-      else
-        target.__send__(m, *args, &block)
-      end
-    rescue Exception
-      $@.delete_if{|s| %r"\A#{Regexp.quote(__FILE__)}:\d+:in `method_missing'\z"o =~ s}
-      ::Kernel::raise
+      target.respond_to?(m) ? target.__send__(m, *args, &block) : super(m, *args, &block)
+    ensure
+      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:"o =~ t} if $@
     end
   end
 
-  # 
-  # Checks for a method provided by this the delegate object by fowarding the 
+  #
+  # Checks for a method provided by this the delegate object by forwarding the
   # call through \_\_getobj\_\_.
-  # 
-  def respond_to?(m, include_private = false)
-    return true if super
-    return self.__getobj__.respond_to?(m, include_private)
+  #
+  def respond_to_missing?(m, include_private)
+    r = self.__getobj__.respond_to?(m, include_private)
+    if r && include_private && !self.__getobj__.respond_to?(m, false)
+      warn "#{caller(3)[0]}: delegator does not forward private method \##{m}"
+      return false
+    end
+    r
   end
 
-  # 
-  # Returns true if two objects are considered same.
-  # 
+  #
+  # Returns the methods available to this delegate object as the union
+  # of this object's and \_\_getobj\_\_ methods.
+  #
+  def methods
+    __getobj__.methods | super
+  end
+
+  #
+  # Returns the methods available to this delegate object as the union
+  # of this object's and \_\_getobj\_\_ public methods.
+  #
+  def public_methods(all=true)
+    __getobj__.public_methods(all) | super
+  end
+
+  #
+  # Returns the methods available to this delegate object as the union
+  # of this object's and \_\_getobj\_\_ protected methods.
+  #
+  def protected_methods(all=true)
+    __getobj__.protected_methods(all) | super
+  end
+
+  # Note: no need to specialize private_methods, since they are not forwarded
+
+  #
+  # Returns true if two objects are considered of equal value.
+  #
   def ==(obj)
     return true if obj.equal?(self)
     self.__getobj__ == obj
+  end
+
+  #
+  # Returns true if two objects are not considered of equal value.
+  #
+  def !=(obj)
+    return false if obj.equal?(self)
+    __getobj__ != obj
+  end
+
+  def !
+    !__getobj__
   end
 
   #
@@ -175,26 +224,77 @@ class Delegator
     raise NotImplementedError, "need to define `__setobj__'"
   end
 
+  #
   # Serialization support for the object returned by \_\_getobj\_\_.
+  #
   def marshal_dump
-    __getobj__
-  end
-  # Reinitializes delegation from a serialized object.
-  def marshal_load(obj)
-    __setobj__(obj)
+    ivars = instance_variables.reject {|var| /\A@delegate_/ =~ var}
+    [
+      :__v2__,
+      ivars, ivars.map{|var| instance_variable_get(var)},
+      __getobj__
+    ]
   end
 
-  # Clone support for the object returned by \_\_getobj\_\_.
-  def clone
-    new = super
-    new.__setobj__(__getobj__.clone)
-    new
+  #
+  # Reinitializes delegation from a serialized object.
+  #
+  def marshal_load(data)
+    version, vars, values, obj = data
+    if version == :__v2__
+      vars.each_with_index{|var, i| instance_variable_set(var, values[i])}
+      __setobj__(obj)
+    else
+      __setobj__(data)
+    end
   end
-  # Duplication support for the object returned by \_\_getobj\_\_.
-  def dup
-    new = super
-    new.__setobj__(__getobj__.dup)
-    new
+
+  def initialize_clone(obj) # :nodoc:
+    self.__setobj__(obj.__getobj__.clone)
+  end
+  def initialize_dup(obj) # :nodoc:
+    self.__setobj__(obj.__getobj__.dup)
+  end
+  private :initialize_clone, :initialize_dup
+
+  ##
+  # :method: trust
+  # Trust both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  ##
+  # :method: untrust
+  # Untrust both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  ##
+  # :method: taint
+  # Taint both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  ##
+  # :method: untaint
+  # Untaint both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  [:trust, :untrust, :taint, :untaint].each do |method|
+    define_method method do
+      __getobj__.send(method)
+      super()
+    end
+  end
+
+  #
+  # Freeze self and target at once.
+  #
+  def freeze
+    __getobj__.freeze
+    super
+  end
+
+  @delegator_api = self.public_instance_methods
+  def self.public_api   # :nodoc:
+    @delegator_api
   end
 end
 
@@ -233,12 +333,11 @@ end
 # :stopdoc:
 def Delegator.delegating_block(mid)
   lambda do |*args, &block|
+    target = self.__getobj__
     begin
-      __getobj__.__send__(mid, *args, &block)
-    rescue
-      re = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o
-      $!.backtrace.delete_if {|t| re =~ t}
-      raise
+      target.__send__(mid, *args, &block)
+    ensure
+      $@.delete_if {|t| /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o =~ t} if $@
     end
   end
 end
@@ -256,10 +355,10 @@ end
 #
 def DelegateClass(superclass)
   klass = Class.new(Delegator)
-  methods = superclass.public_instance_methods(true)
-  methods -= ::Delegator.public_instance_methods
+  methods = superclass.instance_methods
+  methods -= ::Delegator.public_api
   methods -= [:to_s,:inspect,:=~,:!~,:===]
-  klass.module_eval {
+  klass.module_eval do
     def __getobj__  # :nodoc:
       @delegate_dc_obj
     end
@@ -267,11 +366,15 @@ def DelegateClass(superclass)
       raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
-  }
-  klass.module_eval do
     methods.each do |method|
       define_method(method, Delegator.delegating_block(method))
     end
+  end
+  klass.define_singleton_method :public_instance_methods do |all=true|
+    super(all) - superclass.protected_instance_methods
+  end
+  klass.define_singleton_method :protected_instance_methods do |all=true|
+    super(all) | superclass.protected_instance_methods
   end
   return klass
 end

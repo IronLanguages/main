@@ -1,12 +1,12 @@
 #
-#   notifier.rb - output methods used by irb 
-#   	$Release Version: 0.9.5$
-#   	$Revision: 16810 $
+#   notifier.rb - output methods used by irb
+#   	$Release Version: 0.9.6$
+#   	$Revision: 26986 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 require "e2mmap"
@@ -15,17 +15,17 @@ require "irb/output-method"
 module IRB
   module Notifier
     extend Exception2MessageMapper
-    def_exception :ErrUndefinedNotifier, 
+    def_exception :ErrUndefinedNotifier,
       "undefined notifier level: %d is specified"
-    def_exception :ErrUnrecognizedLevel, 
+    def_exception :ErrUnrecognizedLevel,
       "unrecognized notifier level: %s is specified"
 
     def def_notifier(prefix = "", output_method = StdioOutputMethod.new)
       CompositeNotifier.new(prefix, output_method)
     end
     module_function :def_notifier
-  
-    class AbstructNotifier
+
+    class AbstractNotifier
       def initialize(prefix, base_notifier)
 	@prefix = prefix
 	@base_notifier = base_notifier
@@ -72,7 +72,7 @@ module IRB
       end
     end
 
-    class CompositeNotifier<AbstructNotifier
+    class CompositeNotifier<AbstractNotifier
       def initialize(prefix, base_notifier)
 	super
 
@@ -93,7 +93,7 @@ module IRB
 
       def level_notifier=(value)
 	case value
-	when AbstructNotifier
+	when AbstractNotifier
 	  @level_notifier = value
 	when Integer
 	  l = @notifiers[value]
@@ -107,12 +107,12 @@ module IRB
       alias level= level_notifier=
     end
 
-    class LeveledNotifier<AbstructNotifier
+    class LeveledNotifier<AbstractNotifier
       include Comparable
 
       def initialize(base, level, prefix)
 	super(prefix, base)
-	
+
 	@level = level
       end
 
@@ -121,7 +121,7 @@ module IRB
       def <=>(other)
 	@level <=> other.level
       end
-      
+
       def notify?
 	@base_notifier.level >= self
       end

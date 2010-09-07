@@ -1,12 +1,12 @@
 #
-#   irb/extend-command.rb - irb extend command 
-#   	$Release Version: 0.9.5$
-#   	$Revision: 26021 $
+#   irb/extend-command.rb - irb extend command
+#   	$Release Version: 0.9.6$
+#   	$Revision: 25998 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 module IRB
   #
@@ -89,15 +89,15 @@ module IRB
 
       [:irb_load, :Load, "irb/cmd/load"],
       [:irb_require, :Require, "irb/cmd/load"],
-      [:irb_source, :Source, "irb/cmd/load", 
+      [:irb_source, :Source, "irb/cmd/load",
 	[:source, NO_OVERRIDE]],
 
       [:irb, :IrbCommand, "irb/cmd/subirb"],
-      [:irb_jobs, :Jobs, "irb/cmd/subirb", 
+      [:irb_jobs, :Jobs, "irb/cmd/subirb",
 	[:jobs, NO_OVERRIDE]],
-      [:irb_fg, :Foreground, "irb/cmd/subirb", 
+      [:irb_fg, :Foreground, "irb/cmd/subirb",
 	[:fg, NO_OVERRIDE]],
-      [:irb_kill, :Kill, "irb/cmd/subirb", 
+      [:irb_kill, :Kill, "irb/cmd/subirb",
 	[:kill, OVERRIDE_PRIVATE_ONLY]],
 
       [:irb_help, :Help, "irb/cmd/help",
@@ -122,32 +122,28 @@ module IRB
       end
 
       if load_file
-	eval <<-"EOS", binding, __FILE__, __LINE__+1
+	line = __LINE__; eval %[
 	  def #{cmd_name}(*opts, &b)
 	    require "#{load_file}"
 	    arity = ExtendCommand::#{cmd_class}.instance_method(:execute).arity
-            args = []
-	    if arity < 0
-	      args << "*opts"
-	      arity = -arity - 1
-	    end
-	    args.unshift *(1..arity).map {|i| "arg" + i.to_s }
+	    args = (1..(arity < 0 ? ~arity : arity)).map {|i| "arg" + i.to_s }
+	    args << "*opts" if arity < 0
 	    args << "&block"
 	    args = args.join(", ")
-	    eval <<-"EOS2", binding, __FILE__, __LINE__+1
+	    line = __LINE__; eval %[
 	      def #{cmd_name}(\#{args})
 		ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
 	      end
-	    EOS2
+	    ], nil, __FILE__, line
 	    send :#{cmd_name}, *opts, &b
 	  end
-	EOS
+	], nil, __FILE__, line
       else
-	eval <<-"EOS", binding, __FILE__, __LINE__+1
+	line = __LINE__; eval %[
 	  def #{cmd_name}(*opts, &b)
 	    ExtendCommand::#{cmd_class}.execute(irb_context, *opts, &b)
 	  end
-	EOS
+	], nil, __FILE__, line
       end
 
       for ali, flag in aliases
@@ -164,10 +160,10 @@ module IRB
 	  (override == OVERRIDE_PRIVATE_ONLY) && !respond_to?(to) or
 	  (override == NO_OVERRIDE) &&  !respond_to?(to, true)
 	target = self
-	(class<<self;self;end).instance_eval{
-	  if target.respond_to?(to, true) && 
+	(class << self; self; end).instance_eval{
+	  if target.respond_to?(to, true) &&
 	      !target.respond_to?(EXCB.irb_original_method_name(to), true)
-	    alias_method(EXCB.irb_original_method_name(to), to) 
+	    alias_method(EXCB.irb_original_method_name(to), to)
 	  end
 	  alias_method to, from
 	}
@@ -181,7 +177,7 @@ module IRB
     end
 
     def self.extend_object(obj)
-      unless (class<<obj;ancestors;end).include?(EXCB)
+      unless (class << obj; ancestors; end).include?(EXCB)
 	super
 	for ali, com, flg in @ALIASES
 	  obj.install_alias_method(ali, com, flg)
@@ -211,7 +207,7 @@ module IRB
     end
 
     def self.def_extend_command(cmd_name, load_file, *aliases)
-      Context.module_eval <<-"EOS", __FILE__, __LINE__+1
+      line = __LINE__; Context.module_eval %[
         def #{cmd_name}(*opts, &b)
 	  Context.module_eval {remove_method(:#{cmd_name})}
 	  require "#{load_file}"
@@ -220,7 +216,7 @@ module IRB
 	for ali in aliases
 	  alias_method ali, cmd_name
 	end
-      EOS
+      ], __FILE__, line
     end
 
     CE.install_extend_commands
@@ -232,13 +228,13 @@ module IRB
       extend_method = extend_method.to_s
 
       alias_name = new_alias_name(base_method)
-      module_eval <<-"EOS", __FILE__, __LINE__+1
+      module_eval %[
         alias_method alias_name, base_method
         def #{base_method}(*opts)
 	  send :#{extend_method}, *opts
 	  send :#{alias_name}, *opts
 	end
-      EOS
+      ]
     end
 
     def def_post_proc(base_method, extend_method)
@@ -246,13 +242,13 @@ module IRB
       extend_method = extend_method.to_s
 
       alias_name = new_alias_name(base_method)
-      module_eval <<-"EOS", __FLIE__, __LINE__+1
+      module_eval %[
         alias_method alias_name, base_method
         def #{base_method}(*opts)
 	  send :#{alias_name}, *opts
 	  send :#{extend_method}, *opts
 	end
-      EOS
+      ]
     end
 
     # return #{prefix}#{name}#{postfix}<num>

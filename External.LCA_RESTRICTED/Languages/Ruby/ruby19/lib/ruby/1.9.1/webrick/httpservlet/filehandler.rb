@@ -32,7 +32,7 @@ module WEBrick
         if not_modified?(req, res, mtime, res['etag'])
           res.body = ''
           raise HTTPStatus::NotModified
-        elsif req['range'] 
+        elsif req['range']
           make_partial_content(req, res, @local_path, st.size)
           raise HTTPStatus::PartialContent
         else
@@ -87,7 +87,7 @@ module WEBrick
               content = io.read(last-first+1)
               body << "--" << boundary << CRLF
               body << "Content-Type: #{mtype}" << CRLF
-              body << "Content-Range: #{first}-#{last}/#{filesize}" << CRLF
+              body << "Content-Range: bytes #{first}-#{last}/#{filesize}" << CRLF
               body << CRLF
               body << content
               body << CRLF
@@ -107,7 +107,7 @@ module WEBrick
               content = io.read(last-first+1)
             end
             res['content-type'] = mtype
-            res['content-range'] = "#{first}-#{last}/#{filesize}"
+            res['content-range'] = "bytes #{first}-#{last}/#{filesize}"
             res['content-length'] = last - first + 1
             res.body = content
           else
@@ -214,16 +214,20 @@ module WEBrick
         # character in URI notation. So the value of path_info should be
         # normalize before accessing to the filesystem.
 
+        # dirty hack for filesystem encoding; in nature, File.expand_path
+        # should not be used for path normalization.  [Bug #3345]
+        path = req.path_info.dup.force_encoding(Encoding.find("filesystem"))
         if trailing_pathsep?(req.path_info)
           # File.expand_path removes the trailing path separator.
           # Adding a character is a workaround to save it.
           #  File.expand_path("/aaa/")        #=> "/aaa"
           #  File.expand_path("/aaa/" + "x")  #=> "/aaa/x"
-          expanded = File.expand_path(req.path_info + "x")
+          expanded = File.expand_path(path + "x")
           expanded.chop!  # remove trailing "x"
         else
-          expanded = File.expand_path(req.path_info)
+          expanded = File.expand_path(path)
         end
+        expanded.force_encoding(req.path_info.encoding)
         req.path_info = expanded
       end
 
@@ -402,7 +406,7 @@ module WEBrick
         res.body << "<A HREF=\"?M=#{d1}\">Last modified</A>         "
         res.body << "<A HREF=\"?S=#{d1}\">Size</A>\n"
         res.body << "<HR>\n"
-       
+
         list.unshift [ "..", File::mtime(local_path+"/.."), -1 ]
         list.each{ |name, time, size|
           if name == ".."
@@ -412,7 +416,7 @@ module WEBrick
           else
             dname = name
           end
-          s =  " <A HREF=\"#{HTTPUtils::escape(name)}\">#{dname}</A>"
+          s =  " <A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A>"
           s << " " * (30 - dname.bytesize)
           s << (time ? time.strftime("%Y/%m/%d %H:%M      ") : " " * 22)
           s << (size >= 0 ? size.to_s : "-") << "\n"
@@ -420,7 +424,7 @@ module WEBrick
         }
         res.body << "</PRE><HR>"
 
-        res.body << <<-_end_of_html_    
+        res.body << <<-_end_of_html_
     <ADDRESS>
      #{HTMLUtils::escape(@config[:ServerSoftware])}<BR>
      at #{req.host}:#{req.port}

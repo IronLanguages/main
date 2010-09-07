@@ -12,7 +12,7 @@ module WEBrick
 
   module HTTPStatus
 
-    class Status      < StandardError
+    class Status < StandardError
       def initialize(*args)
         args[0] = AccessLog.escape(args[0]) unless args.empty?
         super(*args)
@@ -30,7 +30,7 @@ module WEBrick
     class Error       < Status; end
     class ClientError < Error; end
     class ServerError < Error; end
-    
+
     class EOFError < StandardError; end
 
     StatusMessage = {

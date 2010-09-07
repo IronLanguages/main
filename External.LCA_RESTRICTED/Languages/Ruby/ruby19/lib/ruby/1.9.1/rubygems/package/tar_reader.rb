@@ -1,15 +1,23 @@
-#++
-# Copyright (C) 2004 Mauricio Julio Fern·ndez Pradier
-# See LICENSE.txt for additional licensing information.
+# -*- coding: utf-8 -*-
 #--
+# Copyright (C) 2004 Mauricio Julio Fern√°ndez Pradier
+# See LICENSE.txt for additional licensing information.
+#++
 
-require 'rubygems/package'
+##
+# TarReader reads tar files and allows iteration over their items
 
 class Gem::Package::TarReader
 
   include Gem::Package
 
+  ##
+  # Raised if the tar IO is not seekable
+
   class UnexpectedEOF < StandardError; end
+
+  ##
+  # Creates a new TarReader on +io+ and yields it to the block, if given.
 
   def self.new(io)
     reader = super
@@ -25,13 +33,23 @@ class Gem::Package::TarReader
     nil
   end
 
+  ##
+  # Creates a new tar file reader on +io+ which needs to respond to #pos,
+  # #eof?, #read, #getc and #pos=
+
   def initialize(io)
     @io = io
     @init_pos = io.pos
   end
 
+  ##
+  # Close the tar file
+
   def close
   end
+
+  ##
+  # Iterates over files in the tarball yielding each entry
 
   def each
     loop do
@@ -83,4 +101,6 @@ class Gem::Package::TarReader
   end
 
 end
+
+require 'rubygems/package/tar_reader/entry'
 

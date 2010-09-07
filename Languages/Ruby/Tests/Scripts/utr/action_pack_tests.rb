@@ -40,7 +40,7 @@ class UnitTestSetup
   end
   
   def gather_files
-    gather_rails_files Version
+    gather_rails_files
   end
   
   def require_files
@@ -59,7 +59,7 @@ class UnitTestSetup
   def sanity
     # Do some sanity checks
     sanity_size(80)
-    sanity_version(Version, ActionPack::VERSION::STRING)
+    sanity_version(RailsVersion, ActionPack::VERSION::STRING)
   end
   
 =begin

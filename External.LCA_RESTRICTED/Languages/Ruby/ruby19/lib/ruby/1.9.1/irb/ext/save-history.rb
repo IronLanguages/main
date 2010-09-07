@@ -1,20 +1,18 @@
-#!/usr/local/bin/ruby
-#
-#   save-history.rb - 
-#   	$Release Version: 0.9.5$
-#   	$Revision: 24294 $
+#   save-history.rb -
+#   	$Release Version: 0.9.6$
+#   	$Revision: 25189 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 require "readline"
 
 module IRB
   module HistorySavingAbility
-    @RCS_ID='-$Id: save-history.rb 24294 2009-07-26 15:33:29Z yugui $-'
+    @RCS_ID='-$Id: save-history.rb 25189 2009-10-02 12:04:37Z akr $-'
   end
 
   class Context
@@ -97,4 +95,3 @@ module IRB
     end
   end
 end
-

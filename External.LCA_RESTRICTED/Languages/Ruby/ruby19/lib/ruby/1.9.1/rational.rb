@@ -1,3 +1,7 @@
+# :enddoc:
+
+warn('lib/rational.rb is deprecated') if $VERBOSE
+
 class Fixnum
 
   alias quof fdiv

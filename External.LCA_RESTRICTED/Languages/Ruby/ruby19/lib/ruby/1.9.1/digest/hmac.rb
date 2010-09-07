@@ -2,8 +2,13 @@
 #
 # An implementation of HMAC keyed-hashing algorithm
 #
-# == Overview 
-# 
+# == Overview
+#
+# CAUTION: Use of this library is discouraged, because this
+# implementation was meant to be experimental but somehow got into the
+# 1.9 series without being noticed.  Please use OpenSSL::HMAC in the
+# "openssl" library instead.
+#
 # This library adds a method named hmac() to Digest classes, which
 # creates a Digest class for calculating HMAC digests.
 #
@@ -33,8 +38,10 @@
 # All rights reserved.  You can redistribute and/or modify it under
 # the same terms as Ruby.
 #
-#   $Id: hmac.rb 14881 2008-01-04 07:26:14Z akr $
+#   $Id: hmac.rb 28151 2010-06-03 15:04:36Z knu $
 #
+
+warn "use of the experimetal library 'digest/hmac' is discouraged; require 'openssl' and use OpenSSL::HMAC instead." if $VERBOSE
 
 require 'digest'
 
@@ -49,8 +56,8 @@ module Digest
         key = @md.digest(key)
       end
 
-      ipad = Array.new(block_len).fill(0x36)
-      opad = Array.new(block_len).fill(0x5c)
+      ipad = Array.new(block_len, 0x36)
+      opad = Array.new(block_len, 0x5c)
 
       key.bytes.each_with_index { |c, i|
         ipad[i] ^= c
@@ -58,8 +65,8 @@ module Digest
       }
 
       @key = key.freeze
-      @ipad = ipad.inject('') { |s, c| s << c.chr }.freeze
-      @opad = opad.inject('') { |s, c| s << c.chr }.freeze
+      @ipad = ipad.pack('C*').freeze
+      @opad = opad.pack('C*').freeze
       @md.update(@ipad)
     end
 
@@ -102,7 +109,7 @@ module Digest
 end
 
 if $0 == __FILE__
-  eval DATA.read, nil, $0, __LINE__+4
+  eval DATA.gets(nil), nil, $0, DATA.lineno
 end
 
 __END__
@@ -142,7 +149,7 @@ module TM_HMAC
       }
     }
   end
-end  
+end
 
 class TC_HMAC_MD5 < Test::Unit::TestCase
   include TM_HMAC

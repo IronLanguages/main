@@ -1,5 +1,5 @@
 #
-# $Id: lexer.rb 13966 2007-11-19 07:10:09Z matz $
+# $Id: lexer.rb 25189 2009-10-02 12:04:37Z akr $
 #
 # Copyright (c) 2004,2005 Minero Aoki
 #
@@ -173,7 +173,7 @@ class Ripper
         @tokens[@match.begin(n)...@match.end(n)].map {|pos,type,str| str }
       end
     end
-  
+
   end
 
 end

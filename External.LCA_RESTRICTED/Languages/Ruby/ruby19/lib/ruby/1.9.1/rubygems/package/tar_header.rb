@@ -1,9 +1,8 @@
-#++
-# Copyright (C) 2004 Mauricio Julio Fernández Pradier
-# See LICENSE.txt for additional licensing information.
+# -*- coding: utf-8 -*-
 #--
-
-require 'rubygems/package'
+# Copyright (C) 2004 Mauricio Julio FernÃ¡ndez Pradier
+# See LICENSE.txt for additional licensing information.
+#++
 
 ##
 #--
@@ -26,8 +25,12 @@ require 'rubygems/package'
 #   char prefix[155];   # ASCII + (Z unless filled)
 # };
 #++
+# A header for a tar file
 
 class Gem::Package::TarHeader
+
+  ##
+  # Fields in the tar header
 
   FIELDS = [
     :checksum,
@@ -48,6 +51,9 @@ class Gem::Package::TarHeader
     :version,
   ]
 
+  ##
+  # Pack format for a tar header
+
   PACK_FORMAT = 'a100' + # name
                 'a8'   + # mode
                 'a8'   + # uid
@@ -64,6 +70,9 @@ class Gem::Package::TarHeader
                 'a8'   + # devmajor
                 'a8'   + # devminor
                 'a155'   # prefix
+
+  ##
+  # Unpack format for a tar header
 
   UNPACK_FORMAT = 'A100' + # name
                   'A8'   + # mode
@@ -83,6 +92,9 @@ class Gem::Package::TarHeader
                   'A155'   # prefix
 
   attr_reader(*FIELDS)
+
+  ##
+  # Creates a tar header from IO +stream+
 
   def self.from(stream)
     header = stream.read 512
@@ -147,6 +159,9 @@ class Gem::Package::TarHeader
     #    :empty => empty
   end
 
+  ##
+  # Creates a new TarHeader using +vals+
+
   def initialize(vals)
     unless vals[:name] && vals[:size] && vals[:prefix] && vals[:mode] then
       raise ArgumentError, ":name, :size, :prefix and :mode required"
@@ -171,11 +186,14 @@ class Gem::Package::TarHeader
     @empty = vals[:empty]
   end
 
+  ##
+  # Is the tar entry empty?
+
   def empty?
     @empty
   end
 
-  def ==(other)
+  def ==(other) # :nodoc:
     self.class === other and
     @checksum == other.checksum and
     @devmajor == other.devmajor and
@@ -195,10 +213,13 @@ class Gem::Package::TarHeader
     @version  == other.version
   end
 
-  def to_s
+  def to_s # :nodoc:
     update_checksum
     header
   end
+
+  ##
+  # Updates the TarHeader's checksum
 
   def update_checksum
     header = header " " * 8
@@ -233,7 +254,7 @@ class Gem::Package::TarHeader
     ]
 
     header = header.pack PACK_FORMAT
-                  
+
     header << ("\0" * ((512 - header.size) % 512))
   end
 
