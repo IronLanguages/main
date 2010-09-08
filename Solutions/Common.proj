@@ -4,18 +4,35 @@
 -->
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <!-- Signing -->
     <SolutionDir Condition=" '$(SolutionDir)' == '' ">$(MSBuildThisFileDirectory)</SolutionDir>
-    <AssemblyOriginatorKeyFile>$(SolutionDir)..\Internal\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
-    <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
-    <SignedDir Condition="'$(SignAssembly)' == 'true'">Signed</SignedDir>
-    <SignedDir Condition="$(SignAssembly) != true">Unsigned</SignedDir>
-    <DelaySign>true</DelaySign>
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
+
+  <!-- Signing -->
+  <PropertyGroup>
+    <MSKey>$(SolutionDir)..\Internal\MSSharedLibKey.snk</MSKey>
+    <PublicKey>$(MSBuildThisFileDirectory)\Key.snk</PublicKey>
+  </PropertyGroup>
+
+  <!-- When signing w/ the MS key -->
+  <PropertyGroup Condition="Exists('$(MSKey)')">
+    <AssemblyOriginatorKeyFile>$(MSKey)</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <SignedSym>MS_SIGNED</SignedSym>
+    <SignedDir>Signed</SignedDir>
+  </PropertyGroup>
+  
+  <!-- When signing w/ a full key -->
+  <PropertyGroup Condition="Exists('$(PublicKey)') and '$(AssemblyOriginatorKeyFile)'==''">
+    <AssemblyOriginatorKeyFile>$(PublicKey)</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
+    <SignedDir>Unsigned</SignedDir>
+  </PropertyGroup>
+  
+
   <!-- Silverlight -->
   <PropertyGroup Condition="'$(Configuration)' == 'Silverlight3Release' or '$(Configuration)' == 'Silverlight3Debug'">
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(SolutionDir)..\Util\Silverlight\Runtime\3.0.50106.0</SilverlightPath>

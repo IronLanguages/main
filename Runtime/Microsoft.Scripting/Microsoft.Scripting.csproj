@@ -14,7 +14,7 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
-    <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\Microsoft.Dynamic.xml</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\Microsoft.Scripting.xml</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>618</WarningsNotAsErrors>
     <NoWarn>1591</NoWarn>

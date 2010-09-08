@@ -27,7 +27,7 @@
     <OutputType Condition="$(OutputType)==''">Module</OutputType>
     <!-- Input path to source files  -->
     <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
-    <DefineConstants>RubyDir=$(RubyDir);DlrRoot=$(SolutionDir)..;$(DefineConstants)</DefineConstants>
+    <DefineConstants>RubyDir=$(RubyDir);DlrRoot=$(SolutionDir)..\;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(RubyDir)\Ruby\Ruby.csproj">

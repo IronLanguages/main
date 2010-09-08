@@ -59,13 +59,9 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("!=")]
-        public static bool ValueNotEquals([NotNull]IRubyObject/*!*/ self, object other) {
-            return !ValueEquals(self, other);
-        }
-
-        [RubyMethod("!=")]
-        public static bool ValueNotEquals(object self, object other) {
-            return !ValueEquals(self, other);
+        public static bool ValueNotEquals(BinaryOpStorage/*!*/ eql, object self, object other) {
+            var site = eql.GetCallSite("==", 1);
+            return RubyOps.IsFalse(site.Target(site, self, other));
         }
 
         [RubyMethod("instance_eval")]
