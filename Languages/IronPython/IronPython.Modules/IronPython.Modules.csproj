@@ -112,6 +112,7 @@
     <Compile Include="array.cs" />
     <Compile Include="binascii.cs" />
     <Compile Include="cmath.cs" />
+    <Compile Include="msvcrt.cs" />
     <Compile Include="NativeSignal.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
@@ -178,6 +179,7 @@
     <Compile Include="_random.cs" />
     <Compile Include="_sre.cs" />
     <Compile Include="_ssl.cs" />
+    <Compile Include="_subprocess.cs" />
     <Compile Include="_warnings.cs" />
     <Compile Include="_weakref.cs" />
     <Compile Include="..\AssemblyVersion.cs">

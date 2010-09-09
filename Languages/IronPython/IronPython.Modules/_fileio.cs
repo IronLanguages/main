@@ -72,7 +72,7 @@ namespace IronPython.Modules {
                 }
 
                 PythonContext pc = PythonContext.GetContext(context);
-                FileIO file = (FileIO)pc.FileManager.GetObjectFromId(pc, fd);
+                FileIO file = (FileIO)pc.FileManager.GetObjectFromId(fd);
                 name = file.name ?? fd;
 
                 _context = pc;

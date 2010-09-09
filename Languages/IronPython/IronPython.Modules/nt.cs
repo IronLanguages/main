@@ -113,8 +113,17 @@ namespace IronPython.Modules {
 
         public static void close(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = PythonContext.GetContext(context);
-            PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-            pf.close();
+            PythonFile file;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                file.close();
+            } else {
+                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+                if (stream == null) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                }
+
+                stream.Close();
+            }
         }
         
 #if !SILVERLIGHT
@@ -145,8 +154,17 @@ namespace IronPython.Modules {
             PythonFile.ValidateMode(mode);
 
             PythonContext pythonContext = PythonContext.GetContext(context);
-            PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-            return pf;
+            PythonFile pf;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out pf)) {
+                return pf;
+            }
+
+            Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+            if (stream == null) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+
+            return PythonFile.Create(context, stream, stream.ToString(), mode);
         }
 
         [LightThrowing]
@@ -249,10 +267,16 @@ namespace IronPython.Modules {
             }
         }
 
-        // 
-        // lstat(path) -> stat result
-        // Like stat(path), but do not follow symbolic links.
-        // 
+        public static void lseek(CodeContext context, int filedes, long offset, int whence) {
+            PythonFile file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
+
+            file.seek(offset, whence);
+        }
+
+        /// <summary>
+        /// lstat(path) -> stat result 
+        /// Like stat(path), but do not follow symbolic links.
+        /// </summary>
         [LightThrowing]
         public static object lstat(string path) {
             return stat(path);
@@ -333,6 +357,20 @@ namespace IronPython.Modules {
             }
 
             return res;
+        }
+
+        public static PythonTuple pipe(CodeContext context) {
+            IntPtr hRead, hWrite;
+
+            PythonSubprocess.SECURITY_ATTRIBUTES secAttrs = new PythonSubprocess.SECURITY_ATTRIBUTES();
+            secAttrs.nLength = Marshal.SizeOf(secAttrs);
+
+            var res = PythonSubprocess.CreatePipePI(out hRead, out hWrite, ref secAttrs, 0);
+
+            return PythonTuple.MakeTuple(
+                PythonMsvcrt.open_osfhandle(context, new BigInteger(hRead.ToInt64()), 0),
+                PythonMsvcrt.open_osfhandle(context, new BigInteger(hWrite.ToInt64()), 0)
+            );
         }
 
         public static PythonFile popen(CodeContext/*!*/ context, string command) {
@@ -1368,11 +1406,12 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static void write(CodeContext/*!*/ context, int fd, string text) {
+        public static int write(CodeContext/*!*/ context, int fd, string text) {
             try {
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
                 pf.write(text);
+                return text.Length;
             } catch (Exception e) {
                 throw ToPythonException(e);
             }

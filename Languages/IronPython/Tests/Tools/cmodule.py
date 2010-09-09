@@ -106,6 +106,8 @@ BUILTIN_MODULES =  [
                     "xxsubtype",
                     "zipimport", #CodePlex 391
                     "zlib", #CodePlex 2590
+                    "_subprocess",
+                    "msvcrt",
                     ]
  
 #Most of these are standard *.py modules which IronPython overrides for one 

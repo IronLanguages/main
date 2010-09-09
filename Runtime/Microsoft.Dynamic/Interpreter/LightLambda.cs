@@ -27,6 +27,7 @@ using System.Security;
 using System.Threading;
 
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -238,7 +239,11 @@ namespace Microsoft.Scripting.Interpreter {
         
         public object Run(params object[] arguments) {
             if (_compiled != null || TryGetCompiled()) {
-                return _compiled.DynamicInvoke(arguments);
+                try {
+                    return _compiled.DynamicInvoke(arguments);
+                } catch (TargetInvocationException e) {
+                    throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                }
             }
 
             var frame = MakeFrame();

@@ -51,6 +51,7 @@ BUILTIN_MODULES =  [
                     "_sha512",
                     "_sre",
                     "_struct",
+                    "_subprocess",
                     "_warnings", 
                     "_weakref", 
                     "_winreg", 
@@ -69,6 +70,7 @@ BUILTIN_MODULES =  [
                     "marshal",
                     "math", 
                     "mmap",
+                    "msvcrt",
                     "nt", 
                     "operator", 
                     "select",
@@ -94,11 +96,9 @@ MISSING_MODULES = [
                     "_codecs_kr", #CodePlex 15507
                     "_codecs_tw", #CodePlex 15507
                     "_symtable", #IronPython incompat
-                    "_subprocess", #CodePlex 15512
                     "_types",  #Can't import this in CPython 2.6 either...
                     "audioop", #CodePlex 21400
                     "imageop", #Deprecated in CPy 2.6.  Removed in Cpy 3.0
-                    "msvcrt", #CodePlex 21402
                     "parser", #CodePlex 1347 - Won't fix
                     "strop", #CodePlex 21403
                     "zipimport", #CodePlex 391

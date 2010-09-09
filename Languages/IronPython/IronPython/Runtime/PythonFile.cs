@@ -604,7 +604,7 @@ namespace IronPython.Runtime {
     // translated to '\n' in the strings returned. This class also records whcih of these have been seen so
     // far in the stream to support python semantics (see the Terminators property).
     internal class PythonUniversalReader : PythonTextReader {
-
+        private int _lastChar = -1;
         // Symbols for the different styles of newline terminator we might have seen in this stream so far.
         public enum TerminatorStyles {
             None = 0x0,
@@ -622,18 +622,33 @@ namespace IronPython.Runtime {
             _terminators = TerminatorStyles.None;
         }
 
+        private int ReadOne() {
+            if (_lastChar != -1) {
+                var res = _lastChar;
+                _lastChar = -1;
+                return res;
+            }
+
+            return _reader.Read();
+        }
+
         // Private helper used to check for newlines and transform and record as necessary. Returns the
         // possibly translated character read.
         private int ReadChar() {
-            int c = _reader.Read();
-            if (c != -1) _position++;
-            if (c == '\r' && _reader.Peek() == '\n') {
-                c = _reader.Read();
-                _position++;
-                _terminators |= TerminatorStyles.CrLf;
-            } else if (c == '\r') {
+            int c = ReadOne();
+            if (c != -1) _position++;            
+            if (c == '\r') {
+                Debug.Assert(_lastChar == -1);
+                // we can't Peek here because Peek() won't block for more input
+                int next = _reader.Read();
+                if (next == '\n') {
+                    _position++;
+                    _terminators |= TerminatorStyles.CrLf;
+                } else {
+                    _lastChar = next;
+                    _terminators |= TerminatorStyles.Cr;
+                }
                 c = '\n';
-                _terminators |= TerminatorStyles.Cr;
             } else if (c == '\n') {
                 _terminators |= TerminatorStyles.Lf;
             }
@@ -883,7 +898,7 @@ namespace IronPython.Runtime {
             return pf != null;
         }
 
-        public object GetObjectFromId(PythonContext context, int id) {
+        public object GetObjectFromId(int id) {
             object o = objMapping.GetObjectFromId(id);
 
             if (o == null) {
@@ -1177,6 +1192,43 @@ namespace IronPython.Runtime {
             throw Assert.Unreachable;
         }
 
+        /// <summary>
+        /// Sets the mode to text or binary.  Returns true if previously set to text, false if previously set to binary.
+        /// </summary>
+        internal bool SetMode(CodeContext context, bool text) {
+            lock (this) {
+                var mode = MapFileMode(_mode);
+                if (text) {
+                    if (mode == PythonFileMode.Binary) {
+                        _fileMode = PythonFileMode.UniversalNewline;
+                    } else {
+                        _fileMode = mode;
+                    }
+                } else {
+                    _fileMode = PythonFileMode.Binary;
+                }
+
+                if (_stream != null) {
+                    Encoding enc;
+                    if (!StringOps.TryGetEncoding(_encoding, out enc)) {
+                        enc = context.LanguageContext.DefaultEncoding;
+                    }
+                    InitializeReaderAndWriter(_stream, enc);
+                } else if (text) {
+                    InitializeConsole(_io, _consoleStreamType, _name);
+                } else {
+                    // making console binary
+                    InitializeReaderAndWriter(_stream = _io.GetStream(_consoleStreamType), _io.GetEncoding(_consoleStreamType));
+                }
+
+                if (_fileMode == PythonFileMode.Binary) {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        }
+
         internal void InternalInitialize(Stream/*!*/ stream, Encoding/*!*/ encoding, string/*!*/ mode) {
             Assert.NotNull(stream, encoding, mode);
 
@@ -1187,6 +1239,22 @@ namespace IronPython.Runtime {
             _fileMode = MapFileMode(mode);
             _encoding = StringOps.GetEncodingName(encoding);
 
+            InitializeReaderAndWriter(stream, encoding);
+
+#if !SILVERLIGHT
+            // only possible if the user provides us w/ the stream directly
+            FileStream fs = stream as FileStream;
+            if (fs != null) {
+                _name = fs.Name;
+            } else {
+                _name = "nul";
+            }
+#else
+            _name = "stream";
+#endif
+        }
+
+        private void InitializeReaderAndWriter(Stream stream, Encoding encoding) {
             if (stream.CanRead) {
                 if (_fileMode == PythonFileMode.Binary) {
                     _reader = new PythonBinaryReader(stream);
@@ -1203,18 +1271,6 @@ namespace IronPython.Runtime {
                     _writer = CreateTextWriter(new StreamWriter(stream, encoding));
                 }
             }
-
-#if !SILVERLIGHT
-            // only possible if the user provides us w/ the stream directly
-            FileStream fs = stream as FileStream;
-            if (fs != null) {
-                _name = fs.Name;
-            } else {
-                _name = "nul";
-            }
-#else
-            _name = "stream";
-#endif
         }
 
         internal void InitializeConsole(SharedIO/*!*/ io, ConsoleStreamType type, string/*!*/ name) {
@@ -1307,6 +1363,7 @@ namespace IronPython.Runtime {
                 PythonFileManager myManager = _context.RawFileManager;
                 if (myManager != null) {
                     myManager.Remove(this);
+                    myManager.Remove(_stream);
                 }
             }
         }
@@ -1517,12 +1574,16 @@ namespace IronPython.Runtime {
         }
 
         public virtual void write(string s) {
+            if (s == null) {
+                throw PythonOps.TypeError("must be string or read-only character buffer, not None");
+            }
+
             lock (this) {
                 WriteNoLock(s);
             }
         }
 
-        public virtual void write(IList<byte> bytes) {
+        public virtual void write([NotNull]IList<byte> bytes) {
             lock (this) {
                 WriteNoLock(bytes);
             }
@@ -1714,11 +1775,13 @@ namespace IronPython.Runtime {
             lock (this) {
                 if (IsConsole) {
                     // update writer if redirected:
-                    TextWriter currentWriter = _io.GetWriter(_consoleStreamType);
+                    if (_stream != _io.GetStream(_consoleStreamType)) {
+                        TextWriter currentWriter = _io.GetWriter(_consoleStreamType);
 
-                    if (!ReferenceEquals(currentWriter, _writer.TextWriter)) {
-                        _writer.Flush();
-                        _writer = CreateTextWriter(currentWriter);
+                        if (!ReferenceEquals(currentWriter, _writer.TextWriter)) {
+                            _writer.Flush();
+                            _writer = CreateTextWriter(currentWriter);
+                        }
                     }
                 } else if (_reseekPosition != null) {
                     _stream.Seek(_reseekPosition.Value, SeekOrigin.Begin);

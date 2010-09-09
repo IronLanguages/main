@@ -151,6 +151,7 @@ namespace IronPython.Modules {
                         continue;
                     }
                     blockEvent.WaitOne();
+                    GC.KeepAlive(this);
                 }
             }
 
@@ -165,6 +166,7 @@ namespace IronPython.Modules {
                 if (blockEvent != null) {
                     // if this isn't set yet we race, it's handled in Acquire()
                     blockEvent.Set();
+                    GC.KeepAlive(this);
                 }
             }
 
