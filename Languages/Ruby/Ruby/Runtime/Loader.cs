@@ -167,6 +167,7 @@ namespace IronRuby.Runtime {
                 @"..\Lib\ruby\" + _context.StandardLibraryVersion,
             });
 #endif
+            // TODO: remove?
             loadPaths.Add(MutableString.CreateAscii("."));
             return loadPaths;
         }

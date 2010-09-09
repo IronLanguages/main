@@ -61,7 +61,39 @@ namespace IronRuby.Builtins {
         public static Hash/*!*/ CreateSubclass(RubyClass/*!*/ self) {
             return Hash.CreateInstance(self);
         }
-        
+
+        [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
+        public static Hash/*!*/ CreateSubclass(ConversionStorage<IDictionary<object, object>>/*!*/ toHash, ConversionStorage<IList>/*!*/ toAry,
+            RubyClass/*!*/ self, object listOrHash) {
+
+            var toHashSite = toHash.GetSite(TryConvertToHashAction.Make(toHash.Context));
+            var hash = toHashSite.Target(toHashSite, listOrHash);
+            if (hash != null) {
+                return CreateSubclass(self, hash);
+            }
+
+            var toArySite = toAry.GetSite(TryConvertToArrayAction.Make(toAry.Context));
+            var array = toArySite.Target(toArySite, listOrHash);
+            if (array != null) {
+                return CreateSubclass(toAry, self, array);
+            }
+
+            throw RubyExceptions.CreateArgumentError("odd number of arguments for Hash");
+        }
+
+        [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
+        public static Hash/*!*/ CreateSubclass(ConversionStorage<IList>/*!*/ toAry, RubyClass/*!*/ self, [NotNull]IList/*!*/ list) {
+            Hash result = Hash.CreateInstance(self);
+            var toArySite = toAry.GetSite(TryConvertToArrayAction.Make(toAry.Context));
+            foreach (object item in list) {
+                IList pair = toArySite.Target(toArySite, item);
+                if (pair != null && pair.Count >= 1 && pair.Count <= 2) {
+                    RubyUtils.SetHashElement(self.Context, result, pair[0], (pair.Count == 2) ? pair[1] : null);
+                }
+            }
+            return result;
+        }
+
         [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
         public static Hash/*!*/ CreateSubclass(RubyClass/*!*/ self, [NotNull]IDictionary<object, object>/*!*/ hash) {
             // creates a new hash and copies entries of the given hash into it (no other objects associated with the has are copied):
@@ -127,7 +159,7 @@ namespace IronRuby.Builtins {
         #region Instance Methods
         
         [RubyMethod("[]")]
-        public static object GetElement(CallSiteStorage<Func<CallSite, Hash, object, object>>/*!*/ storage, Hash/*!*/ self, object key) {
+        public static object GetElement(BinaryOpStorage/*!*/ storage, IDictionary<object, object>/*!*/ self, object key) {
             object result;
             if (!self.TryGetValue(CustomStringDictionary.NullToObj(key), out result)) {
                 var site = storage.GetCallSite("default", 1);

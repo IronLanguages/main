@@ -240,7 +240,7 @@ namespace IronRuby.Builtins {
                     // Some MutableString operations (GetHashCode, SetChar, etc.) assume that the encoding maps each and every 
                     // character \u0000..\u007f to a corresponding byte 0..0x7f and back.
                     if (!IsAsciiIdentity(result.Encoding)) {
-                        throw new NotSupportedException(String.Format("Encoding code page {0} is not supported", codepage));
+                        throw new NotSupportedException(String.Format("Encoding {0} (code page {1}) is not supported (it is not ASCII compatible)", result.Name, codepage));
                     }
 
                     _Encodings.Add(codepage, result);

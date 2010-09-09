@@ -405,7 +405,7 @@ a = 'ba'.gsub /b/, '1'
             Assert((s = Engine.Operations.Format(obj)) == "bye");
             
             obj = Engine.Execute(@"class C; def inspect; [7,8,9]; end; new; end");
-            Assert((s = Engine.Operations.Format(obj)) == "789");
+            Assert((s = Engine.Operations.Format(obj)) == "[7, 8, 9]");
 
             var scope = Engine.CreateScope();
             scope.SetVariable("ops", Engine.Operations);

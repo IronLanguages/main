@@ -497,7 +497,7 @@ namespace IronRuby.Tests {
             // TODO:
             // var e = RubyEncoding.GetRubyEncoding(new NonInvertibleEncoding());
         }
-
+        
         [Options(NoRuntime = true)]
         public void MutableString_Concatenate() {
 #if TODO
@@ -571,8 +571,6 @@ namespace IronRuby.Tests {
             );
 
             Assert(MutableStringOps.Reverse(MutableString.Create("αΣ", RubyEncoding.UTF8)).ToString() == "Σα");
-
-            // TODO: KCODE
         }
 
         public void Test_Reverse(byte[]/*!*/ b, RubyEncoding/*!*/ e, byte[]/*!*/ expected) {
@@ -661,8 +659,6 @@ namespace IronRuby.Tests {
             h2 = result.GetHashCode();
             Assert(h1 == h2);
             Assert(self.ToString() == "αAαBα");
-
-            // TODO: KCODE
         }
 
         private void Test_Translate(
@@ -1118,6 +1114,21 @@ namespace IronRuby.Tests {
             s.ChangeEncoding(RubyEncoding.SJIS, true);
             Assert(s.GetHashCode() == hc2 || s.GetHashCode() == hc3);
 #endif
+        }
+
+        [Options(NoRuntime = true)]
+        public void MutableString_ValidEncoding1() {
+            var str = MutableString.CreateBinary(Encoding.UTF8.GetBytes("\u0081"), RubyEncoding.SJIS);
+            Assert(str.ContainsInvalidCharacters());
+
+            str = MutableString.CreateMutable("\u0081", RubyEncoding.SJIS);
+            Assert(str.ContainsInvalidCharacters());
+
+            str = MutableString.CreateMutable("hello", RubyEncoding.SJIS);
+            Assert(!str.ContainsInvalidCharacters());
+
+            str = MutableString.CreateMutable("ﾎｱ", RubyEncoding.SJIS);
+            Assert(!str.ContainsInvalidCharacters());
         }
     }
 }

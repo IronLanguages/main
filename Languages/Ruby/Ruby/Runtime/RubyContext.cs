@@ -2342,14 +2342,15 @@ namespace IronRuby.Runtime {
         }
 
         public MutableString TryEncodePath(string/*!*/ path) {
-            try {
-                return MutableString.Create(path, GetPathEncoding()).CheckEncodingInternal();
-            } catch (EncoderFallbackException) {
-                return null;
-            }
+            var result = MutableString.Create(path, GetPathEncoding());
+            return result.ContainsInvalidCharacters() ? null : result;
         }
 
         internal static MutableString/*!*/ EncodePath(string/*!*/ path, RubyEncoding/*!*/ encoding) {
+            var result = MutableString.Create(path, encoding);
+            if (result.ContainsInvalidCharacters()) {
+
+            }
             try {
                 return MutableString.Create(path, encoding).CheckEncodingInternal();
             } catch (EncoderFallbackException e) {
@@ -2899,7 +2900,8 @@ namespace IronRuby.Runtime {
         public Encoding/*!*/ GetEncodingByRubyName(string/*!*/ name) {
             ContractUtils.RequiresNotNull(name, "name");
 
-            switch (name.ToUpperInvariant()) {
+            var upperName = name.ToUpperInvariant();
+            switch (upperName) {
                 case "BINARY":
                 case "ASCII-8BIT": return BinaryEncoding.Instance;
                 case "LOCALE": return _options.LocaleEncoding.StrictEncoding;
@@ -2909,7 +2911,15 @@ namespace IronRuby.Runtime {
 #else
                 // Mono doesn't recognize 'SJIS' encoding name:
                 case "SJIS": return Encoding.GetEncoding(RubyEncoding.CodePageSJIS);
-                default: return Encoding.GetEncoding(name);
+                case "WINDOWS-31J": return Encoding.GetEncoding(932);
+                default:
+                    if (upperName.StartsWith("CP", StringComparison.Ordinal)) {
+                        int codepage;
+                        if (Int32.TryParse(upperName.Substring(2), out codepage)) {
+                            return Encoding.GetEncoding(codepage);
+                        }
+                    }
+                    return Encoding.GetEncoding(name);
 #endif
             }
         }

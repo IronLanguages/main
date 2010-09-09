@@ -166,6 +166,10 @@ namespace IronRuby.Builtins {
                 GetDataByteCount();
             }
 
+            public override bool ContainsInvalidCharacters() {
+                return Utils.ContainsInvalidCharacters(_data.ToCharArray(), 0, _data.Length, _owner._encoding.StrictEncoding);
+            }
+
             #endregion
 
             #region CompareTo (read-only)

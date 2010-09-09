@@ -377,30 +377,22 @@ namespace IronRuby.Builtins {
 
         /// <summary>
         /// Changes encoding to the specified one. 
+        /// The resulting string might contain byte-sequences that don't represent valid characters in the target encoding.
         /// </summary>
-        public MutableString/*!*/ ChangeEncoding(RubyEncoding/*!*/ newEncoding, bool inplace) {
+        public void ForceEncoding(RubyEncoding/*!*/ newEncoding) {
             ContractUtils.RequiresNotNull(newEncoding, "newEncoding");
+
             if (_encoding == newEncoding) {
-                return this;
-            }
-
-            MutableString result;
-            if (inplace) {
-                result = this;
-            } else {
-                result = MutableString.Create(this);
-            }
-
-            result.ChangeEncoding(newEncoding);
-            return result;
-        }
-
-        private void ChangeEncoding(RubyEncoding/*!*/ newEncoding) {
-            if (_encoding == newEncoding) {
-                Mutate();
-                SetEncoding(newEncoding); 
                 return;
             }
+
+            if (IsBinary) {
+                SetEncoding(newEncoding);
+                return;
+            }
+
+            // If the representation is character based and include non-ascii chcaracters then we need 
+            // to switch to binary repr before we change the encoding so that the binary repr of the string is preserved.
 
             // this caches hash-code, which we need to invalidate due to encoding change:
             bool isAscii = IsAscii();
@@ -408,10 +400,6 @@ namespace IronRuby.Builtins {
 
             if (isAscii) {
                 SetEncoding(newEncoding);
-            } else if (newEncoding != RubyEncoding.Binary) {
-                SwitchToCharacters();
-                SetEncoding(newEncoding);
-                CheckEncoding();
             } else {
                 SwitchToBytes();
                 SetEncoding(newEncoding);
@@ -498,6 +486,10 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        public bool ContainsInvalidCharacters() {
+            return _content.ContainsInvalidCharacters();
+        }
+
         public bool IsTainted {
             get {
                 return (_flags & IsTaintedFlag) != 0; 
@@ -518,7 +510,7 @@ namespace IronRuby.Builtins {
             }
             set {
                 var flags = _flags;
-                if ((flags & IsUntrustedFlag) != 0) {
+                if ((flags & IsFrozenFlag) != 0) {
                     throw RubyExceptions.CreateObjectFrozenError();
                 }
 

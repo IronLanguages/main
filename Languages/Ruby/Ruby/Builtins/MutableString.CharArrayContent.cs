@@ -196,6 +196,10 @@ namespace IronRuby.Builtins {
                 _owner._encoding.StrictEncoding.GetByteCount(_data, 0, _count);
             }
 
+            public override bool ContainsInvalidCharacters() {
+                return Utils.ContainsInvalidCharacters(_data, 0, _count, _owner._encoding.StrictEncoding);
+            }
+
             #endregion
 
             #region CompareTo (read-only)

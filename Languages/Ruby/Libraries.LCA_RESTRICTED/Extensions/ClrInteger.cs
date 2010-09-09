@@ -59,13 +59,17 @@ namespace IronRuby.Builtins {
                 return Zero;
             }
 
+            if (shift == 0) {
+                return self;
+            }
+
             if (shift < 0) {
                 if (shift == Int32.MinValue) {
                     return 0;
                 } else {
                     return RightShift(self, -shift);
                 }
-            } 
+            }
                 
             // If 'self' has more than '31 - other' significant digits it will overflow:
             if (shift >= 31 || (self & ~((1 << (31 - shift)) - 1)) != 0) {

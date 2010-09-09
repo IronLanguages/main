@@ -291,9 +291,10 @@ module ActiveRecord
 
         def handle_to_names_and_values_adonet(handle, options={})
           if handle.has_rows
-            fields = []
+            names = []
             rows = []
-            fields_named = false
+            fields_named = options[:fetch] == :rows
+            one_row_only = options[:fetch] == :one
             while handle.read
               row = []
               handle.visible_field_count.times do |row_index|
@@ -308,15 +309,31 @@ module ActiveRecord
                           value
                         end
                 row << value
-                fields << handle.get_name(row_index).to_s unless fields_named
+                names << handle.get_name(row_index).to_s unless fields_named
+                break if one_row_only
               end
               rows << row
               fields_named = true
             end
           else
-            fields, rows = [], []
+            rows = []
           end
-          [fields,rows]
+          
+          if options[:fetch] != :rows
+            names_and_values = []
+            rows.each do |row|
+              h = {}
+              i = 0
+              while i < row.size
+                h[names[i]] = row[i]
+                i += 1
+              end
+              names_and_values << h
+            end
+            names_and_values
+          else
+            rows
+          end
         end
         
         def finish_statement_handle(handle)

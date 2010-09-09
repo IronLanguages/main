@@ -55,9 +55,13 @@ namespace IronRuby.Builtins {
         [RubyConstant]
         public static readonly RubyEncoding BINARY = RubyEncoding.Binary;
 
+        [RubyConstant]
+        public static readonly RubyEncoding SHIFT_JIS = RubyEncoding.SJIS;
+
+        [RubyConstant]
+        public static readonly RubyEncoding EUC_JP = RubyEncoding.EUC;
+
         // TODO:
-        // Shift_JIS
-        // SHIFT_JIS
         // ...
 
         #endregion

@@ -61,6 +61,7 @@ namespace IronRuby.Builtins {
             public abstract Content/*!*/ SwitchToStringContent();
             public abstract Content/*!*/ SwitchToMutableContent();
             public abstract void CheckEncoding();
+            public abstract bool ContainsInvalidCharacters();
 
             public abstract byte[]/*!*/ ToByteArray();
             internal abstract byte[]/*!*/ GetByteArray(out int count);

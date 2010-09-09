@@ -48,6 +48,7 @@ namespace IronRuby.Tests {
                 MutableString_Characters1,
                 MutableString_Bytes1,
                 MutableString_ChangeEncoding1,
+                MutableString_ValidEncoding1,
                 RubyArray_Ctors,
                 RubyArray_Basic,
                 RubyArray_Add,

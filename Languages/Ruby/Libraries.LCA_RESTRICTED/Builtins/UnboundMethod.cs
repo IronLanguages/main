@@ -132,6 +132,24 @@ namespace IronRuby.Builtins {
             return new RubyArray(self.Info.GetMembers());
         }
 
+        [RubyMethod("source_location")]
+        public static RubyArray GetSourceLocation(UnboundMethod/*!*/ self) {
+            return GetSourceLocation(self.Info);
+        }
+
+        [RubyMethod("parameters")]
+        public static RubyArray/*!*/ GetParameters(UnboundMethod/*!*/ self) {
+            return self.Info.GetRubyParameterArray();
+        }
+
+        internal static RubyArray GetSourceLocation(RubyMemberInfo/*!*/ info) {
+            RubyMethodInfo rubyInfo = info as RubyMethodInfo;
+            return (rubyInfo == null) ? null : new RubyArray(2) {
+                rubyInfo.DeclaringModule.Context.EncodePath(rubyInfo.Document.FileName),
+                rubyInfo.SourceSpan.Start.Line
+            };
+        }
+
         #endregion
     }
 }

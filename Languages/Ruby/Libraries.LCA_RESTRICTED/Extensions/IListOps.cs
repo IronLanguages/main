@@ -1363,7 +1363,6 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("join")]
-        [RubyMethod("to_s")]
         public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self) {
             return Join(tosConversion, self, tosConversion.Context.ItemSeparator);
         }
@@ -1377,6 +1376,7 @@ namespace IronRuby.Builtins {
             return Join(tosConversion, self, separator != null ? Protocols.CastToString(tostrConversion, separator) : MutableString.FrozenEmpty);
         }
 
+        [RubyMethod("to_s")]
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, IList/*!*/ self) {
 

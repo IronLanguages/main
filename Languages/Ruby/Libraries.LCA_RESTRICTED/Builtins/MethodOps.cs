@@ -22,8 +22,6 @@ namespace IronRuby.Builtins {
 
     [RubyClass("Method", Extends = typeof(RubyMethod))]
     public static class MethodOps {
-        #region Public Instance Methods
-
         [RubyMethod("==")]
         public static bool Equal(RubyMethod/*!*/ self, [NotNull]RubyMethod/*!*/ other) {
             // TODO: method with changed visibility, define_methods, module_functions, aliases:
@@ -102,6 +100,14 @@ namespace IronRuby.Builtins {
             return new RubyArray(self.Info.GetMembers());
         }
 
-        #endregion
+        [RubyMethod("source_location")]
+        public static RubyArray GetSourceLocation(RubyMethod/*!*/ self) {
+            return UnboundMethod.GetSourceLocation(self.Info);
+        }
+
+        [RubyMethod("parameters")]
+        public static RubyArray/*!*/ GetParameters(RubyMethod/*!*/ self) {
+            return self.Info.GetRubyParameterArray();
+        }
     }
 }

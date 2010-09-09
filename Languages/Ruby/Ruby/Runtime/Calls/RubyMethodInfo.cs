@@ -32,6 +32,7 @@ using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = MSA.Expression;
+    using Microsoft.Scripting;
 
     public sealed class RubyMethodInfo : RubyMemberInfo {
         // Delegate type for methods with many parameters.
@@ -43,6 +44,7 @@ namespace IronRuby.Runtime.Calls {
         public string/*!*/ DefinitionName { get { return _body.Name; } }
         public Parameters/*!*/ Parameters { get { return _body.Ast.Parameters; } }
         public MSA.SymbolDocumentInfo Document { get { return _body.Document; } }
+        public SourceSpan SourceSpan { get { return _body.Ast.Location; } }
         public RubyScope/*!*/ DeclaringScope { get { return _declaringScope; } }
 
         // method:
@@ -74,6 +76,36 @@ namespace IronRuby.Runtime.Calls {
             } else {
                 return Parameters.Mandatory.Length;
             }
+        }
+
+        public override RubyArray/*!*/ GetRubyParameterArray() {
+            var context = _declaringScope.RubyContext;
+            var reqSymbol = context.CreateAsciiSymbol("req");
+            var optSymbol = context.CreateAsciiSymbol("opt");
+            var ps =_body.Ast.Parameters;
+
+            RubyArray result = new RubyArray();
+            for (int i = 0; i < ps.LeadingMandatoryCount; i++) {
+                result.Add(new RubyArray { reqSymbol, context.EncodeIdentifier(((LocalVariable)ps.Mandatory[i]).Name) });
+            }
+
+            foreach (var p in ps.Optional) {
+                result.Add(new RubyArray { optSymbol, context.EncodeIdentifier(((LocalVariable)p.Left).Name) });
+            }
+
+            if (ps.Unsplat != null) {
+                result.Add(new RubyArray { context.CreateAsciiSymbol("rest"), context.EncodeIdentifier(((LocalVariable)ps.Unsplat).Name) });
+            }
+
+            for (int i = ps.LeadingMandatoryCount; i < ps.Mandatory.Length; i++) {
+                result.Add(new RubyArray { reqSymbol, context.EncodeIdentifier(((LocalVariable)ps.Mandatory[i]).Name) });
+            }
+
+            if (ps.Block != null) {
+                result.Add(new RubyArray { context.CreateAsciiSymbol("block"), context.EncodeIdentifier(ps.Block.Name) });
+            }
+
+            return result;
         }
 
         public MethodDeclaration/*!*/ GetSyntaxTree() {

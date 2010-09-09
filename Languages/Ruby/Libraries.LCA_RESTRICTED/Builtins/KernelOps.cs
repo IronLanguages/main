@@ -534,7 +534,7 @@ namespace IronRuby.Builtins {
             CallSiteStorage<Func<CallSite, RubyModule, object, object>>/*!*/ extendedStorage,
             object self, [NotNull]RubyModule/*!*/ module, [NotNullItems]params RubyModule/*!*/[]/*!*/ modules) {
 
-            Assert.NotNull(self, modules);
+            Assert.NotNull(modules);
 
             // TODO: this is strange:
             RubyUtils.RequireMixins(module.GetOrCreateSingletonClass(), modules);

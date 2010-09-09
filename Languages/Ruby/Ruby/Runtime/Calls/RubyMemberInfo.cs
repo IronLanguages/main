@@ -241,6 +241,34 @@ namespace IronRuby.Runtime.Calls {
         }
 
         /// <summary>
+        /// Returns a Ruby array describing parameters of the method.
+        /// </summary>
+        public virtual RubyArray/*!*/ GetRubyParameterArray() {
+            if (_declaringModule == null) {
+                return new RubyArray();
+            }
+
+            // TODO: quick approximation, we can do better
+
+            var context = _declaringModule.Context;
+
+            RubyArray result = new RubyArray();
+            int arity = GetArity();
+
+            int mandatoryCount = (arity < 0) ? -arity - 1 : arity;
+            var reqSymbol = context.CreateAsciiSymbol("req");
+            for (int i = 0; i < mandatoryCount; i++) {
+                result.Add(new RubyArray { reqSymbol });
+            }
+
+            if (arity < 0) {
+                result.Add(new RubyArray { context.CreateAsciiSymbol("rest") });
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Returns a copy of this member info that groups only those members of this member info that are generic
         /// and of generic arity equal to the length of the given array of type arguments. Returns null if there are no such generic members.
         /// All the members in the resulting info are constructed generic methods bound to the given type arguments.
