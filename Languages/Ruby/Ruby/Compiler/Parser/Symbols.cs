@@ -47,6 +47,7 @@ namespace IronRuby.Compiler {
         public static readonly string ToF = "to_f";
         public static readonly string Initialize = "initialize";
         public static readonly string InitializeCopy = "initialize_copy";
+        public static readonly string BasicObject = "BasicObject";
         public static readonly string Object = "Object";
         public static readonly string Kernel = "Kernel";
         public static readonly string Module = "Module";

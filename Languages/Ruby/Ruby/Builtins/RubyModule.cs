@@ -185,6 +185,10 @@ namespace IronRuby.Builtins {
             get { return ReferenceEquals(this, Context.ObjectClass); }
         }
 
+        public bool IsBasicObjectClass {
+            get { return ReferenceEquals(this, Context.BasicObjectClass); }
+        }
+
         public bool IsComClass {
             get { return ReferenceEquals(this, Context.ComObjectClass); }
         }
@@ -1470,8 +1474,8 @@ namespace IronRuby.Builtins {
                 if (_methods.TryGetValue(name, out method)) {
                     if (method.IsHidden || method.IsUndefined) {
                         return false;
-                    } else if (IsObjectClass && name == Symbols.Initialize) {
-                        // We prohibit removing Object#initialize to simplify object construction logic (this is compatible with 1.9 behavior).
+                    } else if (IsBasicObjectClass && name == Symbols.Initialize) {
+                        // We prohibit removing Object#initialize to simplify object construction logic.
                         return false;
                     } else if (method.IsRemovable) {
                         // Method is used in a dynamic site or group => update version of all dependencies of this module.
@@ -1578,6 +1582,7 @@ namespace IronRuby.Builtins {
                 result = MethodResolutionResult.NotFound;
             }
 
+            // TODO: BasicObject
             // Note: all classes include Object in ancestors, so we don't need to search it again:
             if (!result.Found && (options & MethodLookup.FallbackToObject) != 0 && !IsClass) {
                 return _context.ObjectClass.ResolveMethodNoLock(name, visibility, options & ~MethodLookup.FallbackToObject);

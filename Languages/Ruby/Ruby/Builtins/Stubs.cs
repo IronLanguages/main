@@ -16,8 +16,28 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
+    /// <summary>
+    /// Represents BasicObject class.
+    /// </summary>
+    public class BasicObject : RubyObject {
+        /// <summary>
+        /// Implements BasicObject#new.
+        /// </summary>
+        public BasicObject(RubyClass/*!*/ cls) 
+            : base(cls) {
+        }
+
+        /// <summary>
+        /// Implements BasicObject#new.
+        /// </summary>
+        public BasicObject(RubyClass/*!*/ cls, params object[] args) 
+            : base(cls, args) {
+        }
+    }
+
     /// <summary>
     /// Represents Kernel module mixed into Object class.
     /// </summary>

@@ -192,6 +192,7 @@ internal class LibraryDef {
             get {
                 return !IsExtension && (
                        QualifiedName == RubyClass.MainSingletonName
+                    || Extends == typeof(BasicObject)
                     || Extends == typeof(Kernel)
                     || Extends == typeof(Object)
                     || Extends == typeof(RubyClass)
@@ -218,6 +219,7 @@ internal class LibraryDef {
             }
         }
 
+        public const string/*!*/ BasicObjectClassRef = "Context.BasicObjectClass";
         public const string/*!*/ ObjectClassRef = "Context.ObjectClass";
         public const string/*!*/ KernelModuleRef = "Context.KernelModule";
         public const string/*!*/ ModuleClassRef = "Context.ModuleClass";
@@ -225,7 +227,9 @@ internal class LibraryDef {
 
         internal string GetReference(ref int defVariableId) {
             if (Reference == null) {
-                if (Extends == typeof(Object)) {
+                if (Extends == typeof(BasicObject)) {
+                    Reference = BasicObjectClassRef;
+                } else if (Extends == typeof(Object)) {
                     Reference = ObjectClassRef;
                 } else if (Extends == typeof(Kernel)) {
                     Reference = KernelModuleRef;
@@ -366,7 +370,7 @@ internal class LibraryDef {
                 def.Restrictions = module.GetRestrictions(Builtins);
 
                 def.Super = null;
-                if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface) {
+                if (cls != null && def.Extends != typeof(BasicObject) && !def.Extends.IsInterface) {
                     if (cls != null && cls.Inherits != null) {
                         def.Super = new TypeRef(cls.Inherits);
                     } else if (!def.IsExtension) {
@@ -493,7 +497,7 @@ internal class LibraryDef {
                     def.Super.RefName = MakeClassReference(def.Super.Type);
 
                 }
-            } else if (!def.IsExtension && def.Kind == ModuleKind.Class && def.Extends != typeof(object)) {
+            } else if (!def.IsExtension && def.Kind == ModuleKind.Class && def.Extends != typeof(BasicObject)) {
                 LogError("Missing super type for type '{0}'", def.QualifiedName);
             }
 
@@ -872,6 +876,7 @@ internal class LibraryDef {
 
             _output.WriteLine("Load{0}_Instance,", RubyClass.MainSingletonName);
 
+            _output.WriteLine(_moduleDefs[typeof(BasicObject)].GetInitializerDelegates() + ",");
             _output.WriteLine(_moduleDefs[typeof(Kernel)].GetInitializerDelegates() + ",");
             _output.WriteLine(_moduleDefs[typeof(Object)].GetInitializerDelegates() + ",");
             _output.WriteLine(_moduleDefs[typeof(RubyModule)].GetInitializerDelegates() + ",");

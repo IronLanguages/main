@@ -24,6 +24,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using System.Globalization;
 
 namespace IronRuby.Compiler.Generation {
     internal static class RubyTypeDispenser {
@@ -100,7 +101,10 @@ namespace IronRuby.Compiler.Generation {
         private static Type CreateType(TypeDescription/*!*/ typeInfo) {
             Type baseType = typeInfo.BaseType;
             if (baseType.IsSealed) {
-                throw new NotSupportedException("Can't inherit from a sealed type.");
+                throw new NotSupportedException(
+                    String.Format(CultureInfo.InvariantCulture, "Can't inherit from a sealed type {0}.",
+                    RubyContext.GetQualifiedNameNoLock(baseType, null, false))
+                );
             }
 
             string typeName = GetName(baseType);

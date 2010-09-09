@@ -46,7 +46,7 @@ namespace IronRuby.Builtins {
     public sealed partial class RubyClass : RubyModule, IDuplicable {
         public const string/*!*/ MainSingletonName = "__MainSingleton";
 
-        // Level in class hierarchy (0 == Object)
+        // Level in class hierarchy (0 == BasicObject)
         private readonly int _level;
         private readonly RubyClass _superClass;
 
@@ -281,7 +281,7 @@ namespace IronRuby.Builtins {
             if (_underlyingSystemType == null) {
                 Interlocked.Exchange(ref _underlyingSystemType, 
                     RubyTypeDispenser.GetOrCreateType(
-                        _superClass.GetUnderlyingSystemType(), 
+                        _superClass != null ? _superClass.GetUnderlyingSystemType() : typeof(BasicObject), 
                         GetImplementedInterfaces(),
                         _superClass != null && (_superClass.Restrictions & ModuleRestrictions.NoOverrides) != 0
                     )
@@ -306,11 +306,10 @@ namespace IronRuby.Builtins {
             RubyModule/*!*/[] expandedMixins, TypeTracker tracker, RubyStruct.Info structInfo,
             bool isRubyClass, bool isSingletonClass, ModuleRestrictions restrictions)
             : base(context, name, methodsInitializer, constantsInitializer, expandedMixins,
-                superClass != null ? null : context.Namespaces, tracker, restrictions) {
+                type != typeof(object) ? null : context.Namespaces, tracker, restrictions) {
 
             Debug.Assert(context.Namespaces != null, "Namespaces should be initialized");
-            Debug.Assert((superClass == null) == (type == typeof(object)), "All classes have a superclass, except for Object");
-            Debug.Assert(superClass != null || structInfo == null, "Object is not a struct");
+            Debug.Assert(superClass != null || structInfo == null, "BasicObject is not a struct");
             Debug.Assert(!isRubyClass || tracker == null, "Ruby class cannot have a tracker");
             Debug.Assert(singletonClassOf != null || !isSingletonClass, "Singleton classes don't have a type");
             Debug.Assert(superClass != this);
@@ -555,6 +554,9 @@ namespace IronRuby.Builtins {
             if (IsSingletonClass) {
                 throw RubyExceptions.CreateTypeError("can't copy singleton class");
             }
+            if (IsBasicObjectClass) {
+                throw RubyExceptions.CreateTypeError("can't copy the root class");
+            }
 
             using (Context.ClassHierarchyLocker()) {
                 RubyClass result = Duplicate(null);
@@ -582,22 +584,10 @@ namespace IronRuby.Builtins {
         internal RubyClass/*!*/ Duplicate(object singletonClassOf) {
             Context.RequiresClassHierarchyLock();
 
-            Type type;
-            bool isRubyClass;
+            Debug.Assert(_superClass != null, "BasicObject cannot be duplicated");
 
-            // Notes:
-            // - MRI duplicates Object class so that the result doesn't inherit from Object,
-            //   which we don't do (we want our class hierarchy to be rooted).
-            if (!IsObjectClass) {
-                isRubyClass = IsRubyClass;
-                type = _underlyingSystemType;
-            } else {
-                isRubyClass = true;
-                type = null;
-            }
-
-            RubyClass result = Context.CreateClass(Name, type, singletonClassOf, null, null, null, _factories, 
-                _superClass ?? Context.ObjectClass, null, null, _structInfo, isRubyClass, IsSingletonClass, ModuleRestrictions.None
+            RubyClass result = Context.CreateClass(Name, _underlyingSystemType, singletonClassOf, null, null, null, _factories,
+                _superClass, null, null, _structInfo, IsRubyClass, IsSingletonClass, ModuleRestrictions.None
             );
 
             if (!IsSingletonClass) {
@@ -1351,14 +1341,14 @@ namespace IronRuby.Builtins {
 
                 initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, VisibilityContext.AllVisible).Info;
 
-                // Initializer resolves to Object#initialize unless overridden in a derived class.
-                // We ensure that initializer cannot be removed/undefined so that we don't ever fall back to method_missing.
+                // Initializer resolves to BasicObject#initialize unless overridden in a derived class.
+                // We ensure that initializer cannot be removed/undefined so that we don't ever fall back to method_missing (see RubyModule.RemoveMethodNoEvent).
                 Debug.Assert(initializer != null);
             }
 
             bool isLibraryMethod = initializer is RubyLibraryMethodInfo;
             bool isRubyInitializer = initializer.IsRubyMember && !isLibraryMethod;
-            bool isLibraryInitializer = isLibraryMethod && !initializer.DeclaringModule.IsObjectClass;
+            bool isLibraryInitializer = isLibraryMethod && !initializer.DeclaringModule.IsObjectClass && !initializer.DeclaringModule.IsBasicObjectClass;
 
             if (isRubyInitializer || isLibraryInitializer && _isRubyClass) {
                 // allocate and initialize:

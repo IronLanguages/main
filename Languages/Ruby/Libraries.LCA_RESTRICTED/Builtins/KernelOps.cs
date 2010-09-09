@@ -36,55 +36,7 @@ using Microsoft.Scripting.Utils;
 namespace IronRuby.Builtins {
     [RubyModule("Kernel", Extends = typeof(Kernel))]
     public static class KernelOps {
-        #region TODO: move to BasicObject: !, !=, ==, equal?, :__send__, instance_eval, instance_exec
-
-        [RubyMethod("equal?")]
-        public static bool IsEqual(object self, object other) {
-            // Comparing object IDs is (potentially) expensive because it forces us
-            // to generate InstanceData and a new object ID
-            if (self == other) {
-                return true;
-            }
-
-            if (RubyUtils.IsRubyValueType(self) && RubyUtils.IsRubyValueType(other)) {
-                return object.Equals(self, other);
-            }
-
-            return false;
-        }
-
-        [RubyMethod("!")]
-        public static bool Not(object self) {
-            return RubyOps.IsFalse(self);
-        }
-
-        [RubyMethod("!=")]
-        public static bool ValueNotEquals(BinaryOpStorage/*!*/ eql, object self, object other) {
-            var site = eql.GetCallSite("==", 1);
-            return RubyOps.IsFalse(site.Target(site, self, other));
-        }
-
-        [RubyMethod("instance_eval")]
-        public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
-            [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
-
-            RubyClass singleton = scope.RubyContext.GetOrCreateSingletonClass(self);
-            return RubyUtils.Evaluate(code, scope, self, singleton, file, line);
-        }
-
-        [RubyMethod("instance_eval")]
-        public static object InstanceEval([NotNull]BlockParam/*!*/ block, object self) {
-            return RubyUtils.EvaluateInSingleton(self, block, null);
-        }
-
-        [RubyMethod("instance_exec")]
-        public static object InstanceExec([NotNull]BlockParam/*!*/ block, object self, params object[]/*!*/ args) {
-            return RubyUtils.EvaluateInSingleton(self, block, args);
-        }
-
-        #endregion
-
-        #region initialize_copy, singleton_method_added, singleton_method_removed, singleton_method_undefined
+        #region initialize_copy
 
         [RubyMethod("initialize_copy", RubyMethodAttributes.PrivateInstance)]
         public static object InitializeCopy(RubyContext/*!*/ context, object self, object source) {
@@ -99,21 +51,6 @@ namespace IronRuby.Builtins {
             }
 
             return self;
-        }
-
-        [RubyMethod("singleton_method_added", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
-        public static void MethodAdded(object self, object methodName) {
-            // nop
-        }
-
-        [RubyMethod("singleton_method_removed", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
-        public static void MethodRemoved(object self, object methodName) {
-            // nop
-        }
-
-        [RubyMethod("singleton_method_undefined", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
-        public static void MethodUndefined(object self, object methodName) {
-            // nop
         }
 
         #endregion
@@ -449,33 +386,37 @@ namespace IronRuby.Builtins {
             return Protocols.IsEqual(equals, self, other);
         }
 
-        [RubyMethod("==")]
+        // This method is a binder intrinsic and the behavior of the binder needs to be adjusted appropriately if changed.
         [RubyMethod("eql?")]
         public static bool ValueEquals([NotNull]IRubyObject/*!*/ self, object other) {
             return self.BaseEquals(other);
         }
 
-        [RubyMethod("==")]
+        // This method is a binder intrinsic and the behavior of the binder needs to be adjusted appropriately if changed.
         [RubyMethod("eql?")]
         public static bool ValueEquals(object self, object other) {
             return Object.Equals(self, other);
         }
 
+        // This method is a binder intrinsic and the behavior of the binder needs to be adjusted appropriately if changed.
         [RubyMethod("hash")]
         public static int Hash([NotNull]IRubyObject/*!*/ self) {
             return self.BaseGetHashCode();
         }
 
+        // This method is a binder intrinsic and the behavior of the binder needs to be adjusted appropriately if changed.
         [RubyMethod("hash")]
         public static int Hash(object self) {
             return self == null ? RubyUtils.NilObjectId : self.GetHashCode();
         }
 
+        // This method is a binder intrinsic and the behavior of the binder needs to be adjusted appropriately if changed.
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS([NotNull]IRubyObject/*!*/ self) {
             return RubyUtils.ObjectBaseToMutableString(self);
         }
 
+        // This method is a binder intrinsic and the behavior of the binder needs to be adjusted appropriately if changed.
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(object self) {
             return self == null ? MutableString.CreateEmpty() : MutableString.Create(self.ToString(), RubyEncoding.UTF8);
@@ -810,8 +751,9 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region respond_to?, method_missing
+        #region respond_to?
 
+        // This method is a binder intrinsic and the behavior of the binder needs to be adjusted appropriately if changed.
         [RubyMethod("respond_to?")]
         public static bool RespondTo(RubyContext/*!*/ context, object self,
             [DefaultProtocol, NotNull]string/*!*/ methodName, [Optional]bool includePrivate) {
@@ -819,24 +761,17 @@ namespace IronRuby.Builtins {
             return context.ResolveMethod(self, methodName, includePrivate).Found;
         }
 
-        [RubyMethod("method_missing", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("method_missing", RubyMethodAttributes.PublicSingleton)]
-        [RubyStackTraceHidden]
-        public static object MethodMissing(RubyContext/*!*/ context, object/*!*/ self, [NotNull]RubySymbol/*!*/ name, params object[]/*!*/ args) {
-            throw RubyExceptions.CreateMethodMissing(context, self, name.ToString());
-        }
-
         #endregion
 
-        #region __send__, send, 1.9: public_send
+        #region send, TODO: 1.9: public_send
 
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, object self) {
             throw RubyExceptions.CreateArgumentError("no method name given");
         }
 
         // ARGS: 0
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object>>(
                 methodName, new RubyCallSignature(0, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)
@@ -845,7 +780,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: 0&
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, object>>(
                 methodName, new RubyCallSignature(0, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock)
@@ -854,7 +789,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: 1
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1) {
 
@@ -866,7 +801,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: 1&
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1) {
 
@@ -877,7 +812,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: 2
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1, object arg2) {
 
@@ -889,7 +824,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: 2&
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1, object arg2) {
 
@@ -900,7 +835,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: 3
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1, object arg2, object arg3) {
 
@@ -912,7 +847,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: 3&
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             object arg1, object arg2, object arg3) {
 
@@ -923,7 +858,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: N
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             params object[]/*!*/ args) {
             
@@ -935,7 +870,7 @@ namespace IronRuby.Builtins {
         }
 
         // ARGS: N&
-        [RubyMethod("send"), RubyMethod("__send__")]
+        [RubyMethod("send")]
         public static object SendMessage(RubyScope/*!*/ scope, BlockParam block, object self, [DefaultProtocol, NotNull]string/*!*/ methodName,
             params object[]/*!*/ args) {
 

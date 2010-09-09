@@ -255,6 +255,7 @@ namespace IronRuby.Runtime {
         }
 
         // classes used by runtime (we need to update initialization generator if any of these are added):
+        private RubyClass/*!*/ _basicObjectClass;
         private RubyModule/*!*/ _kernelModule;
         private RubyClass/*!*/ _objectClass;
         private RubyClass/*!*/ _classClass;
@@ -269,6 +270,7 @@ namespace IronRuby.Runtime {
         private Action<RubyModule>/*!*/ _mainSingletonTrait;
 
         // internally set by Initializer:
+        public RubyClass/*!*/ BasicObjectClass { get { return _basicObjectClass; } }
         public RubyModule/*!*/ KernelModule { get { return _kernelModule; } }
         public RubyClass/*!*/ ObjectClass { get { return _objectClass; } }
         public RubyClass/*!*/ ClassClass { get { return _classClass; } set { _classClass = value; } }
@@ -650,6 +652,10 @@ namespace IronRuby.Runtime {
         public void RegisterPrimitives(
             Action<RubyModule>/*!*/ mainSingletonTrait,
 
+            Action<RubyModule>/*!*/ basicObjectInstanceTrait,
+            Action<RubyModule>/*!*/ basicObjectClassTrait,
+            Action<RubyModule> basicObjectConstantsInitializer,
+
             Action<RubyModule>/*!*/ kernelInstanceTrait,
             Action<RubyModule>/*!*/ kernelClassTrait,
             Action<RubyModule> kernelConstantsInitializer,
@@ -666,7 +672,7 @@ namespace IronRuby.Runtime {
             Action<RubyModule>/*!*/ classClassTrait,
             Action<RubyModule> classConstantsInitializer) {
 
-            Assert.NotNull(mainSingletonTrait);
+            Assert.NotNull(mainSingletonTrait, basicObjectInstanceTrait, basicObjectClassTrait);
             Assert.NotNull(objectInstanceTrait, kernelInstanceTrait, moduleInstanceTrait, classInstanceTrait);
             Assert.NotNull(objectClassTrait, kernelClassTrait, moduleClassTrait, classClassTrait);
 
@@ -674,15 +680,17 @@ namespace IronRuby.Runtime {
 
             // inheritance hierarchy:
             //
-            //           Class
-            //             ^
-            // Object -> Object'  
-            //   ^         ^
-            // Module -> Module'
-            //   ^         ^
-            // Class  -> Class'
-            //   ^
-            // Object'
+            //                   Class
+            //                     ^
+            // BasicObject -> BasicObject'
+            //      ^              ^
+            //    Object   ->    Object'  
+            //      ^              ^
+            //    Module   ->    Module'
+            //      ^              ^
+            //    Class    ->    Class'
+            //      ^
+            //    Object'
             //
 
             // only Object should expose CLR methods:
@@ -698,30 +706,35 @@ namespace IronRuby.Runtime {
 
             // locks to comply with lock requirements:
             using (ClassHierarchyLocker()) {
+                _basicObjectClass = new RubyClass(this, Symbols.BasicObject, null, null, basicObjectInstanceTrait, basicObjectConstantsInitializer, null, null, null, null, null, false, false, ModuleRestrictions.Builtin & ~ModuleRestrictions.NoOverrides);
                 _kernelModule = new RubyModule(this, Symbols.Kernel, kernelInstanceTrait, kernelConstantsInitializer, null, null, null, ModuleRestrictions.Builtin);
-                _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, objectConstantsInitializer, null, null, new[] { _kernelModule }, objectTracker, null, false, false, ModuleRestrictions.Builtin & ~ModuleRestrictions.NoOverrides);
+                _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, objectConstantsInitializer, null, _basicObjectClass, new[] { _kernelModule }, objectTracker, null, false, false, ModuleRestrictions.Builtin & ~ModuleRestrictions.NoOverrides);
                 _moduleClass = new RubyClass(this, Symbols.Module, typeof(RubyModule), null, moduleInstanceTrait, moduleConstantsInitializer, moduleFactories, _objectClass, null, null, null, false, false, ModuleRestrictions.Builtin);
                 _classClass = new RubyClass(this, Symbols.Class, typeof(RubyClass), null, classInstanceTrait, classConstantsInitializer, classFactories, _moduleClass, null, null, null, false, false, ModuleRestrictions.Builtin);
-                
-                _objectClass.InitializeImmediateClass(_objectClass.CreateSingletonClass(_classClass, objectClassTrait));
+
+                _basicObjectClass.InitializeImmediateClass(_basicObjectClass.CreateSingletonClass(_classClass, basicObjectClassTrait));
+                _objectClass.InitializeImmediateClass(_objectClass.CreateSingletonClass(_basicObjectClass.ImmediateClass, objectClassTrait));
                 _moduleClass.InitializeImmediateClass(_moduleClass.CreateSingletonClass(_objectClass.ImmediateClass, moduleClassTrait));
                 _classClass.InitializeImmediateClass(_classClass.CreateSingletonClass(_moduleClass.ImmediateClass, classClassTrait));
 
                 _moduleClass.InitializeDummySingleton();
                 _classClass.InitializeDummySingleton();
 
+                _basicObjectClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
                 _objectClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
                 _moduleClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
                 _classClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
                 
                 _kernelModule.InitializeImmediateClass(_moduleClass, kernelClassTrait);
-                
+
+                _objectClass.SetConstantNoMutateNoLock(_basicObjectClass.Name, _basicObjectClass);
                 _objectClass.SetConstantNoMutateNoLock(_moduleClass.Name, _moduleClass);
                 _objectClass.SetConstantNoMutateNoLock(_classClass.Name, _classClass);
                 _objectClass.SetConstantNoMutateNoLock(_objectClass.Name, _objectClass);
                 _objectClass.SetConstantNoMutateNoLock(_kernelModule.Name, _kernelModule);
             }
 
+            AddModuleToCacheNoLock(typeof(BasicObject), _basicObjectClass);
             AddModuleToCacheNoLock(typeof(Kernel), _kernelModule);
             AddModuleToCacheNoLock(objectTracker.Type, _objectClass);
             AddModuleToCacheNoLock(typeof(RubyObject), _objectClass);

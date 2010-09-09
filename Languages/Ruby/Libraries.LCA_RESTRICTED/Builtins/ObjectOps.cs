@@ -17,7 +17,7 @@ using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
 
-    [RubyClass("Object", Extends = typeof(object), Restrictions = ModuleRestrictions.NoNameMapping | ModuleRestrictions.NotPublished)]
+    [RubyClass("Object", Extends = typeof(object), Inherits = typeof(BasicObject), Restrictions = ModuleRestrictions.NoNameMapping | ModuleRestrictions.NotPublished)]
     [Includes(typeof(Kernel))]
     public static class ObjectOps {
         // RubyConstructor implemented by RubyObject ctors

@@ -470,12 +470,12 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("remove_method", RubyMethodAttributes.PrivateInstance)]
         public static RubyModule/*!*/ RemoveMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNullItems]params string[]/*!*/ methodNames) {
-            // MRI 1.8: reports a warning and allows removal
-            // MRI 1.9: throws a NameError
             foreach (var methodName in methodNames) {
-                if (self == self.Context.ObjectClass && methodName == Symbols.Initialize) {
-                    throw RubyExceptions.CreateNameError("Cannot remove Object#initialize");
+                // MRI: reports a warning and allows removal
+                if (self.IsBasicObjectClass && methodName == Symbols.Initialize) {
+                    throw RubyExceptions.CreateNameError("Cannot remove BasicObject#initialize");
                 }
+
                 if (!self.RemoveMethod(methodName)) {
                     throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
                 }
