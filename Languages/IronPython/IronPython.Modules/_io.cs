@@ -535,12 +535,14 @@ namespace IronPython.Modules {
                     for (int i = 0; i < data.Count; i++) {
                         bytes[i] = data._bytes[i];
                     }
+                    GC.KeepAlive(this);
                     return data.Count;
                 }
 
                 object setter;
                 if (PythonOps.TryGetBoundAttr(buf, "__setslice__", out setter)) {
                     PythonOps.CallWithContext(context, setter, new Slice(data.Count), data);
+                    GC.KeepAlive(this);
                     return data.Count;
                 }
 
@@ -548,6 +550,7 @@ namespace IronPython.Modules {
                     for (int i = 0; i < data.Count; i++) {
                         PythonOps.CallWithContext(context, setter, i, data[context, i]);
                     }
+                    GC.KeepAlive(this);
                     return data.Count;
                 }
 
@@ -627,12 +630,17 @@ namespace IronPython.Modules {
             private Bytes _readBuf;
             private int _readBufPos;
 
+            internal static BufferedReader Create(CodeContext/*!*/ context, object raw, [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size) {
+                var res = new BufferedReader(context, raw, buffer_size);
+                res.__init__(context, raw, buffer_size);
+                return res;
+            }
+
             public BufferedReader(
                 CodeContext/*!*/ context,
                 object raw,
                 [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size
             ) : base(context) {
-                __init__(context, raw, buffer_size);
             }
 
             public void __init__(
@@ -817,6 +825,7 @@ namespace IronPython.Modules {
                         count += chunk.Count;
                     }
 
+                    GC.KeepAlive(this);
                     return Bytes.Concat(chunks, count);
                 }
 
@@ -829,6 +838,7 @@ namespace IronPython.Modules {
                         ResetReadBuf();
                     }
 
+                    GC.KeepAlive(this);
                     return Bytes.Make(res);
                 } else {
                     // a read is required to provide requested amount of data
@@ -871,7 +881,7 @@ namespace IronPython.Modules {
                             break;
                         }
                     }
-
+                    GC.KeepAlive(this);
                     return Bytes.Concat(chunks, length - remaining);
                 }
             }
@@ -971,7 +981,8 @@ namespace IronPython.Modules {
                     ResetReadBuf();
                     if (pos < 0) {
                         throw InvalidPosition(pos);
-                    }
+                    } 
+                    GC.KeepAlive(this);
 
                     return pos;
                 }
@@ -1015,13 +1026,23 @@ namespace IronPython.Modules {
             private int _bufSize;
             private List<byte> _writeBuf;
 
+            internal static BufferedWriter Create(CodeContext/*!*/ context,
+                object raw,
+                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
+                [DefaultParameterValue(null)]object max_buffer_size) {
+
+                var res = new BufferedWriter(context, raw, buffer_size, max_buffer_size);
+                res.__init__(context, raw, buffer_size, max_buffer_size);
+                return res;
+            }
+
             public BufferedWriter(
                 CodeContext/*!*/ context,
                 object raw,
                 [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
                 [DefaultParameterValue(null)]object max_buffer_size
-            ) : base(context) {
-                __init__(context, raw, buffer_size, null);
+            )
+                : base(context) {
             }
 
             public void __init__(
@@ -1093,21 +1114,27 @@ namespace IronPython.Modules {
 
             public override bool seekable(CodeContext/*!*/ context) {
                 if (_rawIO != null) {
-                    return _rawIO.seekable(context);
+                    var res = _rawIO.seekable(context);
+                    GC.KeepAlive(this);
+                    return res;
                 }
                 return PythonOps.IsTrue(PythonOps.Invoke(context, _raw, "seekable"));
             }
 
             public override bool readable(CodeContext/*!*/ context) {
                 if (_rawIO != null) {
-                    return _rawIO.readable(context);
+                    var res = _rawIO.readable(context);
+                    GC.KeepAlive(this);
+                    return res;
                 }
                 return PythonOps.IsTrue(PythonOps.Invoke(context, _raw, "readable"));
             }
 
             public override bool writable(CodeContext/*!*/ context) {
                 if (_rawIO != null) {
-                    return _rawIO.writable(context);
+                    var res = _rawIO.writable(context);
+                    GC.KeepAlive(this);
+                    return res;
                 }
                 return PythonOps.IsTrue(PythonOps.Invoke(context, _raw, "writable"));
             }
@@ -1135,7 +1162,9 @@ namespace IronPython.Modules {
 
             public override int fileno(CodeContext/*!*/ context) {
                 if (_rawIO != null) {
-                    return _rawIO.fileno(context);
+                    var res = _rawIO.fileno(context);
+                    GC.KeepAlive(this);
+                    return res;
                 }
                 return GetInt(
                     PythonOps.Invoke(context, _raw, "fileno"),
@@ -1145,7 +1174,9 @@ namespace IronPython.Modules {
 
             public override bool isatty(CodeContext/*!*/ context) {
                 if (_rawIO != null) {
-                    return _rawIO.isatty(context);
+                    var res = _rawIO.isatty(context);
+                    GC.KeepAlive(this);
+                    return res;
                 }
                 return PythonOps.IsTrue(PythonOps.Invoke(context, _raw, "isatty"));
             }
@@ -1200,10 +1231,12 @@ namespace IronPython.Modules {
                     if (_rawIO != null) {
                         return _rawIO.truncate(context, pos);
                     }
-                    return GetBigInt(
+                    var res = GetBigInt(
                         PythonOps.Invoke(context, _raw, "truncate", pos),
                         "truncate() should return integer"
                     );
+                    GC.KeepAlive(this);
+                    return res;
                 }
             }
 
@@ -1256,7 +1289,7 @@ namespace IronPython.Modules {
                 if (res < 0) {
                     throw InvalidPosition(res);
                 }
-
+                GC.KeepAlive(this);
                 return res + _writeBuf.Count;
             }
 
@@ -1283,7 +1316,7 @@ namespace IronPython.Modules {
                     if (res < 0) {
                         throw InvalidPosition(pos);
                     }
-
+                    GC.KeepAlive(this);
                     return res;
                 }
             }
@@ -1308,13 +1341,21 @@ namespace IronPython.Modules {
             private int _readBufPos;
             private List<byte> _writeBuf;
 
+            internal static BufferedRandom Create(CodeContext/*!*/ context,
+                _IOBase raw,
+                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
+                [DefaultParameterValue(null)]object max_buffer_size) {
+                var res = new BufferedRandom(context, raw, buffer_size, max_buffer_size);
+                res.__init__(context, raw, buffer_size, max_buffer_size);
+                return res;
+            }
+
             public BufferedRandom(
                 CodeContext/*!*/ context,
                 _IOBase raw,
                 [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
                 [DefaultParameterValue(null)]object max_buffer_size
             ) : base(context) {
-                __init__(context, raw, buffer_size, max_buffer_size);
             }
 
             public void __init__(
@@ -1376,15 +1417,21 @@ namespace IronPython.Modules {
             }
 
             public override bool seekable(CodeContext/*!*/ context) {
-                return _inner.seekable(context);
+                var res = _inner.seekable(context);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override bool readable(CodeContext/*!*/ context) {
-                return _inner.readable(context);
+                var res = _inner.readable(context);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override bool writable(CodeContext/*!*/ context) {
-                return _inner.writable(context);
+                var res = _inner.writable(context);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override bool closed {
@@ -1404,7 +1451,9 @@ namespace IronPython.Modules {
             }
 
             public override int fileno(CodeContext/*!*/ context) {
-                return _inner.fileno(context);
+                var res = _inner.fileno(context);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override bool isatty(CodeContext/*!*/ context) {
@@ -1451,7 +1500,7 @@ namespace IronPython.Modules {
                         chunks.Add(chunk);
                         count += chunk.Count;
                     }
-
+                    GC.KeepAlive(this);
                     return Bytes.Concat(chunks, count);
                 }
 
@@ -1463,7 +1512,7 @@ namespace IronPython.Modules {
                     if (_readBufPos == _readBuf.Count) {
                         ResetReadBuf();
                     }
-
+                    GC.KeepAlive(this);
                     return Bytes.Make(res);
                 } else {
                     // a read is required to provide requested amount of data
@@ -1491,7 +1540,7 @@ namespace IronPython.Modules {
                             break;
                         }
                     }
-
+                    GC.KeepAlive(this);
                     return Bytes.Concat(chunks, length - remaining);
                 }
             }
@@ -1520,7 +1569,7 @@ namespace IronPython.Modules {
 
                 Bytes next = (Bytes)_inner.read(context, length - _readBuf.Count + _readBufPos) ?? Bytes.Empty;
                 _readBuf = ResetReadBuf() + next;
-
+                GC.KeepAlive(this);
                 return _readBuf;
             }
 
@@ -1664,7 +1713,7 @@ namespace IronPython.Modules {
                     if (pos < 0) {
                         throw PythonOps.IOError("seek() returned invalid position");
                     }
-
+                    GC.KeepAlive(this);
                     return pos;
                 }
             }
@@ -1675,7 +1724,9 @@ namespace IronPython.Modules {
                     if (pos == null) {
                         pos = tell(context);
                     }
-                    return _inner.truncate(context, pos);
+                    var res = _inner.truncate(context, pos);
+                    GC.KeepAlive(this);
+                    return res;
                 }
             }
 
@@ -1715,7 +1766,6 @@ namespace IronPython.Modules {
                 [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
                 [DefaultParameterValue(null)]object max_buffer_size
             ) : base(context) {
-                __init__(context, reader, writer, buffer_size, max_buffer_size);
             }
 
             public void __init__(
@@ -1746,7 +1796,7 @@ namespace IronPython.Modules {
                 set {
                     BufferedReader reader = value as BufferedReader;
                     if (reader == null) {
-                        reader = new BufferedReader(context, value, DEFAULT_BUFFER_SIZE);
+                        reader = BufferedReader.Create(context, value, DEFAULT_BUFFER_SIZE);
                     }
                     _reader = reader;
                 }
@@ -1757,42 +1807,57 @@ namespace IronPython.Modules {
                 set {
                     BufferedWriter writer = value as BufferedWriter;
                     if (writer == null) {
-                        writer = new BufferedWriter(context, value, DEFAULT_BUFFER_SIZE, null);
+                        writer = BufferedWriter.Create(context, value, DEFAULT_BUFFER_SIZE, null);
                     }
                     _writer = writer;
                 }
             }
 
             public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object length) {
-                return _reader.read(context, length);
+                var res = _reader.read(context, length);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override BigInteger readinto(CodeContext/*!*/ context, object buf) {
-                return _reader.readinto(context, buf);
+                var res = _reader.readinto(context, buf);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override BigInteger write(CodeContext/*!*/ context, object buf) {
-                return _writer.write(context, buf);
+                var res = _writer.write(context, buf);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override Bytes peek(CodeContext/*!*/ context, [DefaultParameterValue(0)]int length) {
-                return _reader.peek(context, length);
+                var res = _reader.peek(context, length);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override Bytes read1(CodeContext/*!*/ context, int length) {
-                return _reader.read1(context, length);
+                var res = _reader.read1(context, length);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override bool readable(CodeContext/*!*/ context) {
-                return _reader.readable(context);
+                var res = _reader.readable(context);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override bool writable(CodeContext/*!*/ context) {
-                return _writer.writable(context);
+                var res = _writer.writable(context);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override void flush(CodeContext/*!*/ context) {
                 _writer.flush(context);
+                GC.KeepAlive(this);
             }
 
             public override void close(CodeContext/*!*/ context) {
@@ -1801,10 +1866,13 @@ namespace IronPython.Modules {
                 } finally {
                     _reader.close(context);
                 }
+                GC.KeepAlive(this);
             }
 
             public override bool isatty(CodeContext/*!*/ context) {
-                return _reader.isatty(context) || _writer.isatty(context);
+                var res = _reader.isatty(context) || _writer.isatty(context);
+                GC.KeepAlive(this);
+                return res;
             }
 
             public override bool closed {
@@ -1833,7 +1901,6 @@ namespace IronPython.Modules {
                 [DefaultParameterValue("string")]string errors,
                 [DefaultParameterValue("\n")]string newline
             ) : base(context) {
-                __init__(context, initial_value, encoding, errors, newline);
             }
 
             public void __init__(
@@ -1904,6 +1971,17 @@ namespace IronPython.Modules {
 
             internal TextIOWrapper(CodeContext/*!*/ context) : base(context) { }
 
+            internal static TextIOWrapper Create(CodeContext/*!*/ context,
+                object buffer,
+                [DefaultParameterValue(null)]string encoding,
+                [DefaultParameterValue(null)]string errors,
+                [DefaultParameterValue(null)]string newline,
+                [DefaultParameterValue(false)]bool line_buffering) {
+                var res = new TextIOWrapper(context, buffer, encoding, errors, newline, line_buffering);
+                res.__init__(context, buffer, encoding, errors, newline, line_buffering);
+                return res;
+            }
+
             public TextIOWrapper(
                 CodeContext/*!*/ context,
                 object buffer,
@@ -1912,7 +1990,6 @@ namespace IronPython.Modules {
                 [DefaultParameterValue(null)]string newline,
                 [DefaultParameterValue(false)]bool line_buffering
             ) : base(context) {
-                __init__(context, buffer, encoding, errors, newline, line_buffering);
             }
 
             public void __init__(
@@ -2104,6 +2181,7 @@ namespace IronPython.Modules {
                     PythonOps.Invoke(context, _decoder, "reset");
                 }
 
+                GC.KeepAlive(this);
                 return length;
             }
 
@@ -2303,6 +2381,7 @@ namespace IronPython.Modules {
                         }
                     }
 
+                    GC.KeepAlive(this);
                     return pos;
                 }
 
@@ -2393,6 +2472,7 @@ namespace IronPython.Modules {
                     // the encoder may not exist
                 }
 
+                GC.KeepAlive(this);
                 return cookie;
             }
 
@@ -2514,6 +2594,7 @@ namespace IronPython.Modules {
 
                 // rewind to just after the line ending
                 RewindDecodedChars(line.Length - endPos);
+                GC.KeepAlive(this);
                 return line.Substring(0, endPos);
             }
 
@@ -2804,11 +2885,11 @@ namespace IronPython.Modules {
 
             _BufferedIOBase buffer;
             if (updating) {
-                buffer = new BufferedRandom(context, fio, buffering, null);
+                buffer = BufferedRandom.Create(context, fio, buffering, null);
             } else if (writing || appending) {
-                buffer = new BufferedWriter(context, fio, buffering, null);
+                buffer = BufferedWriter.Create(context, fio, buffering, null);
             } else if (reading) {
-                buffer = new BufferedReader(context, fio, buffering);
+                buffer = BufferedReader.Create(context, fio, buffering);
             } else {
                 throw PythonOps.ValueError("unknown mode: {0}", mode);
             }
@@ -2816,7 +2897,7 @@ namespace IronPython.Modules {
             if (binary) {
                 return buffer;
             }
-            TextIOWrapper res = new TextIOWrapper(context, buffer, encoding, errors, newline, line_buffering);
+            TextIOWrapper res = TextIOWrapper.Create(context, buffer, encoding, errors, newline, line_buffering);
             ((IPythonExpandable)res).EnsureCustomAttributes()["mode"] = mode;
             return res;
         }

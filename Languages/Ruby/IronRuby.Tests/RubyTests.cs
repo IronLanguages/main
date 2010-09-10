@@ -782,6 +782,7 @@ namespace IronRuby.Tests {
                 Dlr_Indexable,
                 Dlr_Number,
                 Dlr_Comparable,
+                Dlr_Equatable,
                 Dlr_RubyObjects,
                 Dlr_Methods,
                 Dlr_Visibility,

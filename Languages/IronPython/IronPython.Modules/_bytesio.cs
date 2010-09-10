@@ -55,13 +55,12 @@ namespace IronPython.Modules {
             private byte[] _data;
             private int _pos, _length;
 
-            internal BytesIO(CodeContext/*!*/ context) : base(context) {
-                __init__(null);
+            internal BytesIO(CodeContext/*!*/ context)
+                : base(context) {
             }
 
             public BytesIO(CodeContext/*!*/ context, [DefaultParameterValue(null)]object initial_bytes)
                 : base(context) {
-                    __init__(initial_bytes);
             }
 
             public void __init__([DefaultParameterValue(null)]object initial_bytes) {
