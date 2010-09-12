@@ -1378,7 +1378,7 @@ B")
 
         // encodings suported in preamble:
         private static readonly string[] preambleEncodingNames = 
-            new[] { "ASCII-8BIT", "ASCII", "BINARY", "US-ASCII", "UTF-8", "EUC-JP", "SJIS", "SHIFT_JIS", "LOCALE" };
+            new[] { "ASCII-8BIT", "ASCII", "BINARY", "US-ASCII", "UTF-8", "EUC-JP", "SJIS", "SHIFT_JIS", "LOCALE", "FILESYSTEM" };
 
         private void Encoding1() {
             foreach (var name in preambleEncodingNames) {
@@ -1386,14 +1386,14 @@ B")
                 Assert(encoding != null);
 
                 // the encoding must be an identity on ASCII characters:
-                Assert(RubyEncoding.IsAsciiIdentity(encoding));
+                Assert(RubyEncoding.AsciiIdentity(encoding));
             }
 
             foreach (var info in Encoding.GetEncodings()) {
                 var encoding = info.GetEncoding();
                 
                 // doesn't blow up (the method checks itself):
-                RubyEncoding.IsAsciiIdentity(encoding);
+                RubyEncoding.AsciiIdentity(encoding);
 
                 //Console.WriteLine("case " + info.CodePage + ": // " + encoding.EncodingName);
             }

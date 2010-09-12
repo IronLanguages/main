@@ -1,2 +1,0 @@
-fails:Matrix#transpose can transpose empty matrices
-fails:"Matrix#transpose can transpose empty matrices"

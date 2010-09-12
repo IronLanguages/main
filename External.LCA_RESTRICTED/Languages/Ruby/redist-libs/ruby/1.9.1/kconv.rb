@@ -1,7 +1,7 @@
 #
 # kconv.rb - Kanji Converter.
 #
-# $Id: kconv.rb 15050 2008-01-14 14:37:29Z naruse $
+# $Id: kconv.rb 25189 2009-10-02 12:04:37Z akr $
 #
 # ----
 #
@@ -47,7 +47,7 @@ module Kconv
   #
   # Public Methods
   #
-  
+
   # call-seq:
   #    Kconv.kconv(str, to_enc, from_enc=nil)
   #
@@ -205,11 +205,11 @@ class String
     form_enc = self.encoding if !from_enc && self.encoding != Encoding.list[0]
     Kconv::kconv(self, to_enc, from_enc)
   end
-  
+
   #
   # to Encoding
   #
-  
+
   # call-seq:
   #    String#tojis   => string
   #

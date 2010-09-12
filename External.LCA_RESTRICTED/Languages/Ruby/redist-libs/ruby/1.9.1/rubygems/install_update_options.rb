@@ -9,9 +9,12 @@ require 'rubygems/security'
 
 ##
 # Mixin methods for install and update options for Gem::Commands
+
 module Gem::InstallUpdateOptions
 
+  ##
   # Add the install/update options to the option parser.
+
   def add_install_update_options
     OptionParser.accept Gem::Security::Policy do |value|
       value = Gem::Security::Policies[value]
@@ -56,8 +59,7 @@ module Gem::InstallUpdateOptions
     end
 
     add_option(:"Install/Update", '-t', '--[no-]test',
-               'Run unit tests prior to installation') do |value, options|
-      options[:test] = value
+               'Ignored; just for compatiblity') do |value, options|
     end
 
     add_option(:"Install/Update", '-w', '--[no-]wrappers',
@@ -92,8 +94,7 @@ module Gem::InstallUpdateOptions
 
     add_option(:"Install/Update",       '--[no-]user-install',
                'Install in user\'s home directory instead',
-               'of GEM_HOME. Defaults to using home directory',
-               'only if GEM_HOME is not writable.') do |value, options|
+               'of GEM_HOME.') do |value, options|
       options[:user_install] = value
     end
 
@@ -104,9 +105,11 @@ module Gem::InstallUpdateOptions
     end
   end
 
+  ##
   # Default options for the gem install command.
+
   def install_update_defaults_str
-    '--rdoc --no-force --no-test --wrappers'
+    '--rdoc --no-force --wrappers'
   end
 
 end

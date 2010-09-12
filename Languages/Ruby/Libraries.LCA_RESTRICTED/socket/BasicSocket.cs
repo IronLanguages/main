@@ -187,7 +187,10 @@ namespace IronRuby.StandardLibrary.Sockets {
             if (how < 0 || 2 < how) {
                 throw RubyExceptions.CreateArgumentError("`how' should be either 0, 1, 2");
             }
-            self.Socket.Shutdown((SocketShutdown)how);
+            // TODO: 
+            // Webrick's (ruby\1.9.1\webrick\server.rb) use of shutdown on socket leads to subsequent scoket failures. Do close instead.
+            // self.Socket.Shutdown((SocketShutdown)how);
+            self.Socket.Close();
             return 0;
         }
 

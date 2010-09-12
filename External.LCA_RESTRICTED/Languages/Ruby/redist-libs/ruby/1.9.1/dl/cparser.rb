@@ -39,7 +39,7 @@ module DL
       tymap ||= {}
       signature = signature.gsub(/\s+/, " ").strip
       case signature
-      when /^([\d\w@\*_\s]+)\(([\d\w\*_\s\,\[\]]*)\)$/
+      when /^([\w@\*\s]+)\(([\w\*\s\,\[\]]*)\)$/
         ret = $1
         (args = $2).strip!
         ret = ret.split(/\s+/)
@@ -52,7 +52,7 @@ module DL
         ret  = ret.join(" ")
         return [func, parse_ctype(ret, tymap), args.collect{|arg| parse_ctype(arg, tymap)}]
       else
-        raise(RuntimeError,"can't parse the function prototype: #{proto}")
+        raise(RuntimeError,"can't parse the function prototype: #{signature}")
       end
     end
 
@@ -73,7 +73,7 @@ module DL
         return -TYPE_SHORT
       when "int"
         return TYPE_INT
-      when "unsigned int"
+      when "unsigned int", 'uint'
         return -TYPE_INT
       when "long"
         return TYPE_LONG

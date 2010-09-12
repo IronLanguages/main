@@ -254,7 +254,7 @@ namespace IronRuby.Builtins {
                     }
                 }
 
-                return SwitchToChars().DataGetChar(index);
+                return SwitchToChars().GetChar(index);
             }
 
             public override byte GetByte(int index) {

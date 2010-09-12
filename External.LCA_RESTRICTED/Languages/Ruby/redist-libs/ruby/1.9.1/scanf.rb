@@ -1,9 +1,9 @@
 # scanf for Ruby
 #
 # $Release Version: 1.1.2 $
-# $Revision: 19094 $
-# $Id: scanf.rb 19094 2008-09-03 12:54:13Z dblack $
-# $Author: dblack $
+# $Revision: 27139 $
+# $Id: scanf.rb 27139 2010-04-01 04:32:22Z naruse $
+# $Author: naruse $
 #
 # A product of the Austin Ruby Codefest (Austin, Texas, August 2002)
 
@@ -63,7 +63,7 @@ to the beginning of the format string, and yields a new array of
 conversions to the block every time the format string is matched
 (including partial matches, but not including complete failures).  The
 actual return value of scanf when called with a block is an array
-containing the results of all the executions of the block. 
+containing the results of all the executions of the block.
 
    str = "123 abc 456 def 789 ghi"
    str.scanf("%d%s") { |num,str| [ num * 2, str.upcase ] }
@@ -100,7 +100,7 @@ and <tt>tests/scanftests.rb</tt> for examples.)
 [u]
   Same as d.
 
-[i] 
+[i]
   Matches an optionally signed integer. The integer is read in base
   16 if it begins with `0x' or `0X', in base 8 if it begins with `0',
   and in base 10 other- wise. Only characters that correspond to the
@@ -112,7 +112,7 @@ and <tt>tests/scanftests.rb</tt> for examples.)
 [x,X]
   Matches an optionally signed hexadecimal integer,
 
-[f,g,e,E]
+[a,e,f,g,A,E,F,G]
   Matches an optionally signed floating-point number.
 
 [s]
@@ -280,7 +280,7 @@ Project contributors:: Nolan Darilek, Jason Johnston
 
 Thanks to Hal Fulton for hosting the Codefest.
 
-Thanks to Matz for suggestions about the class design.  
+Thanks to Matz for suggestions about the class design.
 
 Thanks to Gavin Sinclair for some feedback on the documentation.
 
@@ -309,7 +309,22 @@ module Scanf
 
     def skip;  /^\s*%\*/.match(@spec_string); end
 
-    def extract_float(s); s.to_f if s &&! skip; end
+    def extract_float(s)
+      return nil unless s &&! skip
+      if /\A(?<sign>[-+]?)0[xX](?<frac>\.\h+|\h+(?:\.\h*)?)[pP](?<exp>[-+]\d+)/ =~ s
+        f1, f2 = frac.split('.')
+        f = f1.hex
+        if f2
+          len = f2.length
+          if len > 0
+            f += f2.hex / (16.0 ** len)
+          end
+        end
+        (sign == ?- ? -1 : 1) * Math.ldexp(f, exp.to_i)
+      else
+        s.to_f
+      end
+    end
     def extract_decimal(s); s.to_i if s &&! skip; end
     def extract_hex(s); s.hex if s &&! skip; end
     def extract_octal(s); s.oct if s &&! skip; end
@@ -332,7 +347,7 @@ module Scanf
       @spec_string = str
       h = '[A-Fa-f0-9]'
 
-      @re_string, @handler = 
+      @re_string, @handler =
         case @spec_string
 
           # %[[:...:]]
@@ -409,12 +424,13 @@ module Scanf
           [ "([-+][0-7]{1,#{$1.to_i-1}}|[0-7]{1,#{$1}})", :extract_octal ]
 
           # %f
-        when /%\*?f/
-          [ '([-+]?((\d+(?>(?=[^\d.]|$)))|(\d*(\.(\d*([eE][-+]?\d+)?)))))', :extract_float ]
+        when /%\*?[aefgAEFG]/
+          [ '([-+]?(?:0[xX](?:\.\h+|\h+(?:\.\h*)?)[pP][-+]\d+|\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))', :extract_float ]
 
           # %5f
-        when /%\*?(\d+)f/
-          [ "(\\S{1,#{$1}})", :extract_float ]
+        when /%\*?(\d+)[aefgAEFG]/
+          [ '(?=[-+]?(?:0[xX](?:\.\h+|\h+(?:\.\h*)?)[pP][-+]\d+|\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))' +
+            "(\\S{1,#{$1}})", :extract_float ]
 
           # %5s
         when /%\*?(\d+)s/
@@ -482,7 +498,7 @@ module Scanf
 
       return width_left || cc_no_width
     end
-    
+
   end
 
   class FormatString
@@ -490,7 +506,7 @@ module Scanf
     attr_reader :string_left, :last_spec_tried,
                 :last_match_tried, :matched_count, :space
 
-    SPECIFIERS = 'diuXxofeEgsc'
+    SPECIFIERS = 'diuXxofFeEgGscaA'
     REGEX = /
         # possible space, followed by...
           (?:\s*
@@ -672,10 +688,10 @@ class String
     if b
       block_scanf(fstr,&b)
     else
-      fs = 
+      fs =
         if fstr.is_a? Scanf::FormatString
-          fstr 
-        else 
+          fstr
+        else
           Scanf::FormatString.new(fstr)
         end
       fs.match(self)

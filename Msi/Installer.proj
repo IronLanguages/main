@@ -4,6 +4,10 @@
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     </PropertyGroup>
     <ItemGroup>
+        <!-- Needed to be built ahead of time for the MSIs to include the Silverlight binaries -->
+        <ProjectToBuild Include="..\Solutions\Codeplex-DLR.sln">
+            <Properties>Configuration=Silverlight4$(Configuration)</Properties>
+        </ProjectToBuild>  
         <ProjectToBuild Include="Python\Chm\IronPython.Chm.proj">
           <Name>IronPython.Chm</Name>
         </ProjectToBuild>  

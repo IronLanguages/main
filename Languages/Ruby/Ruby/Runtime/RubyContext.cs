@@ -2060,35 +2060,35 @@ namespace IronRuby.Runtime {
         private object SymbolsLock { get { return _symbols; } }
 
         public RubySymbol/*!*/ CreateSymbol(MutableString/*!*/ str) {
-            return CreateSymbolInternal(str, true);
+            return CreateSymbol(str, true);
         }
 
         public RubySymbol/*!*/ CreateAsciiSymbol(string/*!*/ str) {
             // TODO: do not allocate the MutableString if not needed?
-            return CreateSymbolInternal(MutableString.CreateAscii(str), false);
+            return CreateSymbol(MutableString.CreateAscii(str), false);
         }
 
         public RubySymbol/*!*/ CreateSymbol(string/*!*/ str, RubyEncoding/*!*/ encoding) {
             // TODO: do not allocate the MutableString if not needed?
-            return CreateSymbolInternal(MutableString.CreateMutable(str, encoding), false);
+            return CreateSymbol(MutableString.CreateMutable(str, encoding), false);
         }
 
         public RubySymbol/*!*/ CreateSymbol(byte[]/*!*/ bytes, RubyEncoding/*!*/ encoding) {
             var mstr = MutableString.CreateBinary(bytes, encoding);
             // TODO: do not allocate the MutableString if not needed?
-            return CreateSymbolInternal(mstr, false);
+            return CreateSymbol(mstr, false);
         }
 
-        internal RubySymbol/*!*/ CreateSymbolInternal(MutableString/*!*/ mstr) {
-            return CreateSymbolInternal(mstr, false);
-        }
-
-        private RubySymbol/*!*/ CreateSymbolInternal(MutableString/*!*/ mstr, bool clone) {
+        /// <summary>
+        /// Creates a symbol that holds on a given string or its copy, if <c>clone</c> is true.
+        /// Freezes the string the symbol holds on.
+        /// </summary>
+        public RubySymbol/*!*/ CreateSymbol(MutableString/*!*/ str, bool clone) {
             RubySymbol result;
             lock (SymbolsLock) {
-                if (!_symbols.TryGetValue(mstr, out result)) {
-                    result = new RubySymbol((clone ? mstr.Clone() : mstr).Freeze(), _symbols.Count + RubySymbol.MinId, _runtimeId);
-                    _symbols.Add(mstr, result);
+                if (!_symbols.TryGetValue(str, out result)) {
+                    result = new RubySymbol((clone ? str.Clone() : str).Freeze(), _symbols.Count + RubySymbol.MinId, _runtimeId);
+                    _symbols.Add(str, result);
                 }
             }
             return result;
@@ -2330,11 +2330,11 @@ namespace IronRuby.Runtime {
         }
 
         public RubyEncoding/*!*/ GetPathEncoding() {
-            return _options.LocaleEncoding;
+            return RubyEncoding.UTF8;
         }
 
         /// <summary>
-        /// Creates a mutable string encoded using the current KCODE or (K-)UTF8 if KCODE is not set.
+        /// Creates a mutable string encoded using the path (file system) encoding.
         /// </summary>
         /// <exception cref="EncoderFallbackException">Invalid characters present.</exception>
         public MutableString/*!*/ EncodePath(string/*!*/ path) {
@@ -2878,7 +2878,7 @@ namespace IronRuby.Runtime {
 
                 // Check if the preamble encoding is an identity on preamble bytes.
                 // If not we shouldn't allow such encoding since the encoding of the preamble would be different from the encoding of the file.
-                if (!RubyEncoding.IsAsciiIdentity(rubyPreambleEncoding)) {
+                if (!RubyEncoding.AsciiIdentity(rubyPreambleEncoding)) {
                     throw new IOException(String.Format("Encoding '{0}' is not allowed in preamble.", rubyPreambleEncoding.WebName));
                 }
             }
@@ -2904,6 +2904,7 @@ namespace IronRuby.Runtime {
             switch (upperName) {
                 case "BINARY":
                 case "ASCII-8BIT": return BinaryEncoding.Instance;
+                case "FILESYSTEM": return GetPathEncoding().StrictEncoding;
                 case "LOCALE": return _options.LocaleEncoding.StrictEncoding;
 #if SILVERLIGHT
                 case "UTF-8": return Encoding.UTF8;

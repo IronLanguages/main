@@ -251,8 +251,8 @@ SUB
             Assert(a.Equals(c));
             Assert(a.Equals(d));
 #endif
-            a = Context.CreateSymbolInternal(MutableString.CreateBinary(Encoding.ASCII.GetBytes("foo"), RubyEncoding.Binary));
-            b = Context.CreateSymbolInternal(MutableString.CreateMutable("foo", RubyEncoding.UTF8));
+            a = Context.CreateSymbol(MutableString.CreateBinary(Encoding.ASCII.GetBytes("foo"), RubyEncoding.Binary), false);
+            b = Context.CreateSymbol(MutableString.CreateMutable("foo", RubyEncoding.UTF8), false);
             Assert(a.Equals(b));
         }
         

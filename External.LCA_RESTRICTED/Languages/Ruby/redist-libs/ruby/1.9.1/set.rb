@@ -4,15 +4,15 @@
 #++
 # Copyright (c) 2002-2008 Akinori MUSHA <knu@iDaemons.org>
 #
-# Documentation by Akinori MUSHA and Gavin Sinclair. 
+# Documentation by Akinori MUSHA and Gavin Sinclair.
 #
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
 #
-#   $Id: set.rb 18571 2008-08-13 08:03:30Z knu $
+#   $Id: set.rb 28095 2010-05-30 13:15:17Z marcandre $
 #
-# == Overview 
-# 
+# == Overview
+#
 # This library provides the Set class, which deals with a collection
 # of unordered values with no duplicates.  It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.  If you
@@ -20,7 +20,7 @@
 #
 # The method +to_set+ is added to Enumerable for convenience.
 #
-# See the Set class for an example of usage.
+# See the Set and SortedSet documentation for examples of usage.
 
 
 #
@@ -70,11 +70,22 @@ class Set
     enum.nil? and return
 
     if block
-      enum.each { |o| add(block[o]) }
+      do_with_enum(enum) { |o| add(block[o]) }
     else
       merge(enum)
     end
   end
+
+  def do_with_enum(enum, &block)
+    if enum.respond_to?(:each_entry)
+      enum.each_entry(&block)
+    elsif enum.respond_to?(:each)
+      enum.each(&block)
+    else
+      raise ArgumentError, "value must be enumerable"
+    end
+  end
+  private :do_with_enum
 
   # Copy internal hash.
   def initialize_copy(orig)
@@ -123,7 +134,7 @@ class Set
       @hash.replace(enum.instance_eval { @hash })
     else
       clear
-      enum.each { |o| add(o) }
+      merge(enum)
     end
 
     self
@@ -255,6 +266,14 @@ class Set
     self
   end
 
+  # Deletes every element of the set for which block evaluates to
+  # false, and returns self.
+  def keep_if
+    block_given? or return enum_for(__method__)
+    to_a.each { |o| @hash.delete(o) unless yield(o) }
+    self
+  end
+
   # Replaces the elements with ones returned by collect().
   def collect!
     block_given? or return enum_for(__method__)
@@ -273,13 +292,22 @@ class Set
     size == n ? nil : self
   end
 
+  # Equivalent to Set#keep_if, but returns nil if no changes were
+  # made.
+  def select!
+    block_given? or return enum_for(__method__)
+    n = size
+    keep_if { |o| yield(o) }
+    size == n ? nil : self
+  end
+
   # Merges the elements of the given enumerable object to the set and
   # returns self.
   def merge(enum)
-    if enum.is_a?(Set)
-      @hash.update(enum.instance_eval { @hash })
+    if enum.instance_of?(self.class)
+      @hash.update(enum.instance_variable_get(:@hash))
     else
-      enum.each { |o| add(o) }
+      do_with_enum(enum) { |o| add(o) }
     end
 
     self
@@ -288,7 +316,7 @@ class Set
   # Deletes every element that appears in the given enumerable object
   # and returns self.
   def subtract(enum)
-    enum.each { |o| delete(o) }
+    do_with_enum(enum) { |o| delete(o) }
     self
   end
 
@@ -311,7 +339,7 @@ class Set
   # given enumerable object.
   def &(enum)
     n = self.class.new
-    enum.each { |o| n.add(o) if include?(o) }
+    do_with_enum(enum) { |o| n.add(o) if include?(o) }
     n
   end
   alias intersection &	##
@@ -327,13 +355,16 @@ class Set
 
   # Returns true if two sets are equal.  The equality of each couple
   # of elements is defined according to Object#eql?.
-  def ==(set)
-    equal?(set) and return true
-
-    set.is_a?(Set) && size == set.size or return false
-
-    hash = @hash.dup
-    set.all? { |o| hash.include?(o) }
+  def ==(other)
+    if self.equal?(other)
+      true
+    elsif other.instance_of?(self.class)
+      @hash == other.instance_variable_get(:@hash)
+    elsif other.is_a?(Set) && self.size == other.size
+      other.all? { |o| @hash.include?(o) }
+    else
+      false
+    end
   end
 
   def hash	# :nodoc:
@@ -451,7 +482,35 @@ class Set
   end
 end
 
-# SortedSet implements a set which elements are sorted in order.  See Set.
+# 
+# SortedSet implements a Set that guarantees that it's element are
+# yielded in sorted order (according to the return values of their
+# #<=> methods) when iterating over them.
+# 
+# All elements that are added to a SortedSet must respond to the <=>
+# method for comparison.
+# 
+# Also, all elements must be <em>mutually comparable</em>: <tt>el1 <=>
+# el2</tt> must not return <tt>nil</tt> for any elements <tt>el1</tt>
+# and <tt>el2</tt>, else an ArgumentError will be raised when
+# iterating over the SortedSet.
+#
+# == Example
+# 
+#   require "set"
+#   
+#   set = SortedSet.new([2, 1, 5, 6, 4, 5, 3, 3, 3])
+#   ary = []
+#   
+#   set.each do |obj|
+#     ary << obj
+#   end
+#   
+#   p ary # => [1, 2, 3, 4, 5, 6]
+#   
+#   set2 = SortedSet.new([1, 2, "3"])
+#   set2.each { |obj| } # => raises ArgumentError: comparison of Fixnum with String failed
+#   
 class SortedSet < Set
   @@setup = false
 
@@ -476,6 +535,12 @@ class SortedSet < Set
 	    @hash = RBTree.new
 	    super
 	  end
+	  
+	  def add(o)
+	    o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
+	    super
+	  end
+	  alias << add
 	}
       rescue LoadError
 	module_eval %{
@@ -495,9 +560,9 @@ class SortedSet < Set
 	  end
 
 	  def add(o)
+	    o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
 	    @keys = nil
-	    @hash[o] = true
-	    self
+	    super
 	  end
 	  alias << add
 
@@ -509,6 +574,14 @@ class SortedSet < Set
 
 	  def delete_if
             block_given? or return enum_for(__method__)
+	    n = @hash.size
+	    super
+	    @keys = nil if @hash.size != n
+	    self
+	  end
+
+	  def keep_if
+	    block_given? or return enum_for(__method__)
 	    n = @hash.size
 	    super
 	    @keys = nil if @hash.size != n
@@ -555,33 +628,33 @@ end
 # == RestricedSet class
 # RestricedSet implements a set with restrictions defined by a given
 # block.
-# 
+#
 # === Super class
 #     Set
-# 
+#
 # === Class Methods
 # --- RestricedSet::new(enum = nil) { |o| ... }
 # --- RestricedSet::new(enum = nil) { |rset, o| ... }
 #     Creates a new restricted set containing the elements of the given
 #     enumerable object.  Restrictions are defined by the given block.
-# 
+#
 #     If the block's arity is 2, it is called with the RestrictedSet
 #     itself and an object to see if the object is allowed to be put in
 #     the set.
-# 
+#
 #     Otherwise, the block is called with an object to see if the object
 #     is allowed to be put in the set.
-# 
+#
 # === Instance Methods
 # --- restriction_proc
 #     Returns the restriction procedure of the set.
-# 
+#
 # =end
-# 
+#
 # class RestricedSet < Set
 #   def initialize(*args, &block)
 #     @proc = block or raise ArgumentError, "missing a block"
-# 
+#
 #     if @proc.arity == 2
 #       instance_eval %{
 # 	def add(o)
@@ -589,7 +662,7 @@ end
 # 	  self
 # 	end
 # 	alias << add
-# 
+#
 # 	def add?(o)
 # 	  if include?(o) || !@proc.call(self, o)
 # 	    nil
@@ -598,17 +671,19 @@ end
 # 	    self
 # 	  end
 # 	end
-# 
+#
 # 	def replace(enum)
+# 	  enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
 # 	  clear
-# 	  enum.each { |o| add(o) }
-# 
+# 	  enum.each_entry { |o| add(o) }
+#
 # 	  self
 # 	end
-# 
+#
 # 	def merge(enum)
-# 	  enum.each { |o| add(o) }
-# 
+# 	  enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
+# 	  enum.each_entry { |o| add(o) }
+#
 # 	  self
 # 	end
 #       }
@@ -616,12 +691,12 @@ end
 #       instance_eval %{
 # 	def add(o)
 #         if @proc.call(o)
-# 	    @hash[o] = true 
+# 	    @hash[o] = true
 #         end
 # 	  self
 # 	end
 # 	alias << add
-# 
+#
 # 	def add?(o)
 # 	  if include?(o) || !@proc.call(o)
 # 	    nil
@@ -632,10 +707,10 @@ end
 # 	end
 #       }
 #     end
-# 
+#
 #     super(*args)
 #   end
-# 
+#
 #   def restriction_proc
 #     @proc
 #   end
@@ -674,10 +749,10 @@ class TC_Set < Test::Unit::TestCase
       Set.new([1,2])
       Set.new('a'..'c')
     }
-    assert_raises(NoMethodError) {
+    assert_raises(ArgumentError) {
       Set.new(false)
     }
-    assert_raises(NoMethodError) {
+    assert_raises(ArgumentError) {
       Set.new(1)
     }
     assert_raises(ArgumentError) {
@@ -1241,33 +1316,33 @@ end
 # class TC_RestricedSet < Test::Unit::TestCase
 #   def test_s_new
 #     assert_raises(ArgumentError) { RestricedSet.new }
-# 
+#
 #     s = RestricedSet.new([-1,2,3]) { |o| o > 0 }
 #     assert_equal([2,3], s.sort)
 #   end
-# 
+#
 #   def test_restriction_proc
 #     s = RestricedSet.new([-1,2,3]) { |o| o > 0 }
-# 
+#
 #     f = s.restriction_proc
 #     assert_instance_of(Proc, f)
 #     assert(f[1])
 #     assert(!f[0])
 #   end
-# 
+#
 #   def test_replace
 #     s = RestricedSet.new(-3..3) { |o| o > 0 }
 #     assert_equal([1,2,3], s.sort)
-# 
+#
 #     s.replace([-2,0,3,4,5])
 #     assert_equal([3,4,5], s.sort)
 #   end
-# 
+#
 #   def test_merge
 #     s = RestricedSet.new { |o| o > 0 }
 #     s.merge(-5..5)
 #     assert_equal([1,2,3,4,5], s.sort)
-# 
+#
 #     s.merge([10,-10,-8,8])
 #     assert_equal([1,2,3,4,5,8,10], s.sort)
 #   end

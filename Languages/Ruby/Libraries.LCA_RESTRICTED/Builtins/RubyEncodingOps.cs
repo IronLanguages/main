@@ -55,14 +55,32 @@ namespace IronRuby.Builtins {
         [RubyConstant]
         public static readonly RubyEncoding BINARY = RubyEncoding.Binary;
 
-        [RubyConstant]
+        [RubyConstant("SHIFT_JIS")]
+        [RubyConstant("Shift_JIS")]
         public static readonly RubyEncoding SHIFT_JIS = RubyEncoding.SJIS;
-
+        
         [RubyConstant]
         public static readonly RubyEncoding EUC_JP = RubyEncoding.EUC;
 
         // TODO:
         // ...
+
+        // TODO: lazy encoding load?
+
+        [RubyConstant]
+        public static readonly RubyEncoding UTF_7 = RubyEncoding.GetRubyEncoding(Encoding.UTF7);
+
+        [RubyConstant]
+        public static readonly RubyEncoding UTF_16BE = RubyEncoding.GetRubyEncoding(Encoding.BigEndianUnicode);
+
+        [RubyConstant]
+        public static readonly RubyEncoding UTF_16LE = RubyEncoding.GetRubyEncoding(Encoding.Unicode);
+
+        [RubyConstant]
+        public static readonly RubyEncoding UTF_32BE = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageUTF32BE);
+
+        [RubyConstant]
+        public static readonly RubyEncoding UTF_32LE = RubyEncoding.GetRubyEncoding(Encoding.UTF32);
 
         #endregion
 

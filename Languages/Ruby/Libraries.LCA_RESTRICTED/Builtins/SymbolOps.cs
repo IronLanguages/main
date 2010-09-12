@@ -145,7 +145,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region <=>, ==, ===
+        #region <=>, ==, ===, casecmp
 
         [RubyMethod("<=>")]
         public static int Compare(RubySymbol/*!*/ self, [NotNull]RubySymbol/*!*/ other) {
@@ -180,9 +180,17 @@ namespace IronRuby.Builtins {
             return false;
         }
 
-        #endregion
+        [RubyMethod("casecmp")]
+        public static int Casecmp(RubySymbol/*!*/ self, [NotNull]RubySymbol/*!*/ other) {
+            return MutableStringOps.Casecmp(self.String, other.String);
+        }
 
-        // casecmp
+        [RubyMethod("casecmp")]
+        public static int Casecmp(RubySymbol/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ other) {
+            return MutableStringOps.Casecmp(self.String, other);
+        }
+
+        #endregion
 
         #region =~, match
 
@@ -213,8 +221,45 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        // []
-        // slice
+        #region slice, []
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static MutableString GetChar(RubySymbol/*!*/ self, [DefaultProtocol]int index) {
+            return MutableStringOps.GetChar(self.String, index);
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static MutableString GetSubstring(RubySymbol/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int count) {
+            return MutableStringOps.GetSubstring(self.String, start, count);
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static MutableString GetSubstring(ConversionStorage<int>/*!*/ fixnumCast, RubySymbol/*!*/ self, [NotNull]Range/*!*/ range) {
+            return MutableStringOps.GetSubstring(fixnumCast, self.String, range);
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static MutableString GetSubstring(RubySymbol/*!*/ self, [NotNull]MutableString/*!*/ searchStr) {
+            return MutableStringOps.GetSubstring(self.String, searchStr);
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static MutableString GetSubstring(RubyScope/*!*/ scope, RubySymbol/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+            return MutableStringOps.GetSubstring(scope, self.String, regex);
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static MutableString GetSubstring(RubyScope/*!*/ scope, RubySymbol/*!*/ self, [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol]int occurrance) {
+            return MutableStringOps.GetSubstring(scope, self.String, regex, occurrance);
+        }
+
+        #endregion
 
         #region empty?, encoding, size/length
 

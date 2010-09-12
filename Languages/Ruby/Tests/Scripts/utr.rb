@@ -188,7 +188,7 @@ class UnitTestSetup
   
   def disable_by_name names
     names.each do |name|
-      /(.*)[(](.*)[)]/ =~ name
+      /(.*)[(](.*)[)][:]?/ =~ name
       disable Object.const_get($2), $1
     end
   end
@@ -221,11 +221,12 @@ class UnitTestSetup
   TestUnitVersion = "2.1.1"
   SqlServerAdapterVersion = "3.0.0"
   
+  RAILS_TEST_DIR = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/Rails-#{RailsVersion}", ENV['DLR_ROOT'])
+  
   def gather_rails_files
-    rails_tests_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/Rails-#{RailsVersion}", ENV['DLR_ROOT'])
-    @root_dir = File.join(File.expand_path(@name, rails_tests_dir), "test")
+    @root_dir = File.join(File.expand_path(@name, RAILS_TEST_DIR), "test")
     $LOAD_PATH << @root_dir
-    @all_test_files = Dir.glob("#{@root_dir}/**/*_test.rb").sort
+    @all_test_files = Dir.glob("#{@root_dir}/**/*_test.rb").sort    
   end
 end         
 

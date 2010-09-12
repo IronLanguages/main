@@ -202,7 +202,7 @@ namespace IronRuby.Runtime.Conversions {
             }
 
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
-            Expression targetClassNameConstant = AstUtils.Constant(targetClass.GetNonSingletonClass().Name);
+            Expression targetClassNameConstant = AstUtils.Constant(targetClass.GetNonSingletonClass().Name, typeof(string));
             MethodResolutionResult respondToMethod, methodMissing = MethodResolutionResult.NotFound;
             ProtocolConversionAction selectedConversion = null;
             RubyMemberInfo conversionMethod = null;

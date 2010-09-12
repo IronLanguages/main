@@ -344,7 +344,7 @@ ActiveRecord::Schema.define do
     t.decimal :decimal_number_with_default, :precision => 3, :scale => 2, :default => 2.78
     t.float   :temperature
     # Oracle supports precision up to 38
-    if current_adapter?(:OracleAdapter)
+    if current_adapter?(:OracleAdapter) or current_adapter?(:SQLServerAdapter)
       t.decimal :atoms_in_universe, :precision => 38, :scale => 0
     else
       t.decimal :atoms_in_universe, :precision => 55, :scale => 0

@@ -20,8 +20,9 @@ class Gem::DependencyInstaller
     :force => false,
     :format_executable => false, # HACK dup
     :ignore_dependencies => false,
+    :prerelease => false,
     :security_policy => nil, # HACK NoSecurity requires OpenSSL.  AlmostNo? Low?
-    :wrappers => true
+    :wrappers => true,
   }
 
   ##
@@ -37,6 +38,7 @@ class Gem::DependencyInstaller
   # :format_executable:: See Gem::Installer#initialize.
   # :ignore_dependencies:: Don't install any dependencies.
   # :install_dir:: See Gem::Installer#install.
+  # :prerelease:: Allow prerelease versions.  See #install.
   # :security_policy:: See Gem::Installer::new and Gem::Security.
   # :user_install:: See Gem::Installer.new
   # :wrappers:: See Gem::Installer::new
@@ -58,6 +60,7 @@ class Gem::DependencyInstaller
     @force = options[:force]
     @format_executable = options[:format_executable]
     @ignore_dependencies = options[:ignore_dependencies]
+    @prerelease = options[:prerelease]
     @security_policy = options[:security_policy]
     @user_install = options[:user_install]
     @wrappers = options[:wrappers]
@@ -66,6 +69,10 @@ class Gem::DependencyInstaller
 
     @install_dir = options[:install_dir] || Gem.dir
     @cache_dir = options[:cache_dir] || @install_dir
+
+    # Set with any errors that SpecFetcher finds while search through
+    # gemspecs for a dep
+    @errors = nil
   end
 
   ##
@@ -75,6 +82,8 @@ class Gem::DependencyInstaller
   # local gems preferred over remote gems.
 
   def find_gems_with_sources(dep)
+    # Reset the errors
+    @errors = nil
     gems_and_sources = []
 
     if @domain == :both or @domain == :local then
@@ -86,14 +95,18 @@ class Gem::DependencyInstaller
 
     if @domain == :both or @domain == :remote then
       begin
-        requirements = dep.version_requirements.requirements.map do |req, ver|
+        requirements = dep.requirement.requirements.map do |req, ver|
           req
         end
 
-        all = requirements.length > 1 ||
-                (requirements.first != ">=" and requirements.first != ">")
+        all = !dep.prerelease? &&
+              # we only need latest if there's one requirement and it is
+              # guaranteed to match the newest specs
+              (requirements.length > 1 or
+                (requirements.first != ">=" and requirements.first != ">"))
 
-        found = Gem::SpecFetcher.fetcher.fetch dep, all
+        found, @errors = Gem::SpecFetcher.fetcher.fetch_with_errors dep, all, true, dep.prerelease?
+
         gems_and_sources.push(*found)
 
       rescue Gem::RemoteFetcher::FetchError => e
@@ -117,7 +130,7 @@ class Gem::DependencyInstaller
   def gather_dependencies
     specs = @specs_and_sources.map { |spec,_| spec }
 
-    dependency_list = Gem::DependencyList.new
+    dependency_list = Gem::DependencyList.new @development
     dependency_list.add(*specs)
 
     unless @ignore_dependencies then
@@ -140,7 +153,7 @@ class Gem::DependencyInstaller
 
             @source_index.any? do |_, installed_spec|
               dep.name == installed_spec.name and
-                dep.version_requirements.satisfied_by? installed_spec.version
+                dep.requirement.satisfied_by? installed_spec.version
             end
           end
 
@@ -161,7 +174,9 @@ class Gem::DependencyInstaller
   # +version+.  Returns an Array of specs and sources required for
   # installation of the gem.
 
-  def find_spec_by_name_and_version gem_name, version = Gem::Requirement.default
+  def find_spec_by_name_and_version(gem_name,
+                                    version = Gem::Requirement.default,
+                                    prerelease = false)
     spec_and_source = nil
 
     glob = if File::ALT_SEPARATOR then
@@ -186,6 +201,7 @@ class Gem::DependencyInstaller
 
     if spec_and_source.nil? then
       dep = Gem::Dependency.new gem_name, version
+      dep.prerelease = true if prerelease
       spec_and_sources = find_gems_with_sources(dep).reverse
 
       spec_and_source = spec_and_sources.find { |spec, source|
@@ -194,21 +210,33 @@ class Gem::DependencyInstaller
     end
 
     if spec_and_source.nil? then
-      raise Gem::GemNotFoundException,
-        "could not find gem #{gem_name} locally or in a repository"
+      raise Gem::GemNotFoundException.new(
+        "Could not find a valid gem '#{gem_name}' (#{version}) locally or in a repository",
+        gem_name, version, @errors)
     end
 
     @specs_and_sources = [spec_and_source]
   end
 
   ##
-  # Installs the gem and all its dependencies.  Returns an Array of installed
-  # gems specifications.
+  # Installs the gem +dep_or_name+ and all its dependencies.  Returns an Array
+  # of installed gem specifications.
+  #
+  # If the +:prerelease+ option is set and there is a prerelease for
+  # +dep_or_name+ the prerelease version will be installed.
+  #
+  # Unless explicitly specified as a prerelease dependency, prerelease gems
+  # that +dep_or_name+ depend on will not be installed.
+  #
+  # If c-1.a depends on b-1 and a-1.a and there is a gem b-1.a available then
+  # c-1.a, b-1 and a-1.a will be installed.  b-1.a will need to be installed
+  # separately.
 
   def install dep_or_name, version = Gem::Requirement.default
     if String === dep_or_name then
-      find_spec_by_name_and_version dep_or_name, version
+      find_spec_by_name_and_version dep_or_name, version, @prerelease
     else
+      dep_or_name.prerelease = @prerelease
       @specs_and_sources = [find_gems_with_sources(dep_or_name).last]
     end
 

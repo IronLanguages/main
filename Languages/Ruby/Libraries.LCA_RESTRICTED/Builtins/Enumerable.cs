@@ -96,7 +96,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region detect, find
+        #region detect, find, find_index
 
         [RubyMethod("detect")]
         [RubyMethod("find")]
@@ -131,6 +131,57 @@ namespace IronRuby.Builtins {
                 var site = callStorage.GetCallSite("call", 0);
                 result = site.Target(site, ifNone);
             }
+            return result;
+        }
+
+        [RubyMethod("find_index")]
+        public static Enumerator/*!*/ GetFindIndexEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
+            Debug.Assert(predicate == null);
+            throw new NotImplementedError("TODO: find_index enumerator");
+        }
+
+        [RubyMethod("find_index")]
+        public static object FindIndex(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ predicate, object self) {
+            int index = 0;
+
+            object result = null;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                object blockResult;
+                if (predicate.Yield(item, out blockResult)) {
+                    result = blockResult;
+                    return selfBlock.PropagateFlow(predicate, blockResult);
+                }
+
+                if (Protocols.IsTrue(blockResult)) {
+                    result = ScriptingRuntimeHelpers.Int32ToObject(index);
+                    return selfBlock.Break(null);
+                }
+
+                index++;
+                return null;
+            }));
+
+            return result;
+        }
+
+        [RubyMethod("find_index")]
+        public static object FindIndex(CallSiteStorage<EachSite>/*!*/ each, BinaryOpStorage/*!*/ equals, BlockParam predicate, object self, object value) {
+            if (predicate != null) {
+                each.Context.ReportWarning("given block not used");
+            }
+
+            int index = 0;
+            object result = null;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (Protocols.IsEqual(equals, item, value)) {
+                    result = ScriptingRuntimeHelpers.Int32ToObject(index);
+                    return selfBlock.Break(null);
+                }
+
+                index++;
+                return null;
+            }));
+
             return result;
         }
 

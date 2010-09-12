@@ -1,8 +1,9 @@
 require 'zlib'
+require 'fileutils'
 
-require 'rubygems'
 require 'rubygems/remote_fetcher'
 require 'rubygems/user_interaction'
+require 'rubygems/errors'
 
 ##
 # SpecFetcher handles metadata updates from remote gem repositories.
@@ -22,9 +23,14 @@ class Gem::SpecFetcher
   attr_reader :latest_specs # :nodoc:
 
   ##
-  # Cache of all spces
+  # Cache of all released specs
 
   attr_reader :specs # :nodoc:
+
+  ##
+  # Cache of prerelease specs
+
+  attr_reader :prerelease_specs # :nodoc:
 
   @fetcher = nil
 
@@ -42,12 +48,13 @@ class Gem::SpecFetcher
 
     @specs = {}
     @latest_specs = {}
+    @prerelease_specs = {}
 
     @fetcher = Gem::RemoteFetcher.fetcher
   end
 
   ##
-  # Retuns the local directory to write +uri+ to.
+  # Returns the local directory to write +uri+ to.
 
   def cache_dir(uri)
     File.join @dir, "#{uri.host}%#{uri.port}", File.dirname(uri.path)
@@ -55,23 +62,30 @@ class Gem::SpecFetcher
 
   ##
   # Fetch specs matching +dependency+.  If +all+ is true, all matching
-  # versions are returned.  If +matching_platform+ is false, all platforms are
-  # returned.
+  # (released) versions are returned.  If +matching_platform+ is
+  # false, all platforms are returned. If +prerelease+ is true,
+  # prerelease versions are included.
 
-  def fetch(dependency, all = false, matching_platform = true)
-    specs_and_sources = find_matching dependency, all, matching_platform
+  def fetch_with_errors(dependency, all = false, matching_platform = true, prerelease = false)
+    specs_and_sources, errors = find_matching_with_errors dependency, all, matching_platform, prerelease
 
-    specs_and_sources.map do |spec_tuple, source_uri|
+    ss = specs_and_sources.map do |spec_tuple, source_uri|
       [fetch_spec(spec_tuple, URI.parse(source_uri)), source_uri]
     end
+
+    return [ss, errors]
 
   rescue Gem::RemoteFetcher::FetchError => e
     raise unless warn_legacy e do
       require 'rubygems/source_info_cache'
 
-      return Gem::SourceInfoCache.search_with_source(dependency,
-                                                     matching_platform, all)
+      return [Gem::SourceInfoCache.search_with_source(dependency,
+                                                     matching_platform, all), nil]
     end
+  end
+
+  def fetch(*args)
+    fetch_with_errors(*args).first
   end
 
   def fetch_spec(spec, source_uri)
@@ -106,19 +120,30 @@ class Gem::SpecFetcher
   end
 
   ##
-  # Find spec names that match +dependency+.  If +all+ is true, all matching
-  # versions are returned.  If +matching_platform+ is false, gems for all
-  # platforms are returned.
+  # Find spec names that match +dependency+.  If +all+ is true, all
+  # matching released versions are returned.  If +matching_platform+
+  # is false, gems for all platforms are returned.
 
-  def find_matching(dependency, all = false, matching_platform = true)
+  def find_matching_with_errors(dependency, all = false, matching_platform = true, prerelease = false)
     found = {}
 
-    list(all).each do |source_uri, specs|
+    rejected_specs = {}
+
+    list(all, prerelease).each do |source_uri, specs|
       found[source_uri] = specs.select do |spec_name, version, spec_platform|
-        dependency =~ Gem::Dependency.new(spec_name, version) and
-          (not matching_platform or Gem::Platform.match(spec_platform))
+        if dependency.match?(spec_name, version)
+          if matching_platform and !Gem::Platform.match(spec_platform)
+            pm = (rejected_specs[dependency] ||= Gem::PlatformMismatch.new(spec_name, version))
+            pm.add_platform spec_platform
+            false
+          else
+            true
+          end
+        end
       end
     end
+
+    errors = rejected_specs.values
 
     specs_and_sources = []
 
@@ -127,7 +152,11 @@ class Gem::SpecFetcher
       specs_and_sources.push(*specs.map { |spec| [spec, uri_str] })
     end
 
-    specs_and_sources
+    [specs_and_sources, errors]
+  end
+
+  def find_matching(*args)
+    find_matching_with_errors(*args).first
   end
 
   ##
@@ -155,27 +184,42 @@ class Gem::SpecFetcher
 
   ##
   # Returns a list of gems available for each source in Gem::sources.  If
-  # +all+ is true, all versions are returned instead of only latest versions.
+  # +all+ is true, all released versions are returned instead of only latest
+  # versions. If +prerelease+ is true, include prerelease versions.
 
-  def list(all = false)
+  def list(all = false, prerelease = false)
+    # TODO: make type the only argument
+    type = if all
+             :all
+           elsif prerelease
+             :prerelease
+           else
+             :latest
+           end
+
     list = {}
 
-    file = all ? 'specs' : 'latest_specs'
+    file = { :latest => 'latest_specs',
+      :prerelease => 'prerelease_specs',
+      :all => 'specs' }[type]
+
+    cache = { :latest => @latest_specs,
+      :prerelease => @prerelease_specs,
+      :all => @specs }[type]
 
     Gem.sources.each do |source_uri|
       source_uri = URI.parse source_uri
 
-      if all and @specs.include? source_uri then
-        list[source_uri] = @specs[source_uri]
-      elsif not all and @latest_specs.include? source_uri then
-        list[source_uri] = @latest_specs[source_uri]
-      else
-        specs = load_specs source_uri, file
+      unless cache.include? source_uri
+        cache[source_uri] = load_specs source_uri, file
+      end
 
-        cache = all ? @specs : @latest_specs
+      list[source_uri] = cache[source_uri]
+    end
 
-        cache[source_uri] = specs
-        list[source_uri] = specs
+    if type == :all
+      list.values.map do |gems|
+        gems.reject! { |g| !g[1] || g[1].prerelease? }
       end
     end
 
@@ -206,14 +250,21 @@ class Gem::SpecFetcher
       loaded = true
     end
 
-    specs = Marshal.load spec_dump
+    specs = begin
+              Marshal.load spec_dump
+            rescue ArgumentError
+              spec_dump = @fetcher.fetch_path spec_path
+              loaded = true
+
+              Marshal.load spec_dump
+            end
 
     if loaded and @update_cache then
       begin
         FileUtils.mkdir_p cache_dir
 
         open local_file, 'wb' do |io|
-          Marshal.dump specs, io
+          io << spec_dump
         end
       rescue
       end

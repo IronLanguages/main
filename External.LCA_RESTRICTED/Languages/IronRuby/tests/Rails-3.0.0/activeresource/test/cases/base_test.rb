@@ -18,7 +18,7 @@ class BaseTest < Test::Unit::TestCase
     @greg   = { :id => 3, :name => 'Greg' }.to_xml(:root => 'person')
     @addy   = { :id => 1, :street => '12345 Street', :country => 'Australia' }.to_xml(:root => 'address')
     @rick   = { :name => "Rick", :age => 25 }.to_xml(:root => "person")
-    @joe    = { 'person' => { :id => 6, :name => 'Joe' }}.to_json
+    @joe    = { 'person' => { :id => 6, :name => 'Joe' }}.to_json rescue 0  # TODO(IronRuby): this throws
     @people = [{ :id => 1, :name => 'Matz' }, { :id => 2, :name => 'David' }].to_xml(:root => 'people')
     @people_david = [{ :id => 2, :name => 'David' }].to_xml(:root => 'people')
     @addresses    = [{ :id => 1, :street => '12345 Street', :country => 'Australia' }].to_xml(:root => 'addresses')

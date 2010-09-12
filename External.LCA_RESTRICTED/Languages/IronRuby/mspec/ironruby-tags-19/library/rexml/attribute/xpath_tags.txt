@@ -1,2 +1,0 @@
-fails:REXML::Attribute#xpath returns the path for Attribute
-fails:"REXML::Attribute#xpath returns the path for Attribute"

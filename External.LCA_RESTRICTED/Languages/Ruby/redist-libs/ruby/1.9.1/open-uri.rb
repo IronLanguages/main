@@ -465,7 +465,9 @@ module OpenURI
         subtype = $2.downcase
         parameters = []
         $3.scan(/;#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?=#{RE_LWS}?(?:(#{RE_TOKEN})|(#{RE_QUOTED_STRING}))/no) {|att, val, qval|
-          val = qval.gsub(/[\r\n\t !#-\[\]-~\x80-\xff]+|(\\[\x00-\x7f])/n) { $1 ? $1[1,1] : $& } if qval
+          if qval
+            val = qval[1...-1].gsub(/[\r\n\t !#-\[\]-~\x80-\xff]+|(\\[\x00-\x7f])/n) { $1 ? $1[1,1] : $& }
+          end
           parameters << [att.downcase, val]
         }
         ["#{type}/#{subtype}", *parameters]
@@ -603,7 +605,7 @@ module OpenURI
     #
     #  If :progress_proc option is specified, the proc is called with one
     #  argument each time when `open' gets content fragment from network.
-    #  The argument `size' `size' is a accumulated transfered size in bytes.
+    #  The argument `size' `size' is a accumulated transferred size in bytes.
     #
     #  If two or more transfer is done by HTTP redirection, the procedure
     #  is called only one for a last transfer.

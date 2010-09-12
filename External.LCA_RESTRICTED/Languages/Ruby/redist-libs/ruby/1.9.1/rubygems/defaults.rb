@@ -9,7 +9,7 @@ module Gem
   # An Array of the default sources that come with RubyGems
 
   def self.default_sources
-    %w[http://gems.rubyforge.org/]
+    %w[http://rubygems.org/]
   end
 
   ##
@@ -20,8 +20,12 @@ module Gem
     if defined? RUBY_FRAMEWORK_VERSION then
       File.join File.dirname(ConfigMap[:sitedir]), 'Gems',
                 ConfigMap[:ruby_version]
+    elsif ConfigMap[:rubylibprefix] then
+      File.join(ConfigMap[:rubylibprefix], 'gems',
+                ConfigMap[:ruby_version])
     else
-      ConfigMap[:sitelibdir].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
+      File.join(ConfigMap[:libdir], ruby_engine, 'gems',
+                ConfigMap[:ruby_version])
     end
   end
 
@@ -29,23 +33,32 @@ module Gem
   # Path for gems in the user's home directory
 
   def self.user_dir
-    File.join(Gem.user_home, '.gem', ruby_engine,
-              ConfigMap[:ruby_version])
+    File.join Gem.user_home, '.gem', ruby_engine, ConfigMap[:ruby_version]
   end
 
   ##
   # Default gem load path
 
   def self.default_path
-    [user_dir, default_dir]
+    if File.exist? Gem.user_home then
+      [user_dir, default_dir]
+    else
+      [default_dir]
+    end
   end
 
   ##
   # Deduce Ruby's --program-prefix and --program-suffix from its install name
 
   def self.default_exec_format
-    baseruby = ConfigMap[:BASERUBY] || 'ruby'
-    ConfigMap[:RUBY_INSTALL_NAME].sub(baseruby, '%s') rescue '%s'
+    exec_format = ConfigMap[:ruby_install_name].sub('ruby', '%s') rescue '%s'
+
+    unless exec_format =~ /%s/ then
+      raise Gem::Exception,
+        "[BUG] invalid exec_format #{exec_format.inspect}, no %s"
+    end
+
+    exec_format
   end
 
   ##

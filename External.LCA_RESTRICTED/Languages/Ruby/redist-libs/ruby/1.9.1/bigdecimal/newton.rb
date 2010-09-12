@@ -1,5 +1,8 @@
+require "bigdecimal/ludcmp"
+require "bigdecimal/jacobian"
+
 #
-# newton.rb 
+# newton.rb
 #
 # Solves the nonlinear algebraic equation system f = 0 by Newton's method.
 # This program is not dependent on BigDecimal.
@@ -22,13 +25,11 @@
 #
 # On exit, x is the solution vector.
 #
-require "bigdecimal/ludcmp"
-require "bigdecimal/jacobian"
-
 module Newton
   include LUSolve
   include Jacobian
-  
+  module_function
+
   def norm(fv,zero=0.0)
     s = zero
     n = fv.size

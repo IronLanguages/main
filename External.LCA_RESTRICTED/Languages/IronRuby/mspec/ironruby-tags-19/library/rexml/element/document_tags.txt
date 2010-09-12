@@ -1,1 +1,0 @@
-fails:REXML::Element#document returns the element's document

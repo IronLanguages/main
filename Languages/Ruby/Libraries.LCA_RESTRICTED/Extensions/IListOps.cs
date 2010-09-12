@@ -1190,28 +1190,76 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region include?, index, rindex
+        #region include?, find_index/index, rindex
 
         [RubyMethod("include?")]
         public static bool Include(BinaryOpStorage/*!*/ equals, IList/*!*/ self, object item) {
-            return Index(equals, self, item) != null;
+            return FindIndex(equals, null, self, item) != null;
         }
 
+        [RubyMethod("find_index")]
         [RubyMethod("index")]
-        public static object Index(BinaryOpStorage/*!*/ equals, IList/*!*/ self, object item) {
-            for (int i = 0; i < self.Count; ++i) {
-                if (Protocols.IsEqual(equals, self[i], item)) {
-                    return i;
+        public static Enumerator/*!*/ GetFindIndexEnumerator(BlockParam predicate, IList/*!*/ self) {
+            Debug.Assert(predicate == null);
+            throw new NotImplementedError("TODO: find_index enumerator");
+        }
+
+        [RubyMethod("find_index")]
+        [RubyMethod("index")]
+        public static object FindIndex([NotNull]BlockParam/*!*/ predicate, IList/*!*/ self) {
+            for (int i = 0; i < self.Count; i++) {
+                object blockResult;
+                if (predicate.Yield(self[i], out blockResult)) {
+                    return blockResult;
+                }
+                
+                if (Protocols.IsTrue(blockResult)) {
+                    return ScriptingRuntimeHelpers.Int32ToObject(i);
+                }
+            }
+            return null;
+        }
+
+        [RubyMethod("find_index")]
+        [RubyMethod("index")]
+        public static object FindIndex(BinaryOpStorage/*!*/ equals, BlockParam predicate, IList/*!*/ self, object value) {
+            if (predicate != null) {
+                equals.Context.ReportWarning("given block not used");
+            }
+
+            for (int i = 0; i < self.Count; i++) {
+                if (Protocols.IsEqual(equals, self[i], value)) {
+                    return ScriptingRuntimeHelpers.Int32ToObject(i);
+                }
+            }
+
+            return null;
+        }
+
+        [RubyMethod("rindex")]
+        public static object ReverseIndex([NotNull]BlockParam/*!*/ predicate, IList/*!*/ self) {
+            foreach (int i in IListOps.ReverseEnumerateIndexes(self)) {
+                object blockResult;
+                if (predicate.Yield(self[i], out blockResult)) {
+                    return blockResult;
+                }
+
+                if (Protocols.IsTrue(blockResult)) {
+                    return ScriptingRuntimeHelpers.Int32ToObject(i);
                 }
             }
             return null;
         }
 
         [RubyMethod("rindex")]
-        public static object ReverseIndex(BinaryOpStorage/*!*/ equals, IList/*!*/ self, object item) {
-            foreach (int index in IListOps.ReverseEnumerateIndexes(self)) {
-                if (Protocols.IsEqual(equals, self[index], item)) {
-                    return index;
+        public static object ReverseIndex(BinaryOpStorage/*!*/ equals, BlockParam predicate, IList/*!*/ self, object item) {
+            if (predicate != null) {
+                equals.Context.ReportWarning("given block not used");
+            } 
+            
+            foreach (int i in IListOps.ReverseEnumerateIndexes(self)) {
+                if (Protocols.IsEqual(equals, self[i], item)) {
+                    return ScriptingRuntimeHelpers.Int32ToObject(i);
                 }
             }
             return null;
@@ -1406,11 +1454,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("length")]
         [RubyMethod("size")]
+        [RubyMethod("count")]
         public static int Length(IList/*!*/ self) {
             return self.Count;
         }
 
         [RubyMethod("empty?")]
+        [RubyMethod("none?")]
         public static bool Empty(IList/*!*/ self) {
             return self.Count == 0;
         }

@@ -366,7 +366,7 @@ namespace IronRuby.Builtins {
         #endregion
 
 
-        #region ===, =~, !~, eql?, hash, to_s, inspect, to_a
+        #region =~, !~, ===, <=>, eql?, hash, to_s, inspect, to_a
 
         [RubyMethod("=~")]
         public static object Match(object self, object other) {
@@ -375,7 +375,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("!~")]
-        public static bool NotMatch(CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ match, object self, object other) {
+        public static bool NotMatch(BinaryOpStorage/*!*/ match, object self, object other) {
             var site = match.GetCallSite("=~", 1);
             return RubyOps.IsFalse(site.Target(site, self, other));
         }
@@ -384,6 +384,12 @@ namespace IronRuby.Builtins {
         [RubyMethod("===")]
         public static bool CaseEquals(BinaryOpStorage/*!*/ equals, object self, object other) {
             return Protocols.IsEqual(equals, self, other);
+        }
+
+        // calls == by default
+        [RubyMethod("<=>")]
+        public static object Compare(BinaryOpStorage/*!*/ equals, object self, object other) {
+            return Protocols.IsEqual(equals, self, other) ? ScriptingRuntimeHelpers.Int32ToObject(0) : null;
         }
 
         // This method is a binder intrinsic and the behavior of the binder needs to be adjusted appropriately if changed.
@@ -1204,43 +1210,50 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
-        public static object Test(
-            RubyContext/*!*/ context,
-            object self,
-            int cmd,
-            [DefaultProtocol, NotNull]MutableString/*!*/ file1) {
+        public static object Test(ConversionStorage<MutableString>/*!*/ toPath, object self, [NotNull]MutableString/*!*/ cmd, object path) {
+            if (cmd.IsEmpty) {
+                throw RubyExceptions.CreateTypeConversionError("String", "Integer");
+            }
+            return Test(toPath, self, cmd.GetChar(0), path);
+        }
+
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        public static object Test(ConversionStorage<MutableString>/*!*/ toPath, object self, [DefaultProtocol]int cmd, object path) {
+            RubyContext context = toPath.Context;
+            MutableString pathStr = Protocols.CastToPath(toPath, path);
             cmd &= 0xFF;
             switch (cmd) {
                 case 'A':
-                    return RubyFileOps.RubyStatOps.AccessTime(RubyFileOps.RubyStatOps.Create(context, file1));
+                    return RubyFileOps.RubyStatOps.AccessTime(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'b':
-                    return RubyFileOps.RubyStatOps.IsBlockDevice(RubyFileOps.RubyStatOps.Create(context, file1));
+                    return RubyFileOps.RubyStatOps.IsBlockDevice(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'C':
-                    return RubyFileOps.RubyStatOps.CreateTime(RubyFileOps.RubyStatOps.Create(context, file1));
+                    return RubyFileOps.RubyStatOps.CreateTime(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'c':
-                    return RubyFileOps.RubyStatOps.IsCharDevice(RubyFileOps.RubyStatOps.Create(context, file1));
+                    return RubyFileOps.RubyStatOps.IsCharDevice(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'd':
-                    return FileTest.DirectoryExists(context, file1);
+                    return FileTest.DirectoryExists(context, pathStr);
 
                 case 'e':
                 case 'f':
-                    return FileTest.FileExists(context, file1);
+                    return FileTest.FileExists(context, pathStr);
 
                 case 'g':
-                    return RubyFileOps.RubyStatOps.IsSetGid(RubyFileOps.RubyStatOps.Create(context, file1));
+                    return RubyFileOps.RubyStatOps.IsSetGid(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'G':
-                    return RubyFileOps.RubyStatOps.IsGroupOwned(RubyFileOps.RubyStatOps.Create(context, file1));
+                    return RubyFileOps.RubyStatOps.IsGroupOwned(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'k':
-                    return RubyFileOps.RubyStatOps.IsSticky(RubyFileOps.RubyStatOps.Create(context, file1));
+                    return RubyFileOps.RubyStatOps.IsSticky(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'l':
-                    return RubyFileOps.RubyStatOps.IsSymLink(RubyFileOps.RubyStatOps.Create(context, file1));
+                    return RubyFileOps.RubyStatOps.IsSymLink(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'M': throw new NotImplementedException();
                 case 'O': throw new NotImplementedException();

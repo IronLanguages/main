@@ -20,6 +20,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
     [RubyClass("Dir", Inherits = typeof(object)), Includes(typeof(Enumerable))]
@@ -145,7 +146,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("entries", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray/*!*/ GetEntries(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object dirname) {
+        public static RubyArray/*!*/ GetEntries(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object dirname, [Optional]IDictionary<object, object> options) {
+            // TODO: options[:encoding]
             return new RubyDir(self, Protocols.CastToPath(toPath, dirname)).GetEntries(self.Context);
         }
 

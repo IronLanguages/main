@@ -18,6 +18,11 @@
       <File Id="F2fr58rp78nup8ukyo35063j1n" Source="$(var.DlrRoot)Languages\Ruby\Libs\test\ispec.rb" />
     </Component>
   </Directory>
+  <Directory Id="Dbvlaw9eq1okibg2mflqgp6ix5" Name="yaml">
+    <Component Id="Cbvlaw9eq1okibg2mflqgp6ix5" DiskId="1" Guid="efcdd670-4684-43f0-be2d-d0f68da8384d">
+      <File Id="F4nvvxb285jfjxtkgqwkdeze8x" Source="$(var.DlrRoot)Languages\Ruby\Libs\yaml\types.rb" />
+    </Component>
+  </Directory>
   <Component Id="C6ofkj51hjmz3ryp4gmig9p1fr" DiskId="1" Guid="de158ef8-c110-46cb-8832-5c28ed064bef">
     <File Id="Fbowzrufxwzo6o2gv87x9xl103" Source="$(var.DlrRoot)Languages\Ruby\Libs\PresentationCore.rb" />
     <File Id="Ff0cd0fyhv33jgslhk6qeijbtj" Source="$(var.DlrRoot)Languages\Ruby\Libs\PresentationFramework.rb" />
@@ -48,7 +53,6 @@
     <File Id="Fad5x8qs8thl5tszb11858qgxm" Source="$(var.DlrRoot)Languages\Ruby\Libs\strscan.rb" />
     <File Id="F8axoz2hkwdmmq45gg1p3ecy4y" Source="$(var.DlrRoot)Languages\Ruby\Libs\syslog.rb" />
     <File Id="F4ee9y6njt71r2xp9867e7chqd" Source="$(var.DlrRoot)Languages\Ruby\Libs\thread.rb" />
-    <File Id="F2fb84jiq1njldqu2bza23cwwi" Source="$(var.DlrRoot)Languages\Ruby\Libs\tmpdir.rb" />
     <File Id="F2bbw8icrq38kadtv2ust7h3bc" Source="$(var.DlrRoot)Languages\Ruby\Libs\win32ole.rb" />
     <File Id="Fbnve45mvybv7t5r22e6v3p8ly" Source="$(var.DlrRoot)Languages\Ruby\Libs\yaml.rb" />
     <File Id="Fc6wq650o2npon10ps068qv7ot" Source="$(var.DlrRoot)Languages\Ruby\Libs\zlib.rb" />

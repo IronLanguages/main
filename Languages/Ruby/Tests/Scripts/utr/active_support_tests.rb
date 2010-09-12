@@ -68,260 +68,160 @@
     }
   end
   
-=begin
-  
-  def disable_unstable_tests  
-    disable BufferedLoggerTest,
-      # <false> is not true.
-      :test_should_create_the_log_directory_if_it_doesnt_exist
-
-    # There seems to be a bug in 'active_support/core_ext/string/interpolation' which causes the finished() method in
-    # test-unit-2.0.5\lib\test\unit\ui\console\testrunner.rb to throw an exception. finished() does '"%g%% passed" % pass_percentage'
-    # whereas String::INTERPOLATION_PATTERN disallows %%. So we remove /%%/ from String::INTERPOLATION_PATTERN
-    require 'active_support/core_ext/string/interpolation'
-    String.const_set(:INTERPOLATION_PATTERN, Regexp.union(/%\{(\w+)\}/, /%<(\w+)>(.*?\d*\.?\d*[bBdiouxXeEfgGcps])/))  
-    # The hack above causes this test to fail though
-    disable TestGetTextString, :test_percent
-  end
-  
   def disable_tests
-
-    disable ClassExtTest, 
-      # <[#<Class:0x00056b6>]> expected but was
-      # <[]>.
-      :test_subclasses_of_doesnt_find_anonymous_classes
-
-    disable DependenciesTest, 
-      # NameError: constant Object::Hello not defined
-      # D:\vs_langs01_s\dlr\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\ModuleOps.cs:793:in `remove_const'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/dependencies_test.rb:529:in `test_new_constants_in_with_a_single_constant'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/dependencies_test.rb:529:in `test_new_constants_in_with_a_single_constant'
-      :test_new_constants_in_with_a_single_constant
-
-    disable DurationTest, 
-      # <Mon Mar 30 00:00:00 -0700 2009> expected but was
-      # <Mon Mar 30 01:00:00 -0700 2009>.
-      # 
-      # diff:
-      # - Mon Mar 30 00:00:00 -0700 2009
-      # ?             ^
-      # + Mon Mar 30 01:00:00 -0700 2009
-      # ?             ^
-      :test_adding_hours_across_dst_boundary
-
-    disable HashExtTest, 
-      # <{0=>1, 1=>2}> expected but was
-      # <{0=>1, :disabled=>2}>.
-      :test_symbolize_keys_preserves_fixnum_keys
-
-    disable MessageEncryptorTest, 
-      # NoMethodError: undefined method `encrypt' for nil:NilClass
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/whiny_nil.rb:52:in `method_missing'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/message_encryptor_test.rb:16:in `test_encrypting_twice_yields_differing_cipher_text'
-      # D:\vs_langs01_s\dlr\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\KernelOps.cs:780:in `__send__'
-      :test_encrypting_twice_yields_differing_cipher_text,
-      # NoMethodError: undefined method `encrypt' for nil:NilClass
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/whiny_nil.rb:52:in `method_missing'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/message_encryptor_test.rb:22:in `test_messing_with_either_value_causes_failure'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      :test_messing_with_either_value_causes_failure,
-      # NoMethodError: undefined method `encrypt_and_sign' for nil:NilClass
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/whiny_nil.rb:52:in `method_missing'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/message_encryptor_test.rb:30:in `test_signed_round_tripping'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      :test_signed_round_tripping,
-      # NoMethodError: undefined method `encrypt' for nil:NilClass
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/whiny_nil.rb:52:in `method_missing'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/message_encryptor_test.rb:11:in `test_simple_round_tripping'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testsuite.rb:37:in `run'
-      :test_simple_round_tripping
-
-    disable MultibyteCharsUTF8BehaviourTest, 
-      # <"こにちわ "> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a564
-      #  @wrapped_string="こ\343 \201\253ちわ">>.
-      # 
-      # diff:
-      # - "こにちわ "
-      # + #<ActiveSupport::Multibyte::Chars:0x1a564
-      # +  @wrapped_string="こ\343 \201\253ちわ">
-      :test_center_should_count_charactes_instead_of_bytes,
-      # <"こにaわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a740 @wrapped_string="こにaわ">>.
-      :test_indexed_insert_should_take_character_offsets,
-      # RangeError: Non-negative number required.
-      # Parameter name: length
-      # mscorlib:0:in `Copy'
-      # mscorlib:0:in `Copy'
-      # D:\vs_langs01_s\dlr\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\MutableStringOps.cs:1836:in `insert'
-      :test_ljust_should_count_characters_instead_of_bytes
-    disable Notifications::InstrumentationTest,
-      # <2> expected but was
-      # <1>.
-      :test_event_is_pushed_even_without_block,
-      # <2> expected but was
-      # <1>.
-      :test_nested_events_can_be_instrumented
-
-    disable Notifications::PubSubTest,
-      # <[[:foo]]> expected but was
-      # <[[:foo]]>.
-      :test_events_are_published_to_a_listener
-
-    disable OrderedHashTest, 
-      # <false> is not true.
-      :test_inspect
-
-    disable TestGetTextString, 
-      # <KeyError> exception expected but was
-      # Class: <System::NotSupportedException>
-      # Message: <"Can't inherit from a sealed type.">
-      # ---Backtrace---
-      # d:\vs_langs01_s\ndp\fx\src\Core\Microsoft\Scripting\Actions\DynamicMetaObjectBinder.cs:107:in `Bind'
-      # d:\vs_langs01_s\ndp\fx\src\Core\Microsoft\Scripting\Actions\CallSiteBinder.cs:121:in `BindCore'
-      # D:\vs_langs01_s\dlr\Languages\Ruby\Libraries.LCA_RESTRIC
-      :test_sprintf_lack_argument
-
-    disable TimeExtCalculationsTest, 
-      # st-24.hours=>dt.
-      # <Sat Oct 29 05:03:00 -0700 2005> expected but was
-      # <Sat Oct 29 04:03:00 -0700 2005>.
-      # 
-      # diff:
-      # - Sat Oct 29 05:03:00 -0700 2005
-      # ?             ^
-      # + Sat Oct 29 04:03:00 -0700 2005
-      # ?             ^
-      :test_daylight_savings_time_crossings_backward_end,
-      # dt-24.hours=>st.
-      # <Sat Apr 02 03:18:00 -0700 2005> expected but was
-      # <Sat Apr 02 04:18:00 -0700 2005>.
-      # 
-      # diff:
-      # - Sat Apr 02 03:18:00 -0700 2005
-      # ?             ^
-      # + Sat Apr 02 04:18:00 -0700 2005
-      # ?             ^
-      :test_daylight_savings_time_crossings_backward_start,
-      # dt+24.hours=>st.
-      # <Sun Oct 30 23:45:00 -0700 2005> expected but was
-      # <Mon Oct 31 00:45:00 -0700 2005>.
-      # 
-      # diff:
-      # - Sun Oct 30 23:45:00 -0700 2005
-      # ? ^^        ^^^
-      # + Mon Oct 31 00:45:00 -0700 2005
-      # ? ^^       ++ ^
-      :test_daylight_savings_time_crossings_forward_end,
-      # st+24.hours=>dt.
-      # <Sun Apr 03 20:27:00 -0700 2005> expected but was
-      # <Sun Apr 03 19:27:00 -0700 2005>.
-      # 
-      # diff:
-      # - Sun Apr 03 20:27:00 -0700 2005
-      # ?            ^^
-      # + Sun Apr 03 19:27:00 -0700 2005
-      # ?            ^^
-      :test_daylight_savings_time_crossings_forward_start
-
-    disable TimeWithZoneTest, 
-      # ArgumentError: invalid date
-      # date.rb:1479:in `civil'
-      # mscorlib:0:in `_InvokeMethodFast'
-      # mscorlib:0:in `InvokeMethodFast'
-      :test_change
-
-    disable TimeZoneTest, 
-      # <Fri Dec 31 19:00:00 UTC 1999> expected but was
-      # <Fri Feb 19 19:00:00 UTC 2010>.
-      # 
-      # diff:
-      # - Fri Dec 31 19:00:00 UTC 1999
-      # ?     ^ ^^^                ^^^
-      # + Fri Feb 19 19:00:00 UTC 2010
-      # ?     ^ ^^ +              ++ ^
-      :test_parse_with_incomplete_date
-
-    disable MultibyteCharsExtrasTest, 
-      # <"Абвг абвг"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x19f36 @wrapped_string="Абвг абвг">>.
-      :test_capitalize_should_be_unicode_aware,
-      # <"абвгд\000f"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x19fd0 @wrapped_string="абвгд\000f">>.
-      :test_downcase_should_be_unicode_aware,
-      # <"こにちわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a08a @wrapped_string="こ">>.
-      :test_limit_should_work_on_a_multibyte_string,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: utf-8 and ASCII-8BIT
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # D:\vs_langs01_s\dlr\Languages\Ruby\Libraries.LCA_RESTRICTED\Builtins\Enumerable.cs:83:in `<Map>b__3'
-      :test_tidy_bytes_should_tidy_bytes,
-      # <"АБВГД\000F"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a240 @wrapped_string="АБВГД\000F">>.
-      :test_upcase_should_be_unicode_aware
-
-    disable MultibyteCharsUTF8BehaviourTest, 
-      # ActiveSupport::Multibyte::EncodingError: malformed UTF-8 character
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:483:in `u_unpack'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:203:in `index'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/multibyte_chars_test.rb:240:in `test_index_should_return_character_offset'
-      :test_index_should_return_character_offset,
-      # <"こに わ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a488 @wrapped_string="こに わ">>.
-      :test_indexed_insert_accepts_fixnums,
-      # <"こわにちわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a554 @wrapped_string="こわにちわ">>.
-      :test_insert_should_be_destructive,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: ASCII-8BIT and utf-8
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testcase.rb:398:in `send'
-      :test_lstrip_strips_whitespace_from_the_left_of_the_string,
-      # <"Òu"> expected but was
-      # <"Òu">.
-      :test_overridden_bang_methods_change_wrapped_string,
-      # <"わちにこ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a70c @wrapped_string="わちにこ">>.
-      :test_reverse_reverses_characters,
-      # ActiveSupport::Multibyte::EncodingError: malformed UTF-8 character
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:483:in `u_unpack'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:217:in `rindex'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-3.0.pre/ActiveSupport/multibyte_chars_test.rb:249:in `test_rindex_should_return_character_offset'
-      :test_rindex_should_return_character_offset,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: utf-8 and ASCII-8BIT
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:688:in `insert'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:688:in `justify'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/multibyte/chars.rb:270:in `rjust'
-      :test_rjust_should_count_characters_instead_of_bytes,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: utf-8 and ASCII-8BIT
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testcase.rb:398:in `send'
-      :test_rstrip_strips_whitespace_from_the_right_of_the_string,
-      # <"こわにちわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a8b8 @wrapped_string="こわにちわ">>.
-      :test_should_use_character_offsets_for_insert_offsets,
-      # <"こわ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a966 @wrapped_string="こわ">>.
-      :test_slice_bang_removes_the_slice_from_the_receiver,
-      # <"にち"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1a9f6 @wrapped_string="にち">>.
-      :test_slice_bang_returns_sliced_out_substring,
-      # <"こ"> expected but was
-      # <#<ActiveSupport::Multibyte::Chars:0x1aa8a @wrapped_string="こ">>.
-      :test_slice_should_take_character_offsets,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: ASCII-8BIT and utf-8
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testcase.rb:398:in `send'
-      :test_strip_strips_whitespace,
-      # IronRuby::Builtins::EncodingCompatibilityError: incompatible character encodings: utf-8 and ASCII-8BIT
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/activesupport-3.0.pre/lib/active_support/core_ext/string/output_safety.rb:16:in `+'
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems/test-unit-2.0.5/lib/test/unit/testcase.rb:398:in `send'
-      :test_stripping_whitespace_leaves_whitespace_within_the_string_intact
-
+    # most failures are due to missing String#encode, String#each_char and Time#nsec
+  
+    disable_by_name %w{
+      default_test(ArrayUniqByTests)
+      test_uniq_by(ArrayUniqByTests)
+      test_uniq_by!(ArrayUniqByTests)
+      test_array_of_expressions_identify_failure(AssertDifferenceTest)
+      test_array_of_expressions_identify_failure_when_message_provided(AssertDifferenceTest)
+      test_compare_with_time(DateTimeExtCalculationsTest)
+      test_compare_with_time_with_zone(DateTimeExtCalculationsTest)
+      test_current_with_time_zone(DateTimeExtCalculationsTest)
+      test_current_without_time_zone(DateTimeExtCalculationsTest)
+      test_array_as_cache_key(FileStoreTest)
+      test_cache_key(FileStoreTest)
+      test_clear_also_clears_local_cache(FileStoreTest)
+      test_delete(FileStoreTest)
+      test_delete_matched(FileStoreTest)
+      test_deprecated_expires_in_on_read(FileStoreTest)
+      test_exist(FileStoreTest)
+      test_expires_in(FileStoreTest)
+      test_fetch_with_cache_miss(FileStoreTest)
+      test_fetch_with_cached_nil(FileStoreTest)
+      test_fetch_with_forced_cache_miss(FileStoreTest)
+      test_fetch_without_cache_miss(FileStoreTest)
+      test_hash_as_cache_key(FileStoreTest)
+      test_keys_are_case_sensitive(FileStoreTest)
+      test_local_cache_of_delete(FileStoreTest)
+      test_local_cache_of_exist(FileStoreTest)
+      test_local_cache_of_read(FileStoreTest)
+      test_local_cache_of_write(FileStoreTest)
+      test_local_cache_of_write_nil(FileStoreTest)
+      test_local_writes_are_persistent_on_the_remote_cache(FileStoreTest)
+      test_middleware(FileStoreTest)
+      test_nil_exist(FileStoreTest)
+      test_original_store_objects_should_not_be_immutable(FileStoreTest)
+      test_param_as_cache_key(FileStoreTest)
+      test_race_condition_protection(FileStoreTest)
+      test_race_condition_protection_is_limited(FileStoreTest)
+      test_race_condition_protection_is_safe(FileStoreTest)
+      test_read_and_write_compressed_large_data(FileStoreTest)
+      test_read_and_write_compressed_nil(FileStoreTest)
+      test_read_and_write_compressed_small_data(FileStoreTest)
+      test_read_multi(FileStoreTest)
+      test_read_multi(FileStoreTest)
+      test_really_long_keys(FileStoreTest)
+      test_really_long_keys(FileStoreTest)
+      test_should_overwrite(FileStoreTest)
+      test_should_overwrite(FileStoreTest)
+      test_should_read_and_write_hash(FileStoreTest)
+      test_should_read_and_write_integer(FileStoreTest)
+      test_should_read_and_write_nil(FileStoreTest)
+      test_should_read_and_write_strings(FileStoreTest)
+      test_store_objects_should_be_immutable(FileStoreTest)
+      test_symbolize_keys_preserves_fixnum_keys(HashExtTest)
+      test_symbolize_keys_preserves_fixnum_keys_for_hash_with_indifferent_access(HashExtTest)
+      test_camelize_with_lower_downcases_the_first_letter(InflectorTest)
+      test_parameterize_and_normalize(InflectorTest)
+      test_symbol_to_lower_camel(InflectorTest)
+      test_underscore_to_lower_camel(InflectorTest)
+      test_silence_stderr_with_return_value(KernelTest)
+      test_read_and_write_compressed_large_data(MemoryStoreTest)
+      test_titleize_should_be_unicode_aware(MultibyteCharsExtrasTest)
+      test_titleize_should_not_affect_characters_that_do_not_case_fold(MultibyteCharsExtrasTest)
+      test_indexed_insert_accepts_fixnums(MultibyteCharsUTF8BehaviourTest)
+      test_indexed_insert_should_take_character_offsets(MultibyteCharsUTF8BehaviourTest)
+      test_insert_throws_index_error(MultibyteCharsUTF8BehaviourTest)
+      test_rindex_should_return_character_offset(MultibyteCharsUTF8BehaviourTest)
+      test_rstrip_bang_should_return_self(MultibyteCharsUTF8BehaviourTest)
+      test_rstrip_strips_whitespace_from_the_right_of_the_string(MultibyteCharsUTF8BehaviourTest)
+      test_should_return_character_offset_for_regexp_matches(MultibyteCharsUTF8BehaviourTest)
+      test_strip_bang_should_return_self(MultibyteCharsUTF8BehaviourTest)
+      test_strip_strips_whitespace(MultibyteCharsUTF8BehaviourTest)
+      test_stripping_whitespace_leaves_whitespace_within_the_string_intact(MultibyteCharsUTF8BehaviourTest)
+      test_valid_character_returns_an_expression_for_the_current_encoding(MultibyteUtilsTest)
+      test_verify!_raises_an_exception_when_it_finds_an_invalid_character(MultibyteUtilsTest)
+      test_verify_verifies_Shift-JIS_strings_are_properly_encoded(MultibyteUtilsTest)
+      test_verify_verifies_UTF-8_strings_are_properly_encoded(MultibyteUtilsTest)
+      test_each_after_yaml_serialization(OrderedHashTest)
+      test_json(OrderedHashTest)
+      test_order_after_yaml_serialization(OrderedHashTest)
+      test_order_after_yaml_serialization_with_nested_arrays(OrderedHashTest)
+      test_knows_whether_it_is_encoding_aware(OutputSafetyTest)
+      test_camelize_lower(StringInflectionsTest)
+      test_string_to_time(StringInflectionsTest)
+      test_underscore_to_lower_camel(StringInflectionsTest)
+      test_sprintf_lack_argument(TestGetTextString)
+      test_json_decodes_[]_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_[{"d":"1970-01-01","s":"http:\/\/example.com"},{"d":"1970-01-01","s":"http:\/\/example.com"}]_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_[{"d":"1970-01-01",_"s":"\u0020escape"},{"d":"1970-01-01",_"s":"\u0020escape"}]_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_time_json_with_time_parsing_disabled(TestJSONDecoding)
+      test_json_decodes_{"a":"\""}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":1}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_""}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"'",_"b":_"5,000"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"2007-01-01"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"2007-01-01_01:12:34"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"2007-01-01_01:12:34_Z"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"2007-01-01_:_it's_your_birthday"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"\\\\u0020skip_double_backslashes"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"\u003cbr_/\u003e"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"\u003cunicode\u0020escape\u003e"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"_2007-01-01_01:12:34_Z_"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"a's,_b's_and_c's",_"b":_"5,000"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_"http:\/\/test.host\/posts\/1"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_false}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_null}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"a":_true}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"b":["\u003ci\u003e","\u003cb\u003e","\u003cu\u003e"]}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"bad":"\\\\","trailing":""}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"matzue":_"松江",_"asakusa":_"浅草"}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"returnTo":[1,"\"a\",",_"b"]}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"returnTo":[1,"a"]}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"returnTo":{"\/categories":"\/"}}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"returnTo":{"\/categories":1}}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{"return\"To\":":{"\/categories":"\/"}}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_json_decodes_{}_with_the_JSONGem_backend(TestJSONDecoding)
+      test_array(TestJSONEncoding)
+      test_custom(TestJSONEncoding)
+      test_date(TestJSONEncoding)
+      test_date_time(TestJSONEncoding)
+      test_hash_encoding(TestJSONEncoding)
+      test_hash_key_identifiers_are_always_quoted(TestJSONEncoding)
+      test_hash_should_allow_key_filtering_with_except(TestJSONEncoding)
+      test_hash_should_allow_key_filtering_with_only(TestJSONEncoding)
+      test_hash_with_time_to_json(TestJSONEncoding)
+      test_hashlike(TestJSONEncoding)
+      test_nested_hash_with_float(TestJSONEncoding)
+      test_non_utf8_string_transcodes(TestJSONEncoding)
+      test_numeric(TestJSONEncoding)
+      test_object(TestJSONEncoding)
+      test_regexp(TestJSONEncoding)
+      test_standard_date(TestJSONEncoding)
+      test_standard_date_time(TestJSONEncoding)
+      test_standard_string(TestJSONEncoding)
+      test_standard_time(TestJSONEncoding)
+      test_string(TestJSONEncoding)
+      test_symbol(TestJSONEncoding)
+      test_time(TestJSONEncoding)
+      test_utf8_string_encoded_properly_when_kcode_is_utf8(TestJSONEncoding)
+      test_compare_with_datetime(TimeExtCalculationsTest)
+      test_local_time(TimeExtCalculationsTest)
+      test_since(TimeExtCalculationsTest)
+      test_time_with_datetime_fallback(TimeExtCalculationsTest)
+      test_to_datetime(TimeExtCalculationsTest)
+      test_utc_time(TimeExtCalculationsTest)
+      test_change(TimeWithZoneTest)
+      test_compare_with_datetime(TimeWithZoneTest)
+      test_ruby_19_weekday_name_query_methods(TimeWithZoneTest)
+      test_to_datetime(TimeWithZoneTest)
+      test_to_json_with_use_standard_json_time_format_config_set_to_false(TimeWithZoneTest)
+      test_to_json_with_use_standard_json_time_format_config_set_to_true(TimeWithZoneTest)
+      test_transliterate_should_approximate_ascii(TransliterateTest)
+      test_transliterate_should_work_with_custom_i18n_rules_and_uncomposed_utf8(TransliterateTest)
+    }
   end
-=end
 end

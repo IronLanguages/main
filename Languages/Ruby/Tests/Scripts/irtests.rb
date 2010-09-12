@@ -93,9 +93,9 @@ class IRTest
         @all_tasks.merge!({
           :ActionMailer   => utr_runner("action_mailer"),
           #:ActionPack     => utr_runner("action_pack"),
-          #:ActiveSupport  => utr_runner("active_support"),
+          :ActiveSupport  => utr_runner("active_support"),
           #:ActiveRecord   => utr_runner("active_record"),
-          #:ActiveResource => utr_runner("active_resource"),
+          :ActiveResource => utr_runner("active_resource"),
         })
       end
     
@@ -109,8 +109,8 @@ class IRTest
     
       if not options[:minimum]
          @parallel_tasks += [
-           [:ActionMailer], #:ActionPack, :ActiveSupport
-           #[:ActiveRecord, :ActiveResource],
+           [:ActionMailer, :ActiveSupport, :ActionPack],
+           [:ActiveRecord, :ActiveResource],
          ]
       end 
     end

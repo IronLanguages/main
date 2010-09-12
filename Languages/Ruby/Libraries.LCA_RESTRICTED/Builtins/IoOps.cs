@@ -65,6 +65,14 @@ namespace IronRuby.Builtins {
         [RubyConstant]
         public const int SEEK_END = RubyIO.SEEK_END;
 
+        [RubyModule("WaitReadable")]
+        public static class WaitReadable {
+        }
+
+        [RubyModule("WaitWritable")]
+        public static class WaitWritable {
+        }
+
         #endregion
 
         #region Ruby Constructors

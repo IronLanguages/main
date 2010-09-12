@@ -2,9 +2,11 @@ require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/spec_fetcher'
 require 'rubygems/version_option'
+require 'rubygems/text'
 
 class Gem::Commands::QueryCommand < Gem::Command
 
+  include Gem::Text
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
@@ -19,7 +21,7 @@ class Gem::Commands::QueryCommand < Gem::Command
       options[:installed] = value
     end
 
-    add_version_option
+    add_version_option command, "for use with --installed"
 
     add_option('-n', '--name-matches REGEXP',
                'Name of gem(s) to query on matches the',
@@ -43,6 +45,11 @@ class Gem::Commands::QueryCommand < Gem::Command
       options[:all] = value
     end
 
+    add_option(      '--[no-]prerelease',
+               'Display prerelease versions') do |value, options|
+      options[:prerelease] = value
+    end
+
     add_local_remote_options
   end
 
@@ -54,6 +61,7 @@ class Gem::Commands::QueryCommand < Gem::Command
     exit_code = 0
 
     name = options[:name]
+    prerelease = options[:prerelease]
 
     if options[:installed] then
       if name.source.empty? then
@@ -72,6 +80,10 @@ class Gem::Commands::QueryCommand < Gem::Command
     dep = Gem::Dependency.new name, Gem::Requirement.default
 
     if local? then
+      if prerelease and not both? then
+        alert_warning "prereleases are always shown locally"
+      end
+
       if ui.outs.tty? or both? then
         say
         say "*** LOCAL GEMS ***"
@@ -98,8 +110,16 @@ class Gem::Commands::QueryCommand < Gem::Command
 
       begin
         fetcher = Gem::SpecFetcher.fetcher
-        spec_tuples = fetcher.find_matching dep, all, false
+        spec_tuples = fetcher.find_matching dep, all, false, prerelease
+
+        spec_tuples += fetcher.find_matching dep, false, false, true if
+          prerelease and all
       rescue Gem::RemoteFetcher::FetchError => e
+        if prerelease then
+          raise Gem::OperationNotSupportedError,
+                "Prereleases not supported on legacy repositories"
+        end
+
         raise unless fetcher.warn_legacy e do
           require 'rubygems/source_info_cache'
 
@@ -145,6 +165,12 @@ class Gem::Commands::QueryCommand < Gem::Command
         version
       end.reverse
 
+      platforms = Hash.new { |h,version| h[version] = [] }
+
+      matching_tuples.map do |(name, version, platform,_),_|
+        platforms[version] << platform if platform
+      end
+
       seen = {}
 
       matching_tuples.delete_if do |(name, version,_),_|
@@ -159,8 +185,21 @@ class Gem::Commands::QueryCommand < Gem::Command
       entry = gem_name.dup
 
       if options[:versions] then
-        versions = matching_tuples.map { |(name, version,_),_| version }.uniq
-        entry << " (#{versions.join ', '})"
+        list = if platforms.empty? or options[:details] then
+                 matching_tuples.map { |(name, version,_),_| version }.uniq
+               else
+                 platforms.sort.reverse.map do |version, pls|
+                   if pls == [Gem::Platform::RUBY] then
+                     version
+                   else
+                     ruby = pls.delete Gem::Platform::RUBY
+                     platform_list = [ruby, *pls.sort].compact
+                     "#{version} #{platform_list.join ' '}"
+                   end
+                 end
+               end.join ', '
+
+        entry << " (#{list})"
       end
 
       if options[:details] then
@@ -174,6 +213,28 @@ class Gem::Commands::QueryCommand < Gem::Command
                end
 
         entry << "\n"
+
+        non_ruby = platforms.any? do |_, pls|
+          pls.any? { |pl| pl != Gem::Platform::RUBY }
+        end
+
+        if non_ruby then
+          if platforms.length == 1 then
+            title = platforms.values.length == 1 ? 'Platform' : 'Platforms'
+            entry << "    #{title}: #{platforms.values.sort.join ', '}\n"
+          else
+            entry << "    Platforms:\n"
+            platforms.sort_by do |version,|
+              version
+            end.each do |version, pls|
+              label = "        #{version}: "
+              data = format_text pls.sort.join(', '), 68, label.length
+              data[0, label.length] = label
+              entry << data << "\n"
+            end
+          end
+        end
+
         authors = "Author#{spec.authors.length > 1 ? 's' : ''}: "
         authors << spec.authors.join(', ')
         entry << format_text(authors, 68, 4)
@@ -185,6 +246,12 @@ class Gem::Commands::QueryCommand < Gem::Command
 
         if spec.homepage and not spec.homepage.empty? then
           entry << "\n" << format_text("Homepage: #{spec.homepage}", 68, 4)
+        end
+
+        if spec.license and not spec.license.empty? then
+          licenses = "License#{spec.licenses.length > 1 ? 's' : ''}: "
+          licenses << spec.licenses.join(', ')
+          entry << "\n" << format_text(licenses, 68, 4)
         end
 
         if spec.loaded_from then
@@ -207,26 +274,6 @@ class Gem::Commands::QueryCommand < Gem::Command
     end
 
     say output.join(options[:details] ? "\n\n" : "\n")
-  end
-
-  ##
-  # Used for wrapping and indenting text
-
-  def format_text(text, wrap, indent=0)
-    result = []
-    work = text.dup
-
-    while work.length > wrap
-      if work =~ /^(.{0,#{wrap}})[ \n]/o then
-        result << $1
-        work.slice!(0, $&.length)
-      else
-        result << work.slice!(0, wrap)
-      end
-    end
-
-    result << work if work.length.nonzero?
-    result.join("\n").gsub(/^/, " " * indent)
   end
 
 end

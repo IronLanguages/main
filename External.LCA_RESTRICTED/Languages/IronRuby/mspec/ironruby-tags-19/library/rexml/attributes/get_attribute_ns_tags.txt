@@ -1,2 +1,0 @@
-fails:REXML::Attributes#get_attribute_ns returns an attribute by name and namespace
-fails:"REXML::Attributes#get_attribute_ns returns an attribute by name and namespace"

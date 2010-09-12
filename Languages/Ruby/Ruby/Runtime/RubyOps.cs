@@ -1597,27 +1597,27 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubySymbol/*!*/ CreateSymbolM(MutableString str1, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
-            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringM(str1, encoding));
+            return scope.RubyContext.CreateSymbol(CreateMutableStringM(str1, encoding), false);
         }
 
         [Emitted]
         public static RubySymbol/*!*/ CreateSymbolLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
-            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringLM(str1, str2, encoding));
+            return scope.RubyContext.CreateSymbol(CreateMutableStringLM(str1, str2, encoding), false);
         }
 
         [Emitted]
         public static RubySymbol/*!*/ CreateSymbolML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
-            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringML(str1, str2, encoding));
+            return scope.RubyContext.CreateSymbol(CreateMutableStringML(str1, str2, encoding), false);
         }
         
         [Emitted]
         public static RubySymbol/*!*/ CreateSymbolMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
-            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringMM(str1, str2, encoding));
+            return scope.RubyContext.CreateSymbol(CreateMutableStringMM(str1, str2, encoding), false);
         }
 
         [Emitted]
         public static RubySymbol/*!*/ CreateSymbolN(MutableString[]/*!*/ strings, RubyScope/*!*/ scope) {
-            return scope.RubyContext.CreateSymbolInternal(CreateMutableStringN(strings));
+            return scope.RubyContext.CreateSymbol(CreateMutableStringN(strings), false);
         }
 
         #endregion

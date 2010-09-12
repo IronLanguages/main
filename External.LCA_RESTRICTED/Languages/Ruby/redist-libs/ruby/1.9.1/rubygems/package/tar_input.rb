@@ -1,9 +1,8 @@
+# -*- coding: iso-8859-1 -*-
 #++
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
 #--
-
-require 'rubygems/package'
 
 class Gem::Package::TarInput
 
@@ -72,9 +71,9 @@ class Gem::Package::TarInput
       # map trust policy from string to actual class (or a serialized YAML
       # file, if that exists)
       if String === security_policy then
-        if Gem::Security::Policy.key? security_policy then
+        if Gem::Security::Policies.key? security_policy then
           # load one of the pre-defined security policies
-          security_policy = Gem::Security::Policy[security_policy]
+          security_policy = Gem::Security::Policies[security_policy]
         elsif File.exist? security_policy then
           # FIXME: this doesn't work yet
           security_policy = YAML.load File.read(security_policy)
@@ -136,10 +135,10 @@ class Gem::Package::TarInput
 
   def extract_entry(destdir, entry, expected_md5sum = nil)
     if entry.directory? then
-      dest = File.join(destdir, entry.full_name)
+      dest = File.join destdir, entry.full_name
 
-      if File.dir? dest then
-        @fileops.chmod entry.header.mode, dest, :verbose=>false
+      if File.directory? dest then
+        @fileops.chmod entry.header.mode, dest, :verbose => false
       else
         @fileops.mkdir_p dest, :mode => entry.header.mode, :verbose => false
       end
@@ -201,7 +200,8 @@ class Gem::Package::TarInput
   # times.  And that's the way it is.
 
   def zipped_stream(entry)
-    if defined? Rubinius then
+    if defined? Rubinius or defined? Maglev then
+      # these implementations have working Zlib
       zis = Zlib::GzipReader.new entry
       dis = zis.read
       is = StringIO.new(dis)
