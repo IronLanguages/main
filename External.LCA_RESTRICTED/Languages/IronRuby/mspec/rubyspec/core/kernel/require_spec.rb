@@ -96,12 +96,15 @@ describe "Kernel#require" do
   end
 
   it "does not expand/resolve qualified files against $LOAD_PATH" do
-    num_features = $LOADED_FEATURES.size
     Dir.chdir($require_fixture_dir + '/../') do |dir|
       # This would be a valid path if expanded against the fixture dir
       lambda { require '../require/require_spec_2.rb' }.should raise_error LoadError
+  
+      # Rubygems delayed loading might have kicked in, so count features now:
+      num_features = $LOADED_FEATURES.size
+      lambda { require '../require/require_spec_2.rb' }.should raise_error LoadError
+      $LOADED_FEATURES.size.should == num_features
     end
-    $LOADED_FEATURES.size.should == num_features
   end
 
   it "loads a .rb from an absolute path" do

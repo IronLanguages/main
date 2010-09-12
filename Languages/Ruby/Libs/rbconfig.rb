@@ -14,6 +14,8 @@
 # ****************************************************************************
 
 module RbConfig
+  ::Config = self # compatibility 
+
   CONFIG = {}
   version_components = RUBY_VERSION.split('.')
   abort("Could not parse RUBY_VERSION") unless version_components.size == 3
@@ -24,88 +26,78 @@ module RbConfig
   CONFIG["ruby_install_name"] = "ir"
   CONFIG["RUBY_INSTALL_NAME"] = "ir"
   CONFIG["RUBY_SO_NAME"] = "msvcrt-ruby191"
-  CONFIG["BUILD_FILE_SEPARATOR"] = "\\"
-  CONFIG["ruby_version"] = RUBY_VERSION.dup
   CONFIG["PATH_SEPARATOR"] = ";"
   
   # Set up paths
   if ENV["DLR_ROOT"] then
     # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
-    TOPDIR = File.expand_path(ENV["DLR_BIN"] || System::IO::Path.get_directory_name(
-      System::Reflection::Assembly.get_executing_assembly.code_base
-    ).gsub('file:\\', ''))
-    CONFIG["bindir"] = TOPDIR
-    CONFIG["libdir"] = File.expand_path("External.LCA_RESTRICTED/Languages/Ruby/redist-libs", ENV["DLR_ROOT"])
+    TOPDIR = File.expand_path(ENV["DLR_BIN"] || System::IO::Path.get_directory_name(System::Reflection::Assembly.get_executing_assembly.location))
+    bindir = TOPDIR
+    libdir = File.expand_path("External.LCA_RESTRICTED/Languages/Ruby/redist-libs", ENV["DLR_ROOT"])
   else
     TOPDIR = File.expand_path("../..", File.dirname(__FILE__))
-    CONFIG["bindir"] = TOPDIR + "/bin"
-    CONFIG["libdir"] = TOPDIR + "/lib"
+    bindir = TOPDIR + "/bin"
+    libdir = TOPDIR + "/Lib"
   end
   
-  DESTDIR = TOPDIR && TOPDIR[/\A[a-z]:/i] || '' unless defined? DESTDIR
-  CONFIG["DESTDIR"] = DESTDIR
-  CONFIG["prefix"] = (TOPDIR || DESTDIR + "")
-  CONFIG["exec_prefix"] = "$(prefix)"
-  CONFIG["sbindir"] = "$(exec_prefix)/sbin"
-  CONFIG["libexecdir"] = "$(exec_prefix)/libexec"
-  CONFIG["datadir"] = "$(prefix)/share"
-  CONFIG["sysconfdir"] = "$(prefix)/etc"
-  CONFIG["sharedstatedir"] = "$(DESTDIR)/etc"
-  CONFIG["localstatedir"] = "$(DESTDIR)/var"
-  CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"
-  CONFIG["sitedir"] = "$(libdir)/ruby/site_ruby"
-
+  CONFIG["bindir"] = bindir
+  CONFIG["libdir"] = libdir
+  CONFIG["prefix"] = prefix = TOPDIR
+  CONFIG["exec_prefix"] = prefix
+  
+  # cpu, os
   cpu_and_os = RUBY_PLATFORM.split('-')
   abort("Could not parse RUBY_PLATFORM") if cpu_and_os.size != 2
-  CONFIG["host_cpu"] = (cpu_and_os[0] == "i386") ? "i686" : cpu_and_os[0]
-  CONFIG["host_os"] = cpu_and_os[1]
+  CONFIG["host_cpu"] = CONFIG["target_cpu"] = (cpu_and_os[0] == "i386") ? "i686" : cpu_and_os[0]
+  CONFIG["host_os"] = CONFIG["target_os"] =  cpu_and_os[1]
+  
+  # architecture
   clr_version = "#{System::Environment.Version.Major}.#{System::Environment.Version.Minor}"
-  CONFIG["target"] = "dotnet#{clr_version}"
-  CONFIG["arch"] = "universal-#{CONFIG["target"]}"
-  CONFIG["build"] = CONFIG["arch"] # Not strictly true. For example, while running a .NET 2.0 version of IronRuby on .NET 4
-  CONFIG["target_alias"] = CONFIG["target"]
-  CONFIG["target_cpu"] = cpu_and_os[0]
-  CONFIG["target_vendor"] = "pc"
-  CONFIG["target_os"] = CONFIG["host_os"]
-  CONFIG["CP"] = "copy > nul"
-  CONFIG["SHELL"] = "$(COMSPEC)"
-  CONFIG["rubylibdir"] = "$(rubylibprefix)/$(ruby_version)"
+  CONFIG["arch"] = arch = "universal-dotnet#{clr_version}" # Not strictly true. For example, while running a .NET 2.0 version of IronRuby on .NET 4
+  
+  # std lib
+  CONFIG["ruby_version"] = stdlib_version = "1.9.1"               # std library version
+  CONFIG["RUBY_BASE_NAME"] = ruby_base_name = "ruby"              # directory name
+  CONFIG["datadir"] = datadir = "#{prefix}/share"
+  CONFIG["rubylibdir"] = "#{libdir}/#{ruby_base_name}/#{stdlib_version}"
+  CONFIG["rubylibprefix"] = rubylibprefix = "#{libdir}/#{ruby_base_name}"
+  CONFIG["rubylibdir"] = rubylibdir = "#{rubylibprefix}/#{stdlib_version}"
+  
+  # ri
+  CONFIG["RI_BASE_NAME"] = ri_base_name = "ri"
+  CONFIG["ridir"] = "#{datadir}/#{ri_base_name}"
+ 
+  # site and vendor dirs
+  CONFIG["sitedir"] = sitedir = "#{libdir}/#{ruby_base_name}/site_ruby"
+  CONFIG["sitelibdir"] = sitelibdir = "#{sitedir}/#{stdlib_version}"
+  CONFIG["vendordir"] = vendordir = "#{rubylibprefix}/vendor_ruby"
+  CONFIG["vendorlibdir"] = vendorlibdir = "#{vendordir}/#{stdlib_version}"
+  
+  CONFIG["SHELL"] = ENV["COMSPEC"]
   CONFIG["DLEXT"] = "so"
   CONFIG["DLEXT2"] = "dll"
-  CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
-  CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
-  CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
-  CONFIG["vendorlibdir"] = "$(vendordir)/$(ruby_version)"
-  CONFIG["vendorarchdir"] = "$(vendorlibdir)/$(sitearch)"
-  CONFIG["topdir"] = File.dirname(__FILE__)
+ 
   def RbConfig::expand(val, config = CONFIG)
-    newval = val.gsub(/\$\$|\$\(([^()]+)\)|\$\{([^{}]+)\}/) {
+    newval = val.gsub(/\$\$|\$\(([^()]+)\)|\$\{([^{}]+)\}/) do
       var = $&
       if !(v = $1 || $2)
-	'$'
+       '$'
       elsif key = config[v = v[/\A[^:]+(?=(?::(.*?)=(.*))?\z)/]]
-	pat, sub = $1, $2
-	config[v] = false
-	config[v] = RbConfig::expand(key, config)
-	key = key.gsub(/#{Regexp.quote(pat)}(?=\s|\z)/n) {sub} if pat
-	key
+        pat, sub = $1, $2
+        config[v] = false
+        config[v] = RbConfig::expand(key, config)
+        key = key.gsub(/#{Regexp.quote(pat)}(?=\s|\z)/n) {sub} if pat
+        key
       else
-	var
+        var
       end
-    }
+    end
     val.replace(newval) unless newval == val
     val
   end
-  CONFIG.each_value do |val|
-    RbConfig::expand(val)
-  end
-
+  
   # returns the absolute pathname of the ruby command.
   def RbConfig.ruby
-    File.join(
-      RbConfig::CONFIG["bindir"],
-      RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
-    )
-  end
+    File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"])
+  end  
 end
-Config = RbConfig # compatibility for ruby-1.8.4 and older.

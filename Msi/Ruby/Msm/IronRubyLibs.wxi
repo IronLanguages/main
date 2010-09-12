@@ -46,6 +46,7 @@
     <File Id="F424l64eb479j41cbk0aqcvcom" Source="$(var.DlrRoot)Languages\Ruby\Libs\openssl.rb" />
     <File Id="Fa3roq2gf77y0i2amhphkr5qha" Source="$(var.DlrRoot)Languages\Ruby\Libs\parse_tree.rb" />
     <File Id="F6eythe1k11pqc0yr8l1byfnwv" Source="$(var.DlrRoot)Languages\Ruby\Libs\prime.rb" />
+    <File Id="Ft8uu1gu3lisjczycgblaugd3" Source="$(var.DlrRoot)Languages\Ruby\Libs\rational.rb" />
     <File Id="Fbqeyocyw4yq8ztga3apzhf3u3" Source="$(var.DlrRoot)Languages\Ruby\Libs\rbconfig.rb" />
     <File Id="F76t6ea2ndtxe1dhiuuolbdmmp" Source="$(var.DlrRoot)Languages\Ruby\Libs\repl.rb" />
     <File Id="F2gka4cb09fybfgh5eq51qf8hi" Source="$(var.DlrRoot)Languages\Ruby\Libs\socket.rb" />

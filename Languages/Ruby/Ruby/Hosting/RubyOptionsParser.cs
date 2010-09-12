@@ -36,6 +36,7 @@ namespace IronRuby.Hosting {
         private readonly List<string>/*!*/ _loadPaths = new List<string>();
         private readonly List<string>/*!*/ _requiredPaths = new List<string>();
         private RubyEncoding _defaultEncoding;
+        private bool _disableRubyGems;
 
 #if DEBUG && !SILVERLIGHT
         private ConsoleTraceListener _debugListener;
@@ -252,6 +253,10 @@ namespace IronRuby.Hosting {
                 case "-2.0":
                     throw new InvalidOptionException(String.Format("Option `{0}' is no longer supported. The compatible Ruby version is 1.9.", optionName));
 
+                case "--disable-gems":
+                    _disableRubyGems = true;
+                    break;
+
                 case "-X":
                     switch (optionValue) {
                         case "AutoIndent":
@@ -326,6 +331,11 @@ namespace IronRuby.Hosting {
             }
 #endif
             LanguageSetup.Options["SearchPaths"] = _loadPaths;
+
+            if (!_disableRubyGems) {
+                _requiredPaths.Insert(0, "gem_prelude.rb");
+            }
+
             LanguageSetup.Options["RequiredPaths"] = _requiredPaths;
 
             LanguageSetup.Options["DefaultEncoding"] = _defaultEncoding;                        
