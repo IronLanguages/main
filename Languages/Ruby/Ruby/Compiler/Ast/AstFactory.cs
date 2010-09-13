@@ -131,6 +131,7 @@ namespace IronRuby.Compiler.Ast {
             ICollection<MSA.Expression>/*!*/ arguments, 
             MSA.Expression splattedArgument,
             MSA.Expression rhsArgument,
+            MSA.Expression blockArgument,
             MSA.Expression/*!*/ bfcVariable,
             MSA.Expression/*!*/ selfArgument) {
 
@@ -157,8 +158,7 @@ namespace IronRuby.Compiler.Ast {
                 args.Add(AstUtils.Box(rhsArgument));
             }
 
-            // yield can't pass a block:
-            args.Add(AstFactory.NullOfProc);
+            args.Add(blockArgument != null ? AstUtils.Convert(blockArgument, typeof(Proc)) : AstFactory.NullOfProc);
 
             args.Add(AstUtils.Box(selfArgument));
             args.Add(bfcVariable);

@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,6 +40,10 @@ namespace IronRuby.Runtime {
         LoadOnce = 1,
         LoadIsolated = 2,
         AppendExtensions = 4,
+
+        /// <summary>
+        /// Returns a scope or assembly of already loaded targets.
+        /// </summary>
         ResolveLoaded = 8,
         AnyLanguage = 16,
 
@@ -279,7 +284,7 @@ namespace IronRuby.Runtime {
             string strPath = path.ConvertToString();
             if (TryParseAssemblyName(strPath, out typeName, out assemblyName)) {
 
-                if (AlreadyLoaded(strPath, null, flags)) {
+                if (AlreadyLoaded(strPath, (string)null, flags)) {
                     loaded = ((flags & LoadFlags.ResolveLoaded) != 0) ? GetAssembly(assemblyName, true, false) : null;
                     return false;
                 }
@@ -462,7 +467,7 @@ namespace IronRuby.Runtime {
             Utils.Log(String.Format("Resolving assembly: '{0}'", fullName), "RESOLVE_ASSEMBLY");
             
             AssemblyName assemblyName = new AssemblyName(fullName);
-            ResolvedFile file = FindFile(assemblyName.Name, true, ArrayUtils.EmptyStrings);
+            ResolvedFile file = FindFile(assemblyName.Name, true, ArrayUtils.EmptyStrings).FirstOrDefault();
             if (file == null || file.SourceUnit != null) {
                 return null;
             }
@@ -514,9 +519,9 @@ namespace IronRuby.Runtime {
                 sourceFileExtensions = DomainManager.Configuration.GetFileExtensions(_context);
             }
 
-            ResolvedFile file = FindFile(path, (flags & LoadFlags.AppendExtensions) != 0, sourceFileExtensions);
+            IList<ResolvedFile> files = FindFile(path, (flags & LoadFlags.AppendExtensions) != 0, sourceFileExtensions);
 
-            if (file == null) {
+            if (files.Count == 0) {
                 // MRI: doesn't throw an exception if the path is in $" (performs resolution first though):
                 if (AlreadyLoaded(path, null, flags, sourceFileExtensions)) {
                     loaded = null;
@@ -525,12 +530,14 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateLoadError(String.Format("no such file to load -- {0}", path));
             }
 
+            ResolvedFile file = files.First();
+
             string pathWithExtension = path;
             if (file.AppendedExtension != null) {
                 pathWithExtension += file.AppendedExtension;
             }
 
-            if (AlreadyLoaded(pathWithExtension, file.Path, flags) || _unfinishedFiles.Contains(file.Path)) {
+            if (AlreadyLoaded(path, files, flags) || _unfinishedFiles.Contains(file.Path)) {
                 if ((flags & LoadFlags.ResolveLoaded) != 0) {
                     if (file.SourceUnit != null) {
                         Scope loadedScope;
@@ -623,7 +630,7 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Searches file in load directories and then appends extensions.
         /// </summary>
-        private ResolvedFile FindFile(string/*!*/ path, bool appendExtensions, string[] sourceFileExtensions) {
+        private IList<ResolvedFile> FindFile(string/*!*/ path, bool appendExtensions, string[] sourceFileExtensions) {
             Assert.NotNull(path);
             bool isAbsolutePath;
 
@@ -646,13 +653,14 @@ namespace IronRuby.Runtime {
 
             // Absolute path -> load paths not consulted.
             if (isAbsolutePath) {
-                return ResolveFile(path, extension, appendExtensions, sourceFileExtensions);
+                var file = ResolveFile(path, extension, appendExtensions, sourceFileExtensions);
+                return file != null ? new[] { file } : new ResolvedFile[0];
             }
 
             string[] loadPaths = GetLoadPathStrings();
 
             if (loadPaths.Length == 0) {
-                return null;
+                return new ResolvedFile[0];
             }
 
             // If load paths are non-empty and the path starts with .\ or ..\ then MRI also ignores the load paths.
@@ -661,17 +669,19 @@ namespace IronRuby.Runtime {
                 path.StartsWith(".\\", StringComparison.Ordinal) ||
                 path.StartsWith("..\\", StringComparison.Ordinal)) {
 
-                return ResolveFile(path, extension, appendExtensions, sourceFileExtensions);
+                var file = ResolveFile(path, extension, appendExtensions, sourceFileExtensions);
+                return file != null ? new[] { file } : new ResolvedFile[0];
             }
 
+            var result = new List<ResolvedFile>();
             foreach (var dir in loadPaths) {
-                ResolvedFile result = ResolveFile(RubyUtils.CombinePaths(dir, path), extension, appendExtensions, sourceFileExtensions);
-                if (result != null) {
-                    return result;
+                ResolvedFile file = ResolveFile(RubyUtils.CombinePaths(dir, path), extension, appendExtensions, sourceFileExtensions);
+                if (file != null) {
+                    result.Add(file);
                 }
             }
 
-            return null;
+            return result;
         }
 
         internal string[]/*!*/ GetLoadPathStrings() {
@@ -818,6 +828,12 @@ namespace IronRuby.Runtime {
             }
         }
 
+        private void FileLoaded(MutableString/*!*/ path, LoadFlags flags) {
+            if ((flags & LoadFlags.LoadOnce) != 0) {
+                AddLoadedFile(path);
+            }
+        }
+
         /// <summary>
         /// If the SCRIPT_LINES__ constant is set, we need to publish the file being loaded,
         /// along with the contents of the file
@@ -865,28 +881,45 @@ namespace IronRuby.Runtime {
         }
 
         private bool AlreadyLoaded(string/*!*/ path, string fullPath, LoadFlags flags) {
-            return (flags & LoadFlags.LoadOnce) != 0 && IsFileLoaded(path, fullPath, null);
+            return AlreadyLoaded(path, fullPath, flags, ArrayUtils.EmptyStrings);
         }
-
+        
         private bool AlreadyLoaded(string/*!*/ path, string fullPath, LoadFlags flags, string[]/*!*/ sourceFileExtensions) {
             Debug.Assert(fullPath == null || RubyUtils.GetExtension(path) == RubyUtils.GetExtension(fullPath));
-
-            IEnumerable<string> appendExtensions = (flags & LoadFlags.AppendExtensions) != 0 && RubyUtils.GetExtension(path).Length == 0 ? 
-                sourceFileExtensions.Concat(_LibraryExtensions) : null;
-
-            return (flags & LoadFlags.LoadOnce) != 0 && IsFileLoaded(path, fullPath, appendExtensions);
+            return (flags & LoadFlags.LoadOnce) != 0 && AnyFileLoaded(GetPathsToTestLoaded(path, fullPath, flags, sourceFileExtensions));
         }
 
-        private void FileLoaded(MutableString/*!*/ path, LoadFlags flags) {
-            if ((flags & LoadFlags.LoadOnce) != 0) {
-                AddLoadedFile(path);
+        private IEnumerable<MutableString>/*!*/ GetPathsToTestLoaded(string/*!*/ path, string fullPath, LoadFlags flags, string[]/*!*/ sourceFileExtensions) {
+            List<MutableString> paths = new List<MutableString>();
+            paths.Add(_context.EncodePath(path));
+
+            if (fullPath != null) {
+                paths.Add(_context.EncodePath(path));
             }
+
+            if ((flags & LoadFlags.AppendExtensions) != 0 && RubyUtils.GetExtension(path).Length == 0) {
+                foreach (var extension in sourceFileExtensions) {
+                    paths.Add(_context.EncodePath(path + extension));
+                }
+                foreach (var extension in _LibraryExtensions) {
+                    paths.Add(_context.EncodePath(path + extension));
+                }
+            }
+
+            return paths;
         }
 
-        private bool IsFileLoaded(string/*!*/ path, string/*!*/ fullPath, IEnumerable<string> appendExtensions) {
+        /// <summary>
+        /// Return true if any of the files has alraedy been loaded.
+        /// </summary>
+        private bool AlreadyLoaded(string/*!*/ path, IEnumerable<ResolvedFile>/*!*/ files, LoadFlags flags) {
+            return (flags & LoadFlags.LoadOnce) != 0 && AnyFileLoaded(
+                new[] { _context.EncodePath(path) }.Concat(files.Select((file) => _context.EncodePath(file.Path)))
+            );
+        }
+
+        private bool AnyFileLoaded(IEnumerable<MutableString>/*!*/ paths) {
             var toPath = _toStrStorage.GetSite(CompositeConversionAction.Make(_context, CompositeConversion.ToPathToStr));
-            var encodedPath = _context.EncodePath(path);
-            var encodedFullPath = (fullPath != null) ? _context.EncodePath(fullPath) : null;
 
             foreach (object file in GetLoadedFiles()) {
                 if (file == null) {
@@ -894,18 +927,9 @@ namespace IronRuby.Runtime {
                 }
 
                 // use case sensitive comparison
-                MutableString loadedFile = Protocols.CastToPath(toPath, file);
-                if (loadedFile.Equals(encodedPath) || loadedFile.Equals(encodedFullPath)) {
+                MutableString loadedPath = Protocols.CastToPath(toPath, file);
+                if (paths.Any((path) => loadedPath.Equals(path))) {
                     return true;
-                }
-
-                if (appendExtensions != null) {
-                    foreach (var extension in appendExtensions) {
-                        var pathWithExtension = _context.EncodePath(path + extension);
-                        if (loadedFile.Equals(pathWithExtension) || loadedFile.Equals(encodedFullPath)) {
-                            return true;
-                        }
-                    }
                 }
             }
 

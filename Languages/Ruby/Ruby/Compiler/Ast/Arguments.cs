@@ -74,7 +74,7 @@ namespace IronRuby.Compiler.Ast {
         internal MSA.Expression/*!*/ TransformToYield(AstGenerator/*!*/ gen, MSA.Expression/*!*/ bfcVariable, MSA.Expression/*!*/ selfExpression) {
             var args = new List<MSA.Expression>();
             var splatted = TransformToCallInternal(gen, args);
-            return AstFactory.YieldExpression(gen.Context, args, splatted, null, bfcVariable, selfExpression);
+            return AstFactory.YieldExpression(gen.Context, args, splatted, null, null, bfcVariable, selfExpression);
         }
 
         /// <summary>

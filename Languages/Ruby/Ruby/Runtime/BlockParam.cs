@@ -241,6 +241,7 @@ namespace IronRuby.Runtime {
                 args.GetSimpleArgumentExpressions(),
                 args.GetSplattedArgumentExpression(),
                 args.GetRhsArgumentExpression(),
+                args.GetBlockExpression(),                    
                 convertedTarget,                              // block param
                 Ast.Property(convertedTarget, SelfProperty)   // self
             );

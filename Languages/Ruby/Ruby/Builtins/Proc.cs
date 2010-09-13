@@ -190,6 +190,7 @@ namespace IronRuby.Builtins {
                         args.GetSimpleArgumentExpressions(),
                         args.GetSplattedArgumentExpression(),
                         args.GetRhsArgumentExpression(),
+                        args.GetBlockExpression(),
                         bfcVariable,
                         selfExpression
                     )
