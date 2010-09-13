@@ -72,10 +72,8 @@ namespace IronRuby.Builtins {
             _context = context;
             _fileDescriptor = -1;
             _stream = null;
-
-            // TODO (encoding): enable setting
-            _externalEncoding = RubyEncoding.Binary;
-            _internalEncoding = null;
+            _externalEncoding = context.DefaultExternalEncoding;
+            _internalEncoding = context.DefaultInternalEncoding;
         }
 
         public RubyIO(RubyContext/*!*/ context, Stream/*!*/ stream, IOMode mode) 

@@ -32,10 +32,6 @@ namespace IronRuby.Builtins {
             Path = path;
         }
 
-        public RubyFile(RubyContext/*!*/ context, MutableString/*!*/ path, IOMode mode)
-            : this(context, context.DecodePath(path), mode) {
-        }
-
         public RubyFile(RubyContext/*!*/ context, Stream/*!*/ stream, int descriptor, IOMode mode)
             : base(context, stream, descriptor, mode) {
             Path = null;

@@ -56,6 +56,8 @@ namespace IronRuby.StandardLibrary.Sockets {
         protected RubyBasicSocket(RubyContext/*!*/ context)
             : base(context) {
             Mode = IOMode.ReadWrite | IOMode.PreserveEndOfLines;
+            ExternalEncoding = RubyEncoding.Binary;
+            InternalEncoding = null;
         }
 
         /// <summary>
@@ -64,6 +66,8 @@ namespace IronRuby.StandardLibrary.Sockets {
         protected RubyBasicSocket(RubyContext/*!*/ context, Socket/*!*/ socket)
             : base(context, new SocketStream(socket), IOMode.ReadWrite | IOMode.PreserveEndOfLines) {
             _socket = socket;
+            ExternalEncoding = RubyEncoding.Binary;
+            InternalEncoding = null;
         }
 
         protected internal Socket/*!*/ Socket {

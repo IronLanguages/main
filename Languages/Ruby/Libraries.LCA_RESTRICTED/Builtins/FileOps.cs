@@ -67,47 +67,56 @@ namespace IronRuby.Builtins {
             [Optional]object optionsOrPermissions,
             [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
 
-            // options:
+            var context = self.Context;
+            
             Protocols.TryConvertToOptions(toHash, ref options, ref optionsOrMode, ref optionsOrPermissions);
-
             var toIntSite = toInt.GetSite(TryConvertToFixnumAction.Make(toInt.Context));
 
-            IOMode mode = IOMode.Default;
+            IOInfo info = new IOInfo();
             if (optionsOrMode != Missing.Value) {
                 int? m = toIntSite.Target(toIntSite, optionsOrMode);
-                mode = m.HasValue ? (IOMode)m : IOModeEnum.Parse(Protocols.CastToString(toStr, optionsOrMode));
+                info = m.HasValue ? new IOInfo((IOMode)m) : IOInfo.Parse(context, Protocols.CastToString(toStr, optionsOrMode));
             }
 
             int permissions = 0;
             if (optionsOrPermissions != Missing.Value) {
                 int? p = toIntSite.Target(toIntSite, optionsOrPermissions);
                 if (!p.HasValue) {
-                    throw RubyExceptions.CreateTypeConversionError(self.Context.GetClassName(optionsOrPermissions), "Integer");
+                    throw RubyExceptions.CreateTypeConversionError(context.GetClassName(optionsOrPermissions), "Integer");
                 }
                 permissions = p.Value;
             }
 
-            // TODO: use options, permissions
+            if (options != null) {
+                info = info.AddOptions(toStr, options);
+            }
+
+            // TODO: permissions
             
             // descriptor or path:
             int? descriptor = toIntSite.Target(toIntSite, descriptorOrPath);
             if (descriptor.HasValue) {
-                RubyIOOps.Reinitialize(self, descriptor.Value, (int)mode);
+                RubyIOOps.Reinitialize(self, descriptor.Value, info);
             } else {
-                Reinitialize(self, Protocols.CastToPath(toPath, descriptorOrPath), mode, permissions);
+                Reinitialize(self, Protocols.CastToPath(toPath, descriptorOrPath), info, permissions);
             }
 
             return self;
         }
 
-        private static void Reinitialize(RubyFile/*!*/ file, MutableString/*!*/ path, IOMode mode, int permission) {
+        private static void Reinitialize(RubyFile/*!*/ file, MutableString/*!*/ path, IOInfo info, int permission) {
             var strPath = file.Context.DecodePath(path);
-            var stream = RubyFile.OpenFileStream(file.Context, strPath, (IOMode)mode);
+            var stream = RubyFile.OpenFileStream(file.Context, strPath, info.Mode);
 
             file.Path = strPath;
-            file.Mode = (IOMode)mode;
+            file.Mode = info.Mode;
             file.SetStream(stream);
             file.SetFileDescriptor(file.Context.AllocateFileDescriptor(stream));
+
+            if (info.HasEncoding) {
+                file.ExternalEncoding = info.ExternalEncoding;
+                file.InternalEncoding = info.InternalEncoding;
+            }
         }
         
         #endregion
@@ -322,7 +331,7 @@ namespace IronRuby.Builtins {
             if (size < 0) {
                 throw new InvalidError();
             }
-            using (RubyFile f = new RubyFile(self.Context, Protocols.CastToPath(toPath, path), IOMode.ReadWrite)) {
+            using (RubyFile f = new RubyFile(self.Context, self.Context.DecodePath(Protocols.CastToPath(toPath, path)), IOMode.ReadWrite)) {
                 f.Length = size;
             }
             return 0;

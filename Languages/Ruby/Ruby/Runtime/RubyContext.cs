@@ -2925,6 +2925,7 @@ namespace IronRuby.Runtime {
             }
         }
 
+        /// <exception cref="ArgumentException">Unknown encoding.</exception>
         public RubyEncoding/*!*/ GetRubyEncoding(MutableString/*!*/ name) {
             if (!name.IsAscii()) {
                 throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name.ToAsciiString(false)));
@@ -2932,6 +2933,7 @@ namespace IronRuby.Runtime {
             return RubyEncoding.GetRubyEncoding(GetEncodingByRubyName(name.ToString()));
         }
 
+        /// <exception cref="ArgumentException">Unknown encoding.</exception>
         public RubyEncoding/*!*/ GetRubyEncoding(string/*!*/ name) {
             return RubyEncoding.GetRubyEncoding(GetEncodingByRubyName(name));
         }

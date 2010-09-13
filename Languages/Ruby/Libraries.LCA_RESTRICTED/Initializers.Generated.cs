@@ -132,8 +132,7 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash>(IronRuby.Builtins.HashOps.CreateHash)
             );
             IronRuby.Builtins.RubyClass def32 = DefineGlobalClass("IO", typeof(IronRuby.Builtins.RubyIO), 0x00000007, Context.ObjectClass, LoadIO_Instance, LoadIO_Class, LoadIO_Constants, new IronRuby.Builtins.RubyModule[] {def31, def42}, 
-                new Func<IronRuby.Builtins.RubyClass, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Create), 
-                new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Int32, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Create)
+                new Func<IronRuby.Runtime.ConversionStorage<System.Nullable<System.Int32>>, IronRuby.Runtime.ConversionStorage<System.Collections.Generic.IDictionary<System.Object, System.Object>>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Collections.Generic.IDictionary<System.Object, System.Object>, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.CreateFile)
             );
             IronRuby.Builtins.RubyClass def37 = DefineClass("IronRuby::Clr::Name", typeof(IronRuby.Runtime.ClrName), 0x00000007, Context.ObjectClass, LoadIronRuby__Clr__Name_Instance, LoadIronRuby__Clr__Name_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
             DefineGlobalClass("MatchData", typeof(IronRuby.Builtins.MatchData), 0x00000007, Context.ObjectClass, LoadMatchData_Instance, LoadMatchData_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
@@ -2627,14 +2626,18 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "initialize", 0x52, 
-                0x00030004U, 0x00010000U, 
-                new Func<IronRuby.Builtins.RubyIO, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reinitialize), 
-                new Func<IronRuby.Builtins.RubyIO, System.Int32, System.Int32, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reinitialize)
+                0x00200000U, 
+                new Func<IronRuby.Runtime.ConversionStorage<System.Nullable<System.Int32>>, IronRuby.Runtime.ConversionStorage<System.Collections.Generic.IDictionary<System.Object, System.Object>>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyIO, System.Object, System.Object, System.Collections.Generic.IDictionary<System.Object, System.Object>, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reinitialize)
             );
             
             DefineLibraryMethod(module, "initialize_copy", 0x52, 
                 0x00000002U, 
                 new Func<IronRuby.Builtins.RubyIO, IronRuby.Builtins.RubyIO, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.InitializeCopy)
+            );
+            
+            DefineLibraryMethod(module, "inspect", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyIOOps.Inspect)
             );
             
             DefineLibraryMethod(module, "internal_encoding", 0x51, 
@@ -2710,10 +2713,10 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "reopen", 0x51, 
-                0x00030006U, 0x00010002U, 0x00000002U, 
-                new Func<IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reopen), 
-                new Func<IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reopen), 
-                new Func<IronRuby.Builtins.RubyIO, IronRuby.Builtins.RubyIO, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reopen)
+                0x00000002U, 0x00040008U, 0x00000000U, 
+                new Func<IronRuby.Builtins.RubyIO, IronRuby.Builtins.RubyIO, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reopen), 
+                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyIO, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reopen), 
+                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyIO, System.Object, System.Int32, IronRuby.Builtins.RubyIO>(IronRuby.Builtins.RubyIOOps.Reopen)
             );
             
             DefineLibraryMethod(module, "rewind", 0x51, 
