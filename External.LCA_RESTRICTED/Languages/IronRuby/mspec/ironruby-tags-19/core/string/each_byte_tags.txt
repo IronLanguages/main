@@ -1,1 +1,1 @@
-fails:String#each_byte returns an enumerator when no block given
+fails:String#each_byte keeps iterating from the old position (to new string end) when self changes

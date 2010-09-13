@@ -1141,37 +1141,73 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
-        
-        //bytes
-        //chars
-        //codepoints
-        //each_byte
-        //each_char
-        //each_codepoint
-        
-        
-        #region each, each_byte, each_line
 
-        // encoding aware
+        #region chars, each_byte/bytes, each_codepoint/codepoints, each_line/lines
+        
+        [RubyMethod("bytes")]
         [RubyMethod("each_byte")]
         public static object EachByte(BlockParam block, MutableString/*!*/ self) {
-            if (block == null && !self.IsEmpty) {
-                throw RubyExceptions.NoBlockGiven();
+            if (block == null) {
+                return new Enumerator((scope, innerBlock) => EachByteImpl(innerBlock, self));
             }
+            return EachByteImpl(block, self);
+        } 
 
-            // MRI allows the string to be changed during iteration
-            int i = 0;
-            while (i < self.GetByteCount()) {
+        private static object EachByteImpl(BlockParam/*!*/ block, MutableString/*!*/ self) {
+            foreach (byte b in self.GetBytes()) {
                 object result;
-                if (block.Yield(ScriptingRuntimeHelpers.Int32ToObject((int)self.GetByte(i)), out result)) {
+                if (block.Yield(ScriptingRuntimeHelpers.Int32ToObject((int)b), out result)) {
                     return result;
                 }
-                i++;
             }
+
             return self;
         }
 
-        [RubyMethod("each")]
+        [RubyMethod("chars")]
+        [RubyMethod("each_char")]
+        public static object EachChar(BlockParam block, MutableString/*!*/ self) {
+            if (block == null) {
+                return new Enumerator((scope, innerBlock) => EachCharImpl(innerBlock, self));
+            }
+            return EachCharImpl(block, self);
+        }
+
+        private static object EachCharImpl(BlockParam/*!*/ block, MutableString/*!*/ self) {
+            var enumerator = self.GetCharacters();
+            while (enumerator.MoveNext()) {
+                object result;
+                if (block.Yield(enumerator.Current.ToMutableString(self.Encoding), out result)) {
+                    return result;
+                }
+            }
+
+            return self;
+        }
+
+        [RubyMethod("codepoints")]
+        [RubyMethod("each_codepoint")]
+        public static object EachCodePoint(BlockParam block, MutableString/*!*/ self) {
+            if (block == null) {
+                return new Enumerator((scope, innerBlock) => EachCodePointImpl(innerBlock, self));
+            }
+            return EachCodePointImpl(block, self);
+        }
+
+        private static object EachCodePointImpl(BlockParam/*!*/ block, MutableString/*!*/ self) {
+            var enumerator = self.GetCharacters();
+            while (enumerator.MoveNext()) {
+                object result;
+                if (block.Yield(ScriptingRuntimeHelpers.Int32ToObject((int)enumerator.Current.Codepoint), out result)) {
+                    return result;
+                }
+            }
+
+            return self;
+        }
+
+        [RubyMethod("each")] // TODO: remove (obsolete 1.8)
+        [RubyMethod("lines")]
         [RubyMethod("each_line")]
         public static object EachLine(RubyContext/*!*/ context, BlockParam block, MutableString/*!*/ self) {
             return EachLine(block, self, context.InputSeparator);
@@ -1180,7 +1216,8 @@ namespace IronRuby.Builtins {
         internal static readonly MutableString DefaultLineSeparator = MutableString.CreateAscii("\n").Freeze();
         internal static readonly MutableString DefaultParagraphSeparator = MutableString.CreateAscii("\n\n").Freeze();
 
-        [RubyMethod("each")]
+        [RubyMethod("each")] // TODO: remove (obsolete 1.8)
+        [RubyMethod("lines")]
         [RubyMethod("each_line")]
         public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator) {
             return EachLine(block, self, separator, 0);

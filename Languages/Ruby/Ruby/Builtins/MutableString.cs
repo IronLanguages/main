@@ -69,6 +69,9 @@ namespace IronRuby.Builtins {
 
         // true if untrusted:
         private const uint IsUntrustedFlag = 256;
+
+        // true if the content should be copied on mutation:
+        private const uint CopyOnWriteFlag = 512;
         
         // The instance is frozen so that it can be shared, but it should not be used in places where
         // it will be accessible from user code as the user code could try to mutate it.
@@ -291,10 +294,20 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private void MutateContent(uint setFlags) {
-            uint flags = _flags;
+        private void FrozenOrCopyOnWrite(uint flags) {
             if ((flags & IsFrozenFlag) != 0) {
                 throw RubyExceptions.CreateObjectFrozenError();
+            }
+
+            // TODO: we can do better if the representation is being changed: we don't need to copy the data twice
+            _content = _content.Clone();
+            _flags = flags & ~CopyOnWriteFlag;
+        }
+
+        private void MutateContent(uint setFlags) {
+            uint flags = _flags;
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | setFlags;
         }
@@ -309,8 +322,8 @@ namespace IronRuby.Builtins {
         [Conditional("INLINED")]
         private void MutateOne(int charOrByte) {
             uint flags = _flags;
-            if ((flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | (charOrByte >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
         }
@@ -907,27 +920,51 @@ namespace IronRuby.Builtins {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
             public readonly byte[] Invalid;
             public readonly char Value;
+            public readonly char LowSurrogate;
 
             public bool IsValid {
                 get { return Invalid == null; }
             }
 
+            public bool IsSurrogate {
+                get { return LowSurrogate != '\0'; }
+            }
+
+            public int Codepoint {
+                get { return IsSurrogate ? Tokenizer.ToCodePoint(Value, LowSurrogate) : (int)Value; }
+            }
+
             internal Character(byte[]/*!*/ invalid) {
                 Invalid = invalid;
                 Value = '\0';
+                LowSurrogate = '\0';
             }
 
             internal Character(char value) {
                 Invalid = null;
                 Value = value;
+                LowSurrogate = '\0';
+            }
+
+            internal Character(char highSurrogate, char lowSurrogate) {
+                Debug.Assert(Tokenizer.IsHighSurrogate(highSurrogate) && Tokenizer.IsLowSurrogate(lowSurrogate));
+                Invalid = null;
+                Value = highSurrogate;
+                LowSurrogate = lowSurrogate;
             }
 
             public bool Equals(Character other) {
                 if (IsValid) {
-                    return other.IsValid && Value == other.Value;
+                    return other.IsValid && Value == other.Value && LowSurrogate == other.LowSurrogate;
                 } else {
                     return !other.IsValid && Invalid.ValueEquals(other.Invalid);
                 }
+            }
+
+            public MutableString/*!*/ ToMutableString(RubyEncoding/*!*/ encoding) {
+                return IsSurrogate ?
+                    new MutableString(new char[] { Value, LowSurrogate }, encoding) :
+                    new MutableString(new char[] { Value }, encoding);
             }
         }
 
@@ -993,15 +1030,24 @@ namespace IronRuby.Builtins {
             }
 
             public override bool MoveNext() {
-                if (_index < 0) {
-                    _index = 0;
+                int index = _index;
+                if (index < 0) {
+                    index = 0;
                 }
 
-                if (!HasMore) {
+                if (index == _data.Length) {
+                    _index = index;
                     return false;
                 }
 
-                _current = new Character(_data[_index++]);
+                char c, d;
+                if (Tokenizer.IsHighSurrogate(c = _data[index]) && index + 1 < _data.Length && Tokenizer.IsLowSurrogate(d = _data[index + 1])) {
+                    _current = new Character(c, d);
+                    _index = index + 2;
+                } else {
+                    _current = new Character(c);
+                    _index = index + 1;
+                }
                 return true;
             }
 
@@ -1080,22 +1126,32 @@ namespace IronRuby.Builtins {
             }
 
             public override bool MoveNext() {
-                if (_index < 0) {
-                    _index = 0;
+                int index = _index;
+                if (index < 0) {
+                    index = 0;
                 }
 
-                if (!HasMore) {
+                if (index == _count) {
+                    _index = index;
                     return false;
                 }
 
-                char c = _data[_index++];
-#if SILVERLIGHT
-                _current = new Character(c);
-#else
+                char c = _data[index];
+#if !SILVERLIGHT
                 if (c != LosslessDecoderFallback.InvalidCharacterPlaceholder) {
-                    _current = new Character(c);
+#endif
+                    char d;
+                    if (Tokenizer.IsHighSurrogate(c) && index + 1 < _data.Length && Tokenizer.IsLowSurrogate(d = _data[index + 1])) {
+                        _current = new Character(c, d);
+                        _index = index + 2;
+                    } else {
+                        _current = new Character(c);
+                        _index = index + 1;
+                    }
+#if !SILVERLIGHT
                 } else if (_invalidIndex < InvalidCount) {
                     _current = new Character(_invalid[_invalidIndex++]);
+                    _index = index + 1;
                 } else {
                     // this can only happen if the decoder produces invalid characters \uFFFF, which it should not:
                     throw new InvalidOperationException("Decoder produced an invalid chracter \uFFFF.");
@@ -1136,13 +1192,14 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Enumerates over characters contained in the string. 
         /// Yields both valid characters and invalid byte sequences.
-        /// Yields characters even for K-coded strings.
         /// </summary>
         public CharacterEnumerator/*!*/ GetCharacters() {
+            _flags |= CopyOnWriteFlag;
             return _content.GetCharacters();
         }
 
         public IEnumerable<byte>/*!*/ GetBytes() {
+            _flags |= CopyOnWriteFlag;
             return _content.GetBytes(); 
         }
 
@@ -1396,8 +1453,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Append(char value) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
-            if ((flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | (value >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
             #endregion
@@ -1412,8 +1469,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Append(char value, int repeatCount) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
-            if ((flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | (value >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
             #endregion
@@ -1425,8 +1482,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Append(byte value) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
-            if ((flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | (value >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
             #endregion
@@ -1438,8 +1495,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Append(byte value, int repeatCount) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
-            if ((flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | (value >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
             #endregion
@@ -1578,7 +1635,11 @@ namespace IronRuby.Builtins {
 
         public MutableString/*!*/ Append(Character character) {
             if (character.IsValid) {
-                return Append(character.Value);
+                Append(character.Value);
+                if (character.IsSurrogate) {
+                    Append(character.LowSurrogate);
+                }
+                return this;
             } else {
                 return Append(character.Invalid);
             }
@@ -1596,8 +1657,9 @@ namespace IronRuby.Builtins {
 
         public void SetChar(int index, char value) {
             #region Optimization: MutateOne inlined
-            if ((_flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            uint flags = _flags;
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags |= (value >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
             #endregion
@@ -1608,8 +1670,8 @@ namespace IronRuby.Builtins {
         public void SetByte(int index, byte value) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
-            if ((flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | (value >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
             #endregion
@@ -1620,8 +1682,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Insert(int index, char value) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
-            if ((flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | (value >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
             #endregion
@@ -1633,8 +1695,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Insert(int index, byte value) {
             #region Optimization: MutateOne inlined
             uint flags = _flags;
-            if ((flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+            if ((flags & (IsFrozenFlag | CopyOnWriteFlag)) != 0) {
+                FrozenOrCopyOnWrite(flags);
             }
             _flags = flags | (value >= 0x80 ? HasChangedFlags | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlags | HashUnknownFlag);
             #endregion

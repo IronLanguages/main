@@ -53,6 +53,18 @@ namespace IronRuby.Builtins {
             }
         }
 
+        internal sealed class DelegateWrapper : IEnumerator {
+            private readonly Func<RubyScope, BlockParam, object>/*!*/ _each;
+
+            public DelegateWrapper(Func<RubyScope, BlockParam, object>/*!*/ each) {
+                _each = each;
+            }
+
+            public object Each(RubyScope/*!*/ scope, BlockParam/*!*/ block) {
+                return _each(scope, block);
+            }
+        }
+
         private IEnumerator/*!*/ _impl;
 
         public Enumerator()
@@ -62,6 +74,11 @@ namespace IronRuby.Builtins {
         internal Enumerator(IEnumerator/*!*/ impl) {
             Assert.NotNull(impl);
             _impl = impl;
+        }
+
+        internal Enumerator(Func<RubyScope, BlockParam, object>/*!*/ impl) {
+            Assert.NotNull(impl);
+            _impl = new DelegateWrapper(impl);
         }
 
         public Enumerator(object targetObject, string targetName, params object[] targetArguments) {

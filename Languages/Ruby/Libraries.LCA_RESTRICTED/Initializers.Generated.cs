@@ -6350,6 +6350,11 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.MutableStringOps.IsAscii)
             );
             
+            DefineLibraryMethod(module, "bytes", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachByte)
+            );
+            
             DefineLibraryMethod(module, "bytesize", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.MutableStringOps.GetByteCount)
@@ -6373,6 +6378,11 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "center", 0x51, 
                 0x00030000U, 
                 new Func<IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Center)
+            );
+            
+            DefineLibraryMethod(module, "chars", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachChar)
             );
             
             DefineLibraryMethod(module, "chomp", 0x51, 
@@ -6400,6 +6410,11 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "clear", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Clear)
+            );
+            
+            DefineLibraryMethod(module, "codepoints", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachCodePoint)
             );
             
             DefineLibraryMethod(module, "concat", 0x51, 
@@ -6447,6 +6462,16 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "each_byte", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachByte)
+            );
+            
+            DefineLibraryMethod(module, "each_char", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachChar)
+            );
+            
+            DefineLibraryMethod(module, "each_codepoint", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachCodePoint)
             );
             
             DefineLibraryMethod(module, "each_line", 0x51, 
@@ -6508,9 +6533,9 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "include?", 0x51, 
-                0x00000000U, 0x00010002U, 
-                new Func<IronRuby.Builtins.MutableString, System.Int32, System.Boolean>(IronRuby.Builtins.MutableStringOps.Include), 
-                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.MutableStringOps.Include)
+                0x00010002U, 0x00000000U, 
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.MutableStringOps.Include), 
+                new Func<IronRuby.Builtins.MutableString, System.Int32, System.Boolean>(IronRuby.Builtins.MutableStringOps.Include)
             );
             
             DefineLibraryMethod(module, "index", 0x51, 
@@ -6550,6 +6575,12 @@ namespace IronRuby.Builtins {
             DefineLibraryMethod(module, "length", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.MutableStringOps.GetCharCount)
+            );
+            
+            DefineLibraryMethod(module, "lines", 0x51, 
+                0x00000000U, 0x00020000U, 
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachLine), 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachLine)
             );
             
             DefineLibraryMethod(module, "ljust", 0x51, 

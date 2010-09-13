@@ -288,7 +288,7 @@ module ActiveRecord
             rows
           end
         end
-
+        
         def handle_to_names_and_values_adonet(handle, options={})
           if handle.has_rows
             names = []
@@ -299,15 +299,18 @@ module ActiveRecord
               row = []
               handle.visible_field_count.times do |row_index|
                 value = handle.get_value(row_index)
-                value = if value.is_a? System::String
-                          value.to_s
-                        elsif value.is_a? System::DBNull
-                          nil
-                        elsif value.is_a? System::DateTime
-                          value.to_string("yyyy-MM-dd HH:MM:ss.fff").to_s
-                        else
-                          value
-                        end
+                value = case value
+                  when System::String
+                    value.to_s
+                  when System::DBNull
+                    nil
+                  when System::DateTime
+                    value.to_string("yyyy-MM-dd HH:MM:ss.fff").to_s
+                  when @@array_of_bytes ||= System::Array[System::Byte]
+                    String.new(value)
+                  else
+                    value
+                end
                 row << value
                 names << handle.get_name(row_index).to_s unless fields_named
                 break if one_row_only

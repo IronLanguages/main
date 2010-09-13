@@ -4277,7 +4277,7 @@ module RbReadline
       raise LoadError, "Cygwin is a Posix OS." if RUBY_PLATFORM =~ /\bcygwin\b/i
       raise LoadError, "Not Windows" if RUBY_PLATFORM !~ /mswin|mingw/
 
-      if RUBY_VERSION < '1.9.1'
+      if RUBY_VERSION < '1.9.1' or defined?(IRONRUBY_VERSION)
          require 'Win32API'
       else
          require 'dl'

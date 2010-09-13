@@ -1052,11 +1052,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(RubyContext/*!*/ context, RubyTime/*!*/ self) {            
             return MutableString.CreateAscii(String.Format(CultureInfo.InvariantCulture, 
-                (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) ? 
-                    "{0:ddd MMM dd HH:mm:ss} {1} {0:yyyy}" :
-                    "{0:yyyy-dd-MM HH:mm:ss} {1}",
-                self.DateTime,
-                (self.Kind == DateTimeKind.Utc) ? "UTC" : self.FormatUtcOffset()
+                "{0:yyyy-MM-dd HH:mm:ss} {1}", self.DateTime, (self.Kind == DateTimeKind.Utc) ? "UTC" : self.FormatUtcOffset()
             ));
         }
 

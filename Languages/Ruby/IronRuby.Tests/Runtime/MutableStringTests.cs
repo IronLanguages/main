@@ -971,13 +971,13 @@ namespace IronRuby.Tests {
 
             TestChars(
                 MutableString.CreateBinary(Utils.Concatenate(u12345, beta), RubyEncoding.UTF8),
-                new MSC(s_u12345[0]), new MSC(s_u12345[1]), c_beta
+                new MSC(s_u12345[0], s_u12345[1]), c_beta
             );
 
             // string:
             TestChars(
                 MutableString.CreateMutable("α" + s_u12345 + "xβ", RubyEncoding.UTF8),
-                new MSC('α'), new MSC(s_u12345[0]), new MSC(s_u12345[1]), c_x, c_beta
+                new MSC('α'), new MSC(s_u12345[0], s_u12345[1]), c_x, c_beta
             );
 
             TestChars(
@@ -988,7 +988,7 @@ namespace IronRuby.Tests {
             // chars:
             TestChars(
                 MutableString.CreateMutable("α" + s_u12345 + "xβ", RubyEncoding.UTF8).Remove(4, 1),
-                new MSC('α'), new MSC(s_u12345[0]), new MSC(s_u12345[1]), c_x
+                new MSC('α'), new MSC(s_u12345[0], s_u12345[1]), c_x
             );
 
             // remaining:
@@ -1012,14 +1012,14 @@ namespace IronRuby.Tests {
 
             TestChars(
                 MutableString.CreateMutable("α" + s_u12345 + "xβ", RubyEncoding.UTF8),
-                MutableString.CreateMutable(s_u12345[1] + "xβ", RubyEncoding.UTF8),
-                new MSC('α'), new MSC(s_u12345[0])
+                MutableString.CreateMutable("xβ", RubyEncoding.UTF8),
+                new MSC('α'), new MSC(s_u12345[0], s_u12345[1])
             );
 
             TestChars(
                 MutableString.CreateMutable("α" + s_u12345 + "xβ", RubyEncoding.UTF8).Remove(4, 1),
-                MutableString.CreateMutable(s_u12345[1] + "x", RubyEncoding.UTF8),
-                new MSC('α'), new MSC(s_u12345[0])
+                MutableString.CreateMutable("x", RubyEncoding.UTF8),
+                new MSC('α'), new MSC(s_u12345[0], s_u12345[1])
             );
         }
 
