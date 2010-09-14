@@ -305,7 +305,7 @@ module ActiveRecord
                   when System::DBNull
                     nil
                   when System::DateTime
-                    value.to_string("yyyy-MM-dd HH:MM:ss.fff").to_s
+                    value.to_string("yyyy-MM-dd HH:mm:ss.fff").to_s
                   when @@array_of_bytes ||= System::Array[System::Byte]
                     String.new(value)
                   else

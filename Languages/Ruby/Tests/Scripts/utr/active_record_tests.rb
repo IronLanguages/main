@@ -154,5 +154,23 @@ class UnitTestSetup
       test_should_automatically_build_new_associated_models_for_each_entry_in_a_hash_where_the_id_is_missing(TestNestedAttributesOnAHasManyAssociation)
       test_to_yaml_with_time_with_zone_should_not_raise_exception(YamlSerializationTest):  
     }
+    
+    # These tests pass but take more than 30 seconds each a and consume about 1GB of memory (in IronRuby debug build).
+    # We should investigate if that's an IronRuby perf issue or the tests just operate on so much data.
+    disable_by_name %w{ 
+      test_eager_association_loading_of_stis_with_multiple_references(CascadedEagerLoadingTest)
+      test_eager_association_loading_with_hmt_does_not_table_name_collide_when_joining_associations(CascadedEagerLoadingTest)
+      test_eager_association_loading_with_multiple_stis_and_order(CascadedEagerLoadingTest)
+      test_eager_association_loading_with_join_for_count(CascadedEagerLoadingTest)
+      test_eager_loading_with_conditions_on_joined_table_preloads(EagerAssociationTest)
+      test_including_duplicate_objects_from_has_many(EagerAssociationTest)
+      test_limited_eager_with_numeric_in_association(EagerAssociationTest)
+      test_missing_data_in_a_nested_include_should_not_cause_errors_when_constructing_objects(EagerLoadNestedIncludeWithMissingDataTest)
+      test_find_with_order_on_included_associations_with_construct_finder_sql_for_association_limiting_and_is_distinct(FinderTest)
+      test_join_table_alias(HasAndBelongsToManyAssociationsTest)
+      test_join_with_group(HasAndBelongsToManyAssociationsTest)
+      test_nested_scoped_find_merged_include(NestedScopingTest)
+    }
   end
 end
+
