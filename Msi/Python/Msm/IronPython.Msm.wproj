@@ -15,7 +15,6 @@
     <!-- Paths -->
     <PythonDir>$(SolutionDir)\..\Languages\IronPython</PythonDir>
     <OutputPath>$(SolutionDir)..\bin\$(Configuration)\</OutputPath>
-    <OutputPath>$(SolutionDir)..\bin\Debug\</OutputPath>
     <WixToolPath>$(SolutionDir)..\Util\Wix35\</WixToolPath>
     <WixExtDir>$(SolutionDir)..\Util\Wix35\</WixExtDir>
     <WixTasksPath>$(WixExtDir)\WixTasks.dll</WixTasksPath>

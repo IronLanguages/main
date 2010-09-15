@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='IronStudio' Language='1033' Version='1.1.0.0'>
+  <Module Id='IronStudio' Language='1033' Version='1.0.0.0'>
     <Package Id='83191C78-A44E-4155-A454-A459149A7150' Description='IronStudio Merge Module'
               Manufacturer='Microsoft Corporation' InstallerVersion='200' />
 

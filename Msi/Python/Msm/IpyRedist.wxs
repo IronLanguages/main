@@ -5,7 +5,7 @@
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi' xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
     <!-- Merge module for IronPython Redist.  This includes the core binaries, XML docs, licence, all ngen'd and installed -->
     
-    <Module Id='IronPythonRedist' Language='1033' Version='1.1.0.0'>
+    <Module Id='IronPythonRedist' Language='1033' Version='2.7.0.10'>
       <Package Id='B25C469D-12C7-4327-AEF1-B2D3505E115E' Description='IronPython Redist Merge Module'
                 Manufacturer='Microsoft Corporation' InstallerVersion='200' />
 

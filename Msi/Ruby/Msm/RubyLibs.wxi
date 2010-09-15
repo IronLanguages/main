@@ -26,7 +26,14 @@
       </Component>
     </Directory>
     <Directory Id="D5kuj9ljbha9cuc3i1i0ks1th1" Name="date">
+      <Directory Id="D27jidjtbhh3nwfbehgm36ob8b" Name="delta">
+        <Component Id="C27jidjtbhh3nwfbehgm36ob8b" DiskId="1" Guid="bf09f1a6-c0a3-4581-ade4-d66737ffd27b">
+          <File Id="Fa2lgwdh0mrev64tt1me1rlbho" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\date\delta\parser.rb" />
+          <File Id="F5zrv0ese3omhgw9u66v7v1rad" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\date\delta\parser.ry" />
+        </Component>
+      </Directory>
       <Component Id="C5kuj9ljbha9cuc3i1i0ks1th1" DiskId="1" Guid="9fa72c51-2955-4b43-9ab8-946f9754d9e1">
+        <File Id="F5cnkc5jw8c1fuq03n53uudcw3" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\date\delta.rb" />
         <File Id="Fb4fy7rna2czkcglug6ijzdpnk" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\date\format.rb" />
       </Component>
     </Directory>
@@ -62,6 +69,12 @@
         <File Id="F5a0aufnrrleq66adz9whihkac" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\drb\ssl.rb" />
         <File Id="F6pdcckueg4uo585gbx1gwstzc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\drb\timeridconv.rb" />
         <File Id="F47rzbvyskjq98g0ge3g8k2bpc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\drb\unix.rb" />
+      </Component>
+    </Directory>
+    <Directory Id="D3qqbz5qb4cs5uzq1ar90pw0dd" Name="fiddle">
+      <Component Id="C3qqbz5qb4cs5uzq1ar90pw0dd" DiskId="1" Guid="adf8b090-fc90-4dc6-b3e2-28cef5560da4">
+        <File Id="F2tz1v3ec36als054wpafltud3" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\fiddle\closure.rb" />
+        <File Id="F968a25g5qdwrf7yva0d9phbaw" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\fiddle\function.rb" />
       </Component>
     </Directory>
     <Directory Id="D97in2oilc0f3cv4ecsk387hma" Name="irb">
@@ -110,6 +123,7 @@
         <File Id="F271iq6xagpdufxgaaghsn6i0w" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\irb\help.rb" />
         <File Id="Faf8y1o5zq5khfm7hy3g432ele" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\irb\init.rb" />
         <File Id="F73n66i2i8966mdfl85qgj0t3u" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\irb\input-method.rb" />
+        <File Id="Fc13ih0nifrdjy2ux0x8f6ai1o" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\irb\inspector.rb" />
         <File Id="F8qluu1c47n46wpf1gw17gd5c9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\irb\locale.rb" />
         <File Id="F4xw2f13yx1qctrw7arlzqond1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\irb\magic-file.rb" />
         <File Id="F6rz94ewhv9fn5ij41v4qnzic3" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\irb\notifier.rb" />
@@ -164,7 +178,9 @@
         <File Id="Fdyipbnlu6fppa418izaknu7xh" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\openssl\buffering.rb" />
         <File Id="F9guwoacwpon2od0bb62o90415" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\openssl\cipher.rb" />
         <File Id="Famx57p4x8jje4zte630csqhtd" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\openssl\digest.rb" />
+        <File Id="F8uvogn7evs37soy2s3hs25460" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\openssl\ssl-internal.rb" />
         <File Id="Fatwf0n9scc8huaqudom2pkx42" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\openssl\ssl.rb" />
+        <File Id="F7zgrc0edp5ep2omkszouj8vqm" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\openssl\x509-internal.rb" />
         <File Id="Fbiv3zwo3k9mxfmelxj6kod47k" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\openssl\x509.rb" />
       </Component>
     </Directory>
@@ -177,12 +193,61 @@
         <File Id="F31xmpp7vq0r9ttyzclg3t2gsb" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\optparse\version.rb" />
       </Component>
     </Directory>
+    <Directory Id="D5i33tcs7ant0o3wktm4o5h2ui" Name="psych">
+      <Directory Id="D14wblcdcbibd541u5a5tz9j78" Name="json">
+        <Component Id="C14wblcdcbibd541u5a5tz9j78" DiskId="1" Guid="004e2277-de42-4393-8e23-36e6f4663d74">
+          <File Id="F46j9org023xje2nqeniuktld8" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\json\tree_builder.rb" />
+        </Component>
+      </Directory>
+      <Directory Id="D3psf4jrf89qk0ddebeveo69v7" Name="nodes">
+        <Component Id="C3psf4jrf89qk0ddebeveo69v7" DiskId="1" Guid="2fb08c7f-a6b7-4d5e-b6c1-ef4059a0161f">
+          <File Id="Fb4maev63372q4h2lvwh8z1k36" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\nodes\alias.rb" />
+          <File Id="F7oa9gh0n7r0untchjja369qhu" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\nodes\document.rb" />
+          <File Id="F1vt0orlm4wkyz7cmoca9a7mpk" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\nodes\mapping.rb" />
+          <File Id="F50t16z4y0whrze4roe3pymi7j" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\nodes\node.rb" />
+          <File Id="Fm3gj6qn39sfgy2zez6wyuw8r" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\nodes\scalar.rb" />
+          <File Id="F7mxgo7c1mfoqwgjlywa37bz14" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\nodes\sequence.rb" />
+          <File Id="F5lca87e2wdo9dgcsnubro8fz9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\nodes\stream.rb" />
+        </Component>
+      </Directory>
+      <Directory Id="Daaf9gggby0fvunvm76wibneyb" Name="visitors">
+        <Component Id="Caaf9gggby0fvunvm76wibneyb" DiskId="1" Guid="c42e89ca-0113-4881-b544-d53b9ff60b58">
+          <File Id="Fcsal3zfnkzlzhdby2xw4e6dj" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\visitors\emitter.rb" />
+          <File Id="F1siurpq475vxf5ivfmds38mv5" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\visitors\json_tree.rb" />
+          <File Id="F2rztlqyvb4iecywmzzd5gczzt" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\visitors\to_ruby.rb" />
+          <File Id="F9lk3ycgokireoehg3n54cmxmu" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\visitors\visitor.rb" />
+          <File Id="F4bao45v9wwj8rh0a1lvpjehdc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\visitors\yaml_tree.rb" />
+        </Component>
+      </Directory>
+      <Component Id="C5i33tcs7ant0o3wktm4o5h2ui" DiskId="1" Guid="7ce402b6-8d34-454a-af03-d5793989e9a8">
+        <File Id="Fdev26sovznyzl7olul02izcqc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\coder.rb" />
+        <File Id="Faiyylx4a9ibp8phe6ds4hbicp" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\core_ext.rb" />
+        <File Id="F8iw9oou9yggluuyysw8m9cnde" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\deprecated.rb" />
+        <File Id="Fctfqozoog0pnlgl0w6ei712yb" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\handler.rb" />
+        <File Id="Faxjzl23utltsujo35xu0caxej" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\nodes.rb" />
+        <File Id="F7wrg34ethugj8rhcyyllqknsh" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\omap.rb" />
+        <File Id="F91ebb9lmi99x82mw2lzl9a2wr" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\parser.rb" />
+        <File Id="Fa4koziubkjkjob3yp0iu6gu1b" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\scalar_scanner.rb" />
+        <File Id="Fdtdztxm1jakss3hoysee8ouxr" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\set.rb" />
+        <File Id="F3ucm5rsqrntzclolt6avowa04" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\tree_builder.rb" />
+        <File Id="F3z608vc800si9exh2um7rr1qt" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych\visitors.rb" />
+      </Component>
+    </Directory>
     <Directory Id="Da94js58bhysl18nymmtej2ejc" Name="racc">
       <Component Id="Ca94js58bhysl18nymmtej2ejc" DiskId="1" Guid="2a925c93-c30a-460d-8593-59c28ba96a48">
         <File Id="F3czz38d1z4kx98bz9dd41nk9l" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\racc\parser.rb" />
       </Component>
     </Directory>
     <Directory Id="D4r1tiyvh3wrke33kkji7d220d" Name="rake">
+      <Directory Id="D9ts6bf8w1h07kr1g1qb6jl6ma" Name="contrib">
+        <Component Id="C9ts6bf8w1h07kr1g1qb6jl6ma" DiskId="1" Guid="a5624968-69c9-40f1-9e5d-211488befd01">
+          <File Id="F9l6tgnv5yl6h3109rasbftsmt" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rake\contrib\compositepublisher.rb" />
+          <File Id="F2azqod9352eksdy14sttldp9p" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rake\contrib\ftptools.rb" />
+          <File Id="F4s0c9ggyqhj65hblyvda4774q" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rake\contrib\publisher.rb" />
+          <File Id="Fz58mcg0jazwpfpk8lbmu357w" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rake\contrib\rubyforgepublisher.rb" />
+          <File Id="F8wi17b6g02xc9y6r1rh3ye5i8" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rake\contrib\sshpublisher.rb" />
+        </Component>
+      </Directory>
       <Directory Id="D8jkc8d461r80cpxgy4a20xru7" Name="loaders">
         <Component Id="C8jkc8d461r80cpxgy4a20xru7" DiskId="1" Guid="523c48bb-829b-4d4d-8e35-d3947176e053">
           <File Id="F89ekoncuy54rk958rzh7leias" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rake\loaders\makefile.rb" />
@@ -209,20 +274,76 @@
     <Directory Id="D2hx2m9yk799wb4yoq7dphuarl" Name="rdoc">
       <Directory Id="D82ui9dwtbdvqi691dur3evrmt" Name="generator">
         <Directory Id="D40yrifvkz2r2xn7cpfdzhfosa" Name="template">
+          <Directory Id="Dbvkkwfuarrv616x4oxlpgu7ev" Name="darkfish">
+            <Directory Id="D8nlo1r0fk301mmdnsj05q82a5" Name="images">
+              <Component Id="C8nlo1r0fk301mmdnsj05q82a5" DiskId="1" Guid="41c16e10-a4f2-4b53-a1ff-1aa7dbd71c8b">
+                <File Id="F2d666hm4ymfmrqwd7305nlr92" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\brick.png" />
+                <File Id="Ff20gc51wvpluq7sfxemwuor85" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\brick_link.png" />
+                <File Id="Favvlek8wr24nscb4qc8zl1eeb" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\bug.png" />
+                <File Id="F1an2g99sdgw9ly111oksokgyh" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\bullet_black.png" />
+                <File Id="F3wxswpp1o4ipuw2v26f2faxv4" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\bullet_toggle_minus.png" />
+                <File Id="F6091fwvyi6xyrxn6sj64mydky" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\bullet_toggle_plus.png" />
+                <File Id="F4z547m4epnqlrii08x0x30qcp" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\date.png" />
+                <File Id="Fcxn38bq439ybzx4c1ecwpyk6n" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\find.png" />
+                <File Id="Fcy5wkw4kezbmr9qirkd6dwdtv" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\loadingAnimation.gif" />
+                <File Id="F3c1v2w5s1a8d28f8ktdf26k3f" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\macFFBgHack.png" />
+                <File Id="F3kfboz2bd60vxjjef1pt8zcl1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\package.png" />
+                <File Id="F7iely6u2xfe7sh3ef6o5qmo0w" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\page_green.png" />
+                <File Id="F7f8iyxo4dkca1levvqopemmtn" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\page_white_text.png" />
+                <File Id="F8yz6mznok2wvpk7whmz6yybtf" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\page_white_width.png" />
+                <File Id="Fcuyyok1swgwm0ifs1majwa40" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\plugin.png" />
+                <File Id="Fez4jipyfhx9uwddn130dys97u" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\ruby.png" />
+                <File Id="Fd0uk0xirf5vrgq2qp6n8hhg8d" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\tag_green.png" />
+                <File Id="Feuz0fgtme03rv2q37qk0fe3pu" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\wrench.png" />
+                <File Id="Fewejc0ngtnvkf5eavvr5xcggl" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\wrench_orange.png" />
+                <File Id="F1l3j7r7mqnocbg1a8j74v7vvt" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\images\zoom.png" />
+              </Component>
+            </Directory>
+            <Directory Id="Daf74n8yo245ynupo7jk0kiz7" Name="js">
+              <Component Id="Caf74n8yo245ynupo7jk0kiz7" DiskId="1" Guid="bc70a9f6-ad5d-4e98-bedd-e7a4f3b533c6">
+                <File Id="Fd3zqspg32rag865guju50ps3s" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\js\darkfish.js" />
+                <File Id="F30qsfjxyum3qty53b5l6wf4fy" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\js\jquery.js" />
+                <File Id="F5vgcucahpps6w9o51uz4xb9t4" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\js\quicksearch.js" />
+                <File Id="Feftsf2kw8nskdwc76zf0pym6v" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\js\thickbox-compressed.js" />
+              </Component>
+            </Directory>
+            <Component Id="Cbvkkwfuarrv616x4oxlpgu7ev" DiskId="1" Guid="66ea8a97-81cf-4f37-902f-6f8d56be8b74">
+              <File Id="F2r72xz0hves1qtu9v8phujnau" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\classpage.rhtml" />
+              <File Id="Femfedn5mcjjhgwdvwbxik19nw" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\filepage.rhtml" />
+              <File Id="Fa6d213xaod4tnje7aw4et1bpc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\index.rhtml" />
+              <File Id="F4d0cb1l7dz8jgivx2ackesryn" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\template\darkfish\rdoc.css" />
+            </Component>
+          </Directory>
         </Directory>
         <Component Id="C82ui9dwtbdvqi691dur3evrmt" DiskId="1" Guid="6fc5c96a-dffd-4837-b689-48f53365bd0a">
+          <File Id="Fbc16wa2avmtp0lkcqu22q4i1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\darkfish.rb" />
+          <File Id="Fdkcf1uj5k19i6umswyrv4ms3v" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\markup.rb" />
           <File Id="F9ksujn7anq0g7b5waix3f2yn5" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator\ri.rb" />
         </Component>
       </Directory>
       <Directory Id="D8t9rjhw0eh6eblzeto6p3wvdx" Name="markup">
         <Component Id="C8t9rjhw0eh6eblzeto6p3wvdx" DiskId="1" Guid="9e739ef2-7b8e-47ab-8ceb-54f292c1fcae">
           <File Id="F4ilsmgr39lt5rhyugzgze0fg7" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\attribute_manager.rb" />
+          <File Id="F5mbg4drk1tplxkvoxo8p7rq3i" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\blank_line.rb" />
+          <File Id="Fc41keh20tbayiz43t4chbugb4" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\document.rb" />
           <File Id="Fch5y7wnj53c8y5h8jcnaqeumv" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\formatter.rb" />
+          <File Id="F6e35klt0dt5kq75iv2vt0ic65" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\formatter_test_case.rb" />
+          <File Id="F2r5ggdhpvhy8mai57oxi1avcf" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\heading.rb" />
           <File Id="Fbi3bgvk81sa28wafhcgeaoljy" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\inline.rb" />
+          <File Id="Fas2lu44n9jqzfkbr1ngamc8td" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\list.rb" />
+          <File Id="F4cfq8o595f14v8b9u4l4pvmzb" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\list_item.rb" />
+          <File Id="Fm1cge2mkzoa6batzjflw765j" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\paragraph.rb" />
+          <File Id="F59rpznboxlhyh9gjoj95qrwwv" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\parser.rb" />
           <File Id="F2sv7g725lwo33c27j8al91vxj" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\preprocess.rb" />
+          <File Id="F2l0siy0e3qw5t0wc80ze1tupo" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\raw.rb" />
+          <File Id="Faysemydu1y72bc686cyxx8g9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\rule.rb" />
+          <File Id="Fdwc65348fnthics46xcnxind7" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\to_ansi.rb" />
+          <File Id="Fb1gukcb2fa6nsx8ogrl1aj75v" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\to_bs.rb" />
           <File Id="F8aozbxtcc24t227xy6v1f0u3b" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\to_html.rb" />
           <File Id="F1zj978u61k54c3usduv5lmq24" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\to_html_crossref.rb" />
+          <File Id="F25tshqfxzsdmomff4m231w8z7" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\to_rdoc.rb" />
           <File Id="F1ll805punmrzwprvv2qwyz9d4" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\to_test.rb" />
+          <File Id="Fa29s3ecffv77gavyzjltremtp" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup\verbatim.rb" />
         </Component>
       </Directory>
       <Directory Id="Dd0psdojfax4y2uhgl61p5dmqo" Name="parser">
@@ -230,6 +351,7 @@
           <File Id="Fxc4exq45zi84uz984noz45gi" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\parser\c.rb" />
           <File Id="Fba6p46cvf84k9h23mxs7ufdtk" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\parser\perl.rb" />
           <File Id="F3pa7jugywjtxfuf4xjfc3ur29" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\parser\ruby.rb" />
+          <File Id="Fa1far8fsloy8mengsc8ut48ag" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\parser\ruby_tools.rb" />
           <File Id="F7zq8b8xksc9z5rd0ddv6u8b1r" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\parser\simple.rb" />
         </Component>
       </Directory>
@@ -238,19 +360,40 @@
           <File Id="F6lgwjxg35sii6euno8h1ulj56" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\ri\driver.rb" />
           <File Id="F3ndjesjstbskoyre6dmraluw4" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\ri\formatter.rb" />
           <File Id="F6g1l31mtz363wuasd27a6wyfg" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\ri\paths.rb" />
+          <File Id="Fcsjwbdh8g3xvi0hnyul6f7s55" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\ri\store.rb" />
         </Component>
       </Directory>
       <Component Id="C2hx2m9yk799wb4yoq7dphuarl" DiskId="1" Guid="1e1e84b7-e8eb-4719-8eca-f1415e889d97">
+        <File Id="F8frlk4srw3p8tvwo8z755qnk9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\alias.rb" />
+        <File Id="F594qc29i5bqismuykl07flbjq" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\anon_class.rb" />
+        <File Id="F7b3a679e08synfpuudyolv93b" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\any_method.rb" />
+        <File Id="F4dr1hqs604nv32fwouz59e66a" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\attr.rb" />
+        <File Id="Fe4z7ue4v0z2geoz9cy6xc7bqj" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\class_module.rb" />
+        <File Id="F3gixfyqmhuuijumhjxtpfdjk1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\code_object.rb" />
         <File Id="Ff09yp595svrtswwz7hmp7g1qg" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\code_objects.rb" />
+        <File Id="F4htgjdadx5hnycyli37vsb39d" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\constant.rb" />
+        <File Id="Fepzv3bzvbfclb3ztf1302few" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\context.rb" />
         <File Id="F3csu7gjzzrn75apr1t3q58411" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\generator.rb" />
+        <File Id="F3bslity70ctm90zm76gtslcpg" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\ghost_method.rb" />
+        <File Id="Fdtrn9bhv2v57h84l2bjnicvae" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\include.rb" />
         <File Id="F7cv14yy8up9q8hs9jfuhvity2" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\known_classes.rb" />
         <File Id="F9kik30b4qi9qtua5i5yl0fa3" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\markup.rb" />
+        <File Id="F6b0jqptqmx33rb7xqkhcgrhz0" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\meta_method.rb" />
+        <File Id="F7p8y0yof6lu8z6uma76srq2t" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\normal_class.rb" />
+        <File Id="F3j5egro6lk2kdtv1xj46ir3eb" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\normal_module.rb" />
         <File Id="F1bad4io61e9s6zem2pd8bxsp9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\options.rb" />
         <File Id="Fe5w017bukz9ou1kxx6qk1sycc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\parser.rb" />
         <File Id="F10m1bw0vr5hb0uj18mn6jjm9w" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\rdoc.rb" />
+        <File Id="F5ugv7fo55q2db4bou44m2ny63" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\require.rb" />
         <File Id="Fa8ef4hovlbqutebfz822bfei8" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\ri.rb" />
+        <File Id="F1s7l4rfbw9ea963jqvikytc81" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\ruby_lex.rb" />
+        <File Id="Fe95odsbwqfnoyypc67igh8gil" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\ruby_token.rb" />
+        <File Id="F31yj6ni9u8kr6iu8iq9rpn8o0" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\single_class.rb" />
         <File Id="F3vxbm8gt6qprlg2sq1ii0z80w" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\stats.rb" />
+        <File Id="Fclznks18l5k24z95etxmv05k9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\task.rb" />
+        <File Id="F5v9s3jrcqzqqet7e4ixnxls6n" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\text.rb" />
         <File Id="F4p7m6yafaalbkkyi2szrtd7th" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\tokenstream.rb" />
+        <File Id="F8v3aan74g0brmfy6dc1tfzi2b" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rdoc\top_level.rb" />
       </Component>
     </Directory>
     <Directory Id="Ddkpv72bmue6y6u60li9d3ecpd" Name="rexml">
@@ -432,11 +575,14 @@
           <File Id="Fbvuwzfp8lr0art8eve8qu328l" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\lock_command.rb" />
           <File Id="F94vtekflzf9wzur11kj0gupra" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\mirror_command.rb" />
           <File Id="Fckllow8m8amirvjmfivrabkcc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\outdated_command.rb" />
+          <File Id="Fdrpeks9ankt3mmqqsfvkoym3j" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\owner_command.rb" />
           <File Id="F9l6cthsnngp9rtoqjwzd5ndit" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\pristine_command.rb" />
+          <File Id="Fcxd2zn95pzehf7wy6kxd44igf" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\push_command.rb" />
           <File Id="F73j53klx9bo5dvho1x9ko86kk" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\query_command.rb" />
           <File Id="F3yh26engrcn2sjutah8j2ln0d" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\rdoc_command.rb" />
           <File Id="Ff4ve4bkc6sx7ge00nr5qnmkim" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\search_command.rb" />
           <File Id="F815st4llsq0654xqmmf7upfmq" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\server_command.rb" />
+          <File Id="Fdtgouf9rl7kx4m0tjuu2b6qnt" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\setup_command.rb" />
           <File Id="Fezgchxksyt6cs782xd3v9jh5c" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\sources_command.rb" />
           <File Id="Fc8zqsmh81feoiitqwzl9prhjm" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\specification_command.rb" />
           <File Id="F2xppritlqdjkb8ldf1eugxftj" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\commands\stale_command.rb" />
@@ -480,18 +626,21 @@
         <File Id="Fag7mnk5s7befg8vjzwnkdun5i" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\dependency_installer.rb" />
         <File Id="F13ym97sm26hs6tk2e7e26ro4m" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\dependency_list.rb" />
         <File Id="Fd85w0rkm6iopcfncvw1yi6swc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\doc_manager.rb" />
+        <File Id="Fhdmd6yta66guehg0nswpng1w" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\errors.rb" />
         <File Id="F7a3wkqdnk6qvr5eylhfcfdtei" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\exceptions.rb" />
         <File Id="Faulglkdas67cis2hm87mmi7vk" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\ext.rb" />
         <File Id="F7igo9rrthkko3y3xhl9thouba" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\format.rb" />
         <File Id="F5lzd1freu0j2awmecpu6k672s" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\gem_openssl.rb" />
         <File Id="F4c66r3qbpp4mingodq6ro0y2t" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\gem_path_searcher.rb" />
         <File Id="Fc9zwk9xcm4b67ja6m1hfxllyc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\gem_runner.rb" />
+        <File Id="F6x031aoezok161avi4uhiwhgu" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\gemcutter_utilities.rb" />
         <File Id="F9g50f91hynbrinh1jgauews8q" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\indexer.rb" />
         <File Id="F22apixgr4kasiqbpplz67ewb3" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\install_update_options.rb" />
         <File Id="F8ipnjhfogstmjldx455im0svo" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\installer.rb" />
         <File Id="F7yukvugwe2rcknt25xkpf87rw" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\local_remote_options.rb" />
         <File Id="Ff5ib714se0g3g8srj91q9dsbk" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\old_format.rb" />
         <File Id="Fd8wqmjjxo5o4ghd2egtbmem9j" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\package.rb" />
+        <File Id="Fil529s5zm4ftvgqtm7qoklbc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\package_task.rb" />
         <File Id="F6regqlsouc7uj9gm3zpsll2k5" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\platform.rb" />
         <File Id="Fc3v1nhe66nlmg0pgqlhvz5mjz" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\remote_fetcher.rb" />
         <File Id="F6sz45p4sau8zz1wcdyzscchaq" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\require_paths_builder.rb" />
@@ -504,6 +653,7 @@
         <File Id="F54w0w2n4vzukao3k2s6mjxp4c" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\spec_fetcher.rb" />
         <File Id="F8w0tvfnulfgh4i0psla0ayrjm" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\specification.rb" />
         <File Id="F32sxja8j1le6mg4sxcw27boac" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\test_utilities.rb" />
+        <File Id="F26kcqprdscfbe73ssnq8zr1sn" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\text.rb" />
         <File Id="F9fwp89azo9bzjkdc7v8cgosaq" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\uninstaller.rb" />
         <File Id="F9z9pvwowxfnpj2baoixssm1an" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\user_interaction.rb" />
         <File Id="F20xd9m8smisph4ofddyrt0r3x" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rubygems\validator.rb" />
@@ -520,6 +670,24 @@
         <File Id="Fbfcbwuk5jkt9i5qqcp20m8fc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\shell\process-controller.rb" />
         <File Id="F61n5z87kc2h7dlfp4le00we8c" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\shell\system-command.rb" />
         <File Id="F8tv9j35f86bhwqtfet35lhyyp" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\shell\version.rb" />
+      </Component>
+    </Directory>
+    <Directory Id="D2j5jkizq1hcptuqgmg52mekbh" Name="syck">
+      <Component Id="C2j5jkizq1hcptuqgmg52mekbh" DiskId="1" Guid="bb5a09d1-f6b9-4f48-9d3c-0e36aa2ef5e3">
+        <File Id="Fcriwn1ef0jg7ydfw8ton3xtl2" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\baseemitter.rb" />
+        <File Id="Fbt7t4meen6kscwvwx5ujycbzl" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\basenode.rb" />
+        <File Id="Fdwpcouj0w6nrmjgd803htmafu" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\constants.rb" />
+        <File Id="F3e2tkrcpx8kglrhg2bgckilq4" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\encoding.rb" />
+        <File Id="F12lxtkn9u200bbzx62z03i0p3" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\error.rb" />
+        <File Id="Fe5l5tcecaqhfzhqj0jenonuam" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\loader.rb" />
+        <File Id="Fchzg4qrdd625wydi7vh2nbkp7" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\rubytypes.rb" />
+        <File Id="Fah2oj4xh3p7u2upcc3yqkvsz5" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\stream.rb" />
+        <File Id="F5boa6uwzqdqc3uhkmcs1jjw9l" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\stringio.rb" />
+        <File Id="Fdw1fv7vrfr4knge02ahfdydzb" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\syck.rb" />
+        <File Id="F4vy31uxmjj0u8ya47j0fkrrbo" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\tag.rb" />
+        <File Id="Fce1iu31r0uhi8k86itowv00dy" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\types.rb" />
+        <File Id="Fecxtokzttjt8ay8i68942x4o1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\yamlnode.rb" />
+        <File Id="F53vamavlm9h1x465djrccoiwr" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck\ypath.rb" />
       </Component>
     </Directory>
     <Directory Id="D2p40uq7y2n8b8s53qoywwisb4" Name="test">
@@ -639,9 +807,11 @@
       <File Id="F1bqt23w088180hzraojs5vjlv" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\debug.rb" />
       <File Id="Famjw07d4judn93xgmx3134npr" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\delegate.rb" />
       <File Id="F4t5ih0b6d3o1ecezgmutehfcx" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\digest.rb" />
+      <File Id="F5jeqtf93l0fqgxcy2oxfejqdv" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\dl.rb" />
       <File Id="Ff57sx0g175u2yxp1znqckynr0" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\drb.rb" />
       <File Id="F7dz42sdc0ql55t1rw8ccdsvim" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\e2mmap.rb" />
       <File Id="Fahud7vw4ode4p38wxcihykr2i" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\erb.rb" />
+      <File Id="F9w91klf61g20dppn4rl2ordu8" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\fiddle.rb" />
       <File Id="F64xrpwfbqtyme6skzds5dll8c" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\fileutils.rb" />
       <File Id="F2c3x63pahk4n1m3nm91f2djan" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\find.rb" />
       <File Id="Fc4207exfp35d7gpsv6ptg1po5" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\forwardable.rb" />
@@ -671,6 +841,7 @@
       <File Id="F7deuao6n1dj7fkonhtyt6ck4i" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\profile.rb" />
       <File Id="Fe3x83hwifeb34uj8ue7kpwfzt" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\profiler.rb" />
       <File Id="Fe1gmj46x9cqzsaybfzvttbfzc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\pstore.rb" />
+      <File Id="Faj87bqxtff7zixgxy9lucrelw" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\psych.rb" />
       <File Id="F8ofwdjfagf24rhrdn47094w8l" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rake.rb" />
       <File Id="F489oxshpyohxvv2w2f64hawn8" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rational.rb" />
       <File Id="Fdtyiwkbxfc6senns5oscaeltf" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\rational18.rb" />
@@ -686,6 +857,8 @@
       <File Id="F1wg578ejyrl6jo0onapqzoke2" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\shell.rb" />
       <File Id="Fcwje99nq8plvtxy9mr9ihrpl1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\shellwords.rb" />
       <File Id="Fe55zit4r0nq17a491yp5vi6ta" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\singleton.rb" />
+      <File Id="F2alswvucs196tpq33zki8vje" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\socket.rb" />
+      <File Id="F75hcwlp1zw3pjugw5ri32zi0n" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\syck.rb" />
       <File Id="Fd2iyd96qqfnh2xm7aqmll6t8i" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\sync.rb" />
       <File Id="F4vsl1xnogsctkypl861qghfk5" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\tempfile.rb" />
       <File Id="F6s11f6ji7xi42rlt9qnvp9yo7" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\thread.rb" />
@@ -700,128 +873,9 @@
       <File Id="F5mh00o3f32al3j30ejx85xcpf" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\uri.rb" />
       <File Id="F53gtwwezfog2uzhqghcqafni0" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\weakref.rb" />
       <File Id="F6yffyrm2war7dx3d0qf13bl2x" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\webrick.rb" />
+      <File Id="F6ylr0dw1ndh0rxdhu1o86017t" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\win32ole.rb" />
       <File Id="F8hooma5h2snjryigunftmcfzd" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\yaml.rb" />
     </Component>
-  </Directory>
-  <Directory Id="D7i0j04t0wvuleo95pnyyqzqav" Name="gems">
-    <Directory Id="D8vymlmuttbdn55e2bqvsm4zxw" Name="1.9.1">
-      <Directory Id="Dbb4sbuh0xzeh9ye2r5o3rl4x9" Name="rbconfig">
-        <Component Id="Cbb4sbuh0xzeh9ye2r5o3rl4x9" DiskId="1" Guid="ff552b49-8148-4fc9-9f30-38ab69e5d09d">
-          <File Id="Fctz282zm6rk9u5azz9k9cuawy" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rbconfig\datadir.rb" />
-        </Component>
-      </Directory>
-      <Directory Id="D4m3fx3eoowlf8gucae9y3zv9w" Name="rubygems">
-        <Directory Id="Da0mlsr7r3nohce10nbsqe6ica" Name="commands">
-          <Component Id="Ca0mlsr7r3nohce10nbsqe6ica" DiskId="1" Guid="423b0a62-bdeb-4e8c-9f93-91abea4f1709">
-            <File Id="F1bk9zdz52vvammbrekhrbk1ud" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\build_command.rb" />
-            <File Id="Fao1h4qtp1meirxtqc97dfmaio" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\cert_command.rb" />
-            <File Id="F6ixz4ccg6i6mfi7e6cbik6abm" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\check_command.rb" />
-            <File Id="Fb6pl4gwz2h50ipob9j5d900sb" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\cleanup_command.rb" />
-            <File Id="F46yilyaokianop7y5xbho7jxg" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\contents_command.rb" />
-            <File Id="F651g0vpppurd6aafpnad770gc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\dependency_command.rb" />
-            <File Id="Fa03ykxr3nhcgegi2y3mtxog8x" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\environment_command.rb" />
-            <File Id="F1g09jahbjypccg05eucyw4idx" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\fetch_command.rb" />
-            <File Id="F88pmuvauude2hpqzmp3c7btrm" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\generate_index_command.rb" />
-            <File Id="Fdl52xt4dujyceyd98f3rg4mvz" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\help_command.rb" />
-            <File Id="Fcveazkma9nybgju4zbd9ewfp6" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\install_command.rb" />
-            <File Id="F9vffdbxtnxarcj23h0yt3sbvk" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\list_command.rb" />
-            <File Id="F8zeydftftiyjadebndlv1pz5y" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\lock_command.rb" />
-            <File Id="Fdi1v2alay8zwobeeqa311u0gx" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\mirror_command.rb" />
-            <File Id="Fckfq4gicsxhgqub2f6smb2l4q" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\outdated_command.rb" />
-            <File Id="Fca2nff6l9wrig0brh0y26vqx1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\owner_command.rb" />
-            <File Id="F8md6kgiivsqbfqzt51zg5evod" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\pristine_command.rb" />
-            <File Id="F5b2zsn5a4jllkp20qa092v8bb" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\push_command.rb" />
-            <File Id="Faekzqqecpw2clddovnuv2va2" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\query_command.rb" />
-            <File Id="F80oxo2te2ewmgqyln03g2wlx6" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\rdoc_command.rb" />
-            <File Id="F2zhwp63juw8sa0eher53b0ufk" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\search_command.rb" />
-            <File Id="F9nd71ojhaf81q5x8r5pyepg4v" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\server_command.rb" />
-            <File Id="Ff29ggqbcy6c7fujke2tt1u4zo" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\setup_command.rb" />
-            <File Id="F1cafaelw0jzdsf7oibrq4a31q" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\sources_command.rb" />
-            <File Id="F6hd6kmsjy7py49rm32ai52rg5" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\specification_command.rb" />
-            <File Id="F8njgsnnrhm68aarvxkkxe05v" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\stale_command.rb" />
-            <File Id="F1eidzwh2ea4fq6b3d0lm6ozqr" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\uninstall_command.rb" />
-            <File Id="Fbv3my025zl39usjkipa7rz9ct" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\unpack_command.rb" />
-            <File Id="F1vyfa5rzv3h0myxi1wewm88br" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\update_command.rb" />
-            <File Id="F9d8io7xx66k1q3g7doh7vt4g3" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\commands\which_command.rb" />
-          </Component>
-        </Directory>
-        <Directory Id="Datidv6pl3fzcw2qvc0dvj4pkq" Name="ext">
-          <Component Id="Catidv6pl3fzcw2qvc0dvj4pkq" DiskId="1" Guid="664ccf78-94c6-46b2-a34f-d43fb03599a4">
-            <File Id="Fee0xi42ysdjsbm1nyuf62vm83" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\ext\builder.rb" />
-            <File Id="Fedqq0gnv0pj7z5ux16tezhlxl" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\ext\configure_builder.rb" />
-            <File Id="F6o2dpp24fi7dkooe2kuefzsj8" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\ext\ext_conf_builder.rb" />
-            <File Id="F9q79bawl0429zzf56x7puwn0d" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\ext\rake_builder.rb" />
-          </Component>
-        </Directory>
-        <Directory Id="Dcnh6vky79tomy20l624t9h6nr" Name="package">
-          <Directory Id="D3vm9nks6rwdhcdw6j8vcawnwu" Name="tar_reader">
-            <Component Id="C3vm9nks6rwdhcdw6j8vcawnwu" DiskId="1" Guid="1c7152c1-8d1b-45d3-94f0-a231f80ee0b1">
-              <File Id="F3rrx4tqr0po1b8aq6r9n00b3h" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package\tar_reader\entry.rb" />
-            </Component>
-          </Directory>
-          <Component Id="Ccnh6vky79tomy20l624t9h6nr" DiskId="1" Guid="3ebf7731-383b-4b36-a6d8-ad3a7cea637a">
-            <File Id="F5qwp2ndreyrztiym6zmmgwvow" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package\f_sync_dir.rb" />
-            <File Id="Fcsjgjii5cbqwsqk01lqytd2bw" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package\tar_header.rb" />
-            <File Id="F68lyfctxdcct10n5f0azvlfqu" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package\tar_input.rb" />
-            <File Id="Fcwa4a5hity7cg25tapokoqroa" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package\tar_output.rb" />
-            <File Id="Fafdu5ebx6hxygwwqh5p4mxnjy" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package\tar_reader.rb" />
-            <File Id="F8yctolmwzjd0hwqo3ts4uulzt" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package\tar_writer.rb" />
-          </Component>
-        </Directory>
-        <Component Id="C4m3fx3eoowlf8gucae9y3zv9w" DiskId="1" Guid="19e08aa6-5b44-419f-9845-22c8d6a7ce23">
-          <File Id="F7payk2grq2ewp4nq29t5y9hr0" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\builder.rb" />
-          <File Id="F35swmhyc46t23jxaii61vwulz" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\command.rb" />
-          <File Id="F3hdyjf428b9mrc52n0tfk07z9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\command_manager.rb" />
-          <File Id="Fd4aqihswbj1nhktyxfpr7jgqx" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\config_file.rb" />
-          <File Id="F7nm8b08517ow9brx4vme7aotf" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\custom_require.rb" />
-          <File Id="F5l6rsny7ln74vxlfihxf5842r" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\defaults.rb" />
-          <File Id="F9pbuqf7k21u39tzrmbp9crsmp" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\dependency.rb" />
-          <File Id="Fdv1h9cdupngp0uv3da9kosd66" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\dependency_installer.rb" />
-          <File Id="Fai5j29y8ggtxwfs11lpozxfov" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\dependency_list.rb" />
-          <File Id="F4xxedw3m6oacfv5iecw48ekz5" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\doc_manager.rb" />
-          <File Id="Fbi2eq3nkm5b9z38o0kjlc0eey" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\errors.rb" />
-          <File Id="F8rgastn9ng2wkwbudsgk9sfh9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\exceptions.rb" />
-          <File Id="F9zhd56yi205eneckddpve2ex8" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\ext.rb" />
-          <File Id="F2ddemfbvy78whypyq3zcjfaz7" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\format.rb" />
-          <File Id="F7zrcwwuyqw2ynh34nuhs4mwcp" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\gem_openssl.rb" />
-          <File Id="F9do94y4l6t8l6xw0jsi41zqwe" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\gem_path_searcher.rb" />
-          <File Id="F6lyn9kyc72o0ivvcdr60c5fjs" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\gem_runner.rb" />
-          <File Id="F4nc4lwyixqmdiq6l3kbvkeyvy" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\gemcutter_utilities.rb" />
-          <File Id="F91039zyb47w6g729625a64txo" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\indexer.rb" />
-          <File Id="F6j4fkf82161kfy5anzjtjdoby" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\install_update_options.rb" />
-          <File Id="Fbd06j2ycqwih12vqjbv8te5f3" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\installer.rb" />
-          <File Id="F5vnk02936150by92xjwc7k3lo" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\local_remote_options.rb" />
-          <File Id="F6dsnue6zp989ay3px6id8zd5w" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\old_format.rb" />
-          <File Id="F5ma3pu7spskstr6knvx77vgg1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package.rb" />
-          <File Id="Fahqoio8v08kdxabunbrlbb4zm" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\package_task.rb" />
-          <File Id="Fedz1a6s8sw72sdzzsn9nyt67p" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\platform.rb" />
-          <File Id="F1ovla50f6d8jl54qj72ogva0i" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\remote_fetcher.rb" />
-          <File Id="Fcdtw28f5w8q38mkuibvwbu6hm" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\require_paths_builder.rb" />
-          <File Id="Fbni1uqet69sbpeldgyimocj48" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\requirement.rb" />
-          <File Id="Fczavahkmhk9e72vhffceswqd6" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\security.rb" />
-          <File Id="F22eiehyk1myguzj0bpb4kdznl" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\server.rb" />
-          <File Id="Fbmtohzmf87vgnj4ly0da92l3e" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\source_index.rb" />
-          <File Id="F8rjryswfz0gvp4x05lkrey8jd" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\source_info_cache.rb" />
-          <File Id="Fere5w418ot1dq1nbcdzzz9xnp" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\source_info_cache_entry.rb" />
-          <File Id="F4imf5ipn7b6dh9b6ktw2kwrzi" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\spec_fetcher.rb" />
-          <File Id="Fdvdi25n4ay9y27zndpcafxswx" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\specification.rb" />
-          <File Id="Fc86vesnz7wai1ioccv3vlyj2k" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\test_utilities.rb" />
-          <File Id="F7pv83rl78jmyl1gnu249rsbrw" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\text.rb" />
-          <File Id="F4nkpo22xpxm7eyhhfqsaawm30" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\uninstaller.rb" />
-          <File Id="Faq2wflmud77447oy8ceu6zudc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\user_interaction.rb" />
-          <File Id="F2ood0fn9p73b3u9n9kctmh2ih" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\validator.rb" />
-          <File Id="F1qnd0d8mvclnggwde6j7az150" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\version.rb" />
-          <File Id="F2kmv47llcmo7q6arcsdziy9hu" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems\version_option.rb" />
-        </Component>
-      </Directory>
-      <Component Id="C8vymlmuttbdn55e2bqvsm4zxw" DiskId="1" Guid="1491dcea-b5dc-4de6-ae02-28d8fbd4dd68">
-        <File Id="F36rcu7rxbz2j5drj1ytm8sxvq" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\gauntlet_rubygems.rb" />
-        <File Id="F9taycor1br6ttkk0detb2lo2u" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rbreadline.rb" />
-        <File Id="F91j0vnmefiuijpmck246363p9" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\readline.rb" />
-        <File Id="F43mdvixij0ihkctbx593u448u" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\rubygems.rb" />
-        <File Id="F5s5fk37wl0svo8vaw17m906tc" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\gems\1.9.1\ubygems.rb" />
-      </Component>
-    </Directory>
   </Directory>
   <Directory Id="D5unavpdpzangrj4d82fxw3o50" Name="site_ruby">
     <Directory Id="D6jze7if41302nmcjaqw2q9gww" Name="1.9.1">
@@ -831,7 +885,4 @@
       </Component>
     </Directory>
   </Directory>
-  <Component Id="C9663k8ac4yjkqnfuvibs9cumf" DiskId="1" Guid="61678e92-a8da-4f5a-bdc6-c0002a304507">
-    <File Id="Fbfvtfk4i39n26ztlcot9ved0l" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\Readme.txt" />
-  </Component>
 </Include>
