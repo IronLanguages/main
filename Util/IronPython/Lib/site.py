@@ -12,20 +12,3 @@
 #
 #
 #####################################################################################
-
-
-import sys
-import clr
-from System.IO import Path, Directory, FileInfo
-
-dir = Path.Combine(sys.prefix, 'DLLs')
-if Directory.Exists(dir):
-    sys.path.append(dir)
-    files = Directory.GetFiles(dir)
-    for file in files:
-        if file.lower().endswith('.dll'):
-            try:
-                clr.AddReference(FileInfo(file).Name)
-            except:
-                pass
-
