@@ -53,8 +53,8 @@ describe "Integer#gcd" do
     end
 
     it "raises an ArgumentError unless the argument is an Integer" do
-      lambda { 39.gcd(3.8) }.should raise_error(ArgumentError)
-      lambda { 45872.gcd([]) }.should raise_error(ArgumentError)
+      lambda { 39.gcd(3.8) }.should raise_error(TypeError)
+      lambda { 45872.gcd([]) }.should raise_error(TypeError)
     end  
   end
 end

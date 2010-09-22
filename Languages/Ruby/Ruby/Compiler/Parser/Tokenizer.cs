@@ -2714,7 +2714,11 @@ namespace IronRuby.Compiler {
             content.Append((char)c);
         }
 
-        private static string/*!*/ UnicodeCodePointToString(int codepoint) {
+        /// <summary>
+        /// Converts all codepoints in range [0, 0x10ffff] to a string.
+        /// Undefined for codepoint greater than 0x10ffff.
+        /// </summary>
+        public static string/*!*/ UnicodeCodePointToString(int codepoint) {
             if (codepoint < 0x10000) {
                 // code-points [0xd800 .. 0xdffff] are not treated as invalid
                 return new String((char)codepoint, 1);

@@ -73,7 +73,7 @@
     <Compile Include="Runtime\AssignmentTests.cs" />
     <Compile Include="Runtime\BacktraceTests.cs" />
     <Compile Include="Runtime\BoolAndConditionalTests.cs" />
-    <Compile Include="Runtime\BigIntegerTests.cs" />
+    <Compile Include="Runtime\IntegerTests.cs" />
     <Compile Include="Runtime\CloningTests.cs" />
     <Compile Include="Runtime\ClrTests.cs" />
     <Compile Include="Runtime\ArrayTests.cs" />

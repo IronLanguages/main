@@ -199,26 +199,26 @@ namespace IronRuby.Tests {
             y = MS("α", RubyEncoding.UTF8);
             Assert(x.CompareTo(y) == 0);
 
-            // encodings orderd by code-page:
-            Assert(Math.Sign(RubyEncoding.UTF8.CompareTo(SJIS)) == 1);
+            // encoding ordering:
+            Assert(Math.Sign(RubyEncoding.UTF8.CompareTo(SJIS)) == -1);
 
             // difference in encodings is ignored if both strings are ascii:
             x = MS("a", RubyEncoding.UTF8);
             y = MS(new byte[] { (byte)'b' }, SJIS);
             Assert(Math.Sign(x.CompareTo(y)) == -1);
 
-            // difference in encodings is ignored if both strings are ascii:
+            // different encodings => compare binary data:
             x = MS("α", RubyEncoding.UTF8);
             y = MS("α", SJIS);
-            Assert(Math.Sign(x.CompareTo(y)) == Math.Sign(RubyEncoding.UTF8.CompareTo(SJIS)));
+            Assert(Math.Sign(x.CompareTo(y)) == +1);
 
             x = MS(new byte[] { (byte)'a' }, RubyEncoding.UTF8);
             y = MS("α", SJIS);
-            Assert(Math.Sign(x.CompareTo(y)) == Math.Sign(RubyEncoding.UTF8.CompareTo(SJIS)));
+            Assert(Math.Sign(x.CompareTo(y)) == -1);
 
             x = MS("α", RubyEncoding.UTF8);
             y = MS("a", SJIS);
-            Assert(Math.Sign(x.CompareTo(y)) == Math.Sign(RubyEncoding.UTF8.CompareTo(SJIS)));
+            Assert(Math.Sign(x.CompareTo(y)) == +1);
         }
 
         [Options(NoRuntime = true)]

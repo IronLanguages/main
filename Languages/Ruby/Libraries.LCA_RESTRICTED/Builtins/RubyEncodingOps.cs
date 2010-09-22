@@ -43,7 +43,8 @@ namespace IronRuby.Builtins {
 
         #region Constants
 
-        [RubyConstant]
+        [RubyConstant("US_ASCII")]
+        [RubyConstant("ASCII")]
         public static readonly RubyEncoding US_ASCII = RubyEncoding.Ascii; 
     
         [RubyConstant]

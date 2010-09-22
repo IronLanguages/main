@@ -543,8 +543,8 @@ namespace Microsoft.Scripting.Math {
             return Value.Sign > 0;
         }
 
-        private bool IsOdd() {
-            return !Value.IsEven;
+        public bool IsEven {
+            get { return Value.IsEven; }
         }
 
         public bool IsPowerOfTwo {

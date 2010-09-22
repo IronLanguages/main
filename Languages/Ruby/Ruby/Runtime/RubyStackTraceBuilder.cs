@@ -230,10 +230,13 @@ namespace IronRuby.Runtime {
 
             Type type = method.DeclaringType;
             if (type != null) {
-                if (type.Assembly == typeof(RubyOps).Assembly) {
+                if (type.Assembly == typeof(RubyOps).Assembly || 
+                    type.Namespace.StartsWith("IronRuby.StandardLibrary", StringComparison.Ordinal) ||
+                    type.Namespace.StartsWith("IronRuby.Builtins", StringComparison.Ordinal)) {
                     return false;
-                }
+                }                
             }
+
             // TODO: check loaded assemblies?
             return true;
         }

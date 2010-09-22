@@ -14,10 +14,12 @@
  * ***************************************************************************/
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using IronRuby.Compiler;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
 
@@ -85,96 +87,77 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region numerator/ord, denominator, to_r, rationalize
+
+        [RubyMethod("numerator")]
+        [RubyMethod("ord")]
+        public static object/*!*/ Numerator(object/*!*/ self) {
+            return self;
+        }
+
+        [RubyMethod("denominator")]
+        public static object/*!*/ Denominator(object/*!*/ self) {
+            return ClrInteger.One;
+        }
+
+        [RubyMethod("to_r")]
+        [RubyMethod("rationalize")]
+        public static object ToRational(CallSiteStorage<Func<CallSite, object, object, object, object>>/*!*/ toRational, RubyScope/*!*/ scope, object/*!*/ self) {
+           // TODO: reimplement Rational
+            return KernelOps.ToRational(toRational, scope, self, self, ClrInteger.One);
+        }
+
+        #endregion
+
         #region chr
 
         [RubyMethod("chr")]
-        public static MutableString/*!*/ ToChr(RubyContext/*!*/ context, [DefaultProtocol]int self) {
-            if (self < 0 || self > 255) {
+        public static MutableString/*!*/ ToChr(ConversionStorage<MutableString>/*!*/ toStr, [DefaultProtocol]int self, 
+            [DefaultParameterValue(null)]object encoding) {
+
+            if (self < 0) {
                 throw RubyExceptions.CreateRangeError("{0} out of char range", self);
             }
-            return MutableString.CreateBinary(new byte[] { (byte)self });
+
+            RubyEncoding enc;
+            RubyEncoding resultEncoding;
+            if (encoding != null) {
+                resultEncoding = enc = Protocols.ConvertToEncoding(toStr, encoding);
+            } else {
+                enc = toStr.Context.DefaultInternalEncoding ?? RubyEncoding.Ascii;
+                resultEncoding = (self <= 0x7f) ? RubyEncoding.Ascii : (self <= 0xff) ? RubyEncoding.Binary : enc;
+            }
+
+            switch (enc.CodePage) {
+                case RubyEncoding.CodePageAscii:
+                case RubyEncoding.CodePageBinary:
+                    if (self > 0xff) {
+                        throw RubyExceptions.CreateRangeError("{0} out of char range", self);
+                    }
+                    return MutableString.CreateBinary(new byte[] { (byte)self }, resultEncoding);
+
+                case RubyEncoding.CodePageUTF7:
+                case RubyEncoding.CodePageUTF8:
+                case RubyEncoding.CodePageUTF16BE:
+                case RubyEncoding.CodePageUTF16LE:
+                case RubyEncoding.CodePageUTF32BE:
+                case RubyEncoding.CodePageUTF32LE:
+                    if (self > 0x10ffff) {
+                        throw RubyExceptions.CreateRangeError("{0} is not a valid Unicode code point (0..0x10ffff)", self);
+                    }
+                    return MutableString.CreateMutable(Tokenizer.UnicodeCodePointToString(self), resultEncoding);
+
+                default:
+                    if (self <= 0xff) {
+                        return MutableString.CreateBinary(new byte[] { (byte)self }, resultEncoding);
+                    }
+                    throw new NotSupportedException(RubyExceptions.FormatMessage("Encoding {0} code points not supported", enc));
+            }
         }
 
         #endregion
 
-        #region downto
-
-        /// <summary>
-        /// Iterates block, passing decreasing values from self down to and including other, where both self and other are Fixnum.
-        /// </summary>
-        /// <returns>self</returns>
-        /// <example>
-        /// 5.downto(1) { |n| print n, ".. " }
-        ///   print "  Liftoff!\n"
-        /// produces: 
-        /// 5.. 4.. 3.. 2.. 1..   Liftoff!
-        /// </example>
-        /// <remarks>
-        /// Since both self and other are Fixnum then this algorithm doesn't need to worry about overflowing into Bignum.
-        /// </remarks>
-        [RubyMethod("downto")]
-        public static object DownTo(BlockParam block, int self, int other) {
-            if (self >= other && block == null) {
-                throw RubyExceptions.NoBlockGiven();
-            }
-
-            int i = self;
-            while (i >= other) {
-                object result;
-                if (block.Yield(i, out result)) {
-                    return result;
-                }
-                i--;
-            }
-            return self;
-        }
-
-        /// <summary>
-        /// Iterates block, passing decreasing values from self down to and including other, where other is not Fixnum (probably Bignum or Float).
-        /// </summary>
-        /// <returns>self</returns>
-        /// <remarks>
-        /// Dynamically invokes "-" operator to find next item down.
-        /// Dynamically invokes "&lt;" operator and takes the negation to see if we have reached the bottom.
-        /// This approach automatically deals with Floats and overflow/underflow between Fixnum and Bignum.
-        /// </remarks>
-        [RubyMethod("downto")]
-        public static object DownTo(BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ subtractStorage,
-            BlockParam block, object/*!*/ self, object other) {
-            object i = self;
-            object compare = null;
-
-            var lessThan = lessThanStorage.GetCallSite("<");
-            while (RubyOps.IsFalse(compare)) {
-                // Rather than test i >= other we test !(i < other)
-                compare = lessThan.Target(lessThan, i, other);
-
-                // If the comparison failed (i.e. returned null) then we throw an error.
-                if (compare == null) {
-                    throw RubyExceptions.MakeComparisonError(lessThanStorage.Context, i, other);
-                }
-
-                // If the comparison worked but returned false then we 
-                if (RubyOps.IsFalse(compare)) {
-                    object result;
-                    if (block == null) {
-                        throw RubyExceptions.NoBlockGiven();
-                    }
-
-                    if (block.Yield(i, out result)) {
-                        return result;
-                    }
-
-                    var subtract = subtractStorage.GetCallSite("-");
-                    i = subtract.Target(subtract, i, 1);
-                }
-            }
-            return self;
-        }
-
-        #endregion
-
-        #region integer?
+        #region integer?, odd?, even?
 
         /// <summary>
         /// Always returns true.
@@ -185,9 +168,29 @@ namespace IronRuby.Builtins {
             return true;
         }
 
+        [RubyMethod("odd?")]
+        public static bool IsOdd(int self) {
+            return (self & 1) != 0;
+        }
+
+        [RubyMethod("odd?")]
+        public static bool IsOdd(BigInteger/*!*/ self) {
+            return !self.IsEven;
+        }
+
+        [RubyMethod("even?")]
+        public static bool IsEven(int self) {
+            return (self & 1) == 0;
+        }
+
+        [RubyMethod("even?")]
+        public static bool IsEven(BigInteger/*!*/ self) {
+            return self.IsEven;
+        }
+
         #endregion
 
-        #region next, succ
+        #region next, succ, pred
 
         /// <summary>
         /// Returns the Integer equal to self + 1, where self is Fixnum.
@@ -215,6 +218,17 @@ namespace IronRuby.Builtins {
             return site.Target(site, self, ClrInteger.One);
         }
 
+        [RubyMethod("pred")]
+        public static object Pred(int self) {
+            return ClrInteger.Subtract(self, 1);
+        }
+
+        [RubyMethod("pred")]
+        public static object Pred(BinaryOpStorage/*!*/ subStorage, object/*!*/ self) {
+            var site = subStorage.GetCallSite("-");
+            return site.Target(site, self, ClrInteger.One);
+        }
+
         #endregion
 
         #region times
@@ -223,19 +237,12 @@ namespace IronRuby.Builtins {
         /// Iterates block self times, passing in values from zero to self - 1, where self is Fixnum.
         /// </summary>
         /// <returns>self</returns>
-        /// <example>
-        ///  5.times do |i|
-        ///    print i, " "
-        ///  end
-        /// produces: 
-        ///  0 1 2 3 4
-        /// </example>
         [RubyMethodAttribute("times")]
-        public static object Times(BlockParam block, int self) {
-            if (self > 0 && block == null) {
-                throw RubyExceptions.NoBlockGiven();
-            }
+        public static object Times(BlockParam/*!*/ block, int self) {
+            return (block != null) ? TimesImpl(block, self) : new Enumerator((_, innerBlock) => TimesImpl(innerBlock, self));
+        }
 
+        private static object TimesImpl(BlockParam/*!*/ block, int self) {
             int i = 0;
             while (i < self) {
                 object result;
@@ -258,13 +265,14 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethodAttribute("times")]
         public static object Times(BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ addStorage, BlockParam block, object/*!*/ self) {
+            return (block != null) ? TimesImpl(lessThanStorage, addStorage, block, self) : 
+                new Enumerator((_, innerBlock) => TimesImpl(lessThanStorage, addStorage, innerBlock, self));
+        }
+
+        public static object TimesImpl(BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ addStorage, BlockParam/*!*/ block, object/*!*/ self) {
             object i = 0;
             var lessThan = lessThanStorage.GetCallSite("<");
             while (RubyOps.IsTrue(lessThan.Target(lessThan, i, self))) {
-                if (block == null) {
-                    throw RubyExceptions.NoBlockGiven();
-                }
-
                 object result;
                 if (block.Yield(i, out result)) {
                     return result;
@@ -294,10 +302,10 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("upto")]
         public static object UpTo(BlockParam block, int self, int other) {
-            if (block == null && self <= other) {
-                throw RubyExceptions.NoBlockGiven();
-            }
+            return (block != null) ? UpToImpl(block, self, other) : new Enumerator((_, innerBlock) => UpToImpl(innerBlock, self, other));
+        }
 
+        private static object UpToImpl(BlockParam block, int self, int other) {
             int i = self;
             while (i <= other) {
                 object result;
@@ -321,6 +329,12 @@ namespace IronRuby.Builtins {
         [RubyMethod("upto")]
         public static object UpTo(BinaryOpStorage/*!*/ greaterThanStorage, BinaryOpStorage/*!*/ addStorage, 
             BlockParam block, object/*!*/ self, object other) {
+            return (block != null) ? UpToImpl(greaterThanStorage, addStorage, block, self, other) :
+                new Enumerator((_, innerBlock) => UpToImpl(greaterThanStorage, addStorage, innerBlock, self, other));
+        }
+
+        private static object UpToImpl(BinaryOpStorage/*!*/ greaterThanStorage, BinaryOpStorage/*!*/ addStorage,
+            BlockParam/*!*/ block, object/*!*/ self, object other) {
 
             object i = self;
             object compare = null;
@@ -336,10 +350,6 @@ namespace IronRuby.Builtins {
 
                 // If the comparison worked but returned false then we carry on
                 if (RubyOps.IsFalse(compare)) {
-                    if (block == null) {
-                        throw RubyExceptions.NoBlockGiven();
-                    }
-
                     object result;
                     if (block.Yield(i, out result)) {
                         return result;
@@ -350,6 +360,170 @@ namespace IronRuby.Builtins {
                 }
             }
             return self;
+        }
+
+        #endregion
+
+        #region downto
+
+        /// <summary>
+        /// Iterates block, passing decreasing values from self down to and including other, where both self and other are Fixnum.
+        /// </summary>
+        /// <returns>self</returns>
+        /// <example>
+        /// 5.downto(1) { |n| print n, ".. " }
+        ///   print "  Liftoff!\n"
+        /// produces: 
+        /// 5.. 4.. 3.. 2.. 1..   Liftoff!
+        /// </example>
+        /// <remarks>
+        /// Since both self and other are Fixnum then this algorithm doesn't need to worry about overflowing into Bignum.
+        /// </remarks>
+        [RubyMethod("downto")]
+        public static object DownTo(BlockParam block, int self, int other) {
+            return (block != null) ? DownToImpl(block, self, other) : new Enumerator((_, innerBlock) => DownToImpl(innerBlock, self, other));
+        }
+
+        private static object DownToImpl(BlockParam/*!*/ block, int self, int other) {
+            int i = self;
+            while (i >= other) {
+                object result;
+                if (block.Yield(i, out result)) {
+                    return result;
+                }
+                i--;
+            }
+            return self;
+        }
+
+        /// <summary>
+        /// Iterates block, passing decreasing values from self down to and including other, where other is not Fixnum (probably Bignum or Float).
+        /// </summary>
+        /// <returns>self</returns>
+        /// <remarks>
+        /// Dynamically invokes "-" operator to find next item down.
+        /// Dynamically invokes "&lt;" operator and takes the negation to see if we have reached the bottom.
+        /// This approach automatically deals with Floats and overflow/underflow between Fixnum and Bignum.
+        /// </remarks>
+        [RubyMethod("downto")]
+        public static object DownTo(BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ subtractStorage,
+            BlockParam block, object/*!*/ self, object other) {
+
+            return (block != null) ? DownToImpl(lessThanStorage, subtractStorage, block, self, other) :
+                new Enumerator((_, innerBlock) => DownToImpl(lessThanStorage, subtractStorage, innerBlock, self, other));
+        }
+
+        private static object DownToImpl(BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ subtractStorage,
+            BlockParam block, object/*!*/ self, object other) {
+            object i = self;
+            object compare = null;
+
+            var lessThan = lessThanStorage.GetCallSite("<");
+            while (RubyOps.IsFalse(compare)) {
+                // Rather than test i >= other we test !(i < other)
+                compare = lessThan.Target(lessThan, i, other);
+
+                // If the comparison failed (i.e. returned null) then we throw an error.
+                if (compare == null) {
+                    throw RubyExceptions.MakeComparisonError(lessThanStorage.Context, i, other);
+                }
+
+                // If the comparison worked but returned false then we 
+                if (RubyOps.IsFalse(compare)) {
+                    object result;
+                    if (block.Yield(i, out result)) {
+                        return result;
+                    }
+
+                    var subtract = subtractStorage.GetCallSite("-");
+                    i = subtract.Target(subtract, i, 1);
+                }
+            }
+            return self;
+        }
+
+        #endregion
+
+        #region gcd, lcm, gcdlcm
+
+        private static int SignedGcd(int a, int b) {
+            // avoid overflow (Int32.MinValue % -1)
+            if (b == -1) {
+                return -1;
+            }
+
+            while (b != 0) {
+                int t = b;
+                b = a % b;
+                a = t;
+            }
+
+            return a;
+        }
+
+        private static BigInteger/*!*/ SignedGcd(BigInteger/*!*/ a, BigInteger/*!*/ b) {
+            while (!b.IsZero()) {
+                BigInteger t = b;
+                b = a % b;
+                a = t;
+            }
+
+            return a;
+        }
+
+        private static object/*!*/ Lcm(int self, int other, int gcd) {
+            return gcd == 0 ? ClrInteger.Zero : Protocols.Normalize(Math.Abs((long)self / gcd * other));
+        }
+
+        private static object/*!*/ Lcm(BigInteger/*!*/ self, BigInteger/*!*/ other, BigInteger/*!*/ gcd) {
+            return gcd == 0 ? ClrInteger.Zero : Protocols.Normalize((self / gcd * other).Abs());
+        }
+
+        [RubyMethod("gcd")]
+        public static object/*!*/ Gcd(int self, int other) {
+            return ClrInteger.Abs(SignedGcd(self, other));
+        }
+
+        [RubyMethod("gcd")]
+        public static object/*!*/ Gcd(BigInteger/*!*/ self, BigInteger/*!*/ other) {
+            return ClrBigInteger.Abs(SignedGcd(self, other));
+        }
+
+        [RubyMethod("gcd")]
+        public static object/*!*/ Gcd(object/*!*/ self, object other) {
+            throw RubyExceptions.CreateTypeError("not an integer");
+        }
+
+        [RubyMethod("lcm")]
+        public static object/*!*/ Lcm(int self, int other) {
+            return Lcm(self, other, SignedGcd(self, other));
+        }
+
+        [RubyMethod("lcm")]
+        public static object/*!*/ Lcm(BigInteger/*!*/ self, BigInteger/*!*/ other) {
+            return Lcm(self, other, SignedGcd(self, other));
+        }
+
+        [RubyMethod("lcm")]
+        public static object/*!*/ Lcm(object/*!*/ self, object other) {
+            throw RubyExceptions.CreateTypeError("not an integer");
+        }
+
+        [RubyMethod("gcdlcm")]
+        public static RubyArray/*!*/ GcdLcm(int self, int other) {
+            int gcd = SignedGcd(self, other);
+            return new RubyArray { ClrInteger.Abs(gcd), Lcm(self, other, gcd) };
+        }
+
+        [RubyMethod("gcdlcm")]
+        public static RubyArray/*!*/ GcdLcm(BigInteger/*!*/ self, BigInteger/*!*/ other) {
+            BigInteger gcd = SignedGcd(self, other);
+            return new RubyArray { ClrBigInteger.Abs(gcd), Lcm(self, other, gcd) };
+        }
+
+        [RubyMethod("gcdlcm")]
+        public static RubyArray/*!*/ GcdLcm(object/*!*/ self, object other) {
+            throw RubyExceptions.CreateTypeError("not an integer");
         }
 
         #endregion

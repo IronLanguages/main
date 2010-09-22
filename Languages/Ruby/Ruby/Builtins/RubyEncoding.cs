@@ -53,11 +53,12 @@ namespace IronRuby.Builtins {
         public const int CodePageUTF32LE = 12000;
         public const int CodePageSJIS = 932;
 
-        public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, CodePageBinary);
-        public static readonly RubyEncoding/*!*/ Ascii = new RubyEncoding(CreateEncoding(CodePageAscii, false), CreateEncoding(CodePageAscii, true), CodePageAscii);
-        public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(CreateEncoding(CodePageUTF8, false), CreateEncoding(CodePageUTF8, true), CodePageUTF8);
-        public static readonly RubyEncoding/*!*/ SJIS = new RubyEncoding(CreateEncoding(CodePageSJIS, false), CreateEncoding(CodePageSJIS, true), CodePageSJIS);
-        public static readonly RubyEncoding/*!*/ EUC = new RubyEncoding(CreateEncoding(CodePageEUC, false), CreateEncoding(CodePageEUC, true), CodePageEUC);
+        // TODO: how does MRI sort encodings?
+        public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, -4);
+        public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(CreateEncoding(CodePageUTF8, false), CreateEncoding(CodePageUTF8, true), -3);
+        public static readonly RubyEncoding/*!*/ Ascii = new RubyEncoding(CreateEncoding(CodePageAscii, false), CreateEncoding(CodePageAscii, true), -2);
+        public static readonly RubyEncoding/*!*/ EUC = new RubyEncoding(CreateEncoding(CodePageEUC, false), CreateEncoding(CodePageEUC, true), -1);
+        public static readonly RubyEncoding/*!*/ SJIS = new RubyEncoding(CreateEncoding(CodePageSJIS, false), CreateEncoding(CodePageSJIS, true), 0);
 
         #endregion
 

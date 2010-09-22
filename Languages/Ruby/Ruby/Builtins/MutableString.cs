@@ -761,21 +761,13 @@ namespace IronRuby.Builtins {
         }
 
         public bool Equals(MutableString other) {
-            if (ReferenceEquals(this, other)) return true;
             if (ReferenceEquals(other, null)) return false;
 
             if (KnowsHashCode && other.KnowsHashCode && _hashCode != other._hashCode) {
                 return false;
             }
 
-            if (_encoding != other._encoding) {
-                // only ASCII strings might compare equal if their encodings are different:
-                if (!IsAscii() || !other.IsAscii()) {
-                    return false;
-                }
-            }
-
-            return _content.OrdinalCompareTo(other._content) == 0;
+            return CompareTo(other) == 0;
         }
 
         public int CompareTo(object obj) {
@@ -786,14 +778,22 @@ namespace IronRuby.Builtins {
             if (ReferenceEquals(this, other)) return 0;
             if (ReferenceEquals(other, null)) return 1;
 
+            // TODO: How does MRI deal with invalid characters, surrogates?
             if (_encoding != other._encoding) {
-                // only ASCII strings might compare equal if their encodings are different:
-                if (!IsAscii() || !other.IsAscii()) {
-                    return _encoding.CompareTo(other._encoding);
+                bool bothAscii = true;
+                if (!IsAscii()) {
+                    SwitchToBytes();
+                    bothAscii = false;
                 }
+                if (!other.IsAscii()) {
+                    other.SwitchToBytes();
+                    bothAscii = false;
+                }
+                int result = _content.OrdinalCompareTo(other._content);
+                return !bothAscii && result == 0 ? _encoding.CompareTo(other._encoding) : result;
+            } else {
+                return _content.OrdinalCompareTo(other._content);
             }
-
-            return _content.OrdinalCompareTo(other._content);
         }
 
         #endregion

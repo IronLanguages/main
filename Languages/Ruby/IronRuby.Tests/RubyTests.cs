@@ -795,6 +795,8 @@ namespace IronRuby.Tests {
 #if !CLR2
                 ClrBigIntegerV4,
 #endif
+                BigInteger1,
+                GcdLcm1,
             };
         }
     }
