@@ -6515,7 +6515,7 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "dump", 0x51, 
                 0x00000000U, 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Dump)
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Dump)
             );
             
             DefineLibraryMethod(module, "each", 0x51, 
@@ -6629,7 +6629,7 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "inspect", 0x51, 
                 0x00000000U, 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Inspect)
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Inspect)
             );
             
             DefineLibraryMethod(module, "intern", 0x51, 

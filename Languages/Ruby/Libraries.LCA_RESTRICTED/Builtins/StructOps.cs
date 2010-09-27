@@ -61,7 +61,7 @@ namespace IronRuby.Builtins {
             }
 
             string strName = className.ConvertToString();
-            self.Context.CheckConstantName(strName);
+            RubyUtils.CheckConstantName(strName);
             return Create(block, self, strName, attributeNames);
         }
 

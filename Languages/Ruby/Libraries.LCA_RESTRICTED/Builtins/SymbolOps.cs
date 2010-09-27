@@ -41,17 +41,15 @@ namespace IronRuby.Builtins {
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, RubySymbol/*!*/ self) {
             var str = self.ToString();
-            bool allowMultiByteCharacters = context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19 || context.KCode != null;
-
             var result = self.String.Clone();
 
             // simple cases:
             if (
-                Tokenizer.IsMethodName(str, allowMultiByteCharacters) ||
-                Tokenizer.IsConstantName(str, allowMultiByteCharacters) ||
-                Tokenizer.IsInstanceVariableName(str, allowMultiByteCharacters) ||
-                Tokenizer.IsClassVariableName(str, allowMultiByteCharacters) ||
-                Tokenizer.IsGlobalVariableName(str, allowMultiByteCharacters)
+                Tokenizer.IsMethodName(str) ||
+                Tokenizer.IsConstantName(str) ||
+                Tokenizer.IsInstanceVariableName(str) ||
+                Tokenizer.IsClassVariableName(str) ||
+                Tokenizer.IsGlobalVariableName(str)
             ) {
                 result.Insert(0, ':');
             } else {

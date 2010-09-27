@@ -233,7 +233,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("throw", RubyMethodAttributes.PublicSingleton)]
         public static void Throw(RubyContext/*!*/ context, object self, object label, [DefaultParameterValue(null)]object returnValue) {
             if (_catchSymbols == null || !_catchSymbols.Contains(label, ReferenceEqualityComparer.Instance)) {
-                throw RubyExceptions.CreateNameError("uncaught throw `{0}'", context.Inspect(label).ToAsciiString(false));
+                throw RubyExceptions.CreateNameError("uncaught throw `{0}'", context.Inspect(label).ToAsciiString());
             }
 
             throw new ThrowCatchUnwinder(label, returnValue);
@@ -678,7 +678,7 @@ namespace IronRuby.Builtins {
             object value;
             if (!context.TryGetInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
-                context.CheckInstanceVariableName(name);
+                RubyUtils.CheckInstanceVariableName(name);
                 return null;
             }
             return value;
@@ -686,7 +686,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("instance_variable_set")]
         public static object InstanceVariableSet(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name, object value) {
-            context.CheckInstanceVariableName(name);
+            RubyUtils.CheckInstanceVariableName(name);
             context.SetInstanceVariable(self, name, value);
             return value;
         }
@@ -696,7 +696,7 @@ namespace IronRuby.Builtins {
             object value;
             if (!context.TryGetInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
-                context.CheckInstanceVariableName(name);
+                RubyUtils.CheckInstanceVariableName(name);
                 return false;
             }
 
@@ -708,7 +708,7 @@ namespace IronRuby.Builtins {
             object value;
             if (!context.TryRemoveInstanceVariable(self, name, out value)) {
                 // We didn't find it, check if the name is valid
-                context.CheckInstanceVariableName(name);
+                RubyUtils.CheckInstanceVariableName(name);
 
                 throw RubyExceptions.CreateNameError("instance variable `{0}' not defined", name);
             }
@@ -1043,7 +1043,7 @@ namespace IronRuby.Builtins {
                 var result = new RubyArray();
                 if (foreignMembers.Count > 0) {
                     foreach (var name in foreignMembers) {
-	                    if (Tokenizer.IsMethodName(name, true) || Tokenizer.IsOperatorName(name)) {
+	                    if (Tokenizer.IsMethodName(name) || Tokenizer.IsOperatorName(name)) {
                             result.Add(new ClrName(name));
                         }
                     }

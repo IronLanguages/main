@@ -800,7 +800,7 @@ namespace IronRuby.Builtins {
         public static MutableString ReplaceSubstring(RubyContext/*!*/ context, MutableString/*!*/ self,
             [NotNull]RubyRegex/*!*/ regex, [Optional, DefaultProtocol]int groupIndex, [DefaultProtocol, NotNull]MutableString/*!*/ value) {
 
-            MatchData match = regex.Match(context.KCode, self);
+            MatchData match = regex.Match(self);
             if (match == null) {
                 throw RubyExceptions.CreateIndexError("regexp not matched");
             }
@@ -1113,31 +1113,27 @@ namespace IronRuby.Builtins {
 
         #region dump, inspect
 
-        public static string/*!*/ GetQuotedStringRepresentation(MutableString/*!*/ self, RubyContext/*!*/ context, bool isDump, char quote) {
-            bool is18 = context.RubyOptions.Compatibility < RubyCompatibility.Ruby19;
-            
+        public static string/*!*/ GetQuotedStringRepresentation(MutableString/*!*/ self, bool isDump, char quote) {
+            // TODO: there is a subtle difference between dump and inspect in the way how Unicode escapes are formatted
             return self.AppendRepresentation(
-                new StringBuilder().Append(quote),
-                (isDump || !is18) ? null : context.KCode ?? RubyEncoding.Binary,
-                MutableString.Escape.Special | (is18 ? MutableString.Escape.Octal : 0) | (isDump ? MutableString.Escape.NonAscii : 0),
-                quote
+                new StringBuilder().Append(quote), null, MutableString.Escape.NonAscii | MutableString.Escape.Special, quote
             ).Append(quote).ToString();
         }
 
         // encoding aware
         [RubyMethod("dump")]
-        public static MutableString/*!*/ Dump(RubyContext/*!*/ context, MutableString/*!*/ self) {
+        public static MutableString/*!*/ Dump(MutableString/*!*/ self) {
             // Note that "self" could be a subclass of MutableString, and the return value should be
             // of the same type
-            return self.CreateInstance().Append(GetQuotedStringRepresentation(self, context, true, '"')).TaintBy(self);
+            return self.CreateInstance().Append(GetQuotedStringRepresentation(self, true, '"')).TaintBy(self);
         }
 
-        // encoding aware, uses the current KCODE
+        // encoding aware
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, MutableString/*!*/ self) {
+        public static MutableString/*!*/ Inspect(MutableString/*!*/ self) {
             // Note that "self" could be a subclass of MutableString, but the return value should 
             // always be just a MutableString
-            return MutableString.Create(GetQuotedStringRepresentation(self, context, false, '"'), context.KCode ?? self.Encoding).TaintBy(self);
+            return MutableString.Create(GetQuotedStringRepresentation(self, false, '"'), self.Encoding).TaintBy(self);
         }
 
         #endregion
@@ -1425,7 +1421,7 @@ namespace IronRuby.Builtins {
 
             var matchScope = scope.GetInnerMostClosureScope();
 
-            var matches = regex.Matches(tosConversion.Context.KCode, input);
+            var matches = regex.Matches(input);
             if (matches.Count == 0) {
                 result = null;
                 blockResult = null;
@@ -1586,7 +1582,7 @@ namespace IronRuby.Builtins {
             RubyScope/*!*/ scope, MutableString/*!*/ input, Union<IDictionary<object, object>, MutableString>/*!*/ replacement, RubyRegex/*!*/ regex) {
             var matchScope = scope.GetInnerMostClosureScope();
             
-            IList<MatchData> matches = regex.Matches(scope.RubyContext.KCode, input);
+            IList<MatchData> matches = regex.Matches(input);
             if (matches.Count == 0) {
                 matchScope.CurrentMatch = null;
                 return null;
@@ -1833,7 +1829,7 @@ namespace IronRuby.Builtins {
         public static object Index(RubyScope/*!*/ scope, MutableString/*!*/ self, 
             [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol, Optional]int start) {
 
-            MatchData match = regex.Match(scope.RubyContext.KCode, self, start, true);
+            MatchData match = regex.Match(self, start, true);
             scope.GetInnerMostClosureScope().CurrentMatch = match;
             return (match != null) ? ScriptingRuntimeHelpers.Int32ToObject(match.Index) : null;
         }
@@ -1909,7 +1905,7 @@ namespace IronRuby.Builtins {
         public static object LastIndexOf(RubyScope/*!*/ scope, MutableString/*!*/ self, 
             [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int start) {
 
-            MatchData match = regex.LastMatch(scope.RubyContext.KCode, self, start);
+            MatchData match = regex.LastMatch(self, start);
             scope.GetInnerMostClosureScope().CurrentMatch = match;
             return (match != null) ? ScriptingRuntimeHelpers.Int32ToObject(match.Index) : null;
         }
@@ -2096,7 +2092,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("scan")]
         public static RubyArray/*!*/ Scan(RubyScope/*!*/ scope, MutableString/*!*/ self, [DefaultProtocol, NotNull]RubyRegex/*!*/ regex) {
-            IList<MatchData> matches = regex.Matches(scope.RubyContext.KCode, self, false);
+            IList<MatchData> matches = regex.Matches(self, false);
 
             var matchScope = scope.GetInnerMostClosureScope();
             
@@ -2118,7 +2114,7 @@ namespace IronRuby.Builtins {
         public static object/*!*/ Scan(RubyScope/*!*/ scope, [NotNull]BlockParam/*!*/ block, MutableString/*!*/ self, [DefaultProtocol, NotNull]RubyRegex regex) {
             var matchScope = scope.GetInnerMostClosureScope();
 
-            IList<MatchData> matches = regex.Matches(scope.RubyContext.KCode, self);
+            IList<MatchData> matches = regex.Matches(self);
             if (matches.Count == 0) {
                 matchScope.CurrentMatch = null;
                 return self;
@@ -2390,7 +2386,7 @@ namespace IronRuby.Builtins {
 
             if (limit == 0) {
                 // suppress trailing empty fields
-                RubyArray array = MakeRubyArray(self, regexp.Split(stringCast.Context.KCode, self));
+                RubyArray array = MakeRubyArray(self, regexp.Split(self));
                 while (array.Count != 0 && ((MutableString)array[array.Count - 1]).Length == 0) {
                     array.RemoveAt(array.Count - 1);
                 }
@@ -2402,10 +2398,10 @@ namespace IronRuby.Builtins {
                 return result;
             } else if (limit < 0) {
                 // does not suppress trailing fields when negative 
-                return MakeRubyArray(self, regexp.Split(stringCast.Context.KCode, self));
+                return MakeRubyArray(self, regexp.Split(self));
             } else {
                 // limit > 1 limits to N fields
-                return MakeRubyArray(self, regexp.Split(stringCast.Context.KCode, self, limit));
+                return MakeRubyArray(self, regexp.Split(self, limit));
             }
         }
 

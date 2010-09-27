@@ -95,12 +95,14 @@ namespace IronRuby.Builtins {
         private Regex/*!*/ Transform(ref RubyEncoding encoding, MutableString/*!*/ input, int start, out string strInput) {
             ContractUtils.RequiresNotNull(input, "input");
 
+            // TODO:
+
             // K-coding of the current operation (the current KCODE gets preference over the KCODE regex option):
             RubyRegexOptions kc = _options & RubyRegexOptions.EncodingMask;
             if (kc != 0) {
                 encoding = _pattern.Encoding;
             } else {
-                kc = RubyEncoding.ToRegexOption(encoding);
+                kc = RubyRegexOptions.NONE;
             }
 
             // Convert input to a string. Force k-coding if necessary.
@@ -278,16 +280,18 @@ namespace IronRuby.Builtins {
 
         #region Match, LastMatch, Matches, Split
 
-        public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input) {
+        public MatchData Match(MutableString/*!*/ input) {
             string str;
+            RubyEncoding kcode = null;
             return MatchData.Create(Transform(ref kcode, input, 0, out str).Match(str), input, true, str, kcode, 0);
         }
 
         /// <summary>
         /// Start is a number of bytes if kcode is given, otherwise it's a number of characters.
         /// </summary>
-        public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input, int start, bool freezeInput) {
+        public MatchData Match(MutableString/*!*/ input, int start, bool freezeInput) {
             string str;
+            RubyEncoding kcode = null;
             Regex regex = Transform(ref kcode, input, start, out str);
 
             Match match;
@@ -309,8 +313,8 @@ namespace IronRuby.Builtins {
             return MatchData.Create(match, input, freezeInput, str, kcode, start);
         }
 
-        public MatchData LastMatch(RubyEncoding kcode, MutableString/*!*/ input) {
-            return LastMatch(kcode, input, Int32.MaxValue);
+        public MatchData LastMatch(MutableString/*!*/ input) {
+            return LastMatch(input, Int32.MaxValue);
         }
 
         /// <summary>
@@ -318,8 +322,9 @@ namespace IronRuby.Builtins {
         /// Captures are ordered in the same way as with forward match. This is different from .NET reverse matching.
         /// Start is a number of bytes if kcode is given, otherwise it's a number of characters.
         /// </summary>
-        public MatchData LastMatch(RubyEncoding kcode, MutableString/*!*/ input, int start) {
+        public MatchData LastMatch(MutableString/*!*/ input, int start) {
             string str;
+            RubyEncoding kcode = null;
             Regex regex = Transform(ref kcode, input, 0, out str);
             Debug.Assert(str != null);
 
@@ -382,8 +387,9 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Returns a collection of fresh MatchData objects.
         /// </summary>
-        public IList<MatchData>/*!*/ Matches(RubyEncoding kcode, MutableString/*!*/ input, bool inputMayMutate) {
+        public IList<MatchData>/*!*/ Matches(MutableString/*!*/ input, bool inputMayMutate) {
             string str;
+            RubyEncoding kcode = null;
             MatchCollection matches = Transform(ref kcode, input, 0, out str).Matches(str);
 
             var result = new MatchData[matches.Count];
@@ -399,22 +405,24 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        public IList<MatchData>/*!*/ Matches(RubyEncoding kcode, MutableString/*!*/ input) {
-            return Matches(kcode, input, true);
+        public IList<MatchData>/*!*/ Matches(MutableString/*!*/ input) {
+            return Matches(input, true);
         }
 
-        public MutableString[]/*!*/ Split(RubyEncoding kcode, MutableString/*!*/ input) {
+        public MutableString[]/*!*/ Split(MutableString/*!*/ input) {
             string str;
+            RubyEncoding kcode = null;
             return MutableString.MakeArray(Transform(ref kcode, input, 0, out str).Split(str), kcode ?? input.Encoding);
         }
         
-        public MutableString[]/*!*/ Split(RubyEncoding kcode, MutableString/*!*/ input, int count) {
+        public MutableString[]/*!*/ Split(MutableString/*!*/ input, int count) {
             string str;
+            RubyEncoding kcode = null;
             return MutableString.MakeArray(Transform(ref kcode, input, 0, out str).Split(str, count), kcode ?? input.Encoding);
         }
 
         public static MatchData SetCurrentMatchData(RubyScope/*!*/ scope, RubyRegex/*!*/ regex, MutableString str) {
-            return scope.GetInnerMostClosureScope().CurrentMatch = (str != null) ? regex.Match(scope.RubyContext.KCode, str) : null;
+            return scope.GetInnerMostClosureScope().CurrentMatch = (str != null) ? regex.Match(str) : null;
         }
 
         #endregion               

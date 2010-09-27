@@ -381,7 +381,7 @@ namespace IronRuby.Builtins {
         private static void DefineAccessor(RubyScope/*!*/ scope, RubyModule/*!*/ self, string/*!*/ name, bool readable, bool writable) {
             // MRI: ignores ModuleFunction scope flag (doesn't create singleton methods):
 
-            if (!Tokenizer.IsVariableName(name, true)) {
+            if (!Tokenizer.IsVariableName(name)) {
                 throw RubyExceptions.CreateNameError("invalid attribute name `{0}'", name);
             }
 
@@ -688,7 +688,7 @@ namespace IronRuby.Builtins {
         public static bool IsClassVariableDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
             object value;
             if (self.TryResolveClassVariable(variableName, out value) == null) {
-                self.Context.CheckClassVariableName(variableName);
+                RubyUtils.CheckClassVariableName(variableName);
                 return false;
             }
             return true;
@@ -699,7 +699,7 @@ namespace IronRuby.Builtins {
         public static object GetClassVariable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
             object value;
             if (self.TryResolveClassVariable(variableName, out value) == null) {
-                self.Context.CheckClassVariableName(variableName);
+                RubyUtils.CheckClassVariableName(variableName);
                 throw RubyExceptions.CreateNameError("uninitialized class variable {0} in {1}", variableName, self.Name);
             }
             return value;
@@ -708,7 +708,7 @@ namespace IronRuby.Builtins {
         // not thread-safe:
         [RubyMethod("class_variable_set", RubyMethodAttributes.PrivateInstance)]
         public static object ClassVariableSet(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName, object value) {
-            self.Context.CheckClassVariableName(variableName);
+            RubyUtils.CheckClassVariableName(variableName);
             self.SetClassVariable(variableName, value);
             return value;
         }
@@ -718,7 +718,7 @@ namespace IronRuby.Builtins {
         public static object RemoveClassVariable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
             object value;
             if (!self.TryGetClassVariable(variableName, out value)) {
-                self.Context.CheckClassVariableName(variableName);
+                RubyUtils.CheckClassVariableName(variableName);
                 throw RubyExceptions.CreateNameError("class variable {0} not defined for {1}", variableName, self.Name);
             }
             self.RemoveClassVariable(variableName);
@@ -752,7 +752,7 @@ namespace IronRuby.Builtins {
                         }
 
                         if (!visited.ContainsKey(name)) {
-                            if (Tokenizer.IsConstantName(name, true)) {
+                            if (Tokenizer.IsConstantName(name)) {
                                 result.Add(self.Context.StringifyIdentifier(name));
                             }
                             visited.Add(name, true);
@@ -764,7 +764,7 @@ namespace IronRuby.Builtins {
             } else {
                 using (self.Context.ClassHierarchyLocker()) {
                     self.EnumerateConstants((module, name, value) => {
-                        if (Tokenizer.IsConstantName(name, true)) {
+                        if (Tokenizer.IsConstantName(name)) {
                             result.Add(self.Context.StringifyIdentifier(name));
                         }
                         return false;
@@ -777,7 +777,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("const_defined?")]
         public static bool IsConstantDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
-            self.Context.CheckConstantName(constantName);
+            RubyUtils.CheckConstantName(constantName);
             object constant;
 
             // MRI checks declared constans only and don't trigger autoload:
@@ -793,7 +793,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("const_set")]
         public static object SetConstantValue(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName, object value) {
-            self.Context.CheckConstantName(constantName);
+            RubyUtils.CheckConstantName(constantName);
             RubyUtils.SetConstant(self, constantName, value);
             return value;
         }
@@ -803,7 +803,7 @@ namespace IronRuby.Builtins {
         public static object RemoveConstant(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
             object value;
             if (!self.TryRemoveConstant(constantName, out value)) {
-                self.Context.CheckConstantName(constantName);
+                RubyUtils.CheckConstantName(constantName);
                 throw RubyExceptions.CreateNameError("constant {0}::{1} not defined", self.Name, constantName);
             }
             return value;
@@ -823,7 +823,7 @@ namespace IronRuby.Builtins {
         public static void SetAutoloadedConstant(RubyModule/*!*/ self,
             [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
 
-            self.Context.CheckConstantName(constantName);
+            RubyUtils.CheckConstantName(constantName);
             if (path.IsEmpty) {
                 throw RubyExceptions.CreateArgumentError("empty file name");
             }
@@ -900,7 +900,7 @@ namespace IronRuby.Builtins {
             using (self.Context.ClassHierarchyLocker()) {
                 self.ForEachMember(inherited, attributes, foreignMembers, (name, module, member) => {
                     if (member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMapping) == 0 && RubyUtils.HasMangledName(name)) {
-                        if (Tokenizer.IsMethodName(name, true) || Tokenizer.IsOperatorName(name)) {
+                        if (Tokenizer.IsMethodName(name) || Tokenizer.IsOperatorName(name)) {
                             result.Add(new ClrName(name));
                         }
                     } else {

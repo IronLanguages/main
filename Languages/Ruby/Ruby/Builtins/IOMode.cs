@@ -61,7 +61,7 @@ namespace IronRuby.Builtins {
 
         public static IOInfo Parse(RubyContext/*!*/ context, MutableString/*!*/ modeAndEncoding) {
             if (!modeAndEncoding.IsAscii()) {
-                throw IOModeEnum.IllegalMode(modeAndEncoding.ToAsciiString(false));
+                throw IOModeEnum.IllegalMode(modeAndEncoding.ToAsciiString());
             }
 
             string[] parts = modeAndEncoding.ToString().Split(':');
@@ -91,7 +91,7 @@ namespace IronRuby.Builtins {
 
         public IOInfo AddEncoding(RubyContext/*!*/ context, MutableString/*!*/ encoding) {
             if (!encoding.IsAscii()) {
-                context.ReportWarning(String.Format("Unsupported encoding {0} ignored", encoding.ToAsciiString(false)));
+                context.ReportWarning(String.Format("Unsupported encoding {0} ignored", encoding.ToAsciiString()));
                 return this;
             }
 

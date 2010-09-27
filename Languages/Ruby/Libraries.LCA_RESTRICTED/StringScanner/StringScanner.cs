@@ -389,7 +389,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
 
         private bool Match(RubyRegex/*!*/ pattern, bool currentPositionOnly, bool advancePosition) {
             // TODO: repeated calls on the same ScanString can be optimized:
-            MatchData match = pattern.Match(null, _scanString, _currentPosition, false);
+            MatchData match = pattern.Match(_scanString, _currentPosition, false);
             _lastMatch = null;
             _lastMatchingGroups = null;
             _foundPosition = 0;
@@ -474,7 +474,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
                 }
                 for (int i = CurrentPosition - len; i < CurrentPosition; i++) {
                     MutableString.AppendCharRepresentation(sb, scanstr[i], -1, 
-                        MutableString.Escape.Octal | MutableString.Escape.NonAscii | MutableString.Escape.Special, '"', -1
+                        MutableString.Escape.NonAscii | MutableString.Escape.Special, '"', -1
                     );
                 }
                 sb.Append('"');
@@ -490,7 +490,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
                 sb.Append('"');
                 for (int i = CurrentPosition; i < CurrentPosition + len; i++) {
                     MutableString.AppendCharRepresentation(sb, scanstr[i], -1, 
-                        MutableString.Escape.Octal | MutableString.Escape.NonAscii | MutableString.Escape.Special, '"', -1
+                        MutableString.Escape.NonAscii | MutableString.Escape.Special, '"', -1
                     );
                 }
                 if (ellipsis) {

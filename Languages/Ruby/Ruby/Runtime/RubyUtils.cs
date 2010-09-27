@@ -499,6 +499,24 @@ namespace IronRuby.Runtime {
             "Untaint",
         };
 
+        public static void CheckConstantName(string name) {
+            if (!Tokenizer.IsConstantName(name)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a constant name", name));
+            }
+        }
+
+        public static void CheckClassVariableName(string name) {
+            if (!Tokenizer.IsClassVariableName(name)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a class variable name", name));
+            }
+        }
+
+        public static void CheckInstanceVariableName(string name) {
+            if (!Tokenizer.IsInstanceVariableName(name)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as an instance variable name", name));
+            }
+        }
+
         #endregion
 
         #region Constants
@@ -519,7 +537,7 @@ namespace IronRuby.Runtime {
                 }
             }
 
-            globalScope.Context.CheckConstantName(name);
+            RubyUtils.CheckConstantName(name);
             return owner.ConstantMissing(name);
         }
 
@@ -859,8 +877,7 @@ namespace IronRuby.Runtime {
         }
 
         private static SourceUnit/*!*/ CreateRubySourceUnit(RubyContext/*!*/ context, MutableString/*!*/ code, string path) {
-            Encoding encoding = (context.KCode ?? code.Encoding).Encoding;
-            return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, encoding, SourceCodeKind.File);
+            return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, code.Encoding.Encoding, SourceCodeKind.File);
         }
 
         public static object Evaluate(MutableString/*!*/ code, RubyScope/*!*/ targetScope, object self, RubyModule module, MutableString file, int line) {

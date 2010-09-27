@@ -114,12 +114,6 @@ namespace IronRuby.Runtime {
                     return context.Verbose;
 
                 case GlobalVariableId.KCode:
-                    if (context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
-                        var kcode = KCoding.GetKCodeName(context.KCode);
-                        Utils.Log("KCODE set to " + kcode, "KCODE");
-                        return MutableString.CreateAscii(kcode);
-                    }
-
                     context.ReportWarning("variable $KCODE is no longer effective");
                     return null;
 

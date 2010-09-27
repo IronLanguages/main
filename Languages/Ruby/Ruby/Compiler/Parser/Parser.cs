@@ -148,7 +148,7 @@ namespace IronRuby.Compiler {
 
                 // Default encoding when hosted:
                 _tokenizer.Encoding = (reader.Encoding != null) ? RubyEncoding.GetRubyEncoding(reader.Encoding) : RubyEncoding.UTF8;
-                _tokenizer.AllowNonAsciiIdentifiers = _tokenizer.Encoding != RubyEncoding.Binary;
+                _tokenizer.AllowNonAsciiIdentifiers = _tokenizer.Encoding != RubyEncoding.Ascii;
                 
                 try {
                     Parse();

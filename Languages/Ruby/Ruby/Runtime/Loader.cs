@@ -760,7 +760,7 @@ namespace IronRuby.Runtime {
                 return null;
             }
 
-            var sourceUnit = language.CreateFileUnit(path, RubyEncoding.Binary.Encoding, SourceCodeKind.File);
+            var sourceUnit = language.CreateFileUnit(path, RubyEncoding.Ascii.Encoding, SourceCodeKind.File);
             return new ResolvedFile(sourceUnit, fullPath, extensionAppended ? extension : null);
         }
 

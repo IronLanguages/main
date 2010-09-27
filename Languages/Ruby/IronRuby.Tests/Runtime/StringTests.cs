@@ -308,6 +308,8 @@ SUB
         }
 
 #endif
+        [Run]
+        [Options(NoRuntime = true)]
         private void Inspect2() {
             const char sq = '\'';
 
@@ -321,26 +323,26 @@ SUB
 
             string s;
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, false, sq).ToString();
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), false, sq).ToString();
             Assert(s == @"'\xF0\x92\x8D\x85'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, true, sq).ToString();
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), true, sq).ToString();
             Assert(s == @"'\xF0\x92\x8D\x85'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), Context, false, sq).ToString();
-            Assert(s == "'" + utf16 + "'");
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), false, sq).ToString();
+            Assert(s == @"'\u{12345}'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), Context, true, sq).ToString();
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), true, sq).ToString();
             Assert(s == @"'\u{12345}'");
 
             // incomplete character:
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.Create("\ud808\udf45\ud808", RubyEncoding.UTF8), Context, false, sq).ToString();
-            Assert(s == @"'" + utf16 + @"\u{d808}'");
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.Create("\ud808\udf45\ud808", RubyEncoding.UTF8), false, sq).ToString();
+            Assert(s == @"'\u{12345}\u{d808}'");
             
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), Context, false, sq).ToString();
-            Assert(s == @"'あ'");
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), false, sq).ToString();
+            Assert(s == @"'\x82\xA0'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), Context, true, sq).ToString();
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), true, sq).ToString();
             Assert(s == @"'\x82\xA0'");
         }
     }
