@@ -14,29 +14,24 @@ if EXIST "%PROGRAM_FILES_x86%" set PROGRAM_FILES_64=%ProgramW6432%
 if EXIST "%DLR_ROOT%\Internal" set INTERNALDEV="1"
 If DEFINED THISISSNAP set INTERNALDEV="1"
 
+set RUBY19_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin
+set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe
+
+
+
+set RUBYOPT=
+set GEM_PATH=%RUBY19_BIN%\..\lib\ruby\gems\1.9.1
+
 if DEFINED INTERNALDEV (
   REM -- Nullify the existing environment
   call %DLR_ROOT%\Test\Scripts\SetTestEnv.bat
-
-  REM -- IronRuby environment variables --
-  set RUBY18_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin
-  set RUBY18_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin\ruby.exe
-  set RUBY19_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin
-  set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe
 
   REM -- IronPython environment variables
   set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
 
   REM -- Python environment variables
   set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
-) else (
-  set RUBY18_BIN=
-  set RUBY18_EXE=ruby.exe
-  set RUBY19_BIN=
-  set RUBY19_EXE=ruby.exe
 )
-set RUBYOPT=
-set GEM_PATH=%RUBY19_BIN%\..\lib\ruby\gems\1.9.1
 
 if EXIST "%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe" (
   set SN_UTIL="%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe"

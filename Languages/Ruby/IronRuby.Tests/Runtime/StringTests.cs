@@ -308,7 +308,6 @@ SUB
         }
 
 #endif
-        [Run]
         [Options(NoRuntime = true)]
         private void Inspect2() {
             const char sq = '\'';
