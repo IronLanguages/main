@@ -824,7 +824,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal sealed class BinaryOperation : BinaryOperationBinder, IInteropBinder {
-            private static readonly CallInfo _CallInfo = new CallInfo(1);
+            internal static readonly CallInfo _CallInfo = new CallInfo(1);
             private readonly RubyContext/*!*/ _context;
             public RubyContext Context { get { return _context; } }
 
@@ -845,14 +845,19 @@ namespace IronRuby.Runtime.Calls {
             }
 
             public override DynamicMetaObject/*!*/ FallbackBinaryOperation(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ arg, DynamicMetaObject errorSuggestion) {
-                return InvokeMember.FallbackInvokeMember(this, RubyUtils.MapOperator(Operation), _CallInfo, target, new[] { arg }, errorSuggestion, null);
+                string methodName = RubyUtils.MapOperator(Operation);
+                Debug.Assert(methodName != null, "Binary operator not implemented");
+                return InvokeMember.FallbackInvokeMember(this, methodName, _CallInfo, target, new[] { arg }, errorSuggestion, null);
             }
 
             public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, BinaryOperationBinder/*!*/ binder,
                 DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ arg, 
                 Func<DynamicMetaObject, DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
 
-                return InvokeMember.Bind(context, RubyUtils.MapOperator(binder.Operation), _CallInfo, binder, target, new[] { arg },
+                string methodName = RubyUtils.MapOperator(binder.Operation);
+                Debug.Assert(methodName != null, "Binary operator not implemented");
+
+                return InvokeMember.Bind(context, methodName, _CallInfo, binder, target, new[] { arg },
                     (trgt, args) => fallback(trgt, args[0])
                 );
             }
@@ -866,7 +871,9 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal sealed class UnaryOperation : UnaryOperationBinder, IInteropBinder {
-            private static readonly CallInfo _CallInfo = new CallInfo(0);
+            internal static readonly CallInfo _CallInfo = new CallInfo(0);
+            private static DynamicMetaObject[] _MetaArgumentOne;
+
             private readonly RubyContext/*!*/ _context;
             public RubyContext Context { get { return _context; } }
 
@@ -887,14 +894,41 @@ namespace IronRuby.Runtime.Calls {
             }
 
             public override DynamicMetaObject/*!*/ FallbackUnaryOperation(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
-                return InvokeMember.FallbackInvokeMember(this, RubyUtils.MapOperator(Operation), _CallInfo, target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion, null);
+                string methodName = RubyUtils.MapOperator(Operation);
+                Debug.Assert(methodName != null, "Unary operator not implemented");
+
+                return InvokeMember.FallbackInvokeMember(this, methodName, _CallInfo, target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion, null);
             }
 
             public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, UnaryOperationBinder/*!*/ binder,
                 DynamicMetaObject/*!*/ target, Func<DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
-                return InvokeMember.Bind(context, RubyUtils.MapOperator(binder.Operation), _CallInfo, binder, target, DynamicMetaObject.EmptyMetaObjects,
+
+                if (binder.Operation == ExpressionType.Decrement) {
+                    return InvokeMember.Bind(context, "-", BinaryOperation._CallInfo, binder, target, MetaArgumentOne, (trgt, _) => fallback(trgt));
+                }
+
+                if (binder.Operation == ExpressionType.Increment) {
+                    return InvokeMember.Bind(context, "+", BinaryOperation._CallInfo, binder, target, MetaArgumentOne, (trgt, _) => fallback(trgt));
+                }
+
+                string methodName = RubyUtils.MapOperator(binder.Operation);
+                Debug.Assert(methodName != null, "Unary operator not implemented");
+
+                return InvokeMember.Bind(context, methodName, _CallInfo, binder, target, DynamicMetaObject.EmptyMetaObjects,
                     (trgt, _) => fallback(trgt)
                 );
+            }
+
+            private static DynamicMetaObject[] MetaArgumentOne {
+                get {
+                    return _MetaArgumentOne ?? (
+                        _MetaArgumentOne = new[] { new DynamicMetaObject(
+                            Expression.Constant(ScriptingRuntimeHelpers.Int32ToObject(1), typeof(int)), 
+                            BindingRestrictions.Empty, 
+                            ScriptingRuntimeHelpers.Int32ToObject(1)
+                        )}
+                    );
+                }
             }
 
             public override string/*!*/ ToString() {

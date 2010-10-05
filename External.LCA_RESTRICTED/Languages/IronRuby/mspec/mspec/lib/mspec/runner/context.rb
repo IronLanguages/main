@@ -160,7 +160,7 @@ class ContextState
   # for :enter, :before, :after, :leave.
   def process
     MSpec.register_current self
-
+    
     if @parsed and filter_examples
       MSpec.shuffle @examples if MSpec.randomize?
       MSpec.actions :enter, description

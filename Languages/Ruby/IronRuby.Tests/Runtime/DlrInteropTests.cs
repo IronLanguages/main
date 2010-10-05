@@ -412,39 +412,6 @@ end
 self.indexable = Indexable.new [0, 1, 2]
 
 #------------------------------------------------------------------------------
-class Number
-    def initialize(v)
-        @val = v
-    end
-    
-    def +(other)
-        @val + other
-    end
-    
-    def -(other)
-        @val - other
-    end
-    
-    def *(other)
-        @val * other
-    end
-    
-    def /(other)
-        @val / other
-    end
-
-    def -@
-        -@val
-    end  
-
-    def ~
-        ~@val
-    end  
-end
-
-self.number = Number.new(100)
-
-#------------------------------------------------------------------------------
 class Methods
     def self.named_params(a, b)
         %Q(a:#{a} b:#{b}).to_clr_string
@@ -523,12 +490,6 @@ class SanityTest
         main.indexable[10] = 100
         assert_equal main.indexable[10], 100
         assert_equal main.indexable[9], nil
-        
-        # main.number
-        assert_equal((main.number + 1), 101)
-        assert_equal((main.number - 1), 99)
-        assert_equal((main.number * 2), 200)
-        assert_equal((main.number / 2), 50)
         
         # Methods
         assert_equal Methods.default_values(100), 'a:100 b:2'.to_clr_string
@@ -726,14 +687,56 @@ end
         }
 
         public void Dlr_Number() {
-            var scope = CreateInteropScope();
-            object one_hundred = scope.GetVariable("number");
+            object one_hundred = Engine.Execute(@"
+class Number
+    def initialize(v)
+        @val = v
+    end
+    
+    def +(other)
+        @val + other
+    end
+    
+    def -(other)
+        @val - other
+    end
+    
+    def *(other)
+        @val * other
+    end
+    
+    def /(other)
+        @val / other
+    end
+
+    def -@
+        -@val
+    end  
+
+    def ~
+        ~@val
+    end  
+end
+
+Number.new(100)
+");
+
             AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Add, one_hundred, 1), 100 + 1);
             AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Subtract, one_hundred, 1), 100 - 1);
             AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Multiply, one_hundred, 2), 2 * 100);
             AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Divide, one_hundred, 2), 100/2);
             AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.Negate, one_hundred), -100);
             AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.OnesComplement, one_hundred), ~100);
+            AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.Increment, one_hundred), 100 + 1);
+            AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.Decrement, one_hundred), 100 - 1);
+
+#if !CLR2
+            dynamic number = one_hundred;
+            number--;
+            Assert(number == 99);
+            number++;
+            Assert(number == 100);
+#endif
         }
 
         public void Dlr_Comparable() {

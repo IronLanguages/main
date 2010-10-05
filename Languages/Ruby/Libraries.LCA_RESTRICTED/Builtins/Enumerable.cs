@@ -79,14 +79,16 @@ namespace IronRuby.Builtins {
         [RubyMethod("collect")]
         [RubyMethod("map")]
         public static object Map(CallSiteStorage<EachSite>/*!*/ each, BlockParam collector, object self) {
+            return (collector != null) ? MapImpl(each, collector, self) : new Enumerator((_, block) => MapImpl(each, block, self));
+        }
+        
+        private static object MapImpl(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ collector, object self) {
             RubyArray resultArray = new RubyArray();
             object result = resultArray;
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
-                if (collector != null) {
-                    if (collector.Yield(item, out item)) {
-                        result = item;
-                        return selfBlock.PropagateFlow(collector, item);
-                    }
+                if (collector.Yield(item, out item)) {
+                    result = item;
+                    return selfBlock.PropagateFlow(collector, item);
                 }
                 resultArray.Add(item);
                 return null;
@@ -590,7 +592,34 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region TODO: cycle, drop, drop_while, find_index, group_by, max_by, min_by, minmax, minmax_by, reduce, take_take_while (1.9)
+        #region cycle, TODO: drop, drop_while, find_index, group_by, max_by, min_by, minmax, minmax_by, reduce, take_take_while
+
+        [RubyMethod("cycle")]
+        public static object Cycle(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, 
+            [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int iterations) {
+
+            return (block != null) ? CycleImpl(each, block, self, iterations) : new Enumerator((_, innerBlock) => CycleImpl(each, innerBlock, self, iterations));
+        }
+
+        private static object CycleImpl(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, int iterations) {
+            bool terminate = true;
+            object result = null;
+            while (iterations == Int32.MaxValue || iterations-- > 0) {
+                Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                    if (block.Yield(item, out result)) {
+                        terminate = true;
+                        return selfBlock.PropagateFlow(block, result);
+                    }
+                    terminate = false;
+                    return null;
+                }));
+
+                if (terminate) {
+                    break;
+                }
+            }
+            return result;
+        }
 
         #endregion
 
