@@ -24,71 +24,43 @@ namespace IronRuby.Builtins {
     [RubyModule("Comparable")]
     public static class Comparable {
         [RubyMethod("<")]
-        public static bool Less(
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            object self, object other) {
-
-            return Compare(compareStorage, lessThanStorage, greaterThanStorage, self, other).GetValueOrDefault(0) < 0;
+        public static bool Less(ComparisonStorage/*!*/ comparisonStorage, object self, object other) {
+            return Compare(comparisonStorage, self, other).GetValueOrDefault(0) < 0;
         }
 
         [RubyMethod("<=")]
-        public static bool LessOrEqual(
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,            
-            object self, object other) {
-
-            return Compare(compareStorage, lessThanStorage, greaterThanStorage, self, other).GetValueOrDefault(1) <= 0;
+        public static bool LessOrEqual(ComparisonStorage/*!*/ comparisonStorage, object self, object other) {
+            return Compare(comparisonStorage, self, other).GetValueOrDefault(1) <= 0;
         }
 
         [RubyMethod(">=")]
-        public static bool GreaterOrEqual(
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            object self, object other) {
-
-            return Compare(compareStorage, lessThanStorage, greaterThanStorage, self, other).GetValueOrDefault(-1) >= 0;
+        public static bool GreaterOrEqual(ComparisonStorage/*!*/ comparisonStorage, object self, object other) {
+            return Compare(comparisonStorage, self, other).GetValueOrDefault(-1) >= 0;
         }
 
         [RubyMethod(">")]
-        public static bool Greater(
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            object self, object other) {
-
-            return Compare(compareStorage, lessThanStorage, greaterThanStorage, self, other).GetValueOrDefault(0) > 0;
+        public static bool Greater(ComparisonStorage/*!*/ comparisonStorage, object self, object other) {
+            return Compare(comparisonStorage, self, other).GetValueOrDefault(0) > 0;
         }
 
         /// <summary>
         /// Try to compare the lhs and rhs. Throws and exception if comparison returns null. Returns null on failure, -1/0/+1 otherwise.
         /// </summary>
-        private static int? Compare(BinaryOpStorage/*!*/ compareStorage, BinaryOpStorage/*!*/ lessThanStorage, BinaryOpStorage/*!*/ greaterThanStorage,
-            object lhs, object rhs) {
+        private static int? Compare(ComparisonStorage/*!*/ comparisonStorage, object lhs, object rhs) {
 
             // calls method_missing, doesn't catch any exception:
-            var compare = compareStorage.GetCallSite("<=>");
+            var compare = comparisonStorage.CompareSite;
             object compareResult = compare.Target(compare, lhs, rhs);
-            
             if (compareResult != null) {
-                return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, compareResult);
-            } else {
-                throw RubyExceptions.MakeComparisonError(lessThanStorage.Context, lhs, rhs);
-            }
+                return Protocols.ConvertCompareResult(comparisonStorage, compareResult);
+            } 
+
+            throw RubyExceptions.MakeComparisonError(comparisonStorage.Context, lhs, rhs);
         }
 
         [RubyMethod("between?")]
-        public static bool Between(
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            object self, object min, object max) {
-
-            return !Less(compareStorage, lessThanStorage, greaterThanStorage, self, min)
-                && !Greater(compareStorage, lessThanStorage, greaterThanStorage, self, max);
+        public static bool Between(ComparisonStorage/*!*/ comparisonStorage, object self, object min, object max) {
+            return !Less(comparisonStorage, self, min) && !Greater(comparisonStorage, self, max);
         }
 
         [RubyMethod("==")]

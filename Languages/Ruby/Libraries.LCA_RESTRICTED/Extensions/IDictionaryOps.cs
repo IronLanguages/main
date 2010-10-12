@@ -533,12 +533,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sort")]
-        public static object Sort(
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,            
-            BlockParam block, IDictionary<object, object>/*!*/ self) {
-            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, ToArray(self));
+        public static object Sort(ComparisonStorage/*!*/ comparisonStorage, BlockParam block, IDictionary<object, object>/*!*/ self) {
+            return ArrayOps.SortInPlace(comparisonStorage, block, ToArray(self));
         }
 
         [RubyMethod("to_a")]

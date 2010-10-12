@@ -209,7 +209,7 @@ internal class LibraryDef {
         }
 
         public bool HasConstantsInitializer {
-            get { return Constants.Count > 0 /* TODO: || HasCopyInclusions */; }
+            get { return Constants.Count > 0 || HasCopyInclusions; }
         }
 
         public bool HasClassInitializer {
@@ -1152,7 +1152,7 @@ internal class LibraryDef {
             _output.WriteLine("private static void Load{0}_Constants({1}/*!*/ module) {{", moduleDef.Id, TypeRubyModule);
             _output.Indent++;
 
-            // TODO: constants in copy-included traits
+            GenerateIncludedConstantLoaders(moduleDef);
             GenerateConstants(moduleDef);
 
             _output.Indent--;
@@ -1190,6 +1190,15 @@ internal class LibraryDef {
             ModuleDef def = mixin.Module.Definition;
             if (mixin.Copy && (isInstance ? def.HasInstanceInitializer : def.HasClassInitializer)) {
                 _output.WriteLine("Load{0}_{1}(module);", mixin.Module.Definition.Id, isInstance ? "Instance" : "Class");
+            }
+        }
+    }
+
+    private void GenerateIncludedConstantLoaders(ModuleDef/*!*/ moduleDef) {
+        foreach (MixinRef mixin in moduleDef.Mixins) {
+            ModuleDef def = mixin.Module.Definition;
+            if (mixin.Copy && def.HasConstantsInitializer) {
+                _output.WriteLine("Load{0}_Constants(module);", mixin.Module.Definition.Id);
             }
         }
     }

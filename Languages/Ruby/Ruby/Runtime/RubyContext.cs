@@ -145,7 +145,7 @@ namespace IronRuby.Runtime {
 
         #region Random Number Generator
 
-        private object _randomNumberGeneratorLock = new object();
+        private readonly object _randomNumberGeneratorLock = new object();
         private Random _randomNumberGenerator; // lazy
         private object _randomNumberGeneratorSeed = ScriptingRuntimeHelpers.Int32ToObject(0);
 

@@ -35,6 +35,7 @@ using System.Dynamic;
 
 namespace IronRuby.Runtime {
     using Ast = MSA.Expression;
+    using System.Collections;
     
     public enum BlockReturnReason {
         Undefined = 0,
@@ -218,6 +219,10 @@ namespace IronRuby.Runtime {
 
         public bool Yield(object[]/*!*/ args, out object blockResult) {
             return BlockJumped(blockResult = RubyOps.Yield(args, null, Self, this));
+        }
+
+        public bool YieldSplat(IList/*!*/ args, out object blockResult) {
+            return BlockJumped(blockResult = RubyOps.YieldSplat0(args, null, Self, this));
         }
 
         #endregion

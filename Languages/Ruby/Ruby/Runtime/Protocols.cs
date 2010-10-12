@@ -117,8 +117,14 @@ namespace IronRuby.Runtime {
         /// Converts an object to string using to_str protocol (<see cref="ConvertToStrAction"/>).
         /// </summary>
         public static MutableString/*!*/ CastToString(ConversionStorage<MutableString>/*!*/ stringCast, object obj) {
-            var site = stringCast.GetSite(ConvertToStrAction.Make(stringCast.Context));
-            var result = site.Target(site, obj);
+            return CastToString(stringCast.GetSite(ConvertToStrAction.Make(stringCast.Context)), obj);
+        }
+
+        /// <summary>
+        /// Converts an object to string using to_str protocol (<see cref="ConvertToStrAction"/>).
+        /// </summary>
+        public static MutableString/*!*/ CastToString(CallSite<Func<CallSite, object, MutableString>>/*!*/ toStrSite, object obj) {
+            var result = toStrSite.Target(toStrSite, obj);
             if (result == null) {
                 throw RubyExceptions.CreateTypeConversionError("nil", "String");
             }
@@ -255,7 +261,6 @@ namespace IronRuby.Runtime {
             return site.Target(site, value);
         }
 
-
         public static int CastToFixnum(ConversionStorage<int>/*!*/ conversionStorage, object value) {
             var site = conversionStorage.GetSite(ConvertToFixnumAction.Make(conversionStorage.Context));
             return site.Target(site, value);
@@ -292,35 +297,26 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Try to compare the lhs and rhs. Throws and exception if comparison returns null. Returns -1/0/+1 otherwise.
         /// </summary>
-        public static int Compare(
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            object lhs, object rhs) {
-
-            var compare = comparisonStorage.GetCallSite("<=>");
+        public static int Compare(ComparisonStorage/*!*/ comparisonStorage, object lhs, object rhs) {
+            var compare = comparisonStorage.CompareSite;
 
             var result = compare.Target(compare, lhs, rhs);
             if (result != null) {
-                return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, result);
+                return Protocols.ConvertCompareResult(comparisonStorage, result);
             } else {
                 throw RubyExceptions.MakeComparisonError(comparisonStorage.Context, lhs, rhs);
             }
         }
-    
-        public static int ConvertCompareResult(
-            BinaryOpStorage/*!*/ lessThanStorage, 
-            BinaryOpStorage/*!*/ greaterThanStorage,
-             object/*!*/ result) {
 
+        public static int ConvertCompareResult(ComparisonStorage/*!*/ comparisonStorage, object/*!*/ result) {
             Debug.Assert(result != null);
 
-            var greaterThanSite = greaterThanStorage.GetCallSite(">");
+            var greaterThanSite = comparisonStorage.GreaterThanSite;
             if (RubyOps.IsTrue(greaterThanSite.Target(greaterThanSite, result, 0))) {
                 return 1;
             }
 
-            var lessThanSite = lessThanStorage.GetCallSite("<");
+            var lessThanSite = comparisonStorage.LessThanSite;
             if (RubyOps.IsTrue(lessThanSite.Target(lessThanSite, result, 0))) {
                 return -1;
             }
@@ -358,8 +354,11 @@ namespace IronRuby.Runtime {
         }
 
         public static bool RespondTo(RespondToStorage/*!*/ respondToStorage, object target, string/*!*/ methodName) {
-            var site = respondToStorage.GetCallSite();
-            return IsTrue(site.Target(site, target, respondToStorage.Context.EncodeIdentifier(methodName)));
+            return RespondTo(respondToStorage.GetCallSite(), respondToStorage.Context, target, methodName);
+        }
+
+        public static bool RespondTo(CallSite<Func<CallSite, object, object, object>>/*!*/ respondToSite, RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            return IsTrue(respondToSite.Target(respondToSite, target, context.EncodeIdentifier(methodName)));
         }
 
         public static void Write(BinaryOpStorage/*!*/ writeStorage, object target, object value) {

@@ -28,6 +28,7 @@ using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
     using EachSite = Func<CallSite, object, Proc, object>;
+    using EachSiteN = Func<CallSite, object, Proc, IList, object>;
 
     [RubyModule("Enumerable")]
     public static class Enumerable {
@@ -36,20 +37,30 @@ namespace IronRuby.Builtins {
             return site.Target(site, self, block);
         }
 
-        #region all?, any?
+        internal static object Each(CallSiteStorage<EachSiteN>/*!*/ each, object self, IList/*!*/ args, Proc/*!*/ block) {
+            var site = each.GetCallSite("each", new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasBlock | RubyCallFlags.HasSplattedArgument));
+            return site.Target(site, self, block, args);
+        }
+
+        #region all?, any?, none?
 
         [RubyMethod("all?")]
         public static object TrueForAll(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
-            return TrueForItems(each, predicate, self, true);
+            return TrueForItems(each, predicate, self, false, false);
+        }
+
+        [RubyMethod("none?")]
+        public static object TrueForNone(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
+            return TrueForItems(each, predicate, self, true, false);
         }
 
         [RubyMethod("any?")]
         public static object TrueForAny(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
-            return TrueForItems(each, predicate, self, false);
+            return TrueForItems(each, predicate, self, true, true);
         }
 
-        private static object TrueForItems(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self, bool expected) {
-            object result = ScriptingRuntimeHelpers.BooleanToObject(expected);
+        private static object TrueForItems(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self, bool stop, bool positiveResult) {
+            object result = ScriptingRuntimeHelpers.BooleanToObject(!positiveResult);
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
                 if (predicate != null) {
                     object blockResult;
@@ -61,8 +72,8 @@ namespace IronRuby.Builtins {
                 }
 
                 bool isTrue = Protocols.IsTrue(item);
-                if (isTrue != expected) {
-                    result = ScriptingRuntimeHelpers.BooleanToObject(!expected);
+                if (isTrue == stop) {
+                    result = ScriptingRuntimeHelpers.BooleanToObject(positiveResult); 
                     return selfBlock.Break(result);
                 }
 
@@ -78,21 +89,52 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("collect")]
         [RubyMethod("map")]
-        public static object Map(CallSiteStorage<EachSite>/*!*/ each, BlockParam collector, object self) {
-            return (collector != null) ? MapImpl(each, collector, self) : new Enumerator((_, block) => MapImpl(each, block, self));
+        public static Enumerator/*!*/ GetMapEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam collector, object self) {
+            return new Enumerator((_, block) => Map(each, block, self));
         }
-        
-        private static object MapImpl(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ collector, object self) {
+
+        /// <summary>
+        /// <code>
+        /// def map
+        ///   result = []
+        ///   each do |*args|
+        ///     result.push yield(*args)
+        ///   end    
+        ///   result
+        /// end
+        /// </code>
+        /// </summary>
+        [RubyMethod("collect")]
+        [RubyMethod("map")]
+        public static object Map(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ collector, object self) {
             RubyArray resultArray = new RubyArray();
             object result = resultArray;
-            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
-                if (collector.Yield(item, out item)) {
-                    result = item;
-                    return selfBlock.PropagateFlow(collector, item);
-                }
-                resultArray.Add(item);
-                return null;
-            }));
+
+            if (collector.Proc.Dispatcher.ParameterCount <= 1 && !collector.Proc.Dispatcher.HasUnsplatParameter && !collector.Proc.Dispatcher.HasProcParameter) {
+                // optimize for a block with a single parameter:
+                Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                    object blockResult;
+                    if (collector.Yield(item, out blockResult)) {
+                        result = blockResult;
+                        return selfBlock.PropagateFlow(collector, blockResult);
+                    }
+                    resultArray.Add(blockResult);
+                    return null;
+                }));
+            } else {
+                // general case:
+                Each(each, self, Proc.Create(each.Context, 0, delegate(BlockParam/*!*/ selfBlock, object _, object[] __, RubyArray args) {
+                    Debug.Assert(__.Length == 0);
+
+                    object blockResult;
+                    if (collector.YieldSplat(args, out blockResult)) {
+                        result = blockResult;
+                        return selfBlock.PropagateFlow(collector, blockResult);
+                    }
+                    resultArray.Add(blockResult);
+                    return null;
+                }));
+            }
             return result;
         }
 
@@ -102,15 +144,18 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("detect")]
         [RubyMethod("find")]
-        public static object Find(CallSiteStorage<EachSite>/*!*/ each, CallSiteStorage<Func<CallSite, object, object>>/*!*/ callStorage,
+        public static Enumerator/*!*/ GetFindEnumerator(CallSiteStorage<EachSite>/*!*/ each, CallSiteStorage<Func<CallSite, object, object>>/*!*/ callStorage,
             BlockParam predicate, object self, [Optional]object ifNone) {
+            return new Enumerator((_, block) => Find(each, callStorage, block, self, ifNone));
+        }
+
+        [RubyMethod("detect")]
+        [RubyMethod("find")]
+        public static object Find(CallSiteStorage<EachSite>/*!*/ each, CallSiteStorage<Func<CallSite, object, object>>/*!*/ callStorage,
+            [NotNull]BlockParam/*!*/ predicate, object self, [Optional]object ifNone) {
             object result = Missing.Value;
 
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
-                if (predicate == null) {
-                    throw RubyExceptions.NoBlockGiven();
-                }
-
                 object blockResult;
                 if (predicate.Yield(item, out blockResult)) {
                     result = blockResult;
@@ -138,8 +183,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("find_index")]
         public static Enumerator/*!*/ GetFindIndexEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
-            Debug.Assert(predicate == null);
-            throw new NotImplementedError("TODO: find_index enumerator");
+            return new Enumerator((_, block) => FindIndex(each, block, self));
         }
 
         [RubyMethod("find_index")]
@@ -192,12 +236,12 @@ namespace IronRuby.Builtins {
         #region each_with_index
 
         [RubyMethod("each_with_index")]
-        public static object EachWithIndex(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self) {
-            // for some reason each_with_index always checks for a block, even if there's nothing to yield
-            if (block == null) {
-                throw RubyExceptions.NoBlockGiven();
-            }
+        public static Enumerator/*!*/ GetEachWithIndexEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self) {
+            return new Enumerator((_, innerBlock) => EachWithIndex(each, innerBlock, self));
+        }
 
+        [RubyMethod("each_with_index")]
+        public static object EachWithIndex(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ block, object self) {
             int index = 0;
             object result = self;
 
@@ -231,6 +275,19 @@ namespace IronRuby.Builtins {
             return data;
         }
 
+        [RubyMethod("entries")]
+        [RubyMethod("to_a")]
+        public static RubyArray/*!*/ ToArray(CallSiteStorage<EachSiteN>/*!*/ each, object self, params object[] args) {
+            RubyArray data = new RubyArray();
+
+            Each(each, self, args, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                data.Add(item);
+                return null;
+            }));
+
+            return data;
+        }
+
         #endregion
 
         #region find_all, select, reject
@@ -238,23 +295,23 @@ namespace IronRuby.Builtins {
         [RubyMethod("find_all")]
         [RubyMethod("select")]
         public static object Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
-            return Filter(each, predicate, self, true);
+            return (predicate != null) ? FilterImpl(each, predicate, self, true) : FilterEnum(each, predicate, self, true);
         }
 
         [RubyMethod("reject")]
         public static object Reject(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
-            return Filter(each, predicate, self, false);
+            return (predicate != null) ? FilterImpl(each, predicate, self, false) : FilterEnum(each, predicate, self, false);
         }
 
-        private static object Filter(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self, bool acceptingValue) {
+        private static Enumerator/*!*/ FilterEnum(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self, bool acceptingValue) {
+            return new Enumerator((_, block) => FilterImpl(each, block, self, acceptingValue));
+        }
+
+        private static object FilterImpl(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ predicate, object self, bool acceptingValue) {
             RubyArray resultArray = new RubyArray();
             object result = resultArray;
 
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
-                if (predicate == null) {
-                    throw RubyExceptions.NoBlockGiven();
-                }
-
                 object blockResult;
                 if (predicate.Yield(item, out blockResult)) {
                     result = blockResult;
@@ -285,11 +342,9 @@ namespace IronRuby.Builtins {
 
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
                 if (RubyOps.IsTrue(site.Target(site, pattern, item))) {
-                    if (action != null) {
-                        if (action.Yield(item, out item)) {
-                            result = item;
-                            return selfBlock.PropagateFlow(action, item);
-                        }
+                    if (action != null && action.Yield(item, out item)) {
+                        result = item;
+                        return selfBlock.PropagateFlow(action, item);
                     }
                     resultArray.Add(item);
                 }
@@ -323,6 +378,20 @@ namespace IronRuby.Builtins {
 
         #region inject/reduce
 
+        [RubyMethod("reduce")]
+        [RubyMethod("inject")]
+        public static object Inject(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ operation, object self, [Optional]object initial) {
+            return Inject(each, operation, null, null, self, initial);
+        }
+
+        [RubyMethod("reduce")]
+        [RubyMethod("inject")]
+        public static object Inject(CallSiteStorage<EachSite>/*!*/ each, RubyScope/*!*/ scope, object self, [Optional]object initial, 
+            [DefaultProtocol, NotNull]string/*!*/ operatorName) {
+
+            return Inject(each, null, scope, operatorName, self, initial);
+        }
+
         // def inject(result = Undefined)
         //   each do |*args|
         //     arg = args.size <= 1 ? args[0] : args
@@ -334,9 +403,12 @@ namespace IronRuby.Builtins {
         //   end
         //   result
         // end
-        [RubyMethod("reduce")]
-        [RubyMethod("inject")]
-        public static object Inject(CallSiteStorage<EachSite>/*!*/ each, BlockParam operation, object self, [Optional]object initial) {
+        internal static object Inject(CallSiteStorage<EachSite>/*!*/ each, BlockParam operation, RubyScope scope, string operatorName, object self, object initial) {
+            Debug.Assert(operation != null ^ (scope != null && operatorName != null));
+
+            var site = (operatorName == null) ? null : each.Context.GetOrCreateSendSite<Func<CallSite, RubyScope, object, object, object>>(
+                operatorName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf)
+            );
 
             object result = initial;
             Each(each, self, Proc.Create(each.Context, 0, delegate(BlockParam/*!*/ selfBlock, object _, object[] __, RubyArray/*!*/ args) {
@@ -351,11 +423,9 @@ namespace IronRuby.Builtins {
                     return null;
                 }
 
-                if (operation == null) {
-                    throw RubyExceptions.NoBlockGiven();
-                }
-
-                if (operation.Yield(result, value, out result)) {
+                if (site != null) {
+                    result = site.Target(site, scope, result, value);
+                } else if (operation.Yield(result, value, out result)) {
                     return selfBlock.PropagateFlow(operation, result);
                 }
 
@@ -367,78 +437,167 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region max, min
+        #region min, max, minmax
 
         [RubyMethod("max")]
-        public static object GetMaximum(
-            CallSiteStorage<EachSite>/*!*/ each, 
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam comparer, object self) {
-            return GetExtreme(each, compareStorage, lessThanStorage, greaterThanStorage, comparer, self, -1/*look for max*/);
+        public static object GetMaximum(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self) {
+            return GetExtreme(each, comparisonStorage, comparer, self, +1);
         }
 
         [RubyMethod("min")]
-        public static object GetMinimum(
-            CallSiteStorage<EachSite>/*!*/ each, 
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam comparer, object self) {
-            return GetExtreme(each, compareStorage, lessThanStorage, greaterThanStorage, comparer, self, 1/*look for min*/);
+        public static object GetMinimum(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self) {
+            return GetExtreme(each, comparisonStorage, comparer, self, -1);
         }
 
-        private static object GetExtreme(
-            CallSiteStorage<EachSite>/*!*/ each, 
-            BinaryOpStorage/*!*/ compareStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam comparer, object self, int comparisonValue) {
-
+        private static object GetExtreme(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self, int comparisonValue) {
             bool firstItem = true;
             object result = null;
 
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
-                // Check for first element
                 if (firstItem) {
                     result = item;
                     firstItem = false;
                     return null;
                 }
 
-                int compareResult;
-                if (comparer != null) {
-                    object blockResult;
-                    if (comparer.Yield(result, item, out blockResult)) {
-                        result = blockResult;
-                        return selfBlock.PropagateFlow(comparer, blockResult);
-                    }
-
-                    if (blockResult == null) {
-                        throw RubyExceptions.MakeComparisonError(selfBlock.RubyContext, result, item);
-                    }
-
-                    compareResult = Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, blockResult);
-                } else {
-                    compareResult = Protocols.Compare(compareStorage, lessThanStorage, greaterThanStorage, result, item);
+                object blockResult;
+                int? compareResult = CompareItems(comparisonStorage, item, result, comparer, out blockResult);
+                if (compareResult == null) {
+                    result = blockResult;
+                    return selfBlock.PropagateFlow(comparer, blockResult);
                 }
 
-                // Check if we have found the new minimum or maximum (-1 to select max, 1 to select min)
+                // Check if we have found the new minimum or maximum (+1 to select max, -1 to select min)
                 if (compareResult == comparisonValue) {
                     result = item;
                 }
 
                 return null;
             }));
+
             return result;
         }
+
+        [RubyMethod("minmax")]
+        public static object GetExtremes(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self) {
+            bool hasOddItem = false, hasMinMax = false, blockJumped = false;
+            object oddItem = null;
+            object blockResult = null;
+
+            object min = null, max = null;
+
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (hasOddItem) {
+                    hasOddItem = false;
+
+                    int? compareResult = CompareItems(comparisonStorage, oddItem, item, comparer, out blockResult);
+                    if (compareResult == null) {
+                        goto BlockJumped;
+                    }
+                    if (compareResult > 0) {
+                        // oddItem > item
+                        object obj = item;
+                        item = oddItem;
+                        oddItem = obj;
+                    }
+
+                    // oddItem <= item
+                    if (hasMinMax) {
+                        compareResult = CompareItems(comparisonStorage, oddItem, min, comparer, out blockResult);
+                        if (compareResult == null) {
+                            goto BlockJumped;
+                        }
+                        if (compareResult < 0) {
+                            // oddItem < min
+                            min = oddItem;
+                        }
+
+                        compareResult = CompareItems(comparisonStorage, item, max, comparer, out blockResult);
+                        if (compareResult == null) {
+                            goto BlockJumped;
+                        }
+                        if (compareResult > 0) {
+                            // item > max
+                            max = item;
+                        }
+                    } else {
+                        min = oddItem;
+                        max = item;
+                        hasMinMax = true;
+                    }
+                } else {
+                    hasOddItem = true;
+                    oddItem = item;
+                }
+
+                return null;
+
+            BlockJumped:
+                blockJumped = true;
+                return selfBlock.PropagateFlow(comparer, blockResult);
+            }));
+
+            if (blockJumped) {
+                return blockResult;
+            }
+
+            if (!hasMinMax) {
+                return hasOddItem ? new RubyArray(2) { oddItem, oddItem } : new RubyArray(2) { null, null };
+            }
+
+            if (hasOddItem) {
+                int? compareResult = CompareItems(comparisonStorage, oddItem, min, comparer, out blockResult);
+                if (compareResult == null) {
+                    return blockResult;
+                }
+                if (compareResult < 0) {
+                    min = oddItem;
+                }
+
+                compareResult = CompareItems(comparisonStorage, oddItem, max, comparer, out blockResult);
+                if (compareResult == null) {
+                    return blockResult;
+                }
+                if (compareResult > 0) {
+                    max = oddItem;
+                }
+            }
+
+            return new RubyArray(2) { min, max };
+        }
+
+        private static int? CompareItems(ComparisonStorage/*!*/ comparisonStorage, object left, object right, BlockParam comparer, out object blockResult) {
+            if (comparer != null) {
+                if (comparer.Yield(left, right, out blockResult)) {
+                    return null;
+                }
+
+                if (blockResult == null) {
+                    throw RubyExceptions.MakeComparisonError(comparisonStorage.Context, left, right);
+                }
+
+                return Protocols.ConvertCompareResult(comparisonStorage, blockResult);
+            } else {
+                blockResult = null;
+                return Protocols.Compare(comparisonStorage, left, right);
+            }
+        }
+
+        #endregion
+
+        #region TODO: min_by, max_by, minmax_by
+
         #endregion
 
         #region partition
 
         [RubyMethod("partition")]
-        public static object Partition(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
+        public static Enumerator/*!*/ GetPartitionEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
+            return new Enumerator((_, block) => Partition(each, block, self));
+        }
+
+        [RubyMethod("partition")]
+        public static object Partition(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ predicate, object self) {
             RubyArray trueSet = new RubyArray();
             RubyArray falseSet = new RubyArray();
             RubyArray pair = new RubyArray(2);
@@ -447,10 +606,6 @@ namespace IronRuby.Builtins {
             object result = pair;
 
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
-                if (predicate == null) {
-                    throw RubyExceptions.NoBlockGiven();
-                }
-
                 object blockResult;
                 if (predicate.Yield(item, out blockResult)) {
                     result = blockResult;
@@ -474,24 +629,12 @@ namespace IronRuby.Builtins {
         #region sort, sort_by
 
         [RubyMethod("sort")]
-        public static object Sort(
-            CallSiteStorage<EachSite>/*!*/ each, 
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam keySelector, object self) {
-
-            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, keySelector, ToArray(each, self));
+        public static object Sort(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam keySelector, object self) {
+            return ArrayOps.SortInPlace(comparisonStorage, keySelector, ToArray(each, self));
         }
 
         [RubyMethod("sort_by")]
-        public static object SortBy(
-            CallSiteStorage<EachSite>/*!*/ each, 
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam keySelector, object self) {
-
+        public static object SortBy(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam keySelector, object self) {
             // collect key, value pairs
             List<KeyValuePair<object, object>> keyValuePairs = new List<KeyValuePair<object, object>>();
             object result = null;
@@ -519,7 +662,7 @@ namespace IronRuby.Builtins {
 
             // sort by keys
             keyValuePairs.Sort(delegate(KeyValuePair<object, object> x, KeyValuePair<object, object> y) {
-                return Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, x.Key, y.Key);
+                return Protocols.Compare(comparisonStorage, x.Key, y.Key);
             });
 
             // return values
@@ -535,9 +678,8 @@ namespace IronRuby.Builtins {
 
         #region zip
 
-        internal static object Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToA, BlockParam block,
-            object self, params IList[]/*!*/ args) {
-
+        [RubyMethod("zip")]
+        public static object Zip(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, [DefaultProtocol, NotNullItems]params IList/*!*/[]/*!*/ args) {
             RubyArray results = (block == null) ? new RubyArray() : null;
             object result = results;
 
@@ -549,8 +691,7 @@ namespace IronRuby.Builtins {
                 foreach (IList otherArray in args) {
                     if (index < otherArray.Count) {
                         array.Add(otherArray[index]);
-                    }
-                    else {
+                    } else {
                         array.Add(null);
                     }
                 }
@@ -563,8 +704,7 @@ namespace IronRuby.Builtins {
                         result = blockResult;
                         return selfBlock.PropagateFlow(block, blockResult);
                     }
-                }
-                else {
+                } else {
                     results.Add(array);
                 }
                 return null;
@@ -573,51 +713,249 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        [RubyMethod("zip")]
-        public static object Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToA, BlockParam block,
-            object self, params object[]/*!*/ args) {
+        #endregion
 
-            // Call to_a on each argument
-            IList[] otherArrays = new IList[args.Length];
-            for (int i = 0; i < args.Length; i++) {
-                otherArrays[i] = (args[i] as IList) ?? Protocols.TryConvertToArray(tryToA, args[i]);
+        #region count, one?
+
+        [RubyMethod("count")]
+        public static int Count(CallSiteStorage<EachSite>/*!*/ each, object self) {
+            int result = 0;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                result++;
+                return null;
+            }));
+            return result;
+        }
+
+        [RubyMethod("count")]
+        public static int Count(CallSiteStorage<EachSite>/*!*/ each, BinaryOpStorage/*!*/ equals, BlockParam comparer, object self, object value) {
+            if (comparer != null) {
+                each.Context.ReportWarning("given block not used");
             }
 
-            return Zip(each, tryToA, block, self, otherArrays);
+            int result = 0;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (Protocols.IsEqual(equals, item, value)) {
+                    result++;
+                }
+                return null;
+            }));
+            return result;
+        }
+
+        [RubyMethod("count")]
+        public static object Count(CallSiteStorage<EachSite>/*!*/ each, BinaryOpStorage/*!*/ equals, [NotNull]BlockParam/*!*/ comparer, object self) {
+            int count = 0;
+
+            object result = null;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                object blockResult;
+                if (comparer.Yield(item, out blockResult)) {
+                    count = -1;
+                    result = blockResult;
+                    return selfBlock.PropagateFlow(comparer, blockResult); 
+                }
+
+                if (Protocols.IsTrue(blockResult)) {
+                    count++;
+                }
+                return null;
+            }));
+
+            return (count >= 0) ? ScriptingRuntimeHelpers.Int32ToObject(count) : result;
+        }
+
+        [RubyMethod("one?")]
+        public static object One(CallSiteStorage<EachSite>/*!*/ each, BinaryOpStorage/*!*/ equals, BlockParam comparer, object self) {
+            int count = 0;
+
+            object result = null;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                object blockResult;
+                if (comparer == null) {
+                    blockResult = item;
+                } else if (comparer.Yield(item, out blockResult)) {
+                    count = -1;
+                    result = blockResult;
+                    return selfBlock.PropagateFlow(comparer, blockResult);
+                }
+
+                if (Protocols.IsTrue(blockResult) && ++count > 1) {
+                    selfBlock.Break(null);
+                }
+                return null;
+            }));
+
+            return (count >= 0) ? ScriptingRuntimeHelpers.BooleanToObject(count == 1) : result;
         }
 
         #endregion
 
-        #region TODO: count, none?, one?, first (1.9)
+        #region first, take, take_while, drop, drop_while, cycle
 
-        #endregion
+        [RubyMethod("first")]
+        public static object First(CallSiteStorage<EachSite>/*!*/ each, object self) {
+            object result = null;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                result = item;
+                selfBlock.Break(null);
+                return null;
+            }));
+            return result;
+        }
 
-        #region cycle, TODO: drop, drop_while, find_index, group_by, max_by, min_by, minmax, minmax_by, reduce, take_take_while
+        [RubyMethod("first")]
+        [RubyMethod("take")]
+        public static RubyArray/*!*/ Take(CallSiteStorage<EachSite>/*!*/ each, object self, [DefaultProtocol]int count) {
+            if (count < 0) {
+                throw RubyExceptions.CreateArgumentError("attempt to take negative size");
+            }
+
+            var result = new RubyArray(count);
+            if (count == 0) {
+                return result;
+            }
+
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                result.Add(item);
+                if (--count == 0) {
+                    selfBlock.Break(null);
+                }
+                return null;
+            }));
+
+            return result;
+        }
+
+        [RubyMethod("take_while")]
+        public static Enumerator/*!*/ GetTakeWhileEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
+            return new Enumerator((_, block) => TakeWhile(each, block, self));
+        }
+
+        [RubyMethod("take_while")]
+        public static object TakeWhile(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ predicate, object self) {
+            RubyArray resultArray = new RubyArray();
+
+            object result = resultArray;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                object blockResult;
+                if (predicate.Yield(item, out blockResult)) {
+                    result = blockResult;
+                    return selfBlock.PropagateFlow(predicate, blockResult);
+                }
+
+                if (Protocols.IsTrue(blockResult)) {
+                    resultArray.Add(item);
+                } else {
+                    selfBlock.Break(null);
+                }
+
+                return null;
+            }));
+
+            return result;
+        }
+
+        [RubyMethod("drop")]
+        public static RubyArray/*!*/ Drop(CallSiteStorage<EachSite>/*!*/ each, object self, [DefaultProtocol]int count) {
+            if (count < 0) {
+                throw RubyExceptions.CreateArgumentError("attempt to drop negative size");
+            } 
+            
+            var result = new RubyArray();
+
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (count > 0) {
+                    count--;
+                } else {
+                    result.Add(item);
+                }
+
+                return null;
+            }));
+
+            return result;
+        }
+
+        [RubyMethod("drop_while")]
+        public static Enumerator/*!*/ GetDropWhileEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, object self) {
+            return new Enumerator((_, block) => DropWhile(each, block, self));
+        }
+
+        [RubyMethod("drop_while")]
+        public static object DropWhile(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ predicate, object self) {
+            RubyArray resultArray = new RubyArray();
+
+            bool dropping = true;
+            object result = resultArray; 
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (dropping) {
+                    object blockResult;
+                    if (predicate.Yield(item, out blockResult)) {
+                        result = blockResult;
+                        return selfBlock.PropagateFlow(predicate, blockResult);
+                    }
+
+                    dropping = Protocols.IsTrue(blockResult);
+                }
+
+                if (!dropping) {
+                    resultArray.Add(item);
+                }
+
+                return null;
+            }));
+
+            return result;
+        }
 
         [RubyMethod("cycle")]
-        public static object Cycle(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, 
+        public static Enumerator/*!*/ GetCycleEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self,
             [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int iterations) {
-
-            return (block != null) ? CycleImpl(each, block, self, iterations) : new Enumerator((_, innerBlock) => CycleImpl(each, innerBlock, self, iterations));
+            return new Enumerator((_, innerBlock) => Cycle(each, innerBlock, self, iterations));
         }
 
-        private static object CycleImpl(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, int iterations) {
-            bool terminate = true;
-            object result = null;
-            while (iterations == Int32.MaxValue || iterations-- > 0) {
-                Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
-                    if (block.Yield(item, out result)) {
-                        terminate = true;
-                        return selfBlock.PropagateFlow(block, result);
-                    }
-                    terminate = false;
-                    return null;
-                }));
+        [RubyMethod("cycle")]
+        public static object Cycle(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, DynamicNull iterations) {
+            return (block != null) ? Cycle(each, block, self, Int32.MaxValue) : GetCycleEnumerator(each, block, self, Int32.MaxValue);
+        }
 
-                if (terminate) {
-                    break;
+        [RubyMethod("cycle")]
+        public static object Cycle(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ block, object self,
+            [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int iterations) {
+
+            if (iterations <= 0) {
+                return null;
+            }
+
+            List<object> items = (iterations > 1) ? new List<object>() : null;
+
+            // call "each" only in the first iteration:
+            object result = null;
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (block.Yield(item, out result)) {
+                    iterations = -1;
+                    return selfBlock.PropagateFlow(block, result);
+                }
+                if (items != null) {
+                    items.Add(item);
+                }
+                return null;
+            }));
+
+            if (items == null) {
+                return result;
+            }
+
+            // the rest of the iterations read from cached values:
+            while (iterations == Int32.MaxValue || --iterations > 0) {
+                foreach (var item in items) {
+                    if (block.Yield(item, out result)) {
+                        return result;
+                    }
                 }
             }
+
             return result;
         }
 
@@ -626,7 +964,12 @@ namespace IronRuby.Builtins {
         #region each_cons, each_slice
 
         [RubyMethod("each_cons")]
-        public static object EachCons(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
+        public static Enumerator/*!*/ GetEachConsEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, [DefaultProtocol]int sliceSize) {
+            return new Enumerator((_, innerBlock) => EachCons(each, innerBlock, self, sliceSize));
+        }
+
+        [RubyMethod("each_cons")]
+        public static object EachCons(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
             return EachSlice(each, block, self, sliceSize, false, (slice) => {
                 RubyArray newSlice = new RubyArray(slice.Count);
                 for (int i = 1; i < slice.Count; i++) {
@@ -637,7 +980,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("each_slice")]
-        public static object EachSlice(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
+        public static Enumerator/*!*/ GetEachSliceEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, [DefaultProtocol]int sliceSize) {
+            return new Enumerator((_, innerBlock) => EachSlice(each, innerBlock, self, sliceSize));
+        }
+
+        [RubyMethod("each_slice")]
+        public static object EachSlice(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ block, object self, [DefaultProtocol]int sliceSize) {
             return EachSlice(each, block, self, sliceSize, true, (slice) => null);
         }
 
@@ -660,10 +1008,6 @@ namespace IronRuby.Builtins {
                 slice.Add(item);
 
                 if (slice.Count == sliceSize) {
-                    if (block == null) {
-                        throw RubyExceptions.NoBlockGiven();
-                    }
-
                     var completeSlice = slice;
                     slice = newSliceFactory(slice);
 
@@ -678,10 +1022,6 @@ namespace IronRuby.Builtins {
             }));
 
             if (slice != null && includeIncomplete) {
-                if (block == null) {
-                    throw RubyExceptions.NoBlockGiven();
-                }
-
                 object blockResult;
                 if (block.Yield(slice, out blockResult)) {
                     return blockResult;
@@ -711,5 +1051,12 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
+        // TODO: 
+        // chunk
+        // collect_concat
+        // reverse_each
+        // flat_map
+        // join
     }
 }

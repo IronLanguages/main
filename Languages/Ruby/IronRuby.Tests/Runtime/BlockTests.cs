@@ -1215,6 +1215,345 @@ y5 { |x,y,z,u,v| p [x,y,z,u,v] }
 ");
         }
 
+        public void Scenario_RubyProcYieldArgs4() {
+            TestOutput(@"
+def y00; yield(*[[]]); end
+def y01; yield(*[[1]]); end
+def y02; yield(*[[1,2]]); end
+def y03; yield(*[[1,2,3]]); end
+def y04; yield(*[[1,2,3,4]]); end
+def y10; yield([],*[[]]); end
+def y11; yield([:a],*[[1]]); end
+def y12; yield([:a,:b],*[[1,2]]); end
+def y13; yield([:a,:b,:c],*[[1,2,3]]); end
+def y14; yield([:a,:b,:c,:d],*[[1,2,3,4]]); end
+
+puts '- L(0,0) -'
+y00 { || p [] }
+y01 { || p [] }
+y02 { || p [] }
+y03 { || p [] }
+y04 { || p [] }
+y10 { || p [] }
+y11 { || p [] }
+y12 { || p [] }
+y13 { || p [] }
+y14 { || p [] }
+
+puts '- L(1,0) -'
+y00 { |x| p [x] }
+y01 { |x| p [x] }
+y02 { |x| p [x] }
+y03 { |x| p [x] }
+y04 { |x| p [x] }
+y10 { |x| p [x] }
+y11 { |x| p [x] }
+y12 { |x| p [x] }
+y13 { |x| p [x] }
+y14 { |x| p [x] }
+
+puts '- L(2,0) -'
+y00 { |x,y| p [x,y] }
+y01 { |x,y| p [x,y] }
+y02 { |x,y| p [x,y] }
+y03 { |x,y| p [x,y] }
+y04 { |x,y| p [x,y] }
+y10 { |x,y| p [x,y] }
+y11 { |x,y| p [x,y] }
+y12 { |x,y| p [x,y] }
+y13 { |x,y| p [x,y] }
+y14 { |x,y| p [x,y] }
+
+puts '- L(3,0) -'
+y00 { |x,y,z| p [x,y,z] }
+y01 { |x,y,z| p [x,y,z] }
+y02 { |x,y,z| p [x,y,z] }
+y03 { |x,y,z| p [x,y,z] }
+y04 { |x,y,z| p [x,y,z] }
+y10 { |x,y,z| p [x,y,z] }
+y11 { |x,y,z| p [x,y,z] }
+y12 { |x,y,z| p [x,y,z] }
+y13 { |x,y,z| p [x,y,z] }
+y14 { |x,y,z| p [x,y,z] }
+
+puts '- L(4,0) -'
+y00 { |x,y,z,u| p [x,y,z,u] }
+y01 { |x,y,z,u| p [x,y,z,u] }
+y02 { |x,y,z,u| p [x,y,z,u] }
+y03 { |x,y,z,u| p [x,y,z,u] }
+y04 { |x,y,z,u| p [x,y,z,u] }
+y10 { |x,y,z,u| p [x,y,z,u] }
+y11 { |x,y,z,u| p [x,y,z,u] }
+y12 { |x,y,z,u| p [x,y,z,u] }
+y13 { |x,y,z,u| p [x,y,z,u] }
+y14 { |x,y,z,u| p [x,y,z,u] }
+
+puts '- L(5,0) -'
+y00 { |x,y,z,u,v| p [x,y,z,u,v] }
+y01 { |x,y,z,u,v| p [x,y,z,u,v] }
+y02 { |x,y,z,u,v| p [x,y,z,u,v] }
+y03 { |x,y,z,u,v| p [x,y,z,u,v] }
+y04 { |x,y,z,u,v| p [x,y,z,u,v] }
+y10 { |x,y,z,u,v| p [x,y,z,u,v] }
+y11 { |x,y,z,u,v| p [x,y,z,u,v] }
+y12 { |x,y,z,u,v| p [x,y,z,u,v] }
+y13 { |x,y,z,u,v| p [x,y,z,u,v] }
+y14 { |x,y,z,u,v| p [x,y,z,u,v] }
+
+puts '- L(0, *) -'
+y00 { |*x| p x }
+y01 { |*x| p x }
+y02 { |*x| p x }
+y03 { |*x| p x }
+y04 { |*x| p x }
+y10 { |*x| p x }
+y11 { |*x| p x }
+y12 { |*x| p x }
+y13 { |*x| p x }
+y14 { |*x| p x }
+
+puts '- L(1, *) -'
+y00 { |x,*y| p [x,y] }
+y01 { |x,*y| p [x,y] }
+y02 { |x,*y| p [x,y] }
+y03 { |x,*y| p [x,y] }
+y04 { |x,*y| p [x,y] }
+y10 { |x,*y| p [x,y] }
+y11 { |x,*y| p [x,y] }
+y12 { |x,*y| p [x,y] }
+y13 { |x,*y| p [x,y] }
+y14 { |x,*y| p [x,y] }
+
+puts '- L(2, *) -'
+y00 { |x,y,*z| p [x,y] }
+y01 { |x,y,*z| p [x,y] }
+y02 { |x,y,*z| p [x,y] }
+y03 { |x,y,*z| p [x,y] }
+y04 { |x,y,*z| p [x,y] }
+y10 { |x,y,*z| p [x,y] }
+y11 { |x,y,*z| p [x,y] }
+y12 { |x,y,*z| p [x,y] }
+y13 { |x,y,*z| p [x,y] }
+y14 { |x,y,*z| p [x,y] }
+
+puts '- L(1, &) -'
+y00 { |x,&y| p x }
+y01 { |x,&y| p x }
+y02 { |x,&y| p x }
+y03 { |x,&y| p x }
+y04 { |x,&y| p x }
+y10 { |x,&y| p x }
+y11 { |x,&y| p x }
+y12 { |x,&y| p x }
+y13 { |x,&y| p x }
+y14 { |x,&y| p x }
+
+puts '- L(2, &) -'
+y00 { |x,y,&z| p [x,y] }
+y01 { |x,y,&z| p [x,y] }
+y02 { |x,y,&z| p [x,y] }
+y03 { |x,y,&z| p [x,y] }
+y04 { |x,y,&z| p [x,y] }
+y10 { |x,y,&z| p [x,y] }
+y11 { |x,y,&z| p [x,y] }
+y12 { |x,y,&z| p [x,y] }
+y13 { |x,y,&z| p [x,y] }
+y14 { |x,y,&z| p [x,y] }
+
+puts '- L(0, *, &) -'
+y00 { |*x,&y| p x }
+y01 { |*x,&y| p x }
+y02 { |*x,&y| p x }
+y03 { |*x,&y| p x }
+y04 { |*x,&y| p x }
+y10 { |*x,&y| p x }
+y11 { |*x,&y| p x }
+y12 { |*x,&y| p x }
+y13 { |*x,&y| p x }
+y14 { |*x,&y| p x }
+
+puts '- L(1, *, &) -'
+y00 { |x,*y,&z| p [x,y] }
+y01 { |x,*y,&z| p [x,y] }
+y02 { |x,*y,&z| p [x,y] }
+y03 { |x,*y,&z| p [x,y] }
+y04 { |x,*y,&z| p [x,y] }
+y10 { |x,*y,&z| p [x,y] }
+y11 { |x,*y,&z| p [x,y] }
+y12 { |x,*y,&z| p [x,y] }
+y13 { |x,*y,&z| p [x,y] }
+y14 { |x,*y,&z| p [x,y] }
+
+puts '- L(2, *, &) -'
+y00 { |x,y,*z,&w| p [x,y,z] }
+y01 { |x,y,*z,&w| p [x,y,z] }
+y02 { |x,y,*z,&w| p [x,y,z] }
+y03 { |x,y,*z,&w| p [x,y,z] }
+y04 { |x,y,*z,&w| p [x,y,z] }
+y10 { |x,y,*z,&w| p [x,y,z] }
+y11 { |x,y,*z,&w| p [x,y,z] }
+y12 { |x,y,*z,&w| p [x,y,z] }
+y13 { |x,y,*z,&w| p [x,y,z] }
+y14 { |x,y,*z,&w| p [x,y,z] }
+", @"
+- L(0,0) -
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+- L(1,0) -
+[[]]
+[[1]]
+[[1, 2]]
+[[1, 2, 3]]
+[[1, 2, 3, 4]]
+[[]]
+[[:a]]
+[[:a, :b]]
+[[:a, :b, :c]]
+[[:a, :b, :c, :d]]
+- L(2,0) -
+[nil, nil]
+[1, nil]
+[1, 2]
+[1, 2]
+[1, 2]
+[[], []]
+[[:a], [1]]
+[[:a, :b], [1, 2]]
+[[:a, :b, :c], [1, 2, 3]]
+[[:a, :b, :c, :d], [1, 2, 3, 4]]
+- L(3,0) -
+[nil, nil, nil]
+[1, nil, nil]
+[1, 2, nil]
+[1, 2, 3]
+[1, 2, 3]
+[[], [], nil]
+[[:a], [1], nil]
+[[:a, :b], [1, 2], nil]
+[[:a, :b, :c], [1, 2, 3], nil]
+[[:a, :b, :c, :d], [1, 2, 3, 4], nil]
+- L(4,0) -
+[nil, nil, nil, nil]
+[1, nil, nil, nil]
+[1, 2, nil, nil]
+[1, 2, 3, nil]
+[1, 2, 3, 4]
+[[], [], nil, nil]
+[[:a], [1], nil, nil]
+[[:a, :b], [1, 2], nil, nil]
+[[:a, :b, :c], [1, 2, 3], nil, nil]
+[[:a, :b, :c, :d], [1, 2, 3, 4], nil, nil]
+- L(5,0) -
+[nil, nil, nil, nil, nil]
+[1, nil, nil, nil, nil]
+[1, 2, nil, nil, nil]
+[1, 2, 3, nil, nil]
+[1, 2, 3, 4, nil]
+[[], [], nil, nil, nil]
+[[:a], [1], nil, nil, nil]
+[[:a, :b], [1, 2], nil, nil, nil]
+[[:a, :b, :c], [1, 2, 3], nil, nil, nil]
+[[:a, :b, :c, :d], [1, 2, 3, 4], nil, nil, nil]
+- L(0, *) -
+[[]]
+[[1]]
+[[1, 2]]
+[[1, 2, 3]]
+[[1, 2, 3, 4]]
+[[], []]
+[[:a], [1]]
+[[:a, :b], [1, 2]]
+[[:a, :b, :c], [1, 2, 3]]
+[[:a, :b, :c, :d], [1, 2, 3, 4]]
+- L(1, *) -
+[nil, []]
+[1, []]
+[1, [2]]
+[1, [2, 3]]
+[1, [2, 3, 4]]
+[[], [[]]]
+[[:a], [[1]]]
+[[:a, :b], [[1, 2]]]
+[[:a, :b, :c], [[1, 2, 3]]]
+[[:a, :b, :c, :d], [[1, 2, 3, 4]]]
+- L(2, *) -
+[nil, nil]
+[1, nil]
+[1, 2]
+[1, 2]
+[1, 2]
+[[], []]
+[[:a], [1]]
+[[:a, :b], [1, 2]]
+[[:a, :b, :c], [1, 2, 3]]
+[[:a, :b, :c, :d], [1, 2, 3, 4]]
+- L(1, &) -
+[]
+[1]
+[1, 2]
+[1, 2, 3]
+[1, 2, 3, 4]
+[]
+[:a]
+[:a, :b]
+[:a, :b, :c]
+[:a, :b, :c, :d]
+- L(2, &) -
+[nil, nil]
+[1, nil]
+[1, 2]
+[1, 2]
+[1, 2]
+[[], []]
+[[:a], [1]]
+[[:a, :b], [1, 2]]
+[[:a, :b, :c], [1, 2, 3]]
+[[:a, :b, :c, :d], [1, 2, 3, 4]]
+- L(0, *, &) -
+[[]]
+[[1]]
+[[1, 2]]
+[[1, 2, 3]]
+[[1, 2, 3, 4]]
+[[], []]
+[[:a], [1]]
+[[:a, :b], [1, 2]]
+[[:a, :b, :c], [1, 2, 3]]
+[[:a, :b, :c, :d], [1, 2, 3, 4]]
+- L(1, *, &) -
+[nil, []]
+[1, []]
+[1, [2]]
+[1, [2, 3]]
+[1, [2, 3, 4]]
+[[], [[]]]
+[[:a], [[1]]]
+[[:a, :b], [[1, 2]]]
+[[:a, :b, :c], [[1, 2, 3]]]
+[[:a, :b, :c, :d], [[1, 2, 3, 4]]]
+- L(2, *, &) -
+[nil, nil, []]
+[1, nil, []]
+[1, 2, []]
+[1, 2, [3]]
+[1, 2, [3, 4]]
+[[], [], []]
+[[:a], [1], []]
+[[:a, :b], [1, 2], []]
+[[:a, :b, :c], [1, 2, 3], []]
+[[:a, :b, :c, :d], [1, 2, 3, 4], []]
+");
+        }
+
+
         /// <summary>
         /// RHS is list, LHS is not simple, but contains splatting.
         /// </summary>

@@ -24,7 +24,7 @@ using IronRuby.Builtins;
 namespace IronRuby.Runtime.Calls {
     using BlockCallTargetProcN = Func<BlockParam, object, object[], Proc, object>;
 
-    // L(n > 4, -, &)
+    // L(m, n, &)
     internal sealed class BlockDispatcherProcN : BlockDispatcherN<BlockCallTargetProcN> {
         internal BlockDispatcherProcN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
             : base(parameterCount, attributesAndArity, sourcePath, sourceLine) {
@@ -44,8 +44,12 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
-            IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1) ?? new object[] { arg1 };
-            return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, list), procArg);
+            if (_parameterCount == 1) {
+                return _block(param, self, MakeArray(arg1), procArg);
+            } else {
+                IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1) ?? new object[] { arg1 };
+                return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, list), procArg);
+            }
         }
 
         // R(2, -)
@@ -77,12 +81,20 @@ namespace IronRuby.Runtime.Calls {
 
         // R(0, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
-            return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, splattee), procArg);
+            if (splattee.Count == 1) {
+                return Invoke(param, self, procArg, splattee[0]);
+            } else {
+                return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, splattee), procArg);
+            }
         }
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, IList/*!*/ splattee) {
-            return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1), 1, splattee), procArg);
+            if (splattee.Count == 0) {
+                return Invoke(param, self, procArg, arg1);
+            } else {
+                return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1), 1, splattee), procArg);
+            }
         }
 
         // R(2, *)

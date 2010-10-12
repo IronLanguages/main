@@ -209,26 +209,16 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sort")]
-        public static object Sort(
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam block, RubyArray/*!*/ self) {
-
+        public static object Sort(ComparisonStorage/*!*/ comparisonStorage, BlockParam block, RubyArray/*!*/ self) {
             RubyArray result = self.CreateInstance();
             IListOps.Replace(result, self);
-            return SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, result);
+            return SortInPlace(comparisonStorage, block, result);
         }
 
         [RubyMethod("sort!")]
-        public static object SortInPlace(
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam block, RubyArray/*!*/ self) {
-
+        public static object SortInPlace(ComparisonStorage/*!*/ comparisonStorage, BlockParam block, RubyArray/*!*/ self) {
             StrongBox<object> breakResult;
-            RubyArray result = SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, self, out breakResult);
+            RubyArray result = SortInPlace(comparisonStorage, block, self, out breakResult);
             if (breakResult != null) {
                 return breakResult.Value;
             } else {
@@ -236,26 +226,14 @@ namespace IronRuby.Builtins {
             }
         }
 
-        public static RubyArray/*!*/ SortInPlace(
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyArray/*!*/ self) {
-
+        public static RubyArray/*!*/ SortInPlace(ComparisonStorage/*!*/ comparisonStorage, RubyArray/*!*/ self) {
             StrongBox<object> breakResult;
-            RubyArray result = SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, null, self, out breakResult);
+            RubyArray result = SortInPlace(comparisonStorage, null, self, out breakResult);
             Debug.Assert(result != null && breakResult == null);
             return result;
         }
 
-        internal static RubyArray SortInPlace(
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,            
-            BlockParam block,
-            RubyArray/*!*/ self,
-            out StrongBox<object> breakResult) {
-
+        internal static RubyArray SortInPlace(ComparisonStorage/*!*/ comparisonStorage, BlockParam block, RubyArray/*!*/ self, out StrongBox<object> breakResult) {
             breakResult = null;
             var context = comparisonStorage.Context;
 
@@ -264,7 +242,7 @@ namespace IronRuby.Builtins {
             // exceptions from the comparer & rethrows. We need to rewrite a version of quicksort
             // that behaves like Ruby's sort.
             if (block == null) {
-                self.Sort((x, y) => Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, x, y));
+                self.Sort((x, y) => Protocols.Compare(comparisonStorage, x, y));
             } else {
                 object nonRefBreakResult = null;
                 try {
@@ -280,7 +258,7 @@ namespace IronRuby.Builtins {
                             throw RubyExceptions.MakeComparisonError(context, x, y);
                         }
 
-                        return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, result);
+                        return Protocols.ConvertCompareResult(comparisonStorage, result);
                     });
                 } catch (InvalidOperationException e) {
                     if (e.InnerException == null) {

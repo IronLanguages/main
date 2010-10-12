@@ -2620,20 +2620,13 @@ namespace IronRuby.Builtins {
         #region upto
 
         [RubyMethod("upto")]
-        public static object UpTo(
-            ConversionStorage<MutableString>/*!*/ stringCast, 
-            RespondToStorage/*!*/ respondToStorage,
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BinaryOpStorage/*!*/ equalsStorage,
-            UnaryOpStorage/*!*/ succStorage,
-            BlockParam block, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ endString) {
+        public static Enumerator/*!*/ UpTo(RangeOps.EachStorage/*!*/ storage, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ endString) {
+            return new Enumerator((_, block) => UpTo(storage, block, self, endString));
+        }
 
-            RangeOps.Each(stringCast, respondToStorage, comparisonStorage, lessThanStorage, greaterThanStorage, equalsStorage, succStorage,  
-                block, new Range(self, endString, false)
-            );
-
+        [RubyMethod("upto")]
+        public static object UpTo(RangeOps.EachStorage/*!*/ storage, [NotNull]BlockParam/*!*/ block, MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ endString) {
+            RangeOps.Each(storage, block, new Range(self, endString, false));
             return self;
         }
 

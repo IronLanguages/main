@@ -98,12 +98,20 @@ namespace IronRuby.Runtime.Calls {
 
         // R(0, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, procArg, ArrayUtils.EmptyObjects, splattee);
+            if (splattee.Count == 1) {
+                return Invoke(param, self, procArg, splattee[0]);
+            } else {
+                return InvokeSplatInternal(param, self, procArg, ArrayUtils.EmptyObjects, splattee);
+            }
         }
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, procArg, new object[] { arg1 }, splattee);
+            if (splattee.Count == 0) {
+                return Invoke(param, self, procArg, arg1);
+            } else {
+                return InvokeSplatInternal(param, self, procArg, new object[] { arg1 }, splattee);
+            }
         }
 
         // R(2, *)

@@ -207,9 +207,13 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
-            IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1);
-            if (list != null) {
-                return InvokeSplatInternal(param, self, procArg, list);
+            IList splattee = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1);
+            if (splattee != null) {
+                switch (splattee.Count) {
+                    case 0: return _block(param, self, null, null);
+                    case 1: return _block(param, self, splattee[0], null);
+                    default: return _block(param, self, splattee[0], splattee[1]);
+                }
             } else {
                 return _block(param, self, arg1, null);
             }
@@ -243,22 +247,18 @@ namespace IronRuby.Runtime.Calls {
 
         // R(0, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, procArg, splattee);
-        }
-
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, null, null);
-                case 1: return _block(param, self, splattee[0], null);
-                default: return _block(param, self, splattee[0], splattee[1]);
+                case 0: return Invoke(param, self, procArg);
+                case 1: return Invoke(param, self, procArg, splattee[0]);
+                default: return Invoke(param, self, procArg, splattee[0], splattee[1]);
             }
         }
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, arg1, null);
-                default: return _block(param, self, arg1, splattee[0]);
+                case 0: return Invoke(param, self, procArg, arg1);
+                default: return Invoke(param, self, procArg, arg1, splattee[0]);
             }
         }
 
@@ -308,7 +308,12 @@ namespace IronRuby.Runtime.Calls {
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
             IList splattee = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1);
             if (splattee != null) {
-                return InvokeSplatInternal(param, self, procArg, splattee);
+                switch (splattee.Count) {
+                    case 0: return _block(param, self, null, null, null);
+                    case 1: return _block(param, self, splattee[0], null, null);
+                    case 2: return _block(param, self, splattee[0], splattee[1], null);
+                    default: return _block(param, self, splattee[0], splattee[1], splattee[2]);
+                }
             } else {
                 return _block(param, self, arg1, null, null);
             }
@@ -342,32 +347,28 @@ namespace IronRuby.Runtime.Calls {
 
         // R(0, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, procArg, splattee);
-        }
-
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, null, null, null);
-                case 1: return _block(param, self, splattee[0], null, null);
-                case 2: return _block(param, self, splattee[0], splattee[1], null);
-                default: return _block(param, self, splattee[0], splattee[1], splattee[2]);
+                case 0: return Invoke(param, self, procArg);
+                case 1: return Invoke(param, self, procArg, splattee[0]);
+                case 2: return Invoke(param, self, procArg, splattee[0], splattee[1]);
+                default: return Invoke(param, self, procArg, splattee[0], splattee[1], splattee[2]);
             }
         }
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, arg1, null, null);
-                case 1: return _block(param, self, arg1, splattee[0], null);
-                default: return _block(param, self, arg1, splattee[0], splattee[1]);
+                case 0: return Invoke(param, self, procArg, arg1);
+                case 1: return Invoke(param, self, procArg, arg1, splattee[0]);
+                default: return Invoke(param, self, procArg, arg1, splattee[0], splattee[1]);
             }
         }
 
         // R(2, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, arg1, arg2, null);
-                default: return _block(param, self, arg1, arg2, splattee[0]);
+                case 0: return Invoke(param, self, procArg, arg1, arg2);
+                default: return Invoke(param, self, procArg, arg1, arg2, splattee[0]);
             }
         }
 
@@ -415,9 +416,15 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
-            IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1);
-            if (list != null) {
-                return InvokeSplatInternal(param, self, procArg, list);
+            IList splattee = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1);
+            if (splattee != null) {
+                switch (splattee.Count) {
+                    case 0: return _block(param, self, null, null, null, null);
+                    case 1: return _block(param, self, splattee[0], null, null, null);
+                    case 2: return _block(param, self, splattee[0], splattee[1], null, null);
+                    case 3: return _block(param, self, splattee[0], splattee[1], splattee[2], null);
+                    default: return _block(param, self, splattee[0], splattee[1], splattee[2], splattee[3]);
+                }
             } else {
                 return _block(param, self, arg1, null, null, null);
             }
@@ -446,43 +453,39 @@ namespace IronRuby.Runtime.Calls {
 
         // R(0, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, procArg, splattee);
-        }
-
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, null, null, null, null);
-                case 1: return _block(param, self, splattee[0], null, null, null);
-                case 2: return _block(param, self, splattee[0], splattee[1], null, null);
-                case 3: return _block(param, self, splattee[0], splattee[1], splattee[2], null);
-                default: return _block(param, self, splattee[0], splattee[1], splattee[2], splattee[3]);
+                case 0: return Invoke(param, self, procArg);
+                case 1: return Invoke(param, self, procArg, splattee[0]);
+                case 2: return Invoke(param, self, procArg, splattee[0], splattee[1]);
+                case 3: return Invoke(param, self, procArg, splattee[0], splattee[1], splattee[2]);
+                default: return Invoke(param, self, procArg, splattee[0], splattee[1], splattee[2], splattee[3]);
             }
         }
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, arg1, null, null, null);
-                case 1: return _block(param, self, arg1, splattee[0], null, null);
-                case 2: return _block(param, self, arg1, splattee[0], splattee[1], null);
-                default: return _block(param, self, arg1, splattee[0], splattee[1], splattee[2]);
+                case 0: return Invoke(param, self, procArg, arg1);
+                case 1: return Invoke(param, self, procArg, arg1, splattee[0]);
+                case 2: return Invoke(param, self, procArg, arg1, splattee[0], splattee[1]);
+                default: return Invoke(param, self, procArg, arg1, splattee[0], splattee[1], splattee[2]);
             }
         }
 
         // R(2, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, arg1, arg2, null, null);
-                case 1: return _block(param, self, arg1, arg2, splattee[0], null);
-                default: return _block(param, self, arg1, arg2, splattee[0], splattee[1]);
+                case 0: return Invoke(param, self, procArg, arg1, arg2);
+                case 1: return Invoke(param, self, procArg, arg1, arg2, splattee[0]);
+                default: return Invoke(param, self, procArg, arg1, arg2, splattee[0], splattee[1]);
             }
         }
 
         // R(3, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
             switch (splattee.Count) {
-                case 0: return _block(param, self, arg1, arg2, arg3, null);
-                default: return _block(param, self, arg1, arg2, arg3, splattee[0]);
+                case 0: return Invoke(param, self, procArg, arg1, arg2, arg3);
+                default: return Invoke(param, self, procArg, arg1, arg2, arg3, splattee[0]);
             }
         }
 

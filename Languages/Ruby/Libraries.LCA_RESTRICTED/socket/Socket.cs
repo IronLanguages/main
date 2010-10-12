@@ -30,6 +30,7 @@ using Microsoft.Scripting.Math;
 
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("Socket", BuildConfig = "!SILVERLIGHT")]
+    [Includes(typeof(SocketConstants), Copy = true)]
     public class RubySocket : RubyBasicSocket {
 
         #region Construction
@@ -347,295 +348,10 @@ namespace IronRuby.StandardLibrary.Sockets {
 
         #region Constants
 
-        #region Address Family
-
-        [RubyConstant]
-        public const int AF_APPLETALK = (int)AddressFamily.AppleTalk;
-        [RubyConstant]
-        public const int AF_ATM = (int)AddressFamily.Atm;
-        [RubyConstant]
-        public const int AF_CCITT = (int)AddressFamily.Ccitt;
-        [RubyConstant]
-        public const int AF_CHAOS = (int)AddressFamily.Chaos;
-        [RubyConstant]
-        public const int AF_DATAKIT = (int)AddressFamily.DataKit;
-        [RubyConstant]
-        public const int AF_DLI = (int)AddressFamily.DataLink;
-        [RubyConstant]
-        public const int AF_ECMA = (int)AddressFamily.Ecma;
-        [RubyConstant]
-        public const int AF_HYLINK = (int)AddressFamily.HyperChannel;
-        [RubyConstant]
-        public const int AF_IMPLINK = (int)AddressFamily.ImpLink;
-        [RubyConstant]
-        public const int AF_INET = (int)AddressFamily.InterNetwork;
-        [RubyConstant]
-        public const int AF_INET6 = (int)AddressFamily.InterNetworkV6;
-        [RubyConstant]
-        public const int AF_IPX = (int)AddressFamily.Ipx;
-        [RubyConstant]
-        public const int AF_ISO = (int)AddressFamily.Iso;
-        [RubyConstant]
-        public const int AF_LAT = (int)AddressFamily.Lat;
-        [RubyConstant]
-        public const int AF_MAX = (int)AddressFamily.Max;
-        [RubyConstant]
-        public const int AF_NETBIOS = (int)AddressFamily.NetBios;
-        [RubyConstant]
-        public const int AF_NS = (int)AddressFamily.NS;
-        [RubyConstant]
-        public const int AF_OSI = (int)AddressFamily.Osi;
-        [RubyConstant]
-        public const int AF_PUP = (int)AddressFamily.Pup;
-        [RubyConstant]
-        public const int AF_SNA = (int)AddressFamily.Sna;
-        [RubyConstant]
-        public const int AF_UNIX = (int)AddressFamily.Unix;
-        [RubyConstant]
-        public const int AF_UNSPEC = (int)AddressFamily.Unspecified;
-
-        #endregion
-
-        #region Flag Options for GetAddressInfo
-        [RubyConstant]
-        public const int AI_PASSIVE = 1;
-        [RubyConstant]
-        public const int AI_CANONNAME = 2;
-        [RubyConstant]
-        public const int AI_NUMERICHOST = 4;
-        [RubyConstant]
-        public const int AI_MASK = (AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST);
-
-        [RubyConstant]
-        public const int AI_ALL = 0x00000100;
-        [RubyConstant]
-        public const int AI_V4MAPPED_CFG = 0x00000200;
-        [RubyConstant]
-        public const int AI_ADDRCONFIG = 0x00000400;
-        [RubyConstant]
-        public const int AI_V4MAPPED = 0x00000800;
-        [RubyConstant]
-        public const int AI_DEFAULT = (AI_V4MAPPED_CFG | AI_ADDRCONFIG);
-        #endregion
-
-        #region Error Return Codes from GetAddressInfo
-        [RubyConstant]
-        public const int EAI_ADDRFAMILY = 1;
-        [RubyConstant]
-        public const int EAI_AGAIN = 2;
-        [RubyConstant]
-        public const int EAI_BADFLAGS = 3;
-        [RubyConstant]
-        public const int EAI_BADHINTS = 12;
-        [RubyConstant]
-        public const int EAI_FAIL = 4;
-        [RubyConstant]
-        public const int EAI_FAMILY = 5;
-        [RubyConstant]
-        public const int EAI_MAX = 14;
-        [RubyConstant]
-        public const int EAI_MEMORY = 6;
-        [RubyConstant]
-        public const int EAI_NODATA = 7;
-        [RubyConstant]
-        public const int EAI_NONAME = 8;
-        [RubyConstant]
-        public const int EAI_PROTOCOL = 13;
-        [RubyConstant]
-        public const int EAI_SERVICE = 9;
-        [RubyConstant]
-        public const int EAI_SOCKTYPE = 10;
-        [RubyConstant]
-        public const int EAI_SYSTEM = 11;
-        #endregion
-
-        #region
-        [RubyConstant]
-        public const uint INADDR_ALLHOSTS_GROUP = 0xe0000001;
-        [RubyConstant]
-        public const int INADDR_ANY = 0;
-        [RubyConstant]
-        public const uint INADDR_BROADCAST = 0xffffffff;
-        [RubyConstant]
-        public const int INADDR_LOOPBACK = 0x7F000001;
-        [RubyConstant]
-        public const uint INADDR_MAX_LOCAL_GROUP = 0xe00000ff;
-        [RubyConstant]
-        public const uint INADDR_NONE = 0xffffffff;
-        [RubyConstant]
-        public const uint INADDR_UNSPEC_GROUP = 0xe0000000;
-        #endregion
-
-        #region IP Protocol Constants
-        [RubyConstant]
-        public const int IPPORT_RESERVED = 1024;
-        [RubyConstant]
-        public const int IPPORT_USERRESERVED = 5000;
-        [RubyConstant]
-        public const int IPPROTO_GGP = 3;
-        [RubyConstant]
-        public const int IPPROTO_ICMP = 1;
-        [RubyConstant]
-        public const int IPPROTO_IDP = 22;
-        [RubyConstant]
-        public const int IPPROTO_IGMP = 2;
-        [RubyConstant]
-        public const int IPPROTO_IP = 0;
-        [RubyConstant]
-        public const int IPPROTO_MAX = 256;
-        [RubyConstant]
-        public const int IPPROTO_ND = 77;
-        [RubyConstant]
-        public const int IPPROTO_PUP = 12;
-        [RubyConstant]
-        public const int IPPROTO_RAW = 255;
-        [RubyConstant]
-        public const int IPPROTO_TCP = 6;
-        [RubyConstant]
-        public const int IPPROTO_UDP = 17;
-        #endregion
-
-        #region Message Options
-        [RubyConstant]
-        public const int MSG_DONTROUTE = 4;
-        [RubyConstant]
-        public const int MSG_OOB = 1;
-        [RubyConstant]
-        public const int MSG_PEEK = 2;
-        [RubyConstant]
-        #endregion
-
-        #region Name Info
-        public const int NI_DGRAM = 16;
-        [RubyConstant]
-        public const int NI_MAXHOST = 1025;
-        [RubyConstant]
-        public const int NI_MAXSERV = 32;
-        [RubyConstant]
-        public const int NI_NAMEREQD = 4;
-        [RubyConstant]
-        public const int NI_NOFQDN = 1;
-        [RubyConstant]
-        public const int NI_NUMERICHOST = 2;
-        [RubyConstant]
-        public const int NI_NUMERICSERV = 8;
-        #endregion
-
-        #region Protocol Family
-        [RubyConstant]
-        public const int PF_APPLETALK = (int)ProtocolFamily.AppleTalk;
-        [RubyConstant]
-        public const int PF_ATM = (int)ProtocolFamily.Atm;
-        [RubyConstant]
-        public const int PF_CCITT = (int)ProtocolFamily.Ccitt;
-        [RubyConstant]
-        public const int PF_CHAOS = (int)ProtocolFamily.Chaos;
-        [RubyConstant]
-        public const int PF_DATAKIT = (int)ProtocolFamily.DataKit;
-        [RubyConstant]
-        public const int PF_DLI = (int)ProtocolFamily.DataLink;
-        [RubyConstant]
-        public const int PF_ECMA = (int)ProtocolFamily.Ecma;
-        [RubyConstant]
-        public const int PF_HYLINK = (int)ProtocolFamily.HyperChannel;
-        [RubyConstant]
-        public const int PF_IMPLINK = (int)ProtocolFamily.ImpLink;
-        [RubyConstant]
-        public const int PF_INET = (int)ProtocolFamily.InterNetwork;
-        [RubyConstant]
-        public const int PF_IPX = (int)ProtocolFamily.Ipx;
-        [RubyConstant]
-        public const int PF_ISO = (int)ProtocolFamily.Iso;
-        [RubyConstant]
-        public const int PF_LAT = (int)ProtocolFamily.Lat;
-        [RubyConstant]
-        public const int PF_MAX = (int)ProtocolFamily.Max;
-        [RubyConstant]
-        public const int PF_NS = (int)ProtocolFamily.NS;
-        [RubyConstant]
-        public const int PF_OSI = (int)ProtocolFamily.Osi;
-        [RubyConstant]
-        public const int PF_PUP = (int)ProtocolFamily.Pup;
-        [RubyConstant]
-        public const int PF_SNA = (int)ProtocolFamily.Sna;
-        [RubyConstant]
-        public const int PF_UNIX = (int)ProtocolFamily.Unix;
-        [RubyConstant]
-        public const int PF_UNSPEC = (int)ProtocolFamily.Unspecified;
-        #endregion
-
-        #region Socket Shutdown
-        [RubyConstant]
-        public const int SHUT_RD = (int)SocketShutdown.Receive;
-        [RubyConstant]
-        public const int SHUT_RDWR = (int)SocketShutdown.Both;
-        [RubyConstant]
-        public const int SHUT_WR = (int)SocketShutdown.Send;
-        #endregion
-
-        #region Socket Type
-        [RubyConstant]
-        public const int SOCK_DGRAM = (int)SocketType.Dgram;
-        [RubyConstant]
-        public const int SOCK_RAW = (int)SocketType.Raw;
-        [RubyConstant]
-        public const int SOCK_RDM = (int)SocketType.Rdm;
-        [RubyConstant]
-        public const int SOCK_SEQPACKET = (int)SocketType.Seqpacket;
-        [RubyConstant]
-        public const int SOCK_STREAM = (int)SocketType.Stream;
-        #endregion
-
-        [RubyConstant]
-        public const int SOL_SOCKET = 65535;
-
-        #region Socket Option
-        [RubyConstant]
-        public const int SO_ACCEPTCONN = (int)SocketOptionName.AcceptConnection;
-        [RubyConstant]
-        public const int SO_BROADCAST = (int)SocketOptionName.Broadcast;
-        [RubyConstant]
-        public const int SO_DEBUG = (int)SocketOptionName.Debug;
-        [RubyConstant]
-        public const int SO_DONTROUTE = (int)SocketOptionName.DontRoute;
-        [RubyConstant]
-        public const int SO_ERROR = (int)SocketOptionName.Error;
-        [RubyConstant]
-        public const int SO_KEEPALIVE = (int)SocketOptionName.KeepAlive;
-        [RubyConstant]
-        public const int SO_LINGER = (int)SocketOptionName.Linger;
-        [RubyConstant]
-        public const int SO_OOBINLINE = (int)SocketOptionName.OutOfBandInline;
-        [RubyConstant]
-        public const int SO_RCVBUF = (int)SocketOptionName.ReceiveBuffer;
-        [RubyConstant]
-        public const int SO_RCVLOWAT = (int)SocketOptionName.ReceiveLowWater;
-        [RubyConstant]
-        public const int SO_RCVTIMEO = (int)SocketOptionName.ReceiveTimeout;
-        [RubyConstant]
-        public const int SO_REUSEADDR = (int)SocketOptionName.ReuseAddress;
-        [RubyConstant]
-        public const int SO_SNDBUF = (int)SocketOptionName.SendBuffer;
-        [RubyConstant]
-        public const int SO_SNDLOWAT = (int)SocketOptionName.SendLowWater;
-        [RubyConstant]
-        public const int SO_SNDTIMEO = (int)SocketOptionName.SendTimeout;
-        [RubyConstant]
-        public const int SO_TYPE = (int)SocketOptionName.Type;
-        [RubyConstant]
-        public const int SO_USELOOPBACK = (int)SocketOptionName.UseLoopback;
-        #endregion
-
-        [RubyConstant]
-        public const int TCP_NODELAY = 1;
-        #endregion
-
         [RubyModule("Constants", BuildConfig ="!SILVERLIGHT")]
         public class SocketConstants {
-
-            #region Constants
-
             #region Address Family
+
             [RubyConstant]
             public const int AF_APPLETALK = (int)AddressFamily.AppleTalk;
             [RubyConstant]
@@ -680,45 +396,30 @@ namespace IronRuby.StandardLibrary.Sockets {
             public const int AF_UNIX = (int)AddressFamily.Unix;
             [RubyConstant]
             public const int AF_UNSPEC = (int)AddressFamily.Unspecified;
+
             #endregion
 
             #region Flag Options for GetAddressInfo
+
             [RubyConstant]
             public const int AI_PASSIVE = 1;
             [RubyConstant]
             public const int AI_CANONNAME = 2;
             [RubyConstant]
             public const int AI_NUMERICHOST = 4;
-            [RubyConstant]
-            public const int AI_MASK = (AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST);
 
-            [RubyConstant]
-            public const int AI_ALL = 0x00000100;
-            [RubyConstant]
-            public const int AI_V4MAPPED_CFG = 0x00000200;
-            [RubyConstant]
-            public const int AI_ADDRCONFIG = 0x00000400;
-            [RubyConstant]
-            public const int AI_V4MAPPED = 0x00000800;
-            [RubyConstant]
-            public const int AI_DEFAULT = (AI_V4MAPPED_CFG | AI_ADDRCONFIG);
             #endregion
 
             #region Error Return Codes from GetAddressInfo
-            [RubyConstant]
-            public const int EAI_ADDRFAMILY = 1;
+
             [RubyConstant]
             public const int EAI_AGAIN = 2;
             [RubyConstant]
             public const int EAI_BADFLAGS = 3;
             [RubyConstant]
-            public const int EAI_BADHINTS = 12;
-            [RubyConstant]
             public const int EAI_FAIL = 4;
             [RubyConstant]
             public const int EAI_FAMILY = 5;
-            [RubyConstant]
-            public const int EAI_MAX = 14;
             [RubyConstant]
             public const int EAI_MEMORY = 6;
             [RubyConstant]
@@ -726,16 +427,24 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int EAI_NONAME = 8;
             [RubyConstant]
-            public const int EAI_PROTOCOL = 13;
-            [RubyConstant]
             public const int EAI_SERVICE = 9;
             [RubyConstant]
             public const int EAI_SOCKTYPE = 10;
-            [RubyConstant]
-            public const int EAI_SYSTEM = 11;
+
             #endregion
 
-            #region
+            #region Addresses
+
+            [RubyConstant]
+            public const int IPPORT_RESERVED = 1024;
+            [RubyConstant]
+            public const int IPPORT_USERRESERVED = 5000;
+
+            [RubyConstant]
+            public const int INET_ADDRSTRLEN = 16;
+            [RubyConstant]
+            public const int INET6_ADDRSTRLEN = 46;
+
             [RubyConstant]
             public const uint INADDR_ALLHOSTS_GROUP = 0xe0000001;
             [RubyConstant]
@@ -750,13 +459,47 @@ namespace IronRuby.StandardLibrary.Sockets {
             public const uint INADDR_NONE = 0xffffffff;
             [RubyConstant]
             public const uint INADDR_UNSPEC_GROUP = 0xe0000000;
+
             #endregion
 
             #region IP Protocol Constants
+
             [RubyConstant]
-            public const int IPPORT_RESERVED = 1024;
+            public const int IP_DEFAULT_MULTICAST_TTL = 1;
             [RubyConstant]
-            public const int IPPORT_USERRESERVED = 5000;
+            public const int IP_DEFAULT_MULTICAST_LOOP = 1;
+
+            [RubyConstant]
+            public const int IP_OPTIONS = 1;
+            [RubyConstant]
+            public const int IP_HDRINCL = 2;
+            [RubyConstant]
+            public const int IP_TOS = 3;
+            [RubyConstant]
+            public const int IP_TTL = 4;
+            [RubyConstant]
+            public const int IP_MULTICAST_IF = 9;
+            [RubyConstant]
+            public const int IP_MULTICAST_TTL = 10;
+            [RubyConstant]
+            public const int IP_MULTICAST_LOOP = 11;
+            [RubyConstant]
+            public const int IP_ADD_MEMBERSHIP = 12;
+            [RubyConstant]
+            public const int IP_DROP_MEMBERSHIP = 13;
+            [RubyConstant]
+            public const int IP_ADD_SOURCE_MEMBERSHIP = 15;
+            [RubyConstant]
+            public const int IP_DROP_SOURCE_MEMBERSHIP = 16;
+            [RubyConstant]
+            public const int IP_BLOCK_SOURCE = 17;
+            [RubyConstant]
+            public const int IP_UNBLOCK_SOURCE = 18;
+            [RubyConstant]
+            public const int IP_PKTINFO = 19;
+            [RubyConstant]
+            public const int IP_MAX_MEMBERSHIPS = 20;
+
             [RubyConstant]
             public const int IPPROTO_GGP = 3;
             [RubyConstant]
@@ -779,6 +522,42 @@ namespace IronRuby.StandardLibrary.Sockets {
             public const int IPPROTO_TCP = 6;
             [RubyConstant]
             public const int IPPROTO_UDP = 17;
+            [RubyConstant]
+            public const int IPPROTO_AH = 51;
+            [RubyConstant]
+            public const int IPPROTO_DSTOPTS = 60;
+            [RubyConstant]
+            public const int IPPROTO_ESP = 50;
+            [RubyConstant]
+            public const int IPPROTO_FRAGMENT = 44;
+            [RubyConstant]
+            public const int IPPROTO_HOPOPTS = 0;
+            [RubyConstant]
+            public const int IPPROTO_ICMPV6 = 58;
+            [RubyConstant]
+            public const int IPPROTO_IPV6 = 41;
+            [RubyConstant]
+            public const int IPPROTO_NONE = 59;
+            [RubyConstant]
+            public const int IPPROTO_ROUTING = 43;
+
+            [RubyConstant]
+            public const int IPV6_JOIN_GROUP = 12;
+            [RubyConstant]
+            public const int IPV6_LEAVE_GROUP = 13;
+            [RubyConstant]
+            public const int IPV6_MULTICAST_HOPS = 10;
+            [RubyConstant]
+            public const int IPV6_MULTICAST_IF = 9;
+            [RubyConstant]
+            public const int IPV6_MULTICAST_LOOP = 11;
+            [RubyConstant]
+            public const int IPV6_UNICAST_HOPS = 4;
+            [RubyConstant]
+            public const int IPV6_PKTINFO = 19;
+
+
+
             #endregion
 
             #region Message Options
@@ -808,6 +587,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             #endregion
 
             #region Protocol Family
+
             [RubyConstant]
             public const int PF_APPLETALK = (int)ProtocolFamily.AppleTalk;
             [RubyConstant]
@@ -829,6 +609,8 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int PF_INET = (int)ProtocolFamily.InterNetwork;
             [RubyConstant]
+            public const int PF_INET6 = (int)ProtocolFamily.InterNetworkV6;
+            [RubyConstant]
             public const int PF_IPX = (int)ProtocolFamily.Ipx;
             [RubyConstant]
             public const int PF_ISO = (int)ProtocolFamily.Iso;
@@ -848,18 +630,22 @@ namespace IronRuby.StandardLibrary.Sockets {
             public const int PF_UNIX = (int)ProtocolFamily.Unix;
             [RubyConstant]
             public const int PF_UNSPEC = (int)ProtocolFamily.Unspecified;
+
             #endregion
 
             #region Socket Shutdown
+
             [RubyConstant]
             public const int SHUT_RD = (int)SocketShutdown.Receive;
             [RubyConstant]
             public const int SHUT_RDWR = (int)SocketShutdown.Both;
             [RubyConstant]
             public const int SHUT_WR = (int)SocketShutdown.Send;
+
             #endregion
 
             #region Socket Type
+
             [RubyConstant]
             public const int SOCK_DGRAM = (int)SocketType.Dgram;
             [RubyConstant]
@@ -870,12 +656,11 @@ namespace IronRuby.StandardLibrary.Sockets {
             public const int SOCK_SEQPACKET = (int)SocketType.Seqpacket;
             [RubyConstant]
             public const int SOCK_STREAM = (int)SocketType.Stream;
+
             #endregion
 
-            [RubyConstant]
-            public const int SOL_SOCKET = 65535;
-
             #region Socket Option
+
             [RubyConstant]
             public const int SO_ACCEPTCONN = (int)SocketOptionName.AcceptConnection;
             [RubyConstant]
@@ -910,13 +695,20 @@ namespace IronRuby.StandardLibrary.Sockets {
             public const int SO_TYPE = (int)SocketOptionName.Type;
             [RubyConstant]
             public const int SO_USELOOPBACK = (int)SocketOptionName.UseLoopback;
+
             #endregion
 
             [RubyConstant]
-            public const int TCP_NODELAY = 1;
-            #endregion
+            public const int SOL_SOCKET = 65535;
 
+            [RubyConstant]
+            public const int SOMAXCONN = Int32.MaxValue;
+
+            [RubyConstant]
+            public const int TCP_NODELAY = 1;
         }
+
+        #endregion
 
         #region Private Helpers
 

@@ -23,6 +23,8 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 
 namespace IronRuby.Runtime {
+    using UnaryOp = Func<CallSite, object, object>;
+    using BinaryOp = Func<CallSite, object, object, object>;
 
     public abstract class RubyCallSiteStorage {
         private readonly RubyContext/*!*/ _context;
@@ -52,29 +54,29 @@ namespace IronRuby.Runtime {
         }
     }
 
-    public sealed class BinaryOpStorage : CallSiteStorage<Func<CallSite, object, object, object>> {
+    public sealed class BinaryOpStorage : CallSiteStorage<BinaryOp> {
         [Emitted]
         public BinaryOpStorage(RubyContext/*!*/ context) : base(context) { }
 
-        public CallSite<Func<CallSite, object, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
+        public CallSite<BinaryOp>/*!*/ GetCallSite(string/*!*/ methodName) {
             return GetCallSite(methodName, 1);
         }
     }
 
-    public sealed class UnaryOpStorage : CallSiteStorage<Func<CallSite, object, object>> {
+    public sealed class UnaryOpStorage : CallSiteStorage<UnaryOp> {
         [Emitted]
         public UnaryOpStorage(RubyContext/*!*/ context) : base(context) { }
 
-        public CallSite<Func<CallSite, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
+        public CallSite<UnaryOp>/*!*/ GetCallSite(string/*!*/ methodName) {
             return GetCallSite(methodName, 0);
         }
     }
 
-    public sealed class RespondToStorage : CallSiteStorage<Func<CallSite, object, RubySymbol, object>> {
+    public sealed class RespondToStorage : CallSiteStorage<BinaryOp> {
         [Emitted]
         public RespondToStorage(RubyContext/*!*/ context) : base(context) { }
 
-        public CallSite<Func<CallSite, object, RubySymbol, object>>/*!*/ GetCallSite() {
+        public CallSite<BinaryOp>/*!*/ GetCallSite() {
             return GetCallSite("respond_to?", 1);
         }
     }
@@ -90,6 +92,27 @@ namespace IronRuby.Runtime {
         internal CallSite<Func<CallSite, object, TResult>>/*!*/ GetDefaultConversionSite() {
             return RubyUtils.GetCallSite(ref Site, ProtocolConversionAction.GetConversionAction(Context, typeof(TResult), true));
 
+        }
+    }
+
+    public class ComparisonStorage : RubyCallSiteStorage {
+        private CallSite<BinaryOp> _compareSite;     // <=>
+        private CallSite<BinaryOp> _lessThanSite;    // <
+        private CallSite<BinaryOp> _greaterThanSite; // >
+
+        [Emitted]
+        public ComparisonStorage(RubyContext/*!*/ context) : base(context) { }
+
+        public CallSite<BinaryOp>/*!*/ CompareSite {
+            get { return RubyUtils.GetCallSite(ref _compareSite, Context, "<=>", 1); }
+        }
+
+        public CallSite<BinaryOp>/*!*/ LessThanSite {
+            get { return RubyUtils.GetCallSite(ref _lessThanSite, Context, "<", 1); }
+        }
+
+        public CallSite<BinaryOp>/*!*/ GreaterThanSite {
+            get { return RubyUtils.GetCallSite(ref _greaterThanSite, Context, ">", 1); }
         }
     }
 }

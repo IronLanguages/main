@@ -1621,18 +1621,12 @@ namespace IronRuby.Builtins {
         #region sort, sort!
 
         [RubyMethod("sort")]
-        public static object Sort(
-            UnaryOpStorage/*!*/ allocateStorage,
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam block, IList/*!*/ self) {
-
+        public static object Sort(UnaryOpStorage/*!*/ allocateStorage, ComparisonStorage/*!*/ comparisonStorage, BlockParam block, IList/*!*/ self) {
             // TODO: this is not optimal because it makes an extra array copy
             // (only affects sorting of .NET types, do we need our own quicksort?)
             IList resultList = CreateResultArray(allocateStorage, self);
             StrongBox<object> breakResult;
-            RubyArray result = ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, ToArray(self), out breakResult);
+            RubyArray result = ArrayOps.SortInPlace(comparisonStorage, block, ToArray(self), out breakResult);
             if (breakResult == null) {
                 Replace(resultList, result);
                 return resultList;
@@ -1642,25 +1636,60 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sort!")]
-        public static object SortInPlace(
-            BinaryOpStorage/*!*/ comparisonStorage,
-            BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,
-            BlockParam block, IList/*!*/ self) {
-
+        public static object SortInPlace(ComparisonStorage/*!*/ comparisonStorage, BlockParam block, IList/*!*/ self) {
             // this should always call ArrayOps.SortInPlace instead
             Debug.Assert(!(self is RubyArray));
 
             // TODO: this is not optimal because it makes an extra array copy
             // (only affects sorting of .NET types, do we need our own quicksort?)
             StrongBox<object> breakResult;
-            RubyArray result = ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, ToArray(self), out breakResult);
+            RubyArray result = ArrayOps.SortInPlace(comparisonStorage, block, ToArray(self), out breakResult);
             if (breakResult == null) {
                 Replace(self, result);
                 return self;
             } else {
                 return breakResult.Value;
             }
+        }
+
+        #endregion
+
+        #region shuffle, shuffle!
+
+        [RubyMethod("shuffle")]
+        public static IList/*!*/ Shuffle(UnaryOpStorage/*!*/ allocateStorage, RubyArray/*!*/ self) {
+            IList result = CreateResultArray(allocateStorage, self);
+            if (self.Count == 0) {
+                return result;
+            }
+
+            RubyArray array = result as RubyArray;
+            if (array != null && array.Count < self.Count) {
+                array.AddCapacity(self.Count - array.Count);
+            }
+
+            var generator = allocateStorage.Context.RandomNumberGenerator;
+
+            result.Add(self[0]);
+            for (int i = 1; i < self.Count; i++) {
+                int j = generator.Next(i + 1);
+                result.Add(result[j]);
+                result[j] = self[i];
+            }
+
+            return result;
+        }
+
+        [RubyMethod("shuffle!")]
+        public static RubyArray/*!*/ ShuffleInPlace(RubyContext/*!*/ context, RubyArray/*!*/ self) {
+            var generator = context.RandomNumberGenerator;
+            for (int i = self.Count - 1; i >= 0; i--) {
+                int j = generator.Next(i + 1);
+                object value = self[i];
+                self[i] = self[j];
+                self[j] = value;
+            }
+            return self;
         }
 
         #endregion
@@ -1758,17 +1787,6 @@ namespace IronRuby.Builtins {
             }
 
             return modified ? self : null;
-        }
-
-        #endregion
-
-        #region zip
-
-        [RubyMethod("zip")]
-        public static object Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToAry, BlockParam block,
-            object self, [DefaultProtocol, NotNullItems]params IList/*!*/[]/*!*/ args) {
-
-            return Enumerable.Zip(each, tryToAry, block, self, args);
         }
 
         #endregion
