@@ -1,0 +1,3 @@
+myfp=`which $0`
+mydir=`dirname $myfp`
+mono $mydir/../bin/Chiron.exe $@

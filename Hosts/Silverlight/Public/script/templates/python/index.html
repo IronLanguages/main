@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+    <title>Silverlight Template</title>
+
+    <!-- Basic stylesheet for application -->
+    <link type="text/css" rel="stylesheet" href="css/screen.css" />
+
+    <!-- Defines "onSilverlightError" function for Silverlight plugin -->
+    <script type="text/javascript" src="js/error.js"></script>
+</head>
+
+<body>
+  <!-- 
+    Runtime errors from Silverlight will be displayed here.
+    This will contain debugging information and should be 
+    removed or hidden when debugging is completed 
+  -->
+  <div id='errorLocation'></div>
+
+  <div id="silverlightControlHost">
+
+    <!-- 
+      Silverlight plug-in control 
+      http://msdn.microsoft.com/en-us/library/cc189089(VS.95).aspx#silverlight_plug_in_configuring
+    -->
+    <object data="data:application/x-silverlight," type="application/x-silverlight-2" width="100%" height="100%">
+
+      <!-- 
+        "source" points to the actual Silverlight application
+        If using "Chiron /w", value should be the "<your app folder>.xap"
+      -->
+      <param name="source" value="app.xap"/>
+
+      <!-- 
+        "initParams" is a comma-seperated way to pass key=value pair arguments 
+        into your Silverlight application. Dynamic Languages use special 
+        arguments to configure the application:
+    
+        * start = app.(rb|py|js)
+          - this is the entry-point file to the application. 
+          - By default, it will look for any file named "app", regardless of 
+            the extension. The extension will be used to figure out the language. 
+          - This option can be set to anything you want, but it must include 
+            the extension.
+
+        * debug = [true]|false
+          - Runs your code as debug-able; stack traces will be shown if an error
+            occurs. 
+          - This lets you attach the browser to the Visual Studio
+            debugger and step through the running program (only when the
+            Silverlight tools are installed).
+          - When omitted/set to false, all errors will be silent 
+            (for deployment purposes)
+
+        * reportErrors = [HTML-element-ID]
+          - In the event of an error, the error window will be written into the 
+            innerHTML property of the HTML element with an ID attribute matching 
+            the value of this field.
+          - If there is no matching ID, a HTML element is created with that ID, 
+            and the error window inserted.
+          - If this field is omitted, no errors will be shown.
+            + You can define the "onerror" param, which will let you handle any 
+              error with JavaScript (the index.html templates do this, if you
+              want sample code).
+          - This just causes HTML to be generated in the HTML element; the styling 
+            of the error window is defined in a separate error.css file that must 
+            be included in the page.
+
+        * exceptionDetail = true|[false]
+          - If set to true, this will also show the entire managed stack trace 
+            in the error window rather than just the dynamic stack trace. 
+            This is useful when debugging C#/Visual Basic when called from a 
+            dynamic language.
+
+        * console = true|[false]
+          - If set to true, will show a read-eval-print loop (REPL) window at
+            the bottom of the page, for whatever language the start script is in.
+      -->
+      <param name="initParams" value="reportErrors=errorLocation, console=true" />
+        
+      <!-- Handle all Silverlight errors with function defined in javascripts/error.js -->
+      <param name="onerror" value="onSilverlightError" />
+      
+      <!-- 
+        Other properties of the Silverlight plug-in. For documentation on this, see:
+        http://msdn.microsoft.com/en-us/library/cc189089(VS.95).aspx#silverlight_plug_in_configuring
+      -->
+      <param name="background" value="white" />
+      <param name="windowless" value="true" />
+
+      <!--
+	  <param name="minRuntimeVersion" value="2.0.31005.0" />
+      <param name="autoUpgrade" value="true" />
+      -->
+
+      <!-- 
+        Shows a "Install Microsoft Silverlight" link if Silverlight is 
+        not installed
+      -->
+      <a href="http://go.microsoft.com/fwlink/?LinkID=124807" style="text-decoration: none;">
+        <img src="http://go.microsoft.com/fwlink/?LinkId=108181" alt="Get Microsoft Silverlight" style="border-style: none"/>
+      </a>
+
+    </object>
+
+    <!-- 
+      <iframe> needed to prevent Safari from caching the page and reloading
+      the plugin when the user navigates back to a previously-visted 
+      Silverlight page.
+    -->
+    <iframe style='visibility:hidden;height:0;width:0;border:0px'></iframe>
+  
+  </div>
+
+</body>
+</html>
