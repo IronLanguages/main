@@ -28,7 +28,14 @@ if "%THISISSNAP%" == "1" (
   )
 )
 
+if NOT EXIST %_EXE% (
+  echo File not found: %_EXE%
+  goto End
+)
+
 %_EXE% %TEST_OPTIONS% %*
 ::
 :: There should be no operations after this point so that the exitcode or ir.exe will be avilable as ERRORLEVEL
 ::
+
+:End
