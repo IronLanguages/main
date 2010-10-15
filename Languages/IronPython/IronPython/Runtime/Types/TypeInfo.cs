@@ -1403,6 +1403,23 @@ namespace IronPython.Runtime.Types {
                 if (!Binder.DomainManager.Configuration.PrivateBinding) {
                     foundMembers = CompilerHelpers.FilterNonVisibleMembers(type, foundMembers);
                 }
+                List<MemberInfo> filteredMembers = null;
+                for (int i = 0; i < foundMembers.Length; i++) {
+                    var member = foundMembers[i];
+                    if (member.DeclaringType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
+                        if (filteredMembers == null) {
+                            filteredMembers = new List<MemberInfo>();
+                            for (int j = 0; j < i; j++) {
+                                filteredMembers.Add(foundMembers[j]);
+                            }
+                        }
+                    } else if (filteredMembers != null) {
+                        filteredMembers.Add(foundMembers[i]);
+                    }
+                }
+                if (filteredMembers != null) {
+                    foundMembers = filteredMembers.ToArray();
+                }
 
                 MemberGroup members = new MemberGroup(foundMembers);
 

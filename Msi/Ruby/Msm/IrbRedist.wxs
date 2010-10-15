@@ -70,10 +70,18 @@
                 <netfx:NativeImage Id="NGEN64_File_IronRuby.dll"  Priority="1" Platform="all" />
               </File>
             </Component>
+            
             <Component Id="Comp_64_IrbLibraries" DiskId="1" Guid="CEFEC1FF-F218-423C-BCDE-2031A2157CC5">
               <Condition>VersionNT64</Condition>
               <File Id="NGEN64File_IronRuby.Libraries.dll" Name="IronRuby.Libraries.dll" Assembly=".net" KeyPath="yes">
                 <netfx:NativeImage Id="NGEN64_File_IronRuby.Libraries.dll" Priority="1" Platform="all" />
+              </File>
+            </Component>
+
+            <Component Id="Comp_64_IrbYaml" DiskId="1" Guid="2BF6571B-A914-4CE7-8127-C03DEB5C8D12">
+              <Condition>VersionNT64</Condition>
+              <File Id="NGEN64File_IronRuby.Libraries.Yaml.dll" Name="IronRuby.Libraries.Yaml.dll" Assembly=".net" KeyPath="yes">
+                <netfx:NativeImage Id="NGEN64_File_IronRuby.Libraries.Yaml.dll" Priority="1" Platform="all" />
               </File>
             </Component>
 

@@ -69,6 +69,8 @@ namespace IronRuby.Runtime {
             get { return 0; }
         }
 
+        public const string BinDirEnvironmentVariable = "IRONRUBY_11";
+
         // IronRuby:
         public const string IronRubyInformationalVersion = "1.1.1";
 #if !SILVERLIGHT

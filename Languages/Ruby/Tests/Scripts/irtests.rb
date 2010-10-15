@@ -80,7 +80,7 @@ class IRTest
         :RubySpec_A       => spec_runner(":lang :cli :netinterop :cominterop :thread :netcli"),
         :RubySpec_B       => spec_runner(":core1 :lib1"),
         :RubySpec_C       => spec_runner(":core2 :lib2"),
-        #:RubyGems         => utr_runner("gem"),
+        :RubyGems         => utr_runner("gem"),
         :TZInfo           => utr_runner("tzinfo"),
         :Rake             => utr_runner("rake"),
         :Yaml             => ruby_runner(dlr_path('External.LCA_RESTRICTED/Languages/IronRuby/yaml/YamlTest/yaml_test_suite.rb')),

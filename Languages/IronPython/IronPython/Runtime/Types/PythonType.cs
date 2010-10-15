@@ -2391,6 +2391,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 } else {
                     baseType = _underlyingSystemType.BaseType;
                 }
+                
+                while (baseType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
+                    baseType = baseType.BaseType;
+                }
+
                 _bases = new PythonType[] { GetPythonType(baseType) };
 
                 Type curType = baseType;
@@ -2398,7 +2403,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     Type newType;
                     if (TryReplaceExtensibleWithBase(curType, out newType)) {
                         mro.Add(DynamicHelpers.GetPythonTypeFromType(newType));
-                    } else {
+                    } else if(!curType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                         mro.Add(DynamicHelpers.GetPythonTypeFromType(curType));
                     }
                     curType = curType.BaseType;

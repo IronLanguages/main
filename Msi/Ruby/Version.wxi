@@ -4,6 +4,6 @@
   <?define ProductVersion = "1.1.1.0" ?>
   <?define ProductVersionText = "1.1" ?>
   <?define Manufacturer = "Microsoft Corporation" ?>
-  <?define EnvVariableName = "IRONRUBY_11_40" ?>
+  <?define EnvVariableName = "IRONRUBY_11" ?>
   <?define RegKey = "SOFTWARE\Microsoft\$(var.ProductShortName)\$(var.ProductVersionText)"?>
 </Include> 

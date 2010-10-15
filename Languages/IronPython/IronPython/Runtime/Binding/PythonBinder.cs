@@ -390,6 +390,10 @@ namespace IronPython.Runtime.Binding {
             return res.ToArray();
         }
 
+        public override bool IncludeExtensionMember(MemberInfo member) {
+            return !member.DeclaringType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false);
+        }
+
         public override IList<Type> GetExtensionTypes(Type t) {
             List<Type> list = new List<Type>();
 

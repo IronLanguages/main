@@ -360,10 +360,12 @@ namespace Microsoft.Scripting.Actions {
                 foreach (MemberInfo mi in ext.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
                     MemberInfo newMember = mi;
                     if (PrivateBinding || (newMember = CompilerHelpers.TryGetVisibleMember(mi)) != null) {
-                        if (ext != declaringType) {
-                            members.Add(MemberTracker.FromMemberInfo(newMember, declaringType));
-                        } else {
-                            members.Add(MemberTracker.FromMemberInfo(newMember));
+                        if (IncludeExtensionMember(newMember)) {
+                            if (ext != declaringType) {
+                                members.Add(MemberTracker.FromMemberInfo(newMember, declaringType));
+                            } else {
+                                members.Add(MemberTracker.FromMemberInfo(newMember));
+                            }
                         }
                     }
                 }
@@ -398,6 +400,10 @@ namespace Microsoft.Scripting.Actions {
                 return MemberGroup.CreateInternal(members.ToArray());
             }
             return MemberGroup.EmptyGroup;
+        }
+
+        public virtual bool IncludeExtensionMember(MemberInfo member) {
+            return true;
         }
 
         public virtual IList<Type> GetExtensionTypes(Type t) {

@@ -159,9 +159,14 @@ namespace IronRuby.Runtime {
             }
             
 #if !SILVERLIGHT // no library paths on Silverlight
+            // TODO: this should rather come from Machine.config
+
             string applicationBaseDir;
             try {
-                applicationBaseDir = AppDomain.CurrentDomain.BaseDirectory;
+                applicationBaseDir = _context.Platform.GetEnvironmentVariable(RubyContext.BinDirEnvironmentVariable);
+                if (!Directory.Exists(applicationBaseDir)) {
+                    applicationBaseDir = AppDomain.CurrentDomain.BaseDirectory;
+                }
             } catch (SecurityException) {
                 applicationBaseDir = null;
             }

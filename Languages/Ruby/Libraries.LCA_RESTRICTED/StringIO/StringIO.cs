@@ -585,12 +585,28 @@ namespace IronRuby.StandardLibrary.StringIO {
 
         [RubyMethod("gets")]
         public static MutableString Gets(RubyScope/*!*/ scope, StringIO/*!*/ self) {
-            return Gets(scope, self, scope.RubyContext.InputSeparator);
+            return Gets(scope, self, scope.RubyContext.InputSeparator, -1);
         }
 
         [RubyMethod("gets")]
-        public static MutableString Gets(RubyScope/*!*/ scope, StringIO/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static MutableString Gets(RubyScope/*!*/ scope, StringIO/*!*/ self, DynamicNull separator) {
+            return Gets(scope, self, null, -1);
+        }
+
+        [RubyMethod("gets")]
+        public static MutableString Gets(RubyScope/*!*/ scope, StringIO/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            if (separatorOrLimit.IsFixnum()) {
+                return Gets(scope, self, scope.RubyContext.InputSeparator, separatorOrLimit.Fixnum());
+            } else {
+                return Gets(scope, self, separatorOrLimit.String(), -1);
+            }
+        }
+
+        [RubyMethod("gets")]
+        public static MutableString Gets(RubyScope/*!*/ scope, StringIO/*!*/ self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             var content = self.GetReadableContent();
+
+            // TODO: limit
 
             int position = self._position;
             MutableString result = ReadLine(content, separator, ref position);
@@ -604,13 +620,28 @@ namespace IronRuby.StandardLibrary.StringIO {
 
         [RubyMethod("readline")]
         public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, StringIO/*!*/ self) {
-            return ReadLine(scope, self, scope.RubyContext.InputSeparator);
+            return ReadLine(scope, self, scope.RubyContext.InputSeparator, -1);
         }
 
         [RubyMethod("readline")]
-        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, StringIO/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, StringIO/*!*/ self, DynamicNull separator) {
+            return ReadLine(scope, self, null, -1);
+        }
+
+        [RubyMethod("readline")]
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, StringIO/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            if (separatorOrLimit.IsFixnum()) {
+                return ReadLine(scope, self, scope.RubyContext.InputSeparator, separatorOrLimit.Fixnum());
+            } else {
+                return ReadLine(scope, self, separatorOrLimit.String(), -1);
+            }
+        }
+
+        [RubyMethod("readline")]
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, StringIO/*!*/ self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
+
             // no dynamic call, modifies $_ scope variable:
-            MutableString result = Gets(scope, self, separator);
+            MutableString result = Gets(scope, self, separator, limit);
             if (result == null) {
                 throw new EOFError("end of file reached");
             }
@@ -620,13 +651,29 @@ namespace IronRuby.StandardLibrary.StringIO {
 
         [RubyMethod("readlines")]
         public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, StringIO/*!*/ self) {
-            return ReadLines(self, context.InputSeparator);
+            return ReadLines(self, context.InputSeparator, -1);
         }
 
         [RubyMethod("readlines")]
-        public static RubyArray/*!*/ ReadLines(StringIO/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, StringIO/*!*/ self, DynamicNull separator) {
+            return ReadLines(self, null, -1);
+        }
+
+        [RubyMethod("readlines")]
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, StringIO/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            if (separatorOrLimit.IsFixnum()) {
+                return ReadLines(self, context.InputSeparator, separatorOrLimit.Fixnum());
+            } else {
+                return ReadLines(self, separatorOrLimit.String(), -1);
+            }
+        }
+
+        [RubyMethod("readlines")]
+        public static RubyArray/*!*/ ReadLines(StringIO/*!*/ self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             var content = self.GetReadableContent();
             RubyArray result = new RubyArray();
+
+            // TODO: limit
 
             // no dynamic call, doesn't modify $_ scope variable:
             MutableString line;
@@ -670,17 +717,34 @@ namespace IronRuby.StandardLibrary.StringIO {
         #endregion
 
         #region each, each_line, each_byte, each_char (1.9)
-        
+
         [RubyMethod("each")]
         [RubyMethod("each_line")]
         public static object EachLine(RubyContext/*!*/ context, BlockParam block, StringIO/*!*/ self) {
-            return EachLine(block, self, context.InputSeparator);
+            return EachLine(block, self, context.InputSeparator, -1);
         }
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
-        public static object EachLine(BlockParam block, StringIO/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static object EachLine(RubyContext/*!*/ context, BlockParam block, StringIO/*!*/ self, DynamicNull separator) {
+            return EachLine(block, self, null, -1);
+        }
+
+        [RubyMethod("each")]
+        [RubyMethod("each_line")]
+        public static object EachLine(RubyContext/*!*/ context, BlockParam block, StringIO/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            if (separatorOrLimit.IsFixnum()) {
+                return EachLine(block, self, context.InputSeparator, separatorOrLimit.Fixnum());
+            } else {
+                return EachLine(block, self, separatorOrLimit.String(), -1);
+            }
+        }
+
+        [RubyMethod("each")]
+        [RubyMethod("each_line")]
+        public static object EachLine(BlockParam block, StringIO/*!*/ self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             // TODO: improve MSOps.EachLine
+            // TODO: limit
             var content = self.GetReadableContent();
             var result = MutableStringOps.EachLine(block, content, separator, self._position);
             return ReferenceEquals(result, content) ? self : result;

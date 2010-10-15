@@ -106,15 +106,28 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
-        public static object Each(RubyContext/*!*/ context, BlockParam block, object self, [DefaultProtocol,DefaultParameterValue(-1)]int limit){
-            RubyIOOps.Each(context, block, context.InputProvider.GetOrResetCurrentStream(), limit);
+        public static object Each(RubyContext/*!*/ context, BlockParam block, object self) {
+            RubyIOOps.Each(context, block, context.InputProvider.GetOrResetCurrentStream());
             return self;
         }
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
-        public static object Each(RubyContext/*!*/ context, BlockParam block, object self, [DefaultProtocol]MutableString separator, 
-            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+        public static object Each(RubyContext/*!*/ context, BlockParam block, object self, DynamicNull separator) {
+            RubyIOOps.Each(context, block, context.InputProvider.GetOrResetCurrentStream(), separator);
+            return self;
+        }
+
+        [RubyMethod("each")]
+        [RubyMethod("each_line")]
+        public static object Each(RubyContext/*!*/ context, BlockParam block, object self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            RubyIOOps.Each(context, block, context.InputProvider.GetOrResetCurrentStream(), separatorOrLimit);
+            return self;
+        }
+
+        [RubyMethod("each")]
+        [RubyMethod("each_line")]
+        public static object Each(RubyContext/*!*/ context, BlockParam block, object self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             RubyIOOps.Each(context, block, context.InputProvider.GetOrResetCurrentStream(), separator, limit);
             return self;
         }
@@ -130,13 +143,22 @@ namespace IronRuby.Builtins {
         #region read, readline, readlines
 
         [RubyMethod("readline")]
-        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, object self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
-            return RubyIOOps.ReadLine(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream(), limit);
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, object self) {
+            return RubyIOOps.ReadLine(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream());
         }
 
         [RubyMethod("readline")]
-        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, object self, [DefaultProtocol]MutableString separator, 
-            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, object self, DynamicNull separator) {
+            return RubyIOOps.ReadLine(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream(), separator);
+        }
+
+        [RubyMethod("readline")]
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            return RubyIOOps.ReadLine(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream(), separatorOrLimit);
+        }
+
+        [RubyMethod("readline")]
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, object self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             return RubyIOOps.ReadLine(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream(), separator, limit);
         }
 
@@ -161,13 +183,22 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("readlines")]
-        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, object self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
-            return RubyIOOps.ReadLines(context, context.InputProvider.GetOrResetCurrentStream(), limit);
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, object self) {
+            return RubyIOOps.ReadLines(context, context.InputProvider.GetOrResetCurrentStream());
         }
 
         [RubyMethod("readlines")]
-        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, object self, [DefaultProtocol]MutableString separator, 
-            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, object self, DynamicNull separator) {
+            return RubyIOOps.ReadLines(context, context.InputProvider.GetOrResetCurrentStream(), separator);
+        }
+
+        [RubyMethod("readlines")]
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            return RubyIOOps.ReadLines(context, context.InputProvider.GetOrResetCurrentStream(), separatorOrLimit);
+        }
+
+        [RubyMethod("readlines")]
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, object self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             return RubyIOOps.ReadLines(context, context.InputProvider.GetOrResetCurrentStream(), separator, limit);
         }
 
@@ -187,13 +218,22 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("gets")]
-        public static MutableString Gets(RubyScope/*!*/ scope, object self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
-            return Gets(scope, self, scope.RubyContext.InputSeparator, limit);
+        public static MutableString Gets(RubyScope/*!*/ scope, object self) {
+            return RubyIOOps.Gets(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream());
         }
 
         [RubyMethod("gets")]
-        public static MutableString Gets(RubyScope/*!*/ scope, object self, [DefaultProtocol]MutableString separator, 
-            [DefaultProtocol,DefaultParameterValue(-1)]int limit) {
+        public static MutableString Gets(RubyScope/*!*/ scope, object self, DynamicNull separator) {
+            return RubyIOOps.Gets(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream(), separator);
+        }
+
+        [RubyMethod("gets")]
+        public static MutableString Gets(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            return RubyIOOps.Gets(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream(), separatorOrLimit);
+        }
+
+        [RubyMethod("gets")]
+        public static MutableString Gets(RubyScope/*!*/ scope, object self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             return RubyIOOps.Gets(scope, scope.RubyContext.InputProvider.GetOrResetCurrentStream(), separator, limit);
         }
 

@@ -171,6 +171,7 @@
     <Compile Include="Runtime\MemoryView.cs" />
     <Compile Include="Runtime\Method.Generated.cs" />
     <Compile Include="Runtime\PythonDocumentationProvider.cs" />
+    <Compile Include="Runtime\PythonHiddenBaseClassAttribute.cs" />
     <Compile Include="Runtime\SequenceTypeInfoAttribute.cs" />
     <Compile Include="Runtime\ModuleContext.cs" />
     <Compile Include="Runtime\ModuleGlobalCache.cs" />

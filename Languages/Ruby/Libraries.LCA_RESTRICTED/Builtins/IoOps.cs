@@ -855,7 +855,8 @@ namespace IronRuby.Builtins {
             try {
                 stream.ReadTimeout = 0;
             } catch (InvalidOperationException) {
-                throw RubyExceptions.CreateEBADF();
+                // TODO:throw RubyExceptions.CreateEBADF();
+                // this is called on TCPSocket in RubyGems
             }
 
             return Read(self, bytes, buffer);
@@ -923,13 +924,26 @@ namespace IronRuby.Builtins {
         // readbyte
 
         [RubyMethod("readline")]
-        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
-            return ReadLine(scope, self, scope.RubyContext.InputSeparator, limit);
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self) {
+            return ReadLine(scope, self, scope.RubyContext.InputSeparator, -1);
         }
 
         [RubyMethod("readline")]
-        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, 
-            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, DynamicNull separator) {
+            return ReadLine(scope, self, null, -1);
+        }
+
+        [RubyMethod("readline")]
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            if (separatorOrLimit.IsFixnum()) {
+                return ReadLine(scope, self, scope.RubyContext.InputSeparator, separatorOrLimit.Fixnum());
+            } else {
+                return ReadLine(scope, self, separatorOrLimit.String(), -1);
+            }
+        }
+
+        [RubyMethod("readline")]
+        public static MutableString/*!*/ ReadLine(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
 
             // no dynamic call, modifies $_ scope variable:
             MutableString result = Gets(scope, self, separator, limit);
@@ -941,13 +955,26 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("readlines")]
-        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
-            return ReadLines(context, self, context.InputSeparator, limit);
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self) {
+            return ReadLines(context, self, context.InputSeparator, -1);
         }
 
         [RubyMethod("readlines")]
-        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, 
-            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self, DynamicNull separator) {
+            return ReadLines(context, self, null, -1);
+        }
+
+        [RubyMethod("readlines")]
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            if (separatorOrLimit.IsFixnum()) {
+                return ReadLines(context, self, context.InputSeparator, separatorOrLimit.Fixnum());
+            } else {
+                return ReadLines(context, self, separatorOrLimit.String(), -1);
+            }
+        }
+
+        [RubyMethod("readlines")]
+        public static RubyArray/*!*/ ReadLines(RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             RubyArray result = new RubyArray();
 
             // no dynamic call, doesn't modify $_ scope variable:
@@ -960,6 +987,8 @@ namespace IronRuby.Builtins {
             context.InputProvider.LastInputLineNumber = self.LineNumber;
             return result;
         }
+
+        // TODO: to_hash, to_str, to_int
 
         [RubyMethod("readlines", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ ReadLines(RubyClass/*!*/ self,
@@ -988,13 +1017,26 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("gets")]
-        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
-            return Gets(scope, self, scope.RubyContext.InputSeparator, limit);
+        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self) {
+            return Gets(scope, self, scope.RubyContext.InputSeparator, -1);
         }
 
         [RubyMethod("gets")]
-        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, 
-            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, DynamicNull separator) {
+            return Gets(scope, self, null, -1);
+        }
+
+        [RubyMethod("gets")]
+        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            if (separatorOrLimit.IsFixnum()) {
+                return Gets(scope, self, scope.RubyContext.InputSeparator, separatorOrLimit.Fixnum());
+            } else {
+                return Gets(scope, self, separatorOrLimit.String(), -1);
+            } 
+        }
+
+        [RubyMethod("gets")]
+        public static MutableString Gets(RubyScope/*!*/ scope, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
 
             MutableString result = self.ReadLineOrParagraph(separator, limit);
             if (result != null) {
@@ -1019,6 +1061,8 @@ namespace IronRuby.Builtins {
 
         #region foreach, each, each_byte, each_line
 
+        // TODO: to_hash, to_str, to_int
+
         [RubyMethod("foreach", RubyMethodAttributes.PublicSingleton)]
         public static void ForEach(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path,
             [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
@@ -1035,14 +1079,29 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
-        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self, [DefaultProtocol,DefaultParameterValue(-1)]int limit) {
-            return Each(context, block, self, context.InputSeparator, limit);
+        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self) {
+            return Each(context, block, self, context.InputSeparator, -1);
         }
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
-        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator,
-            [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
+        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self, DynamicNull separator) {
+            return Each(context, block, self, null, -1);
+        }
+
+        [RubyMethod("each")]
+        [RubyMethod("each_line")]
+        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> separatorOrLimit) {
+            if (separatorOrLimit.IsFixnum()) {
+                return Each(context, block, self, context.InputSeparator, separatorOrLimit.Fixnum());
+            } else {
+                return Each(context, block, self, separatorOrLimit.String(), -1);
+            }
+        }
+
+        [RubyMethod("each")]
+        [RubyMethod("each_line")]
+        public static object Each(RubyContext/*!*/ context, BlockParam block, RubyIO/*!*/ self, [DefaultProtocol]MutableString separator, [DefaultProtocol]int limit) {
             self.RequireReadable();
 
             MutableString line;

@@ -203,6 +203,12 @@ def test_cp27547():
     result = source.GetCodeProperties()
     AreEqual(result, ScriptCodeParseResult.IncompleteToken)
 
+def test_hidden_base():
+	from IronPythonTest import DerivedFromHiddenBase
+	a = DerivedFromHiddenBase()
+	AreEqual(a.Accessible(), 42)
+	AssertError(AttributeError, lambda: a.Inaccessible)
+	
 #--MAIN------------------------------------------------------------------------        
 run_test(__name__)
 

@@ -297,7 +297,7 @@ namespace IronPython.Runtime {
         string tostring();
     }
 
-    internal interface IPythonBufferable {
+    public interface IPythonBufferable {
         IntPtr UnsafeAddress {
             get;
         }

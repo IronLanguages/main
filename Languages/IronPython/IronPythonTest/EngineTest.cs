@@ -2792,4 +2792,15 @@ if r.sum != 110:
         }
     }
 
+    [PythonHiddenBaseClass]
+    public class HiddenBase {
+        public void Inaccessible() {
+        }
+    }
+
+    public class DerivedFromHiddenBase : HiddenBase {
+        public int Accessible() {
+            return 42;
+        }
+    }
 }
