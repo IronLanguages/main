@@ -36,7 +36,7 @@ msbuild %DLR_ROOT%\Languages\IronPython\StdLib\StdLib.pyproj /p:OutputPath=%ZIPT
 
 copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\Microsoft.Dynamic.dll .
 copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\Microsoft.Scripting.dll .
-copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\Microsoft.MetaData.dll .
+copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\Microsoft.Scripting.Metadata.dll .
 
 copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\ipy.exe .
 copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\ipy64.exe .
@@ -70,7 +70,7 @@ xcopy /s %DLR_ROOT%\Hosts\Silverlight\Public\script\templates\python Silverlight
 
 del /Q %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip
 cd ..
-zip -9 -r %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip IronPython-2.7
+%DLR_ROOT%\Util\Misc\zip -9 -r %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip IronPython-2.7
 cd /D %DLR_ROOT%\Bin\%BUILD_FLAVOR%\
 
 dir %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip

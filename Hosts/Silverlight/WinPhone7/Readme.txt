@@ -1,2 +1,3 @@
 Known issues:
-- Needs UNSIGNED Silverlight 3 build of DLR assemblies (including Microsoft.Scripting.Core).
+- Requires Silverligh 3 build of DLR.
+- Doesn't support delay-signed binaries.

@@ -19,27 +19,16 @@
                 <File Id="File_IronPython.Modules.XML" Name="IronPython.Modules.XML" />
                 <File Id="File_Readme.html" Name="Readme.html" Source="$(var.PythonDir)\Public\Readme.html"/>
               </Component>
-              
-              <!--NEGENx86 BINARIES-->
-              <Component Id="Comp_32_IronPython" DiskId="1" Guid="1ACF2AF2-81FB-42FA-8252-9ED0D88CE330">
-                <Condition>NOT VersionNT64</Condition>
-                <File Id="NGENFile_IronPython.dll" Name="IronPython.dll" Assembly=".net" KeyPath="yes">
-                  <netfx:NativeImage Id="NGEN_File_IronPython.dll"  Priority="1"/>
-                </File>
-              </Component>          
-              <Component Id="Comp_32_IpyModules" DiskId="1" Guid="3811B55C-E55B-4E6B-8CDE-40C321E8123F">
-                <Condition>NOT VersionNT64</Condition>
-                <File Id="NGENFile_IronPython.Modules.dll" Name="IronPython.Modules.dll" Assembly=".net" KeyPath="yes" Source="IronPython.Modules.dll">
-                  <netfx:NativeImage Id="NGEN_File_IronPython.Modules.dll" Priority="1"/>
-                </File>
-              </Component>
-              
               <Component Id="Comp_Installation_Location" Guid="536A8336-C5ED-4192-8B70-A76EA933C705">
                 <RegistryValue Root='HKLM' Key='SOFTWARE\Microsoft\IronPython\2.7'
                           Type='string' Value='[INSTALLDIR]' 
                           KeyPath='yes' /> 
+                <File Id="IronPython_PF.dll" Name="IronPython.dll" />
+                <File Id="IronPython.Modules_PF.dll" Name="IronPython.Modules.dll" />
+                <File Id="Microsoft.Dynamic_PF.dll" Name="Microsoft.Dynamic.dll" />
+                <File Id="Microsoft.Scripting_PF.dll" Name="Microsoft.Scripting.dll" />
+                <File Id="Microsoft.Scripting.Metadata_PF.dll" Name="Microsoft.Scripting.Metadata.dll" />
               </Component>
-              
               <!-- Ngen'd binaries for for entry points (ipy.exe/ipyw.exe) and config -->
               <Component Id="Comp_NGen_Binaries" DiskId="1" Guid="222D1925-DCC7-476B-AD5C-2075BA728250">
                 <Condition>NOT VersionNT64</Condition>
@@ -52,20 +41,6 @@
                 <RegistryValue Root='HKCU' Key='SOFTWARE\Microsoft\IronPython\2.7' Type='string' Value='ipy' KeyPath='yes' /> 
               </Component>
               
-              <!--#NEGEN64 BINARIES-->
-              <Component Id="Comp_64_IronPython" DiskId="1" Guid="1394F98C-928A-41CB-AF94-9449431A76A5">
-                <Condition>VersionNT64</Condition>
-                <File Id="NGEN64File_IronPython.dll" Name="IronPython.dll" Assembly=".net" KeyPath="yes">
-                  <netfx:NativeImage Id="NGEN64_File_IronPython.dll"  Priority="1" Platform="all" />
-                </File>
-              </Component>
-              <Component Id="Comp_64_IpyModules" DiskId="1" Guid="EB69AFEF-32AC-452F-915B-BDAAB07FE8AB">
-                <Condition>VersionNT64</Condition>
-                <File Id="NGEN64File_IronPython.Modules.dll" Name="IronPython.Modules.dll" Assembly=".net" KeyPath="yes">
-                  <netfx:NativeImage Id="NGEN64_File_IronPython.Modules.dll" Priority="1" Platform="all" />
-                </File>
-              </Component>
-        
               <!-- Ngen'd 64-bit binaries for for entry points (ipy.exe/ipyw.exe) and config -->
               <Component Id="Comp_NGen64_Binaries" DiskId="1" Guid="38B90E99-8D12-413B-A41E-6D860F6E902B">
                 <Condition>VersionNT64</Condition>
@@ -98,7 +73,38 @@
               <Directory Id="Dir_StdLib" Name="Lib">
                 <?include StdLib.wxi ?>
               </Directory>
-          </Directory>
+              
+            </Directory>
+			<Directory Id="GAC" Name="GAC" FileSource="$(var.TargetDir)">
+			  <!--NEGENx86 BINARIES-->
+			  <Component Id="Comp_32_IronPython" DiskId="1" Guid="1ACF2AF2-81FB-42FA-8252-9ED0D88CE330">
+				<Condition>NOT VersionNT64</Condition>
+				<File Id="NGENFile_IronPython.dll" Name="IronPython.dll" Assembly=".net" KeyPath="yes">
+				  <netfx:NativeImage Id="NGEN_File_IronPython.dll"  Priority="1"/>
+				</File>
+			  </Component>          
+			  <Component Id="Comp_32_IpyModules" DiskId="1" Guid="3811B55C-E55B-4E6B-8CDE-40C321E8123F">
+				<Condition>NOT VersionNT64</Condition>
+				<File Id="NGENFile_IronPython.Modules.dll" Name="IronPython.Modules.dll" Assembly=".net" KeyPath="yes" Source="IronPython.Modules.dll">
+				  <netfx:NativeImage Id="NGEN_File_IronPython.Modules.dll" Priority="1"/>
+				</File>
+			  </Component>
+			  <!--#NEGEN64 BINARIES-->
+			  <Component Id="Comp_64_IronPython" DiskId="1" Guid="1394F98C-928A-41CB-AF94-9449431A76A5">
+				<Condition>VersionNT64</Condition>
+				<File Id="NGEN64File_IronPython.dll" Name="IronPython.dll" Assembly=".net" KeyPath="yes">
+				  <netfx:NativeImage Id="NGEN64_File_IronPython.dll"  Priority="1" Platform="all" />
+				</File>
+			  </Component>
+			  <Component Id="Comp_64_IpyModules" DiskId="1" Guid="EB69AFEF-32AC-452F-915B-BDAAB07FE8AB">
+				<Condition>VersionNT64</Condition>
+				<File Id="NGEN64File_IronPython.Modules.dll" Name="IronPython.Modules.dll" Assembly=".net" KeyPath="yes">
+				  <netfx:NativeImage Id="NGEN64_File_IronPython.Modules.dll" Priority="1" Platform="all" />
+				</File>
+			  </Component>
+			</Directory>
+              
+        
         </Directory>
       </Directory>
    </Module>

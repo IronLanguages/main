@@ -7,9 +7,8 @@
       <File Name="Microsoft.Scripting.Silverlight.dll" />
       <File Name="Chiron.exe" />
       <File Name="Chiron.exe.Config" />
-      <File Name="IronRuby.dll" />
-      <File Name="IronRuby.Libraries.dll" />
-      <File Name="IronRuby.Libraries.Yaml.dll" />
+      <File Name="IronPython.dll" />
+      <File Name="IronPython.Modules.dll" />
       <File Name="System.Numerics.dll" />
     </Component>
   </Directory>
