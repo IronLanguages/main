@@ -26,7 +26,7 @@
     <!-- Input path to source files  -->
     <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="$(UseExistingBinaries) != 'true'">
     <ProjectReference Include="$(SolutionDir)..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
       <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
       <Name>Microsoft.Scripting</Name>

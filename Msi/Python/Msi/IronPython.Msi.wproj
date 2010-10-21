@@ -42,7 +42,7 @@
     <WixExtension Include="$(WixToolPath)WixNetFxExtension.dll" />
     <WixExtension Include="$(WixToolPath)WixUIExtension.dll" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="$(UseExistingBinaries) != 'true'">
     <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronPythonTools\IronPythonTools.csproj">
       <Project>{FA7BE5F5-E04F-4613-B7AC-70CE10D1BB68}</Project>
       <Name>IronPythonTools</Name>

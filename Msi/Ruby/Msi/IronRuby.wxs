@@ -51,6 +51,16 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 1.0 => 1.1):
       <RegistrySearch Id='RubyFileTypeNoDefaultSearch' Root="HKCR" Key=".rb" Type="raw" />
     </Property>
 
+    <Property Id="VSINSTALLPATH">
+      <RegistrySearch Id="VSInstallDir" Root="HKLM" Key="Software\Microsoft\VisualStudio\10.0\Setup\VS" Name="EnvironmentDirectory" Type="directory" />
+    </Property>
+
+    <Property Id="VSLAUNCHER" >
+      <DirectorySearch Path="[ProgramFilesFolder]\Common Files\Microsoft Shared\MSEnv" Depth="4" Id="FindVSLauncher">
+        <FileSearch Name="VSLauncher.exe" />
+      </DirectorySearch>
+    </Property>
+
     <!-- Launch conditions -->
     <Condition Message="An administrator must approve or install [ProductName]."> Privileged </Condition>
     <Condition Message="A later version of [ProductName] is already installed."> NOT NEWERVERSIONDETECTED </Condition>
@@ -58,16 +68,9 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 1.0 => 1.1):
 
     <!-- Root directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Merge Id='DLR' Language='1033' src='DLR.msm' DiskId='1' />
-      <Merge Id='IrbRedist' Language='1033' src='$(var.TargetDir)\IrbRedist.msm' DiskId='1' />
-
-      <Directory Id="ProgramFilesFolder" Name="PFILES">
-        <Directory Id="INSTALLDIR" Name="$(var.ProductShortName) $(var.ProductVersionText)">
-          <Directory Id="Dir_Silverlight" Name="Silverlight">
-            <?include Silverlight.wxi ?>
-          </Directory>
-        </Directory>
-      </Directory>
+      <Merge Id="DLR" Language="1033" SourceFile="$(var.TargetDir)\DLR.msm" DiskId="1" />
+      <Merge Id="IrbRedist" Language="1033" SourceFile="$(var.TargetDir)\IrbRedist.msm" DiskId="1" />
+      <Merge Id="IronStudio" Language="1033" SourceFile="$(var.TargetDir)\IronStudio.msm" DiskId="1" />
 
       <Directory Id="ProgramMenuFolder" Name="PMENU">
         <Directory Id="Dir_IRStartMenu" Name="$(var.ProductShortName) $(var.ProductVersionText)">
@@ -86,6 +89,72 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 1.0 => 1.1):
           </Component>
         </Directory>
       </Directory>
+
+      <Directory Id="ProgramFilesFolder" Name="PFILES">
+        <Directory Id="INSTALLDIR" Name="$(var.ProductShortName) $(var.ProductVersionText)">
+          <Directory Id="Dir_Silverlight" Name="Silverlight">
+            <?include Silverlight.wxi ?>
+          </Directory>
+        </Directory>
+
+        <!-- IronRuby Tools for Visual Studio -->
+        <Directory Id="VSINSTALLPATH" Name=".">
+          <Directory Id="ExtensionsDir" Name="Extensions">
+            <Directory Id="MSDir" Name="Microsoft">
+              <Directory Id="IrbToolsDir" Name="IronRuby Tools for Visual Studio">
+                <Directory Id="IrbToolsInstallDir" Name="0.1">
+                  <Directory Id="IrbToolsTemplatesDir" Name="Templates" FileSource="$(var.VsTemplatesDir)" />
+
+                  <Component Id="Comp_VSTools" DiskId="1" Guid="EC4FE36D-A496-47F1-880F-732169B1EA6E">
+                    <File Source="$(var.TargetDir)\IronRubyTools.Core.dll" />
+                    <File Source="$(var.TargetDir)\IronRubyTools.dll" />
+                    <File Source="$(var.TargetDir)\IronRubyTools.pkgdef" />
+                    <File Source="$(var.VsToolsPrivateBinDir)\extension.vsixmanifest" />
+                    <File Source="$(var.VsToolsDir)\Rackup.rb" />
+                    <File Source="$(var.VsToolsDir)\Spec.rb" />
+                    <File Source="$(var.VsToolsDir)\RubyProject.ico" />
+                  </Component>
+
+                  <Component Id="Comp_RbProgRegistration" DiskId="1" Guid="68B85514-C87A-4971-A50F-EBD7616F48EE">
+                    <RegistryValue Root='HKCR' Key='.rbproj' Type='string' Name='PerceivedType' Value='text' />
+                    <RegistryValue Root='HKCR' Key='VisualStudio.Launcher.rbproj.10.0\DefaultIcon' Type='string' Value='[IrbToolsInstallDir]RubyProject.ico' />
+                      
+                    <ProgId Id="VisualStudio.Launcher.rbproj.10.0" Description="IronRuby Project">
+                      <Extension Id="rbproj" ContentType="text/plain">
+                        <Verb Id="OpenRbProj" Command="Open" TargetProperty="VSLAUNCHER" Argument="&quot;%1&quot;"/>
+                      </Extension>
+                    </ProgId>
+                  </Component>
+                  
+                  <Component Id="Comp_RbFileRegistration" DiskId="1" Guid="1D05A180-B126-4CF9-B9E4-BC2BA2038448">
+                    <RegistryKey Root='HKCR' Key='[RUBYFILETYPE]'>
+                      <RegistryValue Type='string' Value='IronRuby source file' />
+
+                      <RegistryKey Key='DefaultIcon'>
+                        <RegistryValue Type='string' Value="[IrbToolsTemplatesDir]\Files\EmptyRbFile\__TemplateIcon.ico" />
+                      </RegistryKey>
+                      
+                      <RegistryKey Key='shell\Edit with Visual Studio'>
+                        <RegistryValue Key='Command' Type='string' Value='[VSINSTALLPATH]devenv.exe /dde "%1"' />
+
+                        <RegistryValue Key='ddeexec' Type='string' Value='Open("%1")' />
+                        <RegistryValue Key='ddeexec\Application' Type='string' Value='VisualStudio.10.0' />
+                        <RegistryValue Key='ddeexec\Topic' Type='string' Value='system' />
+                      </RegistryKey>
+                    </RegistryKey>
+                  </Component>
+
+                  <Component Id="Comp_RbFileExistance" DiskId="1" Guid="15A2DC5B-919A-4852-986B-76B4B1B9DC3C">
+                    <!-- This is only installed if .rb is not already registered.  -->
+                    <RegistryValue Root='HKCR' Key='.rb' Type='string' Value='[RUBYFILETYPE]' />
+                    <RegistryValue Root='HKCR' Key='.rb' Name='Content Type' Type='string' Value='text/plain' />
+                  </Component>
+                </Directory>
+              </Directory>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
     </Directory>
 
     <!-- Features - listed in the UI in the same order as they appear here -->
@@ -101,12 +170,33 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 1.0 => 1.1):
         <Feature Id="Feature_SL_Binaries" AllowAdvertise="no" Level="1" Title="Binaries" Description="IronRuby binaries targeting Silverlight.">
           <ComponentRef Id="Comp_SL" />
         </Feature>
+
         <Feature Id="Feature_SLTemplates" AllowAdvertise="no" Level="1" Title="Templates" Description="Templates supporting IronRuby Silverlight development.">
           <ComponentRef Id="Comp_SLScript" />
           <ComponentRef Id="Comp_templHome" />
           <ComponentRef Id="Comp_templRb" />
           <ComponentRef Id="Comp_templJS" />
           <ComponentRef Id="Comp_templSS" />
+        </Feature>
+      </Feature>
+
+      <!-- IronRuby Tools support -->
+      <Feature Id="Feature_VsTools" AllowAdvertise="yes" Level="1" Title="Tools for Visual Studio" Description="IronRuby Tools for Visual Studio.  Extensions which enable syntax highlighting, projects, and other support for Ruby development.">
+        <Condition Level="0">NOT VSINSTALLPATH</Condition>
+        <ComponentRef Id="Comp_VSTools" />
+        <MergeRef Id='IronStudio' />
+        <ComponentGroupRef Id="ToolsTemplateGroup" />
+
+        <Feature Id="Feature_RbProj" AllowAdvertise="yes" Level="1" Title="Register .rbproj files" Description="Registers .rbproj files to open with Visual Studio">
+          <ComponentRef Id="Comp_RbProgRegistration" />
+        </Feature>
+
+        <Feature Id="Feature_VsRbFile" AllowAdvertise="yes" Level="1" Title="Register .rb context menu." Description="Adds a Edit with Visual Studio context menu for .rb files">
+          <ComponentRef Id="Comp_RbFileRegistration" />
+          <Feature Id="Feature_RbFileExist" AllowAdvertise="no" Level="0" Title="Register the pure existance of .rb files if not already registered">
+            <Condition Level="1">NOT RUBYFILETYPENODEFAULT</Condition>
+            <ComponentRef Id="Comp_RbFileExistance" Primary="yes" />
+          </Feature>
         </Feature>
       </Feature>
     </Feature>

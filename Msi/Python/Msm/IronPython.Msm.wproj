@@ -28,7 +28,7 @@
       $(DefineConstants)
     </DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="$(UseExistingBinaries) != 'true'">
     <ProjectReference Include="$(PythonDir)\IronPython.Modules\IronPython.Modules.csproj">
       <Project>{155CE436-1669-4A48-8095-410F2430237F}</Project>
       <Name>IronPython.Modules</Name>

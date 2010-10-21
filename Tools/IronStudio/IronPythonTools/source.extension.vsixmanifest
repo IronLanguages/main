@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
+  <Identifier Id="6dbd7c1e-1f1b-496d-ac7c-c55dae66c783">
+    <Name>IronPython Tools for Visual Studio</Name>
+    <Author>Microsoft</Author>
+    <Version>0.3</Version>
+    <Description xml:space="preserve">IronPython Tools for Visual Studio provides intellisense, project support, project and item templates, as well as a REPL window for IronPython development.</Description>
+    <Locale>1033</Locale>
+    <MoreInfoUrl>http://www.ironpython.net</MoreInfoUrl>
+    <License>IronPython Tools for VS License.rtf</License>
+    <GettingStartedGuide>http://ironpython.codeplex.com</GettingStartedGuide>
+    <InstalledByMsi>false</InstalledByMsi>
+    <SupportedProducts>
+      <VisualStudio Version="10.0">
+        <Edition>Ultimate</Edition>
+        <Edition>Premium</Edition>
+        <Edition>Pro</Edition>
+        <Edition>IntegratedShell</Edition>
+        <Edition>VSTS</Edition>
+        <Edition>VSTD</Edition>
+      </VisualStudio>
+    </SupportedProducts>
+    <SupportedFrameworkRuntimeEdition MinVersion="4.0" MaxVersion="4.0" />
+  </Identifier>
+  <References>
+    <Reference Id="F2D788A4-C316-4623-AE3A-FBE7E3E59E1A" MinVersion="1.0" MaxVersion="1.0">
+      <Name>IronStudio</Name>
+    </Reference>
+  </References>
+  <Content>
+    <VsPackage>|%CurrentProject%|</VsPackage>
+    <Assembly AssemblyName="IronPython">IronPython</Assembly>
+    <MefComponent>|%CurrentProject%|</MefComponent>
+    <MefComponent>|IronPythonToolsCore|</MefComponent>
+    <ProjectTemplate>Templates\Projects\ConsoleAppProject</ProjectTemplate>
+    <ProjectTemplate>Templates\Projects\WinformsProject</ProjectTemplate>
+    <ProjectTemplate>Templates\Projects\WpfProject</ProjectTemplate>
+    <ProjectTemplate>Templates\Projects\SilverlightProject</ProjectTemplate>
+    <ItemTemplate>Templates\Files\EmptyPyFile</ItemTemplate>
+    <ItemTemplate>Templates\Files\PyClass</ItemTemplate>
+    <ItemTemplate>Templates\Files\WpfWindow</ItemTemplate>
+  </Content>
+</Vsix>

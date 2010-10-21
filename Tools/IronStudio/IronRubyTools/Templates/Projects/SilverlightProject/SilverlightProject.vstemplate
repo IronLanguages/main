@@ -1,0 +1,17 @@
+<VSTemplate Version="2.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>IronRuby Silverlight Web Page</Name>
+    <Description>A project for creating a web page scripted on the client side with IronRuby via Silverlight</Description>
+    <Icon>__TemplateIcon.ico</Icon>
+    <ProjectType>IronRuby</ProjectType>
+    <CreateNewFolder>true</CreateNewFolder>
+    <DefaultName>SilverlightPage</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project TargetFileName="$safeprojectname$.rbproj" File="SilverlightProject.rbproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="$safeprojectname$.html">Program.html</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="$safeprojectname$.rb">Program.rb</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

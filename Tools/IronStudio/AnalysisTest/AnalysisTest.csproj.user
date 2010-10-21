@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <StartArguments>TestInstanceVariable</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <StartArguments>TestCrossModuleFuncAndType</StartArguments>
+    <StartAction>Program</StartAction>
+    <StartProgram>F:\Product\0\Dlr\Tools\bin\Debug\AnalysisTest.exe</StartProgram>
+  </PropertyGroup>
+</Project>

@@ -877,12 +877,28 @@
       <File Id="F8hooma5h2snjryigunftmcfzd" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.9.1\yaml.rb" />
     </Component>
   </Directory>
+  <Directory Id="D7i0j04t0wvuleo95pnyyqzqav" Name="gems">
+    <Directory Id="D8vymlmuttbdn55e2bqvsm4zxw" Name="1.9.1">
+      <Directory Id="D2ynvc4yhjaeenyh6vt4whm586" Name="cache">
+      </Directory>
+      <Directory Id="D4dg26zirecnkczcfr12kcud1i" Name="doc">
+      </Directory>
+      <Directory Id="Damm9okjltowqyeoic9sosgvbb" Name="gems">
+      </Directory>
+      <Directory Id="Daj39yg0yswbqxwnjg3f3uicy3" Name="specifications">
+      </Directory>
+    </Directory>
+  </Directory>
   <Directory Id="D5unavpdpzangrj4d82fxw3o50" Name="site_ruby">
     <Directory Id="D6jze7if41302nmcjaqw2q9gww" Name="1.9.1">
       <Component Id="C6jze7if41302nmcjaqw2q9gww" DiskId="1" Guid="8d7498f1-2389-4e36-9e84-909f1b8c76bc">
         <File Id="Fczla9zqozbeupeb4v5mq8xjfh" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby\1.9.1\rbreadline.rb" />
         <File Id="F4apwq61gzymsy6sc486np8lb1" Source="$(var.DlrRoot)External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby\1.9.1\readline.rb" />
       </Component>
+    </Directory>
+  </Directory>
+  <Directory Id="D8lde29pdfeapifdh47lqvi0d" Name="vendor_ruby">
+    <Directory Id="D35z1uo0b3zpuytpk82uf53re8" Name="1.9.1">
     </Directory>
   </Directory>
 </Include>

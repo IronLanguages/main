@@ -25,7 +25,7 @@
       $(DefineConstants)
     </DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="$(UseExistingBinaries) != 'true'">
     <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronStudio\IronStudio.csproj">
       <Project>{C98DE16D-417E-4079-8939-1F8C8E28E2C8}</Project>
       <Name>IronStudio</Name>
