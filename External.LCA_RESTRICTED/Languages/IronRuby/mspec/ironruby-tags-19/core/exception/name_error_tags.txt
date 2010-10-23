@@ -1,0 +1,2 @@
+fails:NameError.new NameError.new should take optional name argument
+fails:NameError.new calls #inspect on self

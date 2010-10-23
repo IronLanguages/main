@@ -1,2 +1,0 @@
-class BoundTextFieldSpecs < SpecController
-end

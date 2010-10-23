@@ -1,1 +1,0 @@
-fails:Added method clr_new raises a TypeError if called on a pure Ruby type

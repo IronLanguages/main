@@ -1,0 +1,35 @@
+<html>
+<head>
+  <title>
+    2D drawing with Canvas and Python
+  </title>
+  <script src="../dlr.js" type="text/javascript"></script>
+  <script type="application/x-javascript">
+    function draw() {
+      var canvas = document.getElementById("canvas");
+      var ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "rgb(200,0,0)";
+      ctx.fillRect (10, 10, 55, 50);
+
+      ctx.fillStyle = "rgba(0, 0, 200, 0.5)";
+      ctx.fillRect (30, 30, 55, 50);
+    }
+  </script>
+</head>
+<body onload="draw()">
+
+  <canvas id="canvas" width="300" height="300"></canvas>
+
+  <script type="application/x-python">
+    from System import Array
+    canvas = document.canvas
+    #ctx = canvas.getContext("2d")
+    ctx = canvas.Invoke("getContext", Array[object](["2d"]))
+    #window.Alert(document.output.GetType().ToString())
+    ctx.SetProperty("fillStyle", "rgba(0, 200, 0, 0.5)")
+    res = ctx.Invoke("fillRect", Array[object]([50, 50, 55, 50]))
+  </script>
+
+</body>
+</html>    

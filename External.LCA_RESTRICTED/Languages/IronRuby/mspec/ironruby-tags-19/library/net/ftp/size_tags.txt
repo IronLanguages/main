@@ -1,0 +1,2 @@
+fails:Net::FTP#size sends the SIZE command to the server
+fails:"Net::FTP#size sends the SIZE command to the server"

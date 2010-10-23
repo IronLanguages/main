@@ -1,2 +1,0 @@
-fails:Generator#each enumerates the elements
-fails:Generator#each rewinds the generator and only then enumerates the elements

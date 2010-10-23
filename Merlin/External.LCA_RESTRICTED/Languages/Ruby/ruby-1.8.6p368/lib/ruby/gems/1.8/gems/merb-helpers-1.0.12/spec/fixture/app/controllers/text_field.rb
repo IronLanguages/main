@@ -1,3 +1,0 @@
-class TextFieldSpecs < SpecController
-  
-end

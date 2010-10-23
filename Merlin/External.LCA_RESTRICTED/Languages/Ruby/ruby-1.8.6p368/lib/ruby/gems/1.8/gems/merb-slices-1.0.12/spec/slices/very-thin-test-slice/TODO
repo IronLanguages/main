@@ -1,7 +1,0 @@
-TODO:
-
-- Fix VeryThinTestSlice.description and VeryThinTestSlice.version
-- Fix LICENSE with your name
-- Fix Rakefile with your name and contact info
-- Add your code to lib/very-thin-test-slice.rb
-- Add your Merb rake tasks to lib/very-thin-test-slice/merbtasks.rb

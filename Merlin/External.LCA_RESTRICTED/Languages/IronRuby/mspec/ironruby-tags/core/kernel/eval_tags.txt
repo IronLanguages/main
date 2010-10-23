@@ -1,2 +1,0 @@
-fails:Kernel#eval includes file and line information in syntax error
-fails:Kernel#eval uses the filename of the binding if none is provided

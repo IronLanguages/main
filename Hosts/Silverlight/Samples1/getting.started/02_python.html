@@ -1,0 +1,20 @@
+﻿<html>
+<head>
+	<script src="../dlr.js" type="text/javascript"></script>
+</head>
+<body>
+
+<input id="say_hello" type="button" value="Say, Hello!" />
+
+<script type="text/python">
+    import System
+    def OnClick(s,e):
+      window.Alert("Hello, World!")
+
+    document.say_hello.AttachEvent('onclick', System.EventHandler[System.Windows.Browser.HtmlEventArgs](OnClick))
+  </script>
+
+</body>
+</html>
+
+

@@ -1,0 +1,268 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
+  <Extern href="VSDbgCmd.h"/>
+  <Extern href="VsDebugGuids.h"/>
+
+  <KeyBindings>
+    <KeyBinding guid="guidIronStudioCmdSet" id="cmdidSmartExecute" key1="VK_RETURN" mod1="C" editor="guidReplWindow" />
+    <KeyBinding guid="guidIronStudioCmdSet" id="cmdidBreakRepl" key1="VK_CANCEL" mod1="C" editor="guidReplWindow" />
+    <KeyBinding guid="guidIronStudioCmdSet" id="cmdidReplHistoryNext" key1="N" mod1="Alt" editor="guidReplWindow" />
+    <KeyBinding guid="guidIronStudioCmdSet" id="cmdidReplHistoryPrevious" key1="P" mod1="Alt" editor="guidReplWindow" />
+    <KeyBinding guid="guidIronStudioCmdSet" id="cmdidBreakLine" key1="VK_RETURN" mod1="S" editor="guidReplWindow" />
+  </KeyBindings>
+
+  <!--The Commands section is where we the commands, menus and menu groups are defined.
+      This section uses a Guid to identify the package that provides the command defined inside it. -->
+  <Commands package="guidIronStudioPkg">
+    <!-- Inside this section we have different sub-sections: one for the menus, another  
+    for the menu groups, one for the buttons (the actual commands), one for the combos 
+    and the last one for the bitmaps used. Each element is identified by a command id that  
+    is a unique pair of guid and numeric identifier; the guid part of the identifier is usually  
+    called "command set" and is used to group different command inside a logically related  
+    group; your package should define its own command set in order to avoid collisions  
+    with command ids defined by other packages. -->
+
+    <!-- In this section you can define new menu groups. A menu group is a container for 
+         other menus or buttons (commands); from a visual point of view you can see the 
+         group as the part of a menu contained between two lines. The parent of a group 
+         must be a menu. -->
+    <Groups>
+      <!-- Our group of menu items on the context menu, appears right before Cut/Copy/Paste -->
+      <Group guid="guidIronStudioCmdSet" id="ConsoleMenuGroup" priority="0x100">
+        <Parent guid="guidIronStudioCmdSet" id="cmdIdConsoleContextMenu"/>
+      </Group>
+      <Group guid="guidIronStudioCmdSet" id="ConsoleMenuEditGroup" priority="0x200">
+        <Parent guid="guidIronStudioCmdSet" id="cmdIdConsoleContextMenu"/>
+      </Group>
+      <!-- Context menu, clear group -->
+      <Group guid="guidIronStudioCmdSet" id="ConsoleMenuClearGroup" priority="0x300">
+        <Parent guid="guidIronStudioCmdSet" id="cmdIdConsoleContextMenu"/>
+      </Group>
+
+      <!-- Group on normal project items -->
+      <Group guid="guidIronStudioCmdSet" id="CodeFileGroup" priority="0x600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_PROJECT"/>
+      </Group>
+      
+      <!--  Group on search paths project item -->
+
+    </Groups>
+
+    <Menus>
+      <Menu guid="guidIronStudioCmdSet" id="cmdIdConsoleContextMenu" priority="0x0000" type="Context">
+        <Parent guid="guidIronStudioCmdSet" id="0"/>
+        <Strings>
+          <ButtonText>Interactive Console</ButtonText>
+          <CommandName>Interactive Console</CommandName>
+        </Strings>
+      </Menu>
+    </Menus>
+
+    <!--Buttons section: buttons include both buttons on toolbars as well as individual menu items -->
+    <Buttons>
+      <!--================================================================================================================-->
+      <!--================================================ REPL Commands =================================================-->
+      <!--================================================================================================================-->
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidBreakRepl" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuGroup"/>
+        <Icon guid="guidCancelEvaluationBmp" id="bmpConsole" />
+        <Strings>
+          <CommandName>cmdidBreakRepl</CommandName>
+          <ButtonText>Cancel Execution</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidResetRepl" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuGroup"/>
+        <Icon guid="guidResetSessionBmp" id="bmpConsole" />
+        <Strings>
+          <CommandName>cmdIdResetRepl</CommandName>
+          <ButtonText>Reset</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidSmartExecute" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuGroup"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <CommandName>cmdidSmartExecute</CommandName>
+          <ButtonText>Execute or Paste Input</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidReplHistoryPrevious" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuGroup"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <CommandName>cmdidReplHistoryPrevious</CommandName>
+          <ButtonText>History Previous</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidReplHistoryNext" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuGroup"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <CommandName>cmdidReplHistoryNext</CommandName>
+          <ButtonText>History Next</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidReplClearScreen" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuClearGroup"/>
+        <Strings>
+          <CommandName>cmdidReplClearScreen</CommandName>
+          <ButtonText>Clear Screen</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidBreakLine" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuGroup"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <CommandName>cmdidBreakLine</CommandName>
+          <ButtonText>Break Line</ButtonText>
+        </Strings>
+      </Button>
+
+      <!--================================================================================================================-->
+      <!--=============================================== Project Commands ===============================================-->
+      <!--================================================================================================================-->
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidSetAsStartupFile" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="CodeFileGroup"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <CommandName>cmdidSetAsStartupFile</CommandName>
+          <ButtonText>Set as Startup File</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdIdAddSearchPath" priority="0x0300" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_PROJECT_ADD"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <CommandName>cmdIdAddSearchPath</CommandName>
+          <ButtonText>Add Search Path...</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidStartWithoutDebugging" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="CodeFileGroup"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <CommandName>cmdidStartWithoutDebugging</CommandName>
+          <ButtonText>Start without Debugging</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidIronStudioCmdSet" id="cmdidStartDebugging" priority="0x0300" type="Button">
+        <Parent guid="guidIronStudioCmdSet" id="CodeFileGroup"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <CommandName>cmdidStartDebugging</CommandName>
+          <ButtonText>Start with Debugging</ButtonText>
+        </Strings>
+      </Button>
+
+    </Buttons>
+
+    <!--The bitmaps section is used to define the bitmaps that are used for the commands.-->
+    <Bitmaps>
+      <!--  The bitmap id is defined in a way that is a little bit different from the others: 
+            the declaration starts with a guid for the bitmap strip, then there is the resource id of the 
+            bitmap strip containing the bitmaps and then there are the numeric ids of the elements used 
+            inside a button definition. An important aspect of this declaration is that the element id 
+            must be the actual index (1-based) of the bitmap inside the bitmap strip. -->
+      <Bitmap guid="guidCancelEvaluationBmp" href="Resources\CancelEvaluation.bmp" usedList="bmpConsole"/>
+      <Bitmap guid="guidResetSessionBmp" href="Resources\ResetSession.bmp" usedList="bmpConsole"/>
+    </Bitmaps>
+  </Commands>
+
+  <UsedCommands>
+    <UsedCommand guid="guidVSStd97" id="cmdidCut"/>
+    <UsedCommand guid="guidVSStd97" id="cmdidCopy"/>
+    <UsedCommand guid="guidVSStd97" id="cmdidPaste"/>
+    <UsedCommand guid="guidVSStd97" id="cmdidClearPane"/>
+  </UsedCommands>
+
+  <CommandPlacements>
+
+    <!-- Cut/copy/paste group -->
+    <CommandPlacement guid="guidVSStd97" id="cmdidCut" priority="0x0100">
+      <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuEditGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSStd97" id="cmdidCopy" priority="0x0300">
+      <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuEditGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSStd97" id="cmdidPaste" priority="0x0500">
+      <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuEditGroup"/>
+    </CommandPlacement>
+    
+    <!-- Context menu, clear group -->
+    <CommandPlacement guid="guidVSStd97" id="cmdidClearPane" priority="0x0200">
+      <Parent guid="guidIronStudioCmdSet" id="ConsoleMenuClearGroup"/>
+    </CommandPlacement>
+
+    <!-- Project Command Placement -->
+    <CommandPlacement guid="guidIronStudioCmdSet" id="CodeFileGroup" priority="0x600">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE"/>
+    </CommandPlacement>
+
+    <CommandPlacement guid="guidIronStudioCmdSet" id="cmdIdAddSearchPath" priority="0x600">
+      <Parent guid="guidIronStudioCmdSet" id="CodeFileGroup"/>
+    </CommandPlacement>
+
+  </CommandPlacements>
+
+  <Symbols>
+    <!-- This is the package guid. -->
+    <GuidSymbol name="guidIronStudioPkg" value="{F2D788A4-C316-4623-AE3A-FBE7E3E59E1A}" />
+    <GuidSymbol name="guidReplWindow" value="{5adb6033-611f-4d39-a193-57a717115c0f}" />
+        
+    <!-- This is our command set GUID and associated commands -->
+    <GuidSymbol name="guidIronStudioCmdSet" value="{FF3248AC-CB02-4CB4-A711-DD497D10D418}">
+      <IDSymbol name="cmdidSmartExecute" value="0x0103"/>
+      <IDSymbol name="cmdidBreakRepl" value="0x0104"/>
+      <IDSymbol name="cmdidResetRepl" value="0x0105"/>
+      <IDSymbol name="cmdidReplHistoryNext" value="0x0106"/>
+      <IDSymbol name="cmdidReplHistoryPrevious" value="0x0107"/>
+      <IDSymbol name="cmdidReplClearScreen" value="0x0108"/>
+      <IDSymbol name="cmdidBreakLine" value="0x0109"/>
+      <IDSymbol name="cmdIdConsoleContextMenu" value="0x2100" />
+      <IDSymbol name="cmdidSetAsStartupFile" value="0x3001" />
+
+      <IDSymbol name="cmdIdAddSearchPath" value="0x4002" />
+      <IDSymbol name="cmdidStartWithoutDebugging" value="0x4004" />
+      <IDSymbol name="cmdidStartDebugging" value="0x4005" />
+
+      <!-- Groups -->
+
+      <IDSymbol name="ConsoleMenuGroup" value="0x1050" />
+      <IDSymbol name="ConsoleMenuEditGroup" value="0x1051" />
+      <IDSymbol name="ConsoleMenuClearGroup" value="0x1052" />
+      <IDSymbol name="CodeFileGroup" value="0x1053" />
+
+    </GuidSymbol>
+    <GuidSymbol name="guidCancelEvaluationBmp" value="{C4249D23-088A-4CF2-84C9-70981ACCF05A}" >
+      <IDSymbol name="bmpConsole" value="0x01" />
+    </GuidSymbol>
+
+    <GuidSymbol name="guidResetSessionBmp" value="{2E6578D4-E051-4297-AD8C-970206955227}" >
+      <IDSymbol name="bmpConsole" value="0x01" />
+    </GuidSymbol>
+
+  </Symbols>
+
+</CommandTable>

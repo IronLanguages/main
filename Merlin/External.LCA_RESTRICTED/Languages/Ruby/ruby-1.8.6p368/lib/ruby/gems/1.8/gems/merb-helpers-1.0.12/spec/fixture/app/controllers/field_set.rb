@@ -1,2 +1,0 @@
-class FieldsetSpecs < SpecController
-end

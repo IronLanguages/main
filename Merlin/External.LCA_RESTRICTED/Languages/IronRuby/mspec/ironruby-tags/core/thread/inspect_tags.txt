@@ -1,2 +1,0 @@
-fails:Thread#inspect reports aborting on a killed thread
-unstable:Thread#inspect describes a dying sleeping thread

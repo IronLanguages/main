@@ -1,1 +1,0 @@
-fails:IO.for_fd emits a warning if given a block

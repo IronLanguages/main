@@ -1,0 +1,4 @@
+fails:CGI::QueryExtension::Value#last returns self
+fails:CGI::QueryExtension::Value#last outputs a warning
+fails:"CGI::QueryExtension::Value#last returns self"
+fails:"CGI::QueryExtension::Value#last outputs a warning"

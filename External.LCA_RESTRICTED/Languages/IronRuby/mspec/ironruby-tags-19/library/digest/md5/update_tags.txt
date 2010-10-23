@@ -1,0 +1,2 @@
+fails:Digest::MD5#update can update
+fails:"Digest::MD5#update can update"

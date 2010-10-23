@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestDirect3D", "TestDirect3D.csproj", "{01760DFB-DA32-41D9-89CC-225576B9A754}"
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 2
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://vstfdevdiv:8080/devdiv
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = TestDirect3D.csproj
+		SccLocalPath1 = .
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{01760DFB-DA32-41D9-89CC-225576B9A754}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01760DFB-DA32-41D9-89CC-225576B9A754}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01760DFB-DA32-41D9-89CC-225576B9A754}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01760DFB-DA32-41D9-89CC-225576B9A754}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

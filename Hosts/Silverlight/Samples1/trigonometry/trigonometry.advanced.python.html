@@ -1,0 +1,295 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=8" />
+  <title>Advanced Python Trigonometry</title>
+  <script src="../dlr.js" type="text/javascript"></script>
+</head>
+<body>
+
+  <script type="text/python" class="page">
+      from System import * # for Uri
+      from System.Windows import * 
+      from System.Windows.Controls import UserControl, Canvas
+      from System.Windows.Shapes import * # exposes Rectangle to scope since not added by default
+      from System.Windows.Media.Animation import * # exposes Storyboard
+      #from System.Windows.Media.Imaging import * # for bitmap
+      from System.Net import * # for WebClient
+      from System.Windows.Resources import * # for WebClient
+      #from System.Xml import *
+      #from System.Xml.Linq import *
+      from System.Diagnostics import * # enables outputing to a debug window!
+      from System.Windows.Markup import * # for XamlReader
+      from Microsoft.Scripting.Silverlight.DynamicApplication import MakeUri
+      
+      layoutRoot = me.LayoutRoot
+      curves = me.curves
+      nodes = me.nodes
+      bkg = me.bkg
+      bkgScale = me.bkgScale
+      
+      _node = None
+      _curve = None
+      sb = None
+      screenDepth = 1000
+      origin = Point(300, 200)
+      convertToRadians = Math.PI / 180
+      x_axis_rotation = 0
+      y_axis_rotation = 5
+      z_axis_rotation = 0
+      mouse = Point(0, 0)
+      follow = Point(0, 0)
+      #tuple
+      names = ( 'Leto I', 'Paul', 'Jessica', 'Alia', 'Thufir', 'Gurney', 'Duncan', 'Yueh', 'Leto II', 'Siona','Vladimir', 'Feyd', 
+          'Rabban', 'Irulan' , 'Gaius', 'Hwi Noree', 'Stilgar', 'Liet-Kynes', 'Shaddam', 'Piter')
+      isDrag = False
+      
+      class Node(UserControl):
+          def __init__(self, xaml):
+              self.xaml = xaml
+              
+              self.perspective_ratio = 1
+              self.X_3d = 0
+              self.Y_3d = 0
+              self.Z_3d = 0
+              self.c = None
+          
+              def CreateObject(value):
+                  return XamlReader.Load(value)
+                  
+              self.Content = CreateObject(self.xaml)
+              
+          def SetX(self, value):
+              self.SetValue(Canvas.LeftProperty, Convert.ToDouble(value))
+          def GetX(self):
+              return self.GetValue(Canvas.LeftProperty)
+          X = property(GetX, SetX)
+          
+          def SetY(self, value):
+              self.SetValue(Canvas.TopProperty, Convert.ToDouble(value))
+          def GetY(self):
+              return self.GetValue(Canvas.TopProperty)
+          Y = property(GetY, SetY)
+                  
+      class Curve(UserControl):
+          def __init__(self, xaml):
+              self.xaml = xaml
+          
+              def CreateObject(value):
+                  return XamlReader.Load(value)
+                  
+              self.Content = CreateObject(self.xaml)
+              
+          def SetX(self, value):
+              self.SetValue(Canvas.LeftProperty, Convert.ToDouble(value))
+          def GetX(self):
+              return self.GetValue(Canvas.LeftProperty)
+          X = property(GetX, SetX)
+          
+          def SetY(self, value):
+              self.SetValue(Canvas.TopProperty, Convert.ToDouble(value))
+          def GetY(self):
+              return self.GetValue(Canvas.TopProperty)
+          Y = property(GetY, SetY)           
+      
+      
+      def NodeLoaded(sender, e):
+          global _node
+          _node = e.Result
+          LoadCurve()
+          
+      def CurveLoaded(sender, e):
+          global _curve
+          _curve = e.Result
+          Main()
+          
+      def Page_MouseLeftButtonDown(sender, e):
+          global mouse
+          global isDrag
+          global follow
+          global layoutRoot
+          layoutRoot.CaptureMouse()
+          isDrag = True
+          mouse = e.GetPosition(layoutRoot)
+          follow = e.GetPosition(layoutRoot)
+          
+      def Page_MouseMove(sender, e):
+          global mouse
+          global layoutRoot
+          mouse = e.GetPosition(layoutRoot)
+          
+      def Page_MouseLeftButtonUp(sender, e):
+          global isDrag
+          global layoutRoot
+          layoutRoot.ReleaseMouseCapture()
+          isDrag = False
+          
+      def n_MouseLeave(sender, e):
+          sender.bkg.Opacity = .6
+      
+      def n_MouseEnter(sender, e):
+          sender.bkg.Opacity = 1.0
+          
+      def sb_Completed(sender, e):
+          global sb
+          global follow
+          global mouse
+          global origin
+          global convertToRadians
+          global x_axis_rotation
+          global y_axis_rotation
+          global z_axis_rotation
+          global bkg
+          global bkgScale
+          global nodes
+          
+          follow.X = follow.X + (mouse.X - follow.X) * .13
+          follow.Y = follow.Y + (mouse.Y - follow.Y) * .13
+          speedY = (mouse.X - follow.X)*.4
+          speedX = (mouse.Y - follow.Y)*.4
+          targetAlpha = bkg.Opacity
+          targetScale = bkgScale.ScaleX
+          
+          if isDrag:
+              targetAlpha = (mouse.X) / 900
+              targetScale = 1 + (mouse.Y) / 1200
+              x_axis_rotation = speedX / 5
+              y_axis_rotation = speedY / 5
+          else:
+              x_axis_rotation *= .99
+              y_axis_rotation *= .99
+          
+          bkg.Opacity = bkg.Opacity + (targetAlpha - bkg.Opacity) * .08
+          bkgScale.ScaleX = bkgScale.ScaleX + (targetScale - bkgScale.ScaleX) * .08
+          bkgScale.ScaleY = bkgScale.ScaleX
+          sin_x = Math.Sin(x_axis_rotation * convertToRadians)
+          cos_x = Math.Cos(x_axis_rotation * convertToRadians)
+          sin_y = Math.Sin(y_axis_rotation * convertToRadians)
+          cos_y = Math.Cos(y_axis_rotation * convertToRadians)
+          sin_z = Math.Sin(z_axis_rotation * convertToRadians)
+          cos_z = Math.Cos(z_axis_rotation * convertToRadians)
+          left = 0
+          top = 0
+          for n in nodes.Children:
+              rotatedY = (n.Y_3d * cos_x) - (n.Z_3d * sin_x)
+              rotatedDepth = (n.Z_3d * cos_x) + (n.Y_3d * sin_x)
+              n.Y_3d = rotatedY
+              n.Z_3d = rotatedDepth
+      
+              rotatedX = (n.X_3d * cos_y) - (n.Z_3d * sin_y)
+              rotatedDepth = (n.Z_3d * cos_y) + (n.X_3d * sin_y)
+              n.X_3d = rotatedX
+              n.Z_3d = rotatedDepth
+      
+              rotatedX = (n.X_3d * cos_z) - (n.Y_3d * sin_z)
+              rotatedY = (n.Y_3d * cos_z) + (n.X_3d * sin_z)
+      
+              n.X_3d = rotatedX
+              n.Y_3d = rotatedY
+              n.Z_3d = rotatedDepth
+      
+              n.perspective_ratio = screenDepth / (screenDepth + n.Z_3d)
+              n.Content.scale.ScaleX = n.perspective_ratio
+              n.Content.scale.ScaleY = n.perspective_ratio
+              n.Content.Opacity = n.perspective_ratio
+              left = (n.X_3d * n.perspective_ratio) + origin.X
+              top = (n.Y_3d * n.perspective_ratio) + origin.Y
+              n.X = left
+              n.Y = top
+              
+              n.c.Content.scale.ScaleX = (n.X - origin.X)/100
+              n.c.Content.scale.ScaleY = (n.Y - origin.Y)/100
+              n.c.Content.Opacity = n.Content.Opacity
+          sb.Begin() # staring again causes fail
+              
+      
+      def LoadNode():
+          client = WebClient()
+          client.DownloadStringCompleted += NodeLoaded
+          client.DownloadStringAsync(MakeUri("node.xaml"))
+          
+      def LoadCurve():
+          client = WebClient()
+          client.DownloadStringCompleted += CurveLoaded
+          client.DownloadStringAsync(MakeUri("curve.xaml"))
+          
+      def setupNodes():
+          global _node
+          global _curve
+          global names
+          global origin
+          global curves
+          global nodes
+          
+          totalNodes = names.Count
+          for i in range(0, totalNodes):
+              c = Curve(_curve)
+              c.X = origin.X
+              c.Y = origin.Y
+              curves.Children.Add(c)
+          for i in range(0, totalNodes):
+              n = Node(_node)
+              n.c = curves.Children[i]
+              myAngle = (360/totalNodes) * i
+              n.Content.display.Text = names[i]
+              n.X_3d = (Math.Cos((myAngle) * convertToRadians) * 100)
+              n.Y_3d = (Math.Sin((myAngle) * convertToRadians) * -100)
+              n.Z_3d = i * 8 
+              n.Content.offset.X = (n.Content.display.ActualWidth + 10) / -2
+              n.Content.offset.Y = (n.Content.display.ActualHeight + 6) / -2
+              n.Content.bkg.Width = n.Content.display.ActualWidth + 10
+              n.Content.bkg.Height = n.Content.display.ActualHeight + 6
+              if (i % 2) == 0:
+                  n.Z_3d = n.Z_3d * -1
+              n.Content.MouseEnter +=  n_MouseEnter
+              n.Content.MouseLeave +=  n_MouseLeave
+              n.Content.bkg.Opacity = .6
+              nodes.Children.Add(n)
+          
+      def Main():
+          global sb
+          sb = Storyboard()
+          layoutRoot.Resources.Add("sb", sb)
+          
+          layoutRoot.MouseLeftButtonDown += Page_MouseLeftButtonDown
+          layoutRoot.MouseMove +=  Page_MouseMove
+          layoutRoot.MouseLeftButtonUp +=  Page_MouseLeftButtonUp
+          sb.Completed += sb_Completed
+          
+          setupNodes()
+             
+          sb.Begin()
+      
+      LoadNode()
+      
+  </script>
+  
+  <!--
+    The following commented line of code is equivalent to the inline XAML
+    and we recommend doing it this way. Only caveat, if you link to a XAML
+    file, you'll be able to view the page correctly only through a server 
+    (e.g. apache or IIS) because of security sandbox reasons.
+  -->
+  <!--<script src="advanced.page.xaml" id="page" type="application/xml+xaml" width="600" height="400"></script>-->
+  
+  <script id="page" type="application/xml+xaml" width="600" height="400">
+    <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:xaml="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="600" Height="400">
+      <Canvas x:Name="LayoutRoot" Background="Black">
+        <Canvas.Clip>
+          <RectangleGeometry Rect="0,0,600,400"></RectangleGeometry>
+        </Canvas.Clip>
+        <!-- the xaml prefix on the Images is necessary to circumvent a XML parsing bug in FireFox and Chrome-->
+        <!-- Note that the xaml namespace needs to be included in the root as well-->
+        <xaml:Image Width="600" Height="400" Source="trigonometry/images/bkg.png"></xaml:Image>
+        <xaml:Image Width="600" Height="400" x:Name="bkg" Canvas.Left="-20" Canvas.Top="-20" Opacity="0.0" Stretch="Fill" Source="trigonometry/images/bkg.png">
+          <Image.RenderTransform>
+            <ScaleTransform x:Name="bkgScale" CenterX="300" CenterY="200" ScaleX="1.2" ScaleY="1.2"></ScaleTransform>
+          </Image.RenderTransform>
+        </xaml:Image>
+        <Canvas x:Name="curves" Opacity="1"></Canvas>
+        <Canvas x:Name="nodes"></Canvas>
+      </Canvas>
+    </UserControl>
+  </script>
+  
+</body>
+</html>

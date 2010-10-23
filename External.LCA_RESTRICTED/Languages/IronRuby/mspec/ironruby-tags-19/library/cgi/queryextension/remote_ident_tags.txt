@@ -1,0 +1,2 @@
+fails:CGI::QueryExtension#remote_ident returns ENV['REMOTE_IDENT']
+fails:"CGI::QueryExtension#remote_ident returns ENV['REMOTE_IDENT']"

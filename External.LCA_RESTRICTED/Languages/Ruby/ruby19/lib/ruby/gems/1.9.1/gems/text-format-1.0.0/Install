@@ -1,0 +1,6 @@
+Installing this package is as simple as:
+
+% ruby setup.rb
+
+Alternatively, you can use the RubyGem version of Text::Format available as
+text-format-1.0.0.gem from the usual sources.

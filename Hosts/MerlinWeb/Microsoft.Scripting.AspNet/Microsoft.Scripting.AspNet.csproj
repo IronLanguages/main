@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(SolutionDir)..\Solutions\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3272E46C-F4D9-418D-9EE9-081A1B658EE4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft.Scripting.AspNet</RootNamespace>
+    <AssemblyName>Microsoft.Scripting.AspNet</AssemblyName>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\v2Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\v2Release\</OutputPath>
+    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>$(SolutionDir)..\bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;SIGNED</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>$(SolutionDir)..\bin\Release\</OutputPath>
+    <DefineConstants>TRACE;SIGNED</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MembersInjectors\DictionaryMembersInjector.cs" />
+    <Compile Include="MembersInjectors\DataRowViewMembersInjector.cs" />
+    <Compile Include="Configuration\WebScriptingSection.cs" />
+    <Compile Include="EngineHelper.cs" />
+    <Compile Include="EventHandlerWrapper.cs" />
+    <Compile Include="EventHookupHelper.cs" />
+    <Compile Include="MembersInjectors\ControlMembersInjector.cs" />
+    <Compile Include="DynamicLanguageHttpModule.cs" />
+    <Compile Include="MembersInjectors\NameValueCollectionMembersInjector.cs" />
+    <Compile Include="MembersInjectors\XPathNavigableMembersInjector.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="MembersInjectors\RequestParamsMembersInjector.cs" />
+    <Compile Include="UI\ScriptTemplateControlMemberProxy.cs" />
+    <Compile Include="UI\Controls\BaseCodeControl.cs" />
+    <Compile Include="UI\Controls\DataBindingControl.cs" />
+    <Compile Include="UI\Controls\DataBindingIslandControl.cs" />
+    <Compile Include="UI\Controls\EventHookupControl.cs" />
+    <Compile Include="UI\Controls\ExpressionSnippetControl.cs" />
+    <Compile Include="UI\Controls\ScriptControl.cs" />
+    <Compile Include="UI\Controls\SnippetControl.cs" />
+    <Compile Include="UI\Controls\UserControl.cs" />
+    <Compile Include="UI\IScriptTemplateControl.cs">
+    </Compile>
+    <Compile Include="UI\NoCompileCodePageParserFilter.cs" />
+    <Compile Include="UI\ScriptTemplateControl.cs">
+    </Compile>
+    <Compile Include="UI\ScriptMaster.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UI\ScriptTemplateControlDictionary.cs" />
+    <Compile Include="UI\ScriptUserControl.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UI\ScriptPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Util\CombiningEnumerable.cs" />
+    <Compile Include="Util\DynamicFunction.cs" />
+    <Compile Include="Util\FileChangeNotifier.cs" />
+    <Compile Include="Util\Misc.cs" />
+    <Compile Include="Util\SingleObjectCollection.cs" />
+    <Compile Include="WebScriptHost.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(SolutionDir)..\Config\Signed\App.config" />
+    <None Include="MicrosoftSharedLibraries2Key.snk" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.RegularExpressions" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -1,1 +1,0 @@
-doskey n2=n.exe $*

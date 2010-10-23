@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <ProjectType>Local</ProjectType>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{827282D8-3E75-4545-A5E4-2406F0D3E184}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <AssemblyName>gppg</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>gppg</RootNamespace>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <BaseAddress>285212672</BaseAddress>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\..\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugSymbols>true</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <Optimize>false</Optimize>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\..\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="SemanticAction.cs" />
+    <Compile Include="CodeGenerator.cs" />
+    <Compile Include="Grammar.cs" />
+    <Compile Include="LALRGenerator.cs" />
+    <Compile Include="LR0Generator.cs" />
+    <Compile Include="Parser.cs" />
+    <Compile Include="Precedence.cs" />
+    <Compile Include="Scanner.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="ParserAction.cs" />
+    <Compile Include="Production.cs" />
+    <Compile Include="ProductionItem.cs" />
+    <Compile Include="Set.cs" />
+    <Compile Include="State.cs" />
+    <Compile Include="Symbol.cs" />
+    <Compile Include="Transition.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

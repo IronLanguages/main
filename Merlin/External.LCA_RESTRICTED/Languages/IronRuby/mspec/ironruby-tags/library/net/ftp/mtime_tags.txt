@@ -1,3 +1,0 @@
-fails:Net::FTP#mtime when passed filename returns the last modification time of the passed file as a Time object in the local time
-fails:Net::FTP#mtime when passed filename, local_time returns the last modification time as a Time object in UTC when local_time is true
-fails:Net::FTP#mtime when passed filename, local_time returns the last modification time as a Time object in the local time when local_time is false

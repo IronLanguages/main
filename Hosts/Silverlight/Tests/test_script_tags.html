@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+
+  <title>DLR Silverlight tests - script tags</title>
+
+  <script type="text/javascript" src="/dlr-build/dlr.js"></script>
+
+  <script type="application/x-zip-compressed" src="lib.zip"></script>
+
+  <!-- Start of script-tag fixtures -->
+
+  <script type="oogieboogie/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['random-prefix'] = true
+  </script>
+
+  <script type="application/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['inline-ruby'] = {:inline => true, :defer => false, :typed => true}
+  </script>
+
+  <script type="application/ruby" defer="true" id="deferredInline">
+    $script_tags_run ||= {}
+    $script_tags_run['inline-ruby-deferred'] = {:inline => true, :defer => true, :typed => true}
+  </script>
+
+  <script type="application/ruby" src="fixtures/ext-defer.rb" defer='true'></script>
+ 
+  <script type="application/ruby" src="fixtures/ext-nodefer.rb"></script>
+
+  <!-- most browsers will throw a syntax error here since they default to JavaScript -->
+  <!-- any way to change that default? -->
+  <script src="fixtures/ext-notype.rb"></script>
+
+  <script type="application/x-ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['inline-xruby'] = {:inline => true, :defer => false, :typed => true}
+  </script>
+
+  <script type="text/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['inline-text-ruby'] = {:inline => true, :defer => false, :typed => true}
+  </script>
+
+  <script type="application/ruby">
+    require 'fixtures/ext-defer.rb'
+  </script>
+
+  <script type="text/ruby">
+    def foo
+      $script_tags_run ||= {}
+      $script_tags_run['method-call-across-tags'] = true
+    end
+  </script>
+
+  <script type="text/ruby">
+    foo
+  </script>
+
+  <script type="text/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['in-order-execution'] ||= []
+    $script_tags_run['in-order-execution'] << 1
+  </script>
+
+  <script type="text/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['in-order-execution'] ||= []
+    $script_tags_run['in-order-execution'] << 2
+  </script>
+
+  <script type="application/ruby" src="fixtures/inorder3.rb"></script>
+
+  <script type="text/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['in-order-execution'] ||= []
+    $script_tags_run['in-order-execution'] << 4
+  </script>
+
+  <script type="text/python" src="pylib/ruby.py"></script>
+  <script type="application/python">
+    import sys
+    sys.path.append('pylib')
+    import ruby
+    ruby.execute(
+      """
+      $script_tags_run ||= {}
+      $script_tags_run['python'] = {:inline => true, :defer => false, :typed => true}
+      """
+    )
+  </script>
+
+  <!-- end of script-tag fixtures -->
+
+  <script type="application/ruby" src="test_script_tags.rb" defer='true'></script>
+
+</head>
+<body>
+
+  <script type="text/ruby" src="rblib/bacon.rb" defer='true'></script>
+  <script type="text/ruby" src="rblib/bacon_runner.rb" defer='true'></script>
+  <script type="text/ruby" src="rblib/test_results.rb" defer='defer'></script>
+  <script type="text/ruby">
+    require 'rblib/bacon_runner'
+    BaconRunner.run(%W(test_script_tags))
+  </script>
+
+</body>
+</html>

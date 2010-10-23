@@ -1,0 +1,6 @@
+fails:Encoding.find returns the corresponding Encoding object if given a valid encoding name
+fails:Encoding.find returns the corresponding Encoding object if given a valid alias name
+fails:Encoding.find accepts encoding names as Symbols
+fails:Encoding.find accepts encoding names as Strings
+fails:Encoding.find accepts any object as encoding name, if it responds to #to_str
+fails:Encoding.find is case insensitive

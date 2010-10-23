@@ -1,2 +1,0 @@
-fails:Kernel.srand defaults number to a random value
-fails:Kernel.srand calls #to_i on number

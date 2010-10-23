@@ -1,7 +1,0 @@
-TODO:
-
-- Fix ThinTestSlice.description and ThinTestSlice.version
-- Fix LICENSE with your name
-- Fix Rakefile with your name and contact info
-- Add your code to lib/thin-test-slice.rb
-- Add your Merb rake tasks to lib/thin-test-slice/merbtasks.rb

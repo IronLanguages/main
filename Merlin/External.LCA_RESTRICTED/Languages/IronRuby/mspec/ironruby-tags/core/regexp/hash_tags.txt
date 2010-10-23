@@ -1,1 +1,0 @@
-fails:Regexp#hash is based on the text and options of Regexp

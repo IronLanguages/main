@@ -1,2 +1,0 @@
-class SelectSpecs < SpecController
-end

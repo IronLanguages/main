@@ -1,1 +1,0 @@
-fails:Marshal::load raises EOFError on loading an empty file

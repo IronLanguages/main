@@ -1,2 +1,0 @@
-class RadioGroupSpecs < SpecController
-end

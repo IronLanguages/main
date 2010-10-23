@@ -1,0 +1,2 @@
+fails:CGI::QueryExtension#server_software returns ENV['SERVER_SOFTWARE']
+fails:"CGI::QueryExtension#server_software returns ENV['SERVER_SOFTWARE']"

@@ -1,0 +1,37 @@
+<html>
+  <head>
+    <script type="text/javascript" src="../dlr.js"></script>
+  </head>
+<body>
+        
+  <h2>Scopes</h2>
+  <p>The <span id="speed">slow</span> brown fox <span id="action">flies</span> over the lazy <span id="animal">cat</span>.</p>
+
+  <!-- Global scope -->
+  <script type="text/python">
+    document.speed.innerHTML = "quick"
+    document.action.innerHTML = "jumps"
+  </script>
+
+  <!-- Local scope-->
+  <script type="application/python" class="animal">
+    animal = "donkey"
+    document.animal.innerHTML = animal
+  </script>
+
+  <!-- Global scope -->
+  <script type="application/python">
+    #The following statement won't work because animal is not defined within the 
+    #scope of this script
+    #document.animal.innerHTML = animal
+    animal = "dog"
+    document.animal.innerHTML = animal
+  </script>
+
+  <!--  Local scope -->
+  <script type="application/python" class="animal">
+    document.animal.innerHTML = animal
+  </script>
+
+</body>
+</html>

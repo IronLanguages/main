@@ -1,3 +1,0 @@
-fails:Thread#kill can be rescued by outer rescue clause when inner ensure clause raises exception
-unstable:Thread#kill is deferred if ensure clause does Thread.stop
-unstable:Thread#kill killing dying sleeping thread wakes up thread

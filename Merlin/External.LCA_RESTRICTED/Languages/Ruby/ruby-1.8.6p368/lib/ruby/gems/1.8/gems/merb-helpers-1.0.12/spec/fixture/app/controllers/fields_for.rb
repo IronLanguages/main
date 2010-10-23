@@ -1,3 +1,0 @@
-class FieldsForSpecs < SpecController
-
-end

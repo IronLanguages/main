@@ -1,0 +1,48 @@
+﻿<Grid
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    >
+    <Grid x:Name="LayoutRoot">
+        <Grid.Resources>
+            <Storyboard x:Name="Animation">
+                <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="Rotator" Storyboard.TargetProperty="RotationY">
+                    <EasingDoubleKeyFrame x:Name="rotationKeyFrame" KeyTime="00:00:00.9" Value="0">
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <CubicEase />
+                        </EasingDoubleKeyFrame.EasingFunction>
+                    </EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="Rotator" Storyboard.TargetProperty="LocalOffsetZ">
+                    <EasingDoubleKeyFrame x:Name="offestZKeyFrame" KeyTime="00:00:00.9" Value="0">
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <CubicEase />
+                        </EasingDoubleKeyFrame.EasingFunction>
+                    </EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleX">
+                    <EasingDoubleKeyFrame x:Name="scaleXKeyFrame" KeyTime="00:00:00.9" Value="1">
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <CubicEase />
+                        </EasingDoubleKeyFrame.EasingFunction>
+                    </EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleY">
+                    <EasingDoubleKeyFrame x:Name="scaleYKeyFrame" KeyTime="00:00:00.9" Value="1">
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <CubicEase />
+                        </EasingDoubleKeyFrame.EasingFunction>
+                    </EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+            </Storyboard>
+        </Grid.Resources>
+        <Grid RenderTransformOrigin=".5,.5">
+            <Grid.RenderTransform>
+                <ScaleTransform x:Name="scaleTransform" ScaleX="1" ScaleY="1" />
+            </Grid.RenderTransform>
+            <Grid.Projection>
+                <PlaneProjection x:Name="Rotator" CenterOfRotationX="0.5" />
+            </Grid.Projection>
+            <Image x:Name="image" RenderTransformOrigin="0.5,0.5" Cursor="Hand" Source="{Binding}"/>
+        </Grid>
+    </Grid>
+</Grid> 

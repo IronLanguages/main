@@ -1,2 +1,0 @@
-fails:Module#autoload raises a NameError when the autoload file did not define the constant and a module is opened with the same name
-fails:Module#autoload raises a TypeError if not passed a String for the filename

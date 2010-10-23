@@ -1,0 +1,2 @@
+fails:Digest::SHA256#hexdigest returns a hexdigest
+fails:"Digest::SHA256#hexdigest returns a hexdigest"

@@ -1,1 +1,0 @@
-fails:Net::FTP#putbinaryfile sends the contents of the passed local_file, without modifications

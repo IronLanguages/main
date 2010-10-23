@@ -1,0 +1,24 @@
+<VSTemplate Version="2.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>Ruby Gem</Name>
+    <Description>Ruby Gem</Description>
+    <Icon>__TemplateIcon.ico</Icon>
+    <ProjectType>IronRuby</ProjectType>
+    <SortOrder>50</SortOrder>
+    <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
+    <CreateNewFolder>false</CreateNewFolder>
+    <DefaultName>my_gem</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="Gem.rbproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false">__Gems.rb</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false">CHANGELOG</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false">LICENSE</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false">README</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="$safeprojectname$_spec.rb" OpenOrder="0">test\program_spec.rb</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="$safeprojectname$.rb" OpenOrder="1">lib\program.rb</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="$safeprojectname$.gemspec" OpenOrder="2">program.gemspec</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

@@ -1,0 +1,204 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=8" />
+  <title>Advanced Python Image Sequencer</title>
+  <script src="../dlr.js" type="text/javascript"></script>
+</head>
+<body>
+
+  <script type="application/python" class="sequ">
+    from System import * # for Uri
+    from System.Windows import Point, Visibility, Application
+    from System.Windows.Shapes import * # exposes Rectangle to scope since not added by default
+    from System.Windows.Media.Animation import * # exposes Storyboard
+    from System.Windows.Media.Imaging import * # for bitmap
+    from System.Windows.Media import *
+    from System.Windows.Controls import *
+    from System.Net import * # for WebClient
+    from System.Windows.Resources import * # for WebClient
+    from System.Diagnostics import * # enables outputing to a debug window!
+    from Microsoft.Scripting.Silverlight.DynamicApplication import MakeUri
+
+    grid = me.grid
+    layoutRoot = me.LayoutRoot
+    globeComp = me.globeComp
+    scale = me.scale
+    reflection = me.reflection
+    rHolder = me.rHolder
+    holder = me.holder
+    frame = me.frame
+    txtOut = me.txtOut
+    textLayer = me.textLayer
+    
+    _zipInfo = None
+    index = 0
+    mouse = Point(0, 0)
+    sb = Storyboard()
+    webClient = WebClient()
+    
+    def grid_MouseMove(sender, e):
+        global mouse
+        mouse = e.GetPosition(layoutRoot)
+        
+    def sb_Completed(sender, e):
+        global sb
+        global globeComp
+        global index 
+        
+        # move and scale globeComp based on scale
+        left = globeComp.GetValue(Canvas.LeftProperty)
+        left += (mouse.X - left) * .12
+        globeComp.SetValue(Canvas.LeftProperty, left)
+        top = globeComp.GetValue(Canvas.TopProperty)
+        top += ((mouse.Y / 2) - top) * .12
+        if top < 0:
+            top = 0
+        if top > 60:
+            globeComp.SetValue(Canvas.ZIndexProperty, 20)
+        else:
+            globeComp.SetValue(Canvas.ZIndexProperty, 1)
+            
+        if top > 150:
+            top = 150
+    
+        globeComp.SetValue(Canvas.TopProperty, top)
+    
+        targetScale = .5 + mouse.Y/500
+        scale.ScaleX += (targetScale - scale.ScaleX) * .12
+        scale.ScaleY = scale.ScaleX
+    
+        # loop the animation
+        lag = Math.Floor(index / 3.0)
+        holder.SetValue(Canvas.LeftProperty, lag * -150.0)
+        rHolder.SetValue(Canvas.LeftProperty, lag * -150)
+        index = index + 1
+        if lag > 35:
+            index = 0
+        sb.Begin()
+    
+    def webClient_OpenReadCompleted(sender, e):
+        global _zipInfo
+        if (e.Error != None):
+            txtOut.Text = "Error: " + e.Error.Message
+            return
+        _zipInfo = StreamResourceInfo(e.Result, None)
+        buildStrip()
+        
+    def webClient_DownloadProgressChanged(sender, e):
+        txtOut.Text = "Progress: " + e.ProgressPercentage.ToString() + "%"
+        if (e.ProgressPercentage == 100):
+            txtOut.Visibility = Visibility.Collapsed
+        
+    def buildStrip():
+        global index
+        global sb
+        global _zipInfo
+        
+        for i in range( 0, 37):
+            fileName = "redGlobe_" + i.ToString() + ".png"
+            mediaStreamInfo = Application.GetResourceStream(_zipInfo, Uri(fileName, UriKind.Relative))
+            # add an image for the globe
+            img = Image()
+            img.Width = 150
+            img.Height = 140
+            img.SetValue(Canvas.LeftProperty, (i * 150.0))
+            bi = BitmapImage()
+            bi.SetSource(mediaStreamInfo.Stream)
+            img.Source = bi
+            holder.Children.Add(img)
+            # and another copy for the reflection
+            img2 = Image()
+            img2.Width = 150
+            img2.Height = 140
+            # The render transform handles the inverted
+            # representation, so our positioning logic
+            # for reflection is identical to the one in frame
+            img2.SetValue(Canvas.LeftProperty, (i * 150.0))
+            bi2 = BitmapImage()
+            bi2.SetSource(mediaStreamInfo.Stream)
+            img2.Source = bi2
+            # add the duplicate image to rHolder in reflection
+            rHolder.Children.Add(img2)
+        index = 0
+        sb.Begin()
+    
+    grid.MouseMove += grid_MouseMove
+    webClient.DownloadProgressChanged += webClient_DownloadProgressChanged
+    webClient.OpenReadCompleted += webClient_OpenReadCompleted
+    sb.Completed += sb_Completed
+    
+    layoutRoot.Resources.Add("sb", sb)
+    webClient.OpenReadAsync(MakeUri("images/redGlobe.zip"))
+  </script>
+
+  
+  <!-- 
+    The following commented line of code is equivalent to the inline XAML
+    and we recommend doing it this way. Only caveat, if you link to a XAML
+    file, you'll be able to view the page correctly only through a server 
+    (e.g. apache or IIS) because of security sandbox reasons.
+  -->
+  <!--<script id="sequ" type="application/xml+xaml" width="600" height="300" src="image.sequencer.xaml">-->
+    
+  <script id="sequ" type="application/xml+xaml" width="600" height="300">
+      <Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="grid" Width="600" Height="300" Background="Tan">
+          <Canvas x:Name="LayoutRoot">
+              <Canvas.Background>
+                <RadialGradientBrush GradientOrigin="0.483999997377396,0.479000002145767">
+                  <RadialGradientBrush.RelativeTransform>
+                    <TransformGroup>
+                      <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="9.934" ScaleY="2.296" ></ScaleTransform> 
+                      <SkewTransform CenterX="0.5" CenterY="0.5"></SkewTransform>
+                      <RotateTransform CenterX="0.5" CenterY="0.5"></RotateTransform>
+                      <TranslateTransform Y="-0.341" X="-0.66"></TranslateTransform>
+                    </TransformGroup>
+                  </RadialGradientBrush.RelativeTransform>
+                  <GradientStop Color="#FF000000" Offset="0.19599999487400055"></GradientStop>
+                  <GradientStop Color="#FFFF0000" Offset="1"></GradientStop>
+                </RadialGradientBrush>
+              </Canvas.Background>
+              <Canvas x:Name="globeComp" Canvas.Left="300" Canvas.Top="0">
+                  <Canvas.RenderTransform>
+                      <ScaleTransform x:Name="scale" ScaleX="1" ScaleY="1"></ScaleTransform>
+                  </Canvas.RenderTransform>
+                  <Canvas x:Name="reflection" Canvas.Top="290" Canvas.Left="-75" Width="150" Height="140">
+                      <Canvas.Clip>
+                          <RectangleGeometry Rect="0,0,150,140"></RectangleGeometry>
+                      </Canvas.Clip>
+                      <Canvas.OpacityMask>
+                          <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                              <GradientStop Color="#99000000" Offset="1"></GradientStop>
+                              <GradientStop Color="#00000000" Offset="0.6"></GradientStop>
+                              <GradientStop Color="#00000000" Offset="0"></GradientStop>
+                          </LinearGradientBrush>
+                      </Canvas.OpacityMask>
+                      <Canvas.RenderTransform>
+                          <ScaleTransform ScaleY="-1.0"></ScaleTransform>
+                      </Canvas.RenderTransform>
+                      <Canvas x:Name="rHolder"></Canvas>
+                  </Canvas>
+                  <Canvas x:Name="frame" Canvas.Left="-75">
+                      <Canvas.Clip>
+                          <RectangleGeometry Rect="0,0,150,140"></RectangleGeometry>
+                      </Canvas.Clip>
+                      <Canvas x:Name="holder"></Canvas>
+                  </Canvas>
+              </Canvas>
+              <TextBlock x:Name="txtOut" Text="Progress:" Foreground="#FFAAAAAA" FontSize="12" Width="100" Height="20" Canvas.Left="10" Canvas.Top="280" Visibility="Visible"></TextBlock>
+              <Canvas x:Name="textLayer" Canvas.Top="100" Height="52">
+              <Canvas.OpacityMask>
+                      <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                          <GradientStop Color="#66000000" Offset="1"></GradientStop>
+                          <GradientStop Color="#aa000000" Offset="0.5"></GradientStop>
+                          <GradientStop Color="#FF000000" Offset="0.5"></GradientStop>
+                          <GradientStop Color="#FF000000" Offset="0"></GradientStop>
+                      </LinearGradientBrush>
+              </Canvas.OpacityMask>
+                  <TextBlock Height="52" Width="239" Canvas.Left="170" Text="GESTALT" Foreground="#FFFFFFFF" FontFamily="Lucida Sans Unicode" FontSize="36" TextAlignment="Center" FontStretch="Normal" Opacity="0.8"></TextBlock>
+              </Canvas>
+          </Canvas>
+      </Grid>
+  </script>
+
+</body>
+</html>

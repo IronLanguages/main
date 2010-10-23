@@ -1,1 +1,0 @@
-fails:Net::FTP#put (binary mode) sends the contents of the passed local_file, without modifications

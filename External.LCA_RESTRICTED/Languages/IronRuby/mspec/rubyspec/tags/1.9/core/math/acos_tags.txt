@@ -1,0 +1,3 @@
+fails:Math.acos raises an ArgumentError if the argument cannot be coerced with Float()
+fails:Math.acos raises an ArgumentError if the string argument cannot be coerced with Float()
+fails:Math.acos coerces string argument with Float() without calling to_f

@@ -1,0 +1,26 @@
+CLR type name: IronPython.Samples.ClrType.Product
+CLR fields: ['.class', '.dict', '.slots_and_weakref', '_quantity', 'cost', 'name']
+CLR properties: ['quantity']
+CLR methods (introduced): ['calc_total', 'quantity', 'quantity']
+Type attributes:
+    Obsolete.Message: None
+    CLSCompliant.IsCompliant: False
+    XmlRoot.ElementName: product
+    XmlRoot.NameSpace: www.contoso.com
+
+Calling IProduct.Name and IProduct.IsAvailable as a strongly-typed members:
+Name: Widget
+IsAvailable: True
+Calling calc_total as a strongly-typed method using Reflection:
+calc_total CLR signature: Double calc_total(Double)
+calc_total(1.0): 378.0
+
+Calling pinvoke methods:
+IsCharAlpha('A'): True
+IsCharAlpha('1') from another language: False
+
+Changing calc_total from Python
+Calling calc_total as a strongly-typed method using Reflection:
+calc_total CLR signature: Double calc_total(Double)
+calc_total(1.0): 294.0
+

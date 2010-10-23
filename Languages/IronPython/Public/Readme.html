@@ -1,0 +1,196 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>IronPython ReadMe</title>
+</head>
+
+<body style="color: #000000">
+
+<h1></h1>
+    <h1>
+        </h1>
+    <h1>
+        IronPython %IRONPYTHON_VERSION%</h1>
+    <p>
+            IronPython is a new implementation of the Python programming language on .NET.&nbsp; The .NET Framework
+                is a managed programming model for Windows; Microsoft standardized part of it in&nbsp;<a href="http://www.ecma-international.org/">ECMA</a>
+            years ago as the 
+		<a href="http://www.ecma-international.org/publications/standards/Ecma-335.htm">Common Language Infrastructure</a> and 
+		<a href="http://www.ecma-international.org/publications/standards/Ecma-334.htm">C# Language Specification</a>
+            standards.</p>
+    <p>
+            IronPython is fast - up to 37% faster than Python-2.6 on the standard 
+			PyStone benchmark.&nbsp; It supports an interactive interpreter
+            with fully dynamic compilation.&nbsp; It is well integrated with
+            the rest of the framework and makes the whole .NET Framework class 
+			library easily available to Python
+            programmers.</p>
+<p>
+            The best place to learn more about IronPython is the
+			<a href="http://www.ironpython.net">official webiste</a>.&nbsp; 
+			There you'll find links to our
+			<a href="http://www.codeplex.com/ironpython">CodePlex site</a> which 
+			includes IronPython sources, binaries, and samples<span style="color: #000000">.&nbsp; 
+			You can also file bugs and generally interact with the 
+			IronPython team through this shared project site.&nbsp; Finally, there's a 
+			mailing list you can join for discussing issues and releases if you 
+			like.</span></p>
+<p>
+            There's a good introductory tutorial at
+			<a href="Tutorial/Tutorial.htm">IronPython Tutorial</a>.</p>
+<p>
+            IronPython has a high degree of compatibility with CPython, but 
+			there are some differences. See
+			<a href="http://www.codeplex.com/Wiki/View.aspx?ProjectName=IronPython&title=Differences">IronPython Differences</a> document for details.</p>
+<p>
+    IronPython %IRONPYTHON_VERSION% is suitable for building Python applications where you want 
+	to make use of .NET Framework and pure python modules. There are still some 
+	missing standard CPython libraries (See
+	<a href="http://www.codeplex.com/Wiki/View.aspx?ProjectName=IronPython&title=Differences">IronPython Differences</a> for details.), and there are some known issues 
+	with the IronPython implementation 
+	(see <a href="http://www.codeplex.com/ironpython">
+	www.codeplex.com/ironpython</a>).</p>
+<p>
+    &nbsp;</p>
+<h2>
+    Prerequisites</h2>
+    <p>
+        To run, IronPython %IRONPYTHON_VERSION% requires .NET Framework version 
+		4.0 to be installed
+        on your system. You can install the latest version from Microsoft:</p>
+    <ul>
+        <li>
+		<a href="http://www.microsoft.com/downloads/details.aspx?FamilyID=9cfb2d51-5ff4-4491-b0e5-b386f32c0992&amp;displaylang=en">Microsoft .NET Framework Version 
+		4.0</a></li></ul>
+    <p>
+        IronPython should also run on any platform that implements the CLI specification v4.0.</p>
+    <p>
+        There are <a href="#BuilFromSource">more prerequisites</a> if you want to build IronPython from source.</p>
+<p>
+        &nbsp;</p>
+    <h2>
+        Running IronPython</h2>
+<p>If you did not download the binaries, you'll need to
+<a href="#BuilFromSource">build IronPython</a> first.&nbsp; After building 
+IronPython or unpacking the binary distribution, you can complete the installation by 
+adding the IronPython installation directory to your PATH.&nbsp; To test the installation, you 
+should launch the interactive interpreter as shown below:</p>
+<blockquote>
+	<pre>C:\IronPython&gt;ipy
+IronPython 2.7.0 on .NET 4.0.30319.1
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; 2+2
+4</pre>
+</blockquote>
+<p>You can use IronPython to run Python scripts by passing the script name on 
+the command-line just as with standard Python.&nbsp; If hello.py had the 
+displayed contents, the following ipy command line would run it:</p>
+    <blockquote>
+		<pre>Hello.py:
+
+for i in xrange(3):
+    print "Hello World"
+
+
+C:\IronPython&gt;ipy Hello.py
+Hello World
+Hello World
+Hello World
+</pre>
+</blockquote>
+
+This simple example shows how you can start using WinForms from IronPython:
+
+<blockquote>
+	<pre>C:\IronPython&gt;ipy
+IronPython 2.7.0 on .NET 4.0.30319.1
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import clr
+&gt;&gt;&gt; clr.AddReference(&quot;System.Windows.Forms&quot;)
+&gt;&gt;&gt; import System.Windows.Forms as WinForms
+&gt;&gt;&gt; WinForms.MessageBox.Show(&quot;Hello&quot;, &quot;Hello World&quot;)
+OK
+</pre>
+</blockquote>
+<p>For more information on the clr.AddReference function, see the
+<a href="Tutorial/Tutorial.htm#T1.3">Loading .NET Libraries</a> exercise in the
+<a href="Tutorial/Tutorial.htm">IronPython Tutorial</a><span style="color: #000000">, 
+which has many examples of using IronPython in various ways.</span></p>
+<p>&nbsp;</p>
+<h2><a name="silverlight"></a>IronPython in Silverlight</h2>
+<div style="border-left: 10px solid yellow; padding: 10px;">
+<h3>ATTENTION!</h3>
+<p>
+  See <a href="http://ironpython.net/browser/" target="_blank">ironpython.net/browser</a>
+  for the most up-to-date information on using Python in the browser with Silverlight.
+  For example, this HTML page hosts Silverlight to run Python code, and requires no extra
+  dependencies:
+</p>
+<blockquote><pre>&lt;html&gt;
+  &lt;head&gt;
+    &lt;script type="text/javascript" 
+            src="http://gestalt.ironpython.net/dlr-latest.js"&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id="message"&gt;Loading ...&lt;/div&gt;
+    &lt;script type="text/python"&gt;
+      document.message.innerHTML = "Hello from python!"
+      def on_click(obj, args):
+          obj.innerHTML = "Clicked!"
+      document.message.events.onclick += on_click
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre></blockquote>
+<p>
+Keep in mind the information, binaries, and examples in this package
+will still help you build Silverlight applications with IronPython, but
+using HTML script-tags is the preferred model going forward; the
+ways described here will be deprecated in a future release.
+</p>
+</div>
+<h3>Generating an application</h3>
+<blockquote><pre>script\sl python MyApp</pre></blockquote>
+<p>Will create "MyApp" in the current directory.</p>
+<p>For more information on the "server" script, run <code>script\server</code></p>
+<h3>Running an app</h3>
+<blockquote><pre>script\server /b:MyApp\index.html</pre></blockquote>
+<p>This will launch the default browesr pointed at the application.</p>
+<p>&nbsp;</p>
+<h2><a name="BuilFromSource"></a>Building IronPython from Source</h2>
+    <p>
+        If you downloaded the binaries from
+		<a href="http://www.codeplex.com/ironpython">www.codeplex.com/ironpython</a><span style="color: #000000">, 
+		you do not need to build it.&nbsp; </span>To compile IronPython from the source code, you can install either Visual
+        Studio 2010 or .NET Framework 4.0 using one
+        of the following
+        links:</p>
+    <ul>
+        <li>
+		<a href="http://www.microsoft.com/downloads/details.aspx?FamilyID=9cfb2d51-5ff4-4491-b0e5-b386f32c0992&amp;displaylang=en">Microsoft .NET Framework Version 
+		4.0</a></li><li>
+		<a href="http://www.microsoft.com/visualstudio/en-us/howtobuy/default.mspx">Visual Studio 2010
+		</a> </li>
+    </ul>
+    <h3>
+        Building using Visual Studio 2010</h3>
+    <p>
+        Open IronPython.sln in Visual Studio 2010 and build (from menu: Build-&gt;Build Solution).&nbsp; Set IronPythonConsole as your startup project
+        in the Solution Explorer.</p>
+    <h3>
+        Building using .NET Framework 4.0</h3>
+    <p>
+        .NET Framework 4.0 comes with the C# compiler and Microsoft's msbuild.&nbsp; After installing 
+		.NET, open any command prompt, 
+		cd to the IronPython directory, and execute:</p>
+    <blockquote>
+		<pre>%SystemDrive%\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild Solutions\IronPython.sln</pre>
+</blockquote>
+<p>This will build all required Dynamic Language Runtime and IronPython 
+assemblies which include but are not limited to: IronPython.dll, IronPython.Modules.dll, Microsoft.Scripting.dll, 
+Microsoft.Dynamic.dll, Microsoft.Scripting.Debugging.dll, ipy.exe, and ipyw.exe.</p>
+
+</body>
+
+</html>

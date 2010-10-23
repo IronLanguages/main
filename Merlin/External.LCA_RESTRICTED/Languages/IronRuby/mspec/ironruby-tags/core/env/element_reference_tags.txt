@@ -1,2 +1,0 @@
-fails:ENV.[] sets HOME to %HOMEPATH% if %HOME% is not set
-fails:ENV.[] does not set HOME if none of %HOMEDRIVE%, %HOMEPATH% or %USERPROFILE% are set

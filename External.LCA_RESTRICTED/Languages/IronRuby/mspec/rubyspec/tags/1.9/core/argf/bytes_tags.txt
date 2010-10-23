@@ -1,0 +1,1 @@
+fails:ARGF.bytes returns self when passed a block

@@ -1,3 +1,0 @@
-fails:Generator#rewind does nothing for empty generator
-fails:Generator#rewind rewinds the generator
-fails:Generator#rewind rewinds the previously finished generator

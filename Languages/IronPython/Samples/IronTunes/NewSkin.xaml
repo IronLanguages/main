@@ -1,0 +1,212 @@
+﻿<Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid.ColumnDefinitions>
+    <ColumnDefinition Width="*" />
+  </Grid.ColumnDefinitions>
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="*" />
+  </Grid.RowDefinitions>
+  <Grid.Resources>
+    <!---->
+    <Path x:Key="PlayIcon" Margin="8,0,0,0" Width="40" Height="40" Stretch="Fill" Fill="#FF000000" Data="F1 M 335.917,234.533L 219.641,167.402L 219.641,301.665L 335.917,234.533 Z " />
+    <!---->
+    <StackPanel x:Key="ForwardIcon" Orientation="Horizontal" Margin="6,0,0,0">
+      <Path Width="15" Height="25" Stretch="Fill" Fill="#FF000000" Data="F1 M 149.775,88.6667L 101.113,60.5716L 101.113,116.762L 149.775,88.6667 Z " />
+      <Path Width="15" Height="25" Stretch="Fill" Fill="#FF000000" Data="F1 M 199.664,87.3333L 151.002,59.2383L 151.002,115.428L 199.664,87.3333 Z " />
+    </StackPanel>
+    <!---->
+    <StackPanel x:Key="BackIcon" Orientation="Horizontal" Margin="0,0,6,0">
+      <StackPanel.LayoutTransform>
+        <ScaleTransform ScaleX="-1" />
+      </StackPanel.LayoutTransform>
+      <Path Width="15" Height="25" Stretch="Fill" Fill="#FF000000" Data="F1 M 149.775,88.6667L 101.113,60.5716L 101.113,116.762L 149.775,88.6667 Z " />
+      <Path Width="15" Height="25" Stretch="Fill" Fill="#FF000000" Data="F1 M 199.664,87.3333L 151.002,59.2383L 151.002,115.428L 199.664,87.3333 Z " />
+    </StackPanel>
+    <!---->
+    <Path x:Key="AddFileIcon" Width="30" Height="30" Stretch="Fill" Fill="#FF000000" Data="F1 M 12.9883,31.543L 12.9883,18.4571L 0,18.4571L 0,12.9883L 12.9883,12.9883L 12.9883,0L 18.522,0L 18.522,12.9883L 31.5104,12.9883L 31.5104,18.4571L 18.522,18.4571L 18.522,31.543L 12.9883,31.543 Z " />
+    <!---->
+    <Path x:Key="AddFolderIcon" Width="30" Height="30" Stretch="Fill" Fill="#FF000000" Data="F1 M 0,12.5325L 12.4676,12.5325L 12.4676,0L 22.9818,0L 22.9818,12.5325L 35.5144,12.5325L 35.5144,23.0793L 22.9818,23.0793L 22.9818,35.5469L 12.4676,35.5469L 12.4676,23.0793L 0,23.0793L 0,12.5325 Z " />
+    <!---->
+    <DataTemplate x:Key="LibraryItemTemplate">
+      <Grid Height="100" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="162"/>
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition />
+        </Grid.RowDefinitions>
+        <Rectangle HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="158" Height="101">
+          <Rectangle.Fill>
+            <DrawingBrush>
+              <DrawingBrush.Drawing>
+                <DrawingGroup>
+                  <GeometryDrawing Geometry="F1 M 463.05,349.471L 579.047,349.471L 536.95,450.529L 420.953,450.529L 463.05,349.471">
+                    <GeometryDrawing.Brush>
+                      <LinearGradientBrush StartPoint="490.84,443.318" EndPoint="527.09,354.568" MappingMode="Absolute">
+                        <GradientStop Color="#B0000000" Offset="0" />
+                        <GradientStop Color="#00000000" Offset="1" />
+                      </LinearGradientBrush>
+                    </GeometryDrawing.Brush>
+                  </GeometryDrawing>
+                </DrawingGroup>
+              </DrawingBrush.Drawing>
+            </DrawingBrush>
+          </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle Stroke="sc#1, 0.8676036, 0.250823736, 0" Fill="sc#1, 1, 1, 1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,1" Width="116" Height="161" RenderTransformOrigin="0.5,0.5" />
+        <Image x:Name="Image" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8,0,8" Width="100">
+          <Image.Source>
+            <Binding Path="Image" />
+          </Image.Source>
+        </Image>
+        <StackPanel Margin="0,0,0,0" Grid.Column="1" x:Name="TextStackPanel" RenderTransformOrigin="0.5,0.5">
+          <TextBlock x:Name="TextBlock1" Text="{Binding Title}" FontSize="16" FontFamily="Segoe Book" FontWeight="Bold" />
+          <TextBlock x:Name="TextBlock" Text="{Binding Artist}" FontSize="14" FontFamily="Segoe Book" FontWeight="Bold"  />
+          <TextBlock Text="{Binding Album}" FontSize="14" FontFamily="Segoe Book" FontWeight="Bold" />
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+    <!---->
+    <ControlTemplate x:Key="ButtonTemplate">
+      <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Width}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="10*" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" />
+          <RowDefinition Height="20*" />
+          <RowDefinition Height="6*" />
+        </Grid.RowDefinitions>
+        <Ellipse Grid.RowSpan="3" Grid.ColumnSpan="3" Margin="0.5" x:Name="back">
+          <Ellipse.Fill>
+            <RadialGradientBrush Center="0.5,0.9" RadiusX="0.7" RadiusY="0.5">
+              <GradientStop Color="#FF9BB9EF" Offset="0" />
+              <GradientStop Color="#FF0066CC" Offset="1" />
+            </RadialGradientBrush>
+          </Ellipse.Fill>
+        </Ellipse>
+        <ContentPresenter Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center" HorizontalAlignment="Center" Content="{TemplateBinding ContentControl.Content}" />
+        <Ellipse Grid.Row="1" Grid.Column="1" x:Name="glow">
+          <Ellipse.Fill>
+            <RadialGradientBrush Center="0.5,0.1" RadiusX="0.7" RadiusY="0.5">
+              <GradientStop Color="#dfff" Offset="0" />
+              <GradientStop Color="Transparent" Offset="1" />
+            </RadialGradientBrush>
+          </Ellipse.Fill>
+        </Ellipse>
+      </Grid>
+      <ControlTemplate.Triggers>
+        <EventTrigger RoutedEvent="Mouse.MouseEnter">
+          <BeginStoryboard>
+            <Storyboard>
+              <ColorAnimation Storyboard.TargetName="glow" Storyboard.TargetProperty="(Shape.Fill).(GradientBrush.GradientStops)[0].(GradientStop.Color)" From="#dfff" To="#1fff" Duration="0:0:0.5" AutoReverse="True" AccelerationRatio="0.4" DecelerationRatio="0.6" />
+              <ColorAnimation Storyboard.TargetName="back" Storyboard.TargetProperty="(Shape.Fill).(GradientBrush.GradientStops)[0].(GradientStop.Color)" From="#FF9BB9EF" To="#FFFF9933" Duration="0:0:0.5" AutoReverse="True" AccelerationRatio="0.4" DecelerationRatio="0.6" />
+              <ColorAnimation Storyboard.TargetName="back" Storyboard.TargetProperty="(Shape.Fill).(GradientBrush.GradientStops)[1].(GradientStop.Color)" From="#FF0066CC" To="#FFFF9933" Duration="0:0:0.5" AutoReverse="True" AccelerationRatio="0.4" DecelerationRatio="0.6" />
+            </Storyboard>
+          </BeginStoryboard>
+        </EventTrigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate>
+  </Grid.Resources>
+  <!---->
+  <!---->
+  <Rectangle Stretch="Fill" x:Name="Top_Panel">
+    <Rectangle.Fill>
+      <!---->
+      <LinearGradientBrush StartPoint="0.462861,0.117609" EndPoint="0.462861,0.879113">
+        <GradientStop Color="#FF9BB9EF" Offset="0" />
+        <GradientStop Color="#FF0066CC" Offset="1" />
+      </LinearGradientBrush>
+    </Rectangle.Fill>
+  </Rectangle>
+  <!---->
+  <Grid Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="150" />
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <!---->
+    <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
+      <Label Margin="3" Content="IronTunes" />
+      <Button x:Name="Back" Width="50" Template="{StaticResource ButtonTemplate}" Margin="3" Content="{StaticResource BackIcon}" />
+      <Button x:Name="PlayPause" Width="70" Template="{StaticResource ButtonTemplate}" Margin="3" Content="{StaticResource PlayIcon}" />
+      <Button x:Name="Forward" Width="50" Template="{StaticResource ButtonTemplate}" Margin="3" Content="{StaticResource ForwardIcon}" />
+      <Button x:Name="AddFile" Width="50" Template="{StaticResource ButtonTemplate}" Margin="3" Content="{StaticResource AddFileIcon}" />
+      <Button x:Name="AddDir" Width="50" Template="{StaticResource ButtonTemplate}" Margin="3" Content="{StaticResource AddFolderIcon}" />
+      <Slider x:Name="Volume" Width="100" Margin="3" Minimum="0" Maximum="100">
+        <Slider.Value>
+          <Binding Path="player.volume" Mode="TwoWay" />
+        </Slider.Value>
+      </Slider>
+    </StackPanel>
+    <!---->
+    <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal">
+      <Label Margin="3" Content="Search:" />
+      <TextBox Text="{Binding library.SearchFilter.SearchString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Width="63" Height="24"/>
+    </StackPanel>
+  </Grid>
+  <!---->
+  <Grid Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <!---->
+    <Rectangle Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Stretch="Fill" x:Name="LowerPanel">
+      <Rectangle.Fill>
+        <LinearGradientBrush StartPoint="0.502008,0.0208333" EndPoint="0.502008,0.991667">
+          <GradientStop Color="#FF0066CC" Offset="0" />
+          <GradientStop Color="#FF9BB9EF" Offset="1" />
+        </LinearGradientBrush>
+      </Rectangle.Fill>
+    </Rectangle>
+    <!---->
+    <Grid Grid.Column="0" Grid.Row="0" Margin="10,10,10,10" Height="100">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="100" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <!---->
+      <Rectangle Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" RadiusX="13" RadiusY="13">
+        <Rectangle.Fill>
+          <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+            <GradientStop Color="#FF6BC0F5" Offset="0" />
+            <GradientStop Color="#FFFFFFFF" Offset="1" />
+          </LinearGradientBrush>
+        </Rectangle.Fill>
+      </Rectangle>
+      <!---->
+      <Image Stretch="Uniform" Margin="5,5,5,5" Grid.Column="0" Grid.Row="0" />
+      <!---->
+      <StackPanel Grid.Column="1" Orientation="Vertical">
+        <Label FontSize="30pt" FontFamily="Cambria">
+          <Binding Path="player.PlayingItem.Title" />
+        </Label>
+        <StackPanel Orientation="Horizontal">
+          <Label FontSize="15pt" FontFamily="Cambria" Margin="0,0,7pt,0">
+            <Binding Path="player.PlayingItem.Artist" />
+          </Label>
+          <Label FontSize="15pt" FontFamily="Cambria">
+            <Binding Path="player.PlayingItem.Album" />
+          </Label>
+          <Slider Margin="3,3,6,3" Height="20" Width="300" Minimum="0">
+            <Slider.Maximum>
+              <Binding Path="player.Duration" Mode="OneWay" />
+            </Slider.Maximum>
+            <Slider.Value>
+              <Binding Path="player.Position" Mode="TwoWay" />
+            </Slider.Value>
+          </Slider>
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+    <!---->
+    <ListView Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="LibraryView" ItemsSource="{Binding library.LibraryView}" ItemTemplate="{StaticResource LibraryItemTemplate}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding player.SelectedItem, Mode=TwoWay}" SelectedIndex="{Binding player.SelectedIndex, Mode=TwoWay}" />
+  </Grid>
+</Grid>

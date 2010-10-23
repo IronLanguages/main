@@ -1,3 +1,0 @@
-fails:Enumerable#sort sort should throw a NoMethodError if elements do not define <=>
-fails:Enumerable#sort compare values returned by block with 0
-fails:Enumerable#sort raises an error if objects can't be compared

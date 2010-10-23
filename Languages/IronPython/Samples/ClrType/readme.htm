@@ -1,0 +1,310 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=windows-1252">
+  <title>Dynamic Web Service Helpers</title>
+  <style>
+p.Normal, li.Normal
+	{margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:Verdana;
+	margin-left:0in; margin-right:0in; margin-top:0in}
+h1
+	{margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	page-break-before:always;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:Verdana;
+	}
+h2
+	{margin-top:14.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	line-height:150%;
+	page-break-after:avoid;
+	font-size:14.0pt;
+	font-family:Verdana;
+	}
+h3
+	{margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	line-height:150%;
+	page-break-after:avoid;
+	font-size:11.0pt;
+	font-family:Verdana;
+	}
+p.Toc1
+	{margin-top:14.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	line-height:14.0pt;
+	font-size:10.0pt;
+	font-family:Verdana;
+	text-transform:uppercase;
+	font-weight:bold;
+	}
+p.Toc2
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:12.0pt;
+	margin-bottom:.0001pt;
+	font-size:10.0pt;
+	font-family:Verdana;
+	}
+p.Toc3
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:24.0pt;
+	margin-bottom:.0001pt;
+	font-size:10.0pt;
+	font-family:Verdana;
+	}
+a:link
+	{color:blue;
+	text-decoration:underline;
+	}
+a:visited
+	{color:purple;
+	text-decoration:underline;
+	}
+p.Body
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:0in;
+	line-height:-116%;
+	font-size:11.0pt;
+	font-family:Verdana;
+	}
+p.TypedExample
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:.5in;
+	line-height:150%;
+	font-size:10.0pt;
+	font-family:Verdana;
+	font-weight:bold}
+p.ContentsHeading
+	{margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	page-break-before:always;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:Verdana;
+	font-weight:bold}
+p.Step
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:0.1in;
+	font-size:11.0pt;
+	font-family:Verdana
+	}
+p.StepNote
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:.25in;
+	line-height:150%;
+	font-size:10.0pt;
+	font-family:Verdana;
+	font-weight:bold
+	}
+p.Code-Background
+	{margin-top:0;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:0;
+	font-size:10.0pt;
+	font-family:"Courier New"
+	}
+p.Title1
+	{margin-bottom:.0001pt;
+	font-size:36.0pt;
+	font-family:Verdana;
+	margin-left:0in; margin-right:0in; margin-top:0in}
+p.Title2
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:12.0pt;
+	margin-left:0in;
+	page-break-after:avoid;
+	font-size:28.0pt;
+	font-family:Verdana;
+	}
+p.CopyrightText
+	{margin-bottom:.0001pt;
+	font-size:10.0pt;
+	font-family:Verdana;
+	margin-left:0in; margin-right:0in; margin-top:0in}
+p.ExerciseList
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:.5in;
+	text-indent:-.25in;
+	line-height:-116%;
+	font-size:11.0pt;
+	font-family:Verdana;
+	}
+p.LabSummary
+	{margin-top:14.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	line-height:150%;
+	page-break-after:avoid;
+	font-size:14.0pt;
+	font-family:Verdana;
+	font-weight:bold;
+	}
+p.Code-Highlighted
+	{margin-top:0;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:0;
+	background:#E6E6E6;
+	font-size:10.0pt;
+	font-family:"Courier New"
+	}
+p.Stepnonumbering
+	{margin-top:0;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:30.25pt;
+	font-size:11.0pt;
+	font-family:Verdana
+	}
+ul
+	{margin-bottom:0in;}
+  </style>
+</head>
+<body lang="EN-US" link="#0000FF" vlink="#800080">
+<p class="Normal" align="center"></p>
+<hr>
+<p class="CopyrightText"> Information in this document is subject to
+change without notice. The example companies, organizations, products,
+people, and events depicted herein are fictitious. No association with
+any real company, organization, product, person or event is intended or
+should be inferred. Complying with all applicable copyright laws is the
+responsibility of the user. Without limiting the rights under
+copyright, no part of this document may be reproduced, stored in or
+introduced into a retrieval system, or transmitted in any form or by
+any means (electronic, mechanical, photocopying, recording, or
+otherwise), or for any purpose, without the express written permission
+of Microsoft Corporation.</p>
+<p class="CopyrightText"> &nbsp;</p>
+<p class="CopyrightText"> Microsoft may have patents, patent
+applications, trademarked, copyrights, or other intellectual property
+rights covering subject matter in this document. Except as expressly
+provided in any written license agreement from Microsoft, the
+furnishing of this document does not give you any license to these
+patents, trademarks, copyrights, or other intellectual property.</p>
+<p class="CopyrightText">
+&nbsp;</p>
+<div class="Section1">
+	<p class="CopyrightText">© Microsoft Corporation. All rights reserved.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, 
+	Active Directory, BizTalk, SQL Server, SharePoint, Outlook, PowerPoint, 
+	FrontPage, Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual 
+	SourceSafe, Visual C#, Visual J#,&nbsp; and Visual Studio are either registered 
+	trademarks or trademarks of Microsoft Corporation in the U.S.A. and/or other 
+	countries.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Other product and company names herein may be the 
+	trademarks of their respective owners.</div>
+<hr>
+<p class="body">&nbsp;</p>
+<p class="CopyrightText">This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+<p class="CopyrightText">
+&nbsp;</p>
+<p class="body">&nbsp;</p>
+<p class="Title1">ClrType</p><p class="Body">&nbsp;</p>
+<p class="Normal">&nbsp;</p>
+<p class="Title2"> Prerequisites</p>
+<p class="body"> The prerequisites to successfully run this application
+are:</p>
+<ul>
+    <li class="normal">IronPython 2.6 distribution
+	<ul>
+		<li>If you are new to IronPython, please go over the tutorial
+that comes with this distribution</li>
+		<li>Download from 
+		<a
+ href="http://www.codeplex.com/IronPython/Release/ProjectReleases.aspx?ReleaseId=12482">here</a></li>
+	</ul>
+	</li>
+</ul>
+<p>&nbsp;</p>
+<p class="Title2">Getting Started</p>
+<p class="body">Please make sure the folder structure in the 
+<i>ClrType</i> directory is:</p>
+<blockquote>
+  <blockquote>
+      <p class="body">
+      .\sample.py<br>.\clrtype.py<br></p>
+  </blockquote>
+</blockquote>
+<p class="body">HINT: if the folder containing the IronPython distribution is not 
+    already in your PATH environment variable, please add it from the command prompt 
+    you&#39;ll be working in.&nbsp; By doing this you will be able to run the &quot;ipy&quot; 
+    command from any arbitrary directory:</p>
+<p class="TypedExample">set PATH=%PATH%;%ProgramFiles%\IronPython 2.6</p><p class="body">
+        From the command prompt, navigate to the ClrType directory and type the 
+        following:</p>
+    <p class="TypedExample">ipy.exe sample.py</p>
+<p class="Title2">Overview</p>
+<p class="Body">The ClrType sample shows how to define a class in IronPython with 
+    required CLR members. Normally, a class definition in Python does not map 
+    directly to a 
+    unique CLR type. This is because the semantics of classes is different between Python 
+    and the CLR. For example, in Python it is possible to change the base types just 
+    by assigning to the <code>__bases__</code> attribute on the type object. However, the same is 
+    not possible with CLR classes. Hence, IronPython implements Python classes 
+    without mapping them directly to CLR types.</p>
+    <p class="Body">However, it is sometimes required to have control over the CLR type 
+        generated for the Python class. This is because some .NET APIs expect the user 
+        to define a CLR type with certain attributes and members. For example, to define a pinvoke 
+        method, the user is required to define a CLR type with a CLR method marked with 
+        <code>DllImportAttribute</code>, and where the signature of the CLR method 
+        exactly describes the target platform method. Similarly, 
+        Windows Communication Foundation (WCF) requires an interface to be marked with
+        <code>System.ServiceModel.ServiceContractAttribute</code> to indicate that
+        it defines a service contract.</p>
+    <p class="Body">Starting with IronPython 2.6, IronPython supports a low-level hook 
+        referred to as the <code>__clrtype__</code> class attribute that allows customization of the CLR type 
+        corresponding to a Python class. However, this is a low-level hook, and the user 
+        is expected to build on top of it. The ClrType sample shows how to build on top 
+        of the <code>__clrtype__</code> hook. The <code>clrtype.ClrMetaclass</code> metaclass can be used to define CLR 
+        fields, properties and class-level attributes. Also, you can declare
+        declare strongly-typed methods.</p>
+<p class="Body">In the future, the sample is expected to become a fully supported 
+    IronPython module.</p>
+
+<div style="text-align: center;"><br>
+</div>
+</body>
+</html>

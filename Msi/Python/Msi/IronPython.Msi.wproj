@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{01E7EFAA-3BCC-4024-BBCE-015B5D12FFC8}</ProjectGuid>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <DefineSolutionProperties>false</DefineSolutionProperties>
+    <OutputName Condition="$(OutputName)==''">IronPython</OutputName>
+    <OutputType Condition="$(OutputType)==''">Package</OutputType>
+
+    <!-- Paths -->
+    <PythonDir>$(SolutionDir)\..\Languages\IronPython</PythonDir>
+    <VsToolsDir>$(SolutionDir)..\Tools\IronStudio\IronPythonTools</VsToolsDir>
+    <VsTemplatesDir>$(VsToolsDir)\Templates</VsTemplatesDir>
+    <WixToolPath>$(SolutionDir)..\Util\Wix35\</WixToolPath>
+    <WixExtDir>$(SolutionDir)..\Util\Wix35\</WixExtDir>
+    <WixTasksPath>$(WixExtDir)\WixTasks.dll</WixTasksPath>
+    <OutputPath>$(SolutionDir)..\Bin\$(Configuration)</OutputPath>
+    
+    <!-- Default source path  -->
+    <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
+    
+    <DefineConstants>
+      PythonDir=$(PythonDir);
+      VsToolsDir=$(VsToolsDir);
+      VsTemplatesDir=$(VsTemplatesDir);
+      VsToolsPrivateBinDir=$(VsToolsDir)\obj\$(Configuration);
+      SilverlightScriptDir=$(SolutionDir)..\Hosts\SilverLight\Public\script;
+      SilverlightDir=$(SolutionDir)..\Bin\Silverlight4$(Configuration);
+      TutorialDir=$(PythonDir)\Public\Tutorial;
+      ToolsDir=$(PythonDir)\Public\Tools;
+      DocDir=$(PythonDir)\Public\Doc;
+      $(DefineConstants)
+    </DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <WixExtension Include="$(WixToolPath)WixNetFxExtension.dll" />
+    <WixExtension Include="$(WixToolPath)WixUIExtension.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="$(UseExistingBinaries) != 'true'">
+    <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronPythonTools\IronPythonTools.csproj">
+      <Project>{FA7BE5F5-E04F-4613-B7AC-70CE10D1BB68}</Project>
+      <Name>IronPythonTools</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Msm\IronPython.Msm.wproj">
+      <Project>{01E7EFAA-3BCC-4024-BBCE-015B5D12FFC8}</Project>
+      <Name>IronPython.Msi</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Runtime\DLR.Msm.wproj">
+      <Name>DLR.Msm</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\IronStudio\IronStudio.Msm.wproj">
+      <Name>IronStudio.Msm</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <HarvestDirectory Include="$(VsTemplatesDir)" >
+      <DirectoryRefId>IpyToolsInstallDir</DirectoryRefId>
+      <ComponentGroupName>ToolsTemplateGroup</ComponentGroupName>
+      <PreprocessorVariable>var.VsTemplatesDir</PreprocessorVariable>
+      <GenerateGuidsNow>true</GenerateGuidsNow>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(PythonDir)\Public\Tools" >
+      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
+      <ComponentGroupName>ToolsGroup</ComponentGroupName>
+      <PreprocessorVariable>var.ToolsDir</PreprocessorVariable>
+      <GenerateGuidsNow>true</GenerateGuidsNow>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(PythonDir)\Public\Doc" >
+      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
+      <ComponentGroupName>DocGroup</ComponentGroupName>
+      <PreprocessorVariable>var.DocDir</PreprocessorVariable>
+      <GenerateGuidsNow>true</GenerateGuidsNow>
+    </HarvestDirectory>
+    <Compile Include="$(ProjectDir)\IronPython.wxs" />
+    <Compile Include="$(ProjectDir)\Tutorial.wxs" />
+  </ItemGroup>
+  <Import Project="$(WixToolPath)wix2010.targets" />
+</Project>

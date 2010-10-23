@@ -1,2 +1,0 @@
-fails:Mutex#unlock raises ThreadError unless Mutex is locked
-fails:Mutex#unlock raises ThreadError unless thread owns Mutex

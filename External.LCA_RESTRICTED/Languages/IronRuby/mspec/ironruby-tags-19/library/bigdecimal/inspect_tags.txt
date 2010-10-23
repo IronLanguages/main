@@ -1,0 +1,2 @@
+fails:BigDecimal#inspect returns String starting with #
+fails:"BigDecimal#inspect returns String starting with #"

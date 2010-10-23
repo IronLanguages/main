@@ -1,2 +1,0 @@
-class OptionTagSpecs < SpecController
-end

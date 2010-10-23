@@ -1,4 +1,0 @@
-fails:Time#strftime supports mm/dd/yy formatting with %D
-fails:Time#strftime supports HH:MM:SS formatting with %T
-fails:Time#strftime supports timezone formatting with %z
-fails:Time#strftime supports 12-hr formatting with %l

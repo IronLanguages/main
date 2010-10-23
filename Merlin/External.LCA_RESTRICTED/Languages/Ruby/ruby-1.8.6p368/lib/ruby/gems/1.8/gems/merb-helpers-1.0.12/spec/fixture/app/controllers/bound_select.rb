@@ -1,2 +1,0 @@
-class BoundSelectSpecs < SpecController
-end

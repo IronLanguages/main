@@ -1,0 +1,378 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252" />
+<title>Integrating Voice into .NET</title>
+<link rel="stylesheet" href="../IronPython.css" type="text/css"/>
+</head>
+
+<body lang="EN-US">
+
+<div class="Section1">
+
+<hr>
+<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">Information in this document is subject to change without notice. The example companies, organizations, 
+products, people, and events depicted herein are fictitious. No association with any real company, organization, product, 
+person or event is intended or should be inferred. Complying with all applicable copyright laws is the responsibility of 
+the user. Without limiting the rights under copyright, no part of this document may be reproduced, stored in or introduced 
+into a retrieval system, or transmitted in any form or by any means (electronic, mechanical, photocopying, recording, or 
+otherwise), or for any purpose, without the express written permission of Microsoft Corporation.</p>
+<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">&nbsp;</p>
+<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">Microsoft may have patents, patent applications, trademarked, copyrights, or other intellectual 
+property rights covering subject matter in this document. Except as expressly provided in any written license agreement 
+from Microsoft, the furnishing of this document does not give you any license to these patents, trademarks, copyrights, 
+or other intellectual property.</p>
+<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">&nbsp;</p>
+<div class="Section1">
+	<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">© Microsoft Corporation. All rights reserved.</p>
+	<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">&nbsp;</p>
+	<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, Active Directory, BizTalk, SQL Server, SharePoint, 
+	Outlook, PowerPoint, FrontPage, Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual SourceSafe, Visual C#, 
+	Visual J#,&nbsp; and Visual Studio are either registered trademarks or trademarks of Microsoft Corporation in the 
+	U.S.A. and/or other countries.</p>
+	<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">&nbsp;</p>
+	<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">Other product and company names herein may be the trademarks of their respective owners.</p>
+</div>
+<hr>
+<p class="body" style="margin-top: 0; margin-bottom: 0">&nbsp;</p>
+<p class="CopyrightText" style="margin-top: 0; margin-bottom: 0">
+    This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+	<p class="Title2">&nbsp;</p><h1>Integrating Voice into .NET</h1><font SIZE="2">
+	<h3>Contributor: Richard Guo</h3>
+	</font>
+	<p class="ContentsHeading">&nbsp;</p>
+	<h1>Contents</h1>
+	<p class="Toc1">Exercise 1: <a href="#T1">Building a Web Browser</a></p>
+	<blockquote>
+		<p class="Toc3">Task 1: <a href="#T1.1.1">Making a Window</a></p><p class="Toc3">Task 2: 
+		<a href="#T1.1.2">Making a Browser</a></p><p class="Toc3">Task 3: <a href="#T1.1.3">Putting it Together</a></p>
+	</blockquote>
+	<p class="Toc1">Exercise 2: <a href="#T2">Building a Voice Recognition System</a></p>
+	<blockquote>
+		<p class="Toc3">Task 1: <a href="#T2.1.1">Configuring Everything</a></p><p class="Toc3">Task 2: 
+		<a href="#T2.1.2">Your Speech Recognizer</a></p>
+	</blockquote>
+	<p class="Toc1">Exercise 3: <a href="#T3">Sidetrack: Launcher Application</a></p>
+	<blockquote>
+		<p class="Toc3">Task 1: <a href="#T3.1">Voice-based Launching</a></p>
+	</blockquote>
+	<p class="Toc1">Exercise 4: <a href="#T4">Basic Functionality in Voice Browsing</a></p>
+	<blockquote>
+		<p class="Toc3">Task 1: <a href="#T4.1">Class Abstraction and Integration</a></p><p class="Toc3">&nbsp;</p>
+	</blockquote>
+	
+</div>
+<div class="Section2">
+	<h1 style="margin-top: 0; margin-bottom: 0">Introduction</h1>
+	<p class="Normal" style="margin-top: 0; margin-bottom: 0">IronPython is the .NET implementation of the Python programming language
+        (<a href="http://www.python.org">www.python.org</a>).  It's a dynamically typed language with support
+        for many programming paradigms such as object-oriented programming, and also allows seamless use of .NET code.  
+        The goal of this tutorial is to demonstrate how easy it is to make an 
+	application using the power of the .NET libraries, specifically the ones relating to windows forms and speech. We 
+	will also see how the interactive nature of Python is well suited to rapid 
+	prototyping, debugging, and experimentation. Due to the complexity of the 
+	program, it is assumed that you have already completed the main IronPython 
+	tutorial that teaches the basics of Python and how to run applications in 
+	IronPython. However, in an effort to be friendly to newcomers who learn better through a case study that 
+	can be played with, I have broken down elements of the program into exercises that can be completed 
+	independently. This division also corresponds to my steps in coding this application, so it might be 
+	worthwhile to see how the use of Python accelerated development.</p>
+	<p class="Normal">The following packages are required:</p>
+	<ul>
+		<li class="Normal">Windows Vista</li>
+	</ul>
+	<p></p><p class="Body">Visual Studio 2005 is an optional supplement that can be helpful for viewing 
+	methods and GUI element properties. However, this is not a requirement.</p>
+<h1 style="margin-top: 0; margin-bottom: 0">Getting Started<br>
+</h1>
+<p class="body" style="margin-top: 0; margin-bottom: 0">Please make sure the sample folder <i>Voice </i>(where this readme.htm is located)<i> </i>
+contains at least the following:</p>
+<blockquote>
+	<blockquote>
+		<p class="body" style="margin-top: 0; margin-bottom: 0">.\Exer1.py</p>
+		<p class="body" style="margin-top: 0; margin-bottom: 0">.\Exer2.py</p>
+		<p class="body" style="margin-top: 0; margin-bottom: 0">.\Exer3.py</p>
+		<p class="body" style="margin-top: 0; margin-bottom: 0">.\Exer4.py</p>
+		<p class="body" style="margin-top: 0; margin-bottom: 0">.\favs.txt<br>
+		</p>
+	</blockquote>
+</blockquote>
+<p class="body">Add the folder containing the IronPython distribution to your <i>Path</i> environment variable.</p>
+	<p class="body">&nbsp;</p>
+	<h1><a name="T1">Exercise 1: Building a Web Browser</a></h1>
+	<p class="Body">In this section, we will learn the basics of manipulating UI in 
+	IronPython and to do something useful with it: build a web browser!</p>
+	<p class="Body">Specifically, we will use Windows Forms or <i>winforms</i>, the 
+	established way of building graphical applications. We will examine how to 
+	set parameters, add controls, and display the application. This will lay the 
+	foundation for building a graphical web browser that has all the power of 
+	the rendering engine of IE. This idea was inspired by the presence of 
+	the &quot;Web Browser&quot; control in the toolbox of VS 2005.</p>
+	<p class="Body">The code for this section can be found in <strong>Exer1.py</strong></p>
+	<h3><a name="T1.1.1">Task 1: Making a Window</a></h3>
+	<ol>
+		<li>
+		<p class="Step">Start the IronPython console</p>
+		</li>
+	</ol>
+	<ol start="2">
+		<li>
+		<p class="Step">Execute the following:</p></li>
+	</ol>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">import System</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">import clr</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">clr.AddReference(&quot;System.Windows.Forms&quot;)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">clr.AddReference(&quot;System.Drawing&quot;)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">from System.Windows.Forms import *</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">from System.Drawing import *</p>
+	</blockquote>
+	<p class="Stepnonumbering">Let's examine this code.</p>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">import System</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">import clr</p>
+	</blockquote>
+	<p class="Stepnonumbering">This block is the Python equivalent of the using statement in C# and the 
+	#include statement from C/C++. We are loading libraries/modules/namespaces to use for our main program.</p>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">clr.AddReference("System.Windows.Forms")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">clr.AddReference("System.Drawing")</p>
+	</blockquote>
+	<p class="Stepnonumbering">Here we are calling a basic method of clr. We are adding references to more complicated libraries. For this exercise, we will need to load System.Windows.Forms and System.Drawing 
+	in addition to System. Note that we need to add these separately instead of importing them because they are not part of the basic namespaces that we can just import. They are in separate dlls on your hard drive and the information for accessing them must be retrieved through this method. For now, consider basic namespaces such as System and clr as having already been added as references.</p>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">from System.Windows.Forms import *</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">from System.Drawing import *</p>
+	</blockquote>
+	<p class="Stepnonumbering">This might seem complicated. However, what we are doing is just unpacking namespaces. We are importing the contents of these two namespaces 
+	into the global environment. Now, if we do dir() before and after, we can see the difference. This trick allows us to make classes with Form() instead of having to type out System.Windows.Forms.Form().<br></br>Note that we don't need to add a reference to System.Console because it is not a separate 
+	DLL. Rather, it is contained in System. It is important to make the distinction between the libraries that have to be added and then imported and those that are contained in basic namespaces such as System. The documentation for this is on the MSDN website.</p>
+	
+	<ol start="3">
+		<li>
+		<p class="Step">Execute the following:</p></li>
+	</ol>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">f = Form(Text = "My Web Browser")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">f.AutoScroll = True</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">f.AutoSize = True</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">f.MinimumSize = Size(40,40)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">f.Size = Size(500,500)</p>
+	</blockquote>
+	<p class="Stepnonumbering">The first line creates an instance, f, of the object Form (from System.Windows.Forms if you were wondering). This is a winform element that is basically a blank window to be controlled by the OS.
+	<br></br>
+	Next, we set four properties of the form. The syntax of this is almost identical to C# code. The &quot;.&quot; operator allows us to access properties of the instance and set them. Words such as True and False are 
+	Python Boolean values. Do not confuse this with &quot;True&quot;, which is a string. We can also pass the values of 
+	the properties as arguments to the constructor. We set the title of the form to be "My Web Browser". We could just as easily 
+	use <i>f.Text = "My Web Browser"</i>. Likewise, we can move one of the other lines into the constructor.
+	<br></br>
+	Autoscroll tells the form to automatically add scroll bars when there is more content than the form can contain. This lets us display large web pages.
+	Autosize resizes the window to fit the content.
+	MinimumSize is the smallest that we can manually resize the window to be.
+	Size is the default size that the form has when first called.
+	<br></br>
+	Note that the code is different from C# in that we do not need to prefix declarations by new. Also note that like most high-level scripting languages, objects are untyped in Python.</p>
+	
+	<h3><a name="T1.1.2">Task 2: Making a Browser</a></h3>
+	<ol start="1">
+		<li>
+		<p class="Step">Execute the following:</p></li>
+	</ol>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">browser = WebBrowser()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">browser.Dock = DockStyle.Fill</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">browser.MinimumSize = Size(40,40)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">browser.Url = System.Uri("http://www.msn.com")</p>
+	</blockquote>
+	<p class="Stepnonumbering">Likewise, here we are instantiating a Web Browser object found in System.Windows.Forms.WebBrowser. It is a control element that acts like a web browser except that it can be embedded in other applications. Neat, isn't it?
+	<br></br>
+	We also set some properties to desirable values. In this case, we are setting the position (DockStyle.Fill tells the element to take up all the space in the form), the minimum size, and the default URL to be shown upon initialization.
+	<br></br>
+	If you are wondering how I get the values to set properties, I'm going to point you to the MSDN site. Everything is there, including documentation on attributes and examples of usage. There are no Python examples yet, so use the ones in your 
+	favorite language. The rest is experimenting with the environment. For example, if I'm unsure of what to do after I make a browser element, I can do 
+	<i>dir(browser)</i> to list all the methods and attributes of the browser element. Then, I can look up the documentation on MSDN and find appropriate values. If you do something wrong, the system will simply throw an exception. It's a lot easier to debug and code like this (freeform experimentation) than to code in an IDE.
+	
+	<h3><a name="T1.1.3">Task 3: Putting it Together</a></h3>
+	<ol start="1">
+		<li>
+		<p class="Step">Execute the following:</p></li>
+	</ol>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">f.Controls.Add(browser)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">f.ShowDialog()</p>
+	</blockquote>
+	<p class="Stepnonumbering">Our objects are now created. The next step is to link them by putting the browser in the form f. We do that 
+	with the &quot;Add&quot; method of <i>f.Controls</i> by passing &quot;browser&quot; as a parameter.
+	<br></br>
+	Verify the results of&nbsp; <i>f.ShowDialog()</i>. This method of &quot;f&quot; draws the form in all its glory to your screen. You should see a web browser embedded there. Congratulations.
+	
+		<h1><a name="T2">Exercise 2: Building a Voice Recognition System</a></h1>
+	<p class="Body">In this section, we will learn about the powerful voice recognition capabilities added to .NET in version 3.0. As part of 
+	Windows Presentation Foundation, System.Speech 
+	adds two engines, one for rendering text as speech through a variety of synthesized voices and another for 
+	interpreting speech as text according to certain grammar rules.</p>
+	<p class="Body">In our example, we will start by building small modules and walking through the code for making grammar rules to recognize speech. We will not be touching on any speech synthesis tools. All of our efforts will focus on recognition. Thus, it is important to have a good microphone and to be operating in a quiet environment.</p>
+	<p class="Body">The code for this section can be found in <strong>Exer2.py</strong></p>
+	
+<h3><a name="T2.1.1"></a>Task 1: Configuring Everything</h3>
+	<p class="Step">At this point, it's important to make sure the audio recognition system is properly configured. 
+	Go to Speech Recognition in the Control Panel and configure the microphone. After that, train a recognition profile. Then test to make sure that your machine can accept audio input. Once you are sure that everything is done, proceed to the next step.</p>
+<h3><a name="T2.1.2"></a>Task 2: Your Speech Recognizer</h3>
+	<ol start="1">
+		<li>
+		<p class="Step">Now let's build a basic recognizer engine. Open a new console and enter the following:</p></li>
+	</ol>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">import System</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">import clr</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">clr.AddReference("System.Speech")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">from System.Speech import *</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">def recognized(o, eventArgs):</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;System.Console.WriteLine(eventArgs.Result.Text)</p>
+	</blockquote>
+	<p class="Stepnonumbering">Let's examine this code. By now, you should recognize the basic import commands and that we are loading the System.Speech library. The library is a component of .NET 3.0's WPF pillar and uses SAPI as an internal speech decoding engine.</p>
+	<p class="Stepnonumbering">However, we are introducing something new here when we define a function. This function is an event handler, meaning that it is executed when a certain event happens. Because Python is untyped, we can write events that we then plug into any situation. Examples of this will be shown later. For now, notice that this 
+	handler prints out the content of some object passed to it. System.Console.WriteLine is the basic printing mechanism for .NET. We could just as easily have called Python's native print command.</p>
+	<ol start="2">
+		<li>
+		<p class="Step">Execute the following code:</p></li>
+	</ol>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">recognizer = Recognition.SpeechRecognizer()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">choices = Recognition.Choices()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">choices.Add("Sam")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">choices.Add("Mary")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">choices.Add("Bob")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">builder = Recognition.GrammarBuilder()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">builder.Append(choices)</p>
+	</blockquote>
+	<p class="Stepnonumbering">Let's examine this code.</p>
+	<p class="Stepnonumbering">First, we create an instance of the Speech Recognizer Engine. This is a class in System.Speech and serves as the connector to the SAPI engine. Once it's constructed, it's automatically initialized and when it detects speech, it will send the signal to the grammar engine to interpret. Right now, it's picking up everything we say into the 
+	microphone, but since we have no grammar instances attached, nothing will happen.</p>
+	<p class="Stepnonumbering">Choices can only recognize one of its states at a time. We added three strings to our choice builder, so we can say any of the three names and have the 
+	name recognized.</p>
+	<p class="Stepnonumbering">The speech engine must be very precise, so it cannot interpret any arbitrary sound. Thus, we use grammar to define precisely what the engine can recognize. The sound is parsed to match the grammar choices. If there is a match, we trigger the event handler for speech recognized, else, we trigger the speech detected handler or do nothing. 
+	Grammar Builder is quite simple to use. We can append strings or choices. If we append a string, it *must* be said for that grammar path to be followed. If we encounter a choice, we must satisfy one of the choice conditions before proceeding. When we reach the end, the speech engine triggers the handler.</p>
+
+	<ol start="3">
+		<li>
+		<p class="Step">Execute the following code:</p></li>
+	</ol>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">my Grammar = Recognition.Grammar(builder)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">myGrammar.SpeechRecognized += recognized</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">recognizer.LoadGrammar(myGrammar)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">System.Console.ReadLine()</p>
+	</blockquote>
+	<p class="Stepnonumbering">Let's examine this code.</p>
+	<p class="Stepnonumbering">Finally, we're at the stage of building the grammar engine. Initialization proceeds as above. Attaching the handler is done with the += option. We link the function to the port SpeechRecognized. A list of available ports is on MSDN. The last step is to load the grammar processor into the speech recognizer. The ReadLine() statement simply stops the program from closing because we are not executing any more lines. This gives time for the Recognizer(on a separate thread) to read your voice.</p>
+	<p class="Stepnonumbering">After connecting the two, we can try speaking into the microphone. The handler should be triggered as appropriate, and the name of the person you called will be printed in the console.</p>
+
+		<h1><a name="T3">Exercise 3: Sidetrack: Launcher Application</a></h1>
+	<p class="Body">Voice in general is not a good way to interface completely with a program. As an input method, it is far too unreliable (poor sound quality, misunderstood commands, poor vocabulary/grammar selection, etc.) and inefficient (enormous CPU power to accurately decode speech). Humans can enter text through the keyboard and mouse much faster than through voice. All potential uses of voice systems should be application-specific. That is, they leverage commands through Hash tables, mapping a certain word or phrase to an action within the context of the program. It should not be used for blind text input (which is why our web browser will remain limited in functionality).</p>
+	<p class="Body">One particular use for voice-based input is to launch applications. For office workers, it's often an adjustment when they must switch tasks. They often have to navigate through the start menu and then find the exact path of the file they want to open. We can change that by allowing the execution of any command that can be done through the command line (such as opening a file or querying a database) and abstract that as a single voice command. In this example in <strong>Exer3.py</strong>, we will do some basic application launching. This will also familiarize you with the complex abstractions coming in the last section.</p>
+
+<h3><a name="T3.1.1"></a>Task 1: Voice-based Launching</h3>
+	<p class="Step">At this point, it's important to make sure the audio recognition system is properly configured. 
+	Go to Speech Recognition in the Control Panel and configure the microphone. After that, train a recognition profile. Then test to make sure that your machine can accept audio input. Once you are sure that everything is done, proceed to the next step.</p>
+	<ol start="2">
+		<li>
+		<p class="Step">Execute the following code:</p></li>
+	</ol>
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">import System</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">import clr</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">clr.AddReference("System.Speech")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">from System.Speech import *</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">from System.Diagnostics import *</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">from System.Collections import *</p>
+	</blockquote>
+	<p class="Stepnonumbering">Let's examine this code.</p>
+	<p class="Stepnonumbering">You might notice that we are importing new libraries this time. System.Diagnostics contains the Process class, which 
+	lets you launch/terminate applications as well as set command parameters. It allows shallow interactions with a program without fully embellishing it in a .NET shell (if the program is unmanaged code, it will execute as unmanaged). System.Collections contains some basic container classes such as arrays, arraylists, and hashtables. We will primarily be using the hashtable.</p>
+	
+	<ol start="3">
+		<li>
+		<p class="Step">Execute the following code:</p></li>
+	</ol>
+	
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">Programs = Hashtable()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">Programs["Word"] = lambda : Process.Start("winword")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">Programs["Excel"] = lambda : Process.Start("excel")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">Programs["Powerpoint"] = lambda : Process.Start("powerpnt")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">Programs["Notepad"] = lambda : Process.Start("notepad")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">Programs["Internet"] = lambda : Process.Start("iexplore")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">Programs["Program"] = lambda : Process.Start("devenv")</p>
+	</blockquote>
+	<p class="Stepnonumbering">Let's examine this code.</p>
+	<p class="Stepnonumbering">Wow. Lambda statements? These may be unfamiliar to you if you come from a C/C++ background. Essentially, all we're doing here is creating a hashtable and associating strings with functions. Then, later on, when we get a match in the hashtable with a vocal command, we execute the function. There's no need to have complex switch or if-else statements to associate commands with strings. The documentation for lambda is *not* on MSDN. Look to the Python site for documentation about this.</p>
+	<p class="Stepnonumbering">Side Note: part of what's so brilliant about IronPython is that we are free to mix and match the best of all worlds. We can borrow Python libraries and syntax and tools such as lambdas. We have the .NET framework and all the languages and libraries that target it. Isn't it great?</p>
+
+	<ol start="4">
+		<li>
+		<p class="Step">Execute the following code:</p></li>
+	</ol>
+	
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">def recognized(o, eventArgs):</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;if Programs.Contains(eventArgs.Result.Text):</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Programs[eventArgs.Result.Text]()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;synthesizer.Speak(eventArgs.Result.Text)</p>
+	</blockquote>
+	<p class="Stepnonumbering">Let's examine this code.</p>
+	<p class="Stepnonumbering">Simple function declaration - this should be pretty self-explanatory. We're making an event handler that says that if we receive voice input and that voice input matches one of the keys we put into the hashtable, we will execute whatever function is contained in the hashtable at that key and then say the name of the program we executed. Note that we're forward referencing the variable synthesizer as we haven't defined it yet! This is fine according to Python because it's interpreted. However, if we fail to create that variable later on or misname it, we may get headaches trying to debug our app.</p>
+
+	<ol start="5">
+		<li>
+		<p class="Step">Execute the following code:</p></li>
+	</ol>
+	
+	<blockquote>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">class VoiceRecognizer (Recognition.SpeechRecognizer):</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;def __init__(self):</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.choices = Recognition.Choices()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for x in Programs.Keys:</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.choices.Add(x)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.builder = Recognition.GrammarBuilder()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.builder.Append(self.choices)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.myGrammar = Recognition.Grammar(self.builder)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.myGrammar.SpeechRecognized += recognized</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.LoadGrammar(self.myGrammar)</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">&nbsp;</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">synthesizer = Synthesis.SpeechSynthesizer()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">recognizer = VoiceRecognizer()</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">System.Console.WriteLine("Press enter to exit...")</p>
+		<p class="Code-Highlighted" style="margin-top: 0; margin-bottom: 0">System.Console.ReadLine()</p>
+	</blockquote>
+	<p class="Stepnonumbering">Let's examine this code.</p>
+	<p class="Stepnonumbering">Here is a class definition. Notice that we are inheriting from the SpeechRecognizer class 
+	and will have all of its attributes. __init__ is equivalent to a constructor and this should all be familiar if you've experienced OOP. Declaring a new variable isn't done through public or private; rather, we just call self.variablename and set it equal to something. Syntax of note here is the for statement. We don't have the numerical incrementing for statement common in C. Think of this like a foreach statement.</p>
+	<p class="Stepnonumbering">Finally, we have our instantiations and they are initialized to default values.</p>
+
+
+		<h1><a name="T4">Exercise 4: Basic Functionality in Voice Browsing</a></h1>
+	<p class="Body">At this point, you have learned enough to put together a basic application that combines the 
+	previous features. In <strong>Exer4.py</strong>, we have the code for a voice-controlled web browser with 
+	significant modifications.</p>
+
+<h3><a name="T4.1.1"></a>Task 1: Class Abstraction and Integration</h3>
+	<ol>
+		<li>
+		<p class="Step">There is virtually nothing new here. We are expanding on our previous exercises to 
+		include two classes with more methods. We are also doing text input and output, albeit with no error 
+		checking. The only difficult part at this point may be finding the right methods and members for all the different classes. MSDN should be a constantly referenced site when developing .NET apps.&nbsp;
+		<b>Please see Exer4.py for the source to this exercise.</b></p>
+		</li>
+	</ol>
+
+</div>
+
+</body>
+
+</html>

@@ -1,1 +1,0 @@
-fails:OpenSSL::X509::Certificate.new returns a x509 certificate

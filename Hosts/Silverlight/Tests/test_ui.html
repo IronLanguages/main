@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+  <title>DLR Silverlight tests - UI</title>
+  <script type="text/javascript">
+    window.DLR = {autoAdd: false}
+  </script>
+  <script type="text/javascript" src="/dlr-build/dlr.js"></script>
+  <script class='rb' type="application/ruby" src="test_ui.rb" defer='defer'></script>  
+
+  <script src="jslib/json2.js"></script>
+  <script src="jslib/jquery.js"></script>
+  <link rel="stylesheet" href="jslib/qunit/testsuite.css" type="text/css" media="screen" />
+  <script src="jslib/util.js"></script>
+
+  <script src="test_ui.js"></script>
+</head>
+<body>
+
+  <h1>UI tests</h1>
+  <h2 id="banner"></h2>
+  <h2 id="userAgent"></h2>
+  <ol id="tests"></ol>
+  <div id="main"></div>
+
+  <script type="text/javascript" src="jslib/qunit/testrunner.js"></script>
+  
+  <script class='rb' type="application/x-zip-compressed" src="lib.zip"></script>
+  <script class='rb' type="text/ruby" src="rblib/test_results.rb" defer='defer'></script>
+
+  <script class='rb' type="text/ruby" src="rblib/bacon_runner.rb" defer='defer'></script>
+  <script class='rb' type="text/ruby" src="rblib/bacon.rb" defer='defer'></script>
+  <script class='rb' type="text/ruby">
+    require 'rblib/bacon_runner'
+    BaconRunner.run(%W(test_ui))
+  </script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      QUnit.done = function(failures, total) {
+        reportTestResults(failures, total);
+        execute('rb', []);
+      }
+    });
+  </script>
+</body>
+</html>

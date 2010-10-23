@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html>
+
+<head>
+<link rel="stylesheet" type="text/css" href="../Samples.css">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>PowerShell from IronPython</title>
+<style type="text/css">
+  .style5 {
+	margin-left: 40px;
+}
+  .style3 {
+	font-weight: normal;
+}
+</style>
+</head>
+
+<body class="body">
+
+<hr>
+<p class="CopyrightText">Information in this document is subject to change without notice. The example companies, organizations, 
+products, people, and events depicted herein are fictitious. No association with any real company, organization, product, 
+person or event is intended or should be inferred. Complying with all applicable copyright laws is the responsibility of 
+the user. Without limiting the rights under copyright, no part of this document may be reproduced, stored in or introduced 
+into a retrieval system, or transmitted in any form or by any means (electronic, mechanical, photocopying, recording, or 
+otherwise), or for any purpose, without the express written permission of Microsoft Corporation.</p>
+<p class="CopyrightText">&nbsp;</p>
+<p class="CopyrightText">Microsoft may have patents, patent applications, trademarked, copyrights, or other intellectual 
+property rights covering subject matter in this document. Except as expressly provided in any written license agreement 
+from Microsoft, the furnishing of this document does not give you any license to these patents, trademarks, copyrights, 
+or other intellectual property.</p>
+<p class="CopyrightText">&nbsp;</p>
+<div class="Section1">
+	<p class="CopyrightText">© Microsoft Corporation. All rights reserved.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, Active Directory, BizTalk, SQL Server, SharePoint, 
+	Outlook, PowerPoint, FrontPage, Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual SourceSafe, Visual C#, 
+	Visual J#,&nbsp; and Visual Studio are either registered trademarks or trademarks of Microsoft Corporation in the 
+	U.S.A. and/or other countries.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Other product and company names herein may be the trademarks of their respective owners.</p>
+</div>
+<hr>
+<p class="body">&nbsp;</p>
+<p class="CopyrightText">This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+<p class="CopyrightText">&nbsp;</p>
+<p class="body">&nbsp;</p>
+<p class="title2">PowerShell from IronPython</p>
+<p class="body">A brief example which utilizes managed Windows PowerShell APIs to run shell commands directly from IronPython.</p>
+<p class="body">&nbsp;</p>
+<p></p>
+<p class="contentsheading">Overview</p>
+<p class="Body">PowerShell (PS) is a new command-line shell for Windows which provides some pretty dramatic improvements over 
+its predecessor - the DOS prompt. The most important new feature PS provides as far as IronPython is concerned 
+is a set of managed interfaces accessible via the Common Language Runtime. We 
+can tap directly into these from IronPython.</p><p class="Body">Utilizing PS from IronPython offers quite a bit 
+more to developers than the standard Python modules used to run commands, manipulate the filesystem, etc. This sample 
+includes two Python scripts, each of which are designed to determine if your host meets some of the minimum system requirements to 
+play the game &quot;Age of Empires III Trial Edition&quot;. What sets these two scripts apart is that the first script, minsysreq_ps.py, leverages a helper module, powershell.py, to obtain 
+PS functionality in a very useful and 
+object-oriented way. The second script, minsysreq.py, uses PS commands directly to 
+achieve the same results.</p><p class="Body">Note: the scripts distributed with this sample collect various performance 
+and runtime info about your PC and emit this to the console for your own personal use.&nbsp; None of this information is 
+transmitted to Microsoft.</p>
+<p class="contentsheading">Prerequisites</p>
+<p class="body">The prerequisites to successfully run the PowerShell from IronPython demo are:</p>
+<ul>
+	<li class="normal">IronPython 2.6 distribution
+	<ul>
+		<li>If you are new to IronPython, please go over the tutorial
+that comes with this distribution</li>
+		<li>Download from 
+		<a href="http://ironpython.codeplex.com/Release/ProjectReleases.aspx?ReleaseId=12482">here</a></li>
+	</ul>
+	</li>
+	<li>
+	<font face="Verdana" style="font-size: 11pt">Windows PowerShell 2.0</font><ul>
+		<li>
+		<font face="Verdana" style="font-size: 11pt">Needed to access the managed PS APIs</font></li>
+		<li>
+		<font face="Verdana" style="font-size: 11pt">Download from
+		<a href="http://technet.microsoft.com/en-us/scriptcenter/default.aspx">here</a></font></li>
+	</ul>
+	</li>
+	<li>
+	<font face="Verdana" style="font-size: 11pt">Age of Empires III Trial Edition (<b>Optional</b>)</font><ul>
+		<li><font face="Verdana" style="font-size: 11pt">Run this while executing the minsysreq* scripts distributed with this sample to get runtime info about Age 
+		of Empires III</font></li><li><font face="Verdana" style="font-size: 11pt">This step is entirely optional. The 
+		sample scripts will still run without installing Age of Empires III!</font></li><li>
+		<font face="Verdana" style="font-size: 11pt">Download from
+		<a href="http://www.microsoft.com/downloads/details.aspx?FamilyID=f627e37b-a8e8-4537-9a88-3c19b670c92a&DisplayLang=en">
+		here</a></font></li>
+	</ul>
+	</li>
+</ul>
+<p class="contentsheading">Getting Started<br>
+</p>
+<p class="body">Please make sure the sample folder <i>IPPowerShell </i>(where this readme.htm is located)<i> </i>
+contains at least the following:</p>
+<blockquote>
+	<blockquote>
+		<p class="body">.\minsysreq.py</p><p class="body">.\minsysreq_ps.py</p><p class="body">.\powershell.py<br>
+		</p>
+	</blockquote>
+</blockquote>
+<p class="body">HINT: if the folder containing the IronPython distribution
+is not already in your PATH environment variable, please add it from the command 
+prompt you'll be working in.&nbsp; By doing this you will be able to run the &quot;ipy&quot; 
+command from any arbitrary directory: </p>
+<p class="style5"><strong>s</strong><span class="style3">e<span class="typedexample"><strong>t 
+PATH=%PATH%;%ProgramFiles%\IronPython 2.6</strong></span></span></p>
+<p class="contentsheading">Using powershell.py from an Interactive IronPython Session</p>
+<p class="body">From the command prompt, navigate to the <i>IPPowerShell</i> directory and type the following command: </p>
+<p class="typedexample">&gt; ipy.exe -i powershell.py</p><p class="typedexample">&nbsp;</p>
+<p class="body">This starts an interactive IronPython session and imports quite a few modules, 
+functions, objects, etc. into the global namespace. Most importantly you should find a &quot;shell&quot; object. &quot;shell&quot; 
+is an instance of the Shell class (defined within powershell.py) which in turn is a wrapper for the standard PS 
+cmdlets and aliases. You should take special note that the conversion from PS to IronPython involved the 
+following rules with respect to Shell's methods:</p><ul>
+	<li>
+	<p class="body">for every PS cmdlet, there is a corresponding Shell method where the name is completely 
+	lowercase with &quot;-&quot;s translated into &quot;_&quot;s.&nbsp; E.g., the PS command &quot;<b>Get-Process</b>&quot; becomes the Shell method 
+	&quot;<b>shell.get_process()</b>&quot;</p></li>
+	<li>
+	<p class="body">for most simple PS aliases, there is a corresponding Shell method where the name is 
+	completely lowercase with &quot;-&quot;s translated into &quot;_&quot;s.&nbsp; E.g., the PS alias &quot;<b>ls</b>&quot; becomes the Shell 
+	method &quot;<b>shell.ls()</b>&quot;. Aliases that do not directly map into a corresponding 
+	PS cmdlet (such as &quot;more&quot;) have no Shell method mapping.</p></li>
+	<li>
+	<p class="body">if a PS cmdlet accepts (non-parameter) arguments, they are supplied directly to the Shell 
+	method in the form of a single string parameter. E.g., the PS command &quot;<b>Write-Error &quot;Some error message 
+	here...&quot;</b>&quot; would become &quot;<b>shell.write_error(&quot;Some error message here...&quot;)</b>&quot;</p></li>
+	<li>
+	<p class="body">cmdlet parameters are mapped as keyword parameters of Shell methods.&nbsp; E.g., the PS 
+	command &quot;<b>Get-Date -DisplayHint date</b>&quot; becomes the Shell method &quot;<b>shell.get_date(DisplayHint='date')</b>&quot; </p></li>
+	<li>
+	<p class="body">the return value from one cmdlet can be piped in as the input to another cmdlet. To do this, one just needs to invoke the 2nd cmdlet method on the return value of the first cmdlet.&nbsp; E.g., the 
+	PS command &quot;<b>Get-Process ipy | ConvertTo-Html</b>&quot; becomes &quot;<b>shell.get_process(&quot;ipy&quot;).convertto_html()</b>&quot;</p></li>
+	<li>
+	<p class="body">properties of the return value object from a PS cmdlet are accessible as Python object attributes.&nbsp; 
+	E.g., the PS command &quot;<b>Get-Process ipy | Select-Object -First 1 -Property WS</b>&quot; becomes &quot;<b>shell.get_process(&quot;ipy&quot;)[0].WS</b>&quot;&nbsp;
+	</p></li>
+</ul>
+<p class="body">&nbsp;</p>
+<table border="0" width="100%" height="36" bgcolor="#E6E6E6" cellpadding="15" cellspacing="1">
+	<tr>
+		<td height="36" width="523">
+		&gt;&gt;&gt; from powershell import *<br>
+		&gt;&gt;&gt; shell.dir()<br>
+		Directory: Microsoft.PowerShell.Core\FileSystem::E:\Ip\IronPython\Samples\IPPowerShell<br>
+		<br>
+		<br>
+		Mode LastWriteTime Length Name<br>
+		---- ------------- ------ ----<br>
+		-a--- 9/7/2006 3:38 PM 3602 minsysreq.py<br>
+		-a--- 9/11/2006 12:54 PM 3206 minsysreq_ps.py<br>
+		-a--- 9/11/2006 12:21 PM 6261 powershell.py<br>
+		-a--- 9/11/2006 1:06 PM 11567 readme.htm<br>
+		&gt;&gt;&gt;<br>
+		&gt;&gt;&gt;<br>
+		&gt;&gt;&gt; shell.dir().sort(&quot;LastWriteTime&quot;, Descending=True).select_object(&quot;Name&quot;)<br>
+		Name<br>
+		----<br>
+		readme.htm<br>
+		minsysreq_ps.py<br>
+		powershell.py<br>
+		minsysreq.py<br>
+		&gt;&gt;&gt;</td>
+	</tr>
+</table>
+
+<p class="contentsheading">Checking Minimum System Requirements for AOE III Trial 
+Edition</p>
+<p class="body">Included with this sample are two scripts designed to automatically determine if your system is capable 
+of playing Age of Empires III Trial Edition by using PS API(s) from IronPython. The first script, 
+minsysreq_ps.py, uses the nice PS wrapper module powershell.py, while minsysreq.py uses the managed PS assembly directly 
+to achieve the same goal. Furthermore, both scripts will emit some runtime information such as memory usage if AOE III 
+is currently running. This serves as a nice example because the standard Python modules provide little support for 
+obtaining this type of information.</p><p class="body">To run these scripts it is necessary to issue the following 
+commands from the <i>IPPowerShell</i> directory: &quot;<b>ipy.exe minisysreq_ps.py</b>&quot; and &quot;<b>ipy.exe minsysreq.py</b>&quot;. The output for both of 
+these scripts should be identical and similar to the following:</p><p class="body">&nbsp;</p>
+<table border="0" width="100%" height="36" bgcolor="#E6E6E6" cellpadding="15" cellspacing="1">
+	<tr>
+		<td height="36" width="523">
+		E:\Ip\IronPython\Samples\IPPowerShell&gt;ipy minsysreq.py<br>
+		This program will determine if your PC meets some of the<br>
+		minimum system requires to play the game, Age of Empires III Trial.<br>
+		<br>
+		Your CPU is fast enough (2.211Ghz)!<br>
+		<br>
+		256 MB is enough video memory!<br>
+		<br>
+		Have a nice day!</td>
+	</tr>
+</table>
+
+<p class="body">&nbsp;</p><p class="body">If you are 
+already running AOE III, you'd also see the following extra output:</p>
+<table border="0" width="100%" height="36" bgcolor="#E6E6E6" cellpadding="15" cellspacing="1">
+	<tr>
+		<td height="36" width="523">
+		It appears as if you're currently running Age of Empires III Trial !<br>
+		The game is using 77 megs of RAM and has a process ID of 3956.</td>
+	</tr>
+</table>
+
+<p class="body">&nbsp;</p><p class="body"><font size="4">Please explore the contents of both scripts in the <i>IPPowerShell</i> 
+directory to assist you in using PowerShell from your own IronPython scripts and modules! </font></p><p class="body">&nbsp;</p>
+<p class="body">This concludes our tutorial. Have fun playing with PowerShell from IronPython!</p>
+
+</body>
+
+</html>

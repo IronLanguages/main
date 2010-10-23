@@ -1,0 +1,2 @@
+fails:Digest::SHA512#inspect returns a Ruby object representation
+fails:"Digest::SHA512#inspect returns a Ruby object representation"

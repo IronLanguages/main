@@ -1,0 +1,20 @@
+<VSTemplate Version="2.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>Sinatra Web Application</Name>
+    <Description>Sinatra Web Application</Description>
+    <Icon>__TemplateIcon.ico</Icon>
+    <ProjectType>IronRuby</ProjectType>
+    <SortOrder>50</SortOrder>
+    <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
+    <CreateNewFolder>false</CreateNewFolder>
+    <DefaultName>WebApp</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="Sinatra.rbproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false">__Gems.rb</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="config.ru" OpenInEditor="false">config.ru</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="$safeprojectname$.rb" OpenInEditor="true">app.rb</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

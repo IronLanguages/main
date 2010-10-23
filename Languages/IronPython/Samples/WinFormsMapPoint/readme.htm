@@ -1,0 +1,1029 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>IronPython Windows Forms Tutorial</title>
+  <link rel="stylesheet" type="text/css" href="../Samples.css">
+  <style type="text/css">
+.style1 {
+	font-size: x-large;
+}
+</style>
+</head>
+<body lang="EN-US">
+<div class="Section1">
+<p class="Title1">IronPython Windows Forms Tutorial</p>
+<p class="style1">From Empty Window to MapPoint Client</p>
+<p class="Title2"><small><small><small>Contributor: Martin Schray</small></small>
+</small><br>
+</p>
+<hr>
+<p class="CopyrightText">Information in this document is subject to
+change without notice. The example companies, organizations, products,
+people, and events depicted herein are fictitious. No association with
+any real company, organization, product, person or event is intended or
+should be inferred. Complying with all applicable copyright laws is the
+responsibility of the user. Without limiting the rights under
+copyright, no part of this document may be reproduced, stored in or
+introduced into a retrieval system, or transmitted in any form or by
+any means (electronic, mechanical, photocopying, recording, or
+otherwise), or for any purpose, without the express written permission
+of Microsoft Corporation.</p>
+<p class="CopyrightText">&nbsp;</p>
+<p class="CopyrightText">Microsoft may have patents, patent
+applications, trademarked, copyrights, or other intellectual property
+rights covering subject matter in this document. Except as expressly
+provided in any written license agreement from Microsoft, the
+furnishing of this document does not give you any license to these
+patents, trademarks, copyrights, or other intellectual property.</p>
+<p class="CopyrightText">
+&nbsp;</p>
+<p class="CopyrightText">&copy; Microsoft Corporation. All rights
+reserved.</p>
+<p class="CopyrightText">&nbsp;</p>
+<p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT,
+MSDN, Active Directory, BizTalk, SQL Server, SharePoint, Outlook,
+PowerPoint, FrontPage, Visual Basic, Visual C++, Visual J++, Visual
+InterDev, Visual SourceSafe, Visual C#, Visual J#,&nbsp; and Visual
+Studio are either registered trademarks or trademarks of Microsoft
+Corporation in the U.S.A. and/or other countries.</p>
+<p class="CopyrightText">&nbsp;</p>
+<p class="CopyrightText">Other product and company names herein may be
+the trademarks of their respective owners.</p>
+<hr>
+<p class="CopyrightText">
+&nbsp;</p>
+<p class="CopyrightText">This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+<p class="CopyrightText">&nbsp;</p>
+<p class="Body">&nbsp;</p>
+<p class="contentsheading"> Prerequisites</p>
+<p class="body"> The prerequisites to successfully run this application
+are:</p>
+<ul>
+	<li class="normal">IronPython 2.6 distribution
+	<ul>
+		<li>If you are new to IronPython, please go over the tutorial
+that comes with this distribution</li>
+		<li>Download from 
+		<a href="http://ironpython.codeplex.com/Release/ProjectReleases.aspx?ReleaseId=12482">here</a></li>
+	</ul>
+	</li>
+</ul>
+	<p class="Body">&nbsp;</p>
+<p class="ContentsHeading">Contents</p>
+<p class="Toc1">Tutorial 1: <a href="#T1">Building Windows Forms
+applications</a></p>
+<p class="Toc2">Exercise 1: <a href="#T1.1">Building Interesting
+Windows Forms Applications</a></p>
+<p class="Toc3">Task 1: <a href="#T1.1.1">Create an Empty Windows
+Forms Application</a></p>
+<p class="Toc3">Task 2: <a href="#T1.1.2">Add Controls to a Windows
+Forms Application</a></p>
+<p class="Toc3">Task 3: <a href="#T1.1.3">Add Controls that Work
+Together</a></p>
+<p class="Toc3">Task 4: <a href="#T1.1.4">Add Non-visible Components
+to the Form</a></p>
+<p class="Toc3">Task 5: <a href="#T1.1.5">Use Layout Panels to
+Automatically Layout Controls</a></p>
+<p class="Toc3">Task 6: <a href="#T1.1.5">Add a Web Browser to the Form</a></p>
+<p class="Toc3">Task 7: <a href="#T1.1.7">Displaying a Map Picture
+with Data from MapPoint</a></p>
+<p class="Toc3">Task 8: <a href="#T1.3.2">Add Route-finding to the Map
+Application</a></p>
+<p class="Body">&nbsp;</p>
+<p class="Body">&nbsp;</p>
+</div>
+<h1><a name="T1">Tutorial 1: Building Windows Forms Applications</a></h1>
+<p class="Body">In this tutorial we interactively build a Windows
+Form.&nbsp; We will look at eight Windows Forms Applications that
+progress from a Windows Form window with just a title to an application
+that uses the MapPoint web service.&nbsp; We will discuss the Windows
+Forms code so that you understand within each task what the IronPython
+code is doing.&nbsp; However, though the applications are relatively
+small, there's enough code that you won't want to type it into the
+IronPython console.&nbsp; Each task will simply direct you to run the
+application from a Windows cmd.exe window, as you would launch any
+Python script.</p>
+<p class="Body">Estimated time to complete this tutorial: <b>40 minutes</b></p>
+<p class="Body">The objective of this tutorial is to familiarize you
+with more Windows Forms features using IronPython.</p>
+<ul>
+  <li>
+    <p class="Body"><a href="#T1.1">Building Interesting Windows Forms
+Applications</a></p>
+  </li>
+</ul>
+<h2><a name="T1.1">Exercise 1: Building Interesting Windows Forms
+Applications</a></h2>
+<p class="Body">The goal of this exercise is to provide some simple
+examples of IronPython Windows Forms applications.&nbsp; The first few
+tasks will be quite simple and lack any real sophistication, but
+provide the building blocks for building more complete UI as you
+progress through the tasks.&nbsp; Some of the tasks build on the code
+from previous tasks, but each task provides full source code and is
+meant to run as a complete example. </p>
+<p class="Body">The tasks that use MapPoint Web Services require the
+MapPointWebServicesProject.dll.&nbsp; Task 7 contains an extra step
+that tells you how to build this DLL.</p>
+<p class="Body">&nbsp;</p>
+<h3><a name="T1.1.1">Task 1: Create an Empty Windows Forms Application
+(FormV1.py)</a></h3>
+<p class="Body">Task 1 creates an empty Windows form and sets the
+window title of the form.&nbsp; The first three lines of code are the
+required imports.&nbsp; We need to add a reference to
+System.Windows.Forms, and then we can import all the names from it into
+our module.</p>
+<p class="Body">The class FormV1 inherits from
+System.Windows.Forms.Form, so that it has all the default behaviors of
+a form.&nbsp; The __init__ method is used to set the forms window
+title.&nbsp; Finally, we invoke Application.Run to launch our form into
+action. </p>
+<p class="Body">&nbsp;</p>
+<p class="Code-Highlighted">import clr<br>
+clr.AddReference("System.Windows.Forms")<br>
+from System.Windows.Forms import *<br>
+<br>
+&nbsp;&nbsp;&nbsp; class FormV1(Form):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def __init__(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Text = 'Hello World'<br>
+<br>
+Application.Run(FormV1())</p>
+<p class="Body">&nbsp;</p>
+<p class="Step">1. Now let's try the Windows Form application by
+launching the IronPython script from a cmd.exe window:</p>
+<p class="TypedExample">ipyw.exe winforms\formV1.py</p>
+<p class="Step">Note, we're using the ipyw.exe executable instead of
+the ipy.exe.&nbsp; Ipyw.exe launches the Windows Forms application and
+returns control to the cmd.exe it was launched from since the Windows
+Form application executes independently.</p>
+<p class="Step">You should see the following window pop up on your
+screen:</p>
+<p class="Step">&nbsp;</p>
+<p class="Step">
+<img src="winforms/FormV1.jpg" border="0" height="300" width="300"></p>
+<p class="Body">&nbsp;</p>
+<h3>Task 2: <a name="T1.1.2">Add Controls to A Windows Forms
+Application (formV2.py)</a></h3>
+<p class="Body">Task 2 creates a Windows form, sets the window title of
+the form, adds our first control (a Button), and hooks up the Click of
+the button to display a MessageBox when the Button is clicked.&nbsp; We
+show the new lines of code highlighted below.&nbsp; As in the previous
+task, the first three lines of code are the required imports.&nbsp; We
+need to add a reference to System.Windows.Forms, and then we can import
+from it to bring all the names from that module into ours.</p>
+<p class="Body">The class FormV2 inherits from
+System.Windows.Forms.Form, so that it has all the default behaviors of
+a form.&nbsp; The __init__ method is used set up instances of our
+form.&nbsp; First we set the Form's title (self.Text).</p>
+<p class="Body">Now for the new code.&nbsp; We create a Button with the
+text 'Message', and we set its location.&nbsp; Third we hook the
+Button's Click event so that when the button is clicked the
+OnMsgButtonClick method is called.&nbsp; Then we add the Button to the
+form's list of controls.</p>
+<p class="Body">Next we define OnMsgButtonClick, which takes two
+arguments.&nbsp; OnMsgButtonClick simply calls MessageBox.Show to show
+a classic message box pop up.</p>
+<p class="Body">Lastly, we invoke Application.Run to launch our form
+into action.</p>
+<p class="Body">&nbsp;</p>
+<p class="Code-Background">import clr<br>
+clr.AddReference("System.Windows.Forms")<br>
+from System.Windows.Forms import *<br>
+<br>
+&nbsp;&nbsp;&nbsp; class FormV2(Form):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def __init__(self):</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Text = 'Hello World'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+msgButton = Button(Text='Message', Left =20, Top=20)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+msgButton.Click += self.OnMsgButtonClick<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(msgButton)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def OnMsgButtonClick(self,
+*args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+MessageBox.Show("Hello World")<br>
+&nbsp;</p>
+<p class="Code-Background">Application.Run(FormV2())</p>
+<p class="Body">&nbsp;</p>
+<p class="Step">1. Now let's try the Windows Form application by
+launching the IronPython script from a cmd.exe window:</p>
+<p class="TypedExample">ipyw.exe winforms\formV2.py</p>
+<p class="Step"><br>
+</p>
+<p class="Step">You should see the following window pop up on your
+screen:</p>
+<p class="Body">&nbsp;</p>
+<p class="Body">
+<img src="winforms/FormV2.jpg" border="0" height="300" width="300"></p>
+<p class="Body">&nbsp;</p>
+<p class="Body">When you click the Button, you will see the following
+window:</p>
+<p class="Body">
+<img src="winforms/FormV2-1.jpg" border="0" height="107" width="104"></p>
+<p class="Body">&nbsp;</p>
+<h3>Task 3:&nbsp; <a name="T1.1.3">Add Controls that Work Together
+(formV3.py)</a></h3>
+<p class="Body">Task 3 creates a Windows form, sets the window title of
+the form, adds a Label, Textbox, and a Button.&nbsp; We hook up the
+Click of the button to display a MessageBox when the Button is clicked,
+but in this task we use the text from the Textbox.&nbsp; As in the
+previous tasks, the first three lines of code are the required
+imports.&nbsp; We need to add a reference to System.Windows.Forms, and
+then we can import from it to bring all the names from that module into
+ours.</p>
+<p class="Body">The class FormV3 inherits from
+System.Windows.Forms.Form so that it has all the default behaviors of a
+form.&nbsp; The __init__ method is used to set up instances of our
+form.&nbsp; First we set the Form's title (self.Text).</p>
+<p class="Body">Now for the new code (highlighted below).&nbsp; We
+create a Label and add it to the form's controls.&nbsp; Then we create
+a TextBox, and set its location before adding it to the form's
+controls.&nbsp; A reference (self.txtMessage) to the TextBox is kept so
+that in OnMsgButtonClick we can get the Text from the TextBox.</p>
+<p class="Body">As before, we create a Button with the text
+'Message'.&nbsp; We make it visible and set its location (which is
+slightly lower down in the form in this task).&nbsp; We hook the
+Button's Click event up so that when the button is clicked the
+OnMsgButtonClick method is called.&nbsp; Then we add the Button to the
+form's list of controls. </p>
+<p class="Body">Next we define OnMsgButtonClick, which takes two
+arguments.&nbsp; OnMsgButtonClick simply calls MessageBox.Show to
+display the text in the TextBox in a classic message box pop up.</p>
+<p class="Body">Lastly, we invoke Application.Run to launch our form. </p>
+<p class="Body">&nbsp;</p>
+<p class="Code-Background">import clr<br>
+clr.AddReference("System.Windows.Forms")<br>
+from System.Windows.Forms import *<br>
+<br>
+&nbsp;&nbsp;&nbsp; class FormV3(Form):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def __init__(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Text = 'Hello World'</p>
+<p class="Code-Background">&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+# Create Label<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(Label(Text='Enter Message:'))</p>
+<p class="Code-Highlighted">&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+# Create TextBox<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.txtMessage = TextBox(Left=100)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(self.txtMessage)</p>
+<p class="Code-Highlighted">&nbsp;</p>
+<p class="Code-Background">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+# Create Button<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+msgButton = Button(Text='Message', Left =20, Top=25)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+msgButton.Click += self.OnMsgButtonClick<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(msgButton)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def OnMsgButtonClick(self,
+*args):</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+MessageBox.Show(self.txtMessage.Text,"Message")<br>
+&nbsp;</p>
+<p class="Code-Background">Application.Run(FormV3())</p>
+<p class="Body">&nbsp;</p>
+<p class="Step">1. Now let's try the Windows Form application by
+launching the IronPython script from a cmd.exe window:</p>
+<p class="TypedExample">ipyw.exe winforms\formV3.py</p>
+<p class="Step"><br>
+</p>
+<p class="Step">You should see the following window pop up on your
+screen:</p>
+<p class="Body">&nbsp;</p>
+<h3><img src="winforms/FormV3.jpg" border="0" height="300" width="300"></h3>
+<p class="Body">&nbsp;</p>
+<h3>Task 4:&nbsp; <a name="T1.1.4">Add Non-visible Components to the
+Form (formV4.py)</a></h3>
+<p class="Body">Task 4 has the same basic UI that task 3 had which was
+a form with a Label, TextBox, and a Button.&nbsp; The difference is
+that we begin to use non-visible components in task 4.&nbsp; Components
+allow us to add objects that don't necessarily have a visual
+representation.&nbsp; For example, a Timer is a component that doesn't
+appear visibly on the form.&nbsp; In task 4 we will use a NotifyIcon to
+allow our application to appear in the system tray and ContextMenuStrip
+to give NotifyIcon a right-click menu.&nbsp; Our first few lines of
+code now have a few additions since we need to access and import the
+System.Drawing namespace.&nbsp; We need the System.Drawing namespace to
+access the Icon class.&nbsp; The Icon class is used to associate an
+icon file with our NotifyIcon.</p>
+<p class="Body">The good news is that the code to set the form's title,
+as well as create the Label, TextBox, and Button are the same as Task
+3.&nbsp; Now let's get to the new code.&nbsp; Before we can add the
+Components to our form we must create the components container to hold
+them.&nbsp; Next we will create the ContextMenuStrip as well as the
+ContextMenuItem and add them (the ContextMenuStrip holds
+ContextMenuItems).&nbsp; Next we setup the ContextMenuItem's click
+event to call the OnExitClick method, which will close our
+application.&nbsp; Having setup the ContextMenuStrip and it's
+ContextMenuItem, we turn our attention to the NotifyIcon.&nbsp; We
+setup the NotifyIcon and associate the ContextMenuStrip with the
+NotifyIcon.&nbsp; The OnMsgButtonClick method displays the text in the
+TextBox just as in task 3.&nbsp; Next we define our OnExitClick method 
+which closes the form to exit the application.&nbsp; This is followed by 
+the definition of OnNotifyIconExit used to remove the notify icon after the 
+application is closed. Lastly, we invoke Application.Run to launch our 
+form into action. </p>
+<blockquote>
+  <p class="Code-Background">import clr<br>
+clr.AddReference("System.Windows.Forms")<br>
+from System.Windows.Forms import *<br>
+clr.AddReference("System.Drawing")<br>
+from System.Drawing import *<br>
+import System<br>
+from System import *<br>
+  <br>
+&nbsp;&nbsp;&nbsp; class FormV4(Form):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def __init__(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Text = 'Hello World'<br>
+  <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Create Label<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(Label(Text='Enter Message:'))<br>
+  <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Create TextBox<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.txtMessage = TextBox(Left=100)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(self.txtMessage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Create Button<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+msgButton = Button(Text='Message', Left =20, Top=25)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+msgButton.Click += self.OnMsgButtonClick<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(msgButton)<br>
+&nbsp;</p>
+  <p class="Code-Highlighted"> <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Create Component Container <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._components = System.ComponentModel.Container()<br>
+  <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Add component - ContextMenu<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._contextMenuStrip1 = ContextMenuStrip(self._components)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._exitToolStripMenuItem = ToolStripMenuItem(Text='Exit')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._contextMenuStrip1.Items.Add(self._exitToolStripMenuItem)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._exitToolStripMenuItem.Click += self.OnExitClick<br>
+  <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+add Component - NotifyIcon<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._notifyIcon1 =
+NotifyIcon(self._components,Visible=True,Text='Test')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._notifyIcon1.Icon = Icon("Winforms\\app.ico")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._notifyIcon1.ContextMenuStrip = self._contextMenuStrip1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Closed += self.OnNotifyIconExit<br>
+&nbsp;</p>
+  <p class="Code-Background"> <br>
+&nbsp;&nbsp;&nbsp;&nbsp; def OnMsgButtonClick(self, *args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+MessageBox.Show(self.txtMessage.Text,"Message")<br>
+&nbsp;</p>
+  <p class="Code-Highlighted"> <br>
+&nbsp;&nbsp;&nbsp;&nbsp; def OnExitClick(self, *args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; self.Close()<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp; def OnNotifyIconExit(self, *args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; self._notifyIcon1.Dispose()<br>
+&nbsp;</p>
+  <p class="Code-Background"> <br>
+Application.Run(FormV4())<br>
+&nbsp;</p>
+</blockquote>
+<p class="Step">1. Now let's try the Windows Form application by
+launching the IronPython script from a cmd.exe window:</p>
+<p class="TypedExample">ipyw.exe winforms\formV4.py</p>
+<p class="Step"><br>
+</p>
+<p class="Step">You should see the following window pop up on your
+screen:</p>
+<p class="Step">&nbsp;</p>
+<p class="Body"><img src="WinForms/FormV4.jpg" border="0"></p>
+<p class="Body">&nbsp;</p>
+<p class="Step">Additionally you should see the following icon in your
+system tray.&nbsp; If you place your mouse over the icon the text
+'test' will appear.&nbsp; If you right click on the icon the context
+menu will appear.&nbsp; Selecting 'Exit' will cause the application to
+close.</p>
+<span style="font-size: 12pt; font-family: 'Times New Roman',serif;">
+<img src="WinForms/FormV4-1.JPG" border="0" height="45" width="60">&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="WinForms/FormV4-2.JPG" border="0" height="48" width="111"></span>
+<p class="Body">&nbsp;</p>
+<h3>Task 5:&nbsp; <a name="T1.1.5">Use Layout Panels to Automatically
+Layout Controls (formV5.py)</a></h3>
+<p class="Body">Task 5 has the same basic UI that task 4 had which was
+a form with a Label, TextBox, and Button.&nbsp; Task 5 also includes
+the NotifyIcon, ContextMenuStrip, and ContextMenuItem components.&nbsp;
+The big change in task 5 is that we begin to use layout panels to make
+it easier to layout controls.&nbsp; For example, in task 4 we had to go
+through the effort of setting the location of the Label, TextBox, and
+Button.&nbsp; Typically it takes some trial and error to make sure the
+controls are placed correctly.&nbsp; Instead, we use a FlowLayoutPanel
+to automatically place the controls.&nbsp; As the name implies the
+controls are flowed as space allows.</p>
+<p class="Body">The best way to illustrate this is an example.&nbsp;
+Notice that in the image on the left below that there is not enough
+room to display all the controls horizontally, so they are stacked to
+fit vertically.&nbsp; In the image on the right below there is enough
+space to horizontally place all the controls so the FlowLayout Panel
+does so.&nbsp; So the FlowLayoutPanel can actually reposition controls
+as the form resizes.&nbsp;&nbsp;&nbsp; </p>
+<p class="Body">Other than the order in which the controls are created,
+the only different lines of code from the previous task are creating
+the FlowLayoutPanel and adding the controls to it.&nbsp; Also, we add
+the FlowLayoutPanel to the Form's controls.</p>
+<p class="Body">&nbsp;</p>
+<p class="Body"><img src="WinForms/FormV5-1.jpg" border="0">&nbsp;&nbsp;&nbsp;
+<img src="WinForms/FormV5-2.jpg" border="0" height="300" width="315"></p>
+<p class="Body">&nbsp;</p>
+<p class="Code-Background">import clr<br>
+clr.AddReference("System.Windows.Forms")<br>
+clr.AddReference("System.Drawing")<br>
+from System.Windows.Forms import *<br>
+from System.Drawing import *<br>
+import System<br>
+from System import *<br>
+<br>
+&nbsp;&nbsp;&nbsp; class FormV5(Form):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def __init__(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Text = 'Hello World'</p>
+<p class="Code-Background">&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.txtMessage = TextBox()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+msgButton = Button(Text='Message')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+msgButton.Click += self.OnmsgButtonClick<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Create FlowPanelLayout and add controls<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1 = FlowLayoutPanel(Dock = DockStyle.Fill)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(Label(Text='Enter Message:'))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self.txtMessage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(msgButton)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(self._flowLayoutPanel1)<br>
+&nbsp;</p>
+<p class="Code-Background">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._components = System.ComponentModel.Container()<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Add component - ContextMenu<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._contextMenuStrip1 = ContextMenuStrip(self._components)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._exitToolStripMenuItem = ToolStripMenuItem(Text='Exit')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._exitToolStripMenuItem.Click += self.OnExitClick<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._contextMenuStrip1.Items.Add(self._exitToolStripMenuItem)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+add Component - NotifyIcon<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._notifyIcon1 =
+NotifyIcon(self._components,Visible=True,Text='Test')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._notifyIcon1.Icon = Icon("Winforms\\app.ico")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._notifyIcon1.ContextMenuStrip = self._contextMenuStrip1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Closed += self.OnNotifyIconExit<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def OnmsgButtonClick(self,
+*args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+MessageBox.Show(self.txtMessage.Text,"Message")<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def OnExitClick(self, *args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Close()<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def OnNotifyIconExit(self, *args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; self._notifyIcon1.Dispose()<br></p>
+<p class="Code-Background">
+<br>
+Application.Run(FormV5())<br>
+<br>
+&nbsp;</p>
+<p class="Step">1. Now let's try the Windows Form application by
+launching the IronPython script from a cmd.exe window:</p>
+<p class="TypedExample">ipyw.exe winforms\formV5.py</p>
+<p class="Step">&nbsp;</p>
+<h3>Task 6:&nbsp; <a name="T1.1.6">Add a Web Browser to the Form
+(formV6.py)</a></h3>
+<p class="Step">Task 6 takes our basic form with a Label, TextBox, and
+a Button, but now we add a WebBrowser control to make a very simple web
+browser.&nbsp; Continuing on the theme from task 5, we want to build an
+application with a sophisticated UI with little work to position
+controls.</p>
+<p class="Step">We will introduce a TabelLayoutPanel that will allow
+the area of the application containing the Label, TextBox, and Button
+to stay roughly the same size while allowing the web browser to fill up
+any remaining space in the form.&nbsp; The TableLayoutPanel allows the
+form to be broken up into rows and columns.&nbsp; The __init__ method
+starts with the creation all of the controls -- first the
+TableLayoutPanel and FlowLayout Panel, followed by the WebBrowser,
+Label, TextBox, and Button.&nbsp; We set the TextBox's size to allow
+for a lengthier URL to be entered.</p>
+<p class="Step">We introduce the StatusStrip at the bottom of the form
+where status information can be displayed.&nbsp; Within the StatusStrip
+a StatusStripLabel is created so that text information can be
+displayed.&nbsp; The StatusStripLabel will be used to display the URL
+of the site being displayed in the web browser.</p>
+<p class="Step">Next the form's AcceptButton is set so that if the user
+hits enter, the button will be clicked.</p>
+<p class="Step">We set the rows and columns for the TableLayoutPanel
+and add controls to it.&nbsp; We add the appropriate controls to the
+FlowLayoutPanel.</p>
+<p class="Step">The OnMsgButtonClick method will be called in response
+to a button click.&nbsp; This method causes the URL supplied in the
+TextBox to be loaded.&nbsp; It displays the value in the TextBox that
+is in the StatusStripLabel, and the method clears the TextBox.</p>
+<p class="Code-Background">import clr<br>
+clr.AddReference("System.Windows.Forms")<br>
+clr.AddReference("System.Drawing")<br>
+from System.Windows.Forms import *<br>
+from System.Drawing import *<br>
+import System<br>
+from System import *<br>
+<br>
+&nbsp;&nbsp;&nbsp; class FormV6(Form):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def __init__(self):</p>
+<p class="Code-Background">&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+# setup TableLayoutPanel and FlowLayoutPanel<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1 = TableLayoutPanel(ColumnCount = 1,RowCount =
+2, Dock = DockStyle.Fill)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1 = FlowLayoutPanel(Dock = DockStyle.Fill)<br>
+&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._webBrowser = WebBrowser(Dock = DockStyle.Fill)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._label1 = Label(Text ='Enter Message')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._txtMessage = TextBox(TabIndex = 0,Size = Size(200,20))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._button1 = Button(Text ='Message')<br>
+&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+# Setup ToolStrip and ToolStripLabel<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._StatusStrip1 = StatusStrip()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._ToolStripStatusLabel1 = ToolStripStatusLabel()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._StatusStrip1.Items.Add(self._ToolStripStatusLabel1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(self._StatusStrip1)<br>
+&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.AcceptButton = self._button1&nbsp;&nbsp; # when the enter key is
+pressed self._button1 will be clicked<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._button1.Click += self.OnmsgButtonClick<br>
+&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+# Set TableLayoutPanel column and row styles and add FlowLayoutPanel
+and Web Browser</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.ColumnStyles.Add(ColumnStyle(SizeType.Percent,
+100.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.RowStyles.Add(RowStyle(SizeType.Absolute, 80.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.RowStyles.Add(RowStyle(SizeType.Percent, 100.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.Controls.Add(self._flowLayoutPanel1, 0, 0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.Controls.Add(self._webBrowser, 0, 1)<br>
+&nbsp;</p>
+<p class="Code-Highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+# add controls that will be contained in FlowLayoutPanel<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self._label1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self._txtMessage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self._button1)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(self._tableLayoutPanel1)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def OnmsgButtonClick(self,
+*args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._webBrowser.Navigate(self._txtMessage.Text)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._ToolStripStatusLabel1.Text = self._txtMessage.Text<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._txtMessage.Text = ""<br>
+&nbsp;</p>
+<p class="Code-Background">
+<br>
+Application.Run(FormV6())</p>
+<p class="Body"><br>
+&nbsp;</p>
+<p class="Step">1. Now let's try the Windows Form application by
+launching the IronPython script from a cmd.exe window:</p>
+<p class="TypedExample">ipyw.exe winforms\formV6.py</p>
+<p class="Step"><br>
+</p>
+<p class="Step">You should see the following window pop up on your
+screen.&nbsp; If you type in a valid URL and hit enter, the web browser
+control displays the selected web page.</p>
+<p class="Step">&nbsp;</p>
+<p class="Body"><img src="WinForms/FormV6-1.jpg" border="0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="WinForms/FormV6.jpg" border="0"></p>
+<p class="Body">&nbsp;</p>
+<h3>Task 7:&nbsp; <a name="T1.1.7">Displaying a Map Picture with Data
+from MapPoint (formV7.py)</a></h3>
+<p class="Step">Task 7 takes our basic form with a Label, TextBox, and
+a Button, but now we add a PictureBox control.&nbsp; We will leverage
+the approach from Task 6 and use a TableLayoutPanel and FlowLayoutPanel
+to make laying out our form easy.&nbsp; We will use the PictureBox to
+display a map.&nbsp; The user will enter a landmark or address in the
+TextBox, and we will use MapPoint Web Services to render a map of that
+location.&nbsp; We will be using a C# assembly named
+MapPointWebServiceProject.dll to provide access to MapPoint Web
+Services.&nbsp; </p>
+<blockquote>
+  <p class="Step">MapPointWebServiceProject.dll has already been built for you, 
+  but you are more than welcome to rebuild it.&nbsp; To build this DLL,
+  open a command prompt and run &quot;%WINDIR%\Microsoft.NET\Framework\v3.5\MSBuild 
+  /p:configuration=Release MapPointWebServiceProject.sln&quot; from the winformsmappoint\winforms\ 
+  directory.&nbsp;
+  Next simply copy winformsmappoint\winforms\bin\release\mappointwebservicesproject.dll to the winformsmappoint\ directory.</p>
+</blockquote>
+<p class="Step">This task and the next contact Microsoft MapPoint servers 
+remotely.&nbsp; Information sent to the MapPoint servers include a username and 
+password along with your IP address and the text entered into the TextBox in the 
+sample interface.&nbsp; No information is sent remotely until the user clicks on 
+the &quot;Get map&quot; button or presses the enter key at which point the aforementioned 
+data will be sent via SOAP over HTTP, which is not encrypted in any way.</p>
+<p class="Step"><strong>We will be using a MapPoint UserID of 5200 and password
+of "ned68Fe".&nbsp; You can find info on applying for your own MapPoint Web Service
+account here <a href="http://www.microsoft.com/mappoint/en-us/default.aspx">
+http://www.microsoft.com/mappoint/en-us/default.aspx</a></strong>.</p>
+<p class="Step">The first few lines of are the same as most of the
+previous examples.&nbsp; We add a reference to the
+MapPointWebServiceProject.dll so that we can use it inside our program
+and add the appropriate imports so we can use the classes in
+MapPointWebServiceProject as well as the underlying classes the
+MapPoint Web Services expose (such as Location and Route).&nbsp; </p>
+<p class="Step">Next we create the TabelLayoutPanel and FlowLayoutPanel
+as well as creating the required controls such as Label, TextBox and
+Button.&nbsp; We setup the row and column characteristics for the
+TableLayoutPanel and add the controls to it.&nbsp; Then we add the
+controls to the FlowLayoutPanel.</p>
+<p class="Step">All of the event handling is done in
+OnMsgButtonClick.&nbsp; When the button is pressed we create the
+MapPointWebServiceHelper by calling
+MapPointWebServiceHelper.GetInstance and pass it our UserID and password.&nbsp; Please note that when writing your own scripts <span
+ style="font-weight: bold;">you should never hard code usernames or
+passwords</span>. We attempt to find a location using the
+MapPointWebServiceHelper.FindLocation method.&nbsp; If we are
+successful we call the MapPointWebServiceHelper.GetMap method and
+display the map.&nbsp; If the location can't be found we display a
+message stating we couldn't find the location.&nbsp; Finally we call
+application run to initiate the application.</p>
+<p class="Code-Background">import clr<br>
+clr.AddReference("System.Windows.Forms")<br>
+clr.AddReference("System.Drawing")<br>
+from System.Windows.Forms import *<br>
+from System.Drawing import *<br>
+import System<br>
+from System import *<br>
+&nbsp;</p>
+<p class="Code-Background">clr.AddReferenceToFile("MapPointWebServiceProject.dll")<br>
+from MapPointWebServiceProject import *<br>
+from MapPointWebServiceProject.net.mappoint.staging import *<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp; class FormV7(Form):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def __init__(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Create TableLayoutPanel and FlowLayoutPanel <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1 = TableLayoutPanel(ColumnCount = 1,Dock =
+DockStyle.Fill,RowCount = 2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1 = FlowLayoutPanel(Dock = DockStyle.Fill)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Create Controls<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._pictureBox1 = PictureBox(Dock = DockStyle.Fill)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._label1 = Label(Text ='Enter location:',AutoSize=True)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._txtLocation = TextBox()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._button1 = Button(Text ='Get map',AutoSize=True)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Setup TableLayoutPanel rows and columns and add controls<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.ColumnStyles.Add(ColumnStyle(SizeType.Percent,
+100.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.RowStyles.Add(RowStyle(SizeType.Absolute, 45.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.RowStyles.Add(RowStyle(SizeType.Percent, 100.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.Controls.Add(self._flowLayoutPanel1, 0, 0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.Controls.Add(self._pictureBox1, 0, 1)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Add controls to FlowLayoutPanel<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self._label1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self._txtLocation)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self._button1)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.AcceptButton = self._button1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._button1.Click += self.OnMsgButtonClick<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(self._tableLayoutPanel1)<br>
+<br>
+&nbsp;&nbsp;&nbsp; def OnMsgButtonClick(self, *args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try:</p>
+<p class="Code-Background">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+mapHelper = MapPointWebServiceHelper.GetInstance("5200", "ned68Fe")<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; loc
+= mapHelper.FindLocation(self._txtLocation.Text)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if
+loc:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._pictureBox1.Image = mapHelper.GetMap(loc,
+self._pictureBox1.Width, \</p>
+<p class="Code-Background">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._pictureBox1.Height, 4.0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+MessageBox.Show("Address or location is not valid","Invalid Location")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; except Exception, e:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+MessageBox.Show(e.Message,"MapPoint Exception")<br>
+&nbsp;</p>
+<p class="Code-Background">Application.Run(FormV7())<br>
+&nbsp;</p>
+<p class="Step">1. Now let's try the Windows Form application by
+launching the IronPython script from a cmd.exe window:</p>
+<p class="TypedExample">ipyw.exe winforms\formV7.py</p>
+<p class="Step">You should see the following window pop up on your
+screen.&nbsp; If you type well known landmarks (Sears Tower, Navy Pier)
+or a valid address, then a map will be rendered.&nbsp; If you expand or
+contract the form and hit the Get Map button, the map will update to
+fit within the allocated space.</p>
+<p class="Step">&nbsp;</p>
+<p class="Body"><img src="WinForms/FormV7-1.jpg" border="0">&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="WinForms/FormV7-2.jpg" border="0">&nbsp;&nbsp;</p>
+<p class="Body">&nbsp;</p>
+<p class="Body">&nbsp;<img src="WinForms/FormV7-3.jpg" border="0"></p>
+<h3>Task 8:&nbsp; <a name="T1.1.8">Add Route-finding to the Map
+Application (formV8.py)</a></h3>
+<p class="Step">Task 8 takes our task 7 and expands it by allowing us
+to specify start and end locations, and then generate a route
+map.&nbsp; We will leverage previous tasks and use a TableLayoutPanel
+and FlowLayoutPanel to make laying out our form easy.&nbsp; We will use
+the PictureBox to display a map.&nbsp; </p>
+<p class="Step">NOTE: See Task 7 to build and set up the
+MapPointWebServiceProject.dll for this task.&nbsp; If you performed
+task 7, you're fine to proceed.</p>
+<p class="Step">Like task 7, this task contacts Microsoft MapPoint servers 
+remotely.&nbsp; Information sent to the MapPoint servers include a username and 
+password along with your IP address and the text entered into the TextBoxes in 
+the sample interface.&nbsp; No information is sent remotely until the user 
+clicks on the &quot;Get map&quot; button or presses the enter key at which point the 
+aforementioned data will be sent via SOAP over HTTP, which is not encrypted in 
+any way.</p>
+<p class="Step">The first few lines of Task 8 are the same as most of
+the previous examples.&nbsp; We add a reference to the
+MapPointWebServiceProject.dll so that we can use it inside our
+program.&nbsp; Then we add the appropriate Python import statements so
+we can use the classes in MapPointWebServiceProject.dll and classes the
+MapPoint Web Services exposes (such as Location and Route).&nbsp; </p>
+<p class="Step">Next we create the TabelLayoutPanel and two
+FlowLayoutPanel's.&nbsp; The first FlowLayoutPanel is for the control
+related to specifying the starting location.&nbsp; The second
+FlowLayoutPanel is for the Label, TextBox, and Button used to specify
+the ending location.&nbsp; We setup the row and column characteristics
+for the TableLayoutPanel and add the controls to it.&nbsp; Then we add
+the appropriate controls to our two FlowLayoutPanels.</p>
+<p class="Step">All of the event handling is done within
+OnMsgButtonClick.&nbsp; When the button is pressed we create the
+MapPointWebServiceHelper by calling
+MapPointWebServiceHelper.GetInstance and pass it our UserID and
+password.&nbsp; We will be using a MapPoint UserID of 5200 and password
+of "ned68Fe".&nbsp; Please note that when writing your own scripts <span
+ style="font-weight: bold;">you should never hard code usernames or
+passwords</span>.&nbsp; You can find out how to apply for your own MapPoint Web Service
+account here <a href="http://www.microsoft.com/mappoint/en-us/default.aspx">
+http://www.microsoft.com/mappoint/en-us/default.aspx</a>.&nbsp;
+We attempt to find our starting location using the
+MapPointWebServiceHelper.FindLocation method.&nbsp; Next we attempt to
+find our ending location by calling the
+MapPointWebServiceHelper.FindLocation method again.&nbsp; If a location
+can't be found, the helper class throws an exception, which we handle
+by displaying a message.&nbsp; If both locations are found, then we
+will call MapPointWebServiceHelper.GetRouteMap to get our route
+map.&nbsp; If we are successful, we will display a route map, and if
+not, an error message is displayed.</p>
+<p class="Step">Finally, we call application run to initiate the
+application.</p>
+<p class="Step">&nbsp;</p>
+<p class="Code-Background">import clr<br>
+clr.AddReference("System.Windows.Forms")<br>
+clr.AddReference("System.Drawing")<br>
+from System.Windows.Forms import *<br>
+from System.Drawing import *<br>
+import System<br>
+from System import *<br>
+&nbsp;</p>
+<p class="Code-Background">clr.AddReferenceToFile("MapPointWebServiceProject.dll")<br>
+from MapPointWebServiceProject import *<br>
+from MapPointWebServiceProject.net.mappoint.staging import *<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp; class FormV8(Form):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def __init__(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Create TableLayoutPanel and FlowLayoutPanel <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1 = TableLayoutPanel(ColumnCount = 1,Dock =
+DockStyle.Fill,RowCount = 3)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1 = FlowLayoutPanel(Dock = DockStyle.Fill)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel2 = FlowLayoutPanel(Dock = DockStyle.Fill)<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+controls for FlowLayout Start<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._label1 = Label(Text ='Enter start location:',AutoSize=True)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._txtFromLocation = TextBox()<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+controls for FlowLayout End<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._label2 = Label(Text ='Enter end location:',AutoSize=True)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._txtToLocation = TextBox()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._button1 = Button(Text ='Get map',AutoSize=True)<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+this will hold our route map<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._pictureBox1 = PictureBox(Dock = DockStyle.Fill)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Setup TableLayoutPanel rows and columns and add controls<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.ColumnStyles.Add(ColumnStyle(SizeType.Percent,
+100.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.RowStyles.Add(RowStyle(SizeType.Absolute, 40.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.RowStyles.Add(RowStyle(SizeType.Absolute, 60.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.RowStyles.Add(RowStyle(SizeType.Percent, 100.0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.Controls.Add(self._flowLayoutPanel1, 0, 0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.Controls.Add(self._flowLayoutPanel2, 0, 1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._tableLayoutPanel1.Controls.Add(self._pictureBox1, 0, 2)<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Add controls to FlowLayoutPanel Start<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self._label1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel1.Controls.Add(self._txtFromLocation)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #
+Add controls to FlowLayoutPanel End<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel2.Controls.Add(self._label2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel2.Controls.Add(self._txtToLocation)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._flowLayoutPanel2.Controls.Add(self._button1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.AcceptButton = self._button1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._button1.Click += self.OnMsgButtonClick<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self.Controls.Add(self._tableLayoutPanel1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; def OnMsgButtonClick(self,
+*args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+mapHelper = MapPointWebServiceHelper.GetInstance("5200", "ned68Fe")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+locFrom = mapHelper.FindLocation(self._txtFromLocation.Text)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+locTo = mapHelper.FindLocation(self._txtToLocation.Text)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+myRoute = mapHelper.GetRoute(locFrom, locTo)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+self._pictureBox1.Image = mapHelper.GetRouteMap(myRoute,
+self._pictureBox1.Width, self._pictureBox1.Height)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; except Exception, e:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+MessageBox.Show(e.Message,"MapPoint Exception")<br>
+<br>
+Application.Run(FormV8())<br>
+&nbsp;</p>
+<p class="Step">1. Now let's try the Windows Form application by
+launching the IronPython script from a cmd.exe window:</p>
+<p class="TypedExample">ipyw.exe winforms\formV8.py</p>
+<p class="Step">Note, please be patient as there are four web service
+calls.&nbsp; After clicking get map it takes a little time to render
+the map.&nbsp; </p>
+<p class="Step">You should see the following window pop up on your
+screen.&nbsp; If you type a well known landmark (Sears Tower, Navy
+Pier) or a valid address for the start and end locations, then a route
+map will be rendered.&nbsp; If you expand or contract the form and hit
+the Get Map button, the map will update to fit within the allocated
+space.</p>
+<p class="Step">&nbsp;</p>
+<p class="Body"><img src="WinForms/FormV8-1.jpg" border="0">&nbsp;&nbsp;
+<img src="WinForms/FormV8-2.jpg" border="0">&nbsp;&nbsp;&nbsp;</p>
+<p class="Body">&nbsp;</p>
+<p class="Body">&nbsp;<img src="WinForms/FormV8-3.jpg" border="0"></p>
+<p class="Body">&nbsp;</p>
+<p class="Body">&nbsp;</p>
+<p class="LabSummary">Tutorial Summary</p>
+<p class="Normal">In this tutorial you learned more about building
+Windows Forms applications using IronPython.&nbsp; You started with the
+most basic Winforms application - an empty form with the title set -
+and progressed through a series of samples that showed how to build
+increasingly more complex Winforms user interfaces via
+IronPython.&nbsp; You learned that even sophisticated GUIs could be
+easily developed using basic controls such as Label, TextBox, Button,
+PictureBox in conjunction with advanced layout controls like
+TableLayoutPanel and FlowLayoutPanel.</p>
+</body>
+</html>

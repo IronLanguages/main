@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GPPG", "ParserGenerator\GPPG.csproj", "{827282D8-3E75-4545-A5E4-2406F0D3E184}"
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 2
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://vstfdevdiv:8080/devdiv
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = ParserGenerator\\GPPG.csproj
+		SccProjectName1 = ParserGenerator
+		SccLocalPath1 = ParserGenerator
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{827282D8-3E75-4545-A5E4-2406F0D3E184}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{827282D8-3E75-4545-A5E4-2406F0D3E184}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{827282D8-3E75-4545-A5E4-2406F0D3E184}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{827282D8-3E75-4545-A5E4-2406F0D3E184}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

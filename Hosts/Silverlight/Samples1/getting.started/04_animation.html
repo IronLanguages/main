@@ -1,0 +1,93 @@
+﻿<html>
+<head>
+	<script src="../dlr.js" type="text/javascript"></script>
+</head>
+<body>
+  
+<script id="mushroom" type="application/xml+xaml" width="200" height="230">
+  <UserControl x:Name="blinking_mushroom" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="200" Height="230" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d">
+    <UserControl.Resources>
+      <Storyboard x:Name="left_eye_blink" RepeatBehavior="Forever">
+        <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="Path_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)">
+          <SplineDoubleKeyFrame KeyTime="00:00:00.1000000" Value="0.025"></SplineDoubleKeyFrame>
+          <SplineDoubleKeyFrame KeyTime="00:00:00.2000000" Value="1"></SplineDoubleKeyFrame>
+          <SplineDoubleKeyFrame KeyTime="00:00:03" Value="1"></SplineDoubleKeyFrame>
+        </DoubleAnimationUsingKeyFrames>
+        <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="Path_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.Y)">
+          <SplineDoubleKeyFrame KeyTime="00:00:00.1000000" Value="0.084"></SplineDoubleKeyFrame>
+          <SplineDoubleKeyFrame KeyTime="00:00:00.2000000" Value="0"></SplineDoubleKeyFrame>
+          <SplineDoubleKeyFrame KeyTime="00:00:03" Value="0"></SplineDoubleKeyFrame>
+        </DoubleAnimationUsingKeyFrames>
+      </Storyboard>
+      <Storyboard x:Name="right_eye_blink" RepeatBehavior="Forever">
+        <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="Path_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)">
+          <SplineDoubleKeyFrame KeyTime="00:00:00.1000000" Value="0.025"></SplineDoubleKeyFrame>
+          <SplineDoubleKeyFrame KeyTime="00:00:00.2000000" Value="1"></SplineDoubleKeyFrame>
+          <SplineDoubleKeyFrame KeyTime="00:00:03" Value="1"></SplineDoubleKeyFrame>
+        </DoubleAnimationUsingKeyFrames>
+        <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="Path_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.Y)">
+          <SplineDoubleKeyFrame KeyTime="00:00:00.1000000" Value="0.084"></SplineDoubleKeyFrame>
+          <SplineDoubleKeyFrame KeyTime="00:00:00.2000000" Value="0"></SplineDoubleKeyFrame>
+          <SplineDoubleKeyFrame KeyTime="00:00:03" Value="0"></SplineDoubleKeyFrame>
+        </DoubleAnimationUsingKeyFrames>
+      </Storyboard>
+    </UserControl.Resources>
+
+    <Canvas x:Name="mushroom" Width="200" Height="230" Background="Black">
+      <Path x:Name="Path" Width="166.838" Height="196.367" Canvas.Left="13.9608" Canvas.Top="28.0281" Stretch="Fill" Fill="#FFFAE2BA" Data="F1 M 162.759,168.252C 138.947,152.15 138.303,124.811 138.303,124.811C 138.303,124.811 138.063,121.492 137.768,119.23C 137.713,93.3346 137.67,69.5864 137.67,58.5115C 137.67,27.6608 97.3799,28.0283 97.3799,28.0283C 97.3799,28.0283 57.089,27.6608 57.089,58.5115C 57.089,69.5864 57.0464,93.3338 56.9904,119.228C 56.6957,121.49 56.4555,124.811 56.4555,124.811C 56.4555,124.811 55.8113,152.15 31.9993,168.252C 8.18806,184.354 11.0358,200.356 22.8609,199.995C 33.155,199.68 52.086,182.464 56.914,152.773C 56.8331,187.823 56.7537,218.535 56.7537,218.535C 56.7537,218.535 56.5745,224.395 62.5651,224.395C 67.7127,224.395 68.9801,221.156 69.7566,218.481C 70.5309,215.805 72.2238,210.878 75.395,210.878L 119.363,210.878C 122.535,210.878 124.227,215.805 125.003,218.481C 125.777,221.156 127.047,224.395 132.19,224.395C 138.183,224.395 138.004,218.535 138.004,218.535C 138.004,218.535 137.925,187.822 137.844,152.772C 142.671,182.464 161.604,199.68 171.898,199.995C 183.724,200.356 186.572,184.354 162.759,168.252 Z "></Path>
+      <Path x:Name="Path_0" Width="8.6793" Height="6.93059" Canvas.Left="23.9336" Canvas.Top="190.457" Stretch="Fill" Fill="#FFD7C28C" Data="F1 M 32.2067,191.479C 33.39,193.451 31.8226,194.836 29.6348,196.164C 27.4485,197.492 25.3359,198.022 24.2884,196.289C 23.5245,195.026 23.828,193.373 26.8588,191.603C 29.6448,189.976 31.4474,190.215 32.2067,191.479 Z "></Path>
+      <Path x:Name="Path_1" Width="8.67891" Height="6.93059" Canvas.Left="162.667" Canvas.Top="190.457" Stretch="Fill" Fill="#FFD7C28C" Data="F1 M 163.073,191.479C 161.89,193.451 163.457,194.836 165.643,196.164C 167.83,197.492 169.943,198.022 170.991,196.289C 171.755,195.026 171.452,193.373 168.421,191.603C 165.633,189.976 163.832,190.215 163.073,191.479 Z "></Path>
+      <Path x:Name="Path_2" Width="80.8181" Height="19.238" Canvas.Left="56.9526" Canvas.Top="109.18" Stretch="Fill" Fill="#FFE5CCA2" Data="F1 M 137.748,109.18L 56.9726,111.171C 56.9664,114.394 56.9595,117.651 56.9526,120.921C 62.1018,125.872 73.1168,128.27 89.1134,128.407C 106.995,128.562 124.073,127.075 137.771,119.956C 137.762,116.336 137.755,112.734 137.748,109.18 Z "></Path>
+      <Grid Height="8" Width="9" Canvas.Left="66.414" Canvas.Top="128.355">
+        <Path x:Name="Path_3" Stretch="Fill" Fill="#FF221E1F" Data="F1 M 75.5618,132.354C 75.5618,135.105 73.6556,136.471 71.0876,136.471C 68.5207,136.471 66.2653,135.137 66.2653,132.354C 66.2653,129.574 68.1711,128.239 70.738,128.239C 73.3072,128.239 75.5618,129.443 75.5618,132.354 Z " RenderTransformOrigin="0.496,0.501">
+          <Path.RenderTransform>
+            <TransformGroup>
+              <ScaleTransform></ScaleTransform>
+              <SkewTransform></SkewTransform>
+              <RotateTransform></RotateTransform>
+              <TranslateTransform></TranslateTransform>
+            </TransformGroup>
+          </Path.RenderTransform>
+        </Path>
+      </Grid>
+      <Path x:Name="Path_5" Width="7.90562" Height="3.64575" Canvas.Left="67.1899" Canvas.Top="136.693" Stretch="Fill" Fill="#FFC1AA7A" Data="F1 M 67.1899,136.94C 67.1899,136.94 68.0766,138.097 70.9382,138.097C 73.7997,138.097 75.0955,136.693 75.0955,136.693C 75.0955,136.693 71.7209,144.729 67.1899,136.94 Z "></Path>
+      <Path x:Name="Path_6" Width="9.29535" Height="8.23141" Canvas.Left="119.197" Canvas.Top="128.239" Stretch="Fill" Fill="#FF221E1F" Data="F1 M 128.493,132.354C 128.493,135.105 126.587,136.471 124.02,136.471C 121.454,136.471 119.197,135.137 119.197,132.354C 119.197,129.574 121.104,128.239 123.67,128.239C 126.239,128.239 128.493,129.443 128.493,132.354 Z ">
+        <Path.RenderTransform>
+          <TransformGroup>
+            <ScaleTransform></ScaleTransform>
+            <SkewTransform></SkewTransform>
+            <RotateTransform></RotateTransform>
+            <TranslateTransform></TranslateTransform>
+          </TransformGroup>
+        </Path.RenderTransform>
+      </Path>
+      <Path x:Name="Path_8" Width="7.90639" Height="3.64575" Canvas.Left="120.121" Canvas.Top="136.693" Stretch="Fill" Fill="#FFC1AA7A" Data="F1 M 120.121,136.94C 120.121,136.94 121.008,138.097 123.87,138.097C 126.731,138.097 128.027,136.693 128.027,136.693C 128.027,136.693 124.653,144.729 120.121,136.94 Z "></Path>
+      <Path x:Name="Path_9" Width="189.831" Height="112.562" Canvas.Left="4.32246" Canvas.Top="4.19066" Stretch="Fill" Fill="#FFB92025" Data="F1 M 194.153,82.5396C 194.153,118.638 151.658,116.735 99.2382,116.735C 46.8169,116.735 4.32246,118.638 4.32246,82.5396C 4.32246,46.4404 46.8169,4.19066 99.2382,4.19066C 151.658,4.19066 194.153,46.4404 194.153,82.5396 Z "></Path>
+      <Path x:Name="Path_10" Width="11.6821" Height="10.754" Canvas.Left="166.918" Canvas.Top="89.5578" Stretch="Fill" Fill="#FFFFFFFF" Data="F1 M 175.074,99.3477C 172.208,100.824 169.289,100.867 167.605,97.6049C 166.345,95.1669 166.552,92.5572 170.511,90.5173C 174.305,88.5625 176.721,89.8206 177.98,92.2594C 179.565,95.3282 177.939,97.8712 175.074,99.3477 Z "></Path>
+      <Path x:Name="Path_11" Width="29.5489" Height="31.9077" Canvas.Left="41.918" Canvas.Top="75.4503" Stretch="Fill" Fill="#FFFFFFFF" Data="F1 M 64.1035,105.535C 57.3769,109.001 50.0158,108.116 44.6234,97.6769C 40.5907,89.8712 40.2043,82.0582 49.5016,77.2677C 58.4052,72.6802 64.9499,77.3198 68.9802,85.1263C 74.0561,94.95 70.8288,102.069 64.1035,105.535 Z "></Path>
+      <Path x:Name="Path_12" Width="154.91" Height="86.0429" Canvas.Left="37.6103" Canvas.Top="4.19078" Stretch="Fill" Fill="#FFE82225" Data="F1 M 192.52,69.9377C 184.266,37.2974 145.641,4.19078 99.2383,4.19078C 76.2658,4.19078 55.1991,12.3057 38.7797,24.4598C 36.0206,34.1861 36.0428,55.0448 63.1937,70.8099C 97.9326,90.9819 174.829,102.224 192.52,69.9377 Z "></Path>
+      <Canvas x:Name="Group" Width="214.848" Height="130.531" Canvas.Left="-9.10198" Canvas.Top="4">
+        <Canvas Width="200" Height="230" x:Name="Clip" Clip="F1 M 13.102,78.6138C 13.102,114.836 55.7414,112.926 108.34,112.926L 108.34,112.926C 160.938,112.926 203.578,114.836 203.578,78.6138L 203.578,78.6138C 203.578,42.3927 160.938,0 108.34,0L 108.34,0C 55.7414,0 13.102,42.3927 13.102,78.6138 Z ">
+          <Path x:Name="Path_13" Width="46.2032" Height="46.1474" Canvas.Left="0" Canvas.Top="37.2407" Stretch="Fill" Fill="#FFFFFFFF" Data="F1 M 46.2032,60.3148C 46.2032,73.0575 40.1643,83.3882 23.101,83.3882C 10.3432,83.3882 0,77.927 0,60.3148C 0,43.445 10.3432,37.2407 23.101,37.2407C 39.1597,37.2407 46.2032,47.5718 46.2032,60.3148 Z "></Path>
+          <Path x:Name="Path_14" Width="48.5257" Height="48.4644" Canvas.Left="118.391" Canvas.Top="82.0665" Stretch="Fill" Fill="#FFFFFFFF" Data="F1 M 166.917,106.299C 166.917,119.681 160.575,130.531 142.654,130.531C 129.253,130.531 118.391,124.796 118.391,106.299C 118.391,88.5815 129.253,82.0665 142.654,82.0665C 159.518,82.0665 166.917,92.9153 166.917,106.299 Z "></Path>
+          <Path x:Name="Path_15" Width="60.1456" Height="60.1163" Canvas.Left="149.526" Canvas.Top="8.23954" Stretch="Fill" Fill="#FFFFFFFF" Data="F1 M 193.106,64.056C 178.86,71.3977 163.828,70.6148 153.997,51.5828C 146.648,37.3525 146.793,22.6693 166.485,12.5218C 185.348,2.80305 198.245,10.7647 205.596,24.9958C 214.848,42.9053 207.355,56.7144 193.106,64.056 Z "></Path>
+        </Canvas>
+      </Canvas>
+      <Path x:Name="Path_16" Width="20.1736" Height="18.571" Canvas.Left="94.167" Canvas.Top="56.6697" Stretch="Fill" Fill="#FFFFFFFF" Data="F1 M 108.249,73.576C 103.302,76.1255 98.2626,76.1987 95.3531,70.567C 93.1768,66.3559 93.5336,61.85 100.374,58.3264C 106.921,54.951 111.094,57.1242 113.269,61.335C 116.007,66.6356 113.196,71.0269 108.249,73.576 Z "></Path>
+      <Path x:Name="Path_17" Width="12.6564" Height="11.8898" Canvas.Left="99.5336" Canvas.Top="8.78829" Stretch="Fill" Fill="#FFFFFFFF" Data="F1 M 101.054,17.8553C 99.1645,15.246 98.6868,12.3704 101.664,10.2206C 103.891,8.61183 108.635,7.66148 111.246,11.2671C 113.748,14.7211 110.732,18.06 108.506,19.668C 105.704,21.6909 102.943,20.4643 101.054,17.8553 Z "></Path>
+      <Path x:Name="Path_18" Width="28.3932" Height="28.3795" Canvas.Left="49.2328" Canvas.Top="19.2153" Stretch="Fill" Fill="#FFFFFFFF" Data="F1 M 69.8064,45.5656C 63.0803,49.0306 55.9854,48.6608 51.3435,39.6767C 47.8741,32.9586 47.942,26.0282 57.2389,21.2368C 66.1448,16.6486 72.2314,20.4079 75.7022,27.1257C 80.0691,35.5806 76.5326,42.1002 69.8064,45.5656 Z "></Path>
+      <Path x:Name="Path_19" Width="56.2268" Height="29.6914" Canvas.Left="68.8136" Canvas.Top="143.184" Stretch="Fill" Fill="#FF221E1F" Data="F1 M 110.719,171.532C 122.593,165.059 127.245,149.635 124.069,146.7C 123.362,146.046 121.82,145.473 119.686,144.99C 119.04,146.676 117.022,149.341 114.983,149.923C 112.761,150.558 111.31,146.252 111.57,143.803C 103.391,143.034 92.7783,142.954 84.1717,143.719C 84.159,146.311 82.3384,150.145 80.225,149.38C 78.4489,148.739 76.8919,146.91 76.2035,144.812C 71.7331,145.723 68.8324,147.031 68.8136,148.787C 68.8136,148.787 70.7451,165.859 88.3397,172.281C 90.2498,172.977 107.274,173.411 110.719,171.532 Z "></Path>
+      <Path x:Name="Path_20" Width="19.6567" Height="16.1161" Canvas.Left="90.2381" Canvas.Top="157.141" Stretch="Fill" Fill="#FF541018" Data="F1 M 91.8171,169.709C 89.3503,167.055 89.9658,160.722 92.3373,158.39C 94.7082,156.061 98.0049,158.331 98.9538,160.154C 99.9007,161.978 96.7851,163.874 96.6589,166.118C 96.5338,168.359 100.707,168.179 102.537,166.805C 104.365,165.432 100.53,163.478 101.95,159.964C 103.368,156.452 109.365,155.539 109.853,161.204C 110.343,166.868 106.358,170.254 106.358,170.254C 106.358,170.254 98.9231,177.361 91.8171,169.709 Z "></Path>
+      <Path x:Name="Path_21" Width="22.6076" Height="3.78664" Canvas.Left="88.2496" Canvas.Top="170.621" Stretch="Fill" Fill="#FFF05665" Data="F1 M 94.2663,170.915C 97.6071,170.334 98.9746,172.172 98.9746,172.172C 101.628,169.749 107.828,170.698 110.857,171.469C 110.795,171.504 110.732,171.538 110.67,171.572C 110.645,171.585 110.62,171.598 110.596,171.61C 106.233,173.956 100.906,175.093 94.6389,173.973C 92.306,173.555 90.1846,172.97 88.2496,172.258C 89.9682,171.832 92.0566,171.298 94.2663,170.915 Z "></Path>
+    </Canvas>
+  </UserControl>
+</script>
+
+<script class="mushroom" type="text/python">
+  bm = me.blinking_mushroom
+  bm.left_eye_blink.Begin()
+  bm.right_eye_blink.Begin()
+</script>
+</body>
+</html>
+

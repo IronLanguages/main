@@ -1,0 +1,17 @@
+<Project DefaultTargets="Build" ToolsVersion="dogfood" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <!--Import the settings-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\tools\Microsoft.DevDiv.Native.Settings.targets" />
+
+  <!--DIRS-->
+  <ItemGroup Condition=" '$(BuildExePhase)' == '' ">
+    <ProjectFile Include="IronPython\IronPython.Build.csproj" />
+    <ProjectFile Include="IronPython.Modules\IronPython.Modules.Build.csproj" />
+    <ProjectFile Include="IronPythonConsoleAny\IronPythonConsoleAny.Build.csproj" />
+    <ProjectFile Include="IronPythonTest\IronPythonTest.Build.csproj" />
+    <ProjectFile Include="IronPythonWindowAny\IronPythonWindowAny.Build.csproj" />
+  </ItemGroup>
+  
+  <!--Import the targets-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\tools\microsoft.devdiv.traversal.targets" />
+</Project> 

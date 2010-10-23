@@ -1,2 +1,0 @@
-fails:Operators <=> == === != =~ !~ are non-associative
-fails:Operators .. ... are non-associative
