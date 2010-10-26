@@ -486,7 +486,7 @@ namespace IronRuby.Builtins {
 
             object min = null, max = null;
 
-            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+	     Func<IronRuby.Runtime.BlockParam,object,object,object> blockProc = delegate(BlockParam/*!*/ selfBlock, object _, object item) {
                 if (hasOddItem) {
                     hasOddItem = false;
 
@@ -535,7 +535,9 @@ namespace IronRuby.Builtins {
             BlockJumped:
                 blockJumped = true;
                 return selfBlock.PropagateFlow(comparer, blockResult);
-            }));
+            };
+
+            Each(each, self, Proc.Create(each.Context, blockProc));
 
             if (blockJumped) {
                 return blockResult;

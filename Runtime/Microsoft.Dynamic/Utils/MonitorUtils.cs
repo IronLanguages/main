@@ -26,7 +26,10 @@ namespace Microsoft.Scripting.Utils {
             Monitor.Enter(obj);
             lockTaken = true;
 #else
-            Monitor.Enter(obj, ref lockTaken);
+            Monitor.Enter(obj);
+            lockTaken = true;
+	    //Mono 2.8 does not currently support Monitor.Enter(object, bool)
+	    //            Monitor.Enter(obj, ref lockTaken);
 #endif
         }
 
@@ -35,7 +38,9 @@ namespace Microsoft.Scripting.Utils {
 #if CLR2
             return lockTaken = Monitor.TryEnter(obj);
 #else
-            Monitor.TryEnter(obj, ref lockTaken);
+	    return lockTaken = Monitor.TryEnter(obj);
+	    //Mono 2.8 does not currently support Monitor.TryEnter(object, bool)
+	    //            Monitor.TryEnter(obj, ref lockTaken);
             return lockTaken;
 #endif
         }
