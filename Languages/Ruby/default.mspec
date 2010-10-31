@@ -12,4 +12,4 @@
 #
 #
 # ****************************************************************************
-load File.join(ENV['DLR_ROOT'],"External.LCA_RESTRICTED","Languages","IronRuby","mspec","default.mspec")
+load File.join(ENV['DLR_ROOT'], "Languages", "Ruby", "Tests", "mspec", "default.mspec")

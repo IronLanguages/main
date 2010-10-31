@@ -20,9 +20,9 @@ class MSpecScript
     ir_cmd = 'ir.sh'
   end
   # The default implementation to run the specs.
-  set :target, File.join(ENV['DLR_ROOT'], "Test","Scripts","ir.cmd")
+  set :target, File.join(ENV['DLR_ROOT'], "Test", "Scripts", "ir.cmd")
   # config[:prefix] must be set before filtered is used
-  set :prefix, File.join(ENV['DLR_ROOT'], "External.LCA_RESTRICTED","Languages","IronRuby","mspec","rubyspec")
+  set :prefix, File.join(ENV['DLR_ROOT'], "Languages", "Ruby", "Tests", "mspec", "rubyspec")
   
   set :core1sub1,filtered("core","[ac-i]")
   set :core1sub2,[ #want to keep basicobject out of the 1.8 list

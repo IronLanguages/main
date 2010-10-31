@@ -14,7 +14,7 @@ class UnitTestSetup
   end
 
   def gather_files
-    @rake_tests_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/Rake-#{Version}", ENV["DLR_ROOT"])
+    @rake_tests_dir = File.expand_path("Languages/Ruby/Tests/Libraries/Rake-#{Version}", ENV["DLR_ROOT"])
     @all_test_files = Dir.glob("#{@rake_tests_dir}/test/test_*.rb") + Dir.glob("#{@rake_tests_dir}/test/contrib/test_*.rb")
   end
 

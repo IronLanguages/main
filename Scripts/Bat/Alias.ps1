@@ -7,7 +7,7 @@ function global:ip { Set-Location "${env:DLR_ROOT}\Languages\IronPython" }
 function global:rb { Set-Location "${env:DLR_ROOT}\Languages\Ruby" }
 function global:rt { Set-Location "${env:DLR_ROOT}\Runtime" }
 function global:r { Set-Location "${env:DLR_ROOT}" }
-function global:mspc { Set-Location "${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\IronRuby\mspec" }
+function global:mspc { Set-Location "${env:DLR_ROOT}\Languages\Ruby\Tests\mspec" }
 function global:ipl { Set-Location "${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\IronPython\26\Lib" }
 function global:cpl { Set-Location "${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\CPython\26\Lib" }
 
@@ -74,8 +74,6 @@ function global:rbd4 { cmd /C "`"${env:DLR_ROOT}\Bin\V4 Debug\ir.exe`" -D $args"
 function global:rbxm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Debug\ir.exe`" $args" }
 function global:rbrm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Release\ir.exe`" $args" }
 function global:rbdm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Debug\ir.exe`" -D $args" }
-function global:irb19 { cmd /C "`"${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\irb.bat`" $args" }
-function global:ruby19 { cmd /C "`"${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe`" $args" }
 function global:msir { cmd /C "${env:windir}\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %DLR_ROOT%\Bin\Release\ir.exe $args }" }
 
 #=============================================================================

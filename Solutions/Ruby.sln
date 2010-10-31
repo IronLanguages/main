@@ -23,8 +23,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\Languages\Ruby\Scripts\CodeGenerator.rb = ..\Languages\Ruby\Scripts\CodeGenerator.rb
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RubySpec", "..\Languages\Ruby\Tests\RubySpec\RubySpec.csproj", "{534A82C6-3EB0-4888-ABD2-A15284683E8D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ruby.ConsoleAny", "..\Languages\Ruby\Console\Ruby.ConsoleAny.csproj", "{6EE7A428-D803-41BC-8248-1297C3ACE369}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Silverlight", "..\Hosts\SilverLight\Microsoft.Scripting.SilverLight\Microsoft.Scripting.Silverlight.csproj", "{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}"
@@ -200,15 +198,6 @@ Global
 		{AA18A245-E342-4368-A474-83178311A742}.v2Debug|Any CPU.Build.0 = v2Debug|Any CPU
 		{AA18A245-E342-4368-A474-83178311A742}.v2Release|Any CPU.ActiveCfg = v2Release|Any CPU
 		{AA18A245-E342-4368-A474-83178311A742}.v2Release|Any CPU.Build.0 = v2Release|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.FxCop|Any CPU.ActiveCfg = v2Release|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Release|Any CPU.ActiveCfg = v2Release|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Silverlight3Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Silverlight3Release|Any CPU.ActiveCfg = v2Release|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Silverlight4Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Silverlight4Release|Any CPU.ActiveCfg = v2Release|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.v2Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
-		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.v2Release|Any CPU.ActiveCfg = v2Release|Any CPU
 		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6EE7A428-D803-41BC-8248-1297C3ACE369}.FxCop|Any CPU.ActiveCfg = v2Release|Any CPU

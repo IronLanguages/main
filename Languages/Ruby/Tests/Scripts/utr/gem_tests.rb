@@ -14,7 +14,7 @@ class UnitTestSetup
   end
 
   def gather_files
-    test_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/RubyGems-#{Version}", ENV["DLR_ROOT"])
+    test_dir = File.expand_path("Languages/Ruby/Tests/Libraries/RubyGems-#{Version}", ENV["DLR_ROOT"])
     $LOAD_PATH << test_dir
 
     # Note that the copy of minitest\unit.rb has a workaround at line 15 for http://redmine.ruby-lang.org/issues/show/1266
@@ -45,7 +45,7 @@ class UnitTestSetup
     #
     # TODO: is this still applicable?
     # 
-    #dlr\External.LCA_RESTRICTED\Languages\IronRuby\RubyGems-1_3_1-test\gemutilities.rb has a workaround
+    #RubyGems-1_3_1-test\gemutilities.rb has a workaround
     #for http://rubyforge.org/tracker/?func=detail&group_id=126&aid=24169&atid=575. However, the following
     #test fails inspite of the workaround. So we check if %TMP% is something like
     #C:\DOCUME~1\JANEDO~1\LOCALS~1\Temp

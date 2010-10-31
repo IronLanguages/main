@@ -107,7 +107,7 @@ if exist "%PROGRAM_FILES_32%\Microsoft.NET\SDK\v2.0\Bin\sdkvars.bat" (
 :EnvDone
 if DEFINED INTERNALDEV set PATH=%PATH%;%DLR_ROOT%\External\Tools;%DLR_ROOT%\Scripts\Bat;%DLR_ROOT%\Util\Internal\Snap\bin;%DLR_ROOT%\Util\tfpt
 
-set PATH=%PATH%;%DLR_ROOT%\Languages\Ruby\Scripts;%DLR_ROOT%\Languages\Ruby\Scripts\bin;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin;%RUBY19_BIN%
+set PATH=%PATH%;%DLR_ROOT%\Languages\Ruby\Scripts;%DLR_ROOT%\Languages\Ruby\Scripts\bin;%DLR_ROOT%\Languages\Ruby\Tests\mspec\mspec\bin;%RUBY19_BIN%
 
 REM -- Mono
 if defined DLR_VM_PATH goto MonoInitEnd

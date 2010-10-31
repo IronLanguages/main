@@ -53,7 +53,7 @@ class UnitTestSetup
     ensure_database_exists "activerecord_unittest"
     ensure_database_exists "activerecord_unittest2"
     
-    sqlserver_adapter_root_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/activerecord-sqlserver-adapter-#{SqlServerAdapterVersion}", ENV['DLR_ROOT'])
+    sqlserver_adapter_root_dir = File.expand_path("Languages/Ruby/Tests/Libraries/activerecord-sqlserver-adapter-#{SqlServerAdapterVersion}", ENV['DLR_ROOT'])
     $LOAD_PATH << "#{sqlserver_adapter_root_dir}/test"
     ENV['RAILS_SOURCE'] = RAILS_TEST_DIR 
     

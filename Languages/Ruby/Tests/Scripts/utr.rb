@@ -221,7 +221,7 @@ class UnitTestSetup
   TestUnitVersion = "2.1.1"
   SqlServerAdapterVersion = "3.0.0"
   
-  RAILS_TEST_DIR = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/Rails-#{RailsVersion}", ENV['DLR_ROOT'])
+  RAILS_TEST_DIR = File.expand_path("Languages/Ruby/Tests/Libraries/Rails-#{RailsVersion}", ENV['DLR_ROOT'])
   
   def gather_rails_files
     @root_dir = File.join(File.expand_path(@name, RAILS_TEST_DIR), "test")

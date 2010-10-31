@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<RuleSet Name="Migrated rules for IronRuby.Libraries.Yaml.ruleset" Description="This rule set was created from the CodeAnalysisRules property for the &quot;FxCop (Any CPU)&quot; configuration in project &quot;D:\rft\vsl\dlr\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\IronRuby.Libraries.Yaml.csproj&quot;." ToolsVersion="10.0">
+<RuleSet Name="Migrated rules for IronRuby.Libraries.Yaml.ruleset" ToolsVersion="10.0">
   <IncludeAll Action="Warning" />
   <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
     <Rule Id="CA1000" Action="None" />

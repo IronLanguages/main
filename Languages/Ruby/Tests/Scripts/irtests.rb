@@ -75,17 +75,19 @@ class IRTest
       ]
     else
       @all_tasks = {
-        :Smoke            => safe_ruby_runner(dlr_path('Languages/Ruby/Tests/Scripts/unit_tests.rb')),
-        #:Legacy           => safe_ruby_runner(dlr_path('Languages/Ruby/Tests/run.rb')),
+        :Smoke            => safe_ruby_runner(ruby_tests_path('Scripts/unit_tests.rb')),
         :RubySpec_A       => spec_runner(":lang :cli :netinterop :cominterop :thread :netcli"),
         :RubySpec_B       => spec_runner(":core1 :lib1"),
         :RubySpec_C       => spec_runner(":core2 :lib2"),
         :RubyGems         => utr_runner("gem"),
         :TZInfo           => utr_runner("tzinfo"),
         :Rake             => utr_runner("rake"),
-        :Yaml             => ruby_runner(dlr_path('External.LCA_RESTRICTED/Languages/IronRuby/tests/Yaml/yaml_test_suite.rb')),
+        :Yaml             => ruby_runner(ruby_tests_path('Libraries/Yaml/yaml_test_suite.rb')),
         
-        # TODO: get rid of .bat file
+        # TODO: fix these or merge them with mspec
+        #:Legacy           => safe_ruby_runner(ruby_tests_path('legacy/run.rb')),
+        
+        # TODO: fix these and get rid of .bat file
         #:Tutorial         => shell_runner("#{dlr_path('Languages/Ruby/Samples/Tutorial/tutorial.bat')} #{dlr_path('Languages/Ruby/Samples/Tutorial/test/test_console.rb')}"),
       }
       
@@ -137,6 +139,10 @@ class IRTest
   def dlr_path(path)
     q File.join(@root, path)
   end
+
+  def ruby_tests_path(path)
+    q File.join(@root, 'Languages/Ruby/Tests', path)
+  end
   
   def q(str)
     str.include?(' ') ? '"' + str + '"' : str
@@ -163,11 +169,11 @@ class IRTest
   end
   
   def utr_runner(suite, version = nil)
-    shell_runner "#@ir #{version} #{dlr_path('Languages/Ruby/Tests/Scripts/utr.rb')} #{suite}"
+    shell_runner "#@ir #{version} #{ruby_tests_path('Scripts/utr.rb')} #{suite}"
   end
   
   def spec_runner(specs)
-    safe_ruby_runner "#{dlr_path('External.LCA_RESTRICTED/Languages/IronRuby/mspec/mspec/bin/mspec')} ci -fd #{specs}"
+    safe_ruby_runner "#{ruby_tests_path('mspec/mspec/bin/mspec')} ci -fd #{specs}"
   end
   
   def build_cmd(solution, build_config = @config, options = "")
