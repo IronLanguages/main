@@ -21,7 +21,7 @@ if ENV["DLR_ROOT"]
   root = ENV['DLR_ROOT']
   # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
   BIN = "#{root}/Languages/Ruby/Scripts/bin"
-  RUBY_STDLIBS = "#{root}/External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby/1.8"
+  RUBY_STDLIBS = "#{root}/Languages/Ruby/StdLib/ruby/1.9.1"
   IRONRUBY_LIBS = "#{root}/Languages/Ruby/Libs"
   GEMS = "#{root}/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems"
 

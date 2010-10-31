@@ -33,7 +33,7 @@ module RbConfig
     # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
     TOPDIR = File.expand_path(ENV["DLR_BIN"] || System::IO::Path.get_directory_name(System::Reflection::Assembly.get_executing_assembly.location))
     bindir = TOPDIR
-    libdir = File.expand_path("External.LCA_RESTRICTED/Languages/Ruby/redist-libs", ENV["DLR_ROOT"])
+    libdir = File.expand_path("Languages/Ruby/StdLib", ENV["DLR_ROOT"])
   else
     TOPDIR = File.expand_path("../..", File.dirname(__FILE__))
     bindir = TOPDIR + "/bin"

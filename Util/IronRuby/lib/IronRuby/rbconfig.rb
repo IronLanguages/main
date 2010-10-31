@@ -36,16 +36,10 @@ module Config
   CONFIG["LIBS"] = "oldnames.lib user32.lib advapi32.lib ws2_32.lib "
   
   # Set up paths
-  if ENV["MERLIN_ROOT"] then
-    # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
-    TOPDIR = ENV["ROWAN_BIN"] || File.expand_path("bin/Debug", ENV["MERLIN_ROOT"])
-    CONFIG["bindir"] = TOPDIR
-    CONFIG["libdir"] = File.expand_path("../External.LCA_RESTRICTED/Languages/Ruby/redist-libs", ENV["MERLIN_ROOT"])
-  else
-    TOPDIR = File.expand_path("../..", File.dirname(__FILE__))
-    CONFIG["bindir"] = TOPDIR + "/bin"
-    CONFIG["libdir"] = TOPDIR + "/lib"
-  end
+  TOPDIR = File.expand_path("../..", File.dirname(__FILE__))
+  CONFIG["bindir"] = TOPDIR + "/bin"
+  CONFIG["libdir"] = TOPDIR + "/lib"
+  
   DESTDIR = TOPDIR && TOPDIR[/\A[a-z]:/i] || '' unless defined? DESTDIR
   CONFIG["DESTDIR"] = DESTDIR
   CONFIG["prefix"] = (TOPDIR || DESTDIR + "")
