@@ -85,7 +85,7 @@ class IRTest
         :Yaml             => ruby_runner(ruby_tests_path('Libraries/Yaml/yaml_test_suite.rb')),
         
         # TODO: fix these or merge them with mspec
-        #:Legacy           => safe_ruby_runner(ruby_tests_path('legacy/run.rb')),
+        #:Legacy           => safe_ruby_runner(ruby_tests_path('Legacy/run.rb')),
         
         # TODO: fix these and get rid of .bat file
         #:Tutorial         => shell_runner("#{dlr_path('Languages/Ruby/Samples/Tutorial/tutorial.bat')} #{dlr_path('Languages/Ruby/Samples/Tutorial/test/test_console.rb')}"),
