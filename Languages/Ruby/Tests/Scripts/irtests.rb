@@ -83,7 +83,7 @@ class IRTest
         :RubyGems         => utr_runner("gem"),
         :TZInfo           => utr_runner("tzinfo"),
         :Rake             => utr_runner("rake"),
-        :Yaml             => ruby_runner(dlr_path('External.LCA_RESTRICTED/Languages/IronRuby/yaml/YamlTest/yaml_test_suite.rb')),
+        :Yaml             => ruby_runner(dlr_path('External.LCA_RESTRICTED/Languages/IronRuby/tests/Yaml/yaml_test_suite.rb')),
         
         # TODO: get rid of .bat file
         #:Tutorial         => shell_runner("#{dlr_path('Languages/Ruby/Samples/Tutorial/tutorial.bat')} #{dlr_path('Languages/Ruby/Samples/Tutorial/test/test_console.rb')}"),
