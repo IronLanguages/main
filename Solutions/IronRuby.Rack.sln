@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ruby", "..\Languages\Ruby\R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries", "..\Languages\Ruby\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj", "{77323B06-15A2-4CF4-8A7A-86EAA2B66498}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries.Yaml", "..\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\IronRuby.Libraries.Yaml.csproj", "{AA18A245-E342-4368-A474-83178311A742}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries.Yaml", "..\Languages\Ruby\Libraries.Yaml\IronRuby.Libraries.Yaml.csproj", "{AA18A245-E342-4368-A474-83178311A742}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting", "..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj", "{02FF0909-F5AD-48CF-A86A-345E721B7E40}"
 EndProject
@@ -32,71 +32,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Metadata", "..\Runtime\Microsoft.Scripting.Metadata\Microsoft.Scripting.Metadata.csproj", "{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}"
 EndProject
 Global
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 11
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = http://vstfdevdiv:8080/devdiv
-		SccProjectUniqueName0 = ..\\Languages\\Ruby\\Ruby\\Ruby.csproj
-		SccProjectTopLevelParentUniqueName0 = IronRuby.Rack.sln
-		SccProjectName0 = ../Languages/Ruby/Ruby
-		SccAuxPath0 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath0 = ..\\Languages\\Ruby\\Ruby
-		SccProvider0 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName1 = ..\\Languages\\Ruby\\Libraries.LCA_RESTRICTED\\IronRuby.Libraries.csproj
-		SccProjectTopLevelParentUniqueName1 = IronRuby.Rack.sln
-		SccProjectName1 = ../Languages/Ruby/Libraries.LCA_RESTRICTED
-		SccAuxPath1 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath1 = ..\\Languages\\Ruby\\Libraries.LCA_RESTRICTED
-		SccProvider1 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName2 = ..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml\\IronRuby.Libraries.Yaml.csproj
-		SccProjectTopLevelParentUniqueName2 = IronRuby.Rack.sln
-		SccProjectName2 = ../External.LCA_RESTRICTED/Languages/IronRuby/yaml/IronRuby.Libraries.Yaml
-		SccAuxPath2 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath2 = ..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml
-		SccProvider2 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName3 = ..\\Runtime\\Microsoft.Scripting\\Microsoft.Scripting.csproj
-		SccProjectTopLevelParentUniqueName3 = IronRuby.Rack.sln
-		SccProjectName3 = ../Runtime/Microsoft.Scripting
-		SccAuxPath3 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath3 = ..\\Runtime\\Microsoft.Scripting
-		SccProvider3 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName4 = ..\\Runtime\\Microsoft.Scripting.Core\\Microsoft.Scripting.Core.csproj
-		SccProjectTopLevelParentUniqueName4 = IronRuby.Rack.sln
-		SccProjectName4 = ../../ndp/fx/src/Core/Microsoft/Scripting
-		SccAuxPath4 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath4 = ..\\Runtime\\Microsoft.Scripting.Core
-		SccProvider4 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName5 = ..\\Runtime\\Microsoft.Dynamic\\Microsoft.Dynamic.csproj
-		SccProjectTopLevelParentUniqueName5 = IronRuby.Rack.sln
-		SccProjectName5 = ../Runtime/Microsoft.Dynamic
-		SccAuxPath5 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath5 = ..\\Runtime\\Microsoft.Dynamic
-		SccProvider5 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName6 = ..\\Runtime\\Microsoft.Scripting.Metadata\\Microsoft.Scripting.Metadata.csproj
-		SccProjectTopLevelParentUniqueName6 = IronRuby.Rack.sln
-		SccProjectName6 = ../Runtime/Microsoft.Scripting.Metadata
-		SccAuxPath6 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath6 = ..\\Runtime\\Microsoft.Scripting.Metadata
-		SccProvider6 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName7 = ..\\Languages\\Ruby\\Console\\Ruby.Console.csproj
-		SccProjectTopLevelParentUniqueName7 = IronRuby.Rack.sln
-		SccProjectName7 = ../Languages/Ruby/Console
-		SccAuxPath7 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath7 = ..\\Languages\\Ruby\\Console
-		SccProvider7 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName8 = ..\\Hosts\\IronRuby.Rack\\Src\\IronRuby.Rack.csproj
-		SccProjectTopLevelParentUniqueName8 = IronRuby.Rack.sln
-		SccProjectName8 = ../Hosts/IronRuby.Rack/Src
-		SccAuxPath8 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath8 = ..\\Hosts\\IronRuby.Rack\\Src
-		SccProvider8 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName9 = ..\\Hosts\\IronRuby.Rack\\Src\\Cassini\\Cassini.csproj
-		SccProjectTopLevelParentUniqueName9 = IronRuby.Rack.sln
-		SccProjectName9 = ../Hosts/IronRuby.Rack/Src/Cassini
-		SccAuxPath9 = http://vstfdevdiv:8080/devdiv
-		SccLocalPath9 = ..\\Hosts\\IronRuby.Rack\\Src\\Cassini
-		SccProvider9 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		FxCop|Any CPU = FxCop|Any CPU

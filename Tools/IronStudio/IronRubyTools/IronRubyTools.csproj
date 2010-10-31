@@ -66,7 +66,7 @@
       </IncludeOutputGroupsInVSIXLocalOnly>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
+    <ProjectReference Include="..\..\..\Languages\Ruby\Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
       <Project>{AA18A245-E342-4368-A474-83178311A742}</Project>
       <Name>IronRuby.Libraries.Yaml</Name>
       <IncludeOutputGroupsInVSIX>

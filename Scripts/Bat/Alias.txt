@@ -2,6 +2,12 @@
 ;= Folder navigation
 ;=
 
+..      =cd ..
+...     =cd ..\..
+.2      =cd ..\..
+.3      =cd ..\..\..
+.4      =cd ..\..\..\..
+
 bin     =cd /d %DLR_ROOT%\Bin
 ip      =cd /d %DLR_ROOT%\Languages\IronPython
 rb      =cd /d %DLR_ROOT%\Languages\Ruby
@@ -29,7 +35,7 @@ bipd       =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="De
 bipr       =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Release" $*
 bmsd      =msbuild.exe %DLR_ROOT%\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj /p:Configuration="Debug" $*
 geninit   =%DLR_ROOT%\Languages\Ruby\Libraries.LCA_RESTRICTED\GenerateInitializers.cmd $*
-geninity  =%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\GenerateInitializers.cmd $*
+geninity  =%DLR_ROOT%\Languages\Ruby\Libraries.Yaml\GenerateInitializers.cmd $*
 gencache  =%DLR_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd $*
 
 ;==============================================================================
@@ -95,6 +101,7 @@ chr4    ="%DLR_ROOT%\Bin\Silverlight4Release\Chiron.exe" $*
 ;=
 
 n       =notepad.exe $*
+n2      =C:\Programs\notepad2.exe $*
 bc      ="%PROGRAM_FILES_32%\Beyond Compare 2\Bc2.exe" $*
 scite   =C:\programs\ruby\scite\scite.exe $*
 ps      =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe $*

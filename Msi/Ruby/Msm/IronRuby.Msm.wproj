@@ -47,7 +47,7 @@
       <Project>{D6AB587D-A888-4B98-85AC-F15E36F53838}</Project>
       <Name>IronRubyConsole</Name>
     </ProjectReference>
-    <ProjectReference Include="$(SolutionDir)..\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
+    <ProjectReference Include="$(RubyDir)\Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
       <Project>{AA18A245-E342-4368-A474-83178311A742}</Project>
       <Name>IronRubyConsole</Name>
     </ProjectReference>

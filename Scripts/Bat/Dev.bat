@@ -150,7 +150,6 @@ if NOT EXIST "%HOME_FOR_MSPECRC%\.mspecrc" (
 )
 
 doskey /macrofile=%BAT%Alias.txt
-doskey /macrofile=%BAT%AliasInternal.txt
 cd /D %CURRENT%
 
 if not DEFINED INTERNALDEV goto Continue2

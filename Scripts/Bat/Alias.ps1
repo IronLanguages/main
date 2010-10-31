@@ -28,7 +28,7 @@ function global:bipd { cmd /C "msbuild.exe ${env:DLR_ROOT}\Solutions\IronPython.
 function global:bipr { cmd /C "msbuild.exe ${env:DLR_ROOT}\Solutions\IronPython.sln /p:Configuration=`"Release`" $args" }
 function global:bmsd { cmd /C "msbuild.exe ${env:DLR_ROOT}\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj /p:Configuration=`"Debug`" $args" }
 function global:geninit { cmd /C "${env:DLR_ROOT}\Languages\Ruby\Libraries.LCA_RESTRICTED\GenerateInitializers.cmd" }
-function global:geninity { cmd /C "${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\IronRuby\yaml\IronRuby.Libraries.Yaml\GenerateInitializers.cmd" }
+function global:geninity { cmd /C "${env:DLR_ROOT}\Languages\Ruby\Libraries.Yaml\GenerateInitializers.cmd" }
 function global:gencache { cmd /C "${env:DLR_ROOT}\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd" }
 
 #=============================================================================
