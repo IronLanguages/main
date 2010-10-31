@@ -68,10 +68,18 @@ namespace IronPython.Modules {
             return new string((char)_getch(), 1);
         }
 
+        public static int putch(string @char) {
+            char c = @char[0];
+            return _putch(c);
+        }
+
         #endregion
 
         [DllImport("msvcr100")]
         private static extern int _getch();
+
+        [DllImport("msvcr100")]
+        private static extern int _putch(int c);
     }
 }
 #endif
