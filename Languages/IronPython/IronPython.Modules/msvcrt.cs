@@ -64,22 +64,32 @@ namespace IronPython.Modules {
             return oldMode;
         }
 
+        public static bool kbhit() {
+            return _kbhit() == 0 ? false : true;
+        }
+
         public static string getch() {
             return new string((char)_getch(), 1);
         }
 
-        public static int putch(string @char) {
-            char c = @char[0];
-            return _putch(c);
+        public static void putch(char @char) {
+            _putch(@char);
         }
 
         #endregion
+
+        #region P/Invoke Declarations
+
+        [DllImport("msvcr100")]
+        private static extern int _kbhit();
 
         [DllImport("msvcr100")]
         private static extern int _getch();
 
         [DllImport("msvcr100")]
         private static extern int _putch(int c);
+
+        #endregion
     }
 }
 #endif
