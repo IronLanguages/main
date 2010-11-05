@@ -197,11 +197,6 @@
     <Compile Include="Stubs.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\..\System\Linq\Expressions\System.Linq.Expressions.txt">
-      <Link>Ast\System.Linq.Expressions.txt</Link>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Microsoft.Scripting.Core.ruleset" />
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
