@@ -1,0 +1,27 @@
+HKCR
+{
+	DlrComLibrary.ProvidesClassInfo.1 = s 'ProvidesClassInfo Class'
+	{
+		CLSID = s '{81677E1D-62CB-45D8-9BC9-13BD794E1FC6}'
+	}
+	DlrComLibrary.ProvidesClassInfo = s 'ProvidesClassInfo Class'
+	{
+		CLSID = s '{81677E1D-62CB-45D8-9BC9-13BD794E1FC6}'
+		CurVer = s 'DlrComLibrary.ProvidesClassInfo.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {81677E1D-62CB-45D8-9BC9-13BD794E1FC6} = s 'ProvidesClassInfo Class'
+		{
+			ProgID = s 'DlrComLibrary.ProvidesClassInfo.1'
+			VersionIndependentProgID = s 'DlrComLibrary.ProvidesClassInfo'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			val AppID = s '%APPID%'
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+		}
+	}
+}

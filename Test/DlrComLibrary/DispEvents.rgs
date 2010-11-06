@@ -1,0 +1,26 @@
+HKCR
+{
+	DlrComLibrary.DispEvents.1 = s 'DispEvents Class'
+	{
+		CLSID = s '{275076D1-733B-44F3-BFBA-927774AC8EA7}'
+	}
+	DlrComLibrary.DispEvents = s 'DispEvents Class'
+	{
+		CLSID = s '{275076D1-733B-44F3-BFBA-927774AC8EA7}'
+		CurVer = s 'DlrComLibrary.DispEvents.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {275076D1-733B-44F3-BFBA-927774AC8EA7} = s 'DispEvents Class'
+		{
+			ProgID = s 'DlrComLibrary.DispEvents.1'
+			VersionIndependentProgID = s 'DlrComLibrary.DispEvents'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+		}
+	}
+}

@@ -1,0 +1,26 @@
+HKCR
+{
+	DlrComLibrary.SimpleErrors.1 = s 'SimpleErrors Class'
+	{
+		CLSID = s '{F2A8BF44-87A2-4225-B949-466AFE7ECAAC}'
+	}
+	DlrComLibrary.SimpleErrors = s 'SimpleErrors Class'
+	{
+		CLSID = s '{F2A8BF44-87A2-4225-B949-466AFE7ECAAC}'
+		CurVer = s 'DlrComLibrary.SimpleErrors.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {F2A8BF44-87A2-4225-B949-466AFE7ECAAC} = s 'SimpleErrors Class'
+		{
+			ProgID = s 'DlrComLibrary.SimpleErrors.1'
+			VersionIndependentProgID = s 'DlrComLibrary.SimpleErrors'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+		}
+	}
+}

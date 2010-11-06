@@ -1,0 +1,26 @@
+HKCR
+{
+	DlrComLibrary.DlrComStopwatch.1 = s 'DlrComStopwatch Class'
+	{
+		CLSID = s '{DAB5F04A-6CEE-48C2-9413-2847A547FE21}'
+	}
+	DlrComLibrary.DlrComStopwatch = s 'DlrComStopwatch Class'
+	{
+		CLSID = s '{DAB5F04A-6CEE-48C2-9413-2847A547FE21}'
+		CurVer = s 'DlrComLibrary.DlrComStopwatch.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {DAB5F04A-6CEE-48C2-9413-2847A547FE21} = s 'DlrComStopwatch Class'
+		{
+			ProgID = s 'DlrComLibrary.DlrComStopwatch.1'
+			VersionIndependentProgID = s 'DlrComLibrary.DlrComStopwatch'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+		}
+	}
+}

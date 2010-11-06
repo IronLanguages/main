@@ -1,0 +1,26 @@
+HKCR
+{
+	DlrComLibrary.DlrComServer.1 = s 'DlrComServer Class'
+	{
+		CLSID = s '{EDD67229-048F-4A1C-A43A-F00A6171CD7F}'
+	}
+	DlrComLibrary.DlrComServer = s 'DlrComServer Class'
+	{
+		CLSID = s '{EDD67229-048F-4A1C-A43A-F00A6171CD7F}'
+		CurVer = s 'DlrComLibrary.DlrComServer.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {EDD67229-048F-4A1C-A43A-F00A6171CD7F} = s 'DlrComServer Class'
+		{
+			ProgID = s 'DlrComLibrary.DlrComServer.1'
+			VersionIndependentProgID = s 'DlrComLibrary.DlrComServer'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+		}
+	}
+}

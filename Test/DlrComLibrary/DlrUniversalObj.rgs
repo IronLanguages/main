@@ -1,0 +1,26 @@
+HKCR
+{
+	DlrComLibrary.DlrUniversalObj.1 = s 'DlrUniversalObj Class'
+	{
+		CLSID = s '{5CBF3144-CAAC-46A5-9205-F0F73B60E2B3}'
+	}
+	DlrComLibrary.DlrUniversalObj = s 'DlrUniversalObj Class'
+	{
+		CLSID = s '{5CBF3144-CAAC-46A5-9205-F0F73B60E2B3}'
+		CurVer = s 'DlrComLibrary.DlrUniversalObj.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {5CBF3144-CAAC-46A5-9205-F0F73B60E2B3} = s 'DlrUniversalObj Class'
+		{
+			ProgID = s 'DlrComLibrary.DlrUniversalObj.1'
+			VersionIndependentProgID = s 'DlrComLibrary.DlrUniversalObj'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+		}
+	}
+}
