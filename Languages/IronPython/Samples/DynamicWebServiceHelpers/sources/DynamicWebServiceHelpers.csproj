@@ -9,10 +9,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DynamicWebServiceHelpers</RootNamespace>
     <AssemblyName>DynamicWebServiceHelpers</AssemblyName>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <OldToolsVersion>2.0</OldToolsVersion>
     <WarningsNotAsErrors>1685</WarningsNotAsErrors>
   </PropertyGroup>

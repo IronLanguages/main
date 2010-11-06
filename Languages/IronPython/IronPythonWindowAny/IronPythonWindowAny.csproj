@@ -10,12 +10,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPythonWindow</RootNamespace>
     <AssemblyName>ipyw64</AssemblyName>
-    <StartupObject>
-    </StartupObject>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <ApplicationIcon>..\IronPythonWindow\ipy.ico</ApplicationIcon>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

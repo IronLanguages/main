@@ -9,10 +9,6 @@
     <AssemblyName>gppg</AssemblyName>
     <OutputType>Exe</OutputType>
     <RootNamespace>gppg</RootNamespace>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <BaseAddress>285212672</BaseAddress>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
