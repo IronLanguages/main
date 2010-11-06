@@ -1,7 +1,7 @@
 *_name_S*
 obj/
 /bin/
-Solutions/Ruby.suo
+Solutions/*.suo
 
 # TODO - testing scripts should not created this file here
 debug.log

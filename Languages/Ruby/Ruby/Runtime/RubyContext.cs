@@ -611,7 +611,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal static string/*!*/ MakeDescriptionString() {
+        public static string/*!*/ MakeDescriptionString() {
             return String.Format(CultureInfo.InvariantCulture, "IronRuby {0} on {1}", IronRubyVersion, MakeRuntimeDesriptionString());
         }
 

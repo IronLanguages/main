@@ -40,11 +40,13 @@ namespace IronRuby.Hosting {
         }
 
         protected override string Logo {
-            get {
-                return String.Format(CultureInfo.InvariantCulture, 
-                    "IronRuby {1} on {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
-                    Environment.NewLine, RubyContext.IronRubyVersion, RubyContext.MakeRuntimeDesriptionString());
-            }
+            get { return GetLogo(); }
+        }
+
+        public static string GetLogo() {
+            return String.Format(CultureInfo.InvariantCulture,
+                "IronRuby {1} on {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
+                Environment.NewLine, RubyContext.IronRubyVersion, RubyContext.MakeRuntimeDesriptionString());
         }
 
         protected override int? TryInteractiveAction() {
@@ -60,18 +62,6 @@ namespace IronRuby.Hosting {
             } catch (SystemExit e) {
                 return e.Status;
             }
-        }
-
-        protected override int Run() {
-            if (Options.ChangeDirectory != null) {
-                Environment.CurrentDirectory = Options.ChangeDirectory;
-            }
-
-            if (Options.DisplayVersion && (Options.Command != null || Options.FileName != null)) {
-                Console.WriteLine(RubyContext.MakeDescriptionString(), Style.Out);
-            }
-
-            return base.Run();
         }
 
         // overridden to set the default encoding to -KX

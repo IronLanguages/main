@@ -301,6 +301,14 @@
     <Content Include="Templates\Projects\ConsoleAppProject\IronRubyApp.rbproj" />
     <Content Include="Templates\Projects\ConsoleAppProject\Program.rb" />
     <Content Include="Templates\Projects\ConsoleAppProject\__TemplateIcon.ico" />
+    <!-- WinForms -->
+    <Content Include="Templates\Projects\WinFormsAppProject\WinFormsApp.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Projects\WinFormsAppProject\WinFormsApp.vstemplate" />
+    <Content Include="Templates\Projects\WinFormsAppProject\WinFormsApp.rbproj" />
+    <Content Include="Templates\Projects\WinFormsAppProject\Program.rb" />
+    <Content Include="Templates\Projects\WinFormsAppProject\__TemplateIcon.ico" />
     <!-- Silverlight -->
     <Content Include="Templates\Projects\SilverlightProject\SilverlightProject.zip">
       <IncludeInVSIX>true</IncludeInVSIX>

@@ -220,6 +220,7 @@
     <Compile Include="Compiler\Errors.cs" />
     <Compile Include="Compiler\Generation\IRubyType.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
+    <Compile Include="Hosting\RubyConsoleHost.cs" />
     <Compile Include="Hosting\RubyService.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />

@@ -200,16 +200,13 @@ namespace Microsoft.Scripting.Hosting.Shell {
             try {
                 _languageOptionsParser.Parse(Options.IgnoredArgs.ToArray(), runtimeSetup, languageSetup, PlatformAdaptationLayer);
             } catch (InvalidOptionException e) {
-                Console.Error.WriteLine(e.Message);
-                return _exitCode = -1;
+                return _exitCode = InvalidOption(e);
             }
 
-#if !SILVERLIGHT
-            if (typeof(DynamicMethod).GetConstructor(new Type[] { typeof(string), typeof(Type), typeof(Type[]), typeof(bool) }) == null) {
-                Console.WriteLine(string.Format("{0} requires .NET 2.0 SP1 or later to run.", languageSetup.DisplayName));
-                Environment.Exit(1);
+            _exitCode = OptionsParsed(_languageOptionsParser);
+            if (_exitCode != 0) {
+                return _exitCode;
             }
-#endif
 
             _runtime = new ScriptRuntime(runtimeSetup);
 
@@ -222,6 +219,15 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             Execute();
             return _exitCode;
+        }
+
+        protected virtual int InvalidOption(InvalidOptionException e) {
+            Console.Error.WriteLine(e.Message);
+            return -1;
+        }
+
+        protected virtual int OptionsParsed(OptionsParser parser) {
+            return 0;
         }
 
         private static void InsertSearchPaths(IDictionary<string, object> options, ICollection<string> paths) {

@@ -33,6 +33,7 @@
     <MefComponent>|%CurrentProject%|</MefComponent>
     <MefComponent>|IronRubyToolsCore|</MefComponent>
     <ProjectTemplate>Templates\Projects\ConsoleAppProject</ProjectTemplate>
+    <ProjectTemplate>Templates\Projects\WinFormsAppProject</ProjectTemplate>
     <ProjectTemplate>Templates\Projects\RubyOnRailsAppProject</ProjectTemplate>
     <ProjectTemplate>Templates\Projects\GemProject</ProjectTemplate>
     <ProjectTemplate>Templates\Projects\SinatraProject</ProjectTemplate>

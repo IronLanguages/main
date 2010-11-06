@@ -15,34 +15,14 @@
 
 using System;
 using System.Threading;
-using IronRuby;
 using IronRuby.Builtins;
 using IronRuby.Hosting;
 using IronRuby.Runtime;
-using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
-using Microsoft.Scripting.Utils;
 
-internal sealed class RubyConsoleHost : ConsoleHost {
-
-    protected override Type Provider {
-        get { return typeof(RubyContext); }
-    }
-
-    protected override CommandLine/*!*/ CreateCommandLine() {
-        return new RubyCommandLine();
-    }
-
-    protected override OptionsParser/*!*/ CreateOptionsParser() {
-        return new RubyOptionsParser();
-    }
-
-    protected override LanguageSetup CreateLanguageSetup() {
-        return Ruby.CreateRubySetup();
-    }
-
+internal sealed class Host : RubyConsoleHost {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
     private static void OnCancelKey(ConsoleCancelEventArgs ev, RubyContext context, Thread mainThread) {
         if (ev.SpecialKey == ConsoleSpecialKey.ControlC) {
@@ -72,23 +52,27 @@ internal sealed class RubyConsoleHost : ConsoleHost {
         return console;
     }
 
-    private static void SetHome() {
-        try {
-            PlatformAdaptationLayer platform = PlatformAdaptationLayer.Default;
-            string homeDir = RubyUtils.GetHomeDirectory(platform);
-            platform.SetEnvironmentVariable("HOME", homeDir);
-        } catch (System.Security.SecurityException e) {
-            // Ignore EnvironmentPermission exception
-            if (e.PermissionType != typeof(System.Security.Permissions.EnvironmentPermission)) {
-                throw;
-            }
+    protected override int OptionsParsed(OptionsParser parser) {
+        var rubyOptions = ((RubyOptionsParser)parser).ConsoleOptions;
+        if (rubyOptions.ChangeDirectory != null) {
+            Environment.CurrentDirectory = rubyOptions.ChangeDirectory;
         }
+
+        if (rubyOptions.DisplayVersion && (rubyOptions.Command != null || rubyOptions.FileName != null)) {
+            Console.WriteLine(RubyContext.MakeDescriptionString(), Style.Out);
+        }
+
+        return 0;
+    }
+
+    protected override int InvalidOption(InvalidOptionException e) {
+        Console.Error.WriteLine(e.Message);
+        return 1;
     }
 
     [STAThread]
     [RubyStackTraceHidden]
     static int Main(string[] args) {
-        SetHome();
-        return new RubyConsoleHost().Run(args);
+        return new Host().Run(args);
     }
 }

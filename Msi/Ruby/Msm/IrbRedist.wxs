@@ -60,7 +60,10 @@
               <Condition>NOT VersionNT64</Condition>
               <File Id="NGENFile_ir.exe" Name="ir.exe">
                 <netfx:NativeImage Id="NGEN_File_ir.exe" Priority="1"/>
-              </File>             
+              </File>
+              <File Id="NGENFile_irw.exe" Name="irw.exe">
+                <netfx:NativeImage Id="NGEN_File_irw.exe" Priority="1"/>
+              </File>
               <RegistryValue Root='HKCU' Key='SOFTWARE\Microsoft\IronRuby\1.1' Type='string' Value='ir' KeyPath='yes' />
             </Component>
             
@@ -90,15 +93,15 @@
               <File Id="NGEN64File_ir.exe" Name="ir.exe">
                 <netfx:NativeImage Id="NGEN64_File_ir.exe" Priority="1" Platform="32bit" />
               </File>
-              <!--File Id="NGEN64File_irw.exe" Name="irw.exe" >
+              <File Id="NGEN64File_irw.exe" Name="irw.exe" >
                 <netfx:NativeImage Id="NGEN64_File_irw.exe" Priority="1" Platform="32bit"/>
-              </File-->
+              </File>
               <File Id="NGEN64File_ir64.exe" Name="ir64.exe" >
                 <netfx:NativeImage Id="NGEN64_File_ir64.exe" Priority="1" Platform="64bit"/>
               </File>
-              <!--File Id="NGEN64File_irw64.exe" Name="irw64.exe" >
+              <File Id="NGEN64File_irw64.exe" Name="irw64.exe" >
                 <netfx:NativeImage Id="NGEN64_File_irw64.exe" Priority="1" Platform="64bit"/>
-              </File-->
+              </File>
               <RegistryValue Root='HKCU' Key='SOFTWARE\Microsoft\IronRuby\1.1' Type='string' Value='ir64' KeyPath='yes' />
             </Component>
             
