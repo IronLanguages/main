@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if CLR2
 #if MONO
 using Mono.Unix.Native;
 #endif
@@ -194,3 +195,4 @@ namespace Microsoft.Scripting.Metadata {
         internal static extern bool CloseHandle(IntPtr handle);
     }
 }
+#endif

@@ -29,11 +29,26 @@ sls     =cd /d %DLR_ROOT%\Hosts\Silverlight\Samples
 ;= Build commands
 ;=
 
-brbd       =msbuild.exe %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Debug" $*
-brbr       =msbuild.exe %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Release" $*
-bipd       =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Debug" $*
-bipr       =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Release" $*
-bmsd      =msbuild.exe %DLR_ROOT%\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj /p:Configuration="Debug" $*
+bd        =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Debug" $*
+bdc       =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Debug" /t:Rebuild $*
+br        =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Release" $*
+brc       =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Release" /t:Rebuild $*
+
+bsd       =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Silverlight3Debug" $*
+bsr       =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Silverlight3Release" $*
+bsdc      =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Silverlight3Debug" /t:Rebuild $*
+bsrc      =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Silverlight3Release" /t:Rebuild $*
+
+bsd4      =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Silverlight4Debug" $*
+bsr4      =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Silverlight4Release" $*
+bsdc4     =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Silverlight4Debug" /t:Rebuild $*
+bsrc4     =msbuild.exe %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration="Silverlight4Release" /t:Rebuild $*
+
+brbd      =msbuild.exe %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Debug" $*
+brbr      =msbuild.exe %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Release" $*
+bipd      =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Debug" $*
+bipr      =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Release" $*
+
 geninit   =%DLR_ROOT%\Languages\Ruby\Libraries.LCA_RESTRICTED\GenerateInitializers.cmd $*
 geninity  =%DLR_ROOT%\Languages\Ruby\Libraries.Yaml\GenerateInitializers.cmd $*
 gencache  =%DLR_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd $*

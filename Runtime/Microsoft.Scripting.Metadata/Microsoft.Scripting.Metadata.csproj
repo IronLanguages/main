@@ -71,6 +71,7 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="MemoryMapping.V4.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ClrStubs.cs" />
     <Compile Include="MetadataExtensions.cs" />
