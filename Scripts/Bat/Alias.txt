@@ -49,7 +49,7 @@ brbr      =msbuild.exe %DLR_ROOT%\Solutions\Ruby.sln /p:Configuration="Release" 
 bipd      =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Debug" $*
 bipr      =msbuild.exe %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Release" $*
 
-geninit   =%DLR_ROOT%\Languages\Ruby\Libraries.LCA_RESTRICTED\GenerateInitializers.cmd $*
+geninit   =%DLR_ROOT%\Languages\Ruby\Libraries\GenerateInitializers.cmd $*
 geninity  =%DLR_ROOT%\Languages\Ruby\Libraries.Yaml\GenerateInitializers.cmd $*
 gencache  =%DLR_ROOT%\Languages\Ruby\Ruby\Compiler\GenerateReflectionCache.cmd $*
 

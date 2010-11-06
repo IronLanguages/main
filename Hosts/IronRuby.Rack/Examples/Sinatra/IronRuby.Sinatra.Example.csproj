@@ -61,7 +61,7 @@
       <Project>{AA18A245-E342-4368-A474-83178311A742}</Project>
       <Name>IronRuby.Libraries.Yaml</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Languages\Ruby\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj">
+    <ProjectReference Include="..\..\..\Languages\Ruby\Libraries\IronRuby.Libraries.csproj">
       <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
       <Name>IronRuby.Libraries</Name>
     </ProjectReference>

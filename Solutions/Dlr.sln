@@ -49,7 +49,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestInternalDLR", "..\Runti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassInitGenerator", "..\Languages\Ruby\ClassInitGenerator\ClassInitGenerator.csproj", "{166940A1-2C91-4BD0-B72B-A517FBD8BF0B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries", "..\Languages\Ruby\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj", "{77323B06-15A2-4CF4-8A7A-86EAA2B66498}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries", "..\Languages\Ruby\Libraries\IronRuby.Libraries.csproj", "{77323B06-15A2-4CF4-8A7A-86EAA2B66498}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClrAssembly", "..\Test\ClrAssembly\ClrAssembly.csproj", "{BEE737B9-18D5-48D9-8672-9A896213C98B}"
 	ProjectSection(ProjectDependencies) = postProject

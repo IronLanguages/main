@@ -81,7 +81,7 @@
       <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
       <Name>Microsoft.Dynamic</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj">
+    <ProjectReference Include="..\Libraries\IronRuby.Libraries.csproj">
       <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
       <Name>IronRuby.Libraries</Name>
     </ProjectReference>

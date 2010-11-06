@@ -10,7 +10,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassInitGenerator", "..\La
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Core", "..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj", "{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries", "..\Languages\Ruby\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj", "{77323B06-15A2-4CF4-8A7A-86EAA2B66498}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries", "..\Languages\Ruby\Libraries\IronRuby.Libraries.csproj", "{77323B06-15A2-4CF4-8A7A-86EAA2B66498}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting", "..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj", "{02FF0909-F5AD-48CF-A86A-345E721B7E40}"
 EndProject
