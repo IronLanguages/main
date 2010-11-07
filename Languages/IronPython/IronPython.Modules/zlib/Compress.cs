@@ -90,7 +90,7 @@ Call the flush() method to clear these buffers.")]
                 throw ZlibModule.zlib_error(this.zst, err, "while compressing");
             }
 
-            return ZlibModule.Latin1.GetString(output, 0, (int)(zst.total_out - start_total_out));
+            return PythonAsciiEncoding.Instance.GetString(output, 0, (int)(zst.total_out - start_total_out));
         }
 
         [Documentation(@"flush( [mode] ) -- Return a string containing any remaining compressed data.
@@ -139,7 +139,7 @@ calling the flush() method.  Otherwise, more data can still be compressed.")]
                 throw ZlibModule.zlib_error(this.zst, err, "while flushing");
             }
 
-            return ZlibModule.Latin1.GetString(output, 0, (int)(zst.total_out - start_total_out));
+            return PythonAsciiEncoding.Instance.GetString(output, 0, (int)(zst.total_out - start_total_out));
         }
 
         //[Documentation("copy() -- Return a copy of the compression object.")]

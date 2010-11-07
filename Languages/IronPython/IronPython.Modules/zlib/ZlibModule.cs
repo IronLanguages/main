@@ -145,7 +145,7 @@ Optional arg level is the compression level, in 1-9.")]
             err = zst.deflateEnd();
 
             if(err == Z_OK)
-                return Latin1.GetString(output, 0, (int)zst.total_out);
+                return PythonAsciiEncoding.Instance.GetString(output, 0, (int)zst.total_out);
             else
                 throw zlib_error(zst, err, "while finishing compression");
         }
@@ -234,7 +234,7 @@ the initial output buffer size.")]
             Array.Copy(outputBuffer, 0, output, outputOffset, outputBuffer.Length - zst.avail_out);
             outputOffset += outputBuffer.Length - zst.avail_out;
 
-            return Latin1.GetString(output, 0, outputOffset);
+            return PythonAsciiEncoding.Instance.GetString(output, 0, outputOffset);
         }
 
         [Documentation(@"decompressobj([wbits]) -- Return a decompressor object.
@@ -281,7 +281,5 @@ Optional arg wbits is the window buffer size.")]
             else
                 return MakeError(string.Format("Error {0} {1}: {2}", err, msg, zmsg));
         }
-
-        internal static System.Text.Encoding Latin1 = System.Text.Encoding.GetEncoding("iso-8859-1");
     }
 }

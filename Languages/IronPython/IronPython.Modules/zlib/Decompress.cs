@@ -110,19 +110,19 @@ the unconsumed_tail attribute.")]
 
             if(max_length > 0)
             {
-                _unconsumed_tail = ZlibModule.Latin1.GetString(zst.next_in, zst.next_in_index, zst.avail_in);
+                _unconsumed_tail = PythonAsciiEncoding.Instance.GetString(zst.next_in, zst.next_in_index, zst.avail_in);
             }
 
             if(err == Z_STREAM_END)
             {
-                _unused_data += ZlibModule.Latin1.GetString(zst.next_in, zst.next_in_index, zst.avail_in);
+                _unused_data += PythonAsciiEncoding.Instance.GetString(zst.next_in, zst.next_in_index, zst.avail_in);
             }
             else if(err != Z_OK && err != Z_BUF_ERROR)
             {
                 throw ZlibModule.zlib_error(this.zst, err, "while decompressing");
             }
 
-            return ZlibModule.Latin1.GetString(output, 0, (int)(zst.total_out - start_total_out));
+            return PythonAsciiEncoding.Instance.GetString(output, 0, (int)(zst.total_out - start_total_out));
         }
 
         [Documentation(@"flush( [length] ) -- Return a string containing any remaining
@@ -163,7 +163,7 @@ The decompressor object can no longer be used after this call.")]
                 }
             }
 
-            return ZlibModule.Latin1.GetString(output, 0, (int)(zst.total_out - start_total_out));
+            return PythonAsciiEncoding.Instance.GetString(output, 0, (int)(zst.total_out - start_total_out));
         }
 
         //[Documentation("copy() -- Return a copy of the decompression object.")]
