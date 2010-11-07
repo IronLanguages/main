@@ -7,7 +7,7 @@
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <!-- Merge module for IronRuby Redist.  This includes the core binaries, licence, all ngen'd and installed -->
 
-  <Module Id='IronRubyRedist' Language='1033' Version='1.1.1.0'>
+  <Module Id='IronRubyRedist' Language='1033' Version='1.1.2.0'>
     <Package Id='B94BDE1B-3425-4069-B3F4-6117F8EC7E69' Description='IronRuby Redist Merge Module' Manufacturer='Microsoft Corporation' InstallerVersion='200' />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
