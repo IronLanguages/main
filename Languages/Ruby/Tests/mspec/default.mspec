@@ -14,13 +14,12 @@ if engine == 'ironruby'
   $" << "resolv.rb"
 end
 class MSpecScript
-  if RUBY_PLATFORM =~ /(mswin|mingw|bccwin|wince)/i
-    ir_cmd = 'ir.cmd'
-  else
-    ir_cmd = 'ir.sh'
-  end
   # The default implementation to run the specs.
-  set :target, File.join(ENV['DLR_ROOT'], "Test", "Scripts", "ir.cmd")
+  if ENV['DLR_BIN']
+    set :target, File.join(ENV['DLR_BIN'], "ir.exe")
+  else
+    set :target, File.join(ENV['DLR_ROOT'], "bin", "Debug", "ir.exe")
+  end
   # config[:prefix] must be set before filtered is used
   set :prefix, File.join(ENV['DLR_ROOT'], "Languages", "Ruby", "Tests", "mspec", "rubyspec")
   

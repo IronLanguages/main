@@ -82,6 +82,9 @@ class UnitTestSetup
       "test: ExecuteProcedureSqlserver should allow multiple result sets to be returned. ",
       "test: ExecuteProcedureSqlserver should execute a simple procedure. ",
       "test: ExecuteProcedureSqlserver should take parameter arguments. "
+    
+    disable ColumnTestSqlserver, 
+      "test: For datetime columns which have coerced types should have column objects cast to time."
 
     disable_by_name %w{
       test_add_limit_offset_should_sanitize_sql_injection_for_limit_with_comas(AdapterTest)
@@ -153,6 +156,16 @@ class UnitTestSetup
       test_should_assign_existing_children_if_parent_is_new(TestNestedAttributesOnAHasManyAssociation)
       test_should_automatically_build_new_associated_models_for_each_entry_in_a_hash_where_the_id_is_missing(TestNestedAttributesOnAHasManyAssociation)
       test_to_yaml_with_time_with_zone_should_not_raise_exception(YamlSerializationTest):  
+      test_attributes_on_dummy_time(BasicsTest):
+      test_inspect_instance(BasicsTest):
+      test_multiparameter_attributes_on_time_only_column_with_time_zone_aware_attributes_does_not_do_time_zone_conversion(BasicsTest):
+      test_preserving_time_objects(BasicsTest)
+      test_utc_as_time_zone(BasicsTest):
+      test_array_to_xml_including_has_many_association(SerializationTest):
+      test_array_to_xml_including_methods(SerializationTest):
+      test_to_xml(SerializationTest):
+      test_to_xml_including_has_many_association(SerializationTest):
+      test_to_xml_skipping_attributes(SerializationTest):
     }
     
     # These tests pass but take more than 30 seconds each a and consume about 1GB of memory (in IronRuby debug build).
