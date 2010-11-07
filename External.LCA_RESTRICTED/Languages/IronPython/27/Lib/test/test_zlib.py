@@ -1,8 +1,5 @@
 import unittest
 from test import test_support
-if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=307405"):
-    import sys
-    sys.exit(0)
 
 import binascii
 import random
