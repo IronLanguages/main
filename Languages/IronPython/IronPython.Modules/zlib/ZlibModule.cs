@@ -17,6 +17,8 @@
  * *************************************************************************/
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ComponentAce.Compression.Libs.ZLib;
@@ -81,56 +83,33 @@ objects support decompress() and flush().";
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static int adler32(string data, [DefaultParameterValue(1L)] long baseValue)
+        public static int adler32([BytesConversion]IList<byte> data, [DefaultParameterValue(1L)] long baseValue)
         {
-            return adler32(Latin1.GetBytes(data), baseValue);
-        }
-
-        public static int adler32(byte[] data, [DefaultParameterValue(1L)] long baseValue)
-        {
-            return (int)Adler32.GetAdler32Checksum(baseValue, data, 0, data.Length);
+            return (int)Adler32.GetAdler32Checksum(baseValue, data.ToArray(), 0, data.Count());
         }
 
         [Documentation(@"crc32(string[, start]) -- Compute a CRC-32 checksum of string.
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static int crc32(string data, [DefaultParameterValue(0L)] long baseValue)
+        public static int crc32([BytesConversion]IList<byte> data, [DefaultParameterValue(0L)] long baseValue)
         {
             if(baseValue < int.MinValue || baseValue > uint.MaxValue)
                 throw new ArgumentOutOfRangeException("baseValue");
 
             if(baseValue >= 0 && baseValue <= uint.MaxValue)
-                return IronPython.Modules.PythonBinaryAscii.crc32(data, (uint)baseValue);
+                return IronPython.Modules.PythonBinaryAscii.crc32(data.ToArray(), (uint)baseValue);
             else
-                return IronPython.Modules.PythonBinaryAscii.crc32(data, (int)baseValue);
-        }
-
-        public static int crc32(byte[] data, [DefaultParameterValue(0L)] long baseValue)
-        {
-            if(baseValue < int.MinValue || baseValue > uint.MaxValue)
-                throw new ArgumentOutOfRangeException("baseValue");
-
-            if(baseValue >= 0 && baseValue <= uint.MaxValue)
-                return IronPython.Modules.PythonBinaryAscii.crc32(data, (uint)baseValue);
-            else
-                return IronPython.Modules.PythonBinaryAscii.crc32(data, (int)baseValue);
-        }
-
-
-        public static string compress(PythonBuffer data, 
-            [DefaultParameterValue(Z_DEFAULT_COMPRESSION)]int level)
-        {
-            return compress(data.ToString(), level);
+                return IronPython.Modules.PythonBinaryAscii.crc32(data.ToArray(), (int)baseValue);
         }
 
         [Documentation(@"compress(string[, level]) -- Returned compressed string.
 
 Optional arg level is the compression level, in 1-9.")]
-        public static string compress(string data,
+        public static string compress([BytesConversion]IList<byte> data,
             [DefaultParameterValue(Z_DEFAULT_COMPRESSION)]int level)
         {
-            byte[] input = Latin1.GetBytes(data);
+            byte[] input = data.ToArray();
             byte[] output = new byte[input.Length + input.Length / 1000 + 12 + 1];
 
             ZStream zst = new ZStream();
@@ -188,11 +167,11 @@ Optional arg level is the compression level, in 1-9.")]
 
 Optional arg wbits is the window buffer size.  Optional arg bufsize is
 the initial output buffer size.")]
-        public static string decompress(string data,
+        public static string decompress([BytesConversion]IList<byte> data,
             [DefaultParameterValue(MAX_WBITS)]int wbits,
             [DefaultParameterValue(DEFAULTALLOC)]int bufsize)
         {
-            byte[] input = Latin1.GetBytes(data);
+            byte[] input = data.ToArray();
 
             byte[] outputBuffer = new byte[bufsize];
             byte[] output = new byte[bufsize];

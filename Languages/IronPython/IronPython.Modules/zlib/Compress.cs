@@ -17,6 +17,8 @@
  * *************************************************************************/
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using ComponentAce.Compression.Libs.ZLib;
 using IronPython.Runtime;
@@ -57,9 +59,9 @@ namespace IronPython.Zlib
 After calling this function, some of the input data may still
 be stored in internal buffers for later processing.
 Call the flush() method to clear these buffers.")]
-        public string compress(string data)
+        public string compress([BytesConversion]IList<byte> data)
         {
-            byte[] input = ZlibModule.Latin1.GetBytes(data);
+            byte[] input = data.ToArray();
             byte[] output = new byte[ZlibModule.DEFAULTALLOC];
 
             long start_total_out = zst.total_out;

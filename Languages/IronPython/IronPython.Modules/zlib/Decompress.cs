@@ -17,6 +17,8 @@
  * *************************************************************************/
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using ComponentAce.Compression.Libs.ZLib;
 using IronPython.Runtime;
@@ -67,11 +69,6 @@ namespace IronPython.Zlib
             get { return _unconsumed_tail; }
         }
 
-        public string decompress(string value)
-        {
-            return decompress(value, 0);
-        }
-
         [Documentation(@"decompress(data, max_length) -- Return a string containing the decompressed
 version of the data.
 
@@ -81,11 +78,11 @@ Call the flush() method to clear these buffers.
 If the max_length parameter is specified then the return value will be
 no longer than max_length.  Unconsumed input data will be stored in
 the unconsumed_tail attribute.")]
-        public string decompress(string value, int max_length)
+        public string decompress([BytesConversion]IList<byte> value, [DefaultParameterValue(0)]int max_length)
         {
             if(max_length < 0) throw new ArgumentException("max_length must be greater than zero");
 
-            byte[] input = ZlibModule.Latin1.GetBytes(value);
+            byte[] input = value.ToArray();
             byte[] output = new byte[max_length > 0 ? max_length : ZlibModule.DEFAULTALLOC];
 
             long start_total_out = zst.total_out;
