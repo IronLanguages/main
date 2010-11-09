@@ -5126,6 +5126,28 @@
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
         </Test>
         <Test>
+          <Name>test_zipfile_cpy</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>Test\test_zipfile.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>true</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>true</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_zipfile64_cpy</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>Test\test_zipfile64.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>true</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>true</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
+        </Test>
+        <Test>
           <Name>test_zipimport_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>Test\test_zipimport.py</Arguments>
