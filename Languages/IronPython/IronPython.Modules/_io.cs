@@ -211,6 +211,10 @@ namespace IronPython.Modules {
                 return readline(context, GetInt(limit, -1));
             }
 
+            public virtual List readlines() {
+                return readlines(null);
+            }
+
             public virtual List readlines([DefaultParameterValue(null)]object hint) {
                 int size = GetInt(hint, -1);
 
@@ -3173,6 +3177,9 @@ namespace IronPython.Modules {
         /// Convert string or bytes into bytes
         /// </summary>
         private static Bytes GetBytes(object o, string name) {
+            if(o == null)
+                return null;
+            
             Bytes bytes = o as Bytes;
             if (bytes != null) {
                 return bytes;
