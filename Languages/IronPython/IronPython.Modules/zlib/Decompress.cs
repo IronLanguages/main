@@ -83,7 +83,7 @@ the unconsumed_tail attribute.")]
             if(max_length < 0) throw new ArgumentException("max_length must be greater than zero");
 
             byte[] input = value.ToArray();
-            byte[] output = new byte[max_length > 0 ? max_length : ZlibModule.DEFAULTALLOC];
+            byte[] output = new byte[max_length > 0 && ZlibModule.DEFAULTALLOC > max_length ? max_length : ZlibModule.DEFAULTALLOC];
 
             long start_total_out = zst.total_out;
             zst.next_in = input;
