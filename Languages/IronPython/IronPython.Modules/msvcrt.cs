@@ -112,6 +112,28 @@ this function.")]
             return new string((char)_getch(), 1);
         }
 
+        [Documentation(@"getwch() -> Unicode key character
+
+Wide char variant of getch(), returning a Unicode value.")]
+        public static string getwch() {
+            return new string((char)_getwch(), 1);
+        }
+
+        [Documentation(@"getche() -> key character
+
+Similar to getch(), but the keypress will be echoed if it represents
+a printable character.")]
+        public static string getche() {
+            return new string((char)_getche(), 1);
+        }
+
+        [Documentation(@"getwche() -> Unicode key character
+
+Wide char variant of getche(), returning a Unicode value.")]
+        public static string getwche() {
+            return new string((char)_getwche(), 1);
+        }
+
         [Documentation(@"putch(char) -> None
 
 Print the character char to the console without buffering.")]
@@ -119,21 +141,68 @@ Print the character char to the console without buffering.")]
             _putch(@char);
         }
 
+        [Documentation(@"putwch(unicode_char) -> None
+
+Wide char variant of putch(), accepting a Unicode value.")]
+        public static void putwch(char @char) {
+            _putwch(@char);
+        }
+
+        [Documentation(@"ungetch(char) -> None
+
+Cause the character char to be ""pushed back"" into the console buffer;
+it will be the next character read by getch() or getche().")]
+        public static void ungetch(char @char) {
+            if (_ungetch(@char) == EOF) {
+                throw PythonOps.IOError("EOF in ungetch");
+            }
+        }
+
+        [Documentation(@"ungetwch(unicode_char) -> None
+
+Wide char variant of ungetch(), accepting a Unicode value.")]
+        public static void ungetwch(char @char) {
+            if (_ungetwch(@char) == WEOF) {
+                throw PythonOps.IOError("EOF in ungetch");
+            }
+        }
+
         #endregion
 
         #region P/Invoke Declarations
 
+        private static int EOF = -1;
+        private static ushort WEOF = 0xFFFF;
+
         [DllImport("msvcr100", SetLastError=true)]
         private static extern int _heapmin();
 
-        [DllImport("msvcr100")]
+        [DllImport("msvcr100", SetLastError=true)]
         private static extern int _kbhit();
 
-        [DllImport("msvcr100")]
+        [DllImport("msvcr100", SetLastError=true)]
         private static extern int _getch();
 
-        [DllImport("msvcr100")]
+        [DllImport("msvcr100", SetLastError=true)]
+        private static extern int _getche();
+
+        [DllImport("msvcr100", SetLastError=true)]
         private static extern int _putch(int c);
+
+        [DllImport("msvcr100", SetLastError=true)]
+        private static extern int _ungetch(int c);
+
+        [DllImport("msvcr100", SetLastError=true)]
+        private static extern ushort _getwch();
+
+        [DllImport("msvcr100", SetLastError=true)]
+        private static extern ushort _getwche();
+
+        [DllImport("msvcr100", SetLastError=true)]
+        private static extern ushort _putwch(char c);
+
+        [DllImport("msvcr100", SetLastError=true)]
+        private static extern ushort _ungetwch(ushort c);
 
         #endregion
     }
