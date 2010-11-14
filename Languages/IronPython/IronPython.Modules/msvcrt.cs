@@ -38,6 +38,16 @@ namespace IronPython.Modules {
 
         #region Public API
 
+        [Documentation(@"heapmin() -> None
+
+Force the malloc() heap to clean itself up and return unused blocks
+to the operating system. On failure, this raises IOError.")]
+        public static void heapmin() {
+            if (_heapmin() != 0) {
+                throw PythonOps.IOError("heapmin failed");
+            }
+        }
+
         // python call: c2pread = msvcrt.open_osfhandle(c2pread.Detach(), 0)
         [Documentation(@"open_osfhandle(handle, flags) -> file descriptor
 
@@ -112,6 +122,9 @@ Print the character char to the console without buffering.")]
         #endregion
 
         #region P/Invoke Declarations
+
+        [DllImport("msvcr100", SetLastError=true)]
+        private static extern int _heapmin();
 
         [DllImport("msvcr100")]
         private static extern int _kbhit();
