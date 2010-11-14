@@ -192,16 +192,7 @@ namespace IronPython.Modules {
                         break;
                     }
                     
-                    Bytes curBytes = cur as Bytes;
-                    if (curBytes == null) {
-                        if (cur != null) {
-                            throw PythonOps.IOError(
-                                "read() should have returned a bytes object, not '{0}'",
-                                PythonTypeOps.GetName(cur)
-                            );
-                        }
-                        break;
-                    }
+                    Bytes curBytes = GetBytes(cur, "read()");
                     if (curBytes.Count == 0) {
                         break;
                     }
@@ -218,6 +209,10 @@ namespace IronPython.Modules {
 
             public object readline(CodeContext/*!*/ context, [DefaultParameterValue(null)]object limit) {
                 return readline(context, GetInt(limit, -1));
+            }
+
+            public virtual List readlines() {
+                return readlines(null);
             }
 
             public virtual List readlines([DefaultParameterValue(null)]object hint) {
@@ -429,7 +424,7 @@ namespace IronPython.Modules {
             internal Exception InvalidPosition(BigInteger pos) {
                 return PythonOps.IOError("Raw stream returned invalid position {0}", pos);
             }
-
+            
             #endregion
         }
 
@@ -465,16 +460,11 @@ namespace IronPython.Modules {
                         break;
                     }
 
-                    Bytes curBytes = cur as Bytes;
-                    if (curBytes == null) {
-                        if (cur != null) {
-                            throw PythonOps.TypeError("read() should return bytes");
-                        }
-                        break;
-                    }
+                    Bytes curBytes = GetBytes(cur, "read()");
                     if (curBytes.Count == 0) {
                         break;
                     }
+
                     count += curBytes.Count;
                     res.Add(curBytes);
                 }
@@ -521,15 +511,12 @@ namespace IronPython.Modules {
                     length = PythonOps.Length(buf);
                 }
 
-                object dataObj = read(context, length) as Bytes;
-                Bytes data = dataObj as Bytes;
-                if (data == null) {
-                    if (dataObj != null) {
-                        throw PythonOps.TypeError("read() should return bytes");
-                    }
+                object dataObj = read(context, length);
+                if (dataObj == null) {
                     return BigInteger.Zero;
                 }
 
+                Bytes data = GetBytes(dataObj, "read()");
                 IList<byte> bytes = buf as IList<byte>;
                 if (bytes != null) {
                     for (int i = 0; i < data.Count; i++) {
@@ -810,11 +797,7 @@ namespace IronPython.Modules {
                             chunkObj = PythonOps.Invoke(context, _raw, "read", -1);
                         }
 
-                        Bytes chunk = chunkObj as Bytes;
-                        if (chunk == null && chunkObj != null) {
-                            throw PythonOps.TypeError("read() should return bytes");
-                        }
-
+                        Bytes chunk = GetBytes(chunkObj, "read()");
                         if (chunk == null || chunk.Count == 0) {
                             if (count == 0) {
                                 return chunk;
@@ -857,13 +840,7 @@ namespace IronPython.Modules {
                             chunkObj = PythonOps.Invoke(context, _raw, "read", _bufSize);
                         }
 
-                        Bytes chunk = chunkObj as Bytes;
-                        if (chunk == null) {
-                            if (chunkObj != null) {
-                                throw PythonOps.TypeError("read() should return bytes");
-                            }
-                            chunk = Bytes.Empty;
-                        }
+                        Bytes chunk = chunkObj != null ? GetBytes(chunkObj, "read()") : Bytes.Empty;
 
                         _readBuf = chunk;
                         if (_readBuf.Count == 0) {
@@ -914,13 +891,7 @@ namespace IronPython.Modules {
                     nextObj = PythonOps.Invoke(context, _raw, "read", length - _readBuf.Count + _readBufPos);
                 }
 
-                Bytes next = nextObj as Bytes;
-                if (next == null) {
-                    if (nextObj != null) {
-                        throw PythonOps.TypeError("read() should return bytes");
-                    }
-                    next = Bytes.Empty;
-                }
+                Bytes next = nextObj != null ? GetBytes(nextObj, "read()") : Bytes.Empty;
 
                 _readBuf = ResetReadBuf() + next;
                 return _readBuf;
@@ -2439,13 +2410,7 @@ namespace IronPython.Modules {
                     object chunkObj = _bufferTyped != null ?
                         _bufferTyped.read(context, bytesFed) :
                         PythonOps.Invoke(context, _buffer, "read", bytesFed);
-                    Bytes chunk = chunkObj as Bytes;
-                    if (chunk == null) {
-                        if (chunkObj != null) {
-                            throw PythonOps.TypeError("read() should return bytes");
-                        }
-                        chunk = Bytes.Empty;
-                    }
+                    Bytes chunk = chunkObj != null ? GetBytes(chunkObj, "read()") : Bytes.Empty;
 
                     if (typedDecoder != null) {
                         SetDecodedChars(typedDecoder.decode(context, chunk, needEOF));
@@ -2770,13 +2735,7 @@ namespace IronPython.Modules {
                 object chunkObj = _bufferTyped != null ?
                     _bufferTyped.read(context, _CHUNK_SIZE) :
                     PythonOps.Invoke(context, _buffer, "read", _CHUNK_SIZE);
-                Bytes chunk = chunkObj as Bytes;
-                if (chunk == null) {
-                    if (chunkObj != null) {
-                        throw PythonOps.TypeError("read() should return bytes");
-                    }
-                    chunk = Bytes.Empty;
-                }
+                Bytes chunk = chunkObj != null ? GetBytes(chunkObj, "read()") : Bytes.Empty;
                 bool eof = chunkObj == null || chunk.Count == 0;
 
                 string decoded;
@@ -3218,6 +3177,9 @@ namespace IronPython.Modules {
         /// Convert string or bytes into bytes
         /// </summary>
         private static Bytes GetBytes(object o, string name) {
+            if(o == null)
+                return null;
+            
             Bytes bytes = o as Bytes;
             if (bytes != null) {
                 return bytes;
