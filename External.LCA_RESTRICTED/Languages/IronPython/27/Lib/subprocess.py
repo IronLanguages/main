@@ -388,8 +388,8 @@ except that:
   close_fds=True with subprocess.Popen.
 """
 
-import sys
-mswindows = (sys.platform == "win32" or sys.platform == "cli")
+import sys, os
+mswindows = (sys.platform == "win32" or (sys.platform == "cli" and os.name == 'nt'))
 
 import os
 import types
