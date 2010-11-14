@@ -14,6 +14,7 @@
  * ***********************************************************************/
 
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -34,7 +35,7 @@ using System.Numerics;
 namespace IronPython.Modules {
     [PythonType("msvcrt")]
     public class PythonMsvcrt {
-        public const string __doc__ = "msvcrt Module";
+        public const string __doc__ = "Functions from the Microsoft Visual C Runtime.";
 
         #region Public API
 
@@ -44,7 +45,7 @@ Force the malloc() heap to clean itself up and return unused blocks
 to the operating system. On failure, this raises IOError.")]
         public static void heapmin() {
             if (_heapmin() != 0) {
-                throw PythonOps.IOError("heapmin failed");
+                throw PythonOps.IOError(new Win32Exception());
             }
         }
 
@@ -154,7 +155,7 @@ Cause the character char to be ""pushed back"" into the console buffer;
 it will be the next character read by getch() or getche().")]
         public static void ungetch(char @char) {
             if (_ungetch(@char) == EOF) {
-                throw PythonOps.IOError("EOF in ungetch");
+                throw PythonOps.IOError(new Win32Exception());
             }
         }
 
@@ -163,7 +164,7 @@ it will be the next character read by getch() or getche().")]
 Wide char variant of ungetch(), accepting a Unicode value.")]
         public static void ungetwch(char @char) {
             if (_ungetwch(@char) == WEOF) {
-                throw PythonOps.IOError("EOF in ungetch");
+                throw PythonOps.IOError(new Win32Exception());
             }
         }
 
@@ -174,36 +175,35 @@ Wide char variant of ungetch(), accepting a Unicode value.")]
         private static int EOF = -1;
         private static ushort WEOF = 0xFFFF;
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", SetLastError=true, CallingConvention=CallingConvention.Cdecl)]
         private static extern int _heapmin();
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
         private static extern int _kbhit();
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
         private static extern int _getch();
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
         private static extern int _getche();
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
         private static extern int _putch(int c);
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", SetLastError=true, CallingConvention=CallingConvention.Cdecl)]
         private static extern int _ungetch(int c);
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
         private static extern ushort _getwch();
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
         private static extern ushort _getwche();
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
         private static extern ushort _putwch(char c);
 
-        [DllImport("msvcr100", SetLastError=true)]
+        [DllImport("msvcr100", SetLastError=true, CallingConvention=CallingConvention.Cdecl)]
         private static extern ushort _ungetwch(ushort c);
-
         #endregion
     }
 }
