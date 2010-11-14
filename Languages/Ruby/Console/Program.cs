@@ -21,6 +21,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
+using System.IO;
 
 internal sealed class Host : RubyConsoleHost {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -52,8 +53,12 @@ internal sealed class Host : RubyConsoleHost {
         return console;
     }
 
-    protected override int OptionsParsed(OptionsParser parser) {
-        var rubyOptions = ((RubyOptionsParser)parser).ConsoleOptions;
+    protected override ConsoleOptions ParseOptions(string/*!*/[]/*!*/ args, ScriptRuntimeSetup/*!*/ runtimeSetup, LanguageSetup/*!*/ languageSetup) {
+        var rubyOptions = (RubyConsoleOptions)base.ParseOptions(args, runtimeSetup, languageSetup);
+        if (rubyOptions == null) {
+            return null;
+        }
+
         if (rubyOptions.ChangeDirectory != null) {
             Environment.CurrentDirectory = rubyOptions.ChangeDirectory;
         }
@@ -62,12 +67,11 @@ internal sealed class Host : RubyConsoleHost {
             Console.WriteLine(RubyContext.MakeDescriptionString(), Style.Out);
         }
 
-        return 0;
+        return rubyOptions;
     }
 
-    protected override int InvalidOption(InvalidOptionException e) {
+    protected override void ReportInvalidOption(InvalidOptionException e) {
         Console.Error.WriteLine(e.Message);
-        return 1;
     }
 
     [STAThread]

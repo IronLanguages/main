@@ -18,25 +18,29 @@ using IronRuby.Hosting;
 using IronRuby.Runtime;
 using System.Windows.Forms;
 using Microsoft.Scripting.Hosting.Shell;
+using Microsoft.Scripting.Hosting;
 
 internal sealed class Host : RubyConsoleHost {
-    protected override int OptionsParsed(OptionsParser parser) {
-        var rubyOptions = ((RubyOptionsParser)parser).ConsoleOptions;
+    protected override ConsoleOptions ParseOptions(string/*!*/[]/*!*/ args, ScriptRuntimeSetup/*!*/ runtimeSetup, LanguageSetup/*!*/ languageSetup) {
+        var rubyOptions = (RubyConsoleOptions)base.ParseOptions(args, runtimeSetup, languageSetup);
+        if (rubyOptions == null) {
+            return null;
+        }
+
         if (rubyOptions.ChangeDirectory != null) {
             Environment.CurrentDirectory = rubyOptions.ChangeDirectory;
         }
 
         if (rubyOptions.Introspection || rubyOptions.Command == null && rubyOptions.FileName == null) {
             PrintHelp();
-            return 1;
+            return null;
         }
 
-        return 0;
+        return rubyOptions;
     }
 
-    protected override int InvalidOption(InvalidOptionException e) {
+    protected override void ReportInvalidOption(InvalidOptionException e) {
         MessageBox.Show(e.Message);
-        return 1;
     }
 
     [STAThread]

@@ -115,8 +115,8 @@ class Harvester
   end
 
   def load_component_guids wxi_path
+    @component_guids = {}
     if File.exists? wxi_path  
-      @component_guids = {}
       File.foreach(wxi_path) do |line|
         if /Component Id="C([^"]+)".*Guid="([^"]+)"/ =~ line
           @component_guids[$1] = $2

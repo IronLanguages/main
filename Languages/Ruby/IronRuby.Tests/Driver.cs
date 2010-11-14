@@ -82,6 +82,7 @@ namespace IronRuby.Tests {
             runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
             runtimeSetup.HostType = typeof(TestHost);
             runtimeSetup.HostArguments = new object[] { testCase.Options };
+            languageSetup.Options["ApplicationBase"] = AppDomain.CurrentDomain.BaseDirectory;
             languageSetup.Options["NoAdaptiveCompilation"] = _driver.NoAdaptiveCompilation;
             languageSetup.Options["CompilationThreshold"] = _driver.CompilationThreshold;
             languageSetup.Options["Verbosity"] = 2;

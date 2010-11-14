@@ -123,12 +123,7 @@
           </Directory>
          
           <Directory Id="Dir_Lib" Name="Lib">
-            <Directory Id="Dir_IronRubyLibs" Name="ironruby">
-              <?include IronRubyLibs.wxi ?>
-            </Directory>
-            <Directory Id="Dir_RubyLibs" Name="ruby">
-              <?include RubyLibs.wxi ?>
-            </Directory>
+            <?include StdLib.wxi ?>
           </Directory>
         </Directory>
       </Directory>

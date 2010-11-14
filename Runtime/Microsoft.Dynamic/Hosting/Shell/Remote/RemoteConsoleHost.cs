@@ -217,8 +217,6 @@ namespace Microsoft.Scripting.Hosting.Shell.Remote {
                 return ExitCode = 1;
             }
 
-            _languageOptionsParser = CreateOptionsParser();
-
             // Create IConsole early (with default settings) in order to be able to display startup output
             ConsoleIO = CreateConsole(null, null, new ConsoleOptions());
 

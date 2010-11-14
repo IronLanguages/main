@@ -5,10 +5,6 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{9A3E54E8-8B72-4EA3-9275-F98B88D3F6F0}</ProjectGuid>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <DefineSolutionProperties>false</DefineSolutionProperties>
     <OutputName Condition="$(OutputName)==''">IronRuby</OutputName>
     <OutputType Condition="$(OutputType)==''">Package</OutputType>

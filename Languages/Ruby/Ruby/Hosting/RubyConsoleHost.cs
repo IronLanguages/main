@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.IO;
 using System.Threading;
 using IronRuby;
 using IronRuby.Builtins;
@@ -45,6 +46,13 @@ namespace IronRuby.Hosting {
 
         protected override LanguageSetup CreateLanguageSetup() {
             return Ruby.CreateRubySetup();
+        }
+
+        protected override ConsoleOptions ParseOptions(string[] args, ScriptRuntimeSetup runtimeSetup, LanguageSetup languageSetup) {
+#if !SILVERLIGHT
+            languageSetup.Options["ApplicationBase"] = AppDomain.CurrentDomain.BaseDirectory;
+#endif
+            return base.ParseOptions(args, runtimeSetup, languageSetup);
         }
 
         private static void SetHomeEnvironmentVariable() {

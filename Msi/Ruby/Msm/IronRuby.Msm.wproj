@@ -5,10 +5,6 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A1097A06-AD64-4CC2-A196-A80F918FAD22}</ProjectGuid>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <DefineSolutionProperties>false</DefineSolutionProperties>
     <OutputName Condition="$(OutputName)==''">IrbRedist</OutputName>
     <OutputType Condition="$(OutputType)==''">Module</OutputType>

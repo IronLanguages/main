@@ -281,7 +281,6 @@ bar
             if (_driver.PartialTrust) return;
 
             var searchPaths = Engine.GetSearchPaths();
-            Assert(new List<string>(searchPaths)[searchPaths.Count - 1] == ".");
 
             bool result = Engine.RequireFile("fcntl");
             Assert(result == true);
@@ -335,9 +334,7 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
             Debug.Assert(ls.Names.IndexOf("IronRuby") != -1);
 
             var newSetup = new ScriptRuntimeSetup();
-            newSetup.AddRubySetup((s) => {
-                s.Options["LibraryPaths"] = ls.Options["LibraryPaths"];
-            });
+            newSetup.AddRubySetup();
 
             ScriptRuntime runtime = ScriptRuntime.CreateRemote(domain, newSetup);
             ScriptEngine engine = runtime.GetRubyEngine();

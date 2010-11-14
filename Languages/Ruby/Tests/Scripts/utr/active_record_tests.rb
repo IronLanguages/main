@@ -84,7 +84,7 @@ class UnitTestSetup
       "test: ExecuteProcedureSqlserver should take parameter arguments. "
     
     disable ColumnTestSqlserver, 
-      "test: For datetime columns which have coerced types should have column objects cast to time."
+      "test: For datetime columns which have coerced types should have column objects cast to time. "
 
     disable_by_name %w{
       test_add_limit_offset_should_sanitize_sql_injection_for_limit_with_comas(AdapterTest)

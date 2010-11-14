@@ -157,29 +157,53 @@ namespace IronRuby.Runtime {
                     loadPaths.Add(_context.EncodePath(path));
                 }
             }
-            
-#if !SILVERLIGHT // no library paths on Silverlight
-            // TODO: this should rather come from Machine.config
 
-            string applicationBaseDir;
-            try {
-                applicationBaseDir = _context.Platform.GetEnvironmentVariable(RubyContext.BinDirEnvironmentVariable);
-                if (!Directory.Exists(applicationBaseDir)) {
-                    applicationBaseDir = AppDomain.CurrentDomain.BaseDirectory;
-                }
-            } catch (SecurityException) {
-                applicationBaseDir = null;
-            }
-
-            AddAbsoluteLibraryPaths(loadPaths, applicationBaseDir, (ICollection<string>)options.LibraryPaths ?? new[] { 
-                @"..\Lib\ironruby",
-                @"..\Lib\ruby\site_ruby\" + _context.StandardLibraryVersion,
-                @"..\Lib\ruby\" + _context.StandardLibraryVersion,
-            });
-#endif
+            AddStandardLibraryPath(loadPaths, options.StandardLibraryPath, options.ApplicationBase);
             // TODO: remove?
             loadPaths.Add(MutableString.CreateAscii("."));
             return loadPaths;
+        }
+
+        private void AddStandardLibraryPath(RubyArray/*!*/ loadPaths, string path, string applicationBaseDir) {
+#if !SILVERLIGHT // no library paths on Silverlight
+            bool isFullPath;
+            if (path != null) {
+                try {
+                    isFullPath = Platform.IsAbsolutePath(path);
+                } catch {
+                    loadPaths.Add(_context.EncodePath(path));
+                    return;
+                }
+            } else {
+                path = "../Lib";
+                isFullPath = false;
+            }
+
+            if (!isFullPath) {
+                try {
+                    if (String.IsNullOrEmpty(applicationBaseDir)) {
+                        applicationBaseDir = _context.Platform.GetEnvironmentVariable(RubyContext.BinDirEnvironmentVariable);
+                        if (!Directory.Exists(applicationBaseDir)) {
+                            applicationBaseDir = AppDomain.CurrentDomain.BaseDirectory;
+                        }
+                    }
+                } catch (SecurityException) {
+                    applicationBaseDir = null;
+                }
+
+                try {
+                    path = Platform.GetFullPath(RubyUtils.CombinePaths(applicationBaseDir, path));
+                } catch {
+                    loadPaths.Add(_context.EncodePath(path));
+                    return;
+                }
+            }
+
+            path = path.Replace('\\', '/');
+            loadPaths.Add(_context.EncodePath(RubyUtils.CombinePaths(path, "ironruby")));
+            loadPaths.Add(_context.EncodePath(RubyUtils.CombinePaths(path, "ruby/site_ruby/" + _context.StandardLibraryVersion)));
+            loadPaths.Add(_context.EncodePath(RubyUtils.CombinePaths(path, "ruby/" + _context.StandardLibraryVersion)));
+#endif
         }
 
         private void AddAbsoluteLibraryPaths(RubyArray/*!*/ result, string applicationBaseDir, ICollection<string>/*!*/ paths) {
