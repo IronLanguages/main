@@ -74,6 +74,14 @@ namespace IronRuby.Builtins {
         public static class WaitWritable {
         }
 
+        public static Exception/*!*/ NonBlockingError(RubyContext/*!*/ context, Exception/*!*/ exception, bool isRead) {
+            RubyModule waitReadable;
+            if (context.TryGetModule(isRead ? typeof(WaitReadable) : typeof(WaitWritable), out waitReadable)) {
+                ModuleOps.ExtendObject(waitReadable, exception);
+            }
+            return exception;
+        }
+
         #endregion
 
         #region Ruby Constructors
@@ -765,12 +773,9 @@ namespace IronRuby.Builtins {
         [RubyMethod("write_nonblock")]
         public static int WriteNoBlock(RubyIO/*!*/ self, [NotNull]MutableString/*!*/ val) {
             var stream = self.GetWritableStream();
-            try {
-                stream.WriteTimeout = 0;
-            } catch (InvalidOperationException) {
-                throw RubyExceptions.CreateEBADF();
-            }
-            return Write(self, val);
+            int result = -1;
+            self.NonBlockingOperation(() => result = Write(self, val), false);
+            return result;
         }
 
         [RubyMethod("write_nonblock")]
@@ -849,17 +854,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("read_nonblock")]
-        public static MutableString/*!*/ ReadNoBlock(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
+        public static MutableString ReadNoBlock(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
             var stream = self.GetReadableStream();
-
-            try {
-                stream.ReadTimeout = 0;
-            } catch (InvalidOperationException) {
-                // TODO:throw RubyExceptions.CreateEBADF();
-                // this is called on TCPSocket in RubyGems
-            }
-
-            return Read(self, bytes, buffer);
+            MutableString result = null;
+            self.NonBlockingOperation(() => result = Read(self, bytes, buffer), true);
+            return result;
         }
 
         [RubyMethod("read", RubyMethodAttributes.PublicSingleton)]

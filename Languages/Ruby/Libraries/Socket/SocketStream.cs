@@ -87,8 +87,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             long oldPos = _pos;
 
             if (bytesToRead > 0) {
-                int bytesRead = _socket.Receive(readBuffer, bytesToRead, SocketFlags.None);
-                _pos += bytesRead;
+                _pos += _socket.Receive(readBuffer, bytesToRead, SocketFlags.None);                
             }
 
             if (_peeked) {

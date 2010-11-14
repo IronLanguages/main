@@ -392,6 +392,17 @@ namespace IronRuby.Builtins {
             throw new NotSupportedException();
         }
 
+        public virtual int SetReadTimeout(int timeout) {
+            if (timeout > 0) {
+                throw RubyExceptions.CreateEBADF();
+            }
+            return 0;
+        }
+
+        public virtual void NonBlockingOperation(Action operation, bool isRead) {
+            throw RubyExceptions.CreateEBADF();
+        }
+
         public virtual int FileControl(int commandId, int arg) {
             GetStream();
 

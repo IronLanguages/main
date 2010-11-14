@@ -70,6 +70,27 @@ namespace IronRuby.StandardLibrary.Sockets {
             InternalEncoding = null;
         }
 
+        public override int SetReadTimeout(int timeout) {
+            int old = _socket.ReceiveTimeout;
+            _socket.ReceiveTimeout = timeout;
+            return old;
+        }
+
+        public override void NonBlockingOperation(Action operation, bool isRead) {
+            bool wasBlocking = _socket.Blocking;
+            try {
+                _socket.Blocking = false;
+                operation();
+            } catch (SocketException e) {
+                if (e.SocketErrorCode == SocketError.WouldBlock) {
+                    throw RubyIOOps.NonBlockingError(Context, new Errno.WouldBlockError(), isRead);
+                }
+                throw;
+            } finally {
+                _socket.Blocking = wasBlocking;
+            }
+        }
+
         protected internal Socket/*!*/ Socket {
             get {
                 if (_socket == null) {

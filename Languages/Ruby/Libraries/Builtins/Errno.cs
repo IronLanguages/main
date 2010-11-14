@@ -216,6 +216,22 @@ namespace IronRuby.Builtins {
 
         // TODO: generate 
 
+        [RubyClass("EWOULDBLOCK"), Serializable]
+        public class WouldBlockError : ExternalException {
+            private const string/*!*/ M = "A non-blocking socket operation could not be completed immediately.";
+            public override int ErrorCode { get { return 10035; } }
+
+            public WouldBlockError() : this(null, null) { }
+            public WouldBlockError(string message) : this(message, null) { }
+            public WouldBlockError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public WouldBlockError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+            protected WouldBlockError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                : base(info, context) { }
+#endif
+        }
+
         [RubyClass("EADDRINUSE"), Serializable]
         public class AddressInUseError : ExternalException {
             private const string/*!*/ M = "Only one usage of each socket address (protocol/network address/port) is normally permitted.";
