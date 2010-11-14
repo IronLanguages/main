@@ -17,6 +17,8 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
@@ -25,6 +27,7 @@ using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
 #endif
+
 #if !SILVERLIGHT
 
 [assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt))]
@@ -36,11 +39,22 @@ namespace IronPython.Modules {
         #region Public API
 
         // python call: c2pread = msvcrt.open_osfhandle(c2pread.Detach(), 0)
+        [Documentation(@"open_osfhandle(handle, flags) -> file descriptor
+
+Create a C runtime file descriptor from the file handle handle. The
+flags parameter should be a bitwise OR of os.O_APPEND, os.O_RDONLY,
+and os.O_TEXT. The returned file descriptor may be used as a parameter
+to os.fdopen() to create a file object.
+")]
         public static int open_osfhandle(CodeContext context, BigInteger os_handle, int arg1) {
             FileStream stream = new FileStream(new IntPtr((long)os_handle), FileAccess.ReadWrite, true);
             return context.LanguageContext.FileManager.AddToStrongMapping(stream);
         }
 
+        [Documentation(@"get_osfhandle(fd) -> file handle
+
+Return the file handle for the file descriptor fd. Raises IOError
+if fd is not recognized.")]
         public static object get_osfhandle(CodeContext context, int fd) {
             PythonFile pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
 
@@ -51,6 +65,11 @@ namespace IronPython.Modules {
             return -1;
         }
 
+        [Documentation(@"setmode(fd, mode) -> Previous mode
+
+Set the line-end translation mode for the file descriptor fd. To set
+it to text mode, flags should be os.O_TEXT; for binary, it should be
+os.O_BINARY.")]
         public static int setmode(CodeContext context, int fd, int flags) {
             PythonFile pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
             int oldMode;
@@ -64,14 +83,28 @@ namespace IronPython.Modules {
             return oldMode;
         }
 
+        [Documentation(@"kbhit() -> bool
+
+Return true if a keypress is waiting to be read.")]
         public static bool kbhit() {
             return _kbhit() == 0 ? false : true;
         }
 
+        [Documentation(@"getch() -> key character
+
+Read a keypress and return the resulting character. Nothing is echoed to
+the console. This call will block if a keypress is not already
+available, but will not wait for Enter to be pressed. If the pressed key
+was a special function key, this will return '\\000' or '\\xe0'; the next
+call will return the keycode. The Control-C keypress cannot be read with
+this function.")]
         public static string getch() {
             return new string((char)_getch(), 1);
         }
 
+        [Documentation(@"putch(char) -> None
+
+Print the character char to the console without buffering.")]
         public static void putch(char @char) {
             _putch(@char);
         }
