@@ -127,6 +127,7 @@
     <Compile Include="Compiler\PythonDynamicExpression.cs" />
     <Compile Include="Compiler\UncollectableCompilationMode.Generated.cs" />
     <Compile Include="Compiler\RunnableScriptCode.cs" />
+    <Compile Include="Modules\_ast.cs" />
     <Compile Include="Runtime\Binding\IPythonExpandable.cs" />
     <Compile Include="Runtime\Binding\PythonExtensionBinder.cs" />
     <Compile Include="Runtime\BuiltinPythonModule.cs" />
