@@ -52,21 +52,6 @@ namespace IronPython.Modules
             _context = context;
         }
 
-        private static CompileFlags GetCompilerFlags(object flags) {
-            CompileFlags cflags = 0;
-            if (flags != null) {
-                cflags = (CompileFlags)Converter.ConvertToInt32(flags);
-                if ((cflags & ~(CompileFlags.CO_NESTED | CompileFlags.CO_DONT_IMPLY_DEDENT | CompileFlags.CO_GENERATOR_ALLOWED | CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT)) != 0) {
-                    if (((int)cflags & ~PyCF_ONLY_AST) != 0) {
-                        System.Diagnostics.Debugger.Break();
-                        throw PythonOps.ValueError("unrecognized flags");
-                    }
-                }
-            }
-
-            return cflags;
-        }
-
         private class ThrowingErrorSink : ErrorSink
         {
             public static new readonly ThrowingErrorSink/*!*/ Default = new ThrowingErrorSink();
@@ -83,90 +68,13 @@ namespace IronPython.Modules
             }
         }
 
-        private static PythonCompilerOptions GetDefaultCompilerOptions(CodeContext/*!*/ context, bool inheritContext, CompileFlags cflags) {
-            ModuleOptions mo;
-            if (inheritContext) {
-                mo = context.ModuleContext.Features;
-            } else if (((cflags & CompileFlags.CO_FUTURE_DIVISION) != 0)) {
-                mo = ModuleOptions.TrueDivision;
-            } else {
-                mo = ModuleOptions.None;
-            }
-
-            PythonCompilerOptions pco = new PythonCompilerOptions(mo);
-
-            // The options created this way never creates
-            // optimized module (exec, compile)
-            pco.Module &= ~ModuleOptions.Optimized;
-            return pco;
-        }
-
-        public static object compile(params object[] args) {
-            bool astOnly = false;
-            int flags = 0;
-            bool inheritContext = true;
-            if (args.Length >= 4) {
-                flags = Converter.ConvertToInt32(args[3]);
-                if ((flags & PyCF_ONLY_AST) != 0) {
-                    astOnly = true;
-                    flags &= ~PyCF_ONLY_AST;
-                    args[3] = flags;
-                }
-
-                if (args.Length == 5)
-                    inheritContext = (args[4] != null && Converter.ConvertToInt32(args[4]) != 0);
-            }
-
-            object _orig;
-            if (!(_context.BuiltinModuleDict.TryGetValue("compile", out _orig) || astOnly))
-                throw new Exception("Could not get builin compile function.");
-
-            CodeContext context = new CodeContext(new PythonDictionary(), new ModuleContext(new PythonDictionary(), _context));
-
-            if (!astOnly)
-                return PythonOps.CallWithContext(context, _orig, args);
-
-            string source = (string)args[0];
-            string filename = (string)args[1];
-            string kind = (string)args[2];
-
-            if (source.IndexOf('\0') != -1) {
-                throw PythonOps.TypeError("compile() expected string without null bytes");
-            }
-
-            CompileFlags cflags = GetCompilerFlags(flags);
-            PythonCompilerOptions opts = GetDefaultCompilerOptions(context, inheritContext, cflags);
-            if ((cflags & CompileFlags.CO_DONT_IMPLY_DEDENT) != 0) {
-                opts.DontImplyDedent = true;
-            }
-            opts.Module |= ModuleOptions.ExecOrEvalCode;
-
-            SourceUnit sourceUnit;
-            string unitPath = String.IsNullOrEmpty(filename) ? null : filename;
-
-            switch (kind) {
-                case "exec":
-                    sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath,
-                                                                       SourceCodeKind.Statements);
-                    break;
-                case "eval":
-                    sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath,
-                                                                       SourceCodeKind.Expression);
-                    break;
-                case "single":
-                    sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath,
-                                                                       SourceCodeKind.InteractiveCode);
-                    break;
-                default:
-                    throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
-            }
-
+        internal static AST BuildAst(CodeContext context, SourceUnit sourceUnit, PythonCompilerOptions opts, string mode) {
             Parser parser = Parser.CreateParser(
                 new CompilerContext(sourceUnit, opts, ThrowingErrorSink.Default),
                 (PythonOptions)context.LanguageContext.Options);
 
             PythonAst ast = parser.ParseFile(true);
-            return ConvertToAST(ast, kind);
+            return ConvertToAST(ast, mode);
         }
 
         private static mod ConvertToAST(PythonAst pythonAst, string kind) {
