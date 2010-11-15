@@ -112,22 +112,18 @@ namespace IronPython.Modules
         public abstract class AST
         {
             private PythonTuple __fields = new PythonTuple();   // Genshi assumes _fields in not None
-            private int _lineno;
-            private int _col_offset;
+            private PythonTuple __attributes = new PythonTuple();   // Genshi assumes _fields in not None
+            protected int _lineno;
+            protected int _col_offset;
 
             public PythonTuple _fields {
                 get { return __fields; }
                 protected set { __fields = value; }
             }
 
-            public int lineno {
-                get { return _lineno; }
-                set { _lineno = value; }
-            }
-
-            public int col_offset {
-                get { return _col_offset; }
-                set { _col_offset = value; }
+            public PythonTuple _attributes {
+                get { return __attributes; }
+                protected set { __attributes = value; }
             }
 
             protected void GetSourceLocation(Node node) {
@@ -202,11 +198,11 @@ namespace IronPython.Modules
                 else if (stmt is ClassDefinition)
                     ast = new ClassDef((ClassDefinition)stmt);
                 else if (stmt is BreakStatement)
-                    ast = Break.Instance;
+                    ast = new Break();
                 else if (stmt is ContinueStatement)
-                    ast = Continue.Instance;
+                    ast = new Continue();
                 else if (stmt is EmptyStatement)
-                    ast = Pass.Instance;
+                    ast = new Pass();
                 else
                     throw new ArgumentTypeException("Unexpected statement type: " + stmt.GetType());
 
@@ -340,7 +336,7 @@ namespace IronPython.Modules
                 AST ast;
 
                 if (node is TryStatementHandler)
-                    ast = new excepthandler((TryStatementHandler)node);
+                    ast = new ExceptHandler((TryStatementHandler)node);
                 else
                     throw new ArgumentTypeException("Unexpected node type: " + node.GetType());
 
@@ -566,43 +562,37 @@ namespace IronPython.Modules
         [PythonType]
         public class excepthandler : AST
         {
-            private expr _type;
-            private expr _name;
-            private PythonList _body;
-
             public excepthandler() {
-                _fields = new PythonTuple(new[] { "type", "name", "body", "lineno", "col_offset" });
+                _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
             }
 
-            internal excepthandler(TryStatementHandler stmt)
-                : this() {
-                if (stmt.Test != null)
-                    _type = Convert(stmt.Test);
-                if (stmt.Target != null)
-                    _name = Convert(stmt.Target, Store.Instance);
-
-                _body = ConvertStatements(stmt.Body);
+            public int lineno {
+                get { return _lineno; }
+                set { _lineno = value; }
             }
 
-            public expr type {
-                get { return _type; }
-                set { _type = value; }
-            }
-
-            public expr name {
-                get { return _name; }
-                set { _name = value; }
-            }
-
-            public PythonList body {
-                get { return _body; }
-                set { _body = value; }
+            public int col_offset {
+                get { return _col_offset; }
+                set { _col_offset = value; }
             }
         }
 
         [PythonType]
         public abstract class expr : AST
         {
+            protected expr() {
+                _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
+            }
+
+            public int lineno {
+                get { return _lineno; }
+                set { _lineno = value; }
+            }
+
+            public int col_offset {
+                get { return _col_offset; }
+                set { _col_offset = value; }
+            }
         }
 
         [PythonType]
@@ -656,6 +646,19 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class stmt : AST
         {
+            protected stmt() {
+                _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
+            }
+
+            public int lineno {
+                get { return _lineno; }
+                set { _lineno = value; }
+            }
+
+            public int col_offset {
+                get { return _col_offset; }
+                set { _col_offset = value; }
+            }
         }
 
         [PythonType]
@@ -981,9 +984,10 @@ namespace IronPython.Modules
             private string _name;
             private PythonList _bases;
             private PythonList _body;
+            private PythonList _decorator_list;
 
             public ClassDef() {
-                _fields = new PythonTuple(new[] { "name", "bases", "body" });
+                _fields = new PythonTuple(new[] { "name", "bases", "body", "decorator_list" });
             }
 
             internal ClassDef(ClassDefinition def)
@@ -993,6 +997,7 @@ namespace IronPython.Modules
                 foreach (Compiler.Ast.Expression expr in def.Bases)
                     _bases.Add(Convert(expr));
                 _body = ConvertStatements(def.Body);
+                _decorator_list = new PythonList(); // TODO Actually fill in the decorators here
             }
 
             public string name {
@@ -1008,6 +1013,11 @@ namespace IronPython.Modules
             public PythonList body {
                 get { return _body; }
                 set { _body = value; }
+            }
+
+            public PythonList decorator_list {
+                get { return _decorator_list; }
+                set { _decorator_list = value; }
             }
         }
 
@@ -1126,6 +1136,43 @@ namespace IronPython.Modules
         public class Eq : cmpop
         {
             internal static Eq Instance = new Eq();
+        }
+
+        [PythonType]
+        public class ExceptHandler : excepthandler
+        {
+            private expr _type;
+            private expr _name;
+            private PythonList _body;
+
+            public ExceptHandler() {
+                _fields = new PythonTuple(new[] { "type", "name", "body" });
+            }
+
+            internal ExceptHandler(TryStatementHandler stmt)
+                : this() {
+                if (stmt.Test != null)
+                    _type = Convert(stmt.Test);
+                if (stmt.Target != null)
+                    _name = Convert(stmt.Target, Store.Instance);
+
+                _body = ConvertStatements(stmt.Body);
+            }
+
+            public expr type {
+                get { return _type; }
+                set { _type = value; }
+            }
+
+            public expr name {
+                get { return _name; }
+                set { _name = value; }
+            }
+
+            public PythonList body {
+                get { return _body; }
+                set { _body = value; }
+            }
         }
 
         [PythonType]
@@ -1531,6 +1578,7 @@ namespace IronPython.Modules
             public ImportFrom(FromImportStatement stmt)
                 : this() {
                 _module = stmt.Root.MakeString();
+                _module = string.IsNullOrEmpty(_module) ? null : _module;
                 _names = ConvertAliases(stmt.Names, stmt.AsNames);
                 if (stmt.Root is RelativeModuleName)
                     _level = ((RelativeModuleName)stmt.Root).DotCount;
