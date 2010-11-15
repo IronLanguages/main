@@ -101,6 +101,7 @@ namespace TestRunner {
 
             DateTime start = DateTime.Now;
             // Run the tests
+            var originalColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Gray;
 
             List<Test> testList = new List<Test>();
@@ -179,6 +180,8 @@ namespace TestRunner {
             }
 
             Console.WriteLine("Total time: {0} seconds", (DateTime.Now - start).TotalSeconds);
+
+            Console.ForegroundColor = originalColor;
 
             return _failures.Count;
         }
