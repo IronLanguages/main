@@ -135,7 +135,7 @@ puts S.instance_methods(false) - String.instance_methods(false) == []
 puts s = S.new('ghk')
 puts s.reverse
 ", @"
-[S, Enumerable, Comparable, Object, Kernel, BasicObject]
+[S, Comparable, Object, Kernel, BasicObject]
 true
 ghk
 khg

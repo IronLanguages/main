@@ -35,7 +35,7 @@ namespace IronRuby.Builtins {
     using IronRuby.Runtime.Conversions;
 
     [RubyClass("String", Extends = typeof(MutableString), Inherits = typeof(Object))]
-    [Includes(typeof(Enumerable), typeof(Comparable))]
+    [Includes(typeof(Comparable))]
     public class MutableStringOps {
 
         [RubyConstructor]
@@ -1202,24 +1202,34 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        [RubyMethod("each")] // TODO: remove (obsolete 1.8)
-        [RubyMethod("lines")]
-        [RubyMethod("each_line")]
-        public static object EachLine(RubyContext/*!*/ context, BlockParam block, MutableString/*!*/ self) {
-            return EachLine(block, self, context.InputSeparator);
-        }
-
         internal static readonly MutableString DefaultLineSeparator = MutableString.CreateAscii("\n").Freeze();
         internal static readonly MutableString DefaultParagraphSeparator = MutableString.CreateAscii("\n\n").Freeze();
 
-        [RubyMethod("each")] // TODO: remove (obsolete 1.8)
         [RubyMethod("lines")]
         [RubyMethod("each_line")]
-        public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator) {
+        public static Enumerator/*!*/ EachLine(RubyContext/*!*/ context, MutableString/*!*/ self) {
+            return new Enumerator((_, block) => EachLine(block, self, context.InputSeparator));
+        }
+
+        [RubyMethod("lines")]
+        [RubyMethod("each_line")]
+        public static object EachLine(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, MutableString/*!*/ self) {
+            return EachLine(block, self, context.InputSeparator);
+        }
+
+        [RubyMethod("lines")]
+        [RubyMethod("each_line")]
+        public static Enumerator/*!*/ EachLine(MutableString/*!*/ self, [DefaultProtocol]MutableString separator) {
+            return new Enumerator((_, block) => EachLine(block, self, separator, 0));
+        }
+
+        [RubyMethod("lines")]
+        [RubyMethod("each_line")]
+        public static object EachLine([NotNull]BlockParam/*!*/ block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator) {
             return EachLine(block, self, separator, 0);
         }
 
-        public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator, int start) {
+        public static object EachLine(BlockParam/*!*/ block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator, int start) {
             self.TrackChanges();
 
             MutableString paragraphSeparator;
@@ -1255,11 +1265,6 @@ namespace IronRuby.Builtins {
                     } else {
                         end = str.Length;
                     }
-                }
-
-                // Yield the current line
-                if (block == null) {
-                    throw RubyExceptions.NoBlockGiven();
                 }
 
                 object result;
