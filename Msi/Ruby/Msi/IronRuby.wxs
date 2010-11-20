@@ -68,10 +68,6 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 1.0 => 1.1):
 
     <!-- Root directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Merge Id="DLR" Language="1033" SourceFile="$(var.TargetDir)\DLR.msm" DiskId="1" />
-      <Merge Id="IrbRedist" Language="1033" SourceFile="$(var.TargetDir)\IrbRedist.msm" DiskId="1" />
-      <Merge Id="IronStudio" Language="1033" SourceFile="$(var.TargetDir)\IronStudio.msm" DiskId="1" />
-
       <Directory Id="ProgramMenuFolder" Name="PMENU">
         <Directory Id="Dir_IRStartMenu" Name="$(var.ProductShortName) $(var.ProductVersionText)">
           <Component Id="Comp_Shortcuts" DiskId="1" Guid="2C0FB4B5-D081-4893-8697-A801D6BADF62">
@@ -92,6 +88,10 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 1.0 => 1.1):
 
       <Directory Id="ProgramFilesFolder" Name="PFILES">
         <Directory Id="INSTALLDIR" Name="$(var.ProductShortName) $(var.ProductVersionText)">
+          <Merge Id="DLR" Language="1033" SourceFile="$(var.TargetDir)\DLR.msm" DiskId="1" />
+          <Merge Id="IrbRedist" Language="1033" SourceFile="$(var.TargetDir)\IrbRedist.msm" DiskId="1" />
+          <Merge Id="IronStudio" Language="1033" SourceFile="$(var.TargetDir)\IronStudio.msm" DiskId="1" />
+
           <Directory Id="Dir_Silverlight" Name="Silverlight">
             <?include Silverlight.wxi ?>
           </Directory>

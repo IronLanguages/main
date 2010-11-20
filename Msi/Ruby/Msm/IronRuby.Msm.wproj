@@ -35,6 +35,10 @@
       <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
       <Name>IronRuby.Libraries</Name>
     </ProjectReference>
+    <ProjectReference Include="$(RubyDir)\Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
+      <Project>{AA18A245-E342-4368-A474-83178311A742}</Project>
+      <Name>IronRubyConsole</Name>
+    </ProjectReference>
     <ProjectReference Include="$(RubyDir)\Console\Ruby.ConsoleAny.csproj">
       <Project>{6EE7A428-D803-41BC-8248-1297C3ACE369}</Project>
       <Name>IronRubyConsoleAny</Name>
@@ -43,8 +47,12 @@
       <Project>{D6AB587D-A888-4B98-85AC-F15E36F53838}</Project>
       <Name>IronRubyConsole</Name>
     </ProjectReference>
-    <ProjectReference Include="$(RubyDir)\Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
-      <Project>{AA18A245-E342-4368-A474-83178311A742}</Project>
+    <ProjectReference Include="$(RubyDir)\WinConsole\Ruby.WinConsole.csproj">
+      <Project>{D6AB587D-A888-4B98-85AC-F15E36F53838}</Project>
+      <Name>IronRubyConsole</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(RubyDir)\WinConsole\Ruby.WinConsoleAny.csproj">
+      <Project>{D6AB587D-A888-4B98-85AC-F15E36F53838}</Project>
       <Name>IronRubyConsole</Name>
     </ProjectReference>
   </ItemGroup>

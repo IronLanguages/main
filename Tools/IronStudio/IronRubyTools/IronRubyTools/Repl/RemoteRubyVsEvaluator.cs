@@ -93,7 +93,7 @@ namespace Microsoft.IronRubyTools.Repl {
 
             if (existingRubySetup != null) {
                 var options = new RubyOptions(existingRubySetup.Options);
-                rubySetup.Options["LibraryPaths"] = NormalizePaths(root, options.LibraryPaths);
+                rubySetup.Options["StandardLibraryPath"] = NormalizePaths(root, new[] { options.StandardLibraryPath })[0];
                 rubySetup.Options["RequiredPaths"] = NormalizePaths(root, options.RequirePaths);
                 rubySetup.Options["SearchPaths"] = NormalizePaths(root, options.SearchPaths);
             }
