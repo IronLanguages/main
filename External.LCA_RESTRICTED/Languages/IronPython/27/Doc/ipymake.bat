@@ -1,8 +1,12 @@
+if NOT EXIST "%DLR_ROOT%" (
+  echo DLR_ROOT environment variable not set
+  exit /b 1
+)
+
 cd /D %~dp0
 set PYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\CPython\27\Lib;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Doc
 set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Doc
 set CPY=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\CPython\27\python.exe
-rem set CPY=%DLR_ROOT%\Bin\Debug\ipy.exe
 
 :GenerateHtmlHelp
 rem mkdir Output\Html
