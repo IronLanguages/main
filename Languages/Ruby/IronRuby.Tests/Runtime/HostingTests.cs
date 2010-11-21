@@ -332,11 +332,8 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
             var rs = ScriptRuntimeSetup.ReadConfiguration();
             LanguageSetup ls = rs.GetRubySetup();
             Debug.Assert(ls.Names.IndexOf("IronRuby") != -1);
-
-            var newSetup = new ScriptRuntimeSetup();
-            newSetup.AddRubySetup();
-
-            ScriptRuntime runtime = ScriptRuntime.CreateRemote(domain, newSetup);
+            
+            ScriptRuntime runtime = ScriptRuntime.CreateRemote(domain, rs);
             ScriptEngine engine = runtime.GetRubyEngine();
             Assert(engine.RequireFile("fcntl") == true);
             Assert(engine.Execute<bool>("Object.constants.include?(:Fcntl)") == true);
@@ -370,6 +367,29 @@ p S.GetVariable('foo_bar')
 123
 123
 ");
+        }
+
+        public void RubyHosting_Scopes3() {
+            // TODO: test other backing storages (not implemented yet):
+
+            var variables = new Dictionary<string, object>();
+            variables["x"] = 1;
+            variables["y"] = 3;
+
+            var scope = Engine.CreateScope(variables);
+
+            string script = @"
+def foo
+  x + y
+end
+";
+            Engine.Execute(script, scope);
+
+            Assert(scope.GetVariable<int>("x") == 1);
+            Assert(scope.GetVariable<int>("y") == 3);
+
+            var foo = scope.GetVariable<Func<int>>("foo");
+            Assert(foo() == 4);
         }
 
         public void HostingDefaultOptions1() {

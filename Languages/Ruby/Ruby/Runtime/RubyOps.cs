@@ -1379,20 +1379,35 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static void ScopeSetMember(Scope scope, string name, object value) {
-            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
+            object storage = (object)scope.Storage;
+
+            var scopeStorage = storage as ScopeStorage;
             if (scopeStorage != null) {
                 scopeStorage.SetValue(name, false, value);
                 return;
             }
 
+            var stringDict = storage as StringDictionaryExpando;
+            if (stringDict != null) {
+                stringDict.Dictionary[name] = value;
+                return;
+            }
+            
             throw new NotImplementedException();
         }
 
         // TODO:
         internal static bool ScopeContainsMember(Scope scope, string name) {
-            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
+            object storage = (object)scope.Storage;
+
+            var scopeStorage = storage as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.HasValue(name, false);
+            }
+
+            var stringDict = storage as StringDictionaryExpando;
+            if (stringDict != null) {
+                return stringDict.Dictionary.ContainsKey(name);
             }
 
             throw new NotImplementedException();
@@ -1400,9 +1415,16 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static bool ScopeDeleteMember(Scope scope, string name) {
-            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
+            object storage = (object)scope.Storage;
+
+            var scopeStorage = storage as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.DeleteValue(name, false);
+            }
+
+            var stringDict = storage as StringDictionaryExpando;
+            if (stringDict != null) {
+                return stringDict.Dictionary.Remove(name);
             }
 
             throw new NotImplementedException();
@@ -1410,9 +1432,21 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static IList<KeyValuePair<string, object>> ScopeGetItems(Scope scope) {
-            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
+            object storage = (object)scope.Storage;
+
+            var scopeStorage = storage as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.GetItems();
+            }
+
+            var stringDict = storage as StringDictionaryExpando;
+            if (stringDict != null) {
+                var list = new KeyValuePair<string, object>[stringDict.Dictionary.Count];
+                int i = 0;
+                foreach (var entry in stringDict.Dictionary) {
+                    list[i++] = entry;
+                }
+                return list;
             }
 
             throw new NotImplementedException();
