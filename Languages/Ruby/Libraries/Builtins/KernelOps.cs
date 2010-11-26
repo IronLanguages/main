@@ -232,7 +232,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("throw", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("throw", RubyMethodAttributes.PublicSingleton)]
         public static void Throw(RubyContext/*!*/ context, object self, object label, [DefaultParameterValue(null)]object returnValue) {
-            if (_catchSymbols == null || !_catchSymbols.Contains(label, ReferenceEqualityComparer.Instance)) {
+            if (_catchSymbols == null || !_catchSymbols.Contains(label, ReferenceEqualityComparer<object>.Instance)) {
                 throw RubyExceptions.CreateNameError("uncaught throw `{0}'", context.Inspect(label).ToAsciiString());
             }
 

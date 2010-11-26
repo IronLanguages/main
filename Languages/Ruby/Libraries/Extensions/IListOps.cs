@@ -1070,7 +1070,7 @@ namespace IronRuby.Builtins {
             IList/*!*/ list, IList nested, int nestedIndex, Func<IList, object>/*!*/ loopDetected) {
 
             var worklist = new Stack<KeyValuePair<IList, int>>();
-            var recursionPath = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
+            var recursionPath = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
             int start = 0;
 
             while (true) {
@@ -1339,7 +1339,7 @@ namespace IronRuby.Builtins {
                         parts.Add(RubyUtils.InfiniteRecursionMarker);
                     } else {
                         if (seen == null) {
-                            seen = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
+                            seen = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
                         }
 
                         seen.Add(listItem, true);

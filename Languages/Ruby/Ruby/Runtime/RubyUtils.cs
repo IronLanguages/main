@@ -756,7 +756,7 @@ namespace IronRuby.Runtime {
 
             private Dictionary<object, bool> TryPushInfinite(object obj) {
                 if (_infiniteTracker == null) {
-                    _infiniteTracker = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
+                    _infiniteTracker = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
                 }
                 Dictionary<object, bool> infinite = _infiniteTracker;
                 if (infinite.ContainsKey(obj)) {

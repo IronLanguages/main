@@ -22,6 +22,8 @@ using System.Windows.Media;
 using IronRuby;
 using Microsoft.Phone.Controls;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Generation;
+using System.Runtime.CompilerServices;
 
 namespace PhoneScripter {
     public partial class MainPage : PhoneApplicationPage {
@@ -35,15 +37,6 @@ namespace PhoneScripter {
             _engine.Runtime.LoadAssembly(typeof(Color).Assembly);
             _engine.Runtime.Globals.SetVariable("Phone", this);
 
-            Input.Text = @"
-class MyTest
-    def initialize(arg1)
-    end
-end
-MyTest.new(1)
-";
-
-#if X
             Input.Text = 
 @"include System::Windows::Media
 
@@ -58,7 +51,6 @@ end
 
 10.times { |i| puts fact(i) }
 ";
-#endif
         }
 
         public TextBox OutputBox {

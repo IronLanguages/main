@@ -300,7 +300,6 @@
     <Compile Include="Builtins\Range.cs" />
     <Compile Include="Runtime\KCoding.cs" />
     <Compile Include="Runtime\Protocols.cs" />
-    <Compile Include="Runtime\ReferenceEqualityComparer.cs" />
     <Compile Include="Compiler\Ast\Expressions\RangeExpression.cs" />
     <Compile Include="Runtime\Conversions\Converter.cs" />
     <Compile Include="Runtime\Conversions\Converter.Generated.cs" />

@@ -29,6 +29,7 @@ using System.Globalization;
 using IronRuby.Runtime.Conversions;
 using System.Runtime.CompilerServices;
 using System.Reflection;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
 
@@ -575,7 +576,7 @@ namespace IronRuby.Builtins {
                         str = RubyUtils.InfiniteRecursionMarker;
                     } else {
                         if (visitedLists == null) {
-                            visitedLists = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
+                            visitedLists = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
                         }
                         visitedLists.Add(list, true);
                         Push(worklist, list);

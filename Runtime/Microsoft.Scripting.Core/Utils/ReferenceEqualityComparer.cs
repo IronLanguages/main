@@ -27,7 +27,11 @@ namespace System.Dynamic.Utils {
         }
 
         public int GetHashCode(T obj) {
+#if SILVERLIGHT && CLR2 // CF RH.GetHashCode throws NullReferenceException if the argument is null
+            return obj != null ? RuntimeHelpers.GetHashCode(obj) : 0;
+#else
             return RuntimeHelpers.GetHashCode(obj);
+#endif
         }
     }
 }

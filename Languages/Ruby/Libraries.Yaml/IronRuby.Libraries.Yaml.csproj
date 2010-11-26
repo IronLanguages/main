@@ -124,7 +124,6 @@
     <Compile Include="Engine\Nodes.cs" />
     <Compile Include="Engine\Parser.cs" />
     <Compile Include="Engine\PrivateType.cs" />
-    <Compile Include="Engine\ReferenceEqualityComparer.cs" />
     <Compile Include="Engine\Representer.cs" />
     <Compile Include="Engine\ResolverScanner.cs" />
     <Compile Include="Engine\Scanner.cs" />
@@ -160,7 +159,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
-    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" >
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
     </Reference>
