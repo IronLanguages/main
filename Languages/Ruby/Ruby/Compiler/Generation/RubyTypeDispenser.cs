@@ -28,17 +28,17 @@ using System.Globalization;
 
 namespace IronRuby.Compiler.Generation {
     internal static class RubyTypeDispenser {
+
         private static readonly Publisher<TypeDescription/*!*/, Type/*!*/>/*!*/ _newTypes;
         private static readonly Dictionary<Type/*!*/, IList<ITypeFeature/*!*/>/*!*/>/*!*/ _typeFeatures;
-        private static readonly ITypeFeature/*!*/[]/*!*/ _defaultFeatures = new ITypeFeature[2] {
-            RubyTypeBuilder.Feature,
-            InterfacesBuilder.MakeFeature(Type.EmptyTypes)
+        private static readonly ITypeFeature/*!*/[]/*!*/ _defaultFeatures = new ITypeFeature[] {
+            RubyTypeFeature.Instance,
+            InterfaceImplFeature.Create(Type.EmptyTypes)
         };
 
         static RubyTypeDispenser() {
             _newTypes = new Publisher<TypeDescription, Type>();
             _typeFeatures = new Dictionary<Type, IList<ITypeFeature>>();
-
             AddBuiltinType(typeof(object), typeof(RubyObject), false);
             AddBuiltinType(typeof(MutableString), typeof(MutableString.Subclass), true);
             AddBuiltinType(typeof(Proc), typeof(Proc.Subclass), true);
@@ -49,7 +49,7 @@ namespace IronRuby.Compiler.Generation {
             AddBuiltinType(typeof(MatchData), typeof(MatchData.Subclass), true);
             AddBuiltinType(typeof(RubyIO), typeof(RubyIO.Subclass), true);
         }
-
+      
         internal static Type/*!*/ GetOrCreateType(Type/*!*/ baseType, IList<Type/*!*/>/*!*/ interfaces, bool noOverrides) {
             Assert.NotNull(baseType);
             Assert.NotNull(interfaces);
@@ -58,16 +58,16 @@ namespace IronRuby.Compiler.Generation {
             if (interfaces.Count == 0) {
                 features = _defaultFeatures;
             } else {
-                features = new ITypeFeature[2] {
-                    RubyTypeBuilder.Feature,
-                    InterfacesBuilder.MakeFeature(interfaces)
+                features = new ITypeFeature[] {
+                    RubyTypeFeature.Instance,
+                    InterfaceImplFeature.Create(interfaces)
                 };
             }
             noOverrides |= typeof(IRubyType).IsAssignableFrom(baseType);
 
             TypeDescription typeInfo = new TypeDescription(baseType, features, noOverrides);
             Type type = _newTypes.GetOrCreateValue(typeInfo,
-                delegate() {
+                () => {
                     if (TypeImplementsFeatures(baseType, features)) {
                         return baseType;
                     }

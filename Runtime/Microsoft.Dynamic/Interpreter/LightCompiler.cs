@@ -1205,15 +1205,32 @@ namespace Microsoft.Scripting.Interpreter {
                 _forceCompile = true;
             }
 
-            if (!node.Method.IsStatic) {
-                Compile(node.Object);
-            }
+            // CF bug workaround
+            // TODO: can we do better if the delegate targets LightLambda.Run* method?
+            if (PlatformAdaptationLayer.IsCompactFramework && 
+                node.Method.Name == "Invoke" && typeof(Delegate).IsAssignableFrom(node.Object.Type) && !node.Method.IsStatic) {
+                    
+                Compile(
+                    AstUtils.Convert(
+                        Expression.Call(
+                            node.Object,
+                            node.Object.Type.GetMethod("DynamicInvoke"),
+                            Expression.NewArrayInit(typeof(object), node.Arguments.Map((e) => AstUtils.Convert(e, typeof(object))))
+                        ),
+                        node.Type
+                    )
+                );
 
-            foreach (var arg in node.Arguments) {
-                Compile(arg);
-            }
+            } else {
+                if (!node.Method.IsStatic) {
+                    Compile(node.Object);
+                }
 
-            _instructions.EmitCall(node.Method, parameters);
+                foreach (var arg in node.Arguments) {
+                    Compile(arg);
+                }
+                _instructions.EmitCall(node.Method, parameters);
+            }
         }
 
         private void CompileNewExpression(Expression expr) {

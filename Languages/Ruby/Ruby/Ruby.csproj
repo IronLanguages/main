@@ -214,7 +214,9 @@
     <Compile Include="Compiler\Ast\Walkers\NodeTypes.cs" />
     <Compile Include="Compiler\Ast\Walkers\Walker.cs" />
     <Compile Include="Compiler\Errors.cs" />
+    <Compile Include="Compiler\Generation\InterfaceImplFeature.cs" />
     <Compile Include="Compiler\Generation\IRubyType.cs" />
+    <Compile Include="Compiler\Generation\RubyTypeFeature.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Hosting\RubyConsoleHost.cs" />
     <Compile Include="Hosting\RubyService.cs" />

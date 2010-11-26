@@ -30,39 +30,6 @@ using System.Diagnostics;
 
 namespace IronRuby.Compiler.Generation {
     internal class RubyTypeBuilder : IFeatureBuilder {
-
-        #region ITypeFeature
-
-        sealed class TypeFeature : ITypeFeature {
-            public bool CanInherit {
-                get { return true; }
-            }
-
-            public bool IsImplementedBy(Type/*!*/ type) {
-                return typeof(IRubyObject).IsAssignableFrom(type);
-            }
-
-            public IFeatureBuilder/*!*/ MakeBuilder(TypeBuilder/*!*/ tb) {
-                return new RubyTypeBuilder(tb);
-            }
-
-            public override int GetHashCode() {
-                return typeof(TypeFeature).GetHashCode();
-            }
-
-            public override bool Equals(object obj) {
-                return Object.ReferenceEquals(obj, _feature);
-            }
-        }
-
-        static readonly TypeFeature/*!*/ _feature = new TypeFeature();
-
-        public static ITypeFeature/*!*/ Feature {
-            get { return _feature; }
-        }
-
-        #endregion
-
         protected readonly TypeBuilder/*!*/ _tb;
         private RubyTypeEmitter _emitter;
 

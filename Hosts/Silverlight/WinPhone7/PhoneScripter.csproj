@@ -49,19 +49,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="IronRuby">
-      <HintPath>..\..\Bin\Silverlight3$(Configuration)\IronRuby.dll</HintPath>
+      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\IronRuby.dll</HintPath>
     </Reference>
     <Reference Include="IronRuby.Libraries">
-      <HintPath>..\..\Bin\Silverlight3$(Configuration)\IronRuby.Libraries.dll</HintPath>
+      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\IronRuby.Libraries.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
-      <HintPath>..\..\Bin\Silverlight3$(Configuration)\Microsoft.Dynamic.dll</HintPath>
+      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\Microsoft.Dynamic.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting">
-      <HintPath>..\..\Bin\Silverlight3$(Configuration)\Microsoft.Scripting.dll</HintPath>
+      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\Microsoft.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting.Core">
-      <HintPath>..\..\Bin\Silverlight3$(Configuration)\Microsoft.Scripting.Core.dll</HintPath>
+      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\Microsoft.Scripting.Core.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Phone" />
     <Reference Include="Microsoft.Phone.Interop" />
