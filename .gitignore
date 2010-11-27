@@ -2,6 +2,7 @@
 obj/
 /bin/
 Solutions/*.suo
+*.csproj.user
 
 # TODO - testing scripts should not created this file here
 debug.log
