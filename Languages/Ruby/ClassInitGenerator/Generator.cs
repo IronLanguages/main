@@ -78,7 +78,8 @@ internal class Generator {
             type == typeof(MSA.Expression) ||
             type.FullName.StartsWith(typeof(Action).Namespace + ".Action") ||
             type.FullName.StartsWith(typeof(Action<>).Namespace + ".Action`") ||
-            type.FullName.StartsWith(typeof(Func<>).Namespace + ".Func`") ?
+            type.FullName.StartsWith(typeof(Func<>).Namespace + ".Func`") ||
+            type.FullName == "System.Runtime.InteropServices.DefaultParameterValueAttribute" ?
             type.Name : type.FullName;
     }
 }

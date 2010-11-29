@@ -20,6 +20,7 @@ using IronRuby.Compiler;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
 

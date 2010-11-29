@@ -25,12 +25,39 @@ using System.Text;
 
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using System.Runtime.InteropServices;
 
 #if !SILVERLIGHT
 using Microsoft.Scripting.Metadata;
 #endif
 
 namespace Microsoft.Scripting.Utils {
+    // CF doesn't support DefaultParameterValue attribute. Define our own, but not in System.Runtime.InteropServices namespace as that would 
+    // make C# compiler emit the parameter's default value metadata not the attribute itself. The default value metadata are not accessible on CF.
+#if SILVERLIGHT && CLR2 
+    /// <summary>
+    /// The Default Parameter Value Attribute.
+    /// </summary>
+    public sealed class DefaultParameterValueAttribute : Attribute
+    {
+        private readonly object _value;
+
+        public object Value
+        {
+            get { return _value; }
+        }
+
+        /// <summary>
+        /// The constructor
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public DefaultParameterValueAttribute(object value)
+        {
+            _value = value;
+        }
+    }
+#endif
+
     public static class ReflectionUtils {
         #region Signature and Type Formatting
 
@@ -347,11 +374,15 @@ namespace Microsoft.Scripting.Utils {
         /// Returns <c>true</c> if the specified parameter is mandatory, i.e. is not optional and doesn't have a default value.
         /// </summary>
         public static bool IsMandatory(this ParameterInfo pi) {
-            return (pi.Attributes & (ParameterAttributes.Optional | ParameterAttributes.HasDefault)) == 0;
+            return (pi.Attributes & ParameterAttributes.Optional) == 0 && !pi.HasDefaultValue();
         }
 
         public static bool HasDefaultValue(this ParameterInfo pi) {
+#if SILVERLIGHT && CLR2 // CF doesn't support Optional nor DefaultParameterValue attributes
+            return pi.IsDefined(typeof(DefaultParameterValueAttribute), false);
+#else
             return (pi.Attributes & ParameterAttributes.HasDefault) != 0;
+#endif
         }
 
         public static bool ProhibitsNull(this ParameterInfo parameter) {
@@ -379,6 +410,23 @@ namespace Microsoft.Scripting.Utils {
                 if (pi.IsParamArray() || pi.IsParamDictionary()) return true;
             }
             return false;
+        }
+
+        public static object GetDefaultValue(this ParameterInfo info) {
+#if SILVERLIGHT && CLR2 // CF doesn't support Optional nor DefaultParameterValue attributes
+            if (info.IsOptional) {
+                return info.ParameterType == typeof(object) ? Missing.Value : ScriptingRuntimeHelpers.GetPrimitiveDefaultValue(info.ParameterType);
+            } 
+
+            var defaultValueAttribute = info.GetCustomAttributes(typeof(DefaultParameterValueAttribute), false);
+            if (defaultValueAttribute.Length > 0) {
+                return ((DefaultParameterValueAttribute)defaultValueAttribute[0]).Value;
+            } 
+
+            return null;
+#else
+            return info.DefaultValue;
+#endif
         }
 
         #endregion

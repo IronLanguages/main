@@ -19,6 +19,7 @@
 namespace IronRuby.StandardLibrary.Yaml {
     using System;
     using Microsoft.Scripting.Utils;
+    using System.Runtime.InteropServices;
     
     public sealed class YamlLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
         protected override void LoadModules() {

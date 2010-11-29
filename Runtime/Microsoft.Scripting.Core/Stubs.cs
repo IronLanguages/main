@@ -61,19 +61,6 @@ namespace System {
         }
     }
 
-    namespace Runtime.InteropServices {
-        /// <summary>
-        /// The Default Parameter Value Attribute.
-        /// </summary>
-        public sealed class DefaultParameterValueAttribute : Attribute {
-            /// <summary>
-            /// The constructor
-            /// </summary>
-            /// <param name="value">The value.</param>
-            public DefaultParameterValueAttribute(object value) { }
-        }
-    }
-
     // We reference these namespaces via "using"
     // We don't actually use them because the code is #if !SILVERLIGHT
     // Rather than fix the usings all over the place, just define these here

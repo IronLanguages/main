@@ -14,16 +14,14 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
-using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
 
 namespace IronRuby.StandardLibrary.Iconv {
     // TODO: inherits from class Data

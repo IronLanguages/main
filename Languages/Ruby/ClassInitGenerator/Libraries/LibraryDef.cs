@@ -842,6 +842,7 @@ internal class LibraryDef {
         _output.Indent++;
         _output.WriteLine("using System;");
         _output.WriteLine("using Microsoft.Scripting.Utils;");
+        _output.WriteLine("using System.Runtime.InteropServices;");
         _output.WriteLine();
 
         _output.WriteLine("public sealed class {0} : {1} {{", _initializerName, TypeLibraryInitializer);

@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -39,7 +40,6 @@ using Microsoft.Scripting.Utils;
 namespace IronRuby.Builtins {
     using Ast = Expression;
     using Utils = IronRuby.Runtime.Utils;
-    using System.Globalization;
 
     /// <summary>
     /// Implementation of IO builtin class. 
