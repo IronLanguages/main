@@ -1,8 +1,5 @@
-import unittest
+import unittest, sys
 from test import test_support
-if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=307405"):
-    import sys
-    sys.exit(0)
 
 import binascii
 import random
@@ -148,11 +145,13 @@ class CompressTestCase(BaseCompressTestCase, unittest.TestCase):
 
     # Memory use of the following functions takes into account overallocation
 
+    @unittest.skipIf(sys.platform == 'cli', "Issue #29377")
     @precisionbigmemtest(size=_1G + 1024 * 1024, memuse=3)
     def test_big_compress_buffer(self, size):
         compress = lambda s: zlib.compress(s, 1)
         self.check_big_compress_buffer(size, compress)
 
+    @unittest.skipIf(sys.platform == 'cli', "Issue #29377")
     @precisionbigmemtest(size=_1G + 1024 * 1024, memuse=2)
     def test_big_decompress_buffer(self, size):
         self.check_big_decompress_buffer(size, zlib.decompress)
@@ -447,12 +446,14 @@ class CompressObjectTestCase(BaseCompressTestCase, unittest.TestCase):
 
     # Memory use of the following functions takes into account overallocation
 
+    @unittest.skipIf(sys.platform == 'cli', "Issue #29377")
     @precisionbigmemtest(size=_1G + 1024 * 1024, memuse=3)
     def test_big_compress_buffer(self, size):
         c = zlib.compressobj(1)
         compress = lambda s: c.compress(s) + c.flush()
         self.check_big_compress_buffer(size, compress)
 
+    @unittest.skipIf(sys.platform == 'cli', "Issue #29377")
     @precisionbigmemtest(size=_1G + 1024 * 1024, memuse=2)
     def test_big_decompress_buffer(self, size):
         d = zlib.decompressobj()
