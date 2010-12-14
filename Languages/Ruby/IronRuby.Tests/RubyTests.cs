@@ -55,6 +55,7 @@ namespace IronRuby.Tests {
                 RubyArray_Remove,
                 RubyArray_Insert,
                 RubyArray_Misc,
+                RubyArray_Indexer,
      
                 Scenario_ParserLogging,
                 Parser1,

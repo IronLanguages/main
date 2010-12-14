@@ -592,11 +592,6 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyArray, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.InPlaceReverse)
             );
             
-            DefineLibraryMethod(module, "reverse_each", 0x51, 
-                0x00000000U, 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, System.Object>(IronRuby.Builtins.ArrayOps.ReverseEach)
-            );
-            
             DefineLibraryMethod(module, "sort", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Runtime.ComparisonStorage, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, System.Object>(IronRuby.Builtins.ArrayOps.Sort)
@@ -2878,11 +2873,11 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "readlines", 0x51, 
-                0x00000000U, 0x00000000U, 0x00020004U, 0x00060000U, 
+                0x00060000U, 0x00000000U, 0x00000000U, 0x00020004U, 
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyIOOps.ReadLines), 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyIOOps.ReadLines), 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, Microsoft.Scripting.Runtime.DynamicNull, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyIOOps.ReadLines), 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Runtime.Union<IronRuby.Builtins.MutableString, System.Int32>, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyIOOps.ReadLines), 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyIOOps.ReadLines)
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Runtime.Union<IronRuby.Builtins.MutableString, System.Int32>, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyIOOps.ReadLines)
             );
             
             DefineLibraryMethod(module, "reopen", 0x51, 
@@ -4087,15 +4082,15 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "define_singleton_method", 0x51, 
-                new[] { 0x0002000cU, 0x0000000cU, 0x0002000cU, 0x0000000cU, 0x0004000aU, 0x0000000aU, 0x0002000cU, 0x0000000cU}, 
+                new[] { 0x0000000cU, 0x0002000cU, 0x0000000cU, 0x0002000cU, 0x0000000cU, 0x0004000aU, 0x0000000aU, 0x0002000cU}, 
+                new Func<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Runtime.ClrName, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc>(IronRuby.Builtins.KernelOps.DefineSingletonMethod), 
                 new Func<IronRuby.Runtime.RubyScope, System.Object, System.String, IronRuby.Builtins.RubyMethod, IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.KernelOps.DefineSingletonMethod), 
                 new Func<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Runtime.ClrName, IronRuby.Builtins.RubyMethod, IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.KernelOps.DefineSingletonMethod), 
                 new Func<IronRuby.Runtime.RubyScope, System.Object, System.String, IronRuby.Builtins.UnboundMethod, IronRuby.Builtins.UnboundMethod>(IronRuby.Builtins.KernelOps.DefineSingletonMethod), 
                 new Func<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Runtime.ClrName, IronRuby.Builtins.UnboundMethod, IronRuby.Builtins.UnboundMethod>(IronRuby.Builtins.KernelOps.DefineSingletonMethod), 
                 new Func<IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, System.Object, System.String, IronRuby.Builtins.Proc>(IronRuby.Builtins.KernelOps.DefineSingletonMethod), 
                 new Func<IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, System.Object, IronRuby.Runtime.ClrName, IronRuby.Builtins.Proc>(IronRuby.Builtins.KernelOps.DefineSingletonMethod), 
-                new Func<IronRuby.Runtime.RubyScope, System.Object, System.String, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc>(IronRuby.Builtins.KernelOps.DefineSingletonMethod), 
-                new Func<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Runtime.ClrName, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc>(IronRuby.Builtins.KernelOps.DefineSingletonMethod)
+                new Func<IronRuby.Runtime.RubyScope, System.Object, System.String, IronRuby.Builtins.Proc, IronRuby.Builtins.Proc>(IronRuby.Builtins.KernelOps.DefineSingletonMethod)
             );
             
             DefineLibraryMethod(module, "display", 0x51, 
@@ -7597,16 +7592,16 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "*", 0x51, 
                 0x00000000U, 0x00000004U, 0x00040008U, 
-                new Func<IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.Repetition), 
-                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Repetition), 
-                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, IronRuby.Runtime.Union<IronRuby.Builtins.MutableString, System.Int32>, System.Object>(IronRuby.Builtins.IListOps.Repetition)
+                new Func<IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.Repeat), 
+                new Func<IronRuby.Runtime.JoinConversionStorage, System.Collections.IList, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Repeat), 
+                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.JoinConversionStorage, System.Collections.IList, IronRuby.Runtime.Union<IronRuby.Builtins.MutableString, System.Int32>, System.Object>(IronRuby.Builtins.IListOps.Repeat)
             );
             
             DefineLibraryMethod(module, "[]", 0x51, 
                 0x00010000U, 0x00060000U, 0x00000008U, 
                 new Func<System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.GetElement), 
                 new Func<IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElements), 
-                new Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElement)
+                new Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElements)
             );
             
             DefineLibraryMethod(module, "[]=", 0x51, 
@@ -7706,12 +7701,14 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "each", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000001U, 
+                new Func<System.Collections.IList, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.IListOps.Each), 
                 new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.Each)
             );
             
             DefineLibraryMethod(module, "each_index", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000001U, 
+                new Func<System.Collections.IList, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.IListOps.EachIndex), 
                 new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.EachIndex)
             );
             
@@ -7810,8 +7807,8 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "join", 0x51, 
                 0x00000000U, 0x00000000U, 
-                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join), 
-                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join)
+                new Func<IronRuby.Runtime.JoinConversionStorage, System.Collections.IList, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.Join), 
+                new Func<IronRuby.Runtime.JoinConversionStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.JoinWithLazySeparatorConversion)
             );
             
             DefineLibraryMethod(module, "last", 0x51, 
@@ -7851,6 +7848,11 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.Pop)
             );
             
+            DefineLibraryMethod(module, "product", 0x51, 
+                0x80010002U, 
+                new Func<System.Collections.IList, System.Collections.IList[], IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.Product)
+            );
+            
             DefineLibraryMethod(module, "push", 0x51, 
                 0x80000000U, 
                 new Func<System.Collections.IList, System.Object[], System.Collections.IList>(IronRuby.Builtins.IListOps.Push)
@@ -7886,6 +7888,12 @@ namespace IronRuby.Builtins {
                 new Func<System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.InPlaceReverse)
             );
             
+            DefineLibraryMethod(module, "reverse_each", 0x51, 
+                0x00000000U, 0x00000001U, 
+                new Func<IronRuby.Builtins.RubyArray, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.IListOps.ReverseEach), 
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, System.Object>(IronRuby.Builtins.IListOps.ReverseEach)
+            );
+            
             DefineLibraryMethod(module, "rindex", 0x51, 
                 0x00000001U, 0x00000000U, 
                 new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.ReverseIndex), 
@@ -7916,14 +7924,14 @@ namespace IronRuby.Builtins {
                 0x00010000U, 0x00060000U, 0x00000008U, 
                 new Func<System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.GetElement), 
                 new Func<IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElements), 
-                new Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElement)
+                new Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.GetElements)
             );
             
             DefineLibraryMethod(module, "slice!", 0x51, 
-                0x00020000U, 0x00000010U, 0x000c0000U, 
-                new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.SliceInPlace), 
-                new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.IListOps.SliceInPlace), 
-                new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.SliceInPlace)
+                0x00010000U, 0x00000008U, 0x00060000U, 
+                new Func<System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.SliceInPlace), 
+                new Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, IronRuby.Builtins.Range, System.Collections.IList>(IronRuby.Builtins.IListOps.SliceInPlace), 
+                new Func<IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Int32, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.SliceInPlace)
             );
             
             DefineLibraryMethod(module, "sort", 0x51, 
@@ -11126,12 +11134,12 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             );
             
             DefineLibraryMethod(module, "<=>", 0x11, 
-                new[] { 0x00000002U, 0x00000004U, 0x00000000U, 0x00000000U, 0x00000000U}, 
+                new[] { 0x00000000U, 0x00000002U, 0x00000004U, 0x00000000U, 0x00000000U}, 
+                new Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare), 
                 new Func<IronRuby.StandardLibrary.BigDecimal.BigDecimal, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare), 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare), 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Int32, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare), 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare), 
-                new Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Object, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare)
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.StandardLibrary.BigDecimal.BigDecimal, System.Double, System.Object>(IronRuby.StandardLibrary.BigDecimal.BigDecimalOps.Compare)
             );
             
             DefineLibraryMethod(module, "==", 0x11, 

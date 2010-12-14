@@ -322,21 +322,12 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
 #endif
         }
 
-        [Options(NoRuntime = true)]
         public void RubyHosting5() {
             // app-domain creation:
             if (_driver.PartialTrust) return;
 
-            AppDomain domain = AppDomain.CreateDomain("foo");
-
-            var rs = ScriptRuntimeSetup.ReadConfiguration();
-            LanguageSetup ls = rs.GetRubySetup();
-            Debug.Assert(ls.Names.IndexOf("IronRuby") != -1);
-            
-            ScriptRuntime runtime = ScriptRuntime.CreateRemote(domain, rs);
-            ScriptEngine engine = runtime.GetRubyEngine();
-            Assert(engine.RequireFile("fcntl") == true);
-            Assert(engine.Execute<bool>("Object.constants.include?(:Fcntl)") == true);
+            Assert(Engine.RequireFile("fcntl") == true);
+            Assert(Engine.Execute<bool>("Object.constants.include?(:Fcntl)") == true);
         }
 
         public void RubyHosting_Scopes1() {

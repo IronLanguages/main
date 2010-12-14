@@ -25,6 +25,7 @@ using IronRuby.Builtins;
 namespace IronRuby.Runtime {
     using UnaryOp = Func<CallSite, object, object>;
     using BinaryOp = Func<CallSite, object, object, object>;
+    using System.Collections;
 
     public abstract class RubyCallSiteStorage {
         private readonly RubyContext/*!*/ _context;
@@ -113,6 +114,35 @@ namespace IronRuby.Runtime {
 
         public CallSite<BinaryOp>/*!*/ GreaterThanSite {
             get { return RubyUtils.GetCallSite(ref _greaterThanSite, Context, ">", 1); }
+        }
+    }
+
+
+
+    public class JoinConversionStorage : RubyCallSiteStorage {
+        private CallSite<Func<CallSite, object, MutableString>> _tosSite;   // to_s
+        private CallSite<Func<CallSite, object, MutableString>> _toStrSite; // try to_str
+        private CallSite<Func<CallSite, object, IList>> _toArySite;         // try to_ary
+
+        [Emitted]
+        public JoinConversionStorage(RubyContext/*!*/ context) : base(context) { }
+
+        public CallSite<Func<CallSite, object, MutableString>>/*!*/ ToStr {
+            get {
+                return _toStrSite ?? (_toStrSite = RubyUtils.GetCallSite(ref _toStrSite, TryConvertToStrAction.Make(Context)));
+            }
+        }
+
+        public CallSite<Func<CallSite, object, MutableString>>/*!*/ ToS {
+            get {
+                return _tosSite ?? (_tosSite = RubyUtils.GetCallSite(ref _tosSite, ConvertToSAction.Make(Context)));
+            }
+        }
+
+        public CallSite<Func<CallSite, object, IList>>/*!*/ ToAry {
+            get {
+                return _toArySite ?? (_toArySite = RubyUtils.GetCallSite(ref _toArySite, TryConvertToArrayAction.Make(Context)));
+            }
         }
     }
 }

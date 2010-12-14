@@ -117,7 +117,7 @@ namespace IronRuby.Tests {
             Assert((int)a[0] == 3);
 
             a = new RubyArray(new[] { 1, 2, 3 });
-            AssertExceptionThrown<ArgumentNullException>(() => new RubyArray(null, 1, 2));
+            AssertExceptionThrown<ArgumentNullException>(() => new RubyArray((RubyArray)null, 1, 2));
             AssertExceptionThrown<ArgumentOutOfRangeException>(() => new RubyArray(a, -1, 2));
             AssertExceptionThrown<ArgumentOutOfRangeException>(() => new RubyArray(a, 3, 1));
             AssertExceptionThrown<ArgumentOutOfRangeException>(() => new RubyArray(a, 0, 4));
@@ -380,6 +380,31 @@ namespace IronRuby.Tests {
             a.Freeze();
             AssertExceptionThrown<RuntimeError>(() => a.Reverse());
             AssertExceptionThrown<RuntimeError>(() => a.Sort());
+        }
+
+        [Options(NoRuntime = true)]
+        public void RubyArray_Indexer() {
+            RubyArray a;
+
+            a = new RubyArray();
+            a.Add(0);
+            Assert(ArrayUtils.ValueEquals(a.ToArray(), new object[] { 0 }));
+            a[1] = 1;
+            Assert(ArrayUtils.ValueEquals(a.ToArray(), new object[] { 0, 1 }));
+            a[4] = 4;
+            Assert(ArrayUtils.ValueEquals(a.ToArray(), new object[] { 0, 1, null, null, 4 }));
+            a[6] = 6;
+            Assert(ArrayUtils.ValueEquals(a.ToArray(), new object[] { 0, 1, null, null, 4, null, 6 }));
+
+            a = new RubyArray(new object[] { null, null, 2, 3}, 2, 2);
+            Assert(ArrayUtils.ValueEquals(a.ToArray(), new object[] { 2, 3 }));
+            a[3] = 4;
+            Assert(ArrayUtils.ValueEquals(a.ToArray(), new object[] { 2, 3, null, 4 }));
+
+            a = new RubyArray(new object[] { null, null, 2, 3 }, 2, 2);
+            Assert((int)a[0] == 2);
+            object x;
+            AssertExceptionThrown<IndexOutOfRangeException>(() => x = a[2]);
         }
     }
 }

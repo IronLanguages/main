@@ -118,10 +118,7 @@ namespace IronRuby.Builtins {
         }
 
         private static object Reinitialize(BlockParam/*!*/ block, RubyArray/*!*/ self, int size) {
-            if (size < 0) {
-                throw RubyExceptions.CreateArgumentError("negative array size");
-            }
-
+            CheckArraySize(size); 
             self.Clear();
             for (int i = 0; i < size; i++) {
                 object item;
@@ -136,24 +133,28 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyArray/*!*/ CreateArray(RubyClass/*!*/ self, [DefaultProtocol]int size, object value) {
-            if (size < 0) {
-                throw RubyExceptions.CreateArgumentError("negative array size");
-            }
-
+            CheckArraySize(size); 
             return new RubyArray().AddMultiple(size, value);
         }
 
         // Reinitialization. Not called when a factory/non-default ctor is called.
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static RubyArray/*!*/ ReinitializeByRepeatedValue(RubyContext/*!*/ context, RubyArray/*!*/ self, [DefaultProtocol]int size, object value) {
-            if (size < 0) {
-                throw RubyExceptions.CreateArgumentError("negative array size");
-            }
-
+            CheckArraySize(size);
             self.Clear();
             self.AddMultiple(size, value);
 
             return self;
+        }
+
+        private static void CheckArraySize(int size) {
+            if (size < 0) {
+                throw RubyExceptions.CreateArgumentError("negative array size");
+            }
+
+            if (IntPtr.Size == 4 && size > Int32.MaxValue / 4) {
+                throw RubyExceptions.CreateArgumentError("array size too big");
+            }
         }
 
         [RubyMethod("[]", RubyMethodAttributes.PublicSingleton)]
@@ -278,28 +279,11 @@ namespace IronRuby.Builtins {
         }
         #endregion
 
-        #region reverse!, reverse_each
+        #region reverse!
 
         [RubyMethod("reverse!")]
         public static RubyArray/*!*/ InPlaceReverse(RubyContext/*!*/ context, RubyArray/*!*/ self) {
             self.Reverse();
-            return self;
-        }
-
-        [RubyMethod("reverse_each")]
-        public static object ReverseEach(RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
-            Assert.NotNull(context, self);
-
-            if (self.Count > 0 && block == null) {
-                throw RubyExceptions.NoBlockGiven();
-            }
-
-            foreach (int index in IListOps.ReverseEnumerateIndexes(self)) {
-                object result;
-                if (block.Yield(self[index], out result)) {
-                    return result;
-                }
-            }
             return self;
         }
 
