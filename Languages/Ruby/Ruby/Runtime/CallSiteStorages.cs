@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Runtime.CompilerServices;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime.Calls;
@@ -25,7 +26,6 @@ using IronRuby.Builtins;
 namespace IronRuby.Runtime {
     using UnaryOp = Func<CallSite, object, object>;
     using BinaryOp = Func<CallSite, object, object, object>;
-    using System.Collections;
 
     public abstract class RubyCallSiteStorage {
         private readonly RubyContext/*!*/ _context;

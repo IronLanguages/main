@@ -661,7 +661,7 @@ namespace IronRuby.Builtins {
 
         public object this[int index] {
             get {
-                if (index >= _count) {
+                if (index < 0 || index >= _count) {
                     throw new IndexOutOfRangeException();
                 }
                 return _content[_start + index];

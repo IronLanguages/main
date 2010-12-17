@@ -29,7 +29,7 @@ namespace IronRuby.Builtins {
         /// All indices and counts are in bytes.
         /// </summary>
         [Serializable]
-        private class BinaryContent : Content {
+        internal class BinaryContent : Content {
             protected byte[] _data;
             protected int _count;
 

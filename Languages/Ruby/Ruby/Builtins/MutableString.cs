@@ -98,7 +98,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private MutableString(Content/*!*/ content, RubyEncoding/*!*/ encoding) {
+        internal MutableString(Content/*!*/ content, RubyEncoding/*!*/ encoding) {
             Assert.NotNull(content, encoding);
             SetEncoding(encoding);
             SetContent(content);
@@ -238,6 +238,11 @@ namespace IronRuby.Builtins {
         /// </summary>
         public virtual MutableString/*!*/ CreateInstance() {
             return new MutableString(_encoding);
+        }
+
+        // creates an instance of self type with given content and encoding:
+        internal virtual MutableString/*!*/ CreateInstance(Content/*!*/ content, RubyEncoding/*!*/ encoding) {
+            return new MutableString(content, encoding);
         }
 
         public static MutableString/*!*/ CreateEmpty() {
@@ -407,7 +412,7 @@ namespace IronRuby.Builtins {
                 return;
             }
 
-            // If the representation is character based and include non-ascii chcaracters then we need 
+            // If the representation is character based and includes non-ascii chcaracters then we need 
             // to switch to binary repr before we change the encoding so that the binary repr of the string is preserved.
 
             // this caches hash-code, which we need to invalidate due to encoding change:
@@ -419,6 +424,61 @@ namespace IronRuby.Builtins {
             } else {
                 SwitchToBytes();
                 SetEncoding(newEncoding);
+            }
+        }
+
+        /// <summary>
+        /// Assumes the content to be encoded in fromEncoding and trancodes it into toEncoding.
+        /// </summary>
+        /// <exception cref="EncoderFallbackException">Invalid data.</exception>
+        /// <exception cref="DecoderFallbackException">Invalid data.</exception>
+        /// <exception cref="RuntimeError">The string is frozen.</exception>
+        public void Transcode(RubyEncoding/*!*/ fromEncoding, RubyEncoding/*!*/ toEncoding) {
+            if (fromEncoding == toEncoding && _encoding == fromEncoding) {
+                return;
+            }
+
+            bool isAscii = IsAscii();
+            Mutate();
+
+            if (isAscii) {
+                SetEncoding(toEncoding);
+                return;
+            }
+            
+            // fromEncoding -> UTF16:
+            bool switchToChars;
+            if (IsBinary) {
+                if (fromEncoding != _encoding) {
+                    SetEncoding(fromEncoding);
+                }
+                switchToChars = true;
+            } else if (fromEncoding != _encoding) {
+                try {
+                    _content = _content.SwitchToBinaryContent();
+                } catch (EncoderFallbackException e) {
+                    throw RubyExceptions.CreateInvalidByteSequenceError(e, _encoding);
+                }
+                SetEncoding(fromEncoding);
+                switchToChars = true;
+            } else {
+                switchToChars = false;
+            }
+
+            if (switchToChars) {
+                try {
+                    _content = _content.SwitchToStringContent();
+                } catch (DecoderFallbackException e) {
+                    throw RubyExceptions.CreateInvalidByteSequenceError(e, fromEncoding);
+                }
+            }
+
+            // UTF16 -> toEncoding:
+            SetEncoding(toEncoding);
+            try {
+                _content.CheckEncoding();
+            } catch (EncoderFallbackException e) {
+                throw RubyExceptions.CreateTranscodingError(e, fromEncoding, toEncoding);
             }
         }
 
@@ -487,17 +547,9 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Checks if the string content is correctly encoded.
         /// </summary>
+        /// <exception cref="EncoderFallbackException"></exception>
+        /// <exception cref="DecoderFallbackException"></exception>
         public MutableString/*!*/ CheckEncoding() {
-            try {
-               return CheckEncodingInternal();
-            } catch (EncoderFallbackException e) {
-                throw RubyExceptions.CreateArgumentError(e, _encoding);
-            } catch (DecoderFallbackException e) {
-                throw RubyExceptions.CreateArgumentError(e, _encoding);
-            }
-        }
-
-        internal MutableString/*!*/ CheckEncodingInternal() {
             _content.CheckEncoding();
             return this;
         }
@@ -612,7 +664,7 @@ namespace IronRuby.Builtins {
         #region Regular Expressions (read-only)
 
         internal MutableString/*!*/ EscapeRegularExpression() {
-            return new MutableString(_content.EscapeRegularExpression(), _encoding);
+            return CreateInstance(_content.EscapeRegularExpression(), _encoding);
         }
 
         #endregion
@@ -678,26 +730,34 @@ namespace IronRuby.Builtins {
             return _content.ConvertToBytes();
         }
 
+        /// <summary>
+        /// Switches the underlying representation to bytes.
+        /// </summary>
+        /// <returns>Self.</returns>
+        /// <exception cref="InvalidByteSequenceError">
+        /// String content contains a character that isn't valid in the current encoding.
+        /// </exception>
         public MutableString/*!*/ SwitchToBytes() {
             try {
                 _content = _content.SwitchToBinaryContent();
             } catch (EncoderFallbackException e) {
-                throw RubyExceptions.CreateArgumentError(e, _encoding);
+                throw RubyExceptions.CreateInvalidByteSequenceError(e, _encoding);
             }
             return this;
         }
 
         /// <summary>
-        /// Prepares the string for a character based operation.
+        /// Switches the underlying representation to characters.
         /// </summary>
-        /// <exception cref="ArgumentException">
-        /// String content is binary and contains byte sequence that doesn't represent a valid character.
+        /// <returns>Self.</returns>
+        /// <exception cref="InvalidByteSequenceError">
+        /// String content is binary and contains byte sequence that doesn't represent a valid character in the current encoding.
         /// </exception>
         public MutableString/*!*/ SwitchToCharacters() {
             try {
                 _content = _content.SwitchToStringContent();
             } catch (DecoderFallbackException e) {
-                throw RubyExceptions.CreateArgumentError(e, _encoding);
+                throw RubyExceptions.CreateInvalidByteSequenceError(e, _encoding);
             }
             return this;
         }
@@ -1239,7 +1299,7 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ GetSlice(int start, int count) {
             ContractUtils.Requires(start >= 0, "start");
             ContractUtils.Requires(count >= 0, "count");
-            return new MutableString(_content.GetSlice(start, count), _encoding);
+            return CreateInstance(_content.GetSlice(start, count), _encoding);
         }
 
         public string/*!*/ GetStringSlice(int start) {
@@ -1440,6 +1500,8 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Concat(MutableString/*!*/ other) {
             ContractUtils.RequiresNotNull(other, "other");
             var encoding = RequireCompatibleEncoding(other);
+
+            // MRI doesn't create a subclass
             return new MutableString(_content.Concat(other._content), encoding);
         }
 

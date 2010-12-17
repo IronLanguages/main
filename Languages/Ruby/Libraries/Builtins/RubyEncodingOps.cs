@@ -29,15 +29,21 @@ namespace IronRuby.Builtins {
     public static class RubyEncodingOps {
         #region Exceptions
 
-        // TODO: we need to fix class init generator
-        //[RubyException("CompatibilityError", Extends = typeof(EncodingCompatibilityError), Inherits = typeof(EncodingError))]
-        //public static class CompatibilityErrorOps {
-        //}
+        [RubyException("CompatibilityError", Extends = typeof(EncodingCompatibilityError))]
+        public static class CompatibilityErrorOps {
+        }
 
-        // TODO:
-        // UndefinedConversionError
-        // InvalidByteSequenceError
-        // ConverterNotFoundError
+        [RubyException("UndefinedConversionError", Extends = typeof(UndefinedConversionError))]
+        public static class UndefinedConversionErrorOps {
+        }
+
+        [RubyException("InvalidByteSequenceError", Extends = typeof(InvalidByteSequenceError))]
+        public static class InvalidByteSequenceErrorOps {
+        }
+
+        [RubyException("ConverterNotFoundError", Extends = typeof(ConverterNotFoundError))]
+        public static class ConverterNotFoundErrorOps {
+        }
 
         #endregion
 
@@ -62,6 +68,19 @@ namespace IronRuby.Builtins {
         
         [RubyConstant]
         public static readonly RubyEncoding EUC_JP = RubyEncoding.EUC;
+
+        [RubyConstant]
+        public static readonly RubyEncoding KOI8_R = RubyEncoding.GetRubyEncoding(20866);
+
+        [RubyConstant]
+        public static readonly RubyEncoding TIS_620 = RubyEncoding.GetRubyEncoding(874);
+
+        [RubyConstant]
+        public static readonly RubyEncoding ISO_8859_9 = RubyEncoding.GetRubyEncoding(28599);
+
+        [RubyConstant("Big5")]
+        [RubyConstant("BIG5")]
+        public static readonly RubyEncoding Big5 = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageBig5);
 
         // TODO:
         // ...

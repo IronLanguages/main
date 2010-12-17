@@ -28,7 +28,7 @@ namespace IronRuby.Builtins {
         /// All indices and counts are in characters. Surrogate pairs are treated as 2 separate characters.
         /// </summary>
         [Serializable]
-        private sealed class CharArrayContent : Content {
+        internal sealed class CharArrayContent : Content {
             private char[]/*!*/ _data;
             private int _count;
             private string _immutableSnapshot;

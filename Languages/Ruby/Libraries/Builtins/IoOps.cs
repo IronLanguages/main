@@ -667,10 +667,10 @@ namespace IronRuby.Builtins {
             // TODO: options
 
             RubyEncoding externalEncoding = null, internalEncoding = null;
-            if (external != Missing.Value) {
+            if (external != Missing.Value && external != null) {
                 externalEncoding = Protocols.ConvertToEncoding(toStr, external);
             }
-            if (@internal != Missing.Value) {
+            if (@internal != Missing.Value && external != null) {
                 internalEncoding = Protocols.ConvertToEncoding(toStr, @internal);
             }
             return SetEncodings(self, externalEncoding, internalEncoding);

@@ -566,7 +566,7 @@ namespace IronRuby.Tests {
             );
 
             // TODO: MRI allows incorrect byte sequences
-            AssertExceptionThrown<ArgumentException>(
+            AssertExceptionThrown<InvalidByteSequenceError>(
                 () => Test_Reverse(invalid_utf8, RubyEncoding.UTF8, rev_invalid_utf8)
             );
 
@@ -865,8 +865,8 @@ namespace IronRuby.Tests {
             AssertExceptionThrown<EncodingCompatibilityError>(() => MutableStringOps.Index(a, b, 0));
 
             // invalid character:
-            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(invalid, MutableString.FrozenEmpty, 0));
-            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(MutableString.FrozenEmpty, invalid, 0));
+            AssertExceptionThrown<InvalidByteSequenceError>(() => MutableStringOps.Index(invalid, MutableString.FrozenEmpty, 0));
+            AssertExceptionThrown<InvalidByteSequenceError>(() => MutableStringOps.Index(MutableString.FrozenEmpty, invalid, 0));
             
             // returns character index:
             i = (int)MutableStringOps.Index(
@@ -901,7 +901,7 @@ namespace IronRuby.Tests {
             AssertExceptionThrown<EncodingCompatibilityError>(() => MutableStringOps.Index(scope, a, r, 0));
 
             // invalid character:
-            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(scope, invalid, r, 0));
+            AssertExceptionThrown<InvalidByteSequenceError>(() => MutableStringOps.Index(scope, invalid, r, 0));
 
             // returns character index:
             i = (int)MutableStringOps.Index(

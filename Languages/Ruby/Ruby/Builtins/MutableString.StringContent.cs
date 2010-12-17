@@ -23,7 +23,7 @@ using System.IO;
 namespace IronRuby.Builtins {
     public partial class MutableString {
         [Serializable]
-        private sealed class StringContent : Content {
+        internal sealed class StringContent : Content {
             private readonly string/*!*/ _data;
 
             internal StringContent(string/*!*/ data, MutableString owner) 

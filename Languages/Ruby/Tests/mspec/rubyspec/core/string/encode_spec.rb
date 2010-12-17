@@ -36,7 +36,7 @@ ruby_version_is "1.9" do
 
     it "raises a RuntimeError when called on a frozen String" do
       lambda do
-        "foo".freeze.encode!(Encoding::ANSI_X3_4_1968) 
+        "foo".freeze.encode!(Encoding::UTF_8) 
       end.should raise_error(RuntimeError)
     end
 

@@ -2349,7 +2349,7 @@ namespace IronRuby.Runtime {
 
             }
             try {
-                return MutableString.Create(path, encoding).CheckEncodingInternal();
+                return MutableString.Create(path, encoding).CheckEncoding();
             } catch (EncoderFallbackException e) {
                 throw RubyExceptions.CreateEINVAL(
                     e,
@@ -2888,6 +2888,8 @@ namespace IronRuby.Runtime {
                 // Mono doesn't recognize 'SJIS' encoding name:
                 case "SJIS": return Encoding.GetEncoding(RubyEncoding.CodePageSJIS);
                 case "WINDOWS-31J": return Encoding.GetEncoding(932);
+                case "MACCYRILLIC": return Encoding.GetEncoding(10007);
+
                 default:
                     if (upperName.StartsWith("CP", StringComparison.Ordinal)) {
                         int codepage;

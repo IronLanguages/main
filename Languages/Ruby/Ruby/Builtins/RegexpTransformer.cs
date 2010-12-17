@@ -43,9 +43,13 @@ namespace IronRuby.Builtins {
         internal static string Transform(string/*!*/ rubyPattern, RubyRegexOptions options, out bool hasGAnchor) {
             // nested quantifiers {n}+ are not supported:
             if (rubyPattern == "\\Af(?=[[:xdigit:]]{2}+\\z)") {
-                // pp.rb uses this pattern. The real fix requires cracking the entire regexp and so is left for later
+                // TODO: pp.rb uses this pattern. The real fix requires cracking the entire regexp and so is left for later
                 hasGAnchor = false;
                 return "\\Af(?=(?:[A-Fa-f0-9]{2})+\\z)";
+            } else if (rubyPattern == "^[\t\n\r -\uD7FF\uE000-\uFFFD\uD800\uDC00-\uDBFF\uDFFF]*$") {
+                // TODO: REXML uses this pattern.
+                hasGAnchor = false;
+                return "^(?:[\t\n\r -\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])*$";
             }
             RegexpTransformer transformer = new RegexpTransformer(rubyPattern);
             var result = transformer.Transform();

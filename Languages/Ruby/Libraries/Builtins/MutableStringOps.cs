@@ -22,17 +22,15 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using IronRuby.Compiler;
-using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
-using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Compiler;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
     using BinaryOpStorageWithScope = CallSiteStorage<Func<CallSite, RubyScope, object, object, object>>;
-    using IronRuby.Runtime.Conversions;
 
     [RubyClass("String", Extends = typeof(MutableString), Inherits = typeof(Object))]
     [Includes(typeof(Comparable))]
@@ -1037,7 +1035,7 @@ namespace IronRuby.Builtins {
             }
 
             // Remove multiple trailing CR/LFs
-            if (separator.Length == 0) {
+            if (separator.IsEmpty) {
                 return ChompTrailingCarriageReturns(self, false).TaintBy(self);
             }
 
@@ -1338,9 +1336,8 @@ namespace IronRuby.Builtins {
             return ForceEncoding(self, context.GetRubyEncoding(encodingName));
         }
 
-#if TODO
         [RubyMethod("encode")]
-        public static MutableString/*!*/ EncodeInPlace(
+        public static MutableString/*!*/ Encode(
             ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
             ConversionStorage<MutableString>/*!*/ toStr,
             MutableString/*!*/ self,
@@ -1348,12 +1345,12 @@ namespace IronRuby.Builtins {
             [Optional]object fromEncoding,
             [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
 
-            // TODO:
-            return Encode(toHash, toStr, self, toEncoding, fromEncoding, options);
+            // TODO: optimize
+            return EncodeInPlace(toHash, toStr, self.Clone(), toEncoding, fromEncoding, options);
         }
 
         [RubyMethod("encode!")]
-        public static MutableString/*!*/ Encode(
+        public static MutableString/*!*/ EncodeInPlace(
             ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
             ConversionStorage<MutableString>/*!*/ toStr,
             MutableString/*!*/ self,
@@ -1363,20 +1360,59 @@ namespace IronRuby.Builtins {
 
             Protocols.TryConvertToOptions(toHash, ref options, ref toEncoding, ref fromEncoding);
 
-            RubyEncoding to = null, from = null;
-            if (toEncoding != Missing.Value) {
-                to = Protocols.ConvertToEncoding(toStr, toEncoding);
-            }
-            if (fromEncoding != Missing.Value) {
-                from = Protocols.ConvertToEncoding(toStr, fromEncoding);
+            // encodings:
+            RubyEncoding to, from;
+            MutableString toEncodingName = null, fromEncodingName = null;
+            if (toEncoding == Missing.Value) {
+                to = toStr.Context.DefaultInternalEncoding;
+                if (to == null) {
+                    return self;
+                }
+            } else {
+                to = toEncoding as RubyEncoding;
+                if (to == null) {
+                    toEncodingName = Protocols.CastToString(toStr, toEncoding);
+                }
             }
 
+            if (fromEncoding == Missing.Value) {
+                from = self.Encoding;
+            } else {
+                from = fromEncoding as RubyEncoding;
+                if (from == null) {
+                    fromEncodingName = Protocols.CastToString(toStr, fromEncoding);
+                }
+            }
+
+            try {
+                if (fromEncodingName != null) {
+                    from = toStr.Context.GetRubyEncoding(fromEncodingName);
+                }
+                if (toEncodingName != null) {
+                    to = toStr.Context.GetRubyEncoding(toEncodingName);
+                }
+            } catch (ArgumentException) {
+                throw new ConverterNotFoundError(RubyExceptions.FormatMessage("code converter not found ({0} to {1})",
+                    (fromEncodingName != null) ? fromEncodingName.ToAsciiString() : from.Name, 
+                    (toEncodingName != null) ? toEncodingName.ToAsciiString() : to.Name
+                ));
+            }
+
+            self.RequireNotFrozen();
+
+            // options:
+
+
             // TODO: options
-            // TODO:
-            //return self.ChangeEncoding();
+            // :invalid => :replace
+            // :undef => :replace, :replace => ""
+            // :xml => :text
+            // :xml => :attr
+
+            self.Transcode(from, to);
             return self;
         }
-#endif
+
         #endregion
 
 

@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IronRuby.Compiler;
@@ -114,7 +115,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("chr")]
         public static MutableString/*!*/ ToChr(ConversionStorage<MutableString>/*!*/ toStr, [DefaultProtocol]int self, 
-            [DefaultParameterValue(null)]object encoding) {
+            [Optional]object encoding) {
 
             if (self < 0) {
                 throw RubyExceptions.CreateRangeError("{0} out of char range", self);
@@ -122,7 +123,7 @@ namespace IronRuby.Builtins {
 
             RubyEncoding enc;
             RubyEncoding resultEncoding;
-            if (encoding != null) {
+            if (encoding != Missing.Value) {
                 resultEncoding = enc = Protocols.ConvertToEncoding(toStr, encoding);
             } else {
                 enc = toStr.Context.DefaultInternalEncoding ?? RubyEncoding.Ascii;
@@ -130,13 +131,6 @@ namespace IronRuby.Builtins {
             }
 
             switch (enc.CodePage) {
-                case RubyEncoding.CodePageAscii:
-                case RubyEncoding.CodePageBinary:
-                    if (self > 0xff) {
-                        throw RubyExceptions.CreateRangeError("{0} out of char range", self);
-                    }
-                    return MutableString.CreateBinary(new byte[] { (byte)self }, resultEncoding);
-
                 case RubyEncoding.CodePageUTF7:
                 case RubyEncoding.CodePageUTF8:
                 case RubyEncoding.CodePageUTF16BE:
@@ -148,9 +142,31 @@ namespace IronRuby.Builtins {
                     }
                     return MutableString.CreateMutable(Tokenizer.UnicodeCodePointToString(self), resultEncoding);
 
+                case RubyEncoding.CodePageSJIS:
+                    if (self >= 0x81 && self <= 0x9f || self >= 0xe0 && self <= 0xfc) {
+                        throw RubyExceptions.CreateArgumentError("invalid codepoint 0x{0:x2} in Shift_JIS", self);
+                    }
+                    goto default;
+
+                case RubyEncoding.CodePageEUC:
+                    // MRI's bahavior is strange - bug?
+                    if (self >= 0x80) {
+                        throw RubyExceptions.CreateRangeError("{0} out of char range", self);
+                    }
+                    goto default;
+
                 default:
                     if (self <= 0xff) {
-                        return MutableString.CreateBinary(new byte[] { (byte)self }, resultEncoding);
+                        return MutableString.CreateBinary(new[] { (byte)self }, resultEncoding);
+                    }
+                    if (enc.IsDoubleByteCharacterSet) {
+                        if (self <= 0xffff) {
+                            return MutableString.CreateBinary(new[] { (byte)(self >> 8), (byte)(self & 0xff) }, resultEncoding);
+                        }
+                        throw RubyExceptions.CreateRangeError("{0} out of char range", self);
+                    }
+                    if (enc.IsSingleByteCharacterSet) {
+                        throw RubyExceptions.CreateRangeError("{0} out of char range", self);
                     }
                     throw new NotSupportedException(RubyExceptions.FormatMessage("Encoding {0} code points not supported", enc));
             }

@@ -26,7 +26,7 @@ namespace IronRuby.Builtins {
         // TODO: Add range checks to APIs or change the implementation to be out-of-range tolerant (see GetSlice).
         // Tha latter is preferred if the semantics is reasonable since it reduces the amounts of content size dependent checks that the user needs to do.
         [Serializable]
-        private abstract class Content {
+        internal abstract class Content {
             protected MutableString _owner;
 
             #region Utils

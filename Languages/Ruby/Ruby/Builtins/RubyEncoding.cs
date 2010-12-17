@@ -43,6 +43,8 @@ namespace IronRuby.Builtins {
         #region Singletons
 
         public const int CodePageBinary = 0;
+        public const int CodePageSJIS = 932;
+        public const int CodePageBig5 = 950;
         public const int CodePageAscii = 20127;
         public const int CodePageEUC = 51932;
         public const int CodePageUTF7 = 65000;
@@ -51,24 +53,33 @@ namespace IronRuby.Builtins {
         public const int CodePageUTF16LE = 1200;
         public const int CodePageUTF32BE = 12001;
         public const int CodePageUTF32LE = 12000;
-        public const int CodePageSJIS = 932;
-
+        
         // TODO: how does MRI sort encodings?
         public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, -4);
         public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(CreateEncoding(CodePageUTF8, false), CreateEncoding(CodePageUTF8, true), -3);
+#if SILVERLIGHT
+        public static readonly RubyEncoding/*!*/ Ascii = UTF8;
+#else
         public static readonly RubyEncoding/*!*/ Ascii = new RubyEncoding(CreateEncoding(CodePageAscii, false), CreateEncoding(CodePageAscii, true), -2);
         public static readonly RubyEncoding/*!*/ EUC = new RubyEncoding(CreateEncoding(CodePageEUC, false), CreateEncoding(CodePageEUC, true), -1);
         public static readonly RubyEncoding/*!*/ SJIS = new RubyEncoding(CreateEncoding(CodePageSJIS, false), CreateEncoding(CodePageSJIS, true), 0);
+#endif
 
         #endregion
 
         // TODO: use encoders/decoders?
         private readonly Encoding/*!*/ _encoding;
         private readonly Encoding/*!*/ _strictEncoding;
-        private readonly int _maxBytesPerChar;
-        private readonly int _ordinal;
-        private readonly bool _isAsciiIdentity;
         private Expression _expression;
+        private readonly int _ordinal;
+
+        // TODO: combine into a single integer (tables could be merged)
+        private readonly int _maxBytesPerChar;
+        private readonly bool _isAsciiIdentity;
+#if !SILVERLIGHT
+        private bool? _isSingleByteCharacterSet;
+        private bool? _isDoubleByteCharacterSet;
+#endif
 
         private RubyEncoding(Encoding/*!*/ encoding, Encoding/*!*/ strictEncoding, int ordinal) {
             Assert.NotNull(encoding, strictEncoding);
@@ -398,8 +409,56 @@ namespace IronRuby.Builtins {
             return true;
         }
 
+        public bool IsSingleByteCharacterSet {
+            get {
+                if (!_isSingleByteCharacterSet.HasValue) {
+                    _isSingleByteCharacterSet = IsSBCS(GetCodePage(_encoding));
+                }
+
+                return _isSingleByteCharacterSet.Value;
+            }
+        }
+
+        public bool IsDoubleByteCharacterSet {
+            get {
+                if (!_isDoubleByteCharacterSet.HasValue) {
+                    _isDoubleByteCharacterSet = IsDBCS(GetCodePage(_encoding));
+                }
+
+                return _isDoubleByteCharacterSet.Value;
+            }
+        }
+        
+        private static int[] _sbsc;
+        private static int[] _dbsc; 
+
+        private static bool IsSBCS(int codepage) {
+            if (_sbsc == null) {
+                _sbsc = new int[] {
+                    0, 37, 437, 500, 708, 720, 737, 775, 850, 852, 855, 857, 858, 860, 861, 862, 863, 864, 865, 866, 869, 870, 874, 875, 1026, 
+                    1047, 1140, 1141, 1142, 1143, 1144, 1145, 1146, 1147, 1148, 1149, 1250, 1251, 1252, 1253, 1254, 1255, 1256, 1257, 1258, 
+                    10000, 10004, 10005, 10006, 10007, 10010, 10017, 10021, 10029, 10079, 10081, 10082, 20105, 20106, 20107, 20108, 20127, 
+                    20269, 20273, 20277, 20278, 20280, 20284, 20285, 20290, 20297, 20420, 20423, 20424, 20833, 20838, 20866, 20871, 20880, 
+                    20905, 20924, 21025, 21866, 28592, 28593, 28594, 28595, 28596, 28597, 28598, 28599, 28603, 28605, 29001, 38598
+                };
+            }
+
+            return Array.BinarySearch(_sbsc, codepage) >= 0;
+        }
+
+        private static bool IsDBCS(int codepage) {
+            if (_dbsc == null) {
+                _dbsc = new int[] {
+                    932, 936, 949, 950, 1361, 10001, 10002, 10003, 10008, 20000, 20001, 20002, 20003, 20004, 20005, 20261, 20932, 20936, 
+                    20949, 50227, 51936, 51949
+                };
+            }
+
+            return Array.BinarySearch(_dbsc, codepage) >= 0;
+        }
+
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
-            // TODO: use static fields, deal with KCODEs
+            // TODO: use static fields
             return Methods.CreateEncoding.OpCall(Expression.Constant(_encoding.CodePage));
         }
 #else
@@ -411,6 +470,18 @@ namespace IronRuby.Builtins {
             }
 
             return false;
+        }
+
+        public bool IsSingleByteCharacterSet {
+            get {
+                return this == Binary;
+            }
+        }
+
+        public bool IsDoubleByteCharacterSet {
+            get {
+                return false;
+            }
         }
 
         public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding) {
