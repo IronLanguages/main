@@ -431,7 +431,7 @@ namespace IronRuby.Builtins {
             #region Append
 
             public override void Append(char c, int repeatCount) {
-                if (c < 0x80 || _owner.IsBinaryEncoded) {
+                if (c < 0x80 || _owner._encoding == RubyEncoding.Binary) {
                     Append((byte)c, repeatCount);
                 } else {
                     _count = Utils.Append(ref _data, _count, c, repeatCount, _owner._encoding.StrictEncoding);
@@ -502,8 +502,7 @@ namespace IronRuby.Builtins {
 
             // requires: encoding is ascii-identity
             public override void Insert(int index, char c) {
-                if (_owner.HasByteCharacters) {
-                    Debug.Assert(c < 0x80 || _owner.IsBinaryEncoded);
+                if (c < 0x80 && _owner.HasByteCharacters) {
                     _count = Utils.InsertAt(ref _data, _count, index, (byte)c, 1);
                 } else {
                     SwitchToChars(1).Insert(index, c);
@@ -539,8 +538,7 @@ namespace IronRuby.Builtins {
 
             // requires: encoding is ascii-identity
             public override void SetChar(int index, char c) {
-                if (_owner.HasByteCharacters) {
-                    Debug.Assert(c < 0x80 || _owner.IsBinaryEncoded);
+                if (c < 0x80 && _owner.HasByteCharacters) {
                     SetByte(index, (byte)c);
                 } else {
                     SwitchToChars().DataSetChar(index, c);

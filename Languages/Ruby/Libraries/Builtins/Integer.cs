@@ -117,10 +117,6 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ ToChr(ConversionStorage<MutableString>/*!*/ toStr, [DefaultProtocol]int self, 
             [Optional]object encoding) {
 
-            if (self < 0) {
-                throw RubyExceptions.CreateRangeError("{0} out of char range", self);
-            }
-
             RubyEncoding enc;
             RubyEncoding resultEncoding;
             if (encoding != Missing.Value) {
@@ -130,45 +126,53 @@ namespace IronRuby.Builtins {
                 resultEncoding = (self <= 0x7f) ? RubyEncoding.Ascii : (self <= 0xff) ? RubyEncoding.Binary : enc;
             }
 
-            switch (enc.CodePage) {
+            return ToChr(enc, resultEncoding, self);
+        }
+
+        internal static MutableString/*!*/ ToChr(RubyEncoding/*!*/ encoding, RubyEncoding/*!*/ resultEncoding, int codepoint) {
+            if (codepoint < 0) {
+                throw RubyExceptions.CreateRangeError("{0} out of char range", codepoint);
+            }
+
+            switch (encoding.CodePage) {
                 case RubyEncoding.CodePageUTF7:
                 case RubyEncoding.CodePageUTF8:
                 case RubyEncoding.CodePageUTF16BE:
                 case RubyEncoding.CodePageUTF16LE:
                 case RubyEncoding.CodePageUTF32BE:
                 case RubyEncoding.CodePageUTF32LE:
-                    if (self > 0x10ffff) {
-                        throw RubyExceptions.CreateRangeError("{0} is not a valid Unicode code point (0..0x10ffff)", self);
+                    if (codepoint > 0x10ffff) {
+                        throw RubyExceptions.CreateRangeError("{0} is not a valid Unicode code point (0..0x10ffff)", codepoint);
                     }
-                    return MutableString.CreateMutable(Tokenizer.UnicodeCodePointToString(self), resultEncoding);
+                    return MutableString.CreateMutable(Tokenizer.UnicodeCodePointToString(codepoint), resultEncoding);
 
                 case RubyEncoding.CodePageSJIS:
-                    if (self >= 0x81 && self <= 0x9f || self >= 0xe0 && self <= 0xfc) {
-                        throw RubyExceptions.CreateArgumentError("invalid codepoint 0x{0:x2} in Shift_JIS", self);
+                    if (codepoint >= 0x81 && codepoint <= 0x9f || codepoint >= 0xe0 && codepoint <= 0xfc) {
+                        throw RubyExceptions.CreateArgumentError("invalid codepoint 0x{0:x2} in Shift_JIS", codepoint);
                     }
                     goto default;
 
                 case RubyEncoding.CodePageEUC:
                     // MRI's bahavior is strange - bug?
-                    if (self >= 0x80) {
-                        throw RubyExceptions.CreateRangeError("{0} out of char range", self);
+                    if (codepoint >= 0x80) {
+                        throw RubyExceptions.CreateRangeError("{0} out of char range", codepoint);
                     }
                     goto default;
 
                 default:
-                    if (self <= 0xff) {
-                        return MutableString.CreateBinary(new[] { (byte)self }, resultEncoding);
+                    if (codepoint <= 0xff) {
+                        return MutableString.CreateBinary(new[] { (byte)codepoint }, resultEncoding);
                     }
-                    if (enc.IsDoubleByteCharacterSet) {
-                        if (self <= 0xffff) {
-                            return MutableString.CreateBinary(new[] { (byte)(self >> 8), (byte)(self & 0xff) }, resultEncoding);
+                    if (encoding.IsDoubleByteCharacterSet) {
+                        if (codepoint <= 0xffff) {
+                            return MutableString.CreateBinary(new[] { (byte)(codepoint >> 8), (byte)(codepoint & 0xff) }, resultEncoding);
                         }
-                        throw RubyExceptions.CreateRangeError("{0} out of char range", self);
+                        throw RubyExceptions.CreateRangeError("{0} out of char range", codepoint);
                     }
-                    if (enc.IsSingleByteCharacterSet) {
-                        throw RubyExceptions.CreateRangeError("{0} out of char range", self);
+                    if (encoding.IsSingleByteCharacterSet) {
+                        throw RubyExceptions.CreateRangeError("{0} out of char range", codepoint);
                     }
-                    throw new NotSupportedException(RubyExceptions.FormatMessage("Encoding {0} code points not supported", enc));
+                    throw new NotSupportedException(RubyExceptions.FormatMessage("Encoding {0} code points not supported", encoding));
             }
         }
 

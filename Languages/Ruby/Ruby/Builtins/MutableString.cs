@@ -52,7 +52,7 @@ namespace IronRuby.Builtins {
 
         private const uint HasChangedFlags = HasChangedFlag | HasChangedCharArrayToStringFlag;
 
-        // true if all bytes/characters are < x80
+        // true if all bytes/characters are < x80 and the encoding is ASCII-identity
         private const uint IsAsciiFlag = 8;
         
         // true if IsAsciiFlag is not up-to-date:
@@ -61,17 +61,14 @@ namespace IronRuby.Builtins {
         // true if _hashCode is not up-to-date:
         private const uint HashUnknownFlag = 32;
 
-        // true if the string encoding is BinaryEncoding:
-        private const uint IsBinaryEncodedFlag = 64;
-
         // true if tainted:
-        private const uint IsTaintedFlag = 128;
+        private const uint IsTaintedFlag = 64;
 
         // true if untrusted:
-        private const uint IsUntrustedFlag = 256;
+        private const uint IsUntrustedFlag = 128;
 
         // true if the content should be copied on mutation:
-        private const uint CopyOnWriteFlag = 512;
+        private const uint CopyOnWriteFlag = 256;
         
         // The instance is frozen so that it can be shared, but it should not be used in places where
         // it will be accessible from user code as the user code could try to mutate it.
@@ -86,16 +83,17 @@ namespace IronRuby.Builtins {
         }
 
         private void SetEncoding(RubyEncoding/*!*/ encoding) {
+            // TODO: remove this restriction
+            
             // String operations (GetHashCode, SetChar, etc.) assume that the encoding maps each and every 
             // character \u0000..\u007f to a corresponding byte 0..0x7f and back.
             encoding.RequireAsciiIdentity();
 
+            //if (!encoding.IsAsciiIdentity) {
+            //    _flags = _flags & ~IsAsciiFlag | KnowsAscii;
+            //}
+            
             _encoding = encoding;
-            if (encoding == RubyEncoding.Binary) {
-                _flags |= IsBinaryEncodedFlag;
-            } else {
-                _flags &= ~IsBinaryEncodedFlag;
-            }
         }
 
         internal MutableString(Content/*!*/ content, RubyEncoding/*!*/ encoding) {
@@ -287,16 +285,19 @@ namespace IronRuby.Builtins {
         #region Versioning, Encoding, HashCode, and Flags
 
         /// <summary>
-        /// Returns true f the string is known to contain ASCII characters only or if the string is binary-encoded.
-        /// Characters are then same as bytes.
+        /// Returns trie if characters contained in the string are encoded as single bytes
+        /// (the encoding is SBCS or the string includes ASCII only).
         /// Doesn't inspect the content of the string if the ASCII flag is not valid.
         /// </summary>
         public bool HasByteCharacters {
             get {
-                var flags = _flags;
-                return (flags & IsBinaryEncodedFlag) != 0
-                    || (flags & (AsciiUnknownFlag | IsAsciiFlag)) == IsAsciiFlag; 
+                return (_flags & (AsciiUnknownFlag | IsAsciiFlag)) == IsAsciiFlag 
+                    || _encoding.IsSingleByteCharacterSet;
             }
+        }
+
+        public bool DetectByteCharacters() {
+            return _encoding.IsSingleByteCharacterSet || IsAscii();
         }
 
         private void FrozenOrCopyOnWrite(uint flags) {
@@ -516,11 +517,11 @@ namespace IronRuby.Builtins {
             hash = _content.GetHashCode(out binarySum);
 
             // xor with the encoding if there are any non-ASCII characters in the string:
-            if (binarySum >= 0x0080 && !IsBinaryEncoded) {
+            if (binarySum >= 0x0080 && _encoding != RubyEncoding.Binary) {
                 hash ^= _encoding.GetHashCode();
             }
 
-            if (binarySum >= 0x0080) {
+            if (binarySum >= 0x0080 || !_encoding.IsAsciiIdentity) {
                 _flags = _flags & ~(AsciiUnknownFlag | HashUnknownFlag | IsAsciiFlag);
             } else {
                 _flags = (_flags & ~(AsciiUnknownFlag | HashUnknownFlag)) | IsAsciiFlag;
@@ -531,13 +532,6 @@ namespace IronRuby.Builtins {
 
         public bool IsBinary {
             get { return _content.IsBinary; }
-        }
-
-        public bool IsBinaryEncoded {
-            get {
-                Debug.Assert((_encoding == RubyEncoding.Binary) == ((_flags & IsBinaryEncodedFlag) != 0));
-                return (_flags & IsBinaryEncodedFlag) != 0; 
-            }
         }
 
         public RubyEncoding/*!*/ Encoding {
@@ -770,7 +764,7 @@ namespace IronRuby.Builtins {
         /// </exception>
         public MutableString/*!*/ PrepareForCharacterRead() {
             // Switch if the content is not already char based or the bytes are not the same as the equivalent characters:
-            if (IsBinary && !IsBinaryEncoded && !IsAscii()) {
+            if (IsBinary && !DetectByteCharacters()) {
                 SwitchToCharacters();
             }
 
@@ -1022,9 +1016,14 @@ namespace IronRuby.Builtins {
             }
 
             public MutableString/*!*/ ToMutableString(RubyEncoding/*!*/ encoding) {
-                return IsSurrogate ?
-                    new MutableString(new char[] { Value, LowSurrogate }, encoding) :
-                    new MutableString(new char[] { Value }, encoding);
+                if (IsValid) {
+                    return IsSurrogate ?
+                        new MutableString(new char[] { Value, LowSurrogate }, encoding) :
+                        new MutableString(new char[] { Value }, encoding);
+                } else {
+                    // copy bytes so that the character remains immutable:
+                    return new MutableString(ArrayUtils.Copy(Invalid), encoding);
+                }
             }
         }
 
@@ -1033,7 +1032,7 @@ namespace IronRuby.Builtins {
             internal int _index;
             internal Character _current;
 
-            internal CharacterEnumerator(RubyEncoding/*!*/ encoding) {
+            protected CharacterEnumerator(RubyEncoding/*!*/ encoding) {
                 Assert.NotNull(encoding);
                 _encoding = encoding;
                 _index = -1;

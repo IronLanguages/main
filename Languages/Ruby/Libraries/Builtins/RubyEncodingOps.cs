@@ -49,6 +49,7 @@ namespace IronRuby.Builtins {
 
         #region Constants
 
+        [RubyConstant("ANSI_X3_4_1968")]
         [RubyConstant("US_ASCII")]
         [RubyConstant("ASCII")]
         public static readonly RubyEncoding US_ASCII = RubyEncoding.Ascii; 
@@ -75,8 +76,13 @@ namespace IronRuby.Builtins {
         [RubyConstant]
         public static readonly RubyEncoding TIS_620 = RubyEncoding.GetRubyEncoding(874);
 
-        [RubyConstant]
+        [RubyConstant("ISO8859_9")]
+        [RubyConstant("ISO_8859_9")]
         public static readonly RubyEncoding ISO_8859_9 = RubyEncoding.GetRubyEncoding(28599);
+
+        [RubyConstant("ISO8859_15")]
+        [RubyConstant("ISO_8859_15")]
+        public static readonly RubyEncoding ISO_8859_15 = RubyEncoding.GetRubyEncoding(28605);
 
         [RubyConstant("Big5")]
         [RubyConstant("BIG5")]
@@ -110,7 +116,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("name")]
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(RubyEncoding/*!*/ self) {
-            return MutableString.CreateAscii(self.Name.ToUpperInvariant());
+            return MutableString.CreateAscii(self.Name);
         }
 
         [RubyMethod("inspect")]
@@ -120,7 +126,7 @@ namespace IronRuby.Builtins {
             result.Append("#<");
             result.Append(context.GetClassDisplayName(self));
             result.Append(':');
-            result.Append(self.Name.ToUpperInvariant());
+            result.Append(self.Name);
             result.Append('>');
             return result;
         }

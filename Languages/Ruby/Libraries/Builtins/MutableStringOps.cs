@@ -86,7 +86,7 @@ namespace IronRuby.Builtins {
         internal static bool NormalizeSubstringRange(int length, ref int start, ref int count) {
             start = IListOps.NormalizeIndex(length, start);
 
-            if (start == length || start < 0 || start > length || count < 0) {
+            if (start < 0 || start >= length || count < 0) {
                 return false;
             }
 
@@ -430,11 +430,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("<<")]
         [RubyMethod("concat")]
         public static MutableString/*!*/ Append(MutableString/*!*/ self, int c) {
-            if (c < 0 || c > 255) {
-                throw RubyExceptions.CreateTypeConversionError("Fixnum", "String");
-            }
-
-            return self.Append((byte)c);
+            return self.Append(Integer.ToChr(self.Encoding, self.Encoding, c));
         }
 
         #endregion
@@ -608,9 +604,9 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static MutableString GetSubstring(MutableString/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int count) {
-            int byteCount = self.GetCharCount();
-            if (!NormalizeSubstringRange(byteCount, ref start, ref count)) {
-                return (start == byteCount) ? self.CreateInstance().TaintBy(self) : null;
+            int charCount = self.GetCharCount();
+            if (!NormalizeSubstringRange(charCount, ref start, ref count)) {
+                return (start == charCount) ? self.CreateInstance().TaintBy(self) : null;
             }
 
             return self.CreateInstance().Append(self, start, count).TaintBy(self);
@@ -1136,18 +1132,17 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region chars, each_byte/bytes, each_codepoint/codepoints, each_line/lines
-        
+        #region each_byte/bytes, chars, chr, each_codepoint/codepoints, each_line/lines
+
         [RubyMethod("bytes")]
         [RubyMethod("each_byte")]
-        public static object EachByte(BlockParam block, MutableString/*!*/ self) {
-            if (block == null) {
-                return new Enumerator((scope, innerBlock) => EachByteImpl(innerBlock, self));
-            }
-            return EachByteImpl(block, self);
-        } 
+        public static Enumerator/*!*/ EachByte(MutableString/*!*/ self) {
+            return new Enumerator((_, block) => EachByte(block, self));
+        }
 
-        private static object EachByteImpl(BlockParam/*!*/ block, MutableString/*!*/ self) {
+        [RubyMethod("bytes")]
+        [RubyMethod("each_byte")]
+        public static object EachByte([NotNull]BlockParam/*!*/ block, MutableString/*!*/ self) {
             foreach (byte b in self.GetBytes()) {
                 object result;
                 if (block.Yield(ScriptingRuntimeHelpers.Int32ToObject((int)b), out result)) {
@@ -1160,14 +1155,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("chars")]
         [RubyMethod("each_char")]
-        public static object EachChar(BlockParam block, MutableString/*!*/ self) {
-            if (block == null) {
-                return new Enumerator((scope, innerBlock) => EachCharImpl(innerBlock, self));
-            }
-            return EachCharImpl(block, self);
+        public static Enumerator/*!*/ EachChar(MutableString/*!*/ self) {
+            return new Enumerator((_, block) => EachChar(block, self));
         }
 
-        private static object EachCharImpl(BlockParam/*!*/ block, MutableString/*!*/ self) {
+        [RubyMethod("chars")]
+        [RubyMethod("each_char")]
+        public static object EachChar([NotNull]BlockParam/*!*/ block, MutableString/*!*/ self) {
             var enumerator = self.GetCharacters();
             while (enumerator.MoveNext()) {
                 object result;
@@ -1179,16 +1173,27 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        [RubyMethod("codepoints")]
-        [RubyMethod("each_codepoint")]
-        public static object EachCodePoint(BlockParam block, MutableString/*!*/ self) {
-            if (block == null) {
-                return new Enumerator((scope, innerBlock) => EachCodePointImpl(innerBlock, self));
+        [RubyMethod("chr")]
+        public static MutableString/*!*/ FirstChar(MutableString/*!*/ self) {
+            if (self.IsEmpty) {
+                return self.Clone();
             }
-            return EachCodePointImpl(block, self);
+
+            // TODO: optimize
+            var enumerator = self.GetCharacters();
+            enumerator.MoveNext();
+            return enumerator.Current.ToMutableString(self.Encoding);
         }
 
-        private static object EachCodePointImpl(BlockParam/*!*/ block, MutableString/*!*/ self) {
+        [RubyMethod("codepoints")]
+        [RubyMethod("each_codepoint")]
+        public static Enumerator/*!*/ EachCodePoint(MutableString/*!*/ self) {
+            return new Enumerator((_, block) => EachCodePoint(block, self));
+        }
+
+        [RubyMethod("codepoints")]
+        [RubyMethod("each_codepoint")]
+        public static object EachCodePoint([NotNull]BlockParam/*!*/ block, MutableString/*!*/ self) {
             var enumerator = self.GetCharacters();
             while (enumerator.MoveNext()) {
                 object result;
@@ -1850,23 +1855,6 @@ namespace IronRuby.Builtins {
 
         // encoding aware
         [RubyMethod("index")]
-        public static object Index(MutableString/*!*/ self, 
-            int character, [DefaultProtocol, Optional]int start) {
-
-            if (!self.IsBinaryEncoded && !self.IsAscii()) {
-                throw RubyExceptions.CreateTypeError("type mismatch: Fixnum given");
-            }
-
-            if (!NormalizeStart(self.GetByteCount(), ref start) || character < 0 || character > 255) {
-                return null;
-            }
-
-            int result = self.IndexOf((byte)character, start);
-            return (result != -1) ? ScriptingRuntimeHelpers.Int32ToObject(result) : null;
-        }
-
-        // encoding aware
-        [RubyMethod("index")]
         public static object Index(RubyScope/*!*/ scope, MutableString/*!*/ self, 
             [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol, Optional]int start) {
 
@@ -1915,29 +1903,6 @@ namespace IronRuby.Builtins {
             }
 
             int result = self.LastIndexOf(substring, start);
-            return (result != -1) ? ScriptingRuntimeHelpers.Int32ToObject(result) : null;
-        }
-
-        // encoding aware
-        [RubyMethod("rindex")]
-        public static object LastIndexOf(MutableString/*!*/ self,
-            int character, [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int start) {
-
-            if (!self.IsBinaryEncoded && !self.IsAscii()) {
-                throw RubyExceptions.CreateTypeError("type mismatch: Fixnum given");
-            }
-
-            int byteCount = self.GetByteCount();
-            start = IListOps.NormalizeIndex(byteCount, start);
-            if (start < 0 || character < 0 || character > 255) {
-                return null;
-            }
-
-            if (start >= byteCount) {
-                start = byteCount - 1;
-            }
-            
-            int result = self.LastIndexOf((byte)character, start);
             return (result != -1) ? ScriptingRuntimeHelpers.Int32ToObject(result) : null;
         }
 

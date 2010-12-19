@@ -2367,7 +2367,7 @@ namespace IronRuby.Runtime {
         /// <exception cref="InvalidError">Invalid characters present.</exception>
         public string/*!*/ DecodePath(MutableString/*!*/ path) {
             try {
-                if (path.IsBinaryEncoded) {
+                if (path.Encoding == RubyEncoding.Binary) {
                     // force UTF8 encoding to make round-trip work:
                     return path.ToString(Encoding.UTF8);
                 } else {

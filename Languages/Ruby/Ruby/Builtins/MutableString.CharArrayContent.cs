@@ -91,7 +91,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int GetBinaryHashCode(out int binarySum) {
-                return _owner.IsBinaryEncoded ? GetHashCode(out binarySum) : SwitchToBinary().GetBinaryHashCode(out binarySum);
+                return _owner._encoding == RubyEncoding.Binary ? GetHashCode(out binarySum) : SwitchToBinary().GetBinaryHashCode(out binarySum);
             }
 
             public override bool IsBinary {
@@ -470,8 +470,7 @@ namespace IronRuby.Builtins {
             }
 
             public override void Insert(int index, byte b) {
-                if (_owner.HasByteCharacters) {
-                    Debug.Assert(b < 0x80 || _owner.IsBinaryEncoded);
+                if (b < 0x80 && _owner.HasByteCharacters) {
                     Insert(index, (char)b);
                 } else {
                     SwitchToBinary(1).Insert(index, b);
@@ -496,8 +495,7 @@ namespace IronRuby.Builtins {
 
             // requires: encoding is ascii-identity
             public override void SetByte(int index, byte b) {
-                if (_owner.HasByteCharacters) {
-                    Debug.Assert(b < 0x80 || _owner.IsBinaryEncoded);
+                if (b < 0x80 && _owner.HasByteCharacters) {
                     DataSetChar(index, (char)b);
                 } else {
                     SwitchToBinary().SetByte(index, b);

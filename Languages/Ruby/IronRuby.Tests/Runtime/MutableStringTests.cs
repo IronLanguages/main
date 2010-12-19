@@ -843,20 +843,7 @@ namespace IronRuby.Tests {
             var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 }; // \u{12345} in UTF-8
             var invalid = MutableString.CreateBinary(new byte[] { 0x80 }, RubyEncoding.UTF8);
 
-            // SJIS non-ASCII string:
-            AssertExceptionThrown<InvalidOperationException>(
-                () => MutableStringOps.Index(MutableString.CreateBinary(sjis, SJIS), 0xA0, 0)
-            );
-
-            // binary encoding:
             int i;
-            i = (int)MutableStringOps.Index(MutableString.CreateBinary(sjis, RubyEncoding.Binary), 0xA0, 0);
-            Assert(i == 1);
-
-            // ASCII-only are ok:
-            i = (int)MutableStringOps.Index(MutableString.CreateMutable("abc", RubyEncoding.UTF8), (int)'a', 0);
-            Assert(i == 0);
-            
             MutableString a, b;
 
             // incompatible encodings:

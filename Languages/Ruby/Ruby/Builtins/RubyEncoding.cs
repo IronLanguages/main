@@ -152,8 +152,24 @@ namespace IronRuby.Builtins {
             get { return _strictEncoding; }
         }
 
+        /// <summary>
+        /// Name as displayed by MRI.
+        /// </summary>
         public string/*!*/ Name {
-            get { return _encoding.WebName; }
+            get {
+                switch (CodePage) {
+                    case RubyEncoding.CodePageUTF8: return "UTF-8";
+#if !SILVERLIGHT
+                    case RubyEncoding.CodePageUTF7: return "UTF-7";
+                    case RubyEncoding.CodePageUTF16BE: return "UTF-16BE";
+                    case RubyEncoding.CodePageUTF16LE: return "UTF-16LE";
+                    case RubyEncoding.CodePageUTF32BE: return "UTF-32LE";
+                    case RubyEncoding.CodePageUTF32LE: return "UTF-32LE";
+                    case RubyEncoding.CodePageSJIS: return "Shift_JIS";
+#endif
+                    default: return _encoding.WebName;
+                }
+            }
         }
 
         public int CodePage {

@@ -981,13 +981,17 @@ namespace IronRuby.Builtins {
         
         #if !SILVERLIGHT
         private static void LoadEncoding_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
+            SetBuiltinConstant(module, "ANSI_X3_4_1968", IronRuby.Builtins.RubyEncodingOps.US_ASCII);
             SetBuiltinConstant(module, "ASCII", IronRuby.Builtins.RubyEncodingOps.US_ASCII);
             SetBuiltinConstant(module, "ASCII_8BIT", IronRuby.Builtins.RubyEncodingOps.ASCII_8BIT);
             SetBuiltinConstant(module, "Big5", IronRuby.Builtins.RubyEncodingOps.Big5);
             SetBuiltinConstant(module, "BIG5", IronRuby.Builtins.RubyEncodingOps.Big5);
             SetBuiltinConstant(module, "BINARY", IronRuby.Builtins.RubyEncodingOps.BINARY);
             SetBuiltinConstant(module, "EUC_JP", IronRuby.Builtins.RubyEncodingOps.EUC_JP);
+            SetBuiltinConstant(module, "ISO_8859_15", IronRuby.Builtins.RubyEncodingOps.ISO_8859_15);
             SetBuiltinConstant(module, "ISO_8859_9", IronRuby.Builtins.RubyEncodingOps.ISO_8859_9);
+            SetBuiltinConstant(module, "ISO8859_15", IronRuby.Builtins.RubyEncodingOps.ISO_8859_15);
+            SetBuiltinConstant(module, "ISO8859_9", IronRuby.Builtins.RubyEncodingOps.ISO_8859_9);
             SetBuiltinConstant(module, "KOI8_R", IronRuby.Builtins.RubyEncodingOps.KOI8_R);
             SetBuiltinConstant(module, "Shift_JIS", IronRuby.Builtins.RubyEncodingOps.SHIFT_JIS);
             SetBuiltinConstant(module, "SHIFT_JIS", IronRuby.Builtins.RubyEncodingOps.SHIFT_JIS);
@@ -6554,7 +6558,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "bytes", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000001U, 
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachByte), 
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachByte)
             );
             
@@ -6584,7 +6589,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "chars", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000001U, 
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachChar), 
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachChar)
             );
             
@@ -6610,13 +6616,19 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.ChopInPlace)
             );
             
+            DefineLibraryMethod(module, "chr", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.FirstChar)
+            );
+            
             DefineLibraryMethod(module, "clear", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Clear)
             );
             
             DefineLibraryMethod(module, "codepoints", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000001U, 
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachCodePoint), 
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachCodePoint)
             );
             
@@ -6657,17 +6669,20 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "each_byte", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000001U, 
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachByte), 
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachByte)
             );
             
             DefineLibraryMethod(module, "each_char", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000001U, 
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachChar), 
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachChar)
             );
             
             DefineLibraryMethod(module, "each_codepoint", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000001U, 
+                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachCodePoint), 
                 new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachCodePoint)
             );
             
@@ -6748,9 +6763,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "index", 0x51, 
-                0x00030002U, 0x00020000U, 0x00040004U, 
+                0x00030002U, 0x00040004U, 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32, System.Object>(IronRuby.Builtins.MutableStringOps.Index), 
-                new Func<IronRuby.Builtins.MutableString, System.Int32, System.Int32, System.Object>(IronRuby.Builtins.MutableStringOps.Index), 
                 new Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Int32, System.Object>(IronRuby.Builtins.MutableStringOps.Index)
             );
             
@@ -6852,10 +6866,9 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "rindex", 0x51, 
-                0x00010002U, 0x00030002U, 0x00020000U, 0x00040004U, 
+                0x00010002U, 0x00030002U, 0x00040004U, 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.LastIndexOf), 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32, System.Object>(IronRuby.Builtins.MutableStringOps.LastIndexOf), 
-                new Func<IronRuby.Builtins.MutableString, System.Int32, System.Int32, System.Object>(IronRuby.Builtins.MutableStringOps.LastIndexOf), 
                 new Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Int32, System.Object>(IronRuby.Builtins.MutableStringOps.LastIndexOf)
             );
             

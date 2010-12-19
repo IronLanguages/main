@@ -74,7 +74,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int GetBinaryHashCode(out int binarySum) {
-                return _owner.IsBinaryEncoded ? GetHashCode(out binarySum) : SwitchToBinary().GetBinaryHashCode(out binarySum);
+                return _owner._encoding == RubyEncoding.Binary ? GetHashCode(out binarySum) : SwitchToBinary().GetBinaryHashCode(out binarySum);
             }
 
             public override bool IsBinary {
