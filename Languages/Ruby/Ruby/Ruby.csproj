@@ -298,7 +298,6 @@
     <Compile Include="Builtins\MutableString.cs" />
     <Compile Include="Builtins\Proc.cs" />
     <Compile Include="Builtins\Range.cs" />
-    <Compile Include="Runtime\KCoding.cs" />
     <Compile Include="Runtime\Protocols.cs" />
     <Compile Include="Compiler\Ast\Expressions\RangeExpression.cs" />
     <Compile Include="Runtime\Conversions\Converter.cs" />

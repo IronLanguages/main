@@ -24,7 +24,7 @@ namespace IronRuby.Runtime {
     /// Decodes bytes with no information loss. Provides access to invalid byte sequences encountered in the string.
     /// </summary>
     internal sealed class LosslessDecoderFallback : DecoderFallback {
-        public const char InvalidCharacterPlaceholder = '\uffff';
+        internal const char InvalidCharacterPlaceholder = '\uffff';
         private List<byte[]> _invalidCharacters;
         public bool Track { get; set; }
         

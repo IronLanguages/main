@@ -84,7 +84,9 @@ namespace IronRuby.Builtins {
         }
 
         internal static bool NormalizeSubstringRange(int length, ref int start, ref int count) {
-            start = IListOps.NormalizeIndex(length, start);
+            if (start < 0) {
+                start += length;
+            }
 
             if (start < 0 || start >= length || count < 0) {
                 return false;
@@ -604,10 +606,31 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static MutableString GetSubstring(MutableString/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int count) {
-            int charCount = self.GetCharCount();
-            if (!NormalizeSubstringRange(charCount, ref start, ref count)) {
-                return (start == charCount) ? self.CreateInstance().TaintBy(self) : null;
+            if (count < 0) {
+                return null;
             }
+            
+            // TODO:
+            //if (start == length) {
+            //    return self.CreateInstance().TaintBy(self);
+            //}
+            //
+            //if (start < 0) {
+            //    start += length;
+            //}
+            //
+            //if (start < 0 || start > length) {
+            //    return null;
+            //}
+            //
+            //if (start + count > length) {
+            //    count = length - start;
+            //}
+            
+            //int charCount = self.GetCharCount();
+            //if (!NormalizeSubstringRange(charCount, ref start, ref count)) {
+            //    return (start == charCount) ? self.CreateInstance().TaintBy(self) : null;
+            //}
 
             return self.CreateInstance().Append(self, start, count).TaintBy(self);
         }
@@ -1300,7 +1323,7 @@ namespace IronRuby.Builtins {
         // encoding aware
         [RubyMethod("size")]
         [RubyMethod("length")]
-        public static int GetCharCount(MutableString/*!*/ self) {
+        public static int GetCharacterCount(MutableString/*!*/ self) {
             return self.GetCharCount();
         }
 

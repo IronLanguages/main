@@ -2733,13 +2733,17 @@ namespace IronRuby.Compiler {
         }
 
         public static bool IsHighSurrogate(int c) {
-            return c >= 0xd800 && c <= 0xdbff;
+            return unchecked((uint)c - 0xd800 <= (uint)0xdbff - 0xd800);
         }
 
         public static bool IsLowSurrogate(int c) {
-            return c >= 0xdc00 && c <= 0xdfff;
+            return unchecked((uint)c - 0xdc00 <= (uint)0xdfff - 0xdc00);
         }
-        
+
+        public static bool IsSurrogate(int c) {
+            return unchecked((uint)c - 0xd800 <= (uint)0xdfff - 0xd800);
+        }
+
         #endregion
 
         #region Strings

@@ -162,16 +162,162 @@ namespace IronRuby.Tests {
         }
 
         [Options(NoRuntime = true)]
+        public void MutableString_Surrogates() {
+            MutableString x;
+
+            // encoding doesn't produce surrogate characters //
+            
+            x = MutableString.Create("", RubyEncoding.Binary);
+            Assert(x.KnowsSurrogates); 
+            Assert(!x.HasSurrogates());
+
+            x = MutableString.CreateMutable("", RubyEncoding.Binary);
+            Assert(x.KnowsSurrogates);
+            Assert(!x.HasSurrogates());
+
+            x = MutableString.Create("", RubyEncoding.Ascii);
+            Assert(x.KnowsSurrogates);
+            Assert(!x.HasSurrogates());
+
+            x = MutableString.CreateMutable("", RubyEncoding.Ascii);
+            Assert(x.KnowsSurrogates);
+            Assert(!x.HasSurrogates());
+
+            // encoding might produce surrogate characters //
+
+            foreach (var str in new[] { "", "x", "xy", "hello world", "\uD7FF", "\uE000" }) {
+                x = MutableString.Create(str, RubyEncoding.UTF8);
+                Assert(!x.KnowsSurrogates);
+                Assert(!x.HasSurrogates());
+
+                x = MutableString.CreateMutable(str, RubyEncoding.UTF8);
+                Assert(!x.KnowsSurrogates);
+                Assert(!x.HasSurrogates());
+            }
+
+            foreach (var str in new[] { "\uD800", "\uD800a", "a\uD800", "\uDFFF" }) {
+                x = MutableString.Create(str, RubyEncoding.UTF8);
+                Assert(!x.KnowsSurrogates);
+                Assert(x.HasSurrogates());
+
+                x = MutableString.CreateMutable(str, RubyEncoding.UTF8);
+                Assert(!x.KnowsSurrogates);
+                Assert(x.HasSurrogates());
+            }
+        }
+
+        [Options(NoRuntime = true)]
         public void MutableString_Length() {
             MutableString x;
+
+            // 0
+            x = MutableString.Create("", RubyEncoding.Binary);
+            Assert(x.GetCharacterCount() == 0);
+           
+            x = MutableString.Create("", RubyEncoding.Binary);
+            Assert(x.GetCharCount() == 0);
+
+            x = MutableString.Create("", RubyEncoding.Binary);
+            Assert(x.GetByteCount() == 0);
+
+            // 1:1:1
             x = MutableString.Create("a", RubyEncoding.Binary);
-            Assert(MutableStringOps.GetCharCount(x) == 1);
+            Assert(x.GetCharacterCount() == 1);
+
+            x = MutableString.Create("a", RubyEncoding.Binary);
+            Assert(x.GetCharCount() == 1);
+  
+            x = MutableString.Create("a", RubyEncoding.Binary);
+            Assert(x.GetByteCount() == 1);
+
+            x = MutableString.Create("a", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 1);
+
+            x = MutableString.Create("a", RubyEncoding.UTF8);
+            Assert(x.GetCharCount() == 1);
+
+            x = MutableString.Create("a", RubyEncoding.UTF8);
+            Assert(x.GetByteCount() == 1);
+
+            // 1:1:N
+            x = MutableString.Create("α", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 1);
 
             x = MutableString.Create("α", RubyEncoding.UTF8);
-            Assert(MutableStringOps.GetCharCount(x) == 1);
+            Assert(x.GetCharCount() == 1);
 
             x = MutableString.Create("α", RubyEncoding.UTF8);
-            Assert(MutableStringOps.GetByteCount(x) == 2);
+            Assert(x.GetByteCount() == 2);
+
+            x = MutableString.Create("aあa", RubyEncoding.SJIS);
+            Assert(x.GetCharacterCount() == 3);
+
+            x = MutableString.Create("aあa", RubyEncoding.SJIS);
+            Assert(x.GetCharCount() == 3);
+
+            x = MutableString.Create("aあa", RubyEncoding.SJIS);
+            Assert(x.GetByteCount() == RubyEncoding.SJIS.Encoding.GetByteCount("aあa"));
+
+            string s;
+            byte[] b;
+
+            // 1:N:N
+            s = "\uD820\uDC30";
+            b = Encoding.UTF8.GetBytes(s);
+
+            x = MutableString.Create(s, RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 1);
+
+            x = MutableString.Create(s, RubyEncoding.UTF8);
+            Assert(x.GetCharCount() == 2);
+
+            x = MutableString.Create(s, RubyEncoding.UTF8);
+            Assert(x.GetByteCount() == 4);
+
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 1);
+
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetCharCount() == 2);
+
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetByteCount() == 4);
+
+            // surrogate detection tests:
+            x = MutableString.Create("a\uD820\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 2);
+
+            x = MutableString.Create("\uD820\uDC30a\uD820\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 3);
+
+            x = MutableString.Create("\uD820a\uD820\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 3);
+
+            x = MutableString.Create("\uD820\uD820\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 2);
+
+            x = MutableString.Create("\uD820\uDC30\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 2);
+
+            // invalid byte sequences:
+            b = new byte[] { 
+                0x80,                    // invalid
+                0x80,                    // invalid
+                (byte)'a', 
+                0xEA,                    // invalid
+                (byte)'b', 
+                0xf0, 0x92, 0x8d, 0x85   // U+12345
+            };
+            
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 6);
+
+            // TODO: throws an exception
+            //x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            //Assert(x.GetCharCount() == 7);
+
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetByteCount() == b.Length);
         }
 
         [Options(NoRuntime = true)]

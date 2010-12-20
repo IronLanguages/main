@@ -6797,7 +6797,7 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "length", 0x51, 
                 0x00000000U, 
-                new Func<IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.MutableStringOps.GetCharCount)
+                new Func<IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.MutableStringOps.GetCharacterCount)
             );
             
             DefineLibraryMethod(module, "lines", 0x51, 
@@ -6896,7 +6896,7 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "size", 0x51, 
                 0x00000000U, 
-                new Func<IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.MutableStringOps.GetCharCount)
+                new Func<IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.MutableStringOps.GetCharacterCount)
             );
             
             DefineLibraryMethod(module, "slice", 0x51, 

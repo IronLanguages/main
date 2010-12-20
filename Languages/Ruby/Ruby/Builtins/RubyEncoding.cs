@@ -55,8 +55,10 @@ namespace IronRuby.Builtins {
         public const int CodePageUTF32LE = 12000;
         
         // TODO: how does MRI sort encodings?
+
         public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, -4);
         public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(CreateEncoding(CodePageUTF8, false), CreateEncoding(CodePageUTF8, true), -3);
+
 #if SILVERLIGHT
         public static readonly RubyEncoding/*!*/ Ascii = UTF8;
 #else
@@ -67,7 +69,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        // TODO: use encoders/decoders?
         private readonly Encoding/*!*/ _encoding;
         private readonly Encoding/*!*/ _strictEncoding;
         private Expression _expression;
@@ -88,6 +89,10 @@ namespace IronRuby.Builtins {
             _strictEncoding = strictEncoding;
             _maxBytesPerChar = strictEncoding.GetMaxByteCount(1);
             _isAsciiIdentity = AsciiIdentity(encoding);
+        }
+
+        public override int GetHashCode() {
+            return _ordinal;
         }
 
         internal Expression/*!*/ Expression {
@@ -134,7 +139,7 @@ namespace IronRuby.Builtins {
         }
 
         void ISerializable.GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
-            info.AddValue("CodePage", _encoding.CodePage);
+            info.AddValue("CodePage", CodePage);
             info.SetType(typeof(Deserializer));
         }
 #endif
@@ -193,7 +198,7 @@ namespace IronRuby.Builtins {
                 return RubyRegexOptions.NONE;
             }
 
-            switch (GetCodePage(encoding._encoding)) {
+            switch (encoding.CodePage) {
 #if !SILVERLIGHT
                 case RubyEncoding.CodePageSJIS: return RubyRegexOptions.SJIS;
                 case RubyEncoding.CodePageEUC: return RubyRegexOptions.EUC;
@@ -216,9 +221,8 @@ namespace IronRuby.Builtins {
             }
         }
 
-
-        internal static int GetCodePage(int firstChar) {
-            switch (firstChar) {
+        internal static int GetCodePage(int nameInitial) {
+            switch (nameInitial) {
 #if !SILVERLIGHT
                 case 'E':
                 case 'e': return CodePageEUC;
@@ -239,7 +243,7 @@ namespace IronRuby.Builtins {
 
         public void RequireAsciiIdentity() {
             if (!_isAsciiIdentity) {
-                throw new NotSupportedException(String.Format("Encoding {0} (code page {1}) is not supported", _encoding, GetCodePage(_encoding)));
+                throw new NotSupportedException(String.Format("Encoding {0} (code page {1}) is not supported", Name, CodePage));
             }
         }
 
@@ -428,7 +432,7 @@ namespace IronRuby.Builtins {
         public bool IsSingleByteCharacterSet {
             get {
                 if (!_isSingleByteCharacterSet.HasValue) {
-                    _isSingleByteCharacterSet = IsSBCS(GetCodePage(_encoding));
+                    _isSingleByteCharacterSet = IsSBCS(CodePage);
                 }
 
                 return _isSingleByteCharacterSet.Value;
@@ -438,7 +442,7 @@ namespace IronRuby.Builtins {
         public bool IsDoubleByteCharacterSet {
             get {
                 if (!_isDoubleByteCharacterSet.HasValue) {
-                    _isDoubleByteCharacterSet = IsDBCS(GetCodePage(_encoding));
+                    _isDoubleByteCharacterSet = IsDBCS(CodePage);
                 }
 
                 return _isDoubleByteCharacterSet.Value;
@@ -473,9 +477,16 @@ namespace IronRuby.Builtins {
             return Array.BinarySearch(_dbsc, codepage) >= 0;
         }
 
+        public bool InUnicodeBasicPlane {
+            get {
+                // TODO: others
+                return this == Ascii || this == Binary;
+            }
+        }
+
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
             // TODO: use static fields
-            return Methods.CreateEncoding.OpCall(Expression.Constant(_encoding.CodePage));
+            return Methods.CreateEncoding.OpCall(Expression.Constant(CodePage));
         }
 #else
         public static bool AsciiIdentity(Encoding/*!*/ encoding) {
@@ -497,6 +508,12 @@ namespace IronRuby.Builtins {
         public bool IsDoubleByteCharacterSet {
             get {
                 return false;
+            }
+        }
+
+        public bool InUnicodeBasicPlane {
+            get {
+                return this == Binary;
             }
         }
 

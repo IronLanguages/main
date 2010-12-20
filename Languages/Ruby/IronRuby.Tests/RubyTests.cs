@@ -27,6 +27,7 @@ namespace IronRuby.Tests {
                 MutableString_Factories,
                 MutableString_GetHashCode,
                 MutableString_IsAscii,
+                MutableString_Surrogates,
                 MutableString_Length,
                 MutableString_CompareTo,
                 MutableString_Append_Byte,
