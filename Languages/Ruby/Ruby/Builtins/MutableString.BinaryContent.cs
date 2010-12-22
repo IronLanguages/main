@@ -49,6 +49,20 @@ namespace IronRuby.Builtins {
                 return new BinaryContent(data, owner);
             }
 
+            private void Decode(out char[] chars, out List<byte[]> invalidCharacters) {
+                Decoder decoder = _owner.Encoding.Encoding.GetDecoder();
+                var fallback = new LosslessDecoderFallback();
+                decoder.Fallback = fallback;
+
+                // TODO: split into chunks for large strings?
+                fallback.Track = true;
+                chars = new char[decoder.GetCharCount(_data, 0, _count, true)];
+                fallback.Track = false;
+                decoder.GetChars(_data, 0, _count, chars, 0, true);
+
+                invalidCharacters = fallback.InvalidCharacters;
+            }
+
             // TODO: we can remember both representations until a mutable operation is performed
             /// <exception cref="DecoderFallbackException">Invalid character.</exception>
             private CharArrayContent/*!*/ SwitchToChars() {
@@ -106,24 +120,18 @@ namespace IronRuby.Builtins {
                     return String.Empty.GetHashCode();
                 }
 
-                Decoder decoder = _owner.Encoding.Encoding.GetDecoder();
-                var fallback = new LosslessDecoderFallback();
-                decoder.Fallback = fallback;
+                char[] chars;
+                List<byte[]> invalidCharacters;
+                Decode(out chars, out invalidCharacters);
 
-                // TODO: we can use singleton lossless non-tracking decoder for counting characters and tracking for getting the actual chars
-                fallback.Track = true;
-                char[] chars = new char[decoder.GetCharCount(_data, 0, _count, true)];
-                decoder.Reset();
-                fallback.Track = false;
-                decoder.GetChars(_data, 0, _count, chars, 0, true);
-
-                // cache conversion result if there are not invalid characters (switching content to char array):
                 // TODO: we can also cache invalid bytes if needed (maybe have a special content repr?)
-                if (fallback.InvalidCharacters == null) {
+                // cache conversion result if there are not invalid characters (switching content to char array):
+                if (invalidCharacters == null) {
                     return WrapContent(chars, chars.Length).CalculateHashCode();
+                } else {
+                    // Unfortunately, BLC doesn't have a method to calculate hash code directly out of char[]:
+                    return new string(chars).GetHashCode();
                 }
-
-                return new string(chars).GetHashCode();
             }
 
             public override int Count {
@@ -151,6 +159,7 @@ namespace IronRuby.Builtins {
                     return _count;
                 }
 
+                //
                 // We need to 
                 // 1) decode bytes to UTF16 chars replacing sequences of undecodable bytes with U+FFFF markers
                 //    (MRI counts each such sequence as 1 character),
@@ -159,25 +168,18 @@ namespace IronRuby.Builtins {
                 // Unfortunately, this is a bit complex and not very efficient. We might be able to amortize the cost 
                 // by caching the resulting char array via switching to char content in anticipation of subsequent 
                 // character based operations.
+                //
+                char[] chars;
+                List<byte[]> invalidCharacters;
+                Decode(out chars, out invalidCharacters);
 
-                Decoder decoder = _owner.Encoding.Encoding.GetDecoder();
-                var fallback = new LosslessDecoderFallback();
-                decoder.Fallback = fallback;
-
-                // TODO: we can use singleton lossless non-tracking decoder for counting characters and tracking for getting the actual chars
-                fallback.Track = true;
-                char[] chars = new char[decoder.GetCharCount(_data, 0, _count, true)];
-                decoder.Reset();
-                fallback.Track = false;
-                decoder.GetChars(_data, 0, _count, chars, 0, true);
-
-                // cache conversion result if there are not invalid characters (switching content to char array):
                 // TODO: we can also cache invalid bytes if needed (maybe have a special content repr?)
-                if (fallback.InvalidCharacters == null) {
+                // cache conversion result if there are not invalid characters (switching content to char array):
+                if (invalidCharacters == null) {
                     return WrapContent(chars, chars.Length).GetCharacterCount();
+                } else {
+                    return chars.GetCharacterCount(chars.Length);
                 }
-
-                return chars.GetCharacterCount(chars.Length);
             }
 
             public override int GetByteCount() {

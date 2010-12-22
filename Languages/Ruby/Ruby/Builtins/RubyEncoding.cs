@@ -171,6 +171,7 @@ namespace IronRuby.Builtins {
                     case RubyEncoding.CodePageUTF32BE: return "UTF-32LE";
                     case RubyEncoding.CodePageUTF32LE: return "UTF-32LE";
                     case RubyEncoding.CodePageSJIS: return "Shift_JIS";
+                    case RubyEncoding.CodePageAscii: return "US-ASCII";
 #endif
                     default: return _encoding.WebName;
                 }
@@ -481,6 +482,21 @@ namespace IronRuby.Builtins {
             get {
                 // TODO: others
                 return this == Ascii || this == Binary;
+            }
+        }
+
+        public bool IsUnicodeEncoding {
+            get {
+                switch (CodePage) {
+                    case CodePageUTF7:
+                    case CodePageUTF8:
+                    case CodePageUTF16BE:
+                    case CodePageUTF16LE:
+                    case CodePageUTF32BE:
+                    case CodePageUTF32LE:
+                        return true;
+                }
+                return false;
             }
         }
 

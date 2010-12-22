@@ -175,10 +175,19 @@ namespace IronRuby.Builtins {
             return new MutableString(str, encoding);
         }
 
+        /// <summary>
+        /// Creates an instace initialized with given ASCII string.
+        /// </summary>
+        /// <remarks>
+        /// The ASCII-ness of <paramref name="str"/> is not verified (unless compiled in debug build).
+        /// If the string contains any non-ASCII characters subsequent operations might produce incorrect results.
+        /// </remarks>
         public static MutableString CreateAscii(string/*!*/ str) {
             ContractUtils.RequiresNotNull(str, "str");
             Debug.Assert(str.IsAscii());
-            return Create(str, RubyEncoding.Binary);
+            var result = Create(str, RubyEncoding.Ascii);
+            result._flags = IsAsciiFlag | NoSurrogatesFlag;
+            return result;
         }
 
         public static MutableString/*!*/ Create(string/*!*/ str, RubyEncoding/*!*/ encoding) {
@@ -905,10 +914,6 @@ namespace IronRuby.Builtins {
             if (ReferenceEquals(other, null)) return false;
 
             if (KnowsAscii && other.KnowsAscii && IsAscii() != other.IsAscii()) {
-                return false;
-            }
-
-            if (KnowsSurrogates && other.KnowsSurrogates && HasSurrogates() != other.HasSurrogates()) {
                 return false;
             }
 

@@ -606,31 +606,10 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static MutableString GetSubstring(MutableString/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int count) {
-            if (count < 0) {
-                return null;
+            int charCount = self.GetCharCount();
+            if (!NormalizeSubstringRange(charCount, ref start, ref count)) {
+                return (start == charCount) ? self.CreateInstance().TaintBy(self) : null;
             }
-            
-            // TODO:
-            //if (start == length) {
-            //    return self.CreateInstance().TaintBy(self);
-            //}
-            //
-            //if (start < 0) {
-            //    start += length;
-            //}
-            //
-            //if (start < 0 || start > length) {
-            //    return null;
-            //}
-            //
-            //if (start + count > length) {
-            //    count = length - start;
-            //}
-            
-            //int charCount = self.GetCharCount();
-            //if (!NormalizeSubstringRange(charCount, ref start, ref count)) {
-            //    return (start == charCount) ? self.CreateInstance().TaintBy(self) : null;
-            //}
 
             return self.CreateInstance().Append(self, start, count).TaintBy(self);
         }
@@ -1147,7 +1126,9 @@ namespace IronRuby.Builtins {
 
         // encoding aware
         [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(MutableString/*!*/ self) {
+        public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, MutableString/*!*/ self) {
+            // TODO: RubyEncoding encoding = context.DefaultInternalEncoding ?? context.DefaultExternalEncoding;
+            
             // Note that "self" could be a subclass of MutableString, but the return value should 
             // always be just a MutableString
             return MutableString.Create(GetQuotedStringRepresentation(self, false, '"'), self.Encoding).TaintBy(self);
@@ -1324,7 +1305,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("size")]
         [RubyMethod("length")]
         public static int GetCharacterCount(MutableString/*!*/ self) {
-            return self.GetCharCount();
+            return self.GetCharacterCount();
         }
 
         // encoding aware

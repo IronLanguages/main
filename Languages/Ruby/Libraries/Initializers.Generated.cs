@@ -6787,7 +6787,7 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "inspect", 0x51, 
                 0x00000000U, 
-                new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Inspect)
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Inspect)
             );
             
             DefineLibraryMethod(module, "intern", 0x51, 

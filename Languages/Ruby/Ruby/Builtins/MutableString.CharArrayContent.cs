@@ -119,7 +119,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int GetCharacterCount() {
-                return _owner.HasSurrogates() ? _data.GetCharacterCount(_count) : _data.Length;
+                return _owner.HasSurrogates() ? _data.GetCharacterCount(_count) : _count;
             }
 
             public override int GetByteCount() {
