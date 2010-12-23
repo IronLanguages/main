@@ -445,6 +445,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("<=>")]
+        public static int Compare(MutableString/*!*/ self, [NotNull]string/*!*/ other) {
+            return Math.Sign(self.CompareTo(other));
+        }
+
+        [RubyMethod("<=>")]
         public static object Compare(BinaryOpStorage/*!*/ comparisonStorage, RespondToStorage/*!*/ respondToStorage, object/*!*/ self, object other) {
             // Self is object so that we can reuse this method.
 
@@ -471,13 +476,24 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("eql?")]
+        public static bool Eql(MutableString/*!*/ lhs, [NotNull]string/*!*/ rhs) {
+            return lhs.Equals(rhs);
+        }
+
+        [RubyMethod("eql?")]
         public static bool Eql(MutableString/*!*/ lhs, object rhs) {
-            return object.ReferenceEquals(lhs, rhs);
+            return false;
         }
 
         [RubyMethod("==")]
         [RubyMethod("===")]
         public static bool StringEquals(MutableString/*!*/ lhs, [NotNull]MutableString/*!*/ rhs) {
+            return lhs.Equals(rhs);
+        }
+
+        [RubyMethod("==")]
+        [RubyMethod("===")]
+        public static bool StringEquals(MutableString/*!*/ lhs, [NotNull]string/*!*/ rhs) {
             return lhs.Equals(rhs);
         }
 
@@ -691,7 +707,12 @@ namespace IronRuby.Builtins {
 
         #region []=
 
-        //setbyte
+        // TODO:
+        [RubyMethod("setbyte")]
+        public static MutableString/*!*/ SetByte(MutableString/*!*/ self, [DefaultProtocol]int index, [DefaultProtocol]int value) {
+            self.SetByte(index, (byte)value);
+            return self;
+        }
 
         [RubyMethod("[]=")]
         public static MutableString/*!*/ ReplaceCharacter(MutableString/*!*/ self,
@@ -1200,6 +1221,10 @@ namespace IronRuby.Builtins {
         public static object EachCodePoint([NotNull]BlockParam/*!*/ block, MutableString/*!*/ self) {
             var enumerator = self.GetCharacters();
             while (enumerator.MoveNext()) {
+                if (!enumerator.Current.IsValid) {
+                    throw RubyExceptions.CreateArgumentError("invalid byte sequence in {0}", self.Encoding.Name);
+                }
+
                 object result;
                 if (block.Yield(ScriptingRuntimeHelpers.Int32ToObject((int)enumerator.Current.Codepoint), out result)) {
                     return result;

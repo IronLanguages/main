@@ -1,4 +1,0 @@
-fails:String#clear sets self equal to the empty String
-fails:String#clear returns self after emptying it
-fails:String#clear preserves its encoding
-fails:String#clear works with multibyte Strings

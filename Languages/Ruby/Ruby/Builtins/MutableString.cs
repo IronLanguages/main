@@ -190,6 +190,11 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        public static MutableString/*!*/ Create(string/*!*/ str) {
+            ContractUtils.RequiresNotNull(str, "str");
+            return str.IsAscii() ? CreateAscii(str) : Create(str, RubyEncoding.UTF8);
+        }
+        
         public static MutableString/*!*/ Create(string/*!*/ str, RubyEncoding/*!*/ encoding) {
             ContractUtils.RequiresNotNull(str, "str");
             ContractUtils.RequiresNotNull(encoding, "encoding");
@@ -553,15 +558,7 @@ namespace IronRuby.Builtins {
         /// or UTF8 encoded. The hash code is not cached.
         /// </summary>
         public override int GetHashCode() {
-            int hash = _content.CalculateHashCode();
-
-            // TODO: do we need to do this at all?
-            // xor with the encoding if there are any non-ASCII characters in the string:
-            // if (_encoding != RubyEncoding.Binary && _encoding != RubyEncoding.UTF8 && !IsAscii()) {
-            //     hash ^= _encoding.GetHashCode();
-            // }
-
-            return hash;
+            return _content.CalculateHashCode();
         }
 
         /// <summary>
@@ -907,7 +904,11 @@ namespace IronRuby.Builtins {
         #region Comparisons (read-only)
 
         public override bool Equals(object other) {
-            return Equals(other as MutableString);
+            var ms = other as MutableString;
+            if (ms != null) {
+                return Equals(ms);
+            }
+            return Equals(other as string);
         }
 
         public bool Equals(MutableString other) {
@@ -920,8 +921,16 @@ namespace IronRuby.Builtins {
             return CompareTo(other) == 0;
         }
 
-        public int CompareTo(object obj) {
-            return CompareTo(obj as MutableString);
+        public bool Equals(string other) {
+            return CompareTo(other) == 0;
+        }
+
+        public int CompareTo(object other) {
+            var ms = other as MutableString;
+            if (ms != null) {
+                return CompareTo(ms);
+            }
+            return CompareTo(other as string);
         }
 
         public int CompareTo(MutableString other) {
@@ -944,6 +953,14 @@ namespace IronRuby.Builtins {
             } else {
                 return _content.OrdinalCompareTo(other._content);
             }
+        }
+
+        public int CompareTo(string other) {
+            if (ReferenceEquals(other, null)) return 1;
+
+            // TODO: How does MRI deal with invalid characters, surrogates?
+            // TODO: for now, assume the other string is of the same encoding as this string (maybe we should compare binary UTF8 image?)
+            return _content.OrdinalCompareTo(other);
         }
 
         #endregion

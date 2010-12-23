@@ -494,22 +494,26 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("select")]
-        public static object Select(RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
-            RubyArray list = new RubyArray();
+        public static Enumerator/*!*/ Select(RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
+            return new Enumerator((_, block) => Select(context, block, self));
+        }
+
+        [RubyMethod("select")]
+        public static object Select(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, IDictionary<object, object>/*!*/ self) {
+            Hash result = new Hash(context);
 
             foreach (var pair in CopyKeyValuePairs(self)) {
-                object result;
-                if (block.Yield(CustomStringDictionary.ObjToNull(pair.Key), pair.Value, out result)) {
-                    return result;
+                object blockResult;
+                if (block.Yield(CustomStringDictionary.ObjToNull(pair.Key), pair.Value, out blockResult)) {
+                    return blockResult;
                 }
 
-                // Select the key, unless 'false' or 'nil' is returned
-                if (RubyOps.IsTrue(result)) {
-                    list.Add(MakeArray(pair));
+                if (RubyOps.IsTrue(blockResult)) {
+                    result[pair.Key] = pair.Value;
                 }
             }
 
-            return list;
+            return result;
         }
 
         [RubyMethod("shift")]

@@ -2165,8 +2165,9 @@ namespace IronRuby.Compiler {
                 if (c == 'u') {
                     // \uFFFF, \u{xxxxxx}
                     Skip(c);
-                    content = UnicodeCodePointToString(Peek() == '{' ? ReadUnicodeEscape6() : ReadUnicodeEscape4());
-                    encoding = RubyEncoding.UTF8;
+                    int codepoint = Peek() == '{' ? ReadUnicodeEscape6() : ReadUnicodeEscape4();
+                    content = UnicodeCodePointToString(codepoint);
+                    encoding = (codepoint <= 0x7f) ? _encoding : RubyEncoding.UTF8;
                     MarkSingleLineTokenEnd();
                 } else {
                     // \xXX, \M-x, ...
@@ -2548,17 +2549,20 @@ namespace IronRuby.Compiler {
             content.AppendAscii(_lineBuffer, start, _bufferPos - start);
         }
 
-        private void AppendEscapedUnicode(MutableStringBuilder/*!*/ content) {
+        // returns true if any escaped codepoint is non-ascii
+        private bool AppendEscapedUnicode(MutableStringBuilder/*!*/ content) {
+            bool isNonAscii = false;
             int start = _bufferPos - 1;
             if (Peek() == '{') {
                 // \u{codepoint codepoint ... codepoint}
-                AppendUnicodeCodePoints(null);
+                isNonAscii = AppendUnicodeCodePoints(null);
             } else {
                 // \uFFFF
-                ReadUnicodeEscape4();
+                isNonAscii = ReadUnicodeEscape4() >= 0x80;
             }
             Debug.Assert(_lineBuffer[start] == 'u');
             content.AppendAscii(_lineBuffer, start, _bufferPos - start);
+            return isNonAscii;
         }
 
         // Reads octal number of at most 3 digits.
@@ -2659,7 +2663,9 @@ namespace IronRuby.Compiler {
             return codepoint;
         }
 
-        private void AppendUnicodeCodePoints(MutableStringBuilder content) {
+        // returns true if any codepoint represents a non-ascii character
+        private bool AppendUnicodeCodePoints(MutableStringBuilder content) {
+            bool isAscii = true;
             bool isEmpty;
             Skip('{');
             while (true) {
@@ -2667,6 +2673,7 @@ namespace IronRuby.Compiler {
                 if (content != null && !isEmpty) {
                     AppendUnicodeCodePoint(content, codepoint);
                 }
+                isAscii &= codepoint <= 0x7f;
 
                 int c = Peek();
                 if (c == '}') {
@@ -2683,11 +2690,14 @@ namespace IronRuby.Compiler {
             if (isEmpty) {
                 ReportError(Errors.InvalidUnicodeEscape);
             }
+            return !isAscii;
         }
 
         // Reads \uFFFF or \u{FFFFFF} and appends the character to the string content:
         private void AppendUnicodeCodePoint(MutableStringBuilder/*!*/ content, int codepoint) {
-            SwitchToUtf8(content);
+            if (codepoint >= 0x80) {
+                SwitchToUtf8(content);
+            }
             content.AppendUnicodeCodepoint(codepoint);
         }
 
@@ -2817,9 +2827,10 @@ namespace IronRuby.Compiler {
                     } else if ((stringType & StringProperties.RegularExpression) != 0) {
                         // \uFFFF, \u{codepoint}
                         if (c == 'u') {
-                            SwitchToUtf8(content);
                             content.AppendAscii('\\');
-                            AppendEscapedUnicode(content);
+                            if (AppendEscapedUnicode(content)) {
+                                SwitchToUtf8(content);
+                            }
                         } else {
                             SeekRelative(-eolnWidth);
                             AppendEscapedRegexEscape(content, terminator);
@@ -2829,10 +2840,16 @@ namespace IronRuby.Compiler {
                         if (c == 'u') {
                             if (Peek() == '{') {
                                 // \u{codepoint codepoint ... codepoint}
-                                AppendUnicodeCodePoints(content);
+                                if (AppendUnicodeCodePoints(content)) {
+                                    SwitchToUtf8(content);
+                                }
                             } else {
                                 // \uFFFF
-                                AppendUnicodeCodePoint(content, ReadUnicodeEscape4());
+                                int codepoint = ReadUnicodeEscape4();
+                                AppendUnicodeCodePoint(content, codepoint);
+                                if (codepoint >= 0x80) {
+                                    SwitchToUtf8(content);
+                                }
                             }
                         } else {
                             // other escapes:

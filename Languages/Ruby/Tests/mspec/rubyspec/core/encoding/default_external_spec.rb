@@ -41,7 +41,7 @@ ruby_version_is "1.9" do
 
     it "calls #to_s on arguments that are neither Strings nor Encodings" do
       string = mock('string')
-      string.should_receive(:to_str).twice.and_return('ascii')
+      string.should_receive(:to_str).at_least(1).and_return('ascii')
       Encoding.default_external = string
       Encoding.default_external.should == Encoding::ASCII
     end

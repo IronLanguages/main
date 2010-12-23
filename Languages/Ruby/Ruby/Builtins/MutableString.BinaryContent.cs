@@ -50,6 +50,10 @@ namespace IronRuby.Builtins {
             }
 
             private void Decode(out char[] chars, out List<byte[]> invalidCharacters) {
+#if SILVERLIGHT
+                chars = _owner.Encoding.Encoding.GetChars(_data, 0, _count);
+                invalidCharacters = null;
+#else
                 Decoder decoder = _owner.Encoding.Encoding.GetDecoder();
                 var fallback = new LosslessDecoderFallback();
                 decoder.Fallback = fallback;
@@ -61,6 +65,7 @@ namespace IronRuby.Builtins {
                 decoder.GetChars(_data, 0, _count, chars, 0, true);
 
                 invalidCharacters = fallback.InvalidCharacters;
+#endif
             }
 
             // TODO: we can remember both representations until a mutable operation is performed
@@ -362,7 +367,7 @@ namespace IronRuby.Builtins {
                     return false;
                 }
 
-                if (c < 0x80 || _owner.HasByteCharacters) {
+                if (_owner.HasByteCharacters || c < 0x80 && _owner._encoding.IsAsciiIdentity) {
                     return _data[0] == c;    
                 }
 
@@ -490,7 +495,7 @@ namespace IronRuby.Builtins {
             #region Append
 
             public override void Append(char c, int repeatCount) {
-                if (c < 0x80 || _owner._encoding == RubyEncoding.Binary) {
+                if (_owner.HasByteCharacters || c < 0x80 && _owner._encoding.IsAsciiIdentity) {
                     Append((byte)c, repeatCount);
                 } else {
                     _count = Utils.Append(ref _data, _count, c, repeatCount, _owner._encoding.StrictEncoding);
@@ -560,7 +565,7 @@ namespace IronRuby.Builtins {
             #region Insert
 
             public override void Insert(int index, char c) {
-                if (c < 0x80 && _owner.HasByteCharacters) {
+                if (_owner.HasByteCharacters || c < 0x80 && _owner._encoding.IsAsciiIdentity) {
                     _count = Utils.InsertAt(ref _data, _count, index, (byte)c, 1);
                 } else {
                     SwitchToChars(1).Insert(index, c);
@@ -594,9 +599,8 @@ namespace IronRuby.Builtins {
                 _data[index] = b;
             }
 
-            // requires: encoding is ascii-identity
             public override void SetChar(int index, char c) {
-                if (c < 0x80 && _owner.HasByteCharacters) {
+                if (_owner.HasByteCharacters || c < 0x80 && _owner.HasSingleByteCharacters) {
                     SetByte(index, (byte)c);
                 } else {
                     SwitchToChars().DataSetChar(index, c);

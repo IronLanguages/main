@@ -152,7 +152,7 @@ namespace IronRuby.Builtins {
                     }
                     goto default;
 
-                case RubyEncoding.CodePageEUC:
+                case RubyEncoding.CodePageEUCJP:
                     // MRI's bahavior is strange - bug?
                     if (codepoint >= 0x80) {
                         throw RubyExceptions.CreateRangeError("{0} out of char range", codepoint);

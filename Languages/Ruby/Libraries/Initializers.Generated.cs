@@ -1009,9 +1009,9 @@ namespace IronRuby.Builtins {
         
         #if !SILVERLIGHT
         private static void LoadEncoding_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            DefineLibraryMethod(module, "_dump", 0x51, 
+            DefineLibraryMethod(module, "ascii_compatible?", 0x51, 
                 0x00000000U, 
-                new Func<IronRuby.Builtins.RubyEncoding, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyEncodingOps.ToS)
+                new Func<IronRuby.Builtins.RubyEncoding, System.Boolean>(IronRuby.Builtins.RubyEncodingOps.IsAsciiCompatible)
             );
             
             DefineLibraryMethod(module, "based_encoding", 0x51, 
@@ -1034,6 +1034,11 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.RubyEncoding, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyEncodingOps.ToS)
             );
             
+            DefineLibraryMethod(module, "names", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyEncoding, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyEncodingOps.GetAllNames)
+            );
+            
             DefineLibraryMethod(module, "to_s", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Builtins.RubyEncoding, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyEncodingOps.ToS)
@@ -1044,14 +1049,9 @@ namespace IronRuby.Builtins {
         
         #if !SILVERLIGHT
         private static void LoadEncoding_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
-            DefineLibraryMethod(module, "_load?", 0x61, 
-                0x00000000U, 
-                new Func<IronRuby.Builtins.RubyClass, System.Boolean>(IronRuby.Builtins.RubyEncodingOps.Load)
-            );
-            
             DefineLibraryMethod(module, "aliases", 0x61, 
                 0x00000000U, 
-                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyEncodingOps.GetAliases)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.Hash>(IronRuby.Builtins.RubyEncodingOps.GetAliases)
             );
             
             DefineLibraryMethod(module, "compatible?", 0x61, 
@@ -1091,7 +1091,7 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "find", 0x61, 
-                0x00000002U, 
+                0x00010002U, 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyEncoding>(IronRuby.Builtins.RubyEncodingOps.GetEncoding)
             );
             
@@ -3891,6 +3891,13 @@ namespace IronRuby.Builtins {
                 new Func<System.String, IronRuby.Builtins.RubyEncoding>(IronRuby.Builtins.ClrString.GetEncoding)
             );
             
+            DefineLibraryMethod(module, "eql?", 0x51, 
+                0x00000002U, 0x00000002U, 0x00000000U, 
+                new Func<System.String, System.String, System.Boolean>(IronRuby.Builtins.ClrString.Eql), 
+                new Func<System.String, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.ClrString.Eql), 
+                new Func<System.String, System.Object, System.Boolean>(IronRuby.Builtins.ClrString.Eql)
+            );
+            
             DefineLibraryMethod(module, "hex", 0x51, 
                 0x00000000U, 
                 new Func<System.String, System.Object>(IronRuby.Builtins.ClrString.ToIntegerHex)
@@ -6528,8 +6535,9 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "<=>", 0x51, 
-                0x00000002U, 0x00000000U, 
+                0x00000002U, 0x00000002U, 0x00000000U, 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.MutableStringOps.Compare), 
+                new Func<IronRuby.Builtins.MutableString, System.String, System.Int32>(IronRuby.Builtins.MutableStringOps.Compare), 
                 new Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RespondToStorage, System.Object, System.Object, System.Object>(IronRuby.Builtins.MutableStringOps.Compare)
             );
             
@@ -6541,14 +6549,16 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "==", 0x51, 
-                0x00000002U, 0x00000000U, 
+                0x00000002U, 0x00000002U, 0x00000000U, 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.MutableStringOps.StringEquals), 
+                new Func<IronRuby.Builtins.MutableString, System.String, System.Boolean>(IronRuby.Builtins.MutableStringOps.StringEquals), 
                 new Func<IronRuby.Runtime.RespondToStorage, IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.MutableStringOps.Equals)
             );
             
             DefineLibraryMethod(module, "===", 0x51, 
-                0x00000002U, 0x00000000U, 
+                0x00000002U, 0x00000002U, 0x00000000U, 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.MutableStringOps.StringEquals), 
+                new Func<IronRuby.Builtins.MutableString, System.String, System.Boolean>(IronRuby.Builtins.MutableStringOps.StringEquals), 
                 new Func<IronRuby.Runtime.RespondToStorage, IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.MutableStringOps.Equals)
             );
             
@@ -6687,11 +6697,11 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "each_line", 0x51, 
-                0x00000000U, 0x00000002U, 0x00010000U, 0x00020001U, 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachLine), 
+                0x00000002U, 0x00010000U, 0x00020001U, 0x00000000U, 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachLine), 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachLine), 
-                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachLine)
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachLine), 
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachLine)
             );
             
             DefineLibraryMethod(module, "empty?", 0x51, 
@@ -6720,8 +6730,9 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "eql?", 0x51, 
-                0x00000002U, 0x00000000U, 
+                0x00000002U, 0x00000002U, 0x00000000U, 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.MutableStringOps.Eql), 
+                new Func<IronRuby.Builtins.MutableString, System.String, System.Boolean>(IronRuby.Builtins.MutableStringOps.Eql), 
                 new Func<IronRuby.Builtins.MutableString, System.Object, System.Boolean>(IronRuby.Builtins.MutableStringOps.Eql)
             );
             
@@ -6801,11 +6812,11 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "lines", 0x51, 
-                0x00000000U, 0x00000002U, 0x00010000U, 0x00020001U, 
-                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachLine), 
+                0x00000002U, 0x00010000U, 0x00020001U, 0x00000000U, 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachLine), 
                 new Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachLine), 
-                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachLine)
+                new Func<IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.MutableStringOps.EachLine), 
+                new Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.MutableString, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.MutableStringOps.EachLine)
             );
             
             DefineLibraryMethod(module, "ljust", 0x51, 
@@ -6892,6 +6903,11 @@ namespace IronRuby.Builtins {
                 0x00020004U, 0x0004000aU, 
                 new Func<IronRuby.Runtime.RubyScope, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.MutableStringOps.Scan), 
                 new Func<IronRuby.Runtime.RubyScope, IronRuby.Runtime.BlockParam, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.MutableStringOps.Scan)
+            );
+            
+            DefineLibraryMethod(module, "setbyte", 0x51, 
+                0x00030000U, 
+                new Func<IronRuby.Builtins.MutableString, System.Int32, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.SetByte)
             );
             
             DefineLibraryMethod(module, "size", 0x51, 
@@ -7563,7 +7579,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "select", 0x51, 
-                0x00000000U, 
+                0x00000000U, 0x00000002U, 
+                new Func<IronRuby.Runtime.RubyContext, System.Collections.Generic.IDictionary<System.Object, System.Object>, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.IDictionaryOps.Select), 
                 new Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Collections.Generic.IDictionary<System.Object, System.Object>, System.Object>(IronRuby.Builtins.IDictionaryOps.Select)
             );
             

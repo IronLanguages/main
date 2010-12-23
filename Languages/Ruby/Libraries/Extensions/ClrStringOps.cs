@@ -96,7 +96,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region <=>, ==, ===
+        #region <=>, ==, ===, eql?
 
         [RubyMethod("<=>")]
         public static int Compare(string/*!*/ self, [NotNull]string/*!*/ other) {
@@ -105,8 +105,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("<=>")]
         public static int Compare(string/*!*/ self, [NotNull]MutableString/*!*/ other) {
-            // TODO: do not create MS
-            return -Math.Sign(other.CompareTo(MutableString.Create(self, RubyEncoding.UTF8)));
+            return -Math.Sign(other.CompareTo(self));
         }
 
         [RubyMethod("<=>")]
@@ -117,20 +116,34 @@ namespace IronRuby.Builtins {
         [RubyMethod("==")]
         [RubyMethod("===")]
         public static bool StringEquals(string/*!*/ lhs, [NotNull]string/*!*/ rhs) {
-            return lhs.Equals(rhs);
+            return lhs == rhs;
         }
 
         [RubyMethod("==")]
         [RubyMethod("===")]
         public static bool StringEquals(string/*!*/ lhs, [NotNull]MutableString/*!*/ rhs) {
-            // TODO: do not create MS
-            return rhs.Equals(MutableString.Create(lhs, RubyEncoding.UTF8));
+            return rhs.Equals(lhs);
         }
 
         [RubyMethod("==")]
         [RubyMethod("===")]
         public static bool Equals(RespondToStorage/*!*/ respondToStorage, BinaryOpStorage/*!*/ equalsStorage, string/*!*/ self, object other) {
             return MutableStringOps.Equals(respondToStorage, equalsStorage, self, other);
+        }
+
+        [RubyMethod("eql?")]
+        public static bool Eql(string/*!*/ lhs, [NotNull]string/*!*/ rhs) {
+            return lhs == rhs;
+        }
+
+        [RubyMethod("eql?")]
+        public static bool Eql(string/*!*/ lhs, [NotNull]MutableString/*!*/ rhs) {
+            return rhs.Equals(lhs);
+        }
+
+        [RubyMethod("eql?")]
+        public static bool Eql(string/*!*/ lhs, object rhs) {
+            return false;
         }
 
         #endregion

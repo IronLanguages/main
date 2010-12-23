@@ -1,3 +1,0 @@
-fails:String#getbyte returns an Integer between 0 and 255
-fails:String#getbyte mirrors the output of #bytes
-fails:String#getbyte interprets bytes relative to the String's encoding

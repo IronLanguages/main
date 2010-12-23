@@ -148,7 +148,7 @@ namespace IronRuby.Tests {
             MutableString a;
             byte[] b;
 
-            foreach (var e in new[] { RubyEncoding.Binary, RubyEncoding.SJIS, RubyEncoding.EUC, RubyEncodingOps.ISO_8859_15 }) {
+            foreach (var e in new[] { RubyEncoding.Binary, RubyEncoding.SJIS, RubyEncoding.EUCJP, RubyEncodingOps.ISO_8859_15 }) {
                 a = MutableString.CreateBinary(new byte[] { 0x12, 0x34, 0x56 }, e);
                 Assert(a.IsAscii());
                 a.Remove(2);
@@ -388,7 +388,7 @@ namespace IronRuby.Tests {
         }
 
         [Options(NoRuntime = true)]
-        public void MutableString_CompareTo() {
+        public void MutableString_CompareTo1() {
             MutableString x, y;
             RubyEncoding SJIS = RubyEncoding.SJIS;
 
@@ -432,6 +432,31 @@ namespace IronRuby.Tests {
             x = MS("α", RubyEncoding.UTF8);
             y = MS("a", SJIS);
             Assert(Math.Sign(x.CompareTo(y)) == +1);
+        }
+
+        [Options(NoRuntime = true)]
+        public void MutableString_CompareTo2() {
+            MutableString a;
+
+            a = MS("α", RubyEncoding.UTF8);
+            Assert(a.CompareTo("α") == 0);
+
+            a = MS("ab", RubyEncoding.UTF8);
+            Assert(a.CompareTo("ac") < 0);
+
+            a = MS("ﾎ", RubyEncoding.SJIS);
+            Assert(a.CompareTo("ﾎ") == 0);
+
+            a = MS(Sjis("ﾎ"), RubyEncoding.SJIS);
+            Assert(a.CompareTo("ﾎ") == 0);
+
+            a = MS(new byte[] { 0xa8 }, RubyEncodingOps.KOI8_R);
+            Assert(a.CompareTo("╗") == 0);
+
+            a = MS(Encoding.UTF32.GetBytes("α"), RubyEncodingOps.UTF_32LE);
+            Assert(a.CompareTo("α") == 0);
+
+            // TODO: invalid characters, surrogates, test ordinality
         }
 
         [Options(NoRuntime = true)]
@@ -911,7 +936,19 @@ namespace IronRuby.Tests {
 
             s = MutableString.CreateMutable(BinaryEncoding.Instance.GetString(alpha), RubyEncoding.Binary);
             Assert(!s.StartsWith('α'));
-            
+
+            byte[] b = RubyEncodingOps.UTF_32BE.Encoding.GetBytes("ab");
+            s = MutableString.CreateBinary(b, RubyEncodingOps.UTF_32BE);
+            Assert(!s.StartsWith('\0'));
+            Assert(s.StartsWith('a'));
+
+            s = MutableString.CreateBinary(new byte[] { 0xff, 0x23 }, RubyEncoding.Binary);
+            Assert(s.StartsWith('\u00ff'));
+
+            b = new byte[] { 0xA9, 0x20 };
+            s = MutableString.CreateBinary(b, RubyEncodingOps.KOI8_R);
+            Assert(s.StartsWith(RubyEncodingOps.KOI8_R.Encoding.GetString(b)[0]));
+
             // char array content:
             s = MutableString.CreateMutable("abc", RubyEncoding.UTF8).Remove(1, 2);
             Assert(s.StartsWith('a'));
