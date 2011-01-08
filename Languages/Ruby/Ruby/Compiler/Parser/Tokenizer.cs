@@ -2730,7 +2730,7 @@ namespace IronRuby.Compiler {
         /// </summary>
         public static string/*!*/ UnicodeCodePointToString(int codepoint) {
             if (codepoint < 0x10000) {
-                // code-points [0xd800 .. 0xdffff] are not treated as invalid
+                // code-points [0xd800 .. 0xdfff] are not treated as invalid
                 return new String((char)codepoint, 1);
             } else {
                 codepoint -= 0x10000;

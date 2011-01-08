@@ -286,7 +286,7 @@ namespace IronRuby.Tests {
             return str.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t").ToString();
         }
 
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         private void RedirectOutput(TextWriter/*!*/ output, Action f) {
             // TODO:
             if (Runtime == null) {
@@ -305,12 +305,12 @@ namespace IronRuby.Tests {
             }
         }
 
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         public void AssertExceptionThrown<T>(Action f) where T : Exception {
             AssertExceptionThrown<T>(f, null);
         }
 
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         public void AssertExceptionThrown<T>(Action f, Predicate<T> condition) where T : Exception {
             try {
                 RedirectOutput(TextWriter.Null, f);
@@ -329,7 +329,7 @@ namespace IronRuby.Tests {
         /// <summary>
         /// Asserts two values are equal
         /// </summary>
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         public void AreEqual(object x, object y) {
             if (x == null && y == null) return;
 
@@ -339,7 +339,7 @@ namespace IronRuby.Tests {
         /// <summary>
         /// Asserts an condition it true
         /// </summary>
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         public void Assert(bool condition, string msg) {
             if (!condition) {
                 AssertBreak();
@@ -347,7 +347,7 @@ namespace IronRuby.Tests {
             }
         }
 
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         public void Assert(bool condition) {
             Assert(condition, "Assertion failed");
         }
@@ -395,19 +395,19 @@ namespace IronRuby.Tests {
         // you are forced to update the test case. In the meantime, it makes sure that the test can atleast be executed
         // and documents the incorrect result
 
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         internal void AreEqualBug(object x, object y, object buggyResult) {
             // Once the bug is fixed, the result should be "y".
             AreEqual(x, buggyResult);
         }
 
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         internal void AreEqualBug<T>(Action f, object y) where T : Exception {
             // Once the bug is fixed, the result should be "y" and no exception should be thrown
             AssertExceptionThrown<T>(f);
         }
 
-        [DebuggerHiddenAttribute]
+        [DebuggerHidden]
         internal void AssertExceptionThrownBug<T>(Action f, object buggyResult) where T : Exception {
             // f should throw an exception once the bug is fixed
             f();

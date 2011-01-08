@@ -1157,15 +1157,6 @@ namespace IronRuby.Tests {
                 2
             );
             Assert(i == 5);
-
-            // "start at" counts bytes in 1.8, returns byte index (regardless of KCODE)
-            i = (int)MutableStringOps.Index(
-                scope,
-                MutableString.CreateBinary(Encoding.UTF8.GetBytes("αa"), RubyEncoding.Binary),
-                new RubyRegex(MutableString.CreateAscii("a"), RubyRegexOptions.UTF8),
-                2
-            );
-            Assert(i == 2);
         }
 
         [Options(NoRuntime = true)]
