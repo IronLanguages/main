@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -46,7 +46,7 @@ namespace TestRunner {
                 } else if (args[i].StartsWith("/test:")) {
                     tests.Add(args[i].Substring("/test:".Length));
                 } else if (args[i].StartsWith("/binpath:")) {
-                    binPath = Path.Combine(dlrRoot, args[i].Substring("/binpath".Length));
+                    binPath = Path.Combine(dlrRoot, args[i].Substring("/binpath:".Length));
                 } else if (args[i] == "/verbose") {
                     _verbose = true;
                 } else if (args[i] == "/runlong") {
@@ -57,8 +57,8 @@ namespace TestRunner {
                     _quiet = true;
                 } else if (args[i].StartsWith("/threads:")) {
                     int threadCount;
-                    if (!Int32.TryParse(args[i].Substring("/threads".Length), out threadCount) || threadCount <= 0) {
-                        Console.WriteLine("Bad thread count: {0}", args[i].Substring("/threads".Length));
+                    if (!Int32.TryParse(args[i].Substring("/threads:".Length), out threadCount) || threadCount <= 0) {
+                        Console.WriteLine("Bad thread count: {0}", args[i].Substring("/threads:".Length));
                         return -1;
                     }
                     _threadCount = threadCount; 
