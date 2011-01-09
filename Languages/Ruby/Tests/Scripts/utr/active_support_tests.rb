@@ -69,8 +69,13 @@
   end
   
   def disable_tests
+    # regex encodings
+    disable_by_name %w{
+      test_slice_should_take_character_offsets(MultibyteCharsUTF8BehaviourTest)
+      test_transliterate_should_allow_a_custom_replacement_char(TransliterateTest)
+    }
+
     # most failures are due to missing String#encode, String#each_char and Time#nsec
-  
     disable_by_name %w{
       default_test(ArrayUniqByTests)
       test_uniq_by(ArrayUniqByTests)

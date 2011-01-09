@@ -858,6 +858,9 @@ namespace IronRuby.Builtins {
             self.RequireReadable();
             MutableString result = null;
             self.NonBlockingOperation(() => result = Read(self, bytes, buffer), true);
+            if (result == null) {
+                throw new EOFError("end of file reached");
+            }
             return result;
         }
 
