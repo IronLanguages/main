@@ -283,6 +283,14 @@ namespace IronPython.Modules {
 
         }
 
+        public static string ExpandEnvironmentStrings(string value)
+        {
+            if (value == null)
+                throw PythonExceptions.CreateThrowable(PythonExceptions.TypeError,  "must be unicode, not None");
+
+            return Environment.ExpandEnvironmentVariables(value);
+        }
+
         private static string ExtractString(byte[] data, int start, int end) {
             if (end <= start) {
                 return String.Empty;
