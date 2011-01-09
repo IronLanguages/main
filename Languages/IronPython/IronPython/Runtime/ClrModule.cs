@@ -474,7 +474,7 @@ import Namespace.")]
             if (file == null) throw PythonOps.TypeError("Expected string, got NoneType");
 
             // update our path w/ the path of this file...
-            string path = System.IO.Path.GetDirectoryName(file);
+            string path = System.IO.Path.GetDirectoryName(Path.GetFullPath(file));
             List list;
 
             PythonContext pc = PythonContext.GetContext(context);
