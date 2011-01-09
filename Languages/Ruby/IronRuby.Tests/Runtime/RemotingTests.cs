@@ -30,7 +30,7 @@ namespace IronRuby.Tests {
             if (_driver.PartialTrust) return;
 
             var encodings = new object[] {
-                RubyEncoding.EUC,
+                RubyEncoding.EUCJP,
                 RubyEncoding.UTF8,
                 RubyEncoding.SJIS,
                 RubyEncoding.Ascii,

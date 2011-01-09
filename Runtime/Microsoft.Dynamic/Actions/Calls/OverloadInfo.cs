@@ -136,7 +136,7 @@ namespace Microsoft.Scripting.Actions.Calls {
     }
 
     /// <summary>
-    /// Represents a method overload that is bound to a <see cref="System.Reflection.MethodBase"/>.
+    /// Represents a method overload that is bound to a <see cref="T:System.Reflection.MethodBase"/>.
     /// </summary>
     /// <remarks>
     /// Not thread safe.

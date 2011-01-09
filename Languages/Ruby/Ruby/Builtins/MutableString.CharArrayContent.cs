@@ -28,10 +28,10 @@ namespace IronRuby.Builtins {
         /// All indices and counts are in characters. Surrogate pairs are treated as 2 separate characters.
         /// </summary>
         [Serializable]
-        private sealed class CharArrayContent : Content {
+        internal sealed class CharArrayContent : Content {
             private char[]/*!*/ _data;
             private int _count;
-            private string _immutableSnapshot;
+            private string _immutableSnapshot; // TODO: weak ref?
 
             internal CharArrayContent(char[]/*!*/ data, MutableString owner)
                 : this(data, data.Length, owner) {
@@ -84,18 +84,14 @@ namespace IronRuby.Builtins {
                 _data[index] = c;
             }
 
-            #region GetHashCode, Length, Clone (read-only), Count
+            #region UpdateCharacterFlags, CalculateHashCode, Length, Clone, Count (read-only)
 
-            public override int GetHashCode(out int binarySum) {
-                return _data.GetValueHashCode(_count, out binarySum);
+            public override uint UpdateCharacterFlags(uint flags) {
+                return UpdateAsciiAndSurrogatesFlags(_data, _count, flags);
             }
 
-            public override int GetBinaryHashCode(out int binarySum) {
-                return _owner.IsBinaryEncoded ? GetHashCode(out binarySum) : SwitchToBinary().GetBinaryHashCode(out binarySum);
-            }
-
-            public override bool IsBinary {
-                get { return false; }
+            public override int CalculateHashCode() {
+                return ConvertToString().GetHashCode();
             }
 
             public int DataLength {
@@ -122,8 +118,12 @@ namespace IronRuby.Builtins {
                 return _count;
             }
 
+            public override int GetCharacterCount() {
+                return _owner.HasSurrogates() ? _data.GetCharacterCount(_count) : _count;
+            }
+
             public override int GetByteCount() {
-                return (_owner.HasByteCharacters) ? _count : (_count == 0) ? 0 : SwitchToBinary().GetByteCount();
+                return (_owner.HasSingleByteCharacters || _count == 0) ? _count : SwitchToBinary().GetByteCount();
             }
 
             public override Content/*!*/ SwitchToBinaryContent() {
@@ -244,11 +244,14 @@ namespace IronRuby.Builtins {
             }
 
             public override byte GetByte(int index) {
-                if (_owner.HasByteCharacters) {
+                if (index == 0 || _owner.HasSingleByteCharacters && !_owner.HasSurrogates()) {
                     if (index >= _count) {
                         throw new IndexOutOfRangeException();
                     }
-                    return (byte)_data[index];
+                    var result = _data[index];
+                    if (result < 0x80 || _owner.HasByteCharacters) {
+                        return (byte)_data[index];
+                    }
                 }
                 return SwitchToBinary().GetByte(index);
             }
@@ -279,7 +282,7 @@ namespace IronRuby.Builtins {
 
             #endregion
 
-            #region StartsWith
+            #region StartsWith (read-only)
 
             public override bool StartsWith(char c) {
                 return _count != 0 && _data[0] == c;
@@ -470,8 +473,7 @@ namespace IronRuby.Builtins {
             }
 
             public override void Insert(int index, byte b) {
-                if (_owner.HasByteCharacters) {
-                    Debug.Assert(b < 0x80 || _owner.IsBinaryEncoded);
+                if (b < 0x80 && _owner.HasByteCharacters) {
                     Insert(index, (char)b);
                 } else {
                     SwitchToBinary(1).Insert(index, b);
@@ -494,10 +496,8 @@ namespace IronRuby.Builtins {
                 str.Insert(index, _data, start, count);
             }
 
-            // requires: encoding is ascii-identity
             public override void SetByte(int index, byte b) {
-                if (_owner.HasByteCharacters) {
-                    Debug.Assert(b < 0x80 || _owner.IsBinaryEncoded);
+                if (b < 0x80 && _owner.HasByteCharacters) {
                     DataSetChar(index, (char)b);
                 } else {
                     SwitchToBinary().SetByte(index, b);

@@ -667,10 +667,10 @@ namespace IronRuby.Builtins {
             // TODO: options
 
             RubyEncoding externalEncoding = null, internalEncoding = null;
-            if (external != Missing.Value) {
+            if (external != Missing.Value && external != null) {
                 externalEncoding = Protocols.ConvertToEncoding(toStr, external);
             }
-            if (@internal != Missing.Value) {
+            if (@internal != Missing.Value && external != null) {
                 internalEncoding = Protocols.ConvertToEncoding(toStr, @internal);
             }
             return SetEncodings(self, externalEncoding, internalEncoding);
@@ -772,7 +772,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("write_nonblock")]
         public static int WriteNoBlock(RubyIO/*!*/ self, [NotNull]MutableString/*!*/ val) {
-            var stream = self.GetWritableStream();
+            self.RequireWritable();
             int result = -1;
             self.NonBlockingOperation(() => result = Write(self, val), false);
             return result;
@@ -855,9 +855,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("read_nonblock")]
         public static MutableString ReadNoBlock(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
-            var stream = self.GetReadableStream();
+            self.RequireReadable();
             MutableString result = null;
             self.NonBlockingOperation(() => result = Read(self, bytes, buffer), true);
+            if (result == null) {
+                throw new EOFError("end of file reached");
+            }
             return result;
         }
 

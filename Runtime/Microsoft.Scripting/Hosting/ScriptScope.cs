@@ -226,8 +226,8 @@ namespace Microsoft.Scripting.Hosting {
             public System.Collections.Hashtable Variables {
                 get {
                     System.Collections.Hashtable result = new System.Collections.Hashtable();
-                    foreach (KeyValuePair<string, object> variable in _scope.GetItems()) {
-                        result[variable.Key] = variable.Value;
+                    foreach (var variable in _scope.GetItems()) {
+                        result[variable.Key] = (object)variable.Value;
                     }
                     return result;
                 }

@@ -2349,7 +2349,7 @@ namespace IronRuby.Runtime {
 
             }
             try {
-                return MutableString.Create(path, encoding).CheckEncodingInternal();
+                return MutableString.Create(path, encoding).CheckEncoding();
             } catch (EncoderFallbackException e) {
                 throw RubyExceptions.CreateEINVAL(
                     e,
@@ -2367,7 +2367,7 @@ namespace IronRuby.Runtime {
         /// <exception cref="InvalidError">Invalid characters present.</exception>
         public string/*!*/ DecodePath(MutableString/*!*/ path) {
             try {
-                if (path.IsBinaryEncoded) {
+                if (path.Encoding == RubyEncoding.Binary) {
                     // force UTF8 encoding to make round-trip work:
                     return path.ToString(Encoding.UTF8);
                 } else {
@@ -2881,6 +2881,7 @@ namespace IronRuby.Runtime {
                 case "ASCII-8BIT": return BinaryEncoding.Instance;
                 case "FILESYSTEM": return GetPathEncoding().StrictEncoding;
                 case "LOCALE": return _options.LocaleEncoding.StrictEncoding;
+                case "EXTERNAL": return _defaultExternalEncoding.StrictEncoding;
 #if SILVERLIGHT
                 case "UTF-8": return Encoding.UTF8;
                 default: throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name));
@@ -2888,11 +2889,28 @@ namespace IronRuby.Runtime {
                 // Mono doesn't recognize 'SJIS' encoding name:
                 case "SJIS": return Encoding.GetEncoding(RubyEncoding.CodePageSJIS);
                 case "WINDOWS-31J": return Encoding.GetEncoding(932);
+                case "MACCYRILLIC": return Encoding.GetEncoding(10007);
+
+                // encodings whose name only differs in casing are returned by Windows:
+                case "EUC-JP": return Encoding.GetEncoding(RubyEncoding.CodePageEUCJP);
+                case "ISO-2022-JP": return Encoding.GetEncoding(50220);
+
+                // the encoding name doesn't correspond to its code page:
+                case "CP1025": return Encoding.GetEncoding(21025);
+
                 default:
+                    string alias;
+                    if (RubyEncoding.Aliases.TryGetValue(name, out alias)) {
+                        return GetEncodingByRubyName(alias);
+                    }
                     if (upperName.StartsWith("CP", StringComparison.Ordinal)) {
                         int codepage;
                         if (Int32.TryParse(upperName.Substring(2), out codepage)) {
-                            return Encoding.GetEncoding(codepage);
+                            try {
+                                return Encoding.GetEncoding(codepage);
+                            } catch (NotSupportedException) {
+                                // the encoding name is not correct
+                            }
                         }
                     }
                     return Encoding.GetEncoding(name);

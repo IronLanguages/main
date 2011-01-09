@@ -2149,7 +2149,6 @@ false
             // TODO: fix
             if (_driver.PartialTrust) return;
 
-            var e = new ClassWithVirtualEvent1();
             Context.ObjectClass.SetConstant("E", Context.GetClass(typeof(ClassWithVirtualEvent1)));
 
             var f = Engine.Execute<ClassWithVirtualEvent1>(@"

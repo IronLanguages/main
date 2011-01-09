@@ -1,2 +1,0 @@
-fails:String#force_encoding tags the String with the given encoding
-fails:String#force_encoding does not transcode self

@@ -23,7 +23,7 @@ using System.IO;
 namespace IronRuby.Builtins {
     public partial class MutableString {
         [Serializable]
-        private sealed class StringContent : Content {
+        internal sealed class StringContent : Content {
             private readonly string/*!*/ _data;
 
             internal StringContent(string/*!*/ data, MutableString owner) 
@@ -67,18 +67,14 @@ namespace IronRuby.Builtins {
                 _owner._encoding.StrictEncoding.GetBytes(_data, 0, _data.Length, bytes, start);
             }
 
-            #region GetHashCode, Length, Clone (read-only), Count
+            #region UpdateCharacterFlags, CalculateHashCode, Length, Clone, Count (read-only)
 
-            public override int GetHashCode(out int binarySum) {
-                return _data.GetValueHashCode(out binarySum);
+            public override uint UpdateCharacterFlags(uint flags) {
+                return UpdateAsciiAndSurrogatesFlags(_data, flags);
             }
 
-            public override int GetBinaryHashCode(out int binarySum) {
-                return _owner.IsBinaryEncoded ? GetHashCode(out binarySum) : SwitchToBinary().GetBinaryHashCode(out binarySum);
-            }
-
-            public override bool IsBinary {
-                get { return false; }
+            public override int CalculateHashCode() {
+                return _data.GetHashCode();
             }
 
             public override int Count {
@@ -96,8 +92,18 @@ namespace IronRuby.Builtins {
                 return _data.Length;
             }
 
+            public override int GetCharacterCount() {
+                if (!_owner.HasSurrogates()) {
+                    return _data.Length;
+                }
+                return _data.GetCharacterCount();
+            }
+
             public override int GetByteCount() {
-                return (_owner.HasByteCharacters) ? _data.Length : (_data.Length == 0) ? 0 : SwitchToBinary().GetByteCount();
+                if (_data.Length == 0 || _owner.HasSingleByteCharacters && !_owner.HasSurrogates()) {
+                    return _data.Length;
+                }
+                return SwitchToBinary().GetByteCount();
             }
 
             public override Content/*!*/ Clone() {
@@ -211,7 +217,16 @@ namespace IronRuby.Builtins {
             }
 
             public override byte GetByte(int index) {
-                return _owner.HasByteCharacters ? (byte)_data[index] : SwitchToBinary().GetByte(index);
+                if (index == 0 || _owner.HasSingleByteCharacters && !_owner.HasSurrogates()) {
+                    if (index >= _data.Length) {
+                        throw new IndexOutOfRangeException();
+                    }
+                    var result = _data[index];
+                    if (result < 0x80 || _owner.HasByteCharacters) {
+                        return (byte)_data[index];
+                    }
+                }
+                return SwitchToBinary().GetByte(index);
             }
 
             public override string/*!*/ GetStringSlice(int start, int count) {
@@ -240,7 +255,7 @@ namespace IronRuby.Builtins {
 
             #endregion
 
-            #region StartsWith
+            #region StartsWith (read-only)
 
             public override bool StartsWith(char c) {
                 return _data.Length != 0 && _data[0] == c;

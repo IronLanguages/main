@@ -29,7 +29,7 @@ namespace IronRuby.Builtins {
         /// All indices and counts are in bytes.
         /// </summary>
         [Serializable]
-        private class BinaryContent : Content {
+        internal class BinaryContent : Content {
             protected byte[] _data;
             protected int _count;
 
@@ -49,16 +49,38 @@ namespace IronRuby.Builtins {
                 return new BinaryContent(data, owner);
             }
 
+            private void Decode(out char[] chars, out List<byte[]> invalidCharacters) {
+#if SILVERLIGHT
+                chars = _owner.Encoding.Encoding.GetChars(_data, 0, _count);
+                invalidCharacters = null;
+#else
+                Decoder decoder = _owner.Encoding.Encoding.GetDecoder();
+                var fallback = new LosslessDecoderFallback();
+                decoder.Fallback = fallback;
+
+                // TODO: split into chunks for large strings?
+                fallback.Track = true;
+                chars = new char[decoder.GetCharCount(_data, 0, _count, true)];
+                fallback.Track = false;
+                decoder.GetChars(_data, 0, _count, chars, 0, true);
+
+                invalidCharacters = fallback.InvalidCharacters;
+#endif
+            }
+
             // TODO: we can remember both representations until a mutable operation is performed
+            /// <exception cref="DecoderFallbackException">Invalid character.</exception>
             private CharArrayContent/*!*/ SwitchToChars() {
                 return SwitchToChars(0);
             }
 
+            /// <exception cref="DecoderFallbackException">Invalid character.</exception>
             private CharArrayContent/*!*/ SwitchToChars(int additionalCapacity) {
                 char[] chars = DataToChars(additionalCapacity, _owner._encoding.StrictEncoding);
                 return WrapContent(chars, chars.Length - additionalCapacity);
             }
 
+            /// <exception cref="DecoderFallbackException">Invalid character.</exception>
             private char[]/*!*/ DataToChars(int additionalCapacity, Encoding/*!*/ encoding) {
                 if (_count == 0) {
                     return (additionalCapacity == 0) ? Utils.EmptyChars : new char[additionalCapacity];
@@ -87,18 +109,34 @@ namespace IronRuby.Builtins {
                 _count = Utils.Append(ref _data, _count, chars, start, count, _owner._encoding.StrictEncoding);
             }
 
-            #region GetHashCode, Length, Clone (read-only), Count
+            #region UpdateCharacterFlags, CalculateHashCode, Length, Clone, Count (read-only)
 
-            public override bool IsBinary {
-                get { return true; }
+            public override uint UpdateCharacterFlags(uint flags) {
+                // can't determine surrogates for binary repr (w/o conversion):
+                if (_data.IsAscii(_count)) {
+                    return (flags & ~MutableString.AsciiUnknownFlag) | MutableString.IsAsciiFlag;
+                } else {
+                    return flags & ~(MutableString.AsciiUnknownFlag | MutableString.IsAsciiFlag);
+                }
             }
 
-            public override int GetHashCode(out int binarySum) {
-                return _data.GetValueHashCode(_count, out binarySum);
-            }
+            public override int CalculateHashCode() {
+                if (_count == 0) {
+                    return String.Empty.GetHashCode();
+                }
 
-            public override int GetBinaryHashCode(out int binarySum) {
-                return GetHashCode(out binarySum);
+                char[] chars;
+                List<byte[]> invalidCharacters;
+                Decode(out chars, out invalidCharacters);
+
+                // TODO: we can also cache invalid bytes if needed (maybe have a special content repr?)
+                // cache conversion result if there are not invalid characters (switching content to char array):
+                if (invalidCharacters == null) {
+                    return WrapContent(chars, chars.Length).CalculateHashCode();
+                } else {
+                    // Unfortunately, BLC doesn't have a method to calculate hash code directly out of char[]:
+                    return new string(chars).GetHashCode();
+                }
             }
 
             public override int Count {
@@ -118,7 +156,35 @@ namespace IronRuby.Builtins {
             }
 
             public override int GetCharCount() {
-                return (_owner.HasByteCharacters) ? _count : (_count == 0) ? 0 : SwitchToChars().GetCharCount();
+                return (_owner.HasSingleByteCharacters || _count == 0) ? _count : SwitchToChars().GetCharCount();
+            }
+
+            public override int GetCharacterCount() {
+                if (_owner.HasSingleByteCharacters || _count == 0) {
+                    return _count;
+                }
+
+                //
+                // We need to 
+                // 1) decode bytes to UTF16 chars replacing sequences of undecodable bytes with U+FFFF markers
+                //    (MRI counts each such sequence as 1 character),
+                // 2) subtract the number of surrogates in the resulting char sequence.
+                //
+                // Unfortunately, this is a bit complex and not very efficient. We might be able to amortize the cost 
+                // by caching the resulting char array via switching to char content in anticipation of subsequent 
+                // character based operations.
+                //
+                char[] chars;
+                List<byte[]> invalidCharacters;
+                Decode(out chars, out invalidCharacters);
+
+                // TODO: we can also cache invalid bytes if needed (maybe have a special content repr?)
+                // cache conversion result if there are not invalid characters (switching content to char array):
+                if (invalidCharacters == null) {
+                    return WrapContent(chars, chars.Length).GetCharacterCount();
+                } else {
+                    return chars.GetCharacterCount(chars.Length);
+                }
             }
 
             public override int GetByteCount() {
@@ -239,21 +305,19 @@ namespace IronRuby.Builtins {
             #region Slices (read-only)
 
             public override char GetChar(int index) {
-                if (_owner.HasByteCharacters) {
-                    if (index >= _count) {
-                        throw new IndexOutOfRangeException();
-                    }
-                    return (char)_data[index];
-                } else if (index == 0) {
+                if (_owner.HasSingleByteCharacters || index == 0) {
+                    // character index == byte index
                     if (index >= _count) {
                         throw new IndexOutOfRangeException();
                     }
                     var result = _data[index];
-                    if (result < 0x80) {
+                    if (result < 0x80 || _owner.HasByteCharacters) {
+                        // no decoding needed:
                         return (char)result;
                     }
                 }
 
+                // TODO: invalid characters
                 return SwitchToChars().GetChar(index);
             }
 
@@ -279,7 +343,7 @@ namespace IronRuby.Builtins {
             public override CharacterEnumerator/*!*/ GetCharacters() {
                 if (_owner.HasByteCharacters) {
                     return new MutableString.BinaryCharacterEnumerator(_owner.Encoding, _data, _count);
-                } 
+                }
 
                 char[] allValid;
                 var result = MutableString.EnumerateAsCharacters(_data, _count, _owner.Encoding, out allValid);
@@ -296,14 +360,14 @@ namespace IronRuby.Builtins {
 
             #endregion
 
-            #region StartsWith
+            #region StartsWith (read-only)
 
             public override bool StartsWith(char c) {
                 if (_count == 0) {
                     return false;
                 }
 
-                if (c < 0x80 || _owner.HasByteCharacters) {
+                if (_owner.HasByteCharacters || c < 0x80 && _owner._encoding.IsAsciiIdentity) {
                     return _data[0] == c;    
                 }
 
@@ -431,7 +495,7 @@ namespace IronRuby.Builtins {
             #region Append
 
             public override void Append(char c, int repeatCount) {
-                if (c < 0x80 || _owner.IsBinaryEncoded) {
+                if (_owner.HasByteCharacters || c < 0x80 && _owner._encoding.IsAsciiIdentity) {
                     Append((byte)c, repeatCount);
                 } else {
                     _count = Utils.Append(ref _data, _count, c, repeatCount, _owner._encoding.StrictEncoding);
@@ -500,10 +564,8 @@ namespace IronRuby.Builtins {
 
             #region Insert
 
-            // requires: encoding is ascii-identity
             public override void Insert(int index, char c) {
-                if (_owner.HasByteCharacters) {
-                    Debug.Assert(c < 0x80 || _owner.IsBinaryEncoded);
+                if (_owner.HasByteCharacters || c < 0x80 && _owner._encoding.IsAsciiIdentity) {
                     _count = Utils.InsertAt(ref _data, _count, index, (byte)c, 1);
                 } else {
                     SwitchToChars(1).Insert(index, c);
@@ -537,10 +599,8 @@ namespace IronRuby.Builtins {
                 _data[index] = b;
             }
 
-            // requires: encoding is ascii-identity
             public override void SetChar(int index, char c) {
-                if (_owner.HasByteCharacters) {
-                    Debug.Assert(c < 0x80 || _owner.IsBinaryEncoded);
+                if (_owner.HasByteCharacters || c < 0x80 && _owner.HasSingleByteCharacters) {
                     SetByte(index, (byte)c);
                 } else {
                     SwitchToChars().DataSetChar(index, c);

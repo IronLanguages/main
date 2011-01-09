@@ -68,6 +68,24 @@ namespace IronRuby.Runtime {
             return true;
         }
 
+        public static bool IsAscii(this byte[]/*!*/ bytes, int count) {
+            for (int i = 0; i < count; i++) {
+                if (bytes[i] > 0x7f) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool IsAscii(this char[]/*!*/ str, int count) {
+            for (int i = 0; i < count; i++) {
+                if (str[i] > 0x7f) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static bool IsAscii(this char[]/*!*/ str, int start, int count) {
             for (int i = 0; i < count; i++) {
                 if (str[start + i] > 0x7f) {
@@ -84,6 +102,50 @@ namespace IronRuby.Runtime {
                 }
             }
             return true;
+        }
+
+        internal static int GetCharacterCount(this string/*!*/ str) {
+            int surrogateCount = 0;
+            bool wasHighSurrogate = false;
+            for (int i = 0; i < str.Length; i++) {
+                char c = str[i];
+                if (c >= '\uD800') {
+                    if (c <= '\uDBFF') {
+                        wasHighSurrogate = true;
+                    } else if (wasHighSurrogate && c <= '\uDFFF') {
+                        surrogateCount++;
+                        wasHighSurrogate = false;
+                    }
+                }
+            }
+            return str.Length - surrogateCount;
+        }
+
+        /// <summary>
+        /// Calculates the number of Unicode characters in given array.
+        /// Assumes that the content of the array beyond count chars doesn't contain significant data and can be overwritten.
+        /// </summary>
+        internal static int GetCharacterCount(this char[]/*!*/ str, int count) {
+            int surrogateCount = 0;
+            bool wasHighSurrogate = false;
+            if (count < str.Length) {
+                str[count] = '\uffff';
+            }
+
+            for (int i = 0; i < str.Length; i++) {
+                char c = str[i];
+                if (c >= '\uD800') {
+                    if (i >= count) {
+                        break;
+                    } else if (c <= '\uDBFF') {
+                        wasHighSurrogate = true;
+                    } else if (wasHighSurrogate && c <= '\uDFFF') {
+                        surrogateCount++;
+                        wasHighSurrogate = false;
+                    }
+                }
+            }
+            return str.Length - surrogateCount;
         }
 
         public static string/*!*/ ToAsciiString(this string/*!*/ str) {
@@ -661,42 +723,6 @@ namespace IronRuby.Runtime {
                 }
             }
             return -1;
-        }
-
-        internal static int GetValueHashCode(this string/*!*/ str, out int binarySum) {
-            int result = 5381;
-            int sum = 0;
-            for (int i = 0; i < str.Length; i++) {
-                int c = str[i];
-                result = unchecked(((result << 5) + result) ^ c);
-                sum |= c;
-            }
-            binarySum = sum;
-            return result;
-        }
-
-        internal static int GetValueHashCode(this char[]/*!*/ array, int itemCount, out int binarySum) {
-            int result = 5381;
-            int sum = 0;
-            for (int i = 0; i < itemCount; i++) {
-                int c = array[i];
-                result = unchecked(((result << 5) + result) ^ c);
-                sum |= c;
-            }
-            binarySum = sum;
-            return result;
-        }
-
-        internal static int GetValueHashCode(this byte[]/*!*/ array, int itemCount, out int binarySum) {
-            int result = 5381;
-            int sum = 0;
-            for (int i = 0; i < itemCount; i++) {
-                int c = array[i];
-                result = unchecked(((result << 5) + result) ^ c);
-                sum |= c;
-            }
-            binarySum = sum;
-            return result;
         }
 
         internal static int ValueCompareTo(this byte[]/*!*/ array, int itemCount, byte[]/*!*/ other) {

@@ -20,13 +20,14 @@ using System.Text;
 using IronRuby.Runtime;
 using System.Diagnostics;
 using System.IO;
+using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
     public partial class MutableString {
         // TODO: Add range checks to APIs or change the implementation to be out-of-range tolerant (see GetSlice).
         // Tha latter is preferred if the semantics is reasonable since it reduces the amounts of content size dependent checks that the user needs to do.
         [Serializable]
-        private abstract class Content {
+        internal abstract class Content {
             protected MutableString _owner;
 
             #region Utils
@@ -53,6 +54,36 @@ namespace IronRuby.Builtins {
                 return result;
             }
 
+            internal static uint UpdateAsciiAndSurrogatesFlags(string/*!*/ str, uint flags) {
+                int sum = 0;
+                for (int i = 0; i < str.Length; i++) {
+                    int c = str[i];
+                    if (Tokenizer.IsSurrogate(c)) {
+                        return flags & ~(MutableString.SurrogatesUnknownFlag | MutableString.AsciiUnknownFlag | MutableString.IsAsciiFlag | MutableString.NoSurrogatesFlag);
+                    }
+                    sum |= c;
+                }
+
+                return (sum < 0x80)
+                  ? flags & ~(MutableString.SurrogatesUnknownFlag | MutableString.AsciiUnknownFlag) | MutableString.IsAsciiFlag | MutableString.NoSurrogatesFlag
+                  : flags & ~(MutableString.SurrogatesUnknownFlag | MutableString.AsciiUnknownFlag | MutableString.IsAsciiFlag) | MutableString.NoSurrogatesFlag;
+            }
+
+            internal static uint UpdateAsciiAndSurrogatesFlags(char[]/*!*/ str, int itemCount, uint flags) {
+                int sum = 0;
+                for (int i = 0; i < itemCount; i++) {
+                    int c = str[i];
+                    if (Tokenizer.IsSurrogate(c)) {
+                        return flags & ~(MutableString.SurrogatesUnknownFlag | MutableString.AsciiUnknownFlag | MutableString.IsAsciiFlag | MutableString.NoSurrogatesFlag);
+                    }
+                    sum |= c;
+                }
+
+                return (sum < 0x80)
+                  ? flags & ~(MutableString.SurrogatesUnknownFlag | MutableString.AsciiUnknownFlag) | MutableString.IsAsciiFlag | MutableString.NoSurrogatesFlag
+                  : flags & ~(MutableString.SurrogatesUnknownFlag | MutableString.AsciiUnknownFlag | MutableString.IsAsciiFlag) | MutableString.NoSurrogatesFlag;
+            }
+
             #endregion
 
             public abstract string/*!*/ ConvertToString();
@@ -70,19 +101,44 @@ namespace IronRuby.Builtins {
             public abstract Content/*!*/ EscapeRegularExpression();
 
             // read:
-            public abstract bool IsBinary { get; }
             public abstract bool IsEmpty { get; }
             public abstract int Count { get; set; }
-            public abstract int GetBinaryHashCode(out int binarySum);
-            public abstract int GetHashCode(out int binarySum);
+            public abstract int CalculateHashCode();
+            public abstract uint UpdateCharacterFlags(uint flags);
+
+            /// <summary>
+            /// Returns the number of characters in the string.
+            /// Counts surrogates as two characters.
+            /// </summary>
+            /// <exception cref="DecoderFallbackException">Invalid character.</exception>
             public abstract int GetCharCount();
+
+            /// <summary>
+            /// Returns the number of true Unicode characters in the string.
+            /// </summary>
+            public abstract int GetCharacterCount();
+
+            /// <summary>
+            /// Returns the number of bytes in the string.
+            /// Throws if the string includes invalid characters.
+            /// </summary>
             public abstract int GetByteCount();
+
             public abstract void TrimExcess();
             public abstract int GetCapacity();
             public abstract void SetCapacity(int capacity);
             public abstract Content/*!*/ Clone();
 
+            /// <summary>
+            /// Gets index'th character of the string.
+            /// Throws if the string includes invalid characters.
+            /// </summary>
             public abstract char GetChar(int index);
+
+            /// <summary>
+            /// Gets index'th byte of the string.
+            /// Throws if the string includes invalid characters.
+            /// </summary>
             public abstract byte GetByte(int index);
 
             public abstract CharacterEnumerator/*!*/ GetCharacters();

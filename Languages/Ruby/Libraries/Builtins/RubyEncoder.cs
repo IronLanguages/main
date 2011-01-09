@@ -1182,7 +1182,7 @@ namespace IronRuby.Builtins {
                     i += count;
                 }
                 stream.SetLength(stream.Position);
-                return stream.String;
+                return stream.String.TaintBy(format);
             }
         }
 

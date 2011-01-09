@@ -62,18 +62,19 @@ namespace IronRuby.Builtins {
 
         #region Construction
 
-        private RubyArray(object[]/*!*/ content, int count) {
+        internal RubyArray(object[]/*!*/ content, int start, int count) {
+            _start = start;
             _content = content;
             _count = count;
             ObjectInvariant();
         }
 
         public RubyArray() 
-            : this(ArrayUtils.EmptyObjects, 0) {
+            : this(ArrayUtils.EmptyObjects, 0, 0) {
         }
 
         public RubyArray(int capacity)
-            : this(new object[Math.Max(capacity, Utils.MinListSize)], 0) {
+            : this(new object[Math.Max(capacity, Utils.MinListSize)], 0, 0) {
         }
 
         public RubyArray(RubyArray/*!*/ items)
@@ -110,7 +111,7 @@ namespace IronRuby.Builtins {
         public static RubyArray/*!*/ Create(object item) {
             var content = new object[Utils.MinListSize];
             content[0] = item;
-            return new RubyArray(content, 1);
+            return new RubyArray(content, 0, 1);
         }
 
         /// <summary>
@@ -141,8 +142,13 @@ namespace IronRuby.Builtins {
 
         public void RequireNotFrozen() {
             if ((_flags & IsFrozenFlag) != 0) {
-                throw RubyExceptions.CreateObjectFrozenError();
+                // throw in a separate method to allow inlining of the current one
+                ThrowObjectFrozenException();
             }
+        }
+
+        private static void ThrowObjectFrozenException() {
+            throw RubyExceptions.CreateObjectFrozenError();
         }
 
         private void Mutate() {
@@ -241,11 +247,21 @@ namespace IronRuby.Builtins {
 
         #region Add, AddRange
 
-        private int ResizeForAppend(int count, bool clear) {
+        /// <summary>
+        /// Adds count to _count and resizes the storage to make space for count elements if necessary.
+        /// </summary>
+        /// <param name="additionalCount">The number of elements that will be appended.</param>
+        /// <param name="clear">
+        /// True if the slots should be cleared (null initialized). 
+        /// The caller isn't filling the slots with non-null values.
+        /// </param>
+        /// <returns>The index of the first slot that will contain the new elements.</returns>
+        private int ResizeForAppend(int additionalCount, bool clear) {
             int oldCount = _count;
-            _count += count;
+            _count += additionalCount;
 
-            if (_start + oldCount > _content.Length - count) {
+            if (_start + oldCount > _content.Length - additionalCount) {
+                // not enough space for additional items:
                 object[] newContent;
                 if (_count > _content.Length) {
                     newContent = new object[Utils.GetExpandedSize(_content, _count)];
@@ -253,7 +269,7 @@ namespace IronRuby.Builtins {
                     newContent = _content;
                 }
                 Array.Copy(_content, _start, newContent, 0, oldCount);
-                if (newContent == _content && (count < _start || clear)) {
+                if (newContent == _content && (additionalCount < _start || clear)) {
                     if (_start < oldCount) {
                         Utils.Fill(newContent, oldCount, null, _start);
                     } else {
@@ -279,9 +295,26 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        /// <summary>
+        /// Ensures that the underlying storage is prepared to store at least the current number plus capacity items.
+        /// </summary>
+        /// <param name="capacity">Additional capacity.</param>
+        /// <returns>Self.</returns>
+        /// <remarks>
+        /// Use to avoid reallocation of the underlying storage if the number of elements that will eventually by added to this array is known.
+        /// Doesn't increase the number of elements in the array.
+        /// Call <see cref="AddMultiple"/> to add multiple (possibly null) elements into the array.
+        /// </remarks>
         public RubyArray/*!*/ AddCapacity(int capacity) {
+            if (capacity < 0) {
+                throw new ArgumentOutOfRangeException("capacity");
+            }
+
             Mutate();
             int oldCount = _count;
+            // We're not writing to the slots, so require them to be cleared so that we don't 
+            // accidentally keep objects alive whose references might have been in the slots.
+            // (the resize could've just copied the content left to make space for new elements).
             ResizeForAppend(capacity, true);
             _count = oldCount;
             return this;
@@ -481,7 +514,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region RemoveAt, RemoveRange, Remove Clear
+        #region RemoveAt, RemoveRange, Remove, Clear
 
         public void RemoveRange(int index, int size) {
             ContractUtils.RequiresArrayRange(_count, index, size, "index", "size");
@@ -628,10 +661,17 @@ namespace IronRuby.Builtins {
 
         public object this[int index] {
             get {
+                if (index < 0 || index >= _count) {
+                    throw new IndexOutOfRangeException();
+                }
                 return _content[_start + index];
             }
             set {
                 Mutate();
+                int delta = index - _count;
+                if (delta >= 0) {
+                    ResizeForAppend(delta + 1, true);
+                }
                 _content[_start + index] = value;
             }
         }

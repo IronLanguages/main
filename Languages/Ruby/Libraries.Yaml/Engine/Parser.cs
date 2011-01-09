@@ -189,7 +189,6 @@ namespace IronRuby.StandardLibrary.Yaml {
                         return new DocumentStartEvent(false, version, tags);
                     }
                 case Production.DOCUMENT_END: {
-                        Token tok = _scanner.PeekToken();
                         bool @explicit = false;
                         while (_scanner.PeekToken() is DocumentEndToken) {
                             _scanner.GetToken();

@@ -128,9 +128,7 @@ namespace Microsoft.Scripting.Actions {
                 return expr;
             }
 
-            Type visType = CompilerHelpers.GetVisibleType(toType);
-
-            return Expression.Convert(expr, toType);
+            return Expression.Convert(expr, CompilerHelpers.GetVisibleType(toType));
         }
 
         /// <summary>

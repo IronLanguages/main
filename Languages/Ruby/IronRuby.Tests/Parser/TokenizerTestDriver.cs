@@ -408,7 +408,7 @@ namespace IronRuby.Tests {
                 try {
                     parseTime.Start();
                     var parser = new Parser();
-                    var rubyTree = parser.Parse(source, options, ErrorSink.Null);
+                    parser.Parse(source, options, ErrorSink.Null);
                     //int mt;
                     //stackSizes[parser.StackMaxTop] = stackSizes.TryGetValue(parser.StackMaxTop, out mt) ? mt + 1 : 1;
                     parseTime.Stop();

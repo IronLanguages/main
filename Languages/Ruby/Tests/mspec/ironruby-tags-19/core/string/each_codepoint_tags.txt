@@ -1,4 +1,0 @@
-fails:String#each_codepoint raises an ArgumentError when self has an invalid encoding and a method is called on the returned Enumerator
-fails:String#each_codepoint raises an ArgumentError if self's encoding is invalid and a block is given
-fails:String#each_codepoint round-trips to the original String using Integer#chr
-fails:String#each_codepoint is synonomous with #bytes for Strings which are single-byte optimisable

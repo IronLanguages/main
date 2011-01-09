@@ -189,9 +189,8 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static RubyEncoding ConvertToEncoding(ConversionStorage<MutableString>/*!*/ toStr, object obj) {
-            return (obj == null) ? null :
-                   obj as RubyEncoding ??
+        public static RubyEncoding ConvertToEncoding(ConversionStorage<MutableString>/*!*/ toStr, object/*!*/ obj) {
+            return obj as RubyEncoding ??
                    toStr.Context.GetRubyEncoding(Protocols.CastToString(toStr, obj));
         }
 

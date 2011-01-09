@@ -5,6 +5,10 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <SolutionDir Condition=" '$(SolutionDir)' == '' ">$(MSBuildThisFileDirectory)</SolutionDir>
+    
+    <!-- TODO: xbuild doesn't set MSBuildThisFileDirectory variable -->
+    <SolutionDir Condition=" '$(SolutionDir)' == '' ">$(DLR_ROOT)\Solutions</SolutionDir>
+    
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -12,20 +16,9 @@
 
   <!-- Signing -->
   <PropertyGroup>
-    <MSKey>$(SolutionDir)..\Internal\MSSharedLibKey.snk</MSKey>
-    <PublicKey>$(MSBuildThisFileDirectory)\Key.snk</PublicKey>
+    <PublicKey>$(SolutionDir)\Key.snk</PublicKey>
   </PropertyGroup>
 
-  <!-- When signing w/ the MS key -->
-  <PropertyGroup Condition="Exists('$(MSKey)')">
-    <AssemblyOriginatorKeyFile>$(MSKey)</AssemblyOriginatorKeyFile>
-    <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
-    <SignedSym>MS_SIGNED</SignedSym>
-    <SignedDir>Signed</SignedDir>
-  </PropertyGroup>
-  
-  <!-- When signing w/ a full key -->
   <PropertyGroup Condition="Exists('$(PublicKey)') and '$(AssemblyOriginatorKeyFile)'==''">
     <AssemblyOriginatorKeyFile>$(PublicKey)</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>

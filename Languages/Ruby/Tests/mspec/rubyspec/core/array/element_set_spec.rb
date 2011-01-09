@@ -481,18 +481,28 @@ describe "Array#[] after a shift" do
 end
 
 describe "Array#[]= needs review" do
-  # TODO: bust this baby up into multiple it
-  it "[]= with start, length should set elements" do
-    a = [];   a[0, 0] = nil;            a.should == []
-    a = [];   a[2, 0] = nil;            a.should == [nil, nil]
-    a = [];   a[0, 2] = nil;            a.should == []
-    a = [];   a[2, 2] = nil;            a.should == [nil, nil]
-    
-    a = [];   a[0, 0] = [];             a.should == []
-    a = [];   a[2, 0] = [];             a.should == [nil, nil]
-    a = [];   a[0, 2] = [];             a.should == []
-    a = [];   a[2, 2] = [];             a.should == [nil, nil]
 
+  # TODO: bust this baby up into multiple it
+  
+  ruby_version_is '1.9' do
+    it "[]= with start, length and nil" do
+      a = [];   a[0, 0] = nil;            a.should == [nil]
+      a = [];   a[2, 0] = nil;            a.should == [nil, nil, nil]
+      a = [];   a[0, 2] = nil;            a.should == [nil]
+      a = [];   a[2, 2] = nil;            a.should == [nil, nil, nil]
+    end
+  end
+  
+  ruby_version_is '' ... '1.9' do
+    it "[]= with start, length and nil" do
+      a = [];   a[0, 0] = nil;            a.should == []
+      a = [];   a[2, 0] = nil;            a.should == [nil, nil]
+      a = [];   a[0, 2] = nil;            a.should == []
+      a = [];   a[2, 2] = nil;            a.should == [nil, nil]
+    end
+  end
+  
+  it "[]= with start, length should set elements" do
     a = [];   a[0, 0] = ["a"];          a.should == ["a"]
     a = [];   a[2, 0] = ["a"];          a.should == [nil, nil, "a"]
     a = [];   a[0, 2] = ["a","b"];      a.should == ["a", "b"]
@@ -560,12 +570,6 @@ describe "Array#[]= needs review" do
     a.should == [1, 2, 3, 4]
     a[5, 0] = [4, 3, 2, 1]
     a.should == [1, 2, 3, 4, nil, 4, 3, 2, 1]
-    a[-2, 5] = nil
-    a.should == [1, 2, 3, 4, nil, 4, 3]
-    a[-2, 5] = []
-    a.should == [1, 2, 3, 4, nil]
-    a[0, 2] = nil
-    a.should == [3, 4, nil]
     a[0, 100] = [1, 2, 3]
     a.should == [1, 2, 3]
     a[0, 2] *= 2

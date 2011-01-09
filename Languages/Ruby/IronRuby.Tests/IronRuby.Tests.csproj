@@ -12,7 +12,9 @@
     <AssemblyName>IronRuby.Tests</AssemblyName>
     <OldToolsVersion>2.0</OldToolsVersion>
     <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- TODO: xbuild ignores DisabledWarnings -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DisabledWarnings>219,168</DisabledWarnings>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">

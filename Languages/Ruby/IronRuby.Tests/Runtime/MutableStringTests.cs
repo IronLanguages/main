@@ -77,48 +77,45 @@ namespace IronRuby.Tests {
 
         [Options(NoRuntime = true)]
         public void MutableString_GetHashCode() {
-            int h1, h2;
+            int h1, h2, h3;
             MutableString s;
 
-            // binary -> invalid string:
+            // invalid byte sequence:
             s = MutableString.CreateBinary(new byte[] { 0xce }, RubyEncoding.UTF8);
             h1 = s.GetHashCode();
-            AssertExceptionThrown<DecoderFallbackException>(() => s.GetCharCount());
+            Assert(s.GetCharacterCount() == 1);
+            h2 = s.GetHashCode();
+            Assert(h1 == h2);
 
             // binary -> string:
             s = MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.UTF8);
             h1 = s.GetHashCode();
             Assert(s.GetCharCount() == 1);
             h2 = s.GetHashCode();
+            Assert(s.GetCharacterCount() == 1);
+            h3 = s.GetHashCode();
             Assert(h1 == h2);
+            Assert(h1 == h3);
 
             // string -> binary:
             s = MutableString.Create("Σ", RubyEncoding.UTF8);
             h1 = s.GetHashCode();
-
-            s.GetByteCount();
-
-            // binary -> string:
-            s = MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.UTF8);
-            h1 = s.GetHashCode();
-            Assert(s.GetCharCount() == 1);
+            Assert(s.GetByteCount() == 2);
             h2 = s.GetHashCode();
             Assert(h1 == h2);
 
-            // string -> binary:
-            s = MutableString.Create("Σ", RubyEncoding.UTF8);
-            h1 = s.GetHashCode();
+            // string vs. char[] vs CLR string:
+            s = MutableString.CreateMutable("Σ", RubyEncoding.UTF8);
+            h2 = s.GetHashCode();
+            Assert(h1 == h2);
+            Assert(h2 == "Σ".GetHashCode());
 
-            s.GetByteCount();
-
-#if TODO
             // hash(binary) == hash(string):
             s = MutableString.CreateBinary(new byte[] { 0xce, 0xa3 }, RubyEncoding.UTF8);
             h1 = s.GetHashCode();
             s = MutableString.Create("Σ", RubyEncoding.UTF8);
             h2 = s.GetHashCode();
-            AssertEquals(h1, h2);
-#endif
+            Assert(h1 == h2);
 
             // same content, different capacities:
             var a = MutableString.CreateMutable(10, RubyEncoding.UTF8).Append("hello");
@@ -136,52 +133,264 @@ namespace IronRuby.Tests {
             Assert(a.GetHashCode() == c.GetHashCode());
             Assert(b.GetHashCode() == c.GetHashCode());
 
+            // TODO: do we need this property?
             // non-ASCII characters:
-            a = MutableString.Create("α", RubyEncoding.UTF8);
-            b = MutableString.Create("α", RubyEncoding.SJIS);
-            c = MutableString.CreateBinary(Encoding.UTF8.GetBytes("α"), RubyEncoding.Binary);
-            Assert(a.GetHashCode() != b.GetHashCode());
-            Assert(a.GetHashCode() != c.GetHashCode());
-            Assert(b.GetHashCode() != c.GetHashCode());
+            // a = MutableString.Create("α", RubyEncoding.UTF8);
+            // b = MutableString.Create("α", RubyEncoding.SJIS);
+            // c = MutableString.CreateBinary(Encoding.UTF8.GetBytes("α"), RubyEncoding.Binary);
+            // Assert(a.GetHashCode() != b.GetHashCode());
+            // Assert(a.GetHashCode() != c.GetHashCode());
+            // Assert(b.GetHashCode() != c.GetHashCode());
         }
 
         [Options(NoRuntime = true)]
         public void MutableString_IsAscii() {
-            var a = MutableString.CreateBinary(new byte[] { 0x12, 0x34, 0x56 }, RubyEncoding.Binary);
-            Assert(a.IsAscii());
-            a.Remove(2);
-            Assert(a.IsAscii());
-            a.Append(0x56);
-            Assert(a.IsAscii());
-            a.Append(0x80);
-            Assert(!a.IsAscii());
-            a.ConvertToString();
-            Assert(!a.IsAscii());
-            a.Remove(2);
-            Assert(a.IsAscii());
+            MutableString a;
+            byte[] b;
+
+            foreach (var e in new[] { RubyEncoding.Binary, RubyEncoding.SJIS, RubyEncoding.EUCJP, RubyEncodingOps.ISO_8859_15 }) {
+                a = MutableString.CreateBinary(new byte[] { 0x12, 0x34, 0x56 }, e);
+                Assert(a.IsAscii());
+                a.Remove(2);
+                Assert(a.IsAscii());
+                a.Append(0x56);
+                Assert(a.IsAscii());
+                a.Append(0x80);
+                Assert(!a.IsAscii());
+                a.ConvertToString();
+                Assert(!a.IsAscii());
+                a.Remove(2);
+                Assert(a.IsAscii());
+            }
+
+            b = Encoding.Unicode.GetBytes("hello");
+
+            // non-ascii-identity encodings:
+            foreach (var e in new[] { RubyEncodingOps.UTF_16BE, RubyEncodingOps.UTF_16LE, RubyEncodingOps.UTF_32LE, RubyEncodingOps.UTF_32BE }) {
+                a = MutableString.CreateBinary(b, e);
+                Assert(!a.IsAscii());
+
+                a = MutableString.CreateMutable("hello", e);
+                Assert(!a.IsAscii());
+
+                a = MutableString.Create("hello", e);
+                Assert(!a.IsAscii());
+            }
+        }
+
+        [Options(NoRuntime = true)]
+        public void MutableString_Surrogates1() {
+            MutableString x;
+
+            // encoding doesn't produce surrogate characters //
+
+            foreach (var e in new[] { RubyEncoding.Binary, RubyEncoding.Ascii }) {
+                x = MutableString.Create("", e);
+                Assert(x.KnowsSurrogates);
+                Assert(!x.HasSurrogates());
+                Assert(x.KnowsSurrogates);
+
+                x = MutableString.CreateMutable("", e);
+                Assert(x.KnowsSurrogates);
+                Assert(!x.HasSurrogates());
+                Assert(x.KnowsSurrogates);
+            }
+
+            // encoding might produce surrogate characters //
+
+            foreach (var e in new[] { RubyEncoding.UTF8, RubyEncodingOps.UTF_16BE, RubyEncodingOps.UTF_32LE }) {
+                foreach (var str in new[] { "", "x", "xy", "hello world", "\uD7FF", "\uE000" }) {
+                    x = MutableString.Create(str, e);
+                    Assert(!x.KnowsSurrogates);
+                    Assert(!x.HasSurrogates());
+                    Assert(x.KnowsSurrogates);
+
+                    x = MutableString.CreateMutable(str, e);
+                    Assert(!x.KnowsSurrogates);
+                    Assert(!x.HasSurrogates());
+                    Assert(x.KnowsSurrogates);
+                }
+
+                foreach (var str in new[] { "\uD800", "\uD800a", "a\uD800", "\uDFFF" }) {
+                    x = MutableString.Create(str, e);
+                    Assert(!x.KnowsSurrogates);
+                    Assert(x.HasSurrogates());
+                    Assert(x.KnowsSurrogates);
+
+                    x = MutableString.CreateMutable(str, e);
+                    Assert(!x.KnowsSurrogates);
+                    Assert(x.HasSurrogates());
+                    Assert(x.KnowsSurrogates);
+                }
+            }
+        }
+
+        [Options(NoRuntime = true)]
+        public void MutableString_Surrogates2() {
+            MutableString a;
+
+            foreach (var e in new[] { 
+                RubyEncodingOps.UTF_32LE, RubyEncodingOps.UTF_32BE, RubyEncodingOps.UTF_16LE, RubyEncodingOps.UTF_16BE,
+                RubyEncodingOps.UTF_8, RubyEncodingOps.UTF_7
+            }) {
+                a = MutableString.Create("abcd", e);
+                Assert(!a.HasSurrogates());
+                Assert(a.KnowsSurrogates);
+                
+                a.Remove(2, 1);                               // abd
+                Assert(a.KnowsSurrogates);
+                Assert(!a.HasSurrogates());
+                
+                a.Append('e');                                // abde
+                Assert(a.KnowsSurrogates);
+                Assert(!a.HasSurrogates());
+
+                a.SetChar(2, '\uD800');                       // ab\u{D800}e
+                Assert(a.KnowsSurrogates);                    
+                Assert(a.HasSurrogates());                    
+                                                              
+                a.Remove(2, 1);                               // abe
+                Assert(!a.KnowsSurrogates);                   
+                Assert(!a.HasSurrogates());                   
+                                                              
+                a.Append('\uD800');                           // abe\u{D800}
+                Assert(a.KnowsSurrogates); 
+                Assert(a.HasSurrogates());
+
+                a.Replace(2, 2, MutableString.CreateAscii("xx"));  // abxx 
+                Assert(!a.KnowsSurrogates);
+                Assert(!a.HasSurrogates());
+
+                Assert(a.ToString() == "abxx");
+            }
         }
 
         [Options(NoRuntime = true)]
         public void MutableString_Length() {
             MutableString x;
+
+            // 0
+            x = MutableString.Create("", RubyEncoding.Binary);
+            Assert(x.GetCharacterCount() == 0);
+           
+            x = MutableString.Create("", RubyEncoding.Binary);
+            Assert(x.GetCharCount() == 0);
+
+            x = MutableString.Create("", RubyEncoding.Binary);
+            Assert(x.GetByteCount() == 0);
+
+            // 1:1:1
             x = MutableString.Create("a", RubyEncoding.Binary);
-            Assert(MutableStringOps.GetCharCount(x) == 1);
+            Assert(x.GetCharacterCount() == 1);
+
+            x = MutableString.Create("a", RubyEncoding.Binary);
+            Assert(x.GetCharCount() == 1);
+  
+            x = MutableString.Create("a", RubyEncoding.Binary);
+            Assert(x.GetByteCount() == 1);
+
+            x = MutableString.Create("a", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 1);
+
+            x = MutableString.Create("a", RubyEncoding.UTF8);
+            Assert(x.GetCharCount() == 1);
+
+            x = MutableString.Create("a", RubyEncoding.UTF8);
+            Assert(x.GetByteCount() == 1);
+
+            // 1:1:N
+            x = MutableString.Create("α", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 1);
 
             x = MutableString.Create("α", RubyEncoding.UTF8);
-            Assert(MutableStringOps.GetCharCount(x) == 1);
+            Assert(x.GetCharCount() == 1);
 
             x = MutableString.Create("α", RubyEncoding.UTF8);
-            Assert(MutableStringOps.GetByteCount(x) == 2);
+            Assert(x.GetByteCount() == 2);
+
+            x = MutableString.Create("aあa", RubyEncoding.SJIS);
+            Assert(x.GetCharacterCount() == 3);
+
+            x = MutableString.Create("aあa", RubyEncoding.SJIS);
+            Assert(x.GetCharCount() == 3);
+
+            x = MutableString.Create("aあa", RubyEncoding.SJIS);
+            Assert(x.GetByteCount() == RubyEncoding.SJIS.Encoding.GetByteCount("aあa"));
+
+            string s;
+            byte[] b;
+
+            // 1:N:N
+            s = "\uD820\uDC30";
+            b = Encoding.UTF8.GetBytes(s);
+
+            x = MutableString.Create(s, RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 1);
+
+            x = MutableString.Create(s, RubyEncoding.UTF8);
+            Assert(x.GetCharCount() == 2);
+
+            x = MutableString.Create(s, RubyEncoding.UTF8);
+            Assert(x.GetByteCount() == 4);
+
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 1);
+
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetCharCount() == 2);
+
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetByteCount() == 4);
+
+            // surrogate detection tests:
+            x = MutableString.Create("a\uD820\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 2);
+
+            x = MutableString.Create("\uD820\uDC30a\uD820\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 3);
+
+            x = MutableString.Create("\uD820a\uD820\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 3);
+
+            x = MutableString.Create("\uD820\uD820\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 2);
+
+            x = MutableString.Create("\uD820\uDC30\uDC30", RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 2);
+
+            // invalid byte sequences:
+            b = new byte[] { 
+                0x80,                    // invalid
+                0x80,                    // invalid
+                (byte)'a', 
+                0xEA,                    // invalid
+                (byte)'b', 
+                0xf0, 0x92, 0x8d, 0x85   // U+12345
+            };
+            
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetCharacterCount() == 6);
+
+            // TODO: throws an exception
+            //x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            //Assert(x.GetCharCount() == 7);
+
+            x = MutableString.CreateBinary(b, RubyEncoding.UTF8);
+            Assert(x.GetByteCount() == b.Length);
+
+            // char[] with count < length:
+            x = MutableString.CreateMutable("abcd", RubyEncoding.UTF8);
+            x.Remove(2, 2);
+            Assert(x.GetCharacterCount() == 2);
         }
 
         [Options(NoRuntime = true)]
-        public void MutableString_CompareTo() {
+        public void MutableString_CompareTo1() {
             MutableString x, y;
             RubyEncoding SJIS = RubyEncoding.SJIS;
 
             // invalid bytes <=> valid string:
             var invalid = new byte[] { 0xe2, 0x85, 0x9c, 0xef };
-            var alpha = new byte[] { 0xce, 0xb1 };
 
             x = MS(invalid, RubyEncoding.UTF8);
             y = MS("α", RubyEncoding.UTF8);
@@ -219,6 +428,31 @@ namespace IronRuby.Tests {
             x = MS("α", RubyEncoding.UTF8);
             y = MS("a", SJIS);
             Assert(Math.Sign(x.CompareTo(y)) == +1);
+        }
+
+        [Options(NoRuntime = true)]
+        public void MutableString_CompareTo2() {
+            MutableString a;
+
+            a = MS("α", RubyEncoding.UTF8);
+            Assert(a.CompareTo("α") == 0);
+
+            a = MS("ab", RubyEncoding.UTF8);
+            Assert(a.CompareTo("ac") < 0);
+
+            a = MS("ﾎ", RubyEncoding.SJIS);
+            Assert(a.CompareTo("ﾎ") == 0);
+
+            a = MS(Sjis("ﾎ"), RubyEncoding.SJIS);
+            Assert(a.CompareTo("ﾎ") == 0);
+
+            a = MS(new byte[] { 0xa8 }, RubyEncodingOps.KOI8_R);
+            Assert(a.CompareTo("╗") == 0);
+
+            a = MS(Encoding.UTF32.GetBytes("α"), RubyEncodingOps.UTF_32LE);
+            Assert(a.CompareTo("α") == 0);
+
+            // TODO: invalid characters, surrogates, test ordinality
         }
 
         [Options(NoRuntime = true)]
@@ -566,7 +800,7 @@ namespace IronRuby.Tests {
             );
 
             // TODO: MRI allows incorrect byte sequences
-            AssertExceptionThrown<ArgumentException>(
+            AssertExceptionThrown<InvalidByteSequenceError>(
                 () => Test_Reverse(invalid_utf8, RubyEncoding.UTF8, rev_invalid_utf8)
             );
 
@@ -645,13 +879,12 @@ namespace IronRuby.Tests {
 
             // correctly switches to char repr and invalidates hashcode:
             MutableString self, from, to, result;
-            int h0, h1, h2;
+            int h1, h2;
 
             self = MutableString.CreateBinary(Utf8("aAaBa"), RubyEncoding.UTF8);
             from = MutableString.Create("a", RubyEncoding.UTF8);
             to = MutableString.Create("α", RubyEncoding.UTF8);
             result = MutableString.Create("αAαBα", RubyEncoding.UTF8);
-            h0 = self.GetHashCode();
 
             MutableStringOps.Translate(self, from, to);
 
@@ -698,7 +931,19 @@ namespace IronRuby.Tests {
 
             s = MutableString.CreateMutable(BinaryEncoding.Instance.GetString(alpha), RubyEncoding.Binary);
             Assert(!s.StartsWith('α'));
-            
+
+            byte[] b = RubyEncodingOps.UTF_32BE.Encoding.GetBytes("ab");
+            s = MutableString.CreateBinary(b, RubyEncodingOps.UTF_32BE);
+            Assert(!s.StartsWith('\0'));
+            Assert(s.StartsWith('a'));
+
+            s = MutableString.CreateBinary(new byte[] { 0xff, 0x23 }, RubyEncoding.Binary);
+            Assert(s.StartsWith('\u00ff'));
+
+            b = new byte[] { 0xA9, 0x20 };
+            s = MutableString.CreateBinary(b, RubyEncodingOps.KOI8_R);
+            Assert(s.StartsWith(RubyEncodingOps.KOI8_R.Encoding.GetString(b)[0]));
+
             // char array content:
             s = MutableString.CreateMutable("abc", RubyEncoding.UTF8).Remove(1, 2);
             Assert(s.StartsWith('a'));
@@ -843,20 +1088,7 @@ namespace IronRuby.Tests {
             var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 }; // \u{12345} in UTF-8
             var invalid = MutableString.CreateBinary(new byte[] { 0x80 }, RubyEncoding.UTF8);
 
-            // SJIS non-ASCII string:
-            AssertExceptionThrown<InvalidOperationException>(
-                () => MutableStringOps.Index(MutableString.CreateBinary(sjis, SJIS), 0xA0, 0)
-            );
-
-            // binary encoding:
             int i;
-            i = (int)MutableStringOps.Index(MutableString.CreateBinary(sjis, RubyEncoding.Binary), 0xA0, 0);
-            Assert(i == 1);
-
-            // ASCII-only are ok:
-            i = (int)MutableStringOps.Index(MutableString.CreateMutable("abc", RubyEncoding.UTF8), (int)'a', 0);
-            Assert(i == 0);
-            
             MutableString a, b;
 
             // incompatible encodings:
@@ -865,8 +1097,8 @@ namespace IronRuby.Tests {
             AssertExceptionThrown<EncodingCompatibilityError>(() => MutableStringOps.Index(a, b, 0));
 
             // invalid character:
-            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(invalid, MutableString.FrozenEmpty, 0));
-            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(MutableString.FrozenEmpty, invalid, 0));
+            AssertExceptionThrown<InvalidByteSequenceError>(() => MutableStringOps.Index(invalid, MutableString.FrozenEmpty, 0));
+            AssertExceptionThrown<InvalidByteSequenceError>(() => MutableStringOps.Index(MutableString.FrozenEmpty, invalid, 0));
             
             // returns character index:
             i = (int)MutableStringOps.Index(
@@ -901,7 +1133,7 @@ namespace IronRuby.Tests {
             AssertExceptionThrown<EncodingCompatibilityError>(() => MutableStringOps.Index(scope, a, r, 0));
 
             // invalid character:
-            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(scope, invalid, r, 0));
+            AssertExceptionThrown<InvalidByteSequenceError>(() => MutableStringOps.Index(scope, invalid, r, 0));
 
             // returns character index:
             i = (int)MutableStringOps.Index(
@@ -920,15 +1152,6 @@ namespace IronRuby.Tests {
                 2
             );
             Assert(i == 5);
-
-            // "start at" counts bytes in 1.8, returns byte index (regardless of KCODE)
-            i = (int)MutableStringOps.Index(
-                scope,
-                MutableString.CreateBinary(Encoding.UTF8.GetBytes("αa"), RubyEncoding.Binary),
-                new RubyRegex(MutableString.CreateAscii("a"), RubyRegexOptions.UTF8),
-                2
-            );
-            Assert(i == 2);
         }
 
         [Options(NoRuntime = true)]
@@ -1021,6 +1244,21 @@ namespace IronRuby.Tests {
                 MutableString.CreateMutable("x", RubyEncoding.UTF8),
                 new MSC('α'), new MSC(s_u12345[0], s_u12345[1])
             );
+
+            // all Unicode ecnodings
+            foreach (var e in new[] { 
+                RubyEncodingOps.UTF_16LE, RubyEncodingOps.UTF_16BE, 
+                RubyEncodingOps.UTF_32LE, RubyEncodingOps.UTF_32BE,
+                RubyEncodingOps.UTF_7, RubyEncodingOps.UTF_8 }) {
+
+                TestChars(
+                    MutableString.CreateMutable("α" + s_u12345 + "xβ", e),
+                    new MSC('α'),
+                    new MSC(s_u12345[0], s_u12345[1]),
+                    new MSC('x'),
+                    new MSC('β')
+                );
+            }
         }
 
         private void TestChars(MutableString/*!*/ str, string/*!*/ expected) {

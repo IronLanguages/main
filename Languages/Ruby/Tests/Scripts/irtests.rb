@@ -92,7 +92,6 @@ class IRTest
       }
       
       @all_tasks[:BuildSilverlight] = silverlight_build_runner unless options[:nocompile]
-      @all_tasks[:ProjGenerator] = lambda { generate_build_projects } unless git?
     
       if not options[:minimum]
         @all_tasks.merge!({
@@ -105,7 +104,7 @@ class IRTest
       end
     
       @parallel_tasks = [
-         [:Smoke, :Legacy, :ProjGenerator, :BuildSilverlight],
+         [:Smoke, :BuildSilverlight],
          [:RubySpec_A],
          [:RubySpec_B],
          [:RubySpec_C],
@@ -185,13 +184,6 @@ class IRTest
     lambda { run_cmd build_cmd("Ruby", @sl_config) }
   end
   
-  def generate_build_projects
-    script = dlr_path('Scripts/Python/GenerateSystemCoreCsproj.py')
-    if File.exists?(script)
-      run_cmd "#{vm_shim} #{dlr_path('Util/IronPython/ipy.exe')} #{script}"
-    end
-  end
-
   def on_windows
 	case System::Environment.OSVersion.Platform
 	  when System::PlatformID.Win32S

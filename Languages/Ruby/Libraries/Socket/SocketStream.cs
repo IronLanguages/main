@@ -19,18 +19,17 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.IO;
+using System.Diagnostics;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Sockets {
-    internal class SocketStream : System.IO.Stream {
+    internal class SocketStream : Stream {
+        internal readonly Socket/*!*/ _socket;
+
         public SocketStream(Socket/*!*/ s) {
+            Assert.NotNull(s);
             _socket = s;
         }
-
-        private long _pos = 0;
-        private byte _lastByteRead;
-        private bool _peeked = false;
-        private List<byte> _internalWriteBuffer = new List<byte>();
-        internal readonly Socket/*!*/ _socket;
 
         public override bool CanRead {
             get { return true; }
@@ -50,81 +49,37 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         public override void Flush() {
-            if (_internalWriteBuffer.Count == 0) {
-                return;
-            }
-
-            byte[] bufferedData = _internalWriteBuffer.ToArray();
-            int bytesSent = _socket.Send(bufferedData);
-            if (bytesSent < bufferedData.Length) {
-                // TODO: Resend the rest
-                System.Diagnostics.Debug.Assert(false, "Partial data sent");
-            }
-            _internalWriteBuffer.Clear();
         }
 
         public override long Length {
-            get { throw new Exception("The method or operation is not implemented."); }
+            get {
+                throw new InvalidOperationException();
+            }
         }
 
         public override long Position {
             get {
-                return _pos;
+                throw new InvalidOperationException();
             }
             set {
-                long diff = _pos - value;
-                if (diff == 1) {
-                    _peeked = true;
-                }
-
-                _pos = value;
+                throw new InvalidOperationException();
             }
         }
 
         public override int Read(byte[] buffer, int offset, int count) {
-            int bytesToRead = _peeked ? count - 1 : count;
-            byte[] readBuffer = new byte[bytesToRead];
-            long oldPos = _pos;
-
-            if (bytesToRead > 0) {
-                _pos += _socket.Receive(readBuffer, bytesToRead, SocketFlags.None);                
-            }
-
-            if (_peeked) {
-                // Put the byte we've already peeked at the beginning of the buffer
-                buffer[offset] = _lastByteRead;
-                // Put the rest of the data afterwards
-                Array.Copy(readBuffer, 0, buffer, offset + 1, count - 1);
-                _pos += 1;
-                _peeked = false;
-            } else {
-                Array.Copy(readBuffer, 0, buffer, offset, count);
-            }
-
-            int totalBytesRead = (int)(_pos - oldPos);
-            if (totalBytesRead > 0) {
-                _lastByteRead = buffer[totalBytesRead - 1];
-            }
-
-            return totalBytesRead;
+            return _socket.Receive(buffer, offset, count, SocketFlags.None);
         }
 
         public override long Seek(long offset, SeekOrigin origin) {
-            throw new NotSupportedException("The method or operation is not implemented.");
+            throw new InvalidOperationException();
         }
 
         public override void SetLength(long value) {
-            throw new NotSupportedException("The method or operation is not implemented.");
+            throw new InvalidOperationException();
         }
 
         public override void Write(byte[] buffer, int offset, int count) {
-            for (int i = offset; i < offset + count; i++) {
-                _internalWriteBuffer.Add(buffer[i]);
-                if (buffer[i] == '\n') {
-                    Flush();
-                }
-            }
-            Flush();
+            _socket.Send(buffer, offset, count, SocketFlags.None);
         }
     }
 }

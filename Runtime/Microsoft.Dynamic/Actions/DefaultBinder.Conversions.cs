@@ -45,8 +45,6 @@ namespace Microsoft.Scripting.Actions {
             ContractUtils.RequiresNotNull(toType, "toType");
             ContractUtils.RequiresNotNull(arg, "arg");
 
-            Type knownType = arg.GetLimitType();
-
             // try all the conversions - first look for conversions against the expression type,
             // these can be done w/o any additional tests.  Then look for conversions against the 
             // restricted type.

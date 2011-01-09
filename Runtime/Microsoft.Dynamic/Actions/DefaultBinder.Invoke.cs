@@ -243,8 +243,6 @@ namespace Microsoft.Scripting.Actions {
         /// Attempts to bind to an operator Call method.
         /// </summary>
         private TargetInfo TryGetOperatorTargets(DynamicMetaObject self, DynamicMetaObject[] args, object target) {
-            MethodBase[] targets;
-
             Type targetType = CompilerHelpers.GetType(target);
 
             MemberGroup callMembers = GetMember(MemberRequestKind.Invoke, targetType, "Call");
@@ -258,11 +256,8 @@ namespace Microsoft.Scripting.Actions {
                 }
             }
 
-            Expression instance = null;
             if (callTargets.Count > 0) {
-                targets = callTargets.ToArray();
-                instance = Ast.Convert(self.Expression, CompilerHelpers.GetType(target));
-                return new TargetInfo(null, ArrayUtils.Insert(self, args), targets);
+                return new TargetInfo(null, ArrayUtils.Insert(self, args), callTargets.ToArray());
             }
 
             return null;

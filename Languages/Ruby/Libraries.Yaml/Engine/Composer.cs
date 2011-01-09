@@ -109,7 +109,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 }
                 while (!(_parser.PeekEvent() is MappingEndEvent)) {
                     YamlEvent key = _parser.PeekEvent();
-                    Node itemKey = ComposeNode(mapResult, null);
+                    Node itemKey = ComposeNode(mapResult, key);
                     Node composed = ComposeNode(mapResult, itemKey);
                     if (!mapResult.Nodes.ContainsKey(itemKey)) {
                         mapResult.Nodes.Add(itemKey, composed);

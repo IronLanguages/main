@@ -505,9 +505,9 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 }
 
                 public override bool Enter(Arguments/*!*/ node) {
-                    RubyArray exprs = VisitExpressionsAndMaplets(node);
                     throw new NotSupportedException("TODO: argument splatting");
 #if TODO
+                    RubyArray exprs = VisitExpressionsAndMaplets(node);
                     if (node.Array != null) {
                         RubyArray args = MakeSplatArguments(exprs, node.Array);
 
@@ -727,12 +727,13 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 }
 
                 public override bool Enter(ParallelAssignmentExpression/*!*/ node) {
-                    var oldRhs = _rhs;
-                    _rhs = null;
-
                     // TODO: 1.9:
+
                     throw new NotSupportedException("TODO: parallel assignment");
 #if TODO
+                    var oldRhs = _rhs;
+                    _rhs = null;
+                    
                     if (node.Right.SplattedValue == null && node.Right.RightValues.Length == 1 && node.Left.LeftValues.Length > 0) {
                         Walk(node.Right.RightValues[0]);
                         _rhs = new Rhs { InCompoundLhs = true, InTopCompoundLhs = true, Value = MakeNode(NodeKind.to_ary, _result) };
