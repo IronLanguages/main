@@ -147,7 +147,6 @@ namespace Microsoft.Scripting.Utils {
             } else if (type.IsGenericParameter) {
                 result.Append(type.Name);
             } else {
-                string name = type.FullName;
                 // cut namespace off:
                 result.Append(nameDispenser(type).Replace('+', '.'));
             }

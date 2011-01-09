@@ -66,7 +66,6 @@ namespace IronRuby.StandardLibrary.Sockets {
             MutableString str = MutableString.CreateBinary();
             str.Append(buffer, 0, received);
 
-            var context = conversionStorage.Context;
             str.IsTainted = true;
             return RubyOps.MakeArray2(str, self.GetAddressArray(fromEP));
         }

@@ -17,8 +17,9 @@ using System;
 using System.Configuration;
 using System.IO;
 using System.Web;
-using IronRuby.Builtins;
 using Microsoft.Scripting.Hosting;
+using IronRuby.Builtins;
+using IronRuby.Runtime;
 
 namespace IronRubyRack {
 
@@ -116,11 +117,10 @@ namespace IronRubyRack {
             }
         }
 
+        private static readonly JoinConversionStorage _joinStorage = new JoinConversionStorage(IronRubyEngine.Context);
+
         public static MutableString Join(RubyArray array, string joiner) {
-            return IronRuby.Builtins.IListOps.Join(
-                new IronRuby.Runtime.ConversionStorage<MutableString>(IronRubyEngine.Context),
-                array, MutableString.Create(joiner, RubyEncoding.UTF8)
-            );
+            return IronRuby.Builtins.IListOps.Join(_joinStorage, array, MutableString.Create(joiner, RubyEncoding.UTF8));
         }
     }
 }

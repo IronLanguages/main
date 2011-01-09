@@ -388,7 +388,6 @@ namespace IronRuby.Builtins {
             MutableString item = begin;
             int comp;
 
-            var succSite = storage.SuccSite;
             while ((comp = Protocols.Compare(storage, item, end)) < 0) {
                 if (block.Yield(item.Clone(), out result)) {
                     return result;

@@ -772,7 +772,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("write_nonblock")]
         public static int WriteNoBlock(RubyIO/*!*/ self, [NotNull]MutableString/*!*/ val) {
-            var stream = self.GetWritableStream();
+            self.RequireWritable();
             int result = -1;
             self.NonBlockingOperation(() => result = Write(self, val), false);
             return result;
@@ -855,7 +855,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("read_nonblock")]
         public static MutableString ReadNoBlock(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
-            var stream = self.GetReadableStream();
+            self.RequireReadable();
             MutableString result = null;
             self.NonBlockingOperation(() => result = Read(self, bytes, buffer), true);
             return result;

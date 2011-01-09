@@ -405,9 +405,6 @@ namespace IronRuby.Tests {
         /// </summary>
         [Options(NoRuntime = true)]
         public void Interpreter1C() {
-            var label1 = Ast.Label();
-            var label2 = Ast.Label();
-
             var inner =
                 Ast.TryFinally(
                     Ast.TryCatch(

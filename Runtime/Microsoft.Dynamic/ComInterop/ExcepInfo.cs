@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 #if !SILVERLIGHT // ComObject
+#pragma warning disable 414 // msc: unused private field
 
 using System;
 using System.Diagnostics;

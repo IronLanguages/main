@@ -167,16 +167,13 @@ namespace IronRuby.Tests {
 
             // non-ascii-identity encodings:
             foreach (var e in new[] { RubyEncodingOps.UTF_16BE, RubyEncodingOps.UTF_16LE, RubyEncodingOps.UTF_32LE, RubyEncodingOps.UTF_32BE }) {
-                a = MutableString.CreateBinary(b, RubyEncodingOps.UTF_16LE);
+                a = MutableString.CreateBinary(b, e);
                 Assert(!a.IsAscii());
 
-                a = MutableString.CreateBinary(b, RubyEncodingOps.UTF_32BE);
+                a = MutableString.CreateMutable("hello", e);
                 Assert(!a.IsAscii());
 
-                a = MutableString.CreateMutable("hello", RubyEncodingOps.UTF_16LE);
-                Assert(!a.IsAscii());
-
-                a = MutableString.Create("hello", RubyEncodingOps.UTF_16LE);
+                a = MutableString.Create("hello", e);
                 Assert(!a.IsAscii());
             }
         }
@@ -394,7 +391,6 @@ namespace IronRuby.Tests {
 
             // invalid bytes <=> valid string:
             var invalid = new byte[] { 0xe2, 0x85, 0x9c, 0xef };
-            var alpha = new byte[] { 0xce, 0xb1 };
 
             x = MS(invalid, RubyEncoding.UTF8);
             y = MS("α", RubyEncoding.UTF8);
@@ -883,13 +879,12 @@ namespace IronRuby.Tests {
 
             // correctly switches to char repr and invalidates hashcode:
             MutableString self, from, to, result;
-            int h0, h1, h2;
+            int h1, h2;
 
             self = MutableString.CreateBinary(Utf8("aAaBa"), RubyEncoding.UTF8);
             from = MutableString.Create("a", RubyEncoding.UTF8);
             to = MutableString.Create("α", RubyEncoding.UTF8);
             result = MutableString.Create("αAαBα", RubyEncoding.UTF8);
-            h0 = self.GetHashCode();
 
             MutableStringOps.Translate(self, from, to);
 

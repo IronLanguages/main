@@ -1185,7 +1185,6 @@ namespace Microsoft.Scripting.Generation {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitNumericConversion(Type typeFrom, Type typeTo, bool isChecked) {
             bool isFromUnsigned = TypeUtils.IsUnsignedInt(typeFrom);
-            bool isFromFloatingPoint = TypeUtils.IsFloatingPoint(typeFrom);
             if (typeTo == typeof(Single)) {
                 if (isFromUnsigned)
                     Emit(OpCodes.Conv_R_Un);

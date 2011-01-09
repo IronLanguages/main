@@ -132,7 +132,6 @@ namespace IronRuby.StandardLibrary.Yaml {
     public static class YamlStructOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node/*!*/ ToYamlNode(RubyStruct/*!*/ self, [NotNull]RubyRepresenter/*!*/ rep) {
-            var encoding = self.ImmediateClass.Context.GetIdentifierEncoding();
             var fieldNames = self.GetNames();
 
             var fields = new Dictionary<Node, Node>(fieldNames.Count);

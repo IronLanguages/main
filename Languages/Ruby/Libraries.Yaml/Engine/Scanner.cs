@@ -984,7 +984,6 @@ namespace IronRuby.StandardLibrary.Yaml {
             int maxIndent = 0;
             int ind = 0;
             if (sameLine) {
-                bool leadingNonSpace = !BLANK_T(Peek());
                 int length = 0;
                 while (!NULL_OR_LINEBR(Peek(length))) {
                     length++;

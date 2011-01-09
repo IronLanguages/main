@@ -209,11 +209,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             if (members.Count == 0) {
-                if (typeof(TypeTracker).IsAssignableFrom(type)) {
-                    // ensure we don't have a non-generic type, and if we do report an error now.  This matches
-                    // the rule version of the default binder but should probably be removed long term
-                    Type x = ((TypeTracker)target.Value).Type;
-                } else if (type.IsInterface) {
+                if (type.IsInterface) {
                     // all interfaces have object members
                     type = typeof(object);
                     members = GetMember(MemberRequestKind.Get, type, getMemInfo.Name);

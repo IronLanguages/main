@@ -97,14 +97,10 @@ namespace Microsoft.Scripting.Runtime {
                     Type[] siteTypes = MakeSiteSignature();
 
                     CallSite callSite = CallSite.Create(DynamicSiteHelpers.MakeCallSiteDelegate(siteTypes), _invokeBinder);
-                    Type siteType = callSite.GetType();
 
-                    Type convertSiteType = null;
                     CallSite convertSite = null;
-
                     if (_returnType != typeof(void)) {
                         convertSite = CallSite.Create(DynamicSiteHelpers.MakeCallSiteDelegate(typeof(object), _returnType), _convertBinder);
-                        convertSiteType = convertSite.GetType();
                     }
 
                     Debug.Assert(clone[0] == TargetPlaceHolder);
