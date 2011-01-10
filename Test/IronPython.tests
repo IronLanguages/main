@@ -328,7 +328,7 @@
         <Test>
           <Name>sbs_module_compare_20</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>modulediff.py %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\python.exe</Arguments>
+          <Arguments>modulediff.py %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\python.exe</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>false</Disabled>
@@ -895,7 +895,7 @@
           <Arguments>nztest\testArith1.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -906,7 +906,7 @@
           <Arguments>nztest\testArygcd.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -917,7 +917,7 @@
           <Arguments>nztest\testBigrandom.py</Arguments>
           <MaxDuration>2700000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -928,7 +928,7 @@
           <Arguments>nztest\testBigrange.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -939,7 +939,7 @@
           <Arguments>-X:Frames nztest\testCombinatorial.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -950,7 +950,7 @@
           <Arguments>nztest\testCompatibility.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -961,7 +961,7 @@
           <Arguments>nztest\testCubic_root.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -972,7 +972,7 @@
           <Arguments>nztest\testElliptic.py</Arguments>
           <MaxDuration>3000000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -983,7 +983,7 @@
           <Arguments>nztest\testEquation.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -994,7 +994,7 @@
           <Arguments>nztest\testFactorEcm.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1005,7 +1005,7 @@
           <Arguments>nztest\testFactorMethods.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1016,7 +1016,7 @@
           <Arguments>nztest\testFactorMisc.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1027,7 +1027,7 @@
           <Arguments>nztest\testFactorMpqs.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1038,7 +1038,7 @@
           <Arguments>nztest\testFactorUtil.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1049,7 +1049,7 @@
           <Arguments>nztest\testFiniteField.py</Arguments>
           <MaxDuration>900000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1060,7 +1060,7 @@
           <Arguments>nztest\testFormalsum.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1071,7 +1071,7 @@
           <Arguments>-X:Frames nztest\testGcd.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1082,7 +1082,7 @@
           <Arguments>nztest\testGroup.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>true</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1093,7 +1093,7 @@
           <Arguments>nztest\testImaginary.py</Arguments>
           <MaxDuration>8000000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1104,7 +1104,7 @@
           <Arguments>nztest\testIntegerResidueClass.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1115,7 +1115,7 @@
           <Arguments>nztest\testLattice.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1126,7 +1126,7 @@
           <Arguments>nztest\testMatrix.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1137,7 +1137,7 @@
           <Arguments>nztest\testMultiplicative.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1148,7 +1148,7 @@
           <Arguments>nztest\testMultiutil.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1159,7 +1159,7 @@
           <Arguments>nztest\testMultivar.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1170,7 +1170,7 @@
           <Arguments>nztest\testPermute.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1181,7 +1181,7 @@
           <Arguments>nztest\testPolynomial.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1192,7 +1192,7 @@
           <Arguments>nztest\testPrime.py</Arguments>
           <MaxDuration>2700000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1203,7 +1203,7 @@
           <Arguments>nztest\testQuad.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1214,7 +1214,7 @@
           <Arguments>nztest\testRationalFunction.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1225,7 +1225,7 @@
           <Arguments>nztest\testRational.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1236,7 +1236,7 @@
           <Arguments>nztest\testReal.py</Arguments>
           <MaxDuration>9000000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1247,7 +1247,7 @@
           <Arguments>nztest\testRing.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1258,7 +1258,7 @@
           <Arguments>nztest\testTermOrder.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1269,7 +1269,7 @@
           <Arguments>nztest\testUniutil.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1280,7 +1280,7 @@
           <Arguments>nztest\testUnivar.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1291,7 +1291,7 @@
           <Arguments>nztest\testVector.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1302,7 +1302,7 @@
           <Arguments>nztest\testZassenhaus.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\math</WorkingDirectory>
@@ -1940,7 +1940,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib\site-packages\adodbapi\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib\site-packages\adodbapi\tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>adodbapi_pywin32</Name>
@@ -1951,7 +1951,7 @@
           <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib\site-packages\adodbapi\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib\site-packages\adodbapi\tests</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -3299,7 +3299,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_importhooks_cpy</Name>
@@ -5101,7 +5101,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\26\Lib</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_xpickle_cpy</Name>

@@ -8,8 +8,8 @@ function global:rb { Set-Location "${env:DLR_ROOT}\Languages\Ruby" }
 function global:rt { Set-Location "${env:DLR_ROOT}\Runtime" }
 function global:r { Set-Location "${env:DLR_ROOT}" }
 function global:mspc { Set-Location "${env:DLR_ROOT}\Languages\Ruby\Tests\mspec" }
-function global:ipl { Set-Location "${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\IronPython\26\Lib" }
-function global:cpl { Set-Location "${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\CPython\26\Lib" }
+function global:ipl { Set-Location "${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\IronPython\27\Lib" }
+function global:cpl { Set-Location "${env:DLR_ROOT}\External.LCA_RESTRICTED\Languages\CPython\27\Lib" }
 
 function global:irk { Set-Location "`"${env:DLR_ROOT}\Hosts\IronRuby.Rack\`"" }
 function global:rbs { Set-Location "`"${env:DLR_ROOT}\Languages\Ruby\Samples\`"" }
