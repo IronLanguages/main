@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.IO;
+using IronRuby;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Hosting;
@@ -26,8 +27,7 @@ namespace IronRubyRack {
         private static ScriptScope _Scope;
 
         public static void Init() {
-            var runtime = ScriptRuntime.CreateFromConfiguration();
-            Engine = runtime.GetEngine("Ruby");
+        	Engine = Ruby.CreateEngine();
             _Scope = Engine.CreateScope();
         }
 
