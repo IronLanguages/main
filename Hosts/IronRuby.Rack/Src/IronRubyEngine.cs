@@ -51,7 +51,7 @@ namespace IronRubyRack {
 
         public static object Require(string file, string rackVersion) {
             var command = "";
-            if (rackVersion != null) {
+            if (!string.IsNullOrEmpty(rackVersion)) {
                 command = string.Format("gem '{0}', '{1}';", file, rackVersion);
             }
             command += string.Format("require '{0}'", file);
