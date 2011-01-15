@@ -16,6 +16,8 @@
 using System;
 using System.Configuration;
 using System.IO;
+using System.Linq;
+using System.Web;
 using IronRuby.Builtins;
 
 namespace IronRubyRack {
@@ -56,7 +58,11 @@ namespace IronRubyRack {
 
 		private void InitSearchPaths()
 		{
-			IronRubyEngine.Engine.SetSearchPaths(SearchPaths.Split(';'));
+			var paths = SearchPaths
+				.Split(';')
+				.Select(p => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, p))
+				.ToList();
+			IronRubyEngine.Engine.SetSearchPaths(paths);
 		}
 
         private void InitRack() {
@@ -179,7 +185,7 @@ namespace IronRubyRack {
     		get
     		{
     			if(_searchPaths == null)
-    				_searchPaths = ConfigurationManager.AppSettings[SearchPathsOptionName];
+    				_searchPaths = ConfigurationManager.AppSettings[SearchPathsOptionName] ?? "";
     			return _searchPaths;
     		}
     	}
