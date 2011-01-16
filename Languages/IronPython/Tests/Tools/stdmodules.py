@@ -123,7 +123,10 @@ def check_package(package_name):
         
     except (Exception, SystemExit), e:
         log_broken(root_name, e)
-            
+        
+        # no sense continuing
+        return
+    
     #Next examine subpackages and modules
     nt.chdir(cwd + "\\" + package_name)        
     
