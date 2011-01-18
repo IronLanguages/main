@@ -1779,7 +1779,15 @@ namespace IronPython.Runtime {
                         TextWriter currentWriter = _io.GetWriter(_consoleStreamType);
 
                         if (!ReferenceEquals(currentWriter, _writer.TextWriter)) {
-                            _writer.Flush();
+                            try
+                            {
+                                _writer.Flush();
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                //no way to tell if stream has been closed outside of execution
+                                //so don't blow up if it has
+                            }
                             _writer = CreateTextWriter(currentWriter);
                         }
                     }
