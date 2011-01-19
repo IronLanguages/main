@@ -951,7 +951,7 @@ namespace IronPython.Runtime.Operations {
 
             int index;
             int start = 0;
-            while (maxsplit != 0 && (index = v.IndexOf(oldString, start)) != -1) {
+            while (maxsplit != 0 && (index = v.IndexOf(oldString, start, StringComparison.Ordinal)) != -1) {
                 ret.Append(v, start, index - start);
                 ret.Append(newString);
                 start = index + oldString.Length;
