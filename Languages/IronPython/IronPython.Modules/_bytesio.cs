@@ -477,7 +477,7 @@ namespace IronPython.Modules {
                 byte[] _raw_string = new byte[nbytes];
                 for (int i = 0; i < nbytes; i++) {
                     int ord = (int)bytes[i];
-                    if(i < 256) {
+                    if(ord < 256) {
                         _raw_string[i] = (byte)ord;
                     } else {
                         // A character outside the range 0x00-0xFF is present in the original string.
