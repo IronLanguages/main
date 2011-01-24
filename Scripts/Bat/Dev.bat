@@ -4,6 +4,7 @@ set CURRENT=%CD%
 set BAT=%~dp0
 set TERM=
 set DLR_ROOT=%BAT:~0,-13%
+set DLR_BIN=%DLR_ROOT%\bin\Debug
 set DLR_VM=
 set PROGRAM_FILES_32=%ProgramFiles%
 set PROGRAM_FILES_64=%ProgramFiles%

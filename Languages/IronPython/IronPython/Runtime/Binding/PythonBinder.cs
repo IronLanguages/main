@@ -94,8 +94,8 @@ namespace IronPython.Runtime.Binding {
             if (toType.IsAssignableFrom(exprType)) {
                 return expr;
             }
-
-            Type visType = CompilerHelpers.GetVisibleType(toType);
+            
+            Type visType = Context.Binder.PrivateBinding ? toType : CompilerHelpers.GetVisibleType(toType);
 
             if (exprType == typeof(PythonType) && visType == typeof(Type)) {
                 return AstUtils.Convert(expr, visType); // use the implicit conversion

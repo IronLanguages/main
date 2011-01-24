@@ -56,20 +56,7 @@ REM needs to be run against.
 REM set TEST_OPTIONS=-X:Python25 %TEST_OPTIONS%
 
 set ORIG_IRONPYTHONPATH=%IRONPYTHONPATH%
-
-echo %CD% | find /I "ython\27\Lib"
-if %ERRORLEVEL%==0 (
-	echo Running '%TEST%' against 2.7 standard library
-	set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
-) else (
-	echo %CD% | find /I "dlr\Languages\IronPython\Tests"
-	if %ERRORLEVEL%==0 (
-		echo Running '%TEST%' against 2.7 standard library
-		set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
-	) else (
-		echo Running '%TEST%' against 2.6 standard library
-	)
-)
+set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
 
 REM ---------------------------------------------------------------------------
 REM Run the test
