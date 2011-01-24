@@ -96,7 +96,6 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression FinishBind(bool needsLocalsDictionary) {
-            string name = Name;
             if (_variable.AccessedInNestedScope || needsLocalsDictionary) {
                 _parameter = Expression.Parameter(typeof(object), Name);
                 var cell = Ast.Parameter(typeof(ClosureCell), Name);

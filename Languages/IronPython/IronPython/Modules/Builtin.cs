@@ -293,8 +293,6 @@ namespace IronPython.Modules {
             }
 
             SourceUnit sourceUnit;
-            string unitPath = String.IsNullOrEmpty(filename) ? null : filename;
-
             switch (mode) {
                 case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Statements); break;
                 case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Expression); break;
@@ -2079,8 +2077,6 @@ namespace IronPython.Modules {
             }
 
             var sumState = new SumState(context.LanguageContext, start);
-            object ret = start;
-            
             while (i.MoveNext()) {
                 SumOne(ref sumState, i.Current);
             }

@@ -103,36 +103,35 @@ namespace IronPython.Modules {
             }
         }
 
-        /*********************************************************
-         * Format 
-         *  
-         * Tuple: '(',int cnt,tuple items
-         * List:  '[',int cnt, list items
-         * Dict:  '{',key item, value item, '0' terminator
-         * Int :  'i',4 bytes
-         * float: 'f', 1 byte len, float in string
-         * float: 'g', 8 bytes - float in binary form
-         * BigInt:  'l', int encodingSize
-         *      if the value is negative then the size is negative
-         *      and needs to be subtracted from int.MaxValue
-         * 
-         *      the bytes are encoded in 15 bit multiples, a size of
-         *      0 represents a value of zero.
-         * 
-         * True: 'T'
-         * False: 'F'
-         * Float: 'f', str len, float in str
-         * string: 't', int len, bytes  (ascii)
-         * string: 'u', int len, bytes (unicode)
-         * string: 'R' <id> - refer to interned string
-         * StopIteration: 'S'   
-         * None: 'N'
-         * Long: 'I' followed by 8 bytes (little endian 64-bit value)
-         * complex: 'x', byte len, real str, byte len, imag str
-         * Buffer (array.array too, but they don't round trip): 's', int len, buffer bytes
-         * code: 'c', more stuff...
-         * 
-         */
+        //
+        // Format 
+        //  
+        // Tuple: '(',int cnt,tuple items
+        // List:  '[',int cnt, list items
+        // Dict:  '{',key item, value item, '0' terminator
+        // Int :  'i',4 bytes
+        // float: 'f', 1 byte len, float in string
+        // float: 'g', 8 bytes - float in binary form
+        // BigInt:  'l', int encodingSize
+        //      if the value is negative then the size is negative
+        //      and needs to be subtracted from int.MaxValue
+        // 
+        //      the bytes are encoded in 15 bit multiples, a size of
+        //      0 represents a value of zero.
+        // 
+        // True: 'T'
+        // False: 'F'
+        // Float: 'f', str len, float in str
+        // string: 't', int len, bytes  (ascii)
+        // string: 'u', int len, bytes (unicode)
+        // string: 'R' <id> - refer to interned string
+        // StopIteration: 'S'   
+        // None: 'N'
+        // Long: 'I' followed by 8 bytes (little endian 64-bit value)
+        // complex: 'x', byte len, real str, byte len, imag str
+        // Buffer (array.array too, but they don't round trip): 's', int len, buffer bytes
+        // code: 'c', more stuff...
+        // 
         private class MarshalWriter {
             private readonly List<byte> _bytes;
             private readonly int _version;

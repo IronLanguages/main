@@ -126,22 +126,23 @@ namespace IronPython.Modules {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (data.Length == 0) return String.Empty;
 
-            StringBuilder res = EncodeWorker(data, '=', delegate(int val) {
-                if (val < 26) return (char)('A' + val);
-                if (val < 52) return (char)('a' + val - 26);
-                if (val < 62) return (char)('0' + val - 52);
-                switch (val) {
-                    case 62:
-                        return '+';
-                    case 63:
-                        return '/';
-                    default:
-                        throw new InvalidOperationException(String.Format("Bad int val: {0}", val));
-                }
-            });
-
+            StringBuilder res = EncodeWorker(data, '=', EncodeValue);
             res.Append('\n');
             return res.ToString();
+        }
+
+        private static char EncodeValue(int val) {
+            if (val < 26) return (char)('A' + val);
+            if (val < 52) return (char)('a' + val - 26);
+            if (val < 62) return (char)('0' + val - 52);
+            switch (val) {
+                case 62:
+                    return '+';
+                case 63:
+                    return '/';
+                default:
+                    throw new InvalidOperationException(String.Format("Bad int val: {0}", val));
+            }
         }
 
         public static object a2b_qp(object data) {

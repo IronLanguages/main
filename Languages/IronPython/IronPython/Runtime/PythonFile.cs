@@ -1620,17 +1620,15 @@ namespace IronPython.Runtime {
         private void WriteWorker(PythonBuffer/*!*/ buf, bool locking) {
             Debug.Assert(buf != null);
 
-            PythonStreamWriter writer = GetWriter();
             string str = buf._object as string;
             IPythonArray pyArr;
-            Array arr;
             if (str != null || buf._object is IList<byte>) {
                 if (locking) {
                     write(buf.ToString());
                 } else {
                     WriteNoLock(buf.ToString());
                 }
-            } else if ((arr = buf._object as Array) != null) {
+            } else if (buf._object is Array) {
                 throw new NotImplementedException("writing buffer of .NET array to file");
             } else if ((pyArr = buf._object as IPythonArray) != null) {
                 if (_fileMode != PythonFileMode.Binary) {

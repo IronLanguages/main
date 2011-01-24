@@ -54,7 +54,8 @@ namespace IronPython.Modules {
                  * there needs to be some conversion done here...*/
             }
 
-            bool result = CreatePipePI(
+            // TODO: handle failures
+            CreatePipePI(
                 out hReadPipe,
                 out hWritePipe,
                 ref pSecA,
@@ -202,7 +203,8 @@ namespace IronPython.Modules {
             IntPtr lpTargetHandle;
             bool sameAccess = DUPLICATE_SAME_ACCESS != null && Converter.ConvertToBoolean(DUPLICATE_SAME_ACCESS);
 
-            bool result = DuplicateHandlePI(
+            // TODO: handle failures
+            DuplicateHandlePI(
                 currentProcessIntPtr,
                 handleIntPtr,
                 currentProcess2IntPtr,
@@ -210,7 +212,7 @@ namespace IronPython.Modules {
                 Converter.ConvertToUInt32(desiredAccess),
                 inherit_handle,
                 sameAccess ? (uint)DuplicateOptions.DUPLICATE_SAME_ACCESS : (uint)DuplicateOptions.DUPLICATE_CLOSE_SOURCE
-                );
+            );
 
             return new PythonSubprocessHandle(lpTargetHandle); //Converter.ConvertToBigInteger( lpTargetHandle.ToInt32());
         }
@@ -228,7 +230,7 @@ namespace IronPython.Modules {
 
             IntPtr hProcessIntPtr = new IntPtr(Converter.ConvertToInt32(hProcess));
             int exitCode = int.MinValue;
-            var result = GetExitCodeProcessPI(hProcessIntPtr, out exitCode);
+            GetExitCodeProcessPI(hProcessIntPtr, out exitCode);
             return exitCode;
         }
 

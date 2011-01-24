@@ -3206,7 +3206,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 result = obj;
             }
-            return (T)obj;
+            return (T)result;
         }
 
         public static DynamicMetaObjectBinder MakeComplexCallAction(int count, bool list, string[] keywords) {

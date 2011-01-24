@@ -32,9 +32,11 @@ namespace IronPython.Modules {
     internal sealed class MemoryHolder : CriticalFinalizerObject {
         private readonly IntPtr _data;
         private readonly bool _ownsData;
-        private readonly MemoryHolder _parent;
         private readonly int _size;
         private PythonDictionary _objects;
+#pragma warning disable 414 // TODO: unused field?
+        private readonly MemoryHolder _parent;
+#pragma warning restore 414
 
         /// <summary>
         /// Creates a new MemoryHolder and allocates a buffer of the specified size.

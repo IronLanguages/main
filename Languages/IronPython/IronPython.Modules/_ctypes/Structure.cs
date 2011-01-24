@@ -67,10 +67,6 @@ namespace IronPython.Modules {
             public void __init__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<string, object> kwargs) {
                 CheckAbstract();
 
-                INativeType nativeType = NativeType;
-
-                StructType st = (StructType)nativeType;
-
                 foreach (var x in kwargs) {
                     PythonOps.SetAttr(context, this, x.Key, x.Value);
                 }

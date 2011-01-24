@@ -2208,7 +2208,6 @@ namespace IronPython.Modules {
                         PythonOps.Invoke(context, decoder, "setstate", PythonTuple.MakeTuple(Bytes.Empty, _decodeFlags));
                     }
                     BigInteger startPos = pos;
-                    int startFlags = _decodeFlags;
                     int bytesFed = 0;
                     int charsDecoded = 0;
 
@@ -2238,7 +2237,6 @@ namespace IronPython.Modules {
                             // safe starting point
                             startPos += bytesFed;
                             skip -= charsDecoded;
-                            startFlags = _decodeFlags;
                             bytesFed = 0;
                             charsDecoded = 0;
                         }
@@ -2874,9 +2872,12 @@ namespace IronPython.Modules {
 
             private object _decoder;
             private bool _translate;
-            private string _errors;
             private LineEnding _seenNL;
             private bool _pendingCR;
+
+#pragma warning disable 414 // TODO: unused field
+            private string _errors;
+#pragma warning restore 414
 
             public IncrementalNewlineDecoder(object decoder, bool translate, [DefaultParameterValue("strict")]string errors) {
                 _decoder = decoder;

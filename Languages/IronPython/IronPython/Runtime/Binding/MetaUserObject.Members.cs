@@ -337,7 +337,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Assign(tmp, AstUtils.Convert(expr, typeof(object)))
                             ).Catch(
                                 typeof(MissingMemberException),
-                                Ast.Assign(tmp, AstUtils.Convert(FallbackError().Expression, typeof(object)))
+                                Ast.Assign(tmp, AstUtils.Convert(fallback.Expression, typeof(object)))
                             ),
                             tmp
                         )

@@ -249,7 +249,7 @@ namespace IronPython.Modules {
 
             // read length of sequence
             int offset = 1;
-            int len = ReadLength(x, ref offset);
+            ReadLength(x, ref offset);
 
             // read version
             int version = ReadUnivesalInt(x, ref offset);

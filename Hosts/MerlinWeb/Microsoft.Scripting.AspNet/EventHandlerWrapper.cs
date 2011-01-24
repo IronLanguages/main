@@ -24,30 +24,28 @@ using Microsoft.Scripting.Hosting;
 
 namespace Microsoft.Scripting.AspNet {
     class EventHandlerWrapper {
-        private static MethodInfo s_handlerMethodInfo;
-        private object _self;
+        private static MethodInfo _handlerMethodInfo;
         private DynamicFunction _f;
         private string _virtualPath;
         private IBuildProvider _provider;
 
-        public static Delegate GetWrapper(IBuildProvider provider, object self, DynamicFunction f,
+        public static Delegate GetWrapper(IBuildProvider provider, DynamicFunction f,
             string virtualPath, Type delegateType) {
 
             // Get the MethodInfo only once
-            if (s_handlerMethodInfo == null) {
-                s_handlerMethodInfo = typeof(EventHandlerWrapper).GetMethod("Handler");
+            if (_handlerMethodInfo == null) {
+                _handlerMethodInfo = typeof(EventHandlerWrapper).GetMethod("Handler");
             }
 
-            EventHandlerWrapper wrapper = new EventHandlerWrapper(provider, self, f, virtualPath);
+            EventHandlerWrapper wrapper = new EventHandlerWrapper(provider, f, virtualPath);
 
             // Create a delegate of the required type
-            return Delegate.CreateDelegate(delegateType, wrapper, s_handlerMethodInfo);
+            return Delegate.CreateDelegate(delegateType, wrapper, _handlerMethodInfo);
         }
 
         public EventHandlerWrapper(IBuildProvider provider) { _provider = provider;  }
 
-        public EventHandlerWrapper(IBuildProvider provider, object self, DynamicFunction f, string virtualPath) {
-            _self = self;
+        public EventHandlerWrapper(IBuildProvider provider, DynamicFunction f, string virtualPath) {
             _f = f;
             _virtualPath = virtualPath;
             _provider = provider;

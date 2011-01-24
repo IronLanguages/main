@@ -22,16 +22,14 @@ set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby
 set RUBYOPT=
 set GEM_PATH=%RUBY19_BIN%\..\lib\ruby\gems\1.9.1
 
-if DEFINED INTERNALDEV (
-  REM -- Nullify the existing environment
-  call %DLR_ROOT%\Test\Scripts\SetTestEnv.bat
+REM -- Nullify the existing environment
+call %DLR_ROOT%\Test\Scripts\SetTestEnv.bat
 
-  REM -- IronPython environment variables
-  set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
+REM -- IronPython environment variables
+set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
 
-  REM -- Python environment variables
-  set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
-)
+REM -- Python environment variables
+set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
 
 if EXIST "%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe" (
   set SN_UTIL="%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe"

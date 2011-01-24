@@ -113,6 +113,7 @@ namespace IronRuby.Tests {
                 InterpreterLoops2,
                 InterpreterLoops3,
                 InterpreterLoops4,
+                InterpreterValueTypes1,
 
                 SimpleCall1,
                 SimpleCall2, 
@@ -547,6 +548,8 @@ namespace IronRuby.Tests {
                 ClrToString1,
                 ClrHashEquals4,
                 ClrTypeVariance1,
+                ClrValueTypes1,
+                ClrValueTypes2,
                 HostingDefaultOptions1,
                 Interactive1,
                 Interactive2,

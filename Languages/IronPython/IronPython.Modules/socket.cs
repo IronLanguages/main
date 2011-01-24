@@ -1011,7 +1011,10 @@ namespace IronPython.Modules {
                 int family = Converter.ConvertToInt32(current[0]);
                 int socktype = Converter.ConvertToInt32(current[1]);
                 int proto = Converter.ConvertToInt32(current[2]);
-                string name = Converter.ConvertToString(current[3]);
+                
+                // TODO: name is unused?
+                // string name = Converter.ConvertToString(current[3]);
+
                 PythonTuple sockaddress = (PythonTuple)current[4];
                 socket socket = null;
                 try {
@@ -1931,13 +1934,11 @@ namespace IronPython.Modules {
             private int _dataSize;
             private readonly int _bufSize;
             private readonly bool _close;
-            private readonly CodeContext/*!*/ _context;
 
-            public PythonUserSocketStream(CodeContext/*!*/ context, object userSocket, int bufferSize, bool close) {
+            public PythonUserSocketStream(object userSocket, int bufferSize, bool close) {
                 _userSocket = userSocket;
                 _bufSize = bufferSize;
                 _close = close;
-                _context = context;
             }
 
             public override bool CanRead {
@@ -2028,7 +2029,7 @@ namespace IronPython.Modules {
                     _socket = s;
                     stream = new NetworkStream(s._socket);
                 } else {
-                    stream = new PythonUserSocketStream(context, socket, GetBufferSize(context, bufsize), close);
+                    stream = new PythonUserSocketStream(socket, GetBufferSize(context, bufsize), close);
                 }
                 base.__init__(stream, System.Text.Encoding.Default, mode);
             }
@@ -2257,7 +2258,9 @@ namespace IronPython.Modules {
                 try {
                     // make sure the remote side hasn't shutdown before authenticating so we don't
                     // hang if we're in blocking mode.
+#pragma warning disable 219 // unused variable
                     int available = _socket._socket.Available;
+#pragma warning restore 219
                 } catch (SocketException) {
                     throw PythonExceptions.CreateThrowable(PythonExceptions.IOError, "socket closed before handshake");
                 }

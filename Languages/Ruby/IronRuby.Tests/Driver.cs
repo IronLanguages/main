@@ -338,9 +338,10 @@ namespace IronRuby.Tests {
 
             return setIntersection;
 #else
-            Evidence e = new Evidence();
+            // this functionality is not available on Mono (AddHostEvidence is undefined), use dynamic to resolve it at runtime
+            dynamic e = new Evidence();
             e.AddHostEvidence(new Zone(SecurityZone.Internet));
-            return SecurityManager.GetStandardSandbox(e);
+            return SecurityManager.GetStandardSandbox((Evidence)e);
 #endif
         }       
 

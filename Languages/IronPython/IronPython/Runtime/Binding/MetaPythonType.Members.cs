@@ -395,7 +395,6 @@ namespace IronPython.Runtime.Binding {
             }
 
             protected override bool AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
-                ParameterExpression tmp = Ast.Variable(typeof(object), "slotRes");
                 pts.MakeGetExpression(
                     _state.Binder,
                     _codeContext,

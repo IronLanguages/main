@@ -279,14 +279,16 @@ namespace ComponentAce.Compression.Libs.ZLib
         private int noheader;
 
         /// <summary>
-        /// // UNKNOWN, BINARY or ASCII
+        /// UNKNOWN, BINARY or ASCII
         /// </summary>
         private BlockType data_type;
 
+#pragma warning disable 414 // TODO: unused field
         /// <summary>
         /// STORED (for zip only) or DEFLATED
         /// </summary>
         private byte method;
+#pragma warning restore
 
         /// <summary>
         /// Value of internalFlush parameter for previous deflate call

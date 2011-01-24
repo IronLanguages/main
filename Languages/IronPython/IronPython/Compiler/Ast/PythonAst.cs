@@ -195,13 +195,12 @@ namespace IronPython.Compiler.Ast {
             GlobalDictionaryStorage storage = new GlobalDictionaryStorage(globals, globalArray);
             var modContext = _modContext = new ModuleContext(new PythonDictionary(storage), PyContext);
 
-            MSAst.Expression array;
             if (_mode == CompilationMode.ToDisk) {
-                _arrayExpression = array = _globalArray;
+                _arrayExpression = _globalArray;
             } else {
                 var newArray = new ConstantExpression(globalArray);
                 newArray.Parent = this;
-                _arrayExpression = array = newArray;
+                _arrayExpression = newArray;
             }
 
             if (Variables != null) {

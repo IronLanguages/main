@@ -57,8 +57,11 @@ flags parameter should be a bitwise OR of os.O_APPEND, os.O_RDONLY,
 and os.O_TEXT. The returned file descriptor may be used as a parameter
 to os.fdopen() to create a file object.
 ")]
+
         public static int open_osfhandle(CodeContext context, BigInteger os_handle, int arg1) {
+#pragma warning disable 618 // System.IO.FileStream.FileStream(System.IntPtr, System.IO.FileAccess, bool) is obsolete
             FileStream stream = new FileStream(new IntPtr((long)os_handle), FileAccess.ReadWrite, true);
+#pragma warning restore 618
             return context.LanguageContext.FileManager.AddToStrongMapping(stream);
         }
 
@@ -71,7 +74,9 @@ if fd is not recognized.")]
 
             FileStream stream = pfile._stream as FileStream;
             if (stream != null) {
+#pragma warning disable 618 // System.IO.FileStream.Handle is obsolete
                 return stream.Handle.ToPython();
+#pragma warning restore 618
             }
             return -1;
         }

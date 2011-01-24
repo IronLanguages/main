@@ -29,7 +29,6 @@ namespace IronRuby.Builtins {
     /// </summary>
     internal sealed class RegexpTransformer {
         private readonly string/*!*/ _rubyPattern;
-        private readonly RubyRegexOptions _options;
         private int _index;
         private StringBuilder/*!*/ _sb;
         private bool _hasGAnchor;
@@ -41,15 +40,14 @@ namespace IronRuby.Builtins {
                 return "^(?:[\t\n\r -\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])*$";
             }
             
-            RegexpTransformer transformer = new RegexpTransformer(rubyPattern, options);
+            RegexpTransformer transformer = new RegexpTransformer(rubyPattern);
             var result = transformer.Transform();
             hasGAnchor = transformer._hasGAnchor;
             return result;
         }
 
-        private RegexpTransformer(string/*!*/ rubyPattern, RubyRegexOptions options) {
+        private RegexpTransformer(string/*!*/ rubyPattern) {
             _rubyPattern = rubyPattern;
-            _options = options;
         }
 
         #region Buffer Ops

@@ -389,7 +389,7 @@ namespace IronPython.Modules {
                         TryBytesConversion(method, done);
 
                         
-                        Label isNull = method.DefineLabel(), nextTry = method.DefineLabel();
+                        Label nextTry = method.DefineLabel();
                         argIndex.Emit(method);
                         if (argumentType.IsValueType) {
                             method.Emit(OpCodes.Box, argumentType);

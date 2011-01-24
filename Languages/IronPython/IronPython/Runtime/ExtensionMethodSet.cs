@@ -197,11 +197,9 @@ namespace IronPython.Runtime {
 
         private void EnsureLoaded() {
             bool hasUnloaded = false;
-            foreach (var keyValue in _loadedAssemblies) {
-                AssemblyLoadInfo info = keyValue.Value;
-
-                if (keyValue.Value.Namespaces != null ||
-                    keyValue.Value.Types == null) {
+            foreach (AssemblyLoadInfo info in _loadedAssemblies.Values) {
+                if (info.Namespaces != null ||
+                    info.Types == null) {
                     hasUnloaded = true;
                 }
             }

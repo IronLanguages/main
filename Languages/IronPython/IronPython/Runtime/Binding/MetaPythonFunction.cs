@@ -188,8 +188,6 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
-            ParameterExpression tmp = Expression.Parameter(typeof(bool));
-
             // fallback w/ an error suggestion that does a late bound set
             return binder.FallbackSetMember(
                 this,
@@ -940,8 +938,6 @@ namespace IronPython.Runtime.Binding {
                 _temps.Add(_dict = Ast.Variable(typeof(PythonDictionary), "$dict"));
 
                 Expression dictCreator;
-                ParameterExpression dictRef = _dict;
-
                 if (namedArgs != null) {
                     Debug.Assert(namedArgs.Count > 0);
 

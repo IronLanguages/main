@@ -116,7 +116,6 @@ namespace IronPython.Modules {
                 set {
                     int start, stop, step;
                     int size = ((ArrayType)NativeType).Length;
-                    SimpleType elemType = ((ArrayType)NativeType).ElementType as SimpleType;
 
                     slice.indices(size, out start, out stop, out step);
 

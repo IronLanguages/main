@@ -76,7 +76,6 @@ namespace Microsoft.Scripting.AspNet.UI.Controls {
             // REVIEW: we need support for CodeArgumentReferenceExpression, as using a snippet is
             // not guanranteed to be language agnostic
             CodeExpression snippetRenderHelper = new CodeArgumentReferenceExpression("__srh");
-            StringBuilder codeBuilder = new StringBuilder();
 
             // Go through all the children to build the CodeDOM tree
             for (int controlIndex = 0; controlIndex < container.Controls.Count; controlIndex++) {

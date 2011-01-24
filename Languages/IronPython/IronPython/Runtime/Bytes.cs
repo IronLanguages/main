@@ -119,8 +119,6 @@ namespace IronPython.Runtime {
         }
 
         public int count([BytesConversion]IList<byte/*!*/> ssub, int start, int end) {
-            IList<byte> bytes = _bytes;
-
             return _bytes.CountOf(ssub, start, end);
         }
 

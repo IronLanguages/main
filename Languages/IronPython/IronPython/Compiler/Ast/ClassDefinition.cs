@@ -209,8 +209,6 @@ namespace IronPython.Compiler.Ast {
         }
 
         private Microsoft.Scripting.Ast.LightExpression<Func<CodeContext, CodeContext>> MakeClassBody() {
-            string className = _name;
-
             // we always need to create a nested context for class defs            
 
             var init = new List<MSAst.Expression>();

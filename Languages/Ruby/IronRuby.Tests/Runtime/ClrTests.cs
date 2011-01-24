@@ -2187,6 +2187,66 @@ add {0}[System.Int32,System.Int32]
 
         #endregion
 
+        #region Value Types
+
+        public struct S2 {
+            public int X;
+            public int Y;
+
+            public S2(int x, int y) {
+                X = x;
+                Y = y;
+            }
+
+            public void SetX() {
+                X = 1;
+            }
+        }
+
+        public void ClrValueTypes1() {
+            object s = new S2(3, 4);
+
+            Context.ObjectClass.SetConstant("Inst", s);
+
+            Engine.Execute("Inst.X = 10");
+
+            S2 unboxed = (S2)s;
+            Assert(unboxed.X == 10);
+            Assert(unboxed.Y == 4);
+
+            Engine.Execute("Inst.SetX");
+
+            unboxed = (S2)s;
+            Assert(unboxed.X == 1);
+            Assert(unboxed.Y == 4);
+        }
+
+        public class ClassWithValueTypeField1 {
+            public S2 Value = new S2(1, 2);
+        }
+
+        // TODO: unsupported
+        //
+        // If a mutable value type is embedded into an array or an object instance as a field the element/field access operation 
+        // returns a boxed value. It could return a dynamic proxy object that forwards all calls to the original storage.
+        // 
+        public void ClrValueTypes2() {
+            S2[] array = new[] { new S2(1, 2), new S2(3, 4), new S2(5, 6) };
+            var inst = new ClassWithValueTypeField1();
+            Context.ObjectClass.SetConstant("Ary", array);
+            Context.ObjectClass.SetConstant("Inst", inst);
+
+            Engine.Execute("Ary[1].X, Inst.Value.X = 10, 10");
+            
+            Assert(array[1].X == 3); // TODO: should be 10
+            Assert(array[1].Y == 4);
+
+            Assert(inst.Value.X == 1); // TODO: should be 10
+            Assert(inst.Value.Y == 2);
+        }
+
+        #endregion
+
         #region Virtual method overrides
 
         public class ClassWithVirtuals {

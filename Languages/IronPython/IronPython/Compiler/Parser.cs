@@ -208,7 +208,6 @@ namespace IronPython.Compiler {
                 List<int> newLineMapping = new List<int>();
                 int last = 0;
                 for (int i = 0; i < lineLocs.Length; i++) {
-                    int newLine = _sourceUnit.MapLine(i + 1) - 1;
                     while (newLineMapping.Count < i) {
                         newLineMapping.Add(last);
                     }
@@ -2346,7 +2345,6 @@ namespace IronPython.Compiler {
 
         private void CheckUniqueArgument(List<Arg> names, Arg arg) {
             if (arg != null && arg.Name != null) {
-                string name = arg.Name;
                 for (int i = 0; i < names.Count; i++) {
                     if (names[i].Name == arg.Name) {
                         ReportSyntaxError(IronPython.Resources.DuplicateKeywordArg);

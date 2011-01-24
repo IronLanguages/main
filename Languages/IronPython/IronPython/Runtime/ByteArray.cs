@@ -255,8 +255,6 @@ namespace IronPython.Runtime {
 
         public int count([BytesConversion]IList<byte>/*!*/ ssub, int start, int end) {
             lock (this) {
-                IList<byte> bytes = _bytes;
-
                 return _bytes.CountOf(ssub, start, end);
             }
         }
@@ -1239,7 +1237,7 @@ namespace IronPython.Runtime {
                     // will copy the data array and replace it all at once.
                     int newSize = Count - (stop - start) + other.Count;
 
-                    List<byte> newData = new List<byte>();
+                    List<byte> newData = new List<byte>(newSize);
                     for (int i = 0; i < start; i++) {
                         newData.Add(_bytes[i]);
                     }

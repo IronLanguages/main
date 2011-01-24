@@ -352,7 +352,6 @@ namespace IronPython.Runtime {
                 }
 
                 lock (_codeUpdateLock) {
-                    int oldRecLimit = _recursionLimit;
                     _recursionLimit = value;
 
                     if ((_recursionLimit == Int32.MaxValue) != (value == Int32.MaxValue)) {

@@ -65,12 +65,12 @@ namespace IronPythonTest {
 
         public static void cp24115(dynamic testObj) {
             try {
-                dynamic d = testObj.x();
+                testObj.x();
                 throw new Exception("Invoking non-existent method 'x' should have thrown");
             }
             catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
             {
-                if (! ex.Message.Contains("'x'")) {
+                if (!ex.Message.Contains("'x'")) {
                     throw new Exception("Error message didn't contain 'x'", ex);
                 }
             }

@@ -2642,8 +2642,6 @@ if id(a) == id(b):
         }
 
         private static Action<PythonDictionary> VerifyNoKeys(int value) {
-            string key = new string((char)(65 + value), 1);
-
             return (dict) => {
                 AreEqual(dict.Count, 0);
             };

@@ -23,10 +23,8 @@ namespace Microsoft.Scripting.AspNet.UI {
     // This class is not directly exposed to user code, instead it's used as the backing for ScriptPage/ScriptMaster/ScriptUserControl.
     internal class ScriptTemplateControlMemberProxy {
         private ScriptTemplateControlDictionary _moduleGlobals;
-        private object _self;
 
-        internal ScriptTemplateControlMemberProxy(object self, ScriptTemplateControlDictionary moduleGlobals) {
-            _self = self;
+        internal ScriptTemplateControlMemberProxy(ScriptTemplateControlDictionary moduleGlobals) {
             _moduleGlobals = moduleGlobals;
         }
 

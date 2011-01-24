@@ -189,7 +189,7 @@ namespace IronPython.Modules {
             PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
 
             try {
-                return context.LanguageContext.DomainManager.Platform.GetFullPath(dir);
+                return pal.GetFullPath(dir);
             } catch (ArgumentException) {
                 // .NET validates the path, CPython doesn't... so we replace invalid chars with 
                 // Char.Maxvalue, get the full path, and then replace the Char.Maxvalue's back w/ 
@@ -224,7 +224,7 @@ namespace IronPython.Modules {
                 
                 // walk backwards through the path replacing the same characters.  We should have
                 // only updated the directory leaving the filename which we're fixing.
-                string res = context.LanguageContext.DomainManager.Platform.GetFullPath(newdir);
+                string res = pal.GetFullPath(newdir);
                 int curDir = dir.Length;
                 for (int curRes = res.Length - 1; curRes >= 0; curRes--) {
                     if (res[curRes] == Char.MaxValue) {
@@ -365,7 +365,8 @@ namespace IronPython.Modules {
             PythonSubprocess.SECURITY_ATTRIBUTES secAttrs = new PythonSubprocess.SECURITY_ATTRIBUTES();
             secAttrs.nLength = Marshal.SizeOf(secAttrs);
 
-            var res = PythonSubprocess.CreatePipePI(out hRead, out hWrite, ref secAttrs, 0);
+            // TODO: handle unsuccessful call?
+            PythonSubprocess.CreatePipePI(out hRead, out hWrite, ref secAttrs, 0);
 
             return PythonTuple.MakeTuple(
                 PythonMsvcrt.open_osfhandle(context, new BigInteger(hRead.ToInt64()), 0),

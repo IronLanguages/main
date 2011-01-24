@@ -206,19 +206,19 @@ namespace IronPython.Modules {
                 InnerEnumerator = IntYielder(this, start, step);
             }
 
-            public count([DefaultParameterValue(0)]int start, [DefaultParameterValue(1)]BigInteger step) {
+            public count([DefaultParameterValue(0)]int start, BigInteger step) {
                 _curInt = start;
                 _step = step;
                 InnerEnumerator = IntYielder(this, start, step);
             }
 
-            public count(BigInteger start, [DefaultParameterValue(1)]int step) {
+            public count(BigInteger start, int step) {
                 _cur = start;
                 _step = step;
                 InnerEnumerator = BigIntYielder(this, start, step);
             }
 
-            public count(BigInteger start, [DefaultParameterValue(1)]BigInteger step) {
+            public count(BigInteger start, BigInteger step) {
                 _cur = start;
                 _step = step;
                 InnerEnumerator = BigIntYielder(this, start, step);
@@ -827,7 +827,6 @@ namespace IronPython.Modules {
                     do {
                         if (enums[curDepth].MoveNext()) {
                             curIndices[curDepth]++;
-                            int curIndex = curIndices[curDepth];
                             bool shouldSkip = false;
                             for (int i = 0; i < curDepth; i++) {
                                 if (curIndices[i] >= curIndices[curDepth]) {
@@ -885,7 +884,6 @@ namespace IronPython.Modules {
                     do {
                         if (enums[curDepth].MoveNext()) {
                             curIndices[curDepth]++;
-                            int curIndex = curIndices[curDepth];
                             bool shouldSkip = false;
                             for (int i = 0; i < curDepth; i++) {
                                 if (curIndices[i] > curIndices[curDepth]) {
@@ -948,7 +946,6 @@ namespace IronPython.Modules {
                     do {
                         if (enums[curDepth].MoveNext()) {
                             curIndices[curDepth]++;
-                            int curIndex = curIndices[curDepth];
                             bool shouldSkip = false;
                             for (int i = 0; i < curDepth; i++) {
                                 if (curIndices[i] == curIndices[curDepth]) {
