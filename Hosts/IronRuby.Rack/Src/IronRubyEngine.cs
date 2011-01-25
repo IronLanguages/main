@@ -27,7 +27,7 @@ namespace IronRubyRack {
         private static ScriptScope _Scope;
 
         static IronRubyEngine() {
-        	Engine = Ruby.CreateEngine();
+            Engine = Ruby.CreateEngine();
             _Scope = Engine.CreateScope();
         }
 
