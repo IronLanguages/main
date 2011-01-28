@@ -16,10 +16,10 @@
 using System.Reflection;
 
 #if !SILVERLIGHT
-[assembly: AssemblyVersion("2.7.0.10")]
+[assembly: AssemblyVersion("2.7.0.20")]
 #else
-[assembly: AssemblyVersion("2.7.1300.10")]
+[assembly: AssemblyVersion("2.7.1300.20")]
 #endif
 
 [assembly: AssemblyInformationalVersion("2.7")]
-[assembly: AssemblyFileVersion("2.7.0.10")]
+[assembly: AssemblyFileVersion("2.7.0.20")]
