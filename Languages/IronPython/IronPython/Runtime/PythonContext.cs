@@ -1932,7 +1932,7 @@ namespace IronPython.Runtime {
             dict["executable"] = _initialExecutable;
             SystemState.__dict__["prefix"] =  _initialPrefix;
             dict["exec_prefix"] = _initialPrefix;
-            SetVersionVariables(dict, 2, 7, 0, "alpha", _initialVersionString);
+            SetVersionVariables(dict, 2, 7, 0, "beta", _initialVersionString);
         }
 
         private static void SetVersionVariables(PythonDictionary dict, byte major, byte minor, byte build, string level, string versionString) {
