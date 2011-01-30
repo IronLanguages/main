@@ -2,7 +2,7 @@
 using System.IO;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Microsoft.Scripting.Runtime;
 
 

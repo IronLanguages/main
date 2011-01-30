@@ -19,7 +19,7 @@ using System.IO;
 using System.Text;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 #if SILVERLIGHT
 using Microsoft.Silverlight.TestHostCritical;

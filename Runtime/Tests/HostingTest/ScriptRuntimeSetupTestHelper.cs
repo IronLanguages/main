@@ -1,6 +1,6 @@
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using System.Text;
 using System.Diagnostics;

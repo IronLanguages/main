@@ -15,7 +15,7 @@
 
 using Microsoft.Scripting.Hosting;
 using IronRuby.Runtime;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -23,8 +23,7 @@ using Microsoft.Scripting.Generation;
 
 
 namespace HostingTest {
-    [TestClass]
-    [DeploymentItem(@"..\..\bin\Debug")]
+    [TestFixture]
     public class HAPITestBase {
 
         static internal PreDefinedCodeSnippets _codeSnippets;
@@ -58,6 +57,12 @@ namespace HostingTest {
             
             _defaultScope = _runTime.CreateScope();
             _codeSnippets = new PreDefinedCodeSnippets();
+        }
+
+        [TestFixtureSetUp]
+        public void FixtureSetup()
+        {
+            TestHelpers.DeployItem(@"..\Debug");
         }
 
         public static ScriptRuntime CreateRuntime() {

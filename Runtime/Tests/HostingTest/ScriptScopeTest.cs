@@ -4,19 +4,19 @@ using System.IO;
 using IronPython.Runtime.Exceptions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Microsoft.Scripting.Runtime;
 using System.Runtime.Remoting;
 using System.Text;
 
 namespace HostingTest {
 
-    [TestClass()]
+    [TestFixture]
     public partial class ScriptScopeTest : HAPITestBase {
         /// <summary>
         /// No Default Engine test existence of a variable contained in the scope
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ContainsVariable_NoDefaultEngineContainsVariable() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -33,7 +33,7 @@ namespace HostingTest {
         /// Expected : Fail
         /// </summary>
         [Negative()]
-        [TestMethod()]
+        [Test]
         public void ContainsVariable_NoDefaultEngineWrongCaseLookup() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -46,7 +46,7 @@ namespace HostingTest {
         /// Test : Case sensitive default engine (Python), existing name with correct casing
         /// Expected : True
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void ContainsVariable_BasicLookup() {
             ScriptScope scope = _testEng.CreateScope();
             scope.SetVariable("v1", 1);
@@ -58,13 +58,13 @@ namespace HostingTest {
         /// Expected : ArgumentNullException
         /// </summary>
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GetVariable_NameWithNullValue() {
             _runtime.CreateScope().GetVariable((string)null);
         }
 
-        [TestMethod]
+        [Test]
         public void GetVariable_WithEmptyString() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -74,7 +74,7 @@ namespace HostingTest {
             Assert.AreEqual(testVar.Value, scope.GetVariable(testVar.Key));
         }
 
-        [TestMethod]
+        [Test]
         public void GetVariable_CaseSensitiveDefaultEngine() {
             ScriptScope scope = _PYEng.CreateScope();
 
@@ -86,14 +86,14 @@ namespace HostingTest {
 
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(MissingMemberException))]
         public void GetVariable_WithNonExistentVariable() {
             _runtime.CreateScope().GetVariable("MissingVar");
         }
 
         [Ignore]        
-        [TestMethod]
+        [Test]
         public void DefaultEngine_GetDefaultEngineTest() {
             ScriptRuntime defaultRuntime = CreateRuntime();
             ScriptScope scope = defaultRuntime.CreateScope();
@@ -104,7 +104,7 @@ namespace HostingTest {
 
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetVariable_WithNullName() {
             _runtime.CreateScope().SetVariable((string)null, 0);
@@ -115,7 +115,7 @@ namespace HostingTest {
         /// Expect : the value to be inserted properly with an empty 
         ///          string name identifier (or arguably an exception)
         /// </summary>
-        [TestMethod]
+        [Test]
         public void SetVariable_WithEmptyName() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -130,7 +130,7 @@ namespace HostingTest {
         ///        any value	
         /// Expected : New casing inserted properly, old casing undisturbed
         /// </summary>
-        [TestMethod]
+        [Test]
         public void SetVariable_CreateVariableWithNewCaseNewValue() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -150,7 +150,7 @@ namespace HostingTest {
         /// Test : No default engine and case sensitive engine, existing name, new value
         /// Expected : Variable’s value overwritten
         /// </summary>
-        [TestMethod]
+        [Test]
         public void SetVariable_SetExistingVarToNewValue() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -172,7 +172,7 @@ namespace HostingTest {
         ///         current one.
         /// Expected : New value and new  type is available subsequently
         /// </summary>
-        [TestMethod]
+        [Test]
         public void SetVariable_SetExistingVarToNewType() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -185,7 +185,7 @@ namespace HostingTest {
             Assert.AreEqual("HelloWorld", scope.GetVariable(testVar.Key));
         }
 
-        [TestMethod]
+        [Test]
         public void ExecuteGeneric_CallEmptyArg() {
             object testResult = _testEng.Execute<object>(string.Empty);
             Assert.IsNull(testResult);
@@ -195,7 +195,7 @@ namespace HostingTest {
         /// Test     : Correct T value and valid Expression 
         /// Expected : Returns a expresion as type T.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ExecuteGeneric_ValidExpression() {
             // Setup test
             // Call Execute this throws exception
@@ -215,7 +215,7 @@ namespace HostingTest {
         /// Test     : Basic GetVarialbelGeneric smoke test return correct value and type
         /// Expected : Correct value and type are returned.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetVariableGeneric_CaseSensitiveEngine() {
             ScriptScope scope = _PYEng.CreateScope();
 
@@ -225,13 +225,13 @@ namespace HostingTest {
             Assert.AreEqual(1, expectedResult);
         }
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GetVariableGeneric_Null() {
             _runTime.CreateScope().GetVariable<int>(null);
         }
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentTypeException))]
         public void GetVariableGeneric_IncorrectType() {
             ScriptScope scope = _runtime.CreateScope();
@@ -247,7 +247,7 @@ namespace HostingTest {
         /// Name that exists, T value requiring conversion for
         /// for the value in this language.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetVariableGenericT_ExistingVarGenericUnboxLookupCheck() {
             ScriptScope TestScope = _testEng.CreateScope();
             //ScriptScope TestNullScope = null;
@@ -263,7 +263,7 @@ namespace HostingTest {
             Assert.IsTrue((string)objRtn == (string)obj);
         }
 
-        [TestMethod]
+        [Test]
         public void GetVariableGeneric_TypeUpConvert() {
             ScriptScope scope = _PYEng.CreateScope();
 
@@ -273,7 +273,7 @@ namespace HostingTest {
             Assert.AreEqual(1.0, result);
         }
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(TypeErrorException))]
         public void GetVariableGeneric_TypeDownConvert() {
             ScriptScope scope = _PYEng.CreateScope();
@@ -284,13 +284,13 @@ namespace HostingTest {
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void RemoveVariable_NullArg() {
             _runtime.CreateScope().RemoveVariable(null);
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveVariable_OneOfManyVars() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -301,7 +301,7 @@ namespace HostingTest {
             Assert.IsTrue(scope.RemoveVariable("v2") && (2 == scope.GetVariableCount()));
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveVariable_OneVar() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -309,12 +309,12 @@ namespace HostingTest {
             Assert.IsTrue(scope.RemoveVariable("v2") && (0 == scope.GetVariableCount()));
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveVariable_EmptyScope() {
             Assert.IsFalse(_runtime.CreateScope().RemoveVariable("v2"));
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveVariable_WrongCase() {
             ScriptScope scope = _PYEng.CreateScope();
             scope.SetVariable("V2", 4);
@@ -330,7 +330,7 @@ namespace HostingTest {
         /// 
         /// New variable is created matching the given name and value.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void SetVariable_ScopeBoundToEngineSetNewName() {
 
             ScriptScopeDictionary global = new ScriptScopeDictionary();
@@ -353,7 +353,7 @@ namespace HostingTest {
         ///  Test for empty string value lookup
         /// 
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ContainVariable_EmptyStringValue() {
             ScriptScopeDictionary global = new ScriptScopeDictionary();
             // Populate with some test data
@@ -371,7 +371,7 @@ namespace HostingTest {
 
         }
 
-        [TestMethod]
+        [Test]
         public void SetVariable_ScopeBoundToEngineSetExistingName() {
 
             ScriptScopeDictionary global = new ScriptScopeDictionary();
@@ -392,7 +392,7 @@ namespace HostingTest {
         ///  
         /// Expected return false
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ContainVariable_NameLengthGT256WithNonExistingName() {
             ScriptScopeDictionary global = new ScriptScopeDictionary();
             // Populate with some test data
@@ -426,7 +426,7 @@ namespace HostingTest {
         /// name.Length > 20 and name declared in scope 
         /// expected return true.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ContainVariable_NameLengthTwentyWithExistingName() {
             ScriptScopeDictionary global = new ScriptScopeDictionary();
             // Populate with some test data
@@ -453,7 +453,7 @@ namespace HostingTest {
         /// 3) When it doesn't or cannot be converted to T, value set to null 
         ///    and return of false - HOW CAN WE TEST THIS CASE?
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TryGetVariableGenericT_MultipleCases() {
             ScriptScopeDictionary global = new ScriptScopeDictionary();
             // Populate with some test data
@@ -490,7 +490,7 @@ namespace HostingTest {
         ///    return of false
         /// 
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TryGetVariable_multipleCases() {
 
             ScriptScopeDictionary global = new ScriptScopeDictionary();
@@ -529,7 +529,7 @@ namespace HostingTest {
         ///    return of false
         /// 
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TryGetVariableAsHandle_MultipleCases() {
 
             ScriptScopeDictionary global = new ScriptScopeDictionary();
@@ -562,7 +562,7 @@ namespace HostingTest {
         /// Name that exists, T value requiring no conversion for
         /// for the value in this language.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetVariableGenericT_ExistingVarGenericTypeCheck() {
 
             ScriptScopeDictionary global = new ScriptScopeDictionary();
@@ -591,7 +591,7 @@ namespace HostingTest {
         /// Test     : Set some variables in the scope and then invoke
         /// Expected : All variables are returned with correct type when fully enumerated
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetItems_IEnumerable() {
             ScriptScope scope = _runtime.CreateScope();
             KeyValuePair<string, object>[] dict = {new KeyValuePair<string, object>("v1", 1),
@@ -604,7 +604,7 @@ namespace HostingTest {
         }
 
         //regression test for DDB:488990
-        [TestMethod]
+        [Test]
         public void GetItems_RemoteAD() {
             ScriptScope scope = _remoteRuntime.CreateScope();
 
@@ -614,7 +614,7 @@ namespace HostingTest {
             TestHelpers.AreEqualCollections<KeyValuePair<string, object>>(dict, scope.GetItems());
         }
 
-        [TestMethod]
+        [Test]
         public void GetItems_EmptyScope() {
             ScriptScope scope = _runtime.CreateScope();
 
@@ -622,20 +622,20 @@ namespace HostingTest {
             TestHelpers.AreEqualCollections<KeyValuePair<string, object>>(dict, scope.GetItems());
         }
 
-        [TestMethod]
+        [Test]
         public void GetItems_MultipleCalls() {
             ValidateGetItems(_runtime);
         }
 
 
         
-        [TestMethod]
+        [Test]
         public void GetItems_MultipleCallsRemoteRuntime() {
             ValidateGetItems(_remoteRuntime);
         }
 
         // Bug # 482429 validation
-        [TestMethod]
+        [Test]
         public void Execute_ValidExpressionResult()
         {
             Assert.AreEqual((int)(_testEng.Execute("1 + 1")), 2);
@@ -643,14 +643,14 @@ namespace HostingTest {
        
         // Bug # 482429 validation
         // TODO : Replace existing Generic Execute 
-        [TestMethod]
+        [Test]
         public void ExecuteGeneric_ValidExpressionResult()
         {
             Assert.AreEqual((int)(_testEng.Execute<int>("1 + 1")), 2);
         }
 
         // Bug # 485727
-        [TestMethod]
+        [Test]
         public void TryGetVariable_ValidateExistingScopeItem()
         {
             ScriptScope scope = _runtime.CreateScope();
@@ -662,7 +662,7 @@ namespace HostingTest {
         }
 
         // Bug # 485727
-        [TestMethod]
+        [Test]
         public void TryGetVariable_ValidateNonExistingScopeItem()
         {
             ScriptScope scope = _runtime.CreateScope();
@@ -673,7 +673,7 @@ namespace HostingTest {
         }
 
         // Bug # 485727
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentTypeException))]
         public void TryGetVaiable_TryWrongTypeGet()
@@ -690,7 +690,7 @@ namespace HostingTest {
         /// <summary>
         /// Verify that that null name will throw exception
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GetVariableAsHandle_NullName() {
@@ -712,7 +712,7 @@ namespace HostingTest {
         /// Local engine, with non-existent name should throw an exception
         /// MissingMemberException or UnboundNameException?
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(MissingMemberException))]
         public void GetVariableAsHandle_LocalEngine_NonExistentName() {
@@ -727,7 +727,7 @@ namespace HostingTest {
         /// <summary>
         /// Local engine, existing name returns an wrapped ObjectHandle
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetVariableAsHandle_LocalEngineExistingName() {
 
             // Create a valid Scope Dictionary 
@@ -753,7 +753,7 @@ namespace HostingTest {
         /// Remote engine, remote value, return var value returned 
         /// wrapped in ObjectHandle.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetVariableAsHandle_RemoteEngineRemoteValue() {
 
             ScriptRuntime env = ScriptRuntimeTest.CreateRuntime(TestHelpers.CreateAppDomain("new domain"));
@@ -781,7 +781,7 @@ namespace HostingTest {
         /// Also make changes with Execute and verify they are global
         /// scope is updated.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateScope_UsingValidScopeDic() {
 
             // Create a Scope Dictionary 
@@ -808,7 +808,7 @@ namespace HostingTest {
         /// <summary>
         /// Do GetVariable(...) with Empty string as value in name.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetVariable_EmptyString() {
 
             // Create a Scope Dictionary 

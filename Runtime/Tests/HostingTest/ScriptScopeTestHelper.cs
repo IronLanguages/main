@@ -15,7 +15,7 @@
 
 using System.Collections.Generic;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 
 namespace HostingTest

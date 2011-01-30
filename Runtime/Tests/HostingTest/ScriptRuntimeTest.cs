@@ -7,23 +7,22 @@ using System.Text;
 using IronPython.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System.Reflection;
 
 namespace HostingTest{
-    using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
     using Microsoft.Scripting.Runtime;
 
-    [TestClass()]
+    [TestFixture]
     public partial class ScriptRuntimeTest : HAPITestBase
     {
-        [TestMethod]
+        [Test]
         public void Create_WithCurrentAppDomain(){
             ScriptRuntime currentSR = CreateRemoteRuntime(AppDomain.CurrentDomain);
             Assert.IsTrue( currentSR.IsValid());
         }
 
-        [TestMethod]
+        [Test]
         public void Create_WithSecondAppDomain(){
             AppDomain secondAppDomain = TestHelpers.CreateAppDomain("SecondAppDomain");
             ScriptRuntime secondSR = CreateRemoteRuntime(secondAppDomain);
@@ -31,14 +30,14 @@ namespace HostingTest{
             Assert.IsTrue(secondSR.IsValid());
         }
         
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Create_NullAppDomain() {
             ScriptRuntimeTest.CreateRuntime(null);
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(AppDomainUnloadedException))]
         public void Create_PassUnloadedAppDomain(){
@@ -55,7 +54,7 @@ namespace HostingTest{
         }
 
         //this test seems quite complex to me. Let's discuss about this test
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(AppDomainUnloadedException))]
         public void Create_CallMethodsOnSecondUnloadedAppDomain(){
@@ -95,7 +94,7 @@ namespace HostingTest{
             ScriptScope sScpTwo = scpRunTimeTwo.CreateScope();
         }
 
-        [TestMethod]
+        [Test]
         public void Create_PartialTrust() {
             // basic check of running a host in partial trust
             AppDomainSetup info = new AppDomainSetup();
@@ -113,7 +112,7 @@ namespace HostingTest{
             AppDomain.Unload(newDomain);
         }
         
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         [Ignore] //bug ID : 446714
@@ -126,7 +125,7 @@ namespace HostingTest{
                 runTime.ExecuteFile(p + "foo.py");
         }
         
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(SyntaxErrorException))]
         public void ExecuteFile_ValidPathToInvalidScript(){
@@ -134,7 +133,7 @@ namespace HostingTest{
             _runtime.ExecuteFile(tmpFile);
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void ExecuteFile_ValidPathToScriptWithUnRegExtension(){
@@ -143,14 +142,14 @@ namespace HostingTest{
             _runtime.ExecuteFile(tmpFile);
         }
         
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ExecuteFile_NullPath(){
             _runtime.ExecuteFile(null);
         }
 
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void ExecuteFile_EmptyStringPath(){
@@ -159,7 +158,7 @@ namespace HostingTest{
 
         //todo add basic ExecuteFile test
 
-        [TestMethod()]
+        [Test]
         public void ExecuteFile_CallValidPathMultiple(){
             String tmpFile = TestHelpers.CreateTempSourceFile( _codeSnippets[CodeType.ValidExpression1], ".py");
             Assert.IsTrue(File.Exists(tmpFile));
@@ -172,14 +171,14 @@ namespace HostingTest{
             }
         }
 
-        [TestMethod]
+        [Test]
         [Ignore]//Test not yet implemented
         public void ExecuteFile_CallFromMultipleThreads(){
             Assert.Inconclusive("Test not yet implemented");
         }
 
         [ExpectedException(typeof(SyntaxErrorException))]
-        [TestMethod]//regression test for DDB 488971
+        [Test]//regression test for DDB 488971
         public void ExecuteFile_RemoteADAndSyntaxError() {
             AppDomain ad = TestHelpers.CreateAppDomain("alternate 1");
             ScriptRuntime runtime = CreateRemoteRuntime(ad);
@@ -190,7 +189,7 @@ namespace HostingTest{
         }
 
 
-        [TestMethod]
+        [Test]
         public void UseFile_CallValidPathMultiple() {
             string tmpFile = TestHelpers.CreateTempSourceFile(_codeSnippets[CodeType.ValidExpression1], ".py");
             Assert.IsTrue(File.Exists(tmpFile));
@@ -217,19 +216,19 @@ namespace HostingTest{
             }
         }
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void UseFile_NullPath() {
             var scope = _runtime.UseFile(null);
         }
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof( ArgumentException))]
         public void UseFile_EmptyPath() {
             var scope = _runtime.UseFile("");
         }
 
-        [TestMethod]
+        [Test]
         public void UseFile_ValidPath() {
             string tmpFile = TestHelpers.CreateTempSourceFile(_codeSnippets[CodeType.IsOddFunction], ".py");
             var scope = _runtime.UseFile(tmpFile);
@@ -254,7 +253,7 @@ namespace HostingTest{
             Assert.IsFalse(isodd(12));
         }
 
-        [TestMethod]
+        [Test]
         [ExpectedException( typeof(FileNotFoundException))]
         public void UseFile_PartialPath() {
             string tmpFile = TestHelpers.CreateTempSourceFile(_codeSnippets[CodeType.IsOddFunction], ".py");
@@ -268,7 +267,7 @@ namespace HostingTest{
         /// Ensure multiple sets result in the latest 'set' having the effect 
         /// (this test is pretty obvious. but doesnt hurt to have here)
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Globals_TryToAccessNamesSet(){
             ScriptScopeDictionary dict = new ScriptScopeDictionary();
             string key = "foo";
@@ -283,7 +282,7 @@ namespace HostingTest{
             Assert.AreEqual(2, _runtime.Globals.GetVariable(key));
         }
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Globals_Null(){
             ScriptRuntime runtime = CreateRuntime();
@@ -293,7 +292,7 @@ namespace HostingTest{
         /// <summary>
         /// Test to ensure CreateScope doesnt have side effects on the 'Globals' prop
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Globals_NoSideEffectsFromCreateScope(){
             ScriptScope temp = _runtime.Globals;
             ScriptScope newScope = _testEng.CreateScope();
@@ -301,7 +300,7 @@ namespace HostingTest{
             Assert.AreEqual(temp, _runtime.Globals);
         }
 
-        [TestMethod]
+        [Test]
         public void CreateScope_WithZeroExistingScopes(){
             ScriptScope scope = _runtime.CreateScope();
 
@@ -309,7 +308,7 @@ namespace HostingTest{
             Assert.IsTrue(scope.IsEmpty());
         }
 
-        [TestMethod]
+        [Test]
         public void CreateScope_WithManyPreExistingScopes(){
             ScriptScope curScope, prevScope = null;
 
@@ -333,7 +332,7 @@ namespace HostingTest{
             }
         }
 
-        [TestMethod]
+        [Test]
         public void CreateScope_LinkBetweenReturnedScopeAndArg() {
             ScriptScopeDictionary dict = new ScriptScopeDictionary();
             ScriptScope attachedScope = _testEng.CreateScope(new ObjectDictionaryExpando(dict));
@@ -350,7 +349,7 @@ namespace HostingTest{
             Assert.AreEqual(editDict, attachedScope.GetVariable(key));
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScope_PassNull(){
@@ -362,7 +361,7 @@ namespace HostingTest{
         /// Pass a valid global IAttributesCollection object and validate 
         /// all lookups in the scope go through the provided IAttributesCollection
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateScope_PassValidScope(){
             ScriptScopeDictionary dict = new ScriptScopeDictionary();
            
@@ -390,7 +389,7 @@ namespace HostingTest{
         /// Verify the first returned value has no changes after
         /// the second call.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateScope_InvokeMethodTwiceWithSameGlobals(){
             ScriptScopeDictionary dict = new ScriptScopeDictionary();
 
@@ -406,27 +405,27 @@ namespace HostingTest{
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GetEngine_PassNull() {
             _runtime.GetEngine(null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GetEngine_PassEmptyString(){
             _runtime.GetEngine("");
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GetEngine_PassUnRegisteredLangID(){
             _runtime.GetEngine("__sdfsllslsslslslsiiiiiiuuppppwmxxmxmss___");
         }
 
-        [TestMethod]
+        [Test]
         public void GetEngine_PassAllRegisteredLanguages(){
             Dictionary<ScriptEngine, string[]> idDict = new Dictionary<ScriptEngine, string[]>() {
                 {_PYEng, new string[]{ "py", "python", "ironpython" }},
@@ -440,7 +439,7 @@ namespace HostingTest{
             }
         }
 
-        [TestMethod]
+        [Test]
         public void GetEngine_StandardStringInputTest(){
             foreach (string str in StandardTestStrings.AllStrings) {
                 try {
@@ -453,28 +452,28 @@ namespace HostingTest{
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GetEngineByFileExtension_PassNull(){
             _runtime.GetEngineByFileExtension((string)null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GetEngineByFileExtension_PassEmptyString(){
             _runtime.GetEngineByFileExtension("");
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GetEngineByFileExtension_UnRegisteredLangID(){
             _runtime.GetEngineByFileExtension("__sdfsllslsslslslsiiiiiiuuppppwmxxmxmss___");
         }
 
 
-        [TestMethod]
+        [Test]
         public void GetEngineByFileExtension_AllRegisteredExtensions(){
             Dictionary<ScriptEngine, string[]> fileExtDict = new Dictionary<ScriptEngine, string[]>() {
                 {_PYEng, new string[] { ".py" } },
@@ -488,7 +487,7 @@ namespace HostingTest{
             }
         }
 
-        [TestMethod]
+        [Test]
         [Ignore]//Unregistering a language is not supported. So this test may have to be removed
         public void GetEngineByFileExtension_UnRegisteredExtensions(){
             ScriptRuntime runtime = ScriptRuntimeTest.CreatePythonOnlyRuntime( new[]{"py"}, new[]{".py"});
@@ -500,59 +499,59 @@ namespace HostingTest{
                 "How do we un-register a language? what are the expected results");
         }
 
-        [TestMethod]
+        [Test]
         public void GetEngineByFileExtension_PrecedingAPeriodRegisteredExtensions(){
             Assert.IsTrue(_runtime.GetEngineByFileExtension(".py").Setup.DisplayName.Contains("IronPython"));
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GetEngineByFileExtension_PrecedingPeriodsRegisteredExtensions(){
             string lang = _runtime.GetEngineByFileExtension("..py").Setup.DisplayName;
         }
 
-        [TestMethod]
+        [Test]
         public void Configuration_ManyRegisteredLanguages() {
             //the default runtime should have more than 1 registered languages
             Assert.IsTrue(_runtime.Setup.LanguageSetups.Count > 1);
         }
 
-        [TestMethod]
+        [Test]
         public void Configuration_OneRegisteredFileExtension(){
             ScriptRuntime runtime = ScriptRuntimeTest.CreatePythonOnlyRuntime(new[] { "py" }, new[] { ".py" });
             Assert.IsTrue(1 == runtime.Setup.LanguageSetups[0].FileExtensions.Count);
         }
 
-        [TestMethod]
+        [Test]
         public void Configuration_OneRegisteredLanguageName() {
             ScriptRuntime runtime = ScriptRuntimeTest.CreatePythonOnlyRuntime(new[] { "py" }, new[] { ".py" });
             Assert.IsTrue(1 == runtime.Setup.LanguageSetups[0].Names.Count);
         }
 
-        [TestMethod]
+        [Test]
         public void Configuration_ManyRegisteredLanguageNames() {
             //default runtime has more than 1 registered lang id
             Assert.IsTrue(_runtime.Setup.LanguageSetups[0].Names.Count > 1);
         }
 
-        [TestMethod]
+        [Test]
         public void ScriptHost_Invoke(){
             Assert.IsNotNull( _runtime.Host);
         }
 
-        [TestMethod]
+        [Test]
         public void ScriptIO_Get(){
             Assert.IsNotNull(_runtime.IO);
         }
 
-        [TestMethod, Negative, ExpectedException(typeof(ArgumentException))]
+        [Test, Negative, ExpectedException(typeof(ArgumentException))]
         public void Setup_EmptySetup() {
             
             new ScriptRuntime(new ScriptRuntimeSetup());
         }
 
-        [TestMethod]
+        [Test]
         public void Setup_EmptyDisplayName() {
             
             var setup = ScriptRuntimeTest.CreateSetup();
@@ -561,7 +560,7 @@ namespace HostingTest{
             Assert.AreEqual("", runtime.Setup.LanguageSetups[0].DisplayName);
         }
 
-        [TestMethod, Negative, ExpectedException(typeof(InvalidOperationException))]
+        [Test, Negative, ExpectedException(typeof(InvalidOperationException))]
         public void Setup_InvalidTypeName() {            
             // Dev10 bug 502234
             var setup = ScriptRuntimeTest.CreateSetup();
@@ -570,7 +569,7 @@ namespace HostingTest{
             runtime.GetEngine("py");
         }
 
-        [TestMethod]
+        [Test]
         public void Setup_AssemblyNameWithoutPublicKeyToken() {
             // Dev10 bug 502278
             var setup = new ScriptRuntimeSetup();
@@ -579,7 +578,7 @@ namespace HostingTest{
             Assert.AreEqual(python.Setup.DisplayName, "IronPython");
         }
 
-        [TestMethod]
+        [Test]
         public void CreateScope_GetEngineWithNoLanguage() {
             var runtime = ScriptRuntimeTest.CreateRuntime();
             var scope = runtime.CreateScope();

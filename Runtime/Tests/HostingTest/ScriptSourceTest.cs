@@ -18,23 +18,23 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 #if SILVERLIGHT
 using Microsoft.Silverlight.TestHostCritical;
 #endif
 
 namespace HostingTest {
-    using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+    using Assert = NUnit.Framework.Assert;
  
-    [TestClass()]
+    [TestFixture]
     public partial class ScriptSourceTest : HAPITestBase {
         
-        [TestMethod()]
+        [Test]
         public void ScriptEngine_CreateScriptSource1() {
         }
 
-        [TestMethod()]
+        [Test]
         public void ScriptSource_Kind() {
 
             ValidateKind(_codeSnippets[CodeType.Valid1],SourceCodeKind.Statements, SourceCodeKind.Statements);
@@ -47,7 +47,7 @@ namespace HostingTest {
             ValidateKindAsFile(_codeSnippets[CodeType.Valid1]);
         }
 
-        [TestMethod()]
+        [Test]
         [Ignore()]//Bug # 484856
         public void ScriptSource_GetCodeProperties() {
             ValidateGetCodeProperties( _codeSnippets[CodeType.Valid1], ScriptCodeParseResult.Complete);
@@ -61,7 +61,7 @@ namespace HostingTest {
 
         
         
-        [TestMethod()]
+        [Test]
         public void ScriptSource_Engine() {
             foreach (CodeSnippet cs in _codeSnippets.AllSnippets) {
                 if (cs.Code != null)
@@ -69,7 +69,7 @@ namespace HostingTest {
             }
         }
 
-        [TestMethod()]
+        [Test]
         public void ScriptSource_GetCode() {
             foreach (CodeSnippet cs in _codeSnippets.AllSnippets) {
                 if (cs.Code != null)
@@ -77,7 +77,7 @@ namespace HostingTest {
             }
         }
 
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void GetCodeLine_NegativeOutOfBoundsOfActualLineNumbers()
@@ -88,7 +88,7 @@ namespace HostingTest {
             sSrc.GetCodeLine(-1);
         }
         
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void GetCodeLine_GetZeroBasedCodeLine() {
@@ -98,7 +98,7 @@ namespace HostingTest {
             sSrc.GetCodeLine(0);
         }
 
-        [TestMethod()]
+        [Test]
         public void GetCodeLine_GetBeyondCodeLine()
         {
             ScriptSource sSrc = _testEng.CreateScriptSourceFromString(_codeSnippets[CodeType.OneLineAssignmentStatement],
@@ -108,7 +108,7 @@ namespace HostingTest {
             sSrc.GetCodeLine(beyondActualCode);
         }
 
-        [TestMethod()]
+        [Test]
         public void GetCodeLine_GetValidCodeLine()
         {
             ScriptSource sSrc = _testEng.CreateScriptSourceFromString(_codeSnippets[CodeType.OneLineAssignmentStatement],
@@ -122,7 +122,7 @@ namespace HostingTest {
         /// <summary>
         /// Verify that the \r is valid LinefeedTerminator in a string.
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void GetCodeLine_GetValidCodeLineWithLinefeedTerminatorR()
         {
             //Source example using \r
@@ -140,7 +140,7 @@ namespace HostingTest {
             Assert.AreEqual(codeLine, strExpectedTestLine);
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GetCodeLines_NegativeIndex1() {
             ValidateGetCodeLines(_codeSnippets[CodeType.SevenLinesOfAssignemtStatements], -1, 0, null);
@@ -148,27 +148,27 @@ namespace HostingTest {
             ValidateGetCodeLines(_codeSnippets[CodeType.SevenLinesOfAssignemtStatements], -2, 4, null);
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GetCodeLines_NegativeIndex2() {
             ValidateGetCodeLines(_codeSnippets[CodeType.SevenLinesOfAssignemtStatements], 2, -1, null);
         }
 
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void GetCodeLines_NegativeIndex3() {
             ValidateGetCodeLines(_codeSnippets[CodeType.SevenLinesOfAssignemtStatements], 0, 4, null);
         }
 
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void GetCodeLines_ZeroIndex4() {
             ValidateGetCodeLines(_codeSnippets[CodeType.SevenLinesOfAssignemtStatements], 4, 0, null);
         }
 
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void GetCodeLines_NegativeCountArg() {
@@ -176,27 +176,27 @@ namespace HostingTest {
         }
 
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GetCodeLines_ZeroIndex() {
             ValidateGetCodeLines(_codeSnippets[CodeType.SevenLinesOfAssignemtStatements], 0, 0, null);
         }
 
-        [TestMethod()]
+        [Test]
         public void GetCodeLines_Basic1() {
             string input = _codeSnippets[CodeType.SevenLinesOfAssignemtStatements];
             string[] expected = input.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
             ValidateGetCodeLines(input, 1, expected.Length, expected);
         }
 
-        [TestMethod()]
+        [Test]
         public void GetCodeLines_Basic2() {
             string input = _codeSnippets[CodeType.SevenLinesOfAssignemtStatements];
             string[] expected = input.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
             ValidateGetCodeLines(input, 1, 100, expected);
         }
 
-        [TestMethod()]
+        [Test]
         public void GetCodeLines_Basic3() {
             string input = _codeSnippets[CodeType.SevenLinesOfAssignemtStatements];
             string[] temp = input.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
@@ -204,7 +204,7 @@ namespace HostingTest {
             ValidateGetCodeLines(input, 3, 2, expected);
         }
 
-        [TestMethod()]
+        [Test]
         public void GetCodeLines_Basic4() {
             string input = _codeSnippets[CodeType.SevenLinesOfAssignemtStatements];
             string[] temp = input.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
@@ -212,7 +212,7 @@ namespace HostingTest {
             ValidateGetCodeLines(input, temp.Length, 1, new string[] { temp[6] });
         }
 
-        [TestMethod()]
+        [Test]
         public void GetCodeLines_GetCodeLinesInRangeFromFile()
         {
             string sourceInput = _codeSnippets[CodeType.SevenLinesOfAssignemtStatements];
@@ -231,7 +231,7 @@ namespace HostingTest {
             ValidateGetCodeLines(sourceInput, 1, lines, expected);
         }
 
-        [TestMethod()]
+        [Test]
         public void Path_CheckDefaultValueIsNull()
         {
             ScriptSource source = _testEng.CreateScriptSourceFromString(_codeSnippets[CodeType.OneLineAssignmentStatement],
@@ -239,7 +239,7 @@ namespace HostingTest {
             Assert.IsNull(source.Path);
         }
 
-        [TestMethod()]
+        [Test]
         [Ignore()]//Bug 464777 - the test actually succeeds, but we want to check for the path->scope mapping 
         //and that is blocked by this bug
         public void Path_ExplicitSetDuringConstruction()
@@ -258,7 +258,7 @@ namespace HostingTest {
             Assert.AreEqual(scope, newScope);
         }
 
-        [TestMethod()]
+        [Test]
         public void Path_ExplicitSetDuringConstructionFromFile()
         {
             string srcPath = TestHelpers.CreateTempSourceFile(_codeSnippets[CodeType.ValidMultiLineMixedType], ".py");
@@ -266,7 +266,7 @@ namespace HostingTest {
             Assert.AreEqual(source.Path, srcPath, "'The Path is null if not set explicitly on construction.'");
         }
 
-        [TestMethod()]
+        [Test]
         public void Path_NotExplicitlySet1()
         {
             ScriptSource source = _testEng.CreateScriptSourceFromString( _codeSnippets[CodeType.ValidStatement1],
@@ -274,7 +274,7 @@ namespace HostingTest {
             Assert.IsNull(source.Path);
         }
 
-        [TestMethod()]
+        [Test]
         public void Path_NotExplicitlySet2()
         {
             ScriptSource source = _testEng.CreateScriptSourceFromString(_codeSnippets[CodeType.ValidExpressionWithMethodCalls],
@@ -282,14 +282,14 @@ namespace HostingTest {
             Assert.IsNull(source.Path);
         }
 
-        [TestMethod()]
+        [Test]
         public void Path_NotExplicitlySet3()
         {
             ScriptSource source = _testEng.CreateScriptSourceFromString(_codeSnippets[CodeType.ValidExpressionWithMethodCalls]);
             Assert.IsNull(source.Path);
         }
 
-        [TestMethod()]
+        [Test]
         public void Path_NotExplicitlySet4()
         {
             ScriptSource source = _testEng.CreateScriptSourceFromString(_codeSnippets[CodeType.SimpleExpressionOnePlusOne],
@@ -300,7 +300,7 @@ namespace HostingTest {
         /// <summary>
         /// 
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Compile_Invoke()
         {
             string singleExp = _codeSnippets[CodeType.SimpleExpressionOnePlusOne];
@@ -313,7 +313,7 @@ namespace HostingTest {
         }
 
 
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Compile_ArgNullCompilerOptions()
@@ -323,7 +323,7 @@ namespace HostingTest {
             CompiledCode ccode = source.Compile((CompilerOptions)null);
         }
 
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Compile_ArgNullErrorSink()
@@ -339,7 +339,7 @@ namespace HostingTest {
         }
 
         [Ignore]//Bug # 450336
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Compile_ArgNullOpAndErrorSink()
@@ -353,7 +353,7 @@ namespace HostingTest {
             Assert.Inconclusive("ErrorSink is not imeplementedundefined can not run this test");
         }
 
-        [TestMethod()]
+        [Test]
         [Ignore] //blocked by bug #450125
         public void Compile_InvokeWithOptions()
         {
@@ -376,7 +376,7 @@ namespace HostingTest {
         /// Verification:
         /// Same correct value is returned 
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Execute_MultipleInvocation()
         {
             string singleExp = _codeSnippets[CodeType.SimpleExpressionOnePlusOne];
@@ -401,7 +401,7 @@ namespace HostingTest {
         /// Verification:
         ///   Different objects and not references to the same object
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Execute_MultipleInvocationValidDifferentObject()
         {
             //setup code in python such that it returns a reference type
@@ -413,7 +413,7 @@ namespace HostingTest {
             // TODO : Finish this test
         }
 
-        [TestMethod()]
+        [Test]
         public void Execute_CallingPythonMethod()
         {
             ScriptScope scope = _testEng.CreateScope();
@@ -440,7 +440,7 @@ namespace HostingTest {
         /// This example is more of a ScriptScope example
         /// </summary>
         [Ignore]// Bug #466321
-        [TestMethod()]
+        [Test]
         public void Execute_SingleInvocationMultipleCallsOfLoadedFn()
         {
             // Setup tests simple result of rot13 on string and it's result
@@ -485,7 +485,7 @@ namespace HostingTest {
         ///   
         /// </summary>
         //with a different python code (or removed altogether)
-        [TestMethod()]
+        [Test]
         public void Execute_MultipleInvocationValidDefinedMethodIsCalled()
         {
             // Call validation method multiple times.
@@ -501,7 +501,7 @@ namespace HostingTest {
         /// 
         /// Case 1 : calling a function defined in C#
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Execute_CallingPythonObjectMethodWrappedInAFun()
         {
             ScriptSource source = _testEng.CreateScriptSourceFromString(
@@ -523,7 +523,7 @@ namespace HostingTest {
         /// Case 2 : calling an object that has been created of type FooClass and
         ///          calling it's member function. 
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Execute_CallingInstanceMethodDefinedInAPythonObject() 
         {
             // Setup tests
@@ -552,7 +552,7 @@ namespace HostingTest {
         /// 
         /// Result : Successfully, calling the FooClass member from C#.
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Execute_CallingPythonClassMemberMethod()
         {
             // Setup tests
@@ -578,7 +578,7 @@ namespace HostingTest {
         /// Test Case:	
         /// Verification:
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Execute_AccessValidVarInScope()
         {
             // Setup tests data
@@ -595,7 +595,7 @@ namespace HostingTest {
         /// Verification:
         ///     Script executes against the preset value of the var 
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Execute_UseVarDefinedInScope()
         {
             ScriptScope scope = _runTime.CreateScope();
@@ -610,7 +610,7 @@ namespace HostingTest {
         /// Verification:
         ///     Script executes against the preset value of the var 
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Execute_ResultAvailableInScope()
         {
             // Setup tests data
@@ -638,7 +638,7 @@ test1 = abs(test1)";
         /// Test Case:	Null ScriptScope arg in Execute(...) should throw exception
         /// Verification: Verify Exception is thrown
         /// </summary>
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Execute_NullScriptScope()
@@ -650,7 +650,7 @@ test1 = abs(test1)";
         }
 
         
-        [TestMethod()]
+        [Test]
         public void ExecuteAndGetAsHandle_CheckExpectedReturnValue()
         {
             string inputSrc  = @"pow(64, 0.5)";
@@ -661,14 +661,14 @@ test1 = abs(test1)";
             Assert.AreEqual(8.0, source.Execute<double>(scope));
         }
 
-        [TestMethod]
+        [Test]
         public void ExecuteProgram_Basic1()
         {
             string testInput = _codeSnippets[CodeType.UpdateVarWithAbsValue];
             ValidateExecuteProgram(testInput, 0, SourceCodeKind.Statements);
         }
 
-        [TestMethod]
+        [Test]
         public void GetReader_MoveIntoStreamCreateNewReaderAndCheckPosition()
         {
 
@@ -704,7 +704,7 @@ test1 = abs(test1)";
         ///(ex ): Read 20% using the first reader, 40% using the second reader
         ///Expected Result: The readers are unaffected and don’t interfere in the other’s instance
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetReader_TwoIndependentReadersAccessingSameData()
         {
             string testInput = _codeSnippets[CodeType.SevenLinesOfAssignemtStatements];
@@ -740,7 +740,7 @@ test1 = abs(test1)";
             Assert.AreEqual(testInput, strBuffer.ToString());
         }
 
-        [TestMethod]
+        [Test]
         public void GetReader_CreateMultipleDifferentInstances(){
             string testInput = _codeSnippets[CodeType.SevenLinesOfAssignemtStatements];
             ScriptSource source = _testEng.CreateScriptSourceFromString(testInput,
@@ -757,7 +757,7 @@ test1 = abs(test1)";
             }
         }
 
-        [TestMethod]
+        [Test]
         [Ignore]//Not implemented
         public void GetReader_ThreadSafetyTest()
         {

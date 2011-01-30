@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 
 namespace HostingTest    {
@@ -12,7 +12,7 @@ namespace HostingTest    {
     /// to contain all ScriptIOTest Unit Tests
     ///
     ///</summary>
-    [TestClass()]
+    [TestFixture]
     public partial class ScriptIOTest : HAPITestBase
     {
 
@@ -25,14 +25,14 @@ namespace HostingTest    {
         }
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetOutput_FirstParameterIsNull() {
             _runTime.IO.SetOutput((Stream)null, Encoding.ASCII);
         }
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetOutput_SecondParameterIsNull() {
             string file = TestHelpers.CreateTempFile("Test!");
@@ -42,7 +42,7 @@ namespace HostingTest    {
 
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetOutput_TextWriterFirstParameterIsNull() {
 
@@ -53,7 +53,7 @@ namespace HostingTest    {
         }
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetOutput_TextWriterSecondParameterIsNull() {
             
@@ -67,7 +67,7 @@ namespace HostingTest    {
         /// Result  : The output stream receives the proper values in proper format
         /// </summary>
         [Ignore]// bug #466678 - this issue doesn't happen in ruby
-        [TestMethod]
+        [Test]
         public void SetOutput_TextWriterValidateOutputCloseStreamAndVerifyEngineStability() {
 
             string testFile = Path.GetTempFileName();
@@ -103,7 +103,7 @@ namespace HostingTest    {
         /// Test    : ‘stream’ is set explicitly; output is captured in ‘stream’ then ‘stream’ is closed when still in use by the engine
         /// Result  : No output appears. No side effect – app runs normally without exceptions
         /// </summary>
-        [TestMethod]
+        [Test]
         public void SetOutput_TextWriterValidateOutput() {
             string expectedOutput = "hello";
             string file = TestHelpers.CreateTempFile("Test!");
@@ -126,7 +126,7 @@ namespace HostingTest    {
         /// Tests    : Set stream to a valid object; set encoding to a known value
         /// Expected : The output stream receives the proper values in proper format 
         /// </summary>
-        [TestMethod]
+        [Test]
         public void SetOutput_ValidateOutput() {
             string testFile = Path.GetTempFileName();
            
@@ -149,7 +149,7 @@ namespace HostingTest    {
         ///            is closed when still in use by the engine	
         /// Expected : ObjectDisposed exception is thrown since the stream was closed
         /// </summary>
-        [TestMethod]
+        [Test]
         [ExpectedException( typeof(ObjectDisposedException))]
         public void SetOutput_ValidateOutputCloseStreamAndVerifyEngineStability() {
 
@@ -169,14 +169,14 @@ namespace HostingTest    {
         }
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetInput_FirstParameterIsNull() {
             _runTime.IO.SetInput((Stream)null, Encoding.ASCII);
         }
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetInput_SecondParameterIsNull() {
             string file = TestHelpers.CreateTempFile("Test!");
@@ -186,7 +186,7 @@ namespace HostingTest    {
 
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetInput_TextReaderFirstParameterIsNull() {
             string file = TestHelpers.CreateTempFile("Test!");
@@ -196,7 +196,7 @@ namespace HostingTest    {
 
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetInput_TextReaderSecondParameterIsNull() {
             string file = TestHelpers.CreateTempFile("Test!");
@@ -209,7 +209,7 @@ namespace HostingTest    {
 
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetErrorOutput_FirstParameterIsNull() {
             _runTime.IO.SetErrorOutput((Stream)null, Encoding.ASCII);
@@ -217,7 +217,7 @@ namespace HostingTest    {
         }
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetErrorOutput_SecondParameterIsNull() {
             string file = TestHelpers.CreateTempFile("Test!");
@@ -228,7 +228,7 @@ namespace HostingTest    {
         }
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetErrorOutput_TextWriterFirstParameterIsNull() {
             string file = TestHelpers.CreateTempFile("Test!");
@@ -240,7 +240,7 @@ namespace HostingTest    {
 
 
         [Negative()]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetErrorOutput_TextWriterSecondParameterIsNull() {
             string file = TestHelpers.CreateTempFile("Test!");
@@ -254,7 +254,7 @@ namespace HostingTest    {
         /// Results  : Errors, input and output is redirected to console overriding any pervious setting
         /// </summary>
         [Ignore]//This is easy to do as a manual test. Consider that option too
-        [TestMethod]
+        [Test]
         public void RedirectToConsole_Invoke() {
             _runTime.IO.RedirectToConsole();
 

@@ -19,15 +19,15 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace HostingTest    {
-    using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+    using Assert = NUnit.Framework.Assert;
 
-    [TestClass()]
+    [TestFixture]
     public partial class ObjectOperationsTest : HAPITestBase {
 
-        [TestMethod()]
+        [Test]
         //[Ignore] // Bug # 479046
         public void Engine_GetAccess() {
             //  Setup....
@@ -39,13 +39,13 @@ namespace HostingTest    {
         ///  Test     : Null object
         ///  Expected : ArgumentNullException
         /// </summary>
-        [TestMethod()]
+        [Test]
         [Negative]
         public void IsCallable_NullObjectArgument() {
             _testEng.Operations.IsCallable((object)null);
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void IsCallable_NullObjectHandleArgument() {
@@ -59,7 +59,7 @@ namespace HostingTest    {
         /// 
         /// Notes    : Look for example in existing code.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void IsCallable_ObjOfDelegateInstance() {
 
             // Setup tests
@@ -95,7 +95,7 @@ namespace HostingTest    {
         /// Test     : Null object	
         /// Expected : ArgumentNullException
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentTypeException))]
         public void Call_NullObject() {
@@ -107,7 +107,7 @@ namespace HostingTest    {
         /// Test     : Null object[]	
         /// Expected : ArgumentNullException
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(NullReferenceException))]
         public void Call_NullObjectParams() {
@@ -118,14 +118,14 @@ namespace HostingTest    {
         }
 
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(MissingMemberException))]
         public void GetMember_NullObject() {
             _testEng.Operations.GetMember((object)null, "foo");
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GetMember_NullName() {
@@ -136,14 +136,14 @@ namespace HostingTest    {
             _testEng.Operations.GetMember(FooClass, (string)null);
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(MissingMemberException))]
         public void GenericGetMember_NullObject() {
             _testEng.Operations.GetMember<string>((object)null, "foo");
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GenericGetMember_NullName() {
@@ -153,7 +153,7 @@ namespace HostingTest    {
             _testEng.Operations.GetMember<string>(fooClasObj, (string)null);
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         public void TryGetMember_NullObject() {
             // Spec say this should throw NullArgumentException for null object or null name
@@ -161,7 +161,7 @@ namespace HostingTest    {
             Assert.IsFalse(_testEng.Operations.TryGetMember((object)null, "foo", out outObj));
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void TryGetMember_NullName() {
@@ -178,7 +178,7 @@ namespace HostingTest    {
         ///  Expected : Raise the correct exception
         /// </summary>
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(TypeErrorException))]
         public void DoOperation_NoOperatorForLanguage() {
             object expectedResult = 2;
@@ -195,7 +195,7 @@ namespace HostingTest    {
         ///  Test     : GetCallSignatures with null object
         ///  Expected : Returns empty string array
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetCallSignature_NullArg() {
             int expectedResult = 0;
             string[] result = (string[])_testEng.Operations.GetCallSignatures((object)null);
@@ -205,13 +205,13 @@ namespace HostingTest    {
         }
 
       
-        [TestMethod]
+        [Test]
         [Negative]
         public void GetMemberNames_NullObject() {
             _testEng.Operations.GetMemberNames((object)null);
         }
 
-        [TestMethod]
+        [Test]
         public void GetMemberNames_MemberObjects() {
             List<string> expectedResult = new List<string>() { "concat", "add", "__doc__", "__module__", "__init__", "f", "someInstanceAttribute" }; 
             String varName = "FooClass";
@@ -230,7 +230,7 @@ namespace HostingTest    {
             });
         }
 
-        [TestMethod]
+        [Test]
         public void GetCallSignature_PassValidClassObject() {
             // depending on how the object stores objects 
             // internally python stores 4 members maybe?
@@ -246,7 +246,7 @@ namespace HostingTest    {
         }
 
         
-        [TestMethod]
+        [Test]
         public void GetCallSignature_PassValidMethodObject() {
             string varName = "concat";
             string[] expectedResult = new string[] { "concat(a, b, c)" };
@@ -263,7 +263,7 @@ namespace HostingTest    {
         /// Test      :
         /// Expected  :
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ConvertTo_IntegerToDouble() {
             // Setup input values
             string lookupObjectName = "x";
@@ -278,7 +278,7 @@ namespace HostingTest    {
         }
 
 
-        [TestMethod]
+        [Test]
         [Negative]// Bug # 478206
         [ExpectedException(typeof(TypeErrorException))]
         public void GenericConvertTo_NullObject(){
@@ -286,14 +286,14 @@ namespace HostingTest    {
         }
 
 
-        [TestMethod]
+        [Test]
         [Negative]// Bug # 478206
         [ExpectedException(typeof(TypeErrorException))]
         public void ConvertTo_NullObject() {
             object newValue = _testEng.Operations.ConvertTo((object)null, typeof(int));
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ConvertTo_NullType() {
@@ -312,7 +312,7 @@ namespace HostingTest    {
        /// Test      :
        /// Expected  :
        /// </summary>
-        [TestMethod]
+        [Test]
         public void GenericConvertTo_IntegerToDouble() {
             string lookupObjectName = "x";
             double expectedValue = 3;
@@ -327,7 +327,7 @@ namespace HostingTest    {
         /// Test     : Same cases as ConvertTo<T>
         /// Expected : Returns true on successful conversion, and on failure returns false and result of T.default
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GenericTryConvertTo_IntegerToDouble(){
             
             string lookupObjectName = "x";
@@ -338,14 +338,14 @@ namespace HostingTest    {
             ValidateTryConvertTo<double>(objectInScope, expectedValue);
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(MissingMemberException))]
         public void SetMember_NullObjectArg(){
             (_testEng.CreateOperations()).SetMember((object)null, "foo", 0);
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void SetMember_NullNameArg() {
@@ -359,7 +359,7 @@ namespace HostingTest    {
         /// 
         /// Note      : This code fails for languages that do not have read/write objects!
         /// </summary>
-        [TestMethod]
+        [Test]
         public void SetMember_BasicMemberTest() {
 
             // BUG - File bug/Investigate either I don't understand or this is a bug.
@@ -393,7 +393,7 @@ namespace HostingTest    {
         /// Test     : Lookup the a member of an object 
         /// Expected : validate that ContainsMember returns true for a known member
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ContainsMember_BasicLookup() {
 
             string lookupClassVarName = "FooClass";
@@ -412,7 +412,7 @@ namespace HostingTest    {
         /// Expected : validate that ContainsMember returns false
         /// </summary>
         [Negative]
-        [TestMethod]
+        [Test]
         public void ContainsMember_LookForMemberThatDoesNotExist() {
 
             string lookupClassVarName = "FooClass";
@@ -431,7 +431,7 @@ namespace HostingTest    {
         /// Expected : ArgumentNullException
         /// </summary>
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(MissingMemberException))]
         public void RemoveMember_NullObjectArg(){
             _testEng.Operations.RemoveMember((object)null, "x");
@@ -442,7 +442,7 @@ namespace HostingTest    {
         /// Expected : ArgumentNullException
         /// </summary>
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void RemoveMember_NullStringNameArg() {
             // BUG -  investigate/file bug
@@ -467,7 +467,7 @@ namespace HostingTest    {
         ///             N.inc(4) ==> Error
         ///            
         /// </summary>
-        [TestMethod]
+        [Test]
         public void RemoveMember_BaiscObjectRemovalFn() {
             string lookupClassVarName = "FooClass";
             string lookupMemberName = "someInstanceAttribute";
@@ -491,7 +491,7 @@ namespace HostingTest    {
         /// Expected : object is remove
         /// Note     : this might not make sense for vars but only class members.
         /// </summary>
-        [TestMethod]
+        [Test]
         [Ignore] // Bug # 478257 - This might not be valid though IP code like "x=4\ndel x\n" works in IP
         public void RemoveMember_BaiscObjectRemovalVar() {
             // BUG -  investigate/file bug
@@ -508,7 +508,7 @@ namespace HostingTest    {
         /// Test     : GetMembers of imported module from script
         /// Expected : check subset of member names exist
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetMemberNames_LocalFromImportedModule() {
 
             // Setup tests
@@ -543,7 +543,7 @@ namespace HostingTest    {
         /// Test     : Pass null value to method
         /// Expected : empty string return
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(NullReferenceException))]
         public void GetDocumentation_NullParameter() {
@@ -551,7 +551,7 @@ namespace HostingTest    {
             Assert.AreEqual(0, doc.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void GetDocumentation_AssemblyModule() {
             ///Setup
             string varName = "date";
@@ -566,7 +566,7 @@ namespace HostingTest    {
             Assert.IsTrue( doc.Contains(expectedDocs));
         }
       
-        [TestMethod]
+        [Test]
         public void GetDocumentation_FromScriptMethod() {
            
             string varName = "doc";
@@ -585,7 +585,7 @@ namespace HostingTest    {
         /// 
         /// Note      : Could be a problem if the .Net version changes and this specific doc string is changed
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetDocumentation_FromDotNetObject() {
             string varName = "DotNetDate";
             ScriptScope scope = _testEng.CreateScope();
@@ -602,7 +602,7 @@ namespace HostingTest    {
             Assert.IsTrue(doc.Contains(expectedDocs));
         }
 
-        [TestMethod]
+        [Test]
         public void AddMethod() {
             //System.Dynamic.Runtime.Operators.And
             object left = 4;
@@ -612,7 +612,7 @@ namespace HostingTest    {
             Assert.AreEqual(expectedResult, result );
         }
 
-        [TestMethod]
+        [Test]
         public void SubMethod() {
             object left = 4;
             object right = 3;
@@ -626,7 +626,7 @@ namespace HostingTest    {
         /// Test     : Test env change using engine.CreateOperations with module change in scope 
         /// Expected : New env change should give correct __future__ division type.
         /// </summary>
-        [TestMethod]
+        [Test]
         [Ignore] // BUG 476154
         public void TestFromFuture_UsingOperations() {
 
@@ -651,7 +651,7 @@ namespace HostingTest    {
         }
 
         // Bug # 466027 - regression test
-        [TestMethod]
+        [Test]
         public void FormatException_Test()
         {
             ScriptEngine engine = _runtime.GetEngine("py");
@@ -663,7 +663,7 @@ namespace HostingTest    {
 
         }
 
-        [TestMethod]
+        [Test]
         public void Create_Op2()
         {
             ScriptEngine engine = _runtime.GetEngine("py");
@@ -688,7 +688,7 @@ namespace HostingTest    {
 
         }
 
-        [TestMethod]// BUG # 479046 - regression test
+        [Test]// BUG # 479046 - regression test
         public void Create_Op1(){
 
             ScriptEngine engine = _runtime.GetEngine("py");

@@ -8,15 +8,15 @@ using IronPython.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System.Diagnostics;
 
 namespace HostingTest {
 
-    [TestClass()]
+    [TestFixture]
     public partial class ScriptRuntimeSetupTest {
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void Cons_NoArg1() {
             var srs = new ScriptRuntimeSetup();
@@ -25,7 +25,7 @@ namespace HostingTest {
             var sr = new ScriptRuntime(srs);
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void Cons_NoArg2() {
             var srs = new ScriptRuntimeSetup();
@@ -34,7 +34,7 @@ namespace HostingTest {
             Assert.Fail("shouldn't be able to create a runtime without any langsetups");
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_All4Langs() {
             var srs = ScriptRuntimeSetup.ReadConfiguration(TestHelpers.StandardConfigFile);
             Assert.AreEqual(2, srs.LanguageSetups.Count);
@@ -49,7 +49,7 @@ namespace HostingTest {
             }
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_1Lang() {
             string configFile = GetTempConfigFile(new[]{LangSetup.Python});
 
@@ -63,7 +63,7 @@ namespace HostingTest {
             Assert.IsTrue(pythonEngine.IsValidPythonEngine());
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_Multiple() {
             string configFile = GetTempConfigFile(new[] { LangSetup.Python });
             var srs = ScriptRuntimeSetup.ReadConfiguration(configFile);
@@ -85,7 +85,7 @@ namespace HostingTest {
             Assert.AreEqual(1, sr.Setup.LanguageSetups.Count);
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_DuplicateLang() {
             string configFile = GetTempConfigFile(new[] { LangSetup.Python, LangSetup.Python });
             var srs = ScriptRuntimeSetup.ReadConfiguration(configFile);
@@ -95,7 +95,7 @@ namespace HostingTest {
             Assert.AreEqual(1, sr.Setup.LanguageSetups.Count);
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_Multi_SameTypeDifferentName() {
             LangSetup py1 = LangSetup.Python;
             LangSetup py2 = new LangSetup( new[]{"NewPython"}, py1.Extensions, py1.DisplayName,
@@ -110,7 +110,7 @@ namespace HostingTest {
             Assert.AreEqual("NewPython", sr.Setup.LanguageSetups[0].Names[0]);
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void ReadConfiguration_Multi_SameNameDifferentType() {
             LangSetup py1 = LangSetup.Python;
@@ -125,7 +125,7 @@ namespace HostingTest {
             Assert.Fail("some exception should have been thrown");
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void ReadConfiguration_DuplicateExtensions() {
             LangSetup py1 = LangSetup.Python;
@@ -141,7 +141,7 @@ namespace HostingTest {
             Assert.Fail("some exception should have been thrown");
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof( ArgumentException))]
         public void ReadConfiguration_DuplicateNames() {
             LangSetup py1 = LangSetup.Python;
@@ -156,7 +156,7 @@ namespace HostingTest {
             Assert.Fail("some exception should have been thrown");
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void ReadConfiguration_MissingAssembly() {
             LangSetup lang = new LangSetup(new[]{"SomeName"}, new[]{".sn"}, "Somename",
@@ -171,7 +171,7 @@ namespace HostingTest {
             Assert.Fail("some exception should have been thrown");
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(InvalidOperationException))]
         public void ReadConfiguration_MisMatchedTypeAssembly() {
             LangSetup py1 = LangSetup.Python;
@@ -186,7 +186,7 @@ namespace HostingTest {
             Assert.Fail("some exception should have been thrown");
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(InvalidOperationException))]
         public void ReadConfiguration_IncorrectType() {
             LangSetup py1 = LangSetup.Python;
@@ -202,7 +202,7 @@ namespace HostingTest {
             Assert.Fail("some exception should have been thrown");
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_EmptyExtensions() {
             LangSetup py1 = LangSetup.Python;
             LangSetup py2 = new LangSetup(py1.Names, new[]{"",""}, py1.DisplayName,
@@ -215,7 +215,7 @@ namespace HostingTest {
             Assert.AreEqual(5, runtime.GetEngine("py").Execute("2+3"));
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_DuplicateEmptyExtensions() {
 
             LangSetup rb1 = new LangSetup(LangSetup.Ruby.Names, new[] { "", "" }, LangSetup.Ruby.DisplayName,
@@ -234,7 +234,7 @@ namespace HostingTest {
             Assert.AreEqual(5, eng.Execute("2+3"));
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void ReadConfiguration_EmptyConfigEntries() {
             string configFile = GetTempConfigFile(new[]{new LangSetup()});
@@ -244,7 +244,7 @@ namespace HostingTest {
             Assert.Fail("some exception should have been thrown");
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void ReadConfiguration_EmptySetup() {
             var srs = new ScriptRuntimeSetup();
@@ -254,7 +254,7 @@ namespace HostingTest {
             Assert.Fail("some exception should have been thrown");
         }
 
-        [TestMethod()]
+        [Test]
         public void Configuration_MutateAndCheck() {
             string configFile = GetTempConfigFile(new[] { LangSetup.Python });
 
@@ -265,7 +265,7 @@ namespace HostingTest {
             Assert.IsNotNull(sr.Setup);
         }
 
-        [TestMethod()]
+        [Test]
         public void Configuration_MutateAndCheck2() {
             string configFile = GetTempConfigFile(new[] { LangSetup.Python });
 
@@ -279,7 +279,7 @@ namespace HostingTest {
             TestHelpers.AreEqualArrays(LangSetup.Python.Names, config1.LanguageSetups[0].Names);
         }
 
-        [TestMethod()]
+        [Test]
         public void Configuration_MutateAndCheck3() {
             string configFile = GetTempConfigFile(new[] { LangSetup.Python });
 
@@ -292,7 +292,7 @@ namespace HostingTest {
             Assert.IsNotNull(eng.Setup);
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_NullDisplayName() {
             LangSetup py2 = new LangSetup(LangSetup.Python.Names, LangSetup.Python.Extensions, null,
                                 LangSetup.Python.TypeName, LangSetup.Python.AssemblyString);
@@ -304,7 +304,7 @@ namespace HostingTest {
             Assert.AreEqual("", eng.Setup.DisplayName);
         }
 
-        [TestMethod()]
+        [Test]
         public void ReadConfiguration_EmptyDisplayName() {
             LangSetup py2 = new LangSetup(LangSetup.Python.Names, LangSetup.Python.Extensions, "",
                                 LangSetup.Python.TypeName, LangSetup.Python.AssemblyString);
@@ -316,7 +316,7 @@ namespace HostingTest {
             Assert.AreEqual("", eng.Setup.DisplayName);
         }
 
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void ReadConfiguration_EmptyTypeName() {
             LangSetup py2 = new LangSetup(LangSetup.Python.Names, LangSetup.Python.Extensions, LangSetup.Python.DisplayName,

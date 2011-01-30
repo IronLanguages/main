@@ -21,7 +21,7 @@ using System.IO;
 using Microsoft.Silverlight.TestHostCritical;
 #endif
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 
 namespace HostingTest

@@ -8,9 +8,9 @@ using IronPython.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System.Dynamic;
-
+using NUnit.Framework;
 
 
 namespace HostingTest {
@@ -18,11 +18,11 @@ namespace HostingTest {
     ///This is a test class for ScriptEngineTest and is intended
     ///to contain all ScriptEngineTest Unit Tests
     ///</summary>
-    [TestClass()]
+    [TestFixture]
     public partial class ScriptEngineTest {
 
 
-        [TestMethod()]
+        [Test]
         public void Runtime_Test() {
             //@TODO - Custom language
             Assert.AreEqual(_runTime.GetEngine("python").Runtime, _runTime);
@@ -30,14 +30,14 @@ namespace HostingTest {
         }
 
 
-        [TestMethod()]
+        [Test]
         public void LanguageDisplayName_Test() {
-            Assert.AreEqual(_runTime.GetEngine("python").Setup.DisplayName, "IronPython 2.7 Beta 1");
+            Assert.AreEqual(_runTime.GetEngine("python").Setup.DisplayName, "IronPython 2.7 Beta 2");
             Assert.AreEqual(_runTime.GetEngine("ruby").Setup.DisplayName, "IronRuby");
         }
 
 
-        [TestMethod()]
+        [Test]
         public void GetRegisteredIdentifiers_Test() {
             var result = _runTime.GetEngine("python").Setup.Names;
             TestHelpers.AreEqualArrays(new string[] { "IronPython", "Python", "py" }, result);
@@ -45,7 +45,7 @@ namespace HostingTest {
             TestHelpers.AreEqualArrays(new string[] { "IronRuby", "Ruby", "rb" }, result);
         }
 
-        [TestMethod()]
+        [Test]
         public void GetRegisteredExtensions_Test() {
             var result = _runTime.GetEngine("python").Setup.FileExtensions;
             TestHelpers.AreEqualArrays(new string[] { ".py" }, result);
@@ -54,7 +54,7 @@ namespace HostingTest {
             TestHelpers.AreEqualArrays(new string[] { ".rb" }, result);
         }
         
-        [TestMethod()]
+        [Test]
         public void LanguageVersion_Test() {
             //LanguageVersion
             Version ver = _runTime.GetEngine("python").LanguageVersion;
@@ -63,7 +63,7 @@ namespace HostingTest {
             //Assert.AreEqual(ver, Ruby.Runtime.RubyContext.IronRubyVersion);
         }
 
-        [TestMethod()]
+        [Test]
         public void CreateScriptSource_DifferentEncoding_Test() {
 
             List<ScriptSource> sources = CreateSourceListWithDifferentEncodings(_codeSnippets[CodeType.Valid1]);
@@ -90,14 +90,14 @@ namespace HostingTest {
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GetScope_Null_InvalidCode_Test() {
             _testEng.GetScope(null);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullCodeMemberMethod_Test() {
             _testEng.CreateScriptSource((CodeMemberMethod)null);
@@ -105,7 +105,7 @@ namespace HostingTest {
 
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(SyntaxErrorException))]
         public void CreateScriptSource_InvalidCode_Test() {
             //Ensure that creating a ScriptSource doesn't trigger any parsing or execution of code
@@ -124,17 +124,17 @@ namespace HostingTest {
             DeleteTempFiles();
         }
 
-        [TestMethod()]
+        [Test]
         public void CreateScriptSourceFromFile_InvalidName_Test() {
             Assert.IsNotNull(_testEng.CreateScriptSourceFromFile("invalid?file|<name>"));
         }
 
-        [TestMethod()]
+        [Test]
         public void CreateScriptSourceFromFile_FileIsADir_Test() {
             Assert.IsNotNull(_testEng.CreateScriptSourceFromFile(Path.GetTempPath()));
         }
 
-        [TestMethod()]
+        [Test]
         public void CreateScriptSourceFromFile_NonExistentFile_Test() {
             string tempFile = Path.GetTempFileName();
             File.Delete(tempFile);
@@ -145,35 +145,35 @@ namespace HostingTest {
 
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromString_NullString_Test() {
             _testEng.CreateScriptSourceFromString(null);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromString_NullString2_Test() {
             _testEng.CreateScriptSourceFromString(null, SourceCodeKind.Statements);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromString_NullString3_Test() {
             _testEng.CreateScriptSourceFromString(null, "id");
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromString_NullString4_Test() {
             _testEng.CreateScriptSourceFromString(null, "id", SourceCodeKind.Statements);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullString_Test() {
             _testEng.CreateScriptSource(null);
@@ -181,14 +181,14 @@ namespace HostingTest {
 
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullCodeObject_Test() {
             _testEng.CreateScriptSource((CodeObject)null, SourceCodeKind.Statements);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullCodeObject2_Test() {
             _testEng.CreateScriptSource((CodeObject)null, "some_path.py");
@@ -196,7 +196,7 @@ namespace HostingTest {
 
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullStreamContentProvider_Test() {
             _testEng.CreateScriptSource((StreamContentProvider)null, "some_path.py");
@@ -205,28 +205,28 @@ namespace HostingTest {
 
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullCodeObject3_Test() {
             _testEng.CreateScriptSource((CodeObject)null, "some_path.py", SourceCodeKind.Statements);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullStreamContentProvider2_Test() {
             _testEng.CreateScriptSource((StreamContentProvider)null, "some_path.py", Encoding.Unicode);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullTextContentProvider_Test() {
             _testEng.CreateScriptSource((TextContentProvider)null, "some_path.py", SourceCodeKind.Statements);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource_NullStreamContentProvider3_Test() {
             _testEng.CreateScriptSource((StreamContentProvider)null, "some_path.py", 
@@ -235,105 +235,105 @@ namespace HostingTest {
 
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromFile_NullArgs_Test() {
             _testEng.CreateScriptSourceFromFile(null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromFile_NullArgsUnicode_Test() {
             _testEng.CreateScriptSourceFromFile(null, Encoding.Unicode);
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromFile_InvalidFile_Test() {
             _testEng.CreateScriptSourceFromFile("some_path.py", null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromFile_NullArgsUnicode_Test2() {
             _testEng.CreateScriptSourceFromFile(null, Encoding.Unicode, SourceCodeKind.File);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSourceFromFile_InvalidFileUnicode_Test() {
             _testEng.CreateScriptSourceFromFile("some_path.py", null, SourceCodeKind.File);
         }
         
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Execute_WithNullString() {
             _testEng.Execute(null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Execute_WithNullScope() {
             _testEng.Execute("", null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ExecuteOfT_WithNullString() {
             _testEng.Execute<object>(null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ExecuteOfT_WithNullScope() {
             _testEng.Execute<object>("", null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ExecuteAndWrap_WithNullString() {
             _testEng.ExecuteAndWrap(null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ExecuteAndWrap_WithNullScope() {
             _testEng.ExecuteAndWrap("", null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ExecuteFile_WithNullNullPath() {
             _testEng.ExecuteFile(null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ExecuteFile_WithNullScope() {
             _testEng.ExecuteFile("", null);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(SyntaxErrorException))]
         public void Execute_WithInvalidCode() {
             _testEng.Execute(_codeSnippets[CodeType.InCompleteExpression2]);
         }
 
         [Negative]
-        [TestMethod]
+        [Test]
         public void Execute_WithScope() {
             ScriptScope scope = _testEng.CreateScope();
             scope.SetVariable("x", 1);
@@ -342,7 +342,7 @@ namespace HostingTest {
             Assert.AreEqual(result, 2);
         }
 
-        [TestMethod]
+        [Test]
         public void ExecuteFile_WithoutScope() {
             // the extension should be ignored:
             String tmpFile = TestHelpers.CreateTempSourceFile("x = 2 + 2", ".foo");
@@ -355,7 +355,7 @@ namespace HostingTest {
             Assert.AreEqual(_testEng, result.Engine);
         }
 
-        [TestMethod]
+        [Test]
         public void ExecuteFile_WithScope() {
             // the extension should be ignored:
             String tmpFile = TestHelpers.CreateTempSourceFile("x = y + 1", ".bar");
@@ -375,7 +375,7 @@ namespace HostingTest {
         /// <summary>
         /// Covers ScriptEngine.CompileExpression for various basic expressions
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Compile_Expression_Basic1_Test() {
             ScriptScope scope = _runTime.CreateScope();
 
@@ -385,7 +385,7 @@ namespace HostingTest {
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(SyntaxErrorException))]
         public void Compile_Expression_SyntaxError_Test() {
             ScriptScope scope = _runTime.CreateScope();
@@ -396,7 +396,7 @@ namespace HostingTest {
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(UnboundNameException))]
         public void Compile_Expression_UnboundVar_Test() {
             ScriptScope scope = _runTime.CreateScope();
@@ -407,7 +407,7 @@ namespace HostingTest {
             
         }
 
-        [TestMethod()]
+        [Test]
         public void Compile_Expression_ModuleBoundVar_Test() {
             ScriptScope scope = _runTime.CreateScope();
             scope.SetVariable("modulevar", 5);
@@ -418,7 +418,7 @@ namespace HostingTest {
             TestHelpers.AssertOutput(_runTime, delegate() { e1.Execute(scope); }, "");
         }
 
-        [TestMethod()]
+        [Test]
         public void Compile_Expression_TODO() {
             ScriptScope scope = _runTime.CreateScope();
             scope.SetVariable("modulevar", 5);
@@ -435,7 +435,7 @@ namespace HostingTest {
         /// Covers ScriptEngine.CompileStatement for various basic statements
         /// </summary>
         #region CompileStatement Tests
-        [TestMethod()]
+        [Test]
         public void Compile_Statement_Basic1_Test() {
             ScriptScope scope = _runTime.CreateScope();
             scope.SetVariable("modulevar", 5);
@@ -446,7 +446,7 @@ namespace HostingTest {
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(SyntaxErrorException))]
         public void Compile_Statement_SyntaxError_Test() {
             ScriptScope scope = _runTime.CreateScope();
@@ -457,7 +457,7 @@ namespace HostingTest {
         }
 
         [Negative]
-        [TestMethod()]
+        [Test]
         [ExpectedException(typeof(UnboundNameException))]
         public void Compile_Statement_UnboundVar_Test() {
             ScriptScope scope = _runTime.CreateScope();
@@ -468,7 +468,7 @@ namespace HostingTest {
             
         }
 
-        [TestMethod()]
+        [Test]
         public void Compile_Statement_ModuleBoundVar_Test() {
             ScriptScope scope = _runTime.CreateScope();
             scope.SetVariable("modulevar", 5);
@@ -478,7 +478,7 @@ namespace HostingTest {
             TestHelpers.AssertOutput(_runTime, delegate() { e1.Execute(scope); }, "7");
         }
 
-        [TestMethod()]
+        [Test]
         public void Compile_Statement_StatementBoundVar_Test() {
             ScriptScope scope = _runTime.CreateScope();
 
@@ -490,7 +490,7 @@ namespace HostingTest {
 
         }
 
-        [TestMethod()]
+        [Test]
         public void Compile_Statement_TODO() {
             ScriptScope scope = _runTime.CreateScope();
             scope.SetVariable("modulevar", 5);
@@ -502,7 +502,7 @@ namespace HostingTest {
         }
         #endregion
 
-        [TestMethod()]
+        [Test]
         public void Compile_Basic2_Test() {
             ScriptScope scope = _runTime.CreateScope();
             scope.SetVariable("modulevar", 5);
@@ -518,7 +518,7 @@ def f(arg):
             TestHelpers.AssertOutput(_runTime, delegate() { e1.Execute(scope); }, "Hello World!");
         }
 
-        [TestMethod()]
+        [Test]
         public void Compile_TODO_Tests() {
             ScriptScope scope = _runTime.CreateScope();
             scope.SetVariable("modulevar", 5);
@@ -529,35 +529,35 @@ def f(arg):
 ", SourceCodeKind.Statements).Execute(scope);
         }
 
-        [TestMethod()]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void Runtime_Exception_Test() {
             ScriptRuntime sRuntime = _runTime.GetEngine("IronButterfly").Runtime;
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void LanguageDisplay_WrongLanguage() {
             string result = _runTime.GetEngine("Iron Butterfly").Setup.DisplayName;
         }
 
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentException))]
         public void LanguageDisplayName_EmptyLanguage() {
             var name = _runTime.GetEngine("").Setup.DisplayName;
         }
         
-        [TestMethod]
+        [Test]
         public void GetRegisteredIdentifiers_LangWithNoIDs_Test() {
             ScriptRuntime runtime = ScriptRuntimeTest.CreatePythonOnlyRuntime(new string[] { }, new string[]{".py"});
             ScriptEngine engine = runtime.GetEngineByFileExtension("py");
             Assert.IsTrue(0 == engine.Setup.Names.Count);
         }
 
-        [TestMethod]
+        [Test]
         public void GetRegisteredExtensions_LangWithNoExt() {
             ScriptRuntime runtime = ScriptRuntimeTest.CreatePythonOnlyRuntime(new string[] {"py" }, new string[] { });
             ScriptEngine engine = runtime.GetEngine("py");
@@ -568,7 +568,7 @@ def f(arg):
         /// <summary>
         ///  Invoke accessor method to test for a valid return object.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Operations_InvokeIsNotNull_Test() {
             
             Assert.IsNotNull(_testEng.Operations);
@@ -580,7 +580,7 @@ def f(arg):
         /// Ensure there are no side effects when calling CreateOperations.
         /// The Operations property shouldn't be affected during a call to this method
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Operations_MultiAccess_Test() {
                         
             ObjectOperations operations = _testEng.Operations;
@@ -594,7 +594,7 @@ def f(arg):
         /// <summary>
         /// Verify Successfully Invoke a usable new instance.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateOperations_Invoke_Test() {
             Assert.IsNotNull(_testEng.CreateOperations());
         }
@@ -606,7 +606,7 @@ def f(arg):
         /// Only test that the next instance is not the
         /// same as the last instance
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateOperations_MultipleTimes() {
             
             const int n = 5;
@@ -617,7 +617,7 @@ def f(arg):
             }
         }
         
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateOperations_NullScopeArg_Test() {
@@ -625,7 +625,7 @@ def f(arg):
         }
 
 
-        [TestMethod]
+        [Test]
         public void TestFromFuture_localScope() {
             string testSrc = _codeSnippets[CodeType.ImportFutureDiv];
             ScriptRuntime sr = CreateRuntime();
@@ -647,7 +647,7 @@ def f(arg):
         /// 
         /// Note     : Might be testing IPY?
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(IronPython.Runtime.Exceptions.ImportException))]
         //[Ignore]//this test is useless from HAPI perspective. Should be deleted altogether
@@ -685,7 +685,7 @@ def f(arg):
 
         }
 
-        [TestMethod]
+        [Test]
         public void TestFromFuture_globalScope() {
 
             //string testSrc = "from __future__ import division\nr= 1/2\n";
@@ -712,7 +712,7 @@ def f(arg):
         /// <summary>
         /// Make sure this throws the Null Argument Exception
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void GetScope_NullArg_Test() {
@@ -723,7 +723,7 @@ def f(arg):
         /// Give Invalid Path - does this test need to be used
         /// with PAL path?
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetScope_InvalidPath() {
             string wrongPath = "~//root/blah/blah";
             Assert.IsNull(_testEng.GetScope(wrongPath));
@@ -733,7 +733,7 @@ def f(arg):
         /// <summary>
         /// A ScriptSource Needs a valid path?
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetScope_NonExistentScriptSourcePath() {
                     
             //As long as the engine's scope is not associated with
@@ -753,7 +753,7 @@ def f(arg):
         /// <summary>
         /// Need to ask shes where we can place this script file?
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetScope_ValidPathOfUnExecutedScript() {
 
             //Create a temp source with some code
@@ -773,7 +773,7 @@ def f(arg):
         ///    Return of the ScriptScope in which the given ScriptSource most recently ran
         ///    
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void GetScope_VerifyScriptScopeFromScriptFileCanBeRetrieved(){
 
             // Create a temp source with some simple code that adds 1+2 to the var 'x'
@@ -809,7 +809,7 @@ def f(arg):
         /// Valid path to a junk file.
         /// --- What about different encoding -- maybe this is testing DOT net.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateScriptSourceFromFile_ValidPathToJunkFile() {
             
             //Create a temp source with some invalid code
@@ -834,7 +834,7 @@ def f(arg):
         /// Test to ensure the CreateScriptSource doesnt throw any exception irrespective 
         /// of how bad the input path is...
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateScriptSourceFromFile_NoExceptions() {
 
             foreach (string path in StandardTestPaths.AllPaths) {
@@ -846,7 +846,7 @@ def f(arg):
         /// <summary>
         /// Blast the method with Junk Strings As Bad Code
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateScriptSourceFromString_JunkStringsTest() {
             int cnt = 0;
             ScriptSource sSrc;
@@ -865,7 +865,7 @@ def f(arg):
         /// <summary>
         /// 
         /// </summary>
-        [TestMethod]
+        [Test]
         public void CreateScriptSourceFromFile_JunkStringsTest() {
             
 
@@ -898,7 +898,7 @@ def f(arg):
         /// CodeObject and id are passed up the chain of function until they hit ScriptSource(...)
         /// </summary>
         
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         //public void CreateScriptSource_NullIdValidCodeObject() {
@@ -911,7 +911,7 @@ def f(arg):
             ScriptSource ss = _testEng.CreateScriptSource(null);
         }
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScriptSource() {
             _testEng.CreateScriptSourceFromString(null, "id", SourceCodeKind.Statements);
@@ -920,14 +920,14 @@ def f(arg):
         /// <summary>
         /// Given a null scope CreateScope should throw an ArgumentNullException
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void CreateScope_NullGlobals() {
             _testEng.CreateScope((IDynamicMetaObjectProvider)null);
         }
 
-        [TestMethod]
+        [Test]
         [Ignore]// BUG # 446911
         public void SourceSearchPaths_SpecificPathsCheck() {
             //_testEng.SetSearchPaths
@@ -935,7 +935,7 @@ def f(arg):
         }
 
 
-        [TestMethod]
+        [Test]
         public void LanguageVersion_Call() {
             Assert.IsNotNull(_testEng.LanguageVersion);
         }
