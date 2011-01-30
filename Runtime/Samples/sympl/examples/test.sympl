@@ -1,0 +1,385 @@
+(import system)
+
+;;; Basic .NET and Sympl fun call.
+;;;
+
+(system.console.WriteLine "hey")
+
+(defun print (x)
+   ;;.NET prints null as empty string, so need to test for it here
+   ;; and print "nil" ... when 'if' and 'eq' work.
+   ;;(if (eq x nil)
+   ;;    (system.console.writeline "nil")
+   ;;    (system.console.writeline x))
+   (system.console.writeline x)
+   x)
+
+(defun princ (x)
+   ;;.NET prints null as empty string, so need to test for it here
+   ;; and print "nil" ... when 'if' and 'eq' work.
+   ;;(if (eq x nil)
+   ;;    (system.console.write "nil")
+   ;;    (system.console.write x))
+   (system.console.write x)
+   x)
+
+(print 3)
+
+(print (print "cool"))
+
+
+;;; Global and local var setting.
+;;;
+
+(set blah 5)
+
+(princ "blah ")
+(print blah)
+
+(defun foo (x)
+   (princ "x ")
+   (print x)
+   (set x 5)
+   (princ "new x ")
+   (print x)
+   (princ "blah ")
+   (print blah)
+   (set blah 10))
+
+(foo "foo")
+(print blah)
+
+
+;;; Let binding
+;;;
+
+(defun foo2 (x)
+   (princ "x ")
+   (print x)
+   (let* ((x "let x")
+          (y 7))
+      ;; Test shadow binding local names.
+      (print "in let* ...")
+      (print x) ;had runtime type null for x in print???????
+      (princ "y: ")
+      (print y)
+      (set x 5)
+      (princ "let x ")
+      (print x))
+   (princ "arg x ")
+   (print x)
+   (princ "blah ")
+   (print blah)
+   ;; Test shadow binding global names.
+   (let* ((blah "let blah"))
+      (print blah)
+      (set blah "bill")
+      (print blah))
+   (princ "blah: ")
+   (print blah)
+   (set blah 17))
+
+(print (foo2 11))
+(print blah)
+
+
+;;; Block
+;;;
+(print (block "bill" (set worble 19) "yeah"))
+(princ "worble: ") (print worble)
+
+
+;;; Quoted lists.
+;;;
+(print '(yay me "tambien" 10))
+(print '(now lets (nest some stuff ("bill" "martin") 10) "todd"))
+(print '10)
+(print 'same)
+
+
+;;; Lambdas
+;;;
+(let* ((f (lambda (x y)
+             (princ "x: ") (princ x)
+             (princ " ... y: ")
+             (print y))))
+   (f '(something wicked) "this way comes")
+   (print (f.GetType).Name))
+;(print f) ;need try-catch to show this is error
+
+((lambda (z) (princ "non ID expr fun: ") (print z)) "yes")
+
+
+;;; Closures
+(set closure (let* ((x 5)) 
+               (lambda (z) (princ z) (print x))))
+(closure "closure: ")
+
+
+;;; Keyword literal constants.
+;;;
+(print nil) ;prints empty due to .NET until we fix print below
+(print true)
+(print false)
+
+
+;;; EQ, Cons, List, If
+;;;
+(set alist '(1 2 3))
+(set blist alist)
+(princ "alist eq blist: ") (print (eq alist blist))
+(set x 123)
+(princ "eq 123: ") (print (eq x 123))
+(princ "eq 'bill 'BILL: ") (print (eq 'bill 'BILL))
+
+(print (cons "bill" "lin"))
+(print (cons "bill" nil))
+
+(print (list x alist (list blah "bill" (list 'dev "martin") 10) 'todd))
+
+;(princ "(one two) tail: ") (print ('(one two)._getRest)) ;doesn't work in C# impl
+(if (eq '(one).Rest nil) ;_getRest nil)
+    (print "tail was nil"))
+(if (eq '(one two) nil)
+    (print "whatever")
+    (print "(one two) is not nil"))
+
+
+;;; Redefine print now with 'if' and 'nil' ...
+;;;
+(defun print (x)
+   ;;.NET prints null as empty string, so need to test for it here
+   ;; and print "nil"
+   (if (eq x nil)
+       (system.console.writeline "nil")
+       (system.console.writeline x))
+   x)
+
+(defun princ (x)
+   ;;.NET prints null as empty string, so need to test for it here
+   ;; and print "nil"
+   (if (eq x nil)
+       (system.console.write "nil")
+       (system.console.write x))
+   x)
+
+(print nil)
+
+
+;;; Import sympl file and list/eq/... tests
+;;;
+(import lists)
+
+(set steve (cons 'steve 'grunt))
+(set db (list (cons 'bill 'pm) (cons 'martin 'dev) (cons 'todd 'test)
+              steve))
+
+(princ "Todd is ")
+(print (lists.assoc 'todd db))
+
+(princ "member: ")
+(print (lists.member steve db))
+(princ "member: ")
+(print (lists.member 3 db))
+
+(print (eq nil (lists.member 3 db)))
+
+(print db)
+(princ "reverse: ") (print (lists.reverse db))
+(princ "db after reverse ... ") (print db)
+(princ "nreverse ... ") (print (lists.nreverse db))
+(princ "db after Nreverse ... ") (print db)
+
+(princ "a list ... ") (print (set l '(the great)))
+(princ "another list ... ") (print (set l2 '(quux)))
+(princ "append: ") (print (set l3 (lists.append l l2)))
+(princ "res is eq? ") (print (eq l l3)) (print l)
+(princ "nconc: ") (print (set l3 (lists.nconc l l2)))
+(princ "res is eq? ") (print (eq l l3)) (print l)
+
+
+;;; loop
+;;;
+(let* ((l '(bill ted nancy alice)))
+   (loop
+      (if l 
+          (block (print l.First)
+                 (set l l.Rest))
+          (break))))
+
+(let* ((x '(2 6 8 9 4 10)))
+   (print
+      (loop
+         (if (eq x.First 9)
+             (break x.Rest)
+             (set x x.Rest)))))
+
+
+;;; Create Instance, set inst members, ...
+;;;
+(set x (new System.Text.StringBuilder "hello"))
+(x.Append " world!")
+(print (x.ToString))
+(print (x.ToString 0 5))  ;;print hello
+;;; make a copy of x
+(set y (new (x.GetType) (x.ToString)))
+(print (y.ToString))
+(print y.Length)
+
+(print system.datetime.minvalue)
+
+;;; TODO: We need a test for Set a static member
+
+
+;;; Indexing
+;;;
+(import indexing)
+
+
+
+;;; Operators
+;;;
+(import ops)
+
+
+;;; With loops and ops, can define length now
+;;;
+(princ "length: ") (print (lists.length '(1 2 3 4 5 6)))
+
+
+;;; Test COM Set Member
+;;;
+;;; Next three "lines" can be manually entered in the Sympl REPL to see Excel/COM.
+;;;
+;(set excel (System.Activator.CreateInstance 
+;             (System.Type.GetTypeFromProgID "Excel.Application")))
+;(set excel.visible true)
+;(set excel.visible false)
+
+
+
+;;;--------------- Correct Output ------------
+;;;
+
+;hey
+;3
+;cool
+;cool
+;blah 5
+;x foo
+;new x 5
+;blah 5
+;10
+;x 11
+;in let* ...
+;let x
+;y: 7
+;let x 5
+;arg x 11
+;blah 10
+;let blah
+;bill
+;blah: 10
+;17
+;17
+;yeah
+;worble: 19
+;(yay me 'tambien' 10)
+;(now lets (nest some stuff ('bill' 'martin') 10) 'todd')
+;10
+;same
+;x: (something wicked) ... y: this way comes
+;Func`3
+;non ID expr fun: yes
+;closure: 5
+;
+;True
+;False
+;alist eq blist: True
+;eq 123: True
+;eq 'bill 'BILL: True
+;('bill' . 'lin')
+;('bill')
+;(123 (1 2 3) (17 'bill' (dev 'martin') 10) todd)
+;(one two) tail: (two)
+;tail was nil
+;(one two) is not nil
+;nil
+;Todd is test
+;member: True
+;member: nil
+;True
+;((bill . pm) (martin . dev) (todd . test) (steve . grunt))
+;reverse: ((steve . grunt) (todd . test) (martin . dev) (bill . pm))
+;db after reverse ... ((bill . pm) (martin . dev) (todd . test) (steve . grunt))
+;nreverse ... ((steve . grunt) (todd . test) (martin . dev) (bill . pm))
+;db after reverse ... ((bill . pm))
+;a list ... (the great)
+;another list ... (quux)
+;append: (the great quux)
+;res is eq? False
+;(the great)
+;nconc: (the great quux)
+;res is eq? True
+;(the great quux)
+;bill
+;ted
+;nancy
+;alice
+;(4 10)
+;hello world!
+;hello
+;hello world!
+;12
+;1/1/0001 12:00:00 AM
+;hi
+;hello
+;world
+;w
+;100
+;200
+;3
+;5
+;1
+;2
+;3
+;100
+;11
+;0
+;50
+;5
+;7
+;3
+;10
+;2
+;-190
+;False
+;True
+;True
+;False
+;True
+;False
+;False
+;True
+;3
+;False
+;False
+;5
+;3
+;3
+;False
+;False
+;False
+;True
+;False
+;True
+;False
+;False
+;True
+;True
+;False
+;False
+;length: 6
+;ExecuteExpr ... 5
+
+
