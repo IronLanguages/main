@@ -57,7 +57,7 @@ namespace HostingTest {
             string xmlPrefix = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +  
 "<configuration>" +
   "<configSections>"+
-    "<section name=\"microsoft.scripting\" type=\"Microsoft.Scripting.Hosting.Configuration.Section, Microsoft.Scripting, Version=1.1.0.10, Culture=neutral, PublicKeyToken=31bf3856ad364e35\" requirePermission=\"false\" />"+
+    "<section name=\"microsoft.scripting\" type=\"Microsoft.Scripting.Hosting.Configuration.Section, Microsoft.Scripting, Version=1.1.0.20, Culture=neutral, PublicKeyToken=31bf3856ad364e35\" requirePermission=\"false\" />"+
   "</configSections>"+
 
   "<microsoft.scripting>"+
