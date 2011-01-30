@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <project name="IronLanguages" basedir=".">
 	<target name="all">
-		<!--<call target="codeplex-dlr" />
+		<!--
 		<call target="dlr" />
 		<call target="ironstudio" />
 		<call target="ironruby.rack" />
@@ -9,12 +9,6 @@
 		<call target="ironpython" />
 		<call target="ironpython.mono" />
 		<call target="ruby" />
-	</target>
-
-	<target name="codeplex-dlr">
-		<property name="solution" value="Codeplex-DLR" />
-
-		<call target="build" />
 	</target>
 	
 	<target name="dlr">
