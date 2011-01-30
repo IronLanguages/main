@@ -212,7 +212,7 @@ namespace Microsoft.Scripting.Actions {
                 if (typeof(TypeTracker).IsAssignableFrom(type)) {
                     // Throws an exception if we don't have a non-generic type, and if we do report an error now.  This matches
                     // the rule version of the default binder but should probably be removed long term.
-                    EnsureTrackerRepresentsSingleType((TypeTracker)target.Value);
+                    EnsureTrackerRepresentsNonGenericType((TypeTracker)target.Value);
                 } else if (type.IsInterface) {
                     // all interfaces have object members
                     type = typeof(object);
@@ -245,7 +245,7 @@ namespace Microsoft.Scripting.Actions {
             return getMemInfo.Body.GetMetaObject(target);
         }
 
-        private static Type EnsureTrackerRepresentsSingleType(TypeTracker tracker) {
+        private static Type EnsureTrackerRepresentsNonGenericType(TypeTracker tracker) {
             // might throw an exception
             return tracker.Type;
         }
