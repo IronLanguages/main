@@ -1,0 +1,72 @@
+;;; This file shows indexing as well as generic type and array creation.
+;;;
+
+(import system)
+
+(defun print (x)
+   (system.console.writeline x)
+   x)
+
+
+;;; Tests for indexing
+;;; create an array containing 3 strings
+(set a (System.Array.CreateInstance System.String 3))
+(set (elt a 0) "hi")
+(set (elt a 1) "hello")
+(set (elt a 2) "world")
+(print (elt a 0))
+(print (elt a 1))
+(print (elt a 2))
+
+(set sb (new System.Text.StringBuilder "hello world!"))
+(print (elt sb 6)) ; print the 6th char in the string, which is 'w'
+
+
+;;; create generic list of int (which requires array of types to start)
+(set types (System.Array.CreateInstance System.Type 1))
+(set (elt types 0) System.Int32)
+(set l (new (System.Collections.Generic.List`1.MakeGenericType types)))
+
+;;; Add an element with Add method
+(l.Add 100)
+(print (elt l 0))
+(set (elt l 0) 200)
+(print (elt l 0))
+
+
+;;; tests for Dictionary<string,int>
+(set types (System.Array.CreateInstance System.Type 2))
+(set (elt types 0) System.String)
+(set (elt types 1) System.Int32)
+(set dict (new (System.Collections.Generic.Dictionary`2.MakeGenericType types)))
+
+;;; Add elements using indexers
+(set (elt dict "a") 3)
+(print (elt dict "a"))    ;; print 3
+(set (elt dict "b") 5)
+(print (elt dict "b"))    ;; print 5
+
+
+;;; Test indexing on list literals
+(set l '(1 2 3))
+(print (elt l 0))
+(print (elt l 1))
+(print (elt l 2))
+
+(set (elt l 1) 100)
+(print (elt l 1))
+
+
+;;; test multidimentional array
+;;; set the dimension lengths of the 2d array int[3][2]
+
+(set lengths (System.Array.CreateInstance System.Int32 2))
+(set (elt lengths 0) 3)
+(set (elt lengths 1) 2)
+
+(set a (System.Array.CreateInstance System.Int32 lengths))
+(set (elt a 2 0) 11)
+(print (elt a 2 0)) ; print 11
+(print (elt a 0 1)) ; print 0, which the default value for uninitialized elements
+
+;;; End of tests for indexing

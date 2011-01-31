@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{43A7EE65-3156-4AE1-9734-19D9A758B163}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SymplSample</RootNamespace>
+    <AssemblyName>sympl</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\..\bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\..\bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DlrHosting.cs" />
+    <Compile Include="ETGen.cs" />
+    <Compile Include="Lexer.cs" />
+    <Compile Include="Parser.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Runtime.cs" />
+    <Compile Include="Sympl.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Languages\IronPython\IronPython.Modules\IronPython.Modules.csproj">
+      <Project>{155CE436-1669-4A48-8095-410F2430237F}</Project>
+      <Name>IronPython.Modules</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\Languages\IronPython\IronPython\IronPython.csproj">
+      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
+      <Name>IronPython %28Languages\IronPython\IronPython%29</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\Languages\Ruby\Libraries\IronRuby.Libraries.csproj">
+      <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
+      <Name>IronRuby.Libraries</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\Languages\Ruby\Ruby\Ruby.csproj">
+      <Project>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</Project>
+      <Name>Ruby %28Languages\Ruby\Ruby%29</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

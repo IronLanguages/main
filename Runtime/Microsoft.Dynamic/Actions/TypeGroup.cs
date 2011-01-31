@@ -144,19 +144,14 @@ namespace Microsoft.Scripting.Actions {
             return type.GetGenericArguments().Length;
         }
 
-        /// <summary>
-        /// This will throw an exception if all the colliding types are generic
-        /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
-        public Type NonGenericType {
-            get {
-                Type nonGenericType;
-                if (TryGetNonGenericType(out nonGenericType)) {
-                    return nonGenericType;
-                }
-
-                throw Error.NonGenericWithGenericGroup(Name);
+        /// <exception cref="TypeLoadException">No non-generic type is represented by this group.</exception>
+        public Type GetNonGenericType() {
+            Type nonGenericType;
+            if (TryGetNonGenericType(out nonGenericType)) {
+                return nonGenericType;
             }
+
+            throw Error.NonGenericWithGenericGroup(Name);
         }
 
         public bool TryGetNonGenericType(out Type nonGenericType) {
@@ -215,7 +210,7 @@ namespace Microsoft.Scripting.Actions {
         /// an exception if all types in the TypeGroup are generic
         /// </summary>
         public override Type Type {
-            get { return NonGenericType; }
+            get { return GetNonGenericType(); }
         }
 
         public override bool IsGenericType {
@@ -227,7 +222,7 @@ namespace Microsoft.Scripting.Actions {
         /// an exception if all types in the TypeGroup are generic
         /// </summary>
         public override bool IsPublic {
-            get { return NonGenericType.IsPublic; }
+            get { return GetNonGenericType().IsPublic; }
         }
 
         #endregion
