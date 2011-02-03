@@ -10,8 +10,6 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
 using NUnit.Framework;
 using System.Dynamic;
-using NUnit.Framework;
-
 
 namespace HostingTest {
     /// <summary>
