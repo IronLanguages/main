@@ -17,14 +17,14 @@ using System.IO;
 using System.Text;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Utils;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace HostingTest {
-    using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+    using Assert = NUnit.Framework.Assert;
 
     internal class TestHelpers {
 
@@ -163,6 +163,24 @@ namespace HostingTest {
             ~EnvSetupTearDown() {
                 //Rest old values
                 Environment.SetEnvironmentVariable(_envName, _oldEnvEntry);
+            }
+        }
+
+        public static void DeployItem(string path)
+        {
+            var targetDir = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, path));
+            if (!Directory.Exists(targetDir))
+                throw new Exception(string.Format("Deployment directory '{0}' doesn't exist", targetDir));
+
+            foreach (string file in Directory.GetFiles(Environment.CurrentDirectory))
+            {
+                string newFile = Path.Combine(targetDir, Path.GetFileName(file));
+
+                if (File.Exists(newFile))
+                    File.Delete(newFile);
+
+                File.Copy(file, newFile);
+                File.SetAttributes(newFile, FileAttributes.Normal);
             }
         }
     }

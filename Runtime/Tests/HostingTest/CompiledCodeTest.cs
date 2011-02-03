@@ -15,11 +15,10 @@
 using System;
 using System.Dynamic;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Microsoft.Scripting;
 
 namespace HostingTest {
-    using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
     using Microsoft.Scripting.Runtime;
 
     class MyErrorListener : ErrorListener {
@@ -43,7 +42,7 @@ namespace HostingTest {
     /// to contain all CompiledCode Unit Tests
     ///
     ///</summary>
-    [TestClass()]
+    [TestFixture]
     public partial class CompiledCodeTest : HAPITestBase {
 
 
@@ -55,7 +54,7 @@ namespace HostingTest {
 
         }
 
-        [TestMethod]
+        [Test]
         public void DefaultScope_ValidateAccess() {
             ScriptSource source = _testEng.CreateScriptSourceFromString(_codeSnippets[CodeType.OneLineAssignmentStatement],
                                                                         SourceCodeKind.Statements);
@@ -65,7 +64,7 @@ namespace HostingTest {
 
 
         [Ignore]
-        [TestMethod]
+        [Test]
         public void Execute_ManyTimesUsingDelegate() {
 
             ScriptSource source = _testEng.CreateScriptSourceFromString(_codeSnippets[CodeType.FactorialFunc], SourceCodeKind.Statements);
@@ -93,7 +92,7 @@ namespace HostingTest {
         /// Test     : Valid scope as input param - Script invokes a variable pre defined in the scope
         /// Expected : Script executes against the preset value of the var
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Execute_AccessVarPreDefinedInScope() {
 
             ScriptScopeDictionary env = new ScriptScopeDictionary();
@@ -121,7 +120,7 @@ namespace HostingTest {
         /// 
         /// Note      : A new test case based on spec for compiledcode
         /// </summary>
-        [TestMethod]
+        [Test]
         [Ignore]
         public void Execute_ValidateFileIsReReadOnExecute() {
             throw new NotImplementedException();
@@ -135,7 +134,7 @@ namespace HostingTest {
         /// Note      : validate the scope value is the same in the engine as the 
         ///             scope.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Engine_Property_Validation() {
 
             ScriptSource source = _testEng.CreateScriptSourceFromFile(TestHelpers.CreateTempSourceFile(
@@ -152,7 +151,7 @@ namespace HostingTest {
             Assert.AreEqual(engine, _testEng);
         }
 
-        [TestMethod]
+        [Test]
         public void Execute_GenericTypeCastSmokeTest() {
             ScriptSource source = _PYEng.CreateScriptSourceFromFile(TestHelpers.CreateTempSourceFile(_codeSnippets[CodeType.SimpleExpressionOnePlusOne], ".py"));
             MyErrorListener errorListen = new MyErrorListener();
@@ -168,7 +167,7 @@ namespace HostingTest {
         /// Test     : Test the behavior off all the Executes
         /// Expected : They all work correct.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Execute_SmokeTest_Execute_TestOfOtherExecutes() {
             ScriptSource source = _PYEng.CreateScriptSourceFromString("1+1");
             ScriptScope scope = _PYEng.CreateScope();
@@ -186,7 +185,7 @@ namespace HostingTest {
         /// Test     : Given a compiled expression Execute with scope arg
         /// Expected : Validate that correct value is returned
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Execute_ReturnExpressionValueForScopeArg() {
 
             ScriptSource source = _testEng.CreateScriptSourceFromString(
@@ -209,7 +208,7 @@ namespace HostingTest {
         /// Test     : Give execute with null scope
         /// Expected : Should throw ArgumentNullException
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Execute_NullScopeArgumentTest() {
@@ -231,7 +230,7 @@ namespace HostingTest {
         /// Test     : Execute a compiled expression multiple times
         /// Expected : Validate that the return values is correct always the same
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Execute_ReturnExpressionValueForScopeArg_MultipleCalls() {
 
             ScriptSource source = _testEng.CreateScriptSourceFromString(
@@ -258,7 +257,7 @@ namespace HostingTest {
         /// Test     : Execute a compiled expression
         /// Expected : Validate that the return values is correct.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Execute_ReturnExpressionValueNoArgs() {
 
             ScriptSource source = _PYEng.CreateScriptSourceFromString("1+1");
@@ -275,7 +274,7 @@ namespace HostingTest {
         /// Test     : Execute a compiled expression multiple times
         /// Expected : Validate that the return values is correct always the same
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Execute_ReturnExpressionValueNoArgs_MultipleCalls() {
 
             ScriptSource source = _PYEng.CreateScriptSourceFromString(
@@ -296,7 +295,7 @@ namespace HostingTest {
         }
 
 
-        [TestMethod]
+        [Test]
         public void Execute_ReturnExpressionValueForDefaultScopeArg() {
 
             ScriptSource source = _PYEng.CreateScriptSourceFromString("x=1+1", SourceCodeKind.Statements);

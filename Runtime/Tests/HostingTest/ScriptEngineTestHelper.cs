@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace HostingTest {
     public partial class ScriptEngineTest : HAPITestBase {

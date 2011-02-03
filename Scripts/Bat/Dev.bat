@@ -23,9 +23,6 @@ set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby
 set RUBYOPT=
 set GEM_PATH=%RUBY19_BIN%\..\lib\ruby\gems\1.9.1
 
-REM -- Nullify the existing environment
-call %DLR_ROOT%\Test\Scripts\SetTestEnv.bat
-
 REM -- IronPython environment variables
 set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
 

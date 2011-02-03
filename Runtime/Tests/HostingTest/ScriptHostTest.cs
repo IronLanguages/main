@@ -4,7 +4,7 @@ using System.IO;
 using IronPython.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace HostingTest    {
 
@@ -31,7 +31,7 @@ namespace HostingTest    {
     ///     Creating more then one derived Host as well as target each
     ///     override-able (i.e., virtual) and abstract methods.
     ///</summary>
-    [TestClass()]
+    [TestFixture]
     public partial class ScriptHostTest : HAPITestBase {
 
         
@@ -40,7 +40,7 @@ namespace HostingTest    {
         ///            runtime with this property.
         /// Expected : Values are the same.
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void Runtime_HostRuntimeProperty() {
 
             // Todo - Investigate this to verify correctness.
@@ -57,7 +57,7 @@ namespace HostingTest    {
         ///  Test     : Invoke the property	
         ///  Expected : Correct PAL is returned
         /// </summary>
-        [TestMethod()]
+        [Test]
         public void PAL_HostPalProperty() {
             
             // Setup runtime with specific path
@@ -75,7 +75,7 @@ namespace HostingTest    {
         ///  Test     : Basic smoke test for derived host invocation.
         ///  Expected : Verify that properties return correct references.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void Host_BasicInvokeFromRuntime(){
 
             string testPath = Path.GetFullPath(".");
@@ -95,7 +95,7 @@ namespace HostingTest    {
         /// Test     :  Create a Host that is not associated with a ScriptRuntime
         /// Expected :  Throw not initialized exception 
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(InvalidOperationException))]
         public void Host_UninitializedRuntimeProperty() {
@@ -116,7 +116,7 @@ namespace HostingTest    {
         /// 
         /// Note     :  Missing documentation this may not be the expected behaviour
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(InvalidOperationException))]
         [Ignore] // BUG - Currently blocked by lack of documentation for ScriptHost|PAL 
@@ -140,7 +140,7 @@ namespace HostingTest    {
         /// Test     : Env var pointerd by ‘PathEnvironmentVariableName’ is null; Invoke the property	
         /// Expected : Value is ‘.’
         /// </summary>
-        [TestMethod]
+        [Test]
         //[Ignore]
         public void SourceFileSearchPath_NullPathEnvironmentVariableName() {
 
@@ -166,7 +166,7 @@ namespace HostingTest    {
         /// Test     : Load a script from a file using the host.
         /// Expected : Execute with expected results 
         /// </summary>
-        [TestMethod]
+        [Test]
         //[Ignore]
         public void TryGetSourceFile_WithEncodingAndKind() {
 
@@ -189,7 +189,7 @@ namespace HostingTest    {
         /// Test     : invoke the ‘ResolveSourceFile’ method
         /// Expected : This method is invoked by the DLR; name is passed through without any modifications
         /// </summary>
-        [TestMethod]
+        [Test]
         //[Ignore] // BUG - This test is blocked by lack of DLRPATH DLR/Config support
         public void ResolveSourceFileName_OverrideTestNameIsUnchanged() {
             
@@ -213,7 +213,7 @@ namespace HostingTest    {
         ///            we can't change the DLR Path currently thus almost any file
         ///            will fail - weather it there or not! 
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(FileNotFoundException))]
         //[Ignore] // See|File Host Config Bug/ResolveSourceFile
@@ -234,7 +234,7 @@ namespace HostingTest    {
         /// <summary>
         /// See bug entry, this method and test might go away.
         /// </summary>
-        [TestMethod]
+        [Test]
         //[Ignore] // Bug # 475921
         public void ResolveSourceFileName_LookForFilePysicallyAddFileAndDLRPATH() {
 
@@ -261,7 +261,7 @@ namespace HostingTest    {
 
         
 
-        [TestMethod]
+        [Test]
         //[Ignore]
         public void ResolveSourceFileTest() {
 
@@ -283,7 +283,7 @@ namespace HostingTest    {
         
         }
 
-        [TestMethod]
+        [Test]
         //[Ignore] // Bug # 475921
         public void ResolveSourceFile_Test() {
 
@@ -323,7 +323,7 @@ namespace HostingTest    {
         /// Test : Resolve file that is not in path
         /// Expected : Throw file not found exception
         /// </summary>
-        [TestMethod]
+        [Test]
         [Negative]
         [ExpectedException(typeof(FileNotFoundException))]
         //[Ignore] // See|File Host Config Bug/ResolveSourceFile
@@ -347,7 +347,7 @@ namespace HostingTest    {
         /// 
         /// Note     : See Test Plan BUG?/ See Config/ResolveSourceFileName(...) bug
         /// </summary>
-        [TestMethod]
+        [Test]
         //[Ignore] // Bug see ResolveSourceFileName bug
         public void ResolveSourceFile_PassValidName() {
             // Get source
@@ -371,7 +371,7 @@ namespace HostingTest    {
         /// Test      : Override this method in the derived class and create a ScriptRuntime object
         /// Expected  : This method should be invoked by the DLR automatically.
         /// </summary>
-        [TestMethod]
+        [Test]
         //[Ignore] // Bug This is block due to lack of virtual function to subclass investigate file bug
         public void RuntimeAttached_DerivedHostOverrideInvoke() {
 
