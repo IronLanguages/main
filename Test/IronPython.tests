@@ -1318,7 +1318,7 @@
           <Arguments>test_parrot.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- The files for this benchmark are not in the repo -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Scripts</WorkingDirectory>
@@ -3296,7 +3296,7 @@
           <Arguments>Test\regrtest.py -u network Test\test_imaplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- Causes the tests to hang -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -5098,7 +5098,7 @@
           <Arguments>-X:Frames Test\test_xml_etree.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- Disabled until there's an expat implemntation or some other parser -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -5131,7 +5131,7 @@
           <Arguments>Test\test_zipfile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled><!-- The tests do not properly clean up temp files inall cases, which causes them to fail. -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>true</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
