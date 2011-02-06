@@ -47,13 +47,8 @@ namespace IronRuby.Builtins {
         public const int CodePageBig5 = 950;
         public const int CodePageAscii = 20127;
 
-        // Windows returns 2 EUC-JP encodings (CP 20932 and CP 51932).
-        // It seems CP20932 is closest to the encoding that MRI calls Encoding::EUC_JP,  although the mapping is not exactly the same.
-        // Differences:
-        //                         CP20932   MRI
-        // A1 BD                -> U+2015    U+2014
-        // mapping for many codepoints is undeffined in MRI
-        public const int CodePageEUCJP = 20932;
+        // Windows returns 2 EUC-JP encodings (CP 20932 and CP 51932). Mono implements EUC-JP as 51932 and doesn't support 20932.
+        public const int CodePageEUCJP = 51932;
 
         public const int CodePageUTF7 = 65000;
         public const int CodePageUTF8 = 65001;
@@ -188,7 +183,7 @@ namespace IronRuby.Builtins {
 
                 // disambiguates CP 20932 and CP 51932:
                 case RubyEncoding.CodePageEUCJP: return "EUC-JP";
-                case 51932: return "CP51932";
+                case 20932: return "CP20932";
 
                 case 50220: return "ISO-2022-JP";
                 case 50222: return "CP50222";
