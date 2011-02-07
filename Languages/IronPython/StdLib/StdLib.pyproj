@@ -20,6 +20,7 @@
     <!-- Begin Generated Project Items -->
     <Content Include="$(StdLibPath)\abc.py" />
     <Content Include="$(StdLibPath)\aifc.py" />
+    <Content Include="$(StdLibPath)\antigravity.py" />
     <Content Include="$(StdLibPath)\anydbm.py" />
     <Content Include="$(StdLibPath)\argparse.py" />
     <Content Include="$(StdLibPath)\asynchat.py" />
@@ -72,6 +73,7 @@
     <Content Include="$(StdLibPath)\getpass.py" />
     <Content Include="$(StdLibPath)\gettext.py" />
     <Content Include="$(StdLibPath)\glob.py" />
+    <Content Include="$(StdLibPath)\gzip.py" />
     <Content Include="$(StdLibPath)\hashlib.py" />
     <Content Include="$(StdLibPath)\heapq.py" />
     <Content Include="$(StdLibPath)\hmac.py" />
@@ -80,6 +82,7 @@
     <Content Include="$(StdLibPath)\HTMLParser.py" />
     <Content Include="$(StdLibPath)\httplib.py" />
     <Content Include="$(StdLibPath)\ihooks.py" />
+    <Content Include="$(StdLibPath)\imaplib.py" />
     <Content Include="$(StdLibPath)\imghdr.py" />
     <Content Include="$(StdLibPath)\imputil.py" />
     <Content Include="$(StdLibPath)\inspect.py" />
@@ -155,12 +158,14 @@
     <Content Include="$(StdLibPath)\sre_compile.py" />
     <Content Include="$(StdLibPath)\sre_constants.py" />
     <Content Include="$(StdLibPath)\sre_parse.py" />
+    <Content Include="$(StdLibPath)\ssl.py" />
     <Content Include="$(StdLibPath)\stat.py" />
     <Content Include="$(StdLibPath)\statvfs.py" />
     <Content Include="$(StdLibPath)\string.py" />
     <Content Include="$(StdLibPath)\StringIO.py" />
     <Content Include="$(StdLibPath)\stringold.py" />
     <Content Include="$(StdLibPath)\struct.py" />
+    <Content Include="$(StdLibPath)\subprocess.py" />
     <Content Include="$(StdLibPath)\sunau.py" />
     <Content Include="$(StdLibPath)\sunaudio.py" />
     <Content Include="$(StdLibPath)\symbol.py" />
@@ -191,6 +196,7 @@
     <Content Include="$(StdLibPath)\warnings.py" />
     <Content Include="$(StdLibPath)\wave.py" />
     <Content Include="$(StdLibPath)\weakref.py" />
+    <Content Include="$(StdLibPath)\webbrowser.py" />
     <Content Include="$(StdLibPath)\whichdb.py" />
     <Content Include="$(StdLibPath)\xdrlib.py" />
     <Content Include="$(StdLibPath)\xmllib.py" />
@@ -227,7 +233,6 @@
     <Content Include="$(StdLibPath)\ctypes\test\test_checkretval.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_delattr.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_errcheck.py" />
-    <Content Include="$(StdLibPath)\ctypes\test\test_find.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_frombuffer.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_funcptr.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_functions.py" />
@@ -237,7 +242,6 @@
     <Content Include="$(StdLibPath)\ctypes\test\test_internals.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_keeprefs.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_libc.py" />
-    <Content Include="$(StdLibPath)\ctypes\test\test_loading.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_macholib.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_memfunctions.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_numbers.py" />
@@ -247,7 +251,6 @@
     <Content Include="$(StdLibPath)\ctypes\test\test_pickling.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_pointers.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_prototypes.py" />
-    <Content Include="$(StdLibPath)\ctypes\test\test_python_api.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_random_things.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_refcounts.py" />
     <Content Include="$(StdLibPath)\ctypes\test\test_repr.py" />
@@ -455,6 +458,7 @@
     <Content Include="$(StdLibPath)\encodings\utf_8.py" />
     <Content Include="$(StdLibPath)\encodings\utf_8_sig.py" />
     <Content Include="$(StdLibPath)\encodings\uu_codec.py" />
+    <Content Include="$(StdLibPath)\encodings\zlib_codec.py" />
     <Content Include="$(StdLibPath)\encodings\__init__.py" />
     <Content Include="$(StdLibPath)\idlelib\AutoExpand.py" />
     <Content Include="$(StdLibPath)\idlelib\Delegator.py" />
@@ -599,10 +603,8 @@
     <Content Include="$(StdLibPath)\unittest\test\dummy.py" />
     <Content Include="$(StdLibPath)\unittest\test\support.py" />
     <Content Include="$(StdLibPath)\unittest\test\test_assertions.py" />
-    <Content Include="$(StdLibPath)\unittest\test\test_break.py" />
     <Content Include="$(StdLibPath)\unittest\test\test_discovery.py" />
     <Content Include="$(StdLibPath)\unittest\test\test_functiontestcase.py" />
-    <Content Include="$(StdLibPath)\unittest\test\test_loader.py" />
     <Content Include="$(StdLibPath)\unittest\test\test_program.py" />
     <Content Include="$(StdLibPath)\unittest\test\test_runner.py" />
     <Content Include="$(StdLibPath)\unittest\test\test_setups.py" />
@@ -633,6 +635,7 @@
     <Content Include="$(StdLibPath)\xml\sax\xmlreader.py" />
     <Content Include="$(StdLibPath)\xml\sax\_exceptions.py" />
     <Content Include="$(StdLibPath)\xml\sax\__init__.py" />
+    <Content Include="$(StdLibPath)\site-packages\README.txt" />
     <!-- End Generated Project Items -->
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets"/>

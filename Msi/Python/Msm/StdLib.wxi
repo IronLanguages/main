@@ -27,7 +27,6 @@
         <File Id="F37xe0hzhwg6we6w2dmfuhxkpy" Source="$(var.StdLibPath)\ctypes\test\test_checkretval.py" />
         <File Id="F71lc0ocpl7chiolizq61aveu7" Source="$(var.StdLibPath)\ctypes\test\test_delattr.py" />
         <File Id="F15pysz1rerlv413u8nh38yxet" Source="$(var.StdLibPath)\ctypes\test\test_errcheck.py" />
-        <File Id="Fa3ws2y6yvcyz040bus7go52i" Source="$(var.StdLibPath)\ctypes\test\test_find.py" />
         <File Id="F8klg27i221fhzf51eftz8zddn" Source="$(var.StdLibPath)\ctypes\test\test_frombuffer.py" />
         <File Id="F5ndhnvex0zfl0ozmq7bj2e1g7" Source="$(var.StdLibPath)\ctypes\test\test_funcptr.py" />
         <File Id="F9l3acmlo3pp2d5wvb3w5ugc1t" Source="$(var.StdLibPath)\ctypes\test\test_functions.py" />
@@ -37,7 +36,6 @@
         <File Id="Fdtikbb4ma5r2pwiwakvzf5szh" Source="$(var.StdLibPath)\ctypes\test\test_internals.py" />
         <File Id="Fdigod9dnkw8m6urmtxipl94v1" Source="$(var.StdLibPath)\ctypes\test\test_keeprefs.py" />
         <File Id="F36ct96apltut772uwdmf59u8x" Source="$(var.StdLibPath)\ctypes\test\test_libc.py" />
-        <File Id="F9wfldbeh3l3isebw1jxo51ry7" Source="$(var.StdLibPath)\ctypes\test\test_loading.py" />
         <File Id="F9fgfozcwfw1qxjvbxh6du0rpg" Source="$(var.StdLibPath)\ctypes\test\test_macholib.py" />
         <File Id="F81bqg9yozbws2nl0vsy74gbtq" Source="$(var.StdLibPath)\ctypes\test\test_memfunctions.py" />
         <File Id="F4ucvwh69wy8hqx5uu2vbgce4v" Source="$(var.StdLibPath)\ctypes\test\test_numbers.py" />
@@ -47,7 +45,6 @@
         <File Id="Fawcgpfppbwoi47os4n457t0g6" Source="$(var.StdLibPath)\ctypes\test\test_pickling.py" />
         <File Id="F7ljle6xw89jb01k6etvsjg6gz" Source="$(var.StdLibPath)\ctypes\test\test_pointers.py" />
         <File Id="Fecksbfv67xl6yd8rxvzegb1js" Source="$(var.StdLibPath)\ctypes\test\test_prototypes.py" />
-        <File Id="F152uttvgtoga3nau2udy41nhx" Source="$(var.StdLibPath)\ctypes\test\test_python_api.py" />
         <File Id="F3p75ve2fwy6e2n7v0a7k7ssop" Source="$(var.StdLibPath)\ctypes\test\test_random_things.py" />
         <File Id="Fep0dlfnjzkvqfloy5z5mbpmp6" Source="$(var.StdLibPath)\ctypes\test\test_refcounts.py" />
         <File Id="Fcwua80xwr7i3bmykap3qdfqwt" Source="$(var.StdLibPath)\ctypes\test\test_repr.py" />
@@ -290,6 +287,7 @@
       <File Id="Fgb283ychfrnbwas7lm5m4w7k" Source="$(var.StdLibPath)\encodings\utf_8.py" />
       <File Id="F71oq72j7ny7eq7tnbjvpul4cy" Source="$(var.StdLibPath)\encodings\utf_8_sig.py" />
       <File Id="Fa051ze7lc0y92qao0u4beb32z" Source="$(var.StdLibPath)\encodings\uu_codec.py" />
+      <File Id="F6z3cmbu17yovstqx2ndxd387i" Source="$(var.StdLibPath)\encodings\zlib_codec.py" />
     </Component>
   </Directory>
   <Directory Id="Dusdjuyklalbdldeeiqayidqt" Name="idlelib">
@@ -475,6 +473,11 @@
       <File Id="F2e4uu6csx9c8s5fole51x4ha9" Source="$(var.StdLibPath)\pydoc_data\topics.py" />
     </Component>
   </Directory>
+  <Directory Id="Ddnp80mufy0sh43mpttta680ow" Name="site-packages">
+    <Component Id="Cdnp80mufy0sh43mpttta680ow" DiskId="1" Guid="920aed14-6fb0-411c-af8a-88a9d8357ff2">
+      <File Id="Fc5jfzturcvckogogmfv98z9c3" Source="$(var.StdLibPath)\site-packages\README.txt" />
+    </Component>
+  </Directory>
   <Directory Id="Da37f65gsc0xmzucpq6ytaw6kk" Name="unittest">
     <Directory Id="Ddoyr0ms9xt14abbagbqo1kues" Name="test">
       <Component Id="Cdoyr0ms9xt14abbagbqo1kues" DiskId="1" Guid="3efecec7-1fed-4839-aba5-50a34ca92e90">
@@ -482,10 +485,8 @@
         <File Id="F1xyt1qadc4hssulpp23dxhlzt" Source="$(var.StdLibPath)\unittest\test\dummy.py" />
         <File Id="Fbn40odazy94zv23kz60g1tkre" Source="$(var.StdLibPath)\unittest\test\support.py" />
         <File Id="F46ebl9qxrw01l2ip7qblsqsr0" Source="$(var.StdLibPath)\unittest\test\test_assertions.py" />
-        <File Id="Fbgznfhlm3udhigk5h5f2eoyzv" Source="$(var.StdLibPath)\unittest\test\test_break.py" />
         <File Id="Fedcqo44tkw5dbs6vy5lsix6t6" Source="$(var.StdLibPath)\unittest\test\test_discovery.py" />
         <File Id="F5ivuvgw1hpeadbawrjfczc8d8" Source="$(var.StdLibPath)\unittest\test\test_functiontestcase.py" />
-        <File Id="Fdu4e4i6r3h8gu18mscupcjzrt" Source="$(var.StdLibPath)\unittest\test\test_loader.py" />
         <File Id="F3x58gisldnavdrxpu9m473ybt" Source="$(var.StdLibPath)\unittest\test\test_program.py" />
         <File Id="Fdfputv1hsobz81lepqvnksihz" Source="$(var.StdLibPath)\unittest\test\test_runner.py" />
         <File Id="F15p0rzzkfprgi4nctb2e8arat" Source="$(var.StdLibPath)\unittest\test\test_setups.py" />
@@ -582,6 +583,7 @@
     <File Id="F12g648dos7etyyo5nr4ofrt6u" Source="$(var.StdLibPath)\_weakrefset.py" />
     <File Id="Falm5l2octu5g9pdnqd2dga0m8" Source="$(var.StdLibPath)\abc.py" />
     <File Id="Fal43fecvrvuvzoz441svy69xf" Source="$(var.StdLibPath)\aifc.py" />
+    <File Id="F8tfrvynq86df73f41f3cgz6ak" Source="$(var.StdLibPath)\antigravity.py" />
     <File Id="F9xwh4rimwol79yairdi3byi5f" Source="$(var.StdLibPath)\anydbm.py" />
     <File Id="F9zrdswesvf091i3lvz536ntnh" Source="$(var.StdLibPath)\argparse.py" />
     <File Id="F3mg1cll2x4ujgg6kqmovojstp" Source="$(var.StdLibPath)\asynchat.py" />
@@ -628,6 +630,7 @@
     <File Id="F1lj722w6wry86w2b4fz62g835" Source="$(var.StdLibPath)\getpass.py" />
     <File Id="F56olb9cgo2ygaz29vhlhejnu4" Source="$(var.StdLibPath)\gettext.py" />
     <File Id="Fbpv6l87np9evxzjvypvuum9zz" Source="$(var.StdLibPath)\glob.py" />
+    <File Id="F5tb0l0oyzkrnh9yo3kqf4tak7" Source="$(var.StdLibPath)\gzip.py" />
     <File Id="F50lzrcn1f565880fmysbhb9kx" Source="$(var.StdLibPath)\hashlib.py" />
     <File Id="F386ko07cdxynrvcfwyydovlzp" Source="$(var.StdLibPath)\heapq.py" />
     <File Id="F2qnusabftb6ljlh004amnvprh" Source="$(var.StdLibPath)\hmac.py" />
@@ -635,6 +638,7 @@
     <File Id="F8v160o1mjyst3qcqzi2ml4wgj" Source="$(var.StdLibPath)\htmllib.py" />
     <File Id="F6vfy6we7ex0hmy1fy9ey227ob" Source="$(var.StdLibPath)\httplib.py" />
     <File Id="F10mxwl94ism5uoddrqbwoi0qi" Source="$(var.StdLibPath)\ihooks.py" />
+    <File Id="F2157vz33nacwuescumcvn8qcx" Source="$(var.StdLibPath)\imaplib.py" />
     <File Id="F9a5or77ijuw35c2n1eclbiw0o" Source="$(var.StdLibPath)\imghdr.py" />
     <File Id="F8cvtim4w4t0sq22iyuxvfdg96" Source="$(var.StdLibPath)\imputil.py" />
     <File Id="F9pw9rqljz2ttdu2nm4nyje3ii" Source="$(var.StdLibPath)\inspect.py" />
@@ -704,11 +708,13 @@
     <File Id="F3gd1v34wgs6mmsr5okudqepxi" Source="$(var.StdLibPath)\sre_compile.py" />
     <File Id="F4xroi779qv5edwja0gwk7on2e" Source="$(var.StdLibPath)\sre_constants.py" />
     <File Id="F75fivlarc5nug0cam3cu1yxyf" Source="$(var.StdLibPath)\sre_parse.py" />
+    <File Id="F6pxn00pm111e4gxm5wj0dux4w" Source="$(var.StdLibPath)\ssl.py" />
     <File Id="F6uw4cxg1jlkrlskc6gh74lbfg" Source="$(var.StdLibPath)\stat.py" />
     <File Id="F5fju69h99ib8cnp1rof9lsc5d" Source="$(var.StdLibPath)\statvfs.py" />
     <File Id="Fcvdt7melp9vanjjs4wecohlb5" Source="$(var.StdLibPath)\string.py" />
     <File Id="F5ciju11kjxzfqmkf6pu6p1xox" Source="$(var.StdLibPath)\stringold.py" />
     <File Id="F55kbonjla82slic7z5nwbp7ho" Source="$(var.StdLibPath)\struct.py" />
+    <File Id="Fdaabyhl0k6sa9cq84tcqa0i1e" Source="$(var.StdLibPath)\subprocess.py" />
     <File Id="Feh0cxxn4km2khl9nhl0k3vqy2" Source="$(var.StdLibPath)\sunau.py" />
     <File Id="Fcuzw88ccmrnu0myxr4y8olqs" Source="$(var.StdLibPath)\sunaudio.py" />
     <File Id="F6bg17hsbb4momli77t0puclq0" Source="$(var.StdLibPath)\symbol.py" />
@@ -736,6 +742,7 @@
     <File Id="Fbtefdh0bzue19ijf4iooj8e3z" Source="$(var.StdLibPath)\warnings.py" />
     <File Id="Farnegy1b97gze1elw8vtx6tz5" Source="$(var.StdLibPath)\wave.py" />
     <File Id="F1647rp6odzaii8r2zgbnv846k" Source="$(var.StdLibPath)\weakref.py" />
+    <File Id="F3ijmk9i19h85btgnysts7571d" Source="$(var.StdLibPath)\webbrowser.py" />
     <File Id="F4smbdmzlhcyadnsly9fahlg1s" Source="$(var.StdLibPath)\whichdb.py" />
     <File Id="F4v82mb755eokznu3qil7h4ofv" Source="$(var.StdLibPath)\xdrlib.py" />
     <File Id="F15sm2gogdillx8v0ndpzcscjt" Source="$(var.StdLibPath)\xmllib.py" />
