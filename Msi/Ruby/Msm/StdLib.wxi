@@ -938,6 +938,9 @@
     </Directory>
     <Directory Id="Defpk4cyike9tei6jmsq95cw7x" Name="gems">
       <Directory Id="D1qrcobkb2refi8dwkvtmxh3ml" Name="1.9.1">
+        <Component Id="C1qrcobkb2refi8dwkvtmxh3ml" DiskId="1" Guid="96f98135-927c-45d4-b86d-16a527f8e06c">
+          <File Id="Fav265wqzw47wopjmqzqul19cs" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ruby\gems\1.9.1\empty" />
+        </Component>
       </Directory>
     </Directory>
     <Directory Id="D4dt1gyam4sn9ld82utrboyo47" Name="site_ruby">
