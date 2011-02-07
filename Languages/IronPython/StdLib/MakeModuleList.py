@@ -98,12 +98,14 @@ for dirpath, dirnames, filenames in os.walk(base_dir):
                     sub_name = sub_name[4:]
                     if sub_name.endswith('.exe'):    
                         continue
-                    if (FileInfo(filename).Attributes & FileAttributes.ReadOnly):
-                        files.append('    <Content Include="$(StdLibPath)\%s" />\n' % (sub_name, ))
+                    
+                    files.append('    <Content Include="$(StdLibPath)\\%s" />\n' % (sub_name, ))
 
+# Add site-packages manually
+files.append('    <Content Include="$(StdLibPath)\\site-packages\\README.txt" />\n')
 
 print 'excluding these files:'
-for excluded_file in excludedFiles:
+for excluded_file in excludedDirectories + excludedFiles:
     print excluded_file
 
 file_list = ''.join(files)
