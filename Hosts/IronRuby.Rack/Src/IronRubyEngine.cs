@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.IO;
+using IronRuby;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Hosting;
@@ -25,9 +26,8 @@ namespace IronRubyRack {
         public static ScriptEngine Engine;
         private static ScriptScope _Scope;
 
-        public static void Init() {
-            var runtime = ScriptRuntime.CreateFromConfiguration();
-            Engine = runtime.GetEngine("Ruby");
+        static IronRubyEngine() {
+            Engine = Ruby.CreateEngine();
             _Scope = Engine.CreateScope();
         }
 
@@ -51,7 +51,7 @@ namespace IronRubyRack {
 
         public static object Require(string file, string rackVersion) {
             var command = "";
-            if (rackVersion != null) {
+            if (!string.IsNullOrEmpty(rackVersion)) {
                 command = string.Format("gem '{0}', '{1}';", file, rackVersion);
             }
             command += string.Format("require '{0}'", file);

@@ -16,6 +16,8 @@
 using System;
 using System.Configuration;
 using System.IO;
+using System.Linq;
+using System.Web;
 using IronRuby.Builtins;
 
 namespace IronRubyRack {
@@ -30,19 +32,22 @@ namespace IronRubyRack {
         private string _rackEnv;
         private string _publicDir;
         private RubyArray _actualRackVersion;
+    	private string _searchPaths;
+
 
         private const string AppRootOptionName = "AppRoot";
         private const string RackVersionOptionName = "RackVersion";
         private const string GemPathOptionName = "GemPath";
         private const string RackEnvOptionName = "RackEnv";
         private const string PublicDirOptionName = "PublicDir";
+        private const string SearchPathsOptionName = "SearchPaths";
 
         // TODO: also include overload which takes a RubyObject and uses it as
         // the Rack application (to truely support rackup).
         public IronRubyApplication(string appPath) {
             PhysicalAppPath = appPath;
 
-            IronRubyEngine.Init();
+        	InitSearchPaths();
             InitRack();
             _app = Rackup();
         }
@@ -50,6 +55,15 @@ namespace IronRubyRack {
         public RubyArray Call(Hash env) {
             return IronRubyEngine.ExecuteMethod<RubyArray>(App, "call", env);
         }
+
+		private void InitSearchPaths()
+		{
+			var paths = SearchPaths
+				.Split(';')
+				.Select(p => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, p))
+				.ToList();
+			IronRubyEngine.Engine.SetSearchPaths(paths);
+		}
 
         private void InitRack() {
             IronRubyEngine.SetToplevelBinding();
@@ -166,7 +180,17 @@ namespace IronRubyRack {
             }
         }
 
-        private static string GetFullPath(string path, string root) {
+    	public string SearchPaths
+    	{
+    		get
+    		{
+    			if(_searchPaths == null)
+    				_searchPaths = ConfigurationManager.AppSettings[SearchPathsOptionName] ?? "";
+    			return _searchPaths;
+    		}
+    	}
+
+    	private static string GetFullPath(string path, string root) {
             return Path.GetFullPath(Path.Combine(root, path));
         }
     }
