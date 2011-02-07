@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.IO;
 using IronRuby;
 using IronRuby.Builtins;
@@ -51,10 +52,10 @@ namespace IronRubyRack {
 
         public static object Require(string file, string rackVersion) {
             var command = "";
-            if (!string.IsNullOrEmpty(rackVersion)) {
-                command = string.Format("gem '{0}', '{1}';", file, rackVersion);
+            if (!String.IsNullOrEmpty(rackVersion)) {
+                command = String.Format("gem '{0}', '{1}';", file, rackVersion);
             }
-            command += string.Format("require '{0}'", file);
+            command += String.Format("require '{0}'", file);
             return Execute(command);
         }
 

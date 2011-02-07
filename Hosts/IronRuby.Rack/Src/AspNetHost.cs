@@ -38,8 +38,9 @@ namespace IronRubyRack {
         }
 
         public void ReleaseHandler(IHttpHandler/*!*/ handler) {
-			if(_Handler != null && !_Handler.IsReusable)
-	            _Handler = null;
+            if(_Handler != null && !_Handler.IsReusable) {
+                _Handler = null;
+            }
         }
     }
 
