@@ -52,7 +52,8 @@ class Harvester
     files = [] 
   
     Dir.foreach(full_path) do |entry|
-      next if entry == '.' or entry == '..'
+      # skip .gitignore files - we need them to keep otherwise empty directories in git repo
+      next if entry == '.' or entry == '..' or entry == '.gitignore'
       
       if File.directory? File.join(full_path, entry)
         dirs << entry
@@ -108,8 +109,12 @@ class Harvester
     files.each do |file|
       components = file.gsub('/', '\\').split('\\')
       file_name = components.delete_at(-1)
-      dir = components.reduce(root) { |node, component| node[component] ||= {} }
-      (dir["."] ||= []) << file_name
+      
+      # skip .gitignore files - we need them to keep otherwise empty directories in git repo
+      unless file_name == '.gitignore'
+        dir = components.reduce(root) { |node, component| node[component] ||= {} }
+        (dir["."] ||= []) << file_name
+      end
     end
     root
   end

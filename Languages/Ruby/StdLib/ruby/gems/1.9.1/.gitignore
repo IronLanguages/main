@@ -1,0 +1,1 @@
+# keep this directory in the repo - we need to include it in the installer since RubyGems are checking for its existence on the target machine. If it doesn't exist they attempt to create it which might fail due to restricted access to Program Files directory.

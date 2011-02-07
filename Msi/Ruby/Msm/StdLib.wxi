@@ -936,6 +936,10 @@
         <File Id="Fbdyu20p7thg6p5rx6f75q3li4" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ruby\1.9.1\yaml.rb" />
       </Component>
     </Directory>
+    <Directory Id="Defpk4cyike9tei6jmsq95cw7x" Name="gems">
+      <Directory Id="D1qrcobkb2refi8dwkvtmxh3ml" Name="1.9.1">
+      </Directory>
+    </Directory>
     <Directory Id="D4dt1gyam4sn9ld82utrboyo47" Name="site_ruby">
       <Directory Id="D6pivmhauk6pvm1hask5ei1y17" Name="1.9.1">
         <Component Id="C6pivmhauk6pvm1hask5ei1y17" DiskId="1" Guid="f08ab020-1678-4aac-90e9-65b166d3157b">
