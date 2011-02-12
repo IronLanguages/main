@@ -72,10 +72,10 @@ namespace IronRuby.Runtime {
         public const string BinDirEnvironmentVariable = "IRONRUBY_11";
 
         // IronRuby:
-        public const string IronRubyInformationalVersion = "1.1.2";
+        public const string IronRubyInformationalVersion = "1.1.3";
 #if !SILVERLIGHT
-        public const string/*!*/ IronRubyVersionString = "1.1.2.0";
-        public static readonly Version IronRubyVersion = new Version(1, 1, 2, 0);
+        public const string/*!*/ IronRubyVersionString = "1.1.3.0";
+        public static readonly Version IronRubyVersion = new Version(1, 1, 3, 0);
 #else
         public const string/*!*/ IronRubyVersionString = "1.1.1302.0";
         public static readonly Version IronRubyVersion = new Version(1, 1, 1302, 0);

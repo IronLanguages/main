@@ -44,7 +44,7 @@ namespace HostingTest{
             );
 
             Ruby = new LangSetup( new[] { "IronRuby", "Ruby", "rb" }, new[] { ".rb" },"IronRuby",
-                "IronRuby.Runtime.RubyContext", "IronRuby, Version=1.1.2.0, Culture=neutral"
+                "IronRuby.Runtime.RubyContext", "IronRuby, Version=1.1.3.0, Culture=neutral"
             );
         }
 
