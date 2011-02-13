@@ -116,7 +116,7 @@ chr4    ="%DLR_ROOT%\Bin\Silverlight4Release\Chiron.exe" $*
 ;=
 
 n       =notepad.exe $*
-n2      =C:\Programs\notepad2.exe $*
+n2      ="%DLR_ROOT%\External\Tools\notepad2.exe" $*
 bc      ="%PROGRAM_FILES_32%\Beyond Compare 2\Bc2.exe" $*
 scite   =C:\programs\ruby\scite\scite.exe $*
 ps      =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe $*

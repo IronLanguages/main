@@ -358,7 +358,8 @@ namespace IronPython.Runtime {
             return cur;
         }
 
-        internal SourceSpan Span {
+        public SourceSpan Span {
+            [PythonHidden]
             get {
                 return _lambda.Span;
             }

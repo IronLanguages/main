@@ -336,7 +336,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Attempts to convert value into a index usable for slicing and return the integer
-        /// value.  If the conversion fails false is returned.  
+        /// value.  If the conversion fails false is returned.
         /// 
         /// If throwOverflowError is true then BigInteger's outside the normal range of integers will
         /// result in an OverflowError.
@@ -352,6 +352,29 @@ namespace IronPython.Runtime {
 
             index = res.HasValue ? res.Value : 0;
             return res.HasValue;
+        }
+
+        internal static bool TryConvertToIndex(object value, out object index) {
+            return TryConvertToIndex(value, true, out index);
+        }
+
+        /// <summary>
+        /// Attempts to convert value into a index usable for slicing and return the integer
+        /// value.  If the conversion fails false is returned.
+        /// 
+        /// If throwOverflowError is true then BigInteger's outside the normal range of integers will
+        /// result in an OverflowError.
+        /// </summary>
+        internal static bool TryConvertToIndex(object value, bool throwOverflowError, out object index) {
+            index = ConvertToSliceIndexHelper(value);
+            if (index == null) {
+                object callable;
+                if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
+                    index = ConvertToSliceIndexHelper(PythonCalls.Call(callable));
+                }
+            }
+
+            return index != null;
         }
 
         public static int ConvertToIndex(object value) {
@@ -397,7 +420,19 @@ namespace IronPython.Runtime {
 
             return bi == BigInteger.Zero ? 0 : bi > 0 ? Int32.MaxValue : Int32.MinValue;
         }
-        
+
+        private static object ConvertToSliceIndexHelper(object value) {
+            if (value is int) return value;
+            if (value is Extensible<int>) return ScriptingRuntimeHelpers.Int32ToObject(((Extensible<int>)value).Value);
+
+            if (value is BigInteger) {
+                return value;
+            } else if (value is Extensible<BigInteger>) {
+                return ((Extensible<BigInteger>)value).Value;
+            }
+            return null;
+        }
+
         internal static Exception CannotConvertOverflow(string name, object value) {
             return PythonOps.OverflowError("Cannot convert {0}({1}) to {2}", PythonTypeOps.GetName(value), value, name);
         }

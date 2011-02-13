@@ -110,8 +110,6 @@ class ThreadRunningTests(BasicThreadTest):
                 thread.stack_size(0)
 
     def test__count(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28193"):
-            return
         # Test the _count() function.
         orig = thread._count()
         mut = thread.allocate_lock()
@@ -135,6 +133,8 @@ class ThreadRunningTests(BasicThreadTest):
         del task
         while not done:
             time.sleep(0.01)
+            import gc
+            gc.collect()
         self.assertEqual(thread._count(), orig)
 
 

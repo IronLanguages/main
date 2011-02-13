@@ -91,8 +91,8 @@ namespace IronPython.Runtime {
             return new PythonDictionary(new StringDictionaryStorage(count));
         }
 
-        public void __init__(CodeContext/*!*/ context, object o, [ParamDictionary]IDictionary<object, object> kwArgs) {
-            update(context, o);
+        public void __init__(CodeContext/*!*/ context, object o\u00F8, [ParamDictionary]IDictionary<object, object> kwArgs) {
+            update(context, o\u00F8);
             update(context, kwArgs);
         }
 
@@ -100,8 +100,8 @@ namespace IronPython.Runtime {
             update(context, kwArgs);
         }
 
-        public void __init__(CodeContext/*!*/ context, object o) {
-            update(context, o);
+        public void __init__(CodeContext/*!*/ context, object o\u00F8) {
+            update(context, o\u00F8);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]

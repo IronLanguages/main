@@ -808,15 +808,23 @@ namespace IronPython.Runtime {
             if (val < 0) val *= -1;
 
             // convert value to octal
-            StringBuilder str = new StringBuilder();
-            if (val == 0) str.Append('0');
-            while (val != 0) {
-                int digit = (int)(val % radix);
-                if (digit < 10) str.Append((char)((digit) + '0'));
-                else if (Char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
-                else str.Append((char)((digit - 10) + 'A'));
 
-                val /= radix;
+            StringBuilder str = new StringBuilder();
+            // use .NETs faster conversion if we can
+            if (radix == 16) {
+                str.Append(Char.IsLower(format) ? val.ToString("x") : val.ToString("X"));
+            } else if (radix == 10) {
+                str.Append(val.ToString());
+            } else {
+                if (val == 0) str.Append('0');
+                while (val != 0) {
+                    int digit = (int)(val % radix);
+                    if (digit < 10) str.Append((char)((digit) + '0'));
+                    else if (Char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
+                    else str.Append((char)((digit - 10) + 'A'));
+
+                    val /= radix;
+                }
             }
 
             // pad out for additional precision

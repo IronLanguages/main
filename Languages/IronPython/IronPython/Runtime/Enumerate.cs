@@ -26,6 +26,12 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
+
 namespace IronPython.Runtime {
     /* 
      * Enumeraters exposed to Python code directly
@@ -37,10 +43,21 @@ namespace IronPython.Runtime {
     [DontMapIDisposableToContextManagerAttribute, DontMapIEnumerableToContains]
     public class Enumerate : IEnumerator, IEnumerator<object> {
         private readonly IEnumerator _iter;
-        private int _index = -1;
-
+        private object _index;
+        
         public Enumerate(object iter) {
             _iter = PythonOps.GetEnumerator(iter);
+            _index = ScriptingRuntimeHelpers.Int32ToObject(-1);
+        }
+
+        public Enumerate(CodeContext context, object iter, object start) {
+            object index;
+            if (!Converter.TryConvertToIndex(start, out index)) {
+                throw PythonOps.TypeErrorForUnIndexableObject(start);
+            }
+
+            _iter = PythonOps.GetEnumerator(iter);
+            _index = context.LanguageContext.Operation(Binding.PythonOperationKind.Subtract, index, ScriptingRuntimeHelpers.Int32ToObject(1));
         }
 
         public object __iter__() {
@@ -66,7 +83,18 @@ namespace IronPython.Runtime {
         }
 
         bool IEnumerator.MoveNext() {
-            _index++;
+            if (_index is int) {
+                int index = (int)_index;
+                if (index != Int32.MaxValue) {
+                    _index = ScriptingRuntimeHelpers.Int32ToObject(index + 1);
+                } else {
+                    _index = new BigInteger(Int32.MaxValue) + 1;
+                }
+            } else {
+                Debug.Assert(_index is BigInteger);
+                _index = (BigInteger)_index + 1;
+            }
+            
             return _iter.MoveNext();
         }
 

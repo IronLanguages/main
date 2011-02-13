@@ -267,12 +267,6 @@ namespace IronPython.Runtime {
                 }
             }
 
-            // avoid allocating a bunch of strings if we can...
-            object ret;
-            if (bottom && TryGetExistingModule(context, modName, out ret)) {
-                return ret;
-            }
-
             // now import the a.b.c etc.  a needs to be included here
             // because the process of importing could have modified
             // sys.modules.

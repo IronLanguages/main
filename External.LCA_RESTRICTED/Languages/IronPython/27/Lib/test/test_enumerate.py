@@ -233,18 +233,17 @@ class EnumerateStartTestCase(EnumerateTestCase):
         self.assertEqual(list(self.enum(self.seq)), self.res)
 
 
-if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/27656"):
-    class TestStart(EnumerateStartTestCase):
+class TestStart(EnumerateStartTestCase):
 
-        enum = lambda self, i: enumerate(i, start=11)
-        seq, res = 'abc', [(11, 'a'), (12, 'b'), (13, 'c')]
+	enum = lambda self, i: enumerate(i, start=11)
+	seq, res = 'abc', [(11, 'a'), (12, 'b'), (13, 'c')]
 
 
-    class TestLongStart(EnumerateStartTestCase):
+class TestLongStart(EnumerateStartTestCase):
 
-        enum = lambda self, i: enumerate(i, start=sys.maxint+1)
-        seq, res = 'abc', [(sys.maxint+1,'a'), (sys.maxint+2,'b'),
-                           (sys.maxint+3,'c')]
+	enum = lambda self, i: enumerate(i, start=sys.maxint+1)
+	seq, res = 'abc', [(sys.maxint+1,'a'), (sys.maxint+2,'b'),
+					   (sys.maxint+3,'c')]
 
 
 def test_main(verbose=None):

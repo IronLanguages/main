@@ -126,12 +126,6 @@ namespace IronPython.Compiler.Ast {
             }
         }
         
-        internal override bool NeedsLocalContext {
-            get {
-                return true;
-            }
-        }
-
         internal override bool ExposesLocalVariable(PythonVariable variable) {
             return true;
         }

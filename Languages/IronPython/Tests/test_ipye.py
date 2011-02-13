@@ -204,10 +204,20 @@ def test_cp27547():
     AreEqual(result, ScriptCodeParseResult.IncompleteToken)
 
 def test_hidden_base():
-	from IronPythonTest import DerivedFromHiddenBase
-	a = DerivedFromHiddenBase()
-	AreEqual(a.Accessible(), 42)
-	AssertError(AttributeError, lambda: a.Inaccessible)
+    from IronPythonTest import DerivedFromHiddenBase
+    a = DerivedFromHiddenBase()
+    AreEqual(a.Accessible(), 42)
+    AssertError(AttributeError, lambda: a.Inaccessible)
+	
+def test_cp27150():
+	from IronPythonTest import GenericProperty
+	from System import DateTime
+	
+	wrapper = GenericProperty[DateTime]()
+	def f():
+		wrapper.Value = None
+	AssertError(TypeError, f)
+	
 	
 #--MAIN------------------------------------------------------------------------        
 run_test(__name__)

@@ -342,6 +342,24 @@ def test_coerce():
     AreEqual(coerce(None, None), (None, None))
     AssertError(TypeError, coerce, None, 1)
     AssertError(TypeError, coerce, 1, None)
+    
+    class x(object):
+        def __init__(self, value):
+            self.value = value
+        def __int__(self):
+            return self.value
+        def __coerce__(self, other):
+            return self, x(other)
+        def __eq__(self, other):
+            return self.value == other.value
+        def __repr__(self):
+            return 'x(' + repr(self.value) + ')'
+
+    for value in (x(42), 42., 42L):
+        AreEqual(int.__coerce__(0, value), NotImplemented)
+        l, r = coerce(0, value)
+        AreEqual((r, l), (value, type(value)(0)))
+        AreEqual((type(l), type(r)), (type(value), type(value)))
    
 def test_zip():
     def foo(): yield 2
@@ -683,6 +701,18 @@ def in_main():
 def test_error_messages():
     AssertErrorWithMessages(TypeError, "join() takes exactly 1 argument (2 given)", "join() takes exactly one argument (2 given)", "".join, ["a", "b"], "c")
     
+def test_enumerate():
+	class MyIndex(object):
+		def __init__(self, value):
+			self.value = value
+		def __index__(self):
+			return self.value
+
+	for value_maker in MyIndex, lambda x: x:
+		AreEqual([(10, 2), (11, 3), (12, 4)], list(enumerate([2,3,4], value_maker(10))))
+		AreEqual([(10, 2), (11, 3), (12, 4)], list(enumerate([2,3,4], start=value_maker(10))))
+		AreEqual([(2147483647, 2), (2147483648, 3), (2147483649, 4)], list(enumerate([2,3,4], value_maker(int((1<<31) - 1)))))
+		AreEqual([(2147483648, 2), (2147483649, 3), (2147483650, 4)], list(enumerate([2,3,4], value_maker(1<<31))))
     
 temp_func = in_main()
 locals_globals = 7

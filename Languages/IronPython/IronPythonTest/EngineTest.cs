@@ -2801,4 +2801,17 @@ if r.sum != 110:
             return 42;
         }
     }
+
+    public class GenericProperty<T> {
+        private T _value;
+        public T Value {
+            get {
+                return this._value;
+            }
+            set {
+                this._value = value;
+            }
+        }
+    }
+
 }

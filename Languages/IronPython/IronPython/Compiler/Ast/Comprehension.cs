@@ -31,6 +31,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
+    using System.Runtime.CompilerServices;
 
     public abstract class ComprehensionIterator : Node {
         internal abstract MSAst.Expression Transform(MSAst.Expression body);
@@ -130,14 +131,16 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
     }
-
+        
     public sealed class SetComprehension : Comprehension {
         private readonly ComprehensionIterator[] _iterators;
         private readonly Expression _item;
+        private readonly ComprehensionScope _scope;
 
         public SetComprehension(Expression item, ComprehensionIterator[] iterators) {
             _item = item;
             _iterators = iterators;
+            _scope = new ComprehensionScope(this);
         }
 
         public Expression Item {
@@ -154,6 +157,10 @@ namespace IronPython.Compiler.Ast {
 
         protected override MethodInfo Factory() {
             return AstMethods.MakeEmptySet;
+        }
+
+        public override Ast Reduce() {
+            return _scope.AddVariables(base.Reduce());
         }
 
         protected override Ast Body(MSAst.ParameterExpression res) {
@@ -186,16 +193,24 @@ namespace IronPython.Compiler.Ast {
             }
             walker.PostWalk(this);
         }
+
+        internal ComprehensionScope Scope {
+            get {
+                return _scope;
+            }
+        }
     }
 
     public sealed class DictionaryComprehension : Comprehension {
         private readonly ComprehensionIterator[] _iterators;
         private readonly Expression _key, _value;
+        private readonly ComprehensionScope _scope;
 
         public DictionaryComprehension(Expression key, Expression value, ComprehensionIterator[] iterators) {
             _key = key;
             _value = value;
             _iterators = iterators;
+            _scope = new ComprehensionScope(this);
         }
 
         public Expression Key {
@@ -216,6 +231,10 @@ namespace IronPython.Compiler.Ast {
 
         protected override MethodInfo Factory() {
             return AstMethods.MakeEmptyDict;
+        }
+
+        public override Ast Reduce() {
+            return _scope.AddVariables(base.Reduce());
         }
 
         protected override Ast Body(MSAst.ParameterExpression res) {
@@ -251,6 +270,103 @@ namespace IronPython.Compiler.Ast {
                 }
             }
             walker.PostWalk(this);
+        }
+
+        internal ComprehensionScope Scope {
+            get {
+                return _scope;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Scope for the comprehension.  Because scopes are usually statements and comprehensions are expressions
+    /// this doesn't actually show up in the AST hierarchy and instead hangs off the comprehension expression.
+    /// </summary>
+    class ComprehensionScope : ScopeStatement {
+        private readonly Expression _comprehension;
+        internal static readonly MSAst.ParameterExpression _compContext = Ast.Parameter(typeof(CodeContext), "$compContext");
+
+        public ComprehensionScope(Expression comprehension) {
+            _comprehension = comprehension;
+        }
+
+        internal override bool ExposesLocalVariable(PythonVariable variable) {
+            if (NeedsLocalsDictionary) {
+                return true;
+            } else if (variable.Scope == this) {
+                return false;
+            }
+            return _comprehension.Parent.ExposesLocalVariable(variable);
+        }
+
+        internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
+            PythonVariable variable;
+            if (TryGetVariable(reference.Name, out variable)) {
+                if (variable.Kind == VariableKind.Global) {
+                    AddReferencedGlobal(reference.Name);
+                }
+                return variable;
+            }
+
+            // then bind in our parent scope
+            return _comprehension.Parent.BindReference(binder, reference);
+        }
+
+        internal override Ast GetVariableExpression(PythonVariable variable) {
+            if (variable.IsGlobal) {
+                return GlobalParent.ModuleVariables[variable];
+            }
+
+            Ast expr;
+            if (_variableMapping.TryGetValue(variable, out expr)) {
+                return expr;
+            }
+
+            return _comprehension.Parent.GetVariableExpression(variable);
+        }
+
+        internal override Microsoft.Scripting.Ast.LightLambdaExpression GetLambda() {
+            throw new NotImplementedException();
+        }
+
+        public override void Walk(PythonWalker walker) {
+            _comprehension.Walk(walker);
+        }
+
+        internal override Ast LocalContext {
+            get {
+                if (NeedsLocalContext) {
+                    return _compContext;
+                }
+
+                return _comprehension.Parent.LocalContext;
+            }
+        }
+
+        internal Ast AddVariables(Ast expression) {
+            ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>();
+            MSAst.ParameterExpression localContext = null;
+            if (NeedsLocalContext) {
+                localContext = _compContext;
+                locals.Add(_compContext);
+            }
+
+            List<MSAst.Expression> body = new List<MSAst.Expression>();
+            CreateVariables(locals, body);
+
+            if (localContext != null) {
+                var createLocal = CreateLocalContext(_comprehension.Parent.LocalContext);
+                body.Add(Ast.Assign(_compContext, createLocal));
+                body.Add(expression);
+            } else {
+                body.Add(expression);
+            }
+
+            return Expression.Block(
+                locals, 
+                body
+            );
         }
     }
 }

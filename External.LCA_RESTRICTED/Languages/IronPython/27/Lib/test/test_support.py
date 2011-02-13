@@ -1122,17 +1122,9 @@ def run_doctest(module, verbosity=None):
 # at the end of a test run.
 
 def threading_setup():
-    # http://ironpython.codeplex.com/workitem/28193
-    if thread and hasattr(thread, '_count'):
-        return thread._count(),
-    else:
-        return 1,
+	return thread._count(),
 
 def threading_cleanup(nb_threads):
-    # http://ironpython.codeplex.com/workitem/28193
-    if not (thread and hasattr(thread, '_count')):
-        return
-
     _MAX_COUNT = 10
     for count in range(_MAX_COUNT):
         n = thread._count()
