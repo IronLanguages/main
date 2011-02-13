@@ -101,7 +101,7 @@ namespace IronRuby.Builtins {
 
             IList list = Protocols.TryCastToArray(tryToAry, val);
             if (list != null) {
-                IEnumerable recEnum = IListOps.EnumerateRecursively(tryToAry, list, (_) => MutableString.CreateAscii("[...]"));
+                IEnumerable recEnum = IListOps.EnumerateRecursively(tryToAry, list, -1, (_) => MutableString.CreateAscii("[...]"));
                 foreach (object item in recEnum ?? list) {
                     Puts(writeStorage, self, ToPrintedString(tosConversion, item));
                 }

@@ -546,6 +546,34 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        [RubyMethod("flatten")]
+        public static IList/*!*/ Flatten(ConversionStorage<IList>/*!*/ tryToAry, IDictionary<object, object>/*!*/ self,
+            [DefaultProtocol, DefaultParameterValue(1)] int maxDepth) {
+
+            if (maxDepth == 0) {
+                return ToArray(self);
+            } else if (maxDepth > 0) {
+                maxDepth--;
+            }
+
+            RubyArray result = new RubyArray();
+            IList list;
+            foreach (KeyValuePair<object, object> pair in self) {
+                if (maxDepth != 0 && (list = Protocols.TryCastToArray(tryToAry, pair.Key)) != null) {
+                    IListOps.Flatten(tryToAry, list, maxDepth - 1, result);
+                } else {
+                    result.Add(pair.Key);
+                }
+
+                if (maxDepth != 0 && (list = Protocols.TryCastToArray(tryToAry, pair.Value)) != null) {
+                    IListOps.Flatten(tryToAry, list, maxDepth - 1, result);
+                } else {
+                    result.Add(pair.Value);
+                }
+            }
+            return result;
+        }
+
         [RubyMethod("to_hash")]
         public static IDictionary<object, object> ToHash(IDictionary<object, object>/*!*/ self) {
             return self;

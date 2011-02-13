@@ -1115,7 +1115,11 @@ namespace IronRuby.Builtins {
         /// Enumerates all items of the list recursively - if there are any items convertible to IList the items of that lists are enumerated as well.
         /// Returns null if there are no nested lists and so the list can be enumerated using a standard enumerator.
         /// </summary>
-        public static IEnumerable<object> EnumerateRecursively(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ list, Func<IList, object>/*!*/ loopDetected) {
+        public static IEnumerable<object> EnumerateRecursively(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ list, int maxDepth, Func<IList, object>/*!*/ loopDetected) {
+            if (maxDepth == 0) {
+                return null;
+            }
+            
             IList nested;
             int nestedIndex = IndexOfList(tryToAry, list, 0, out nested);
 
@@ -1123,42 +1127,44 @@ namespace IronRuby.Builtins {
                 return null;
             }
 
-            return EnumerateRecursively(tryToAry, list, list, nested, nestedIndex, loopDetected);
+            return EnumerateRecursively(tryToAry, list, list, nested, nestedIndex, maxDepth, loopDetected);
         }
 
         private static IEnumerable<object>/*!*/ EnumerateRecursively(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ root, 
-            IList/*!*/ list, IList nested, int nestedIndex, Func<IList, object>/*!*/ loopDetected) {
+            IList/*!*/ list, IList/*!*/ nested, int nestedIndex, int maxDepth, Func<IList, object>/*!*/ loopDetected) {
+
+            Debug.Assert(nested != null);
+            Debug.Assert(nestedIndex != -1);
+
+            if (maxDepth < 0) {
+                maxDepth = Int32.MaxValue;
+            }
 
             var worklist = new Stack<KeyValuePair<IList, int>>();
-            var recursionPath = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
+            var recursionPath = new HashSet<object>(ReferenceEqualityComparer<object>.Instance);
+            recursionPath.Add(root);
             int start = 0;
 
             while (true) {
-                if (nestedIndex >= 0) {
-                    // push a workitem for the items following the nested list:
-                    if (nestedIndex < list.Count - 1) {
-                        worklist.Push(new KeyValuePair<IList, int>(list, nestedIndex + 1));
-                    }
+                // "list" is the list being visited by the current work item (there might be more work items visiting the same list)
+                // "nestedIndex" is the index of "nested" in the "list"
 
+                if (nestedIndex >= 0) {
+                    // push a work item that will process the items following the nested list:
+                    worklist.Push(new KeyValuePair<IList, int>(list, nestedIndex + 1));
+                    
                     // yield items preceding the nested list:
                     for (int i = start; i < nestedIndex; i++) {
                         yield return list[i];
                     }
 
                     // push a workitem for the nested list:
-                    if (nestedIndex != -1) {
-                        worklist.Push(new KeyValuePair<IList, int>(nested, 0));                        
-                    }
+                    worklist.Push(new KeyValuePair<IList, int>(nested, 0));
                 } else {
                     // there is no nested list => yield all remaining items:
                     for (int i = start; i < list.Count; i++) {
                         yield return list[i];
                     }
-                }
-
-                // finished nested list workitem:
-                if (start == 0) {
-                    recursionPath.Remove(list);
                 }
 
             next:
@@ -1170,45 +1176,63 @@ namespace IronRuby.Builtins {
                 list = workitem.Key;
                 start = workitem.Value;
 
-                // starting nested workitem:
-                if (start == 0) {
-                    if (ReferenceEquals(nested, root) || recursionPath.ContainsKey(nested)) {
-                        yield return loopDetected(nested);
-                        goto next;
-                    } else {
-                        recursionPath.Add(nested, true);
-                    }
+                // finishing nested list:
+                if (start == list.Count) {
+                    recursionPath.Remove(list);
+                    goto next;
                 }
-                
-                nestedIndex = IndexOfList(tryToAry, list, start, out nested);
+
+                // starting nested list:
+                if (start == 0 && recursionPath.Contains(list)) {
+                    yield return loopDetected(list);
+                    goto next;
+                }
+
+                // set the index to -1 if we would go deeper then we should:
+                nestedIndex = (recursionPath.Count < maxDepth) ? IndexOfList(tryToAry, list, start, out nested) : -1;
+
+                // starting nested list:
+                if (start == 0 && nestedIndex != -1) {
+                    recursionPath.Add(list);
+                }
             }
         }
 
-        [RubyMethod("flatten")]
-        public static IList/*!*/ Flatten(UnaryOpStorage/*!*/ allocateStorage, ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ self) {
-            IList result = CreateResultArray(allocateStorage, self);
-            var recEnum = EnumerateRecursively(tryToAry, self, (_) => { throw RubyExceptions.CreateArgumentError("tried to flatten recursive array"); });
+        internal static IList/*!*/ Flatten(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ list, int maxDepth, IList/*!*/ result) {
+            var recEnum = EnumerateRecursively(tryToAry, list, maxDepth, (_) => { 
+                throw RubyExceptions.CreateArgumentError("tried to flatten recursive array"); 
+            });
 
             if (recEnum != null) {
                 foreach (var item in recEnum) {
                     result.Add(item);
                 }
             } else {
-                AddRange(result, self);
+                AddRange(result, list);
             }
 
             return result;
         }
 
+        [RubyMethod("flatten")]
+        public static IList/*!*/ Flatten(UnaryOpStorage/*!*/ allocateStorage, ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ self, 
+            [DefaultProtocol, DefaultParameterValue(-1)] int maxDepth) {
+
+            return Flatten(tryToAry, self, maxDepth, CreateResultArray(allocateStorage, self));
+        }
 
         [RubyMethod("flatten!")]
-        public static IList FlattenInPlace(ConversionStorage<IList>/*!*/ tryToAry, RubyArray/*!*/ self) {
+        public static IList FlattenInPlace(ConversionStorage<IList>/*!*/ tryToAry, RubyArray/*!*/ self, [DefaultProtocol, DefaultParameterValue(-1)] int maxDepth) {
             self.RequireNotFrozen();
-            return FlattenInPlace(tryToAry, (IList)self);
+            return FlattenInPlace(tryToAry, (IList)self, maxDepth);
         }
         
         [RubyMethod("flatten!")]
-        public static IList FlattenInPlace(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ self) {
+        public static IList FlattenInPlace(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ self, [DefaultProtocol, DefaultParameterValue(-1)] int maxDepth) {
+            if (maxDepth == 0) {
+                return null;
+            }
+            
             IList nested;
             int nestedIndex = IndexOfList(tryToAry, self, 0, out nested);
 
@@ -1222,7 +1246,7 @@ namespace IronRuby.Builtins {
             }
 
             bool isRecursive = false;
-            var recEnum = EnumerateRecursively(tryToAry, self, remaining, nested, 0, (rec) => {
+            var recEnum = EnumerateRecursively(tryToAry, self, remaining, nested, 0, maxDepth, (rec) => {
                 isRecursive = true;
                 return rec;
             });

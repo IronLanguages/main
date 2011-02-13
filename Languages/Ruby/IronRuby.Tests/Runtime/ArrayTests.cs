@@ -14,6 +14,8 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
+using IronRuby.Builtins;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -111,6 +113,20 @@ a = [1,*[[],[*4], *[*[]]]]
 puts a.inspect
 ");
             }, @"[1, [], [4]]");
+        }
+
+        public void IListOps_EnumerateRecursively1() {
+            var a = new RubyArray();
+            var b = new RubyArray();
+            b.Add(new RubyArray { new RubyArray { b } });
+            a.Add(b);
+
+            var result = IListOps.EnumerateRecursively(new Runtime.ConversionStorage<System.Collections.IList>(Context), a, -1, list => {
+                Assert(list == b);
+                return 123;
+            }).ToArray();
+
+            Assert(result.Length == 1 && (int)result[0] == 123);
         }
     }
 }

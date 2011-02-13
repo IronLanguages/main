@@ -379,6 +379,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyArrays4,
                 Scenario_RubyArrays5,
                 Scenario_RubyArrays6,
+                IListOps_EnumerateRecursively1,
 
                 Scenario_RubyHashes1A,
                 Scenario_RubyHashes1B,
