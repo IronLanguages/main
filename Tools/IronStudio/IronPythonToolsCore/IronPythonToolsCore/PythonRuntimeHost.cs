@@ -86,7 +86,7 @@ namespace Microsoft.IronPythonTools {
             }
 #endif
             
-            using (var ipy = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\IronPython")) {
+            using (var ipy = Registry.LocalMachine.OpenSubKey("SOFTWARE\\IronPython")) {
                 if (ipy != null) {
                     using (var twoSeven = ipy.OpenSubKey("2.7")) {
                         if (twoSeven != null) {
