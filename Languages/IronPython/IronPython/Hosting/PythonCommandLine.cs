@@ -179,6 +179,10 @@ namespace IronPython.Hosting {
                     Options.FileName = "<stdin>";
                 } else {
 #if !SILVERLIGHT
+                    if (Directory.Exists(Options.FileName)) {
+                        Options.FileName = Path.Combine(Options.FileName, "__main__.py");
+                    }
+
                     if (!File.Exists(Options.FileName)) {
                         Console.WriteLine(
                             String.Format(
