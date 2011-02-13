@@ -26,7 +26,7 @@
           <File Id="File_winforms.py" Name="winforms.py" />
           <File Id="File_xmlutil.py" Name="xmlutil.py" />
           <Shortcut Id="Shortcut_Tutorial" Directory="Dir_StartMenu" Name="IronPython Tutorial" Target="[#File_Tutorial.htm]" />
-          <RegistryValue Root='HKCU' Key='SOFTWARE\IronPython\2.7\Tutorial'
+          <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\2.7\Tutorial'
                       Type='string' Value='Installed' 
                       KeyPath='yes' /> 
         </Component>
