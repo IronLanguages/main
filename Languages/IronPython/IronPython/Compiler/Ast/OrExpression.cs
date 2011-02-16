@@ -80,7 +80,8 @@ namespace IronPython.Compiler.Ast {
 
         public override Type Type {
             get {
-                return _left.Type == _right.Type ? _left.Type : typeof(object);
+                Type leftType = _left.Type;
+                return leftType == _right.Type ? leftType : typeof(object);
             }
         }
 
