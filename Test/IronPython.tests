@@ -3293,7 +3293,7 @@
         <Test>
           <Name>test_imaplib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_imaplib.py</Arguments>
+          <Arguments>Test\regrtest.py -u network Test\test_imaplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- Causes the tests to hang -->

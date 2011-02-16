@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace TestRunner {
-    class TestResult {
+    public class TestResult {
         public readonly Test Test;
         public readonly TestResultStatus Status;
         public readonly double EllapsedSeconds;
@@ -16,9 +16,25 @@ namespace TestRunner {
             EllapsedSeconds = ellapsedSeconds;
             Output = output;
         }
+
+        public bool IsFailure
+        {
+            get
+            {
+                return Status == TestResultStatus.Failed || Status == TestResultStatus.TimedOut;
+            }
+        }
+
+        public bool WasRun
+        {
+            get
+            {
+                return Status != TestResultStatus.Disabled && Status != TestResultStatus.Skipped && Status != TestResultStatus.None;
+            }
+        }
     }
 
-    enum TestResultStatus {
+    public enum TestResultStatus {
         None,
         Passed,
         Failed,
