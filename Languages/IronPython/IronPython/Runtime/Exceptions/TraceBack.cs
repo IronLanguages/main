@@ -148,7 +148,7 @@ namespace IronPython.Runtime.Exceptions {
             get {
                 object context;
                 if (_scopeCallback != null &&
-                    _scopeCallback().TryGetValue(Compiler.Ast.PythonAst.GlobalContextName, out context)) {
+                    _scopeCallback().TryGetValue(Compiler.Ast.PythonAst.GlobalContextName, out context) && context != null) {
                     return ((CodeContext)context).GlobalDict;
                 } else {
                     return _globals;
