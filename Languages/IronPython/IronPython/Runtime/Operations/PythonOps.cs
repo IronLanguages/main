@@ -2246,7 +2246,8 @@ namespace IronPython.Runtime.Operations {
                         context,
                         context.GlobalDict,
                         context.Dict,
-                        code);
+                        code,
+                        tb != null ? tb.tb_frame : null);
 
                     tb = new TraceBack(tb, tbf);
                     tb.SetLine(frame.GetFileLineNumber());
@@ -4375,7 +4376,7 @@ namespace IronPython.Runtime.Operations {
                 if (pyFrames == null) {
                     e.SetFrameList(pyFrames = new List<DynamicStackFrame>());
                 }
-
+                
                 var frame = new PythonDynamicStackFrame(context, funcCode, line);
                 funcCode.LightThrowCompile(context);
                 pyFrames.Add(frame);

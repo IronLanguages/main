@@ -228,10 +228,7 @@ compile_tests = [
     #("'abc'.", "invalid syntax", 1),
 ]
 
-if is_ironpython or float(sys.winver) < 2.7: #http://ironpython.codeplex.com/workitem/28379
-    compile_tests.append(("None = 2", "assignment to None", 1, False))
-else:
-    compile_tests.append(("None = 2", "cannot assign to None", 1, False))
+compile_tests.append(("None = 2", "cannot assign to None", 1, False))
 
 # different error messages, ok
 for test in compile_tests:

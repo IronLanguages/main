@@ -208,5 +208,10 @@ def test_system_core_cp20623():
     AreEqual(cp20623.A, 35)
     #TODO: need to also generate a standalone exe from cp20623 and try running it
 
+def test_cp30178():
+    compileCode("cp30178", 'mydict = { "a": ("Fail", "tuple") }')
+    import cp30178
+    AreEqual(cp30178.mydict, {'a' : ('Fail', 'tuple')})
+
 #------------------------------------------------------------------------------        
 run_test(__name__)

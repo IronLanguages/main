@@ -30,7 +30,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
-    public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, ICodeFormattable, IEnumerable {
+    public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, ICodeFormattable, IEnumerable, IWeakReferenceable {
         private readonly Func<MutableTuple, object>/*!*/ _next;     // The delegate which contains the user code to perform the iteration.
         private readonly PythonFunction _function;                  // the function which created the generator
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
@@ -63,6 +63,7 @@ namespace IronPython.Runtime {
         /// Since send() could send an exception, we need to keep this different from throwable's value.
         /// </summary>
         private object _sendValue;
+        private WeakRefTracker _tracker;
 
         internal PythonGenerator(PythonFunction function, Func<MutableTuple, object>/*!*/ next, MutableTuple data) {
             _function = function;
@@ -617,6 +618,23 @@ namespace IronPython.Runtime {
         IEnumerator IEnumerable.GetEnumerator() {
             // only present for better C# interop
             return this;
+        }
+
+        #endregion
+
+        #region IWeakReferenceable Members
+
+        WeakRefTracker IWeakReferenceable.GetWeakRef() {
+            return _tracker;
+        }
+
+        bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
+            _tracker = value;
+            return true;
+        }
+
+        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
+            _tracker = value;
         }
 
         #endregion

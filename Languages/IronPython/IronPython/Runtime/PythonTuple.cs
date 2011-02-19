@@ -24,20 +24,28 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Compiler.Ast;
+
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 #if CLR2
 using Microsoft.Scripting.Math;
+using MSAst = Microsoft.Scripting.Ast;
 #else
 using System.Numerics;
+using MSAst = System.Linq.Expressions;
 #endif
 
+using Utils = Microsoft.Scripting.Ast.Utils;
+
 namespace IronPython.Runtime {
+    using Ast = MSAst.Expression;
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("tuple"), Serializable, DebuggerTypeProxy(typeof(CollectionDebugProxy)), DebuggerDisplay("tuple, {Count} items")]
-    public class PythonTuple : ICollection, IEnumerable, IEnumerable<object>, IList, IList<object>, ICodeFormattable,
+    public class PythonTuple : ICollection, IEnumerable, IEnumerable<object>, IList, IList<object>, ICodeFormattable, IExpressionSerializable,
 #if CLR2
         IValueEquality,
 #endif
@@ -637,6 +645,26 @@ namespace IronPython.Runtime {
             set {
                 throw new InvalidOperationException("Tuple is readonly");
             }
+        }
+
+        #endregion
+
+        #region IExpressionSerializable Members
+
+        public System.Linq.Expressions.Expression CreateExpression() {
+            Ast[] items = new Ast[Count];
+            for (int i = 0; i < items.Length; i++) {
+                items[i] = Utils.Constant(this[i]);
+            }
+
+            return Ast.Call(
+                AstMethods.MakeTuple,
+                Ast.NewArrayInit(
+                    typeof(object),
+                    items
+                )
+            );
+
         }
 
         #endregion

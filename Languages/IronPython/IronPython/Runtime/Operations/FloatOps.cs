@@ -793,7 +793,7 @@ namespace IronPython.Runtime.Operations {
                 return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
             } else {
                 // Always pass isZero=false so that -0.0 shows up
-                return spec.AlignNumericText(digits, false, Sign(self) > 0);
+                return spec.AlignNumericText(digits, false, Double.IsNaN(self) ?  true : Sign(self) > 0);
             }
         }
 

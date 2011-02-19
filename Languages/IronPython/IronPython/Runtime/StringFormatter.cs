@@ -812,9 +812,9 @@ namespace IronPython.Runtime {
             StringBuilder str = new StringBuilder();
             // use .NETs faster conversion if we can
             if (radix == 16) {
-                str.Append(Char.IsLower(format) ? val.ToString("x") : val.ToString("X"));
+                AppendNumberReversed(str, Char.IsLower(format) ? val.ToString("x") : val.ToString("X"));
             } else if (radix == 10) {
-                str.Append(val.ToString());
+                AppendNumberReversed(str, val.ToString());
             } else {
                 if (val == 0) str.Append('0');
                 while (val != 0) {
@@ -875,6 +875,16 @@ namespace IronPython.Runtime {
             // append the final value
             for (int i = str.Length - 1; i >= 0; i--) {
                 _buf.Append(str[i]);
+            }
+        }
+
+        private static void AppendNumberReversed(StringBuilder str, string res) {
+            int start = 0;
+            while (start < (res.Length - 1) && res[start] == '0') {
+                start++;
+            }
+            for (int i = res.Length - 1; i >= start; i--) {
+                str.Append(res[i]);
             }
         }
 

@@ -248,10 +248,12 @@ namespace IronPython.Runtime {
             }
 
             Bucket[] buckets = _buckets;
+            res._hashFunc = _hashFunc;
+            res._eqFunc = _eqFunc;
+            res._itemType = _itemType;
             if (_count < _buckets.Length * MinLoad) {
                 // If the set is sparsely populated, create a cleaner copy
                 res.Initialize(_count);
-                res.UpdateHelperFunctions(this);
 
                 for (int i = 0; i < buckets.Length; i++) {
                     Bucket bucket = buckets[i];
@@ -263,9 +265,6 @@ namespace IronPython.Runtime {
                 // Otherwise, perform a faster copy
                 res._maxCount = (int)(buckets.Length * Load);
                 res._buckets = new Bucket[buckets.Length];
-                res._hashFunc = _hashFunc;
-                res._eqFunc = _eqFunc;
-                res._itemType = _itemType;
 
                 for (int i = 0; i < buckets.Length; i++) {
                     Bucket bucket = buckets[i];

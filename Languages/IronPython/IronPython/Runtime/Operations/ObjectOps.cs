@@ -253,6 +253,8 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.ValueError("Sign not allowed in string format specifier");
             } else if (spec.Alignment == '=') {
                 throw PythonOps.ValueError("'=' alignment not allowed in string format specifier");
+            } else if (spec.ThousandsComma) {
+                throw PythonOps.ValueError("Cannot specify ',' with 's'.");
             }
 
             // apply precision to shorten the string first
