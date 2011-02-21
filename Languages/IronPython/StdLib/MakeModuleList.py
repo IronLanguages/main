@@ -49,6 +49,7 @@ if len(BROKEN_LIST)<10:
 #Specify Packages and Modules that should not be included here.
 excludedDirectories += [
                         "/Lib/test",
+                        "/Lib/idlelib",
                         "/Lib/lib-tk",
                         ]
 excludedDirectories += [x for x in BROKEN_LIST if not x.endswith(".py")]
@@ -90,7 +91,7 @@ for dirpath, dirnames, filenames in os.walk(base_dir):
                 break
         else:
             for excluded in excludedDirectories:
-                if filename.lower().startswith(excluded):
+                if filename.lower().startswith(excluded) or r'\test' in filename.lower():
                     break
             else:
                 sub_name = filename[len(base_dir) + 1:]

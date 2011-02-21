@@ -35,6 +35,7 @@ STDOUT_BAK = sys.stdout
 FILE_LIST = [LOG_FILE_BUSTED, LOG_FILE_OK, STDOUT_FAKE]
 VERBOSE = __name__=="__main__"
 BROKEN_LIST = []
+BLACKLIST = ['test', 'idlelib'] #Importing all tests takes too long
 
 #--FUNCTIONS-------------------------------------------------------------------
 def import_helper(mod_name):
@@ -115,7 +116,7 @@ def check_package(package_name):
         root_name = package_name
     else:
         root_name = cwd.split(CPY_DIR + "\\Lib\\")[1].replace("\\", ".") + "." + package_name
-       
+    
     #First check that the root package can be imported 
     try:
         import_helper(package_name)    
@@ -131,7 +132,7 @@ def check_package(package_name):
     nt.chdir(cwd + "\\" + package_name)        
     
     for x in nt.listdir("."):
-        if x.endswith(".py") and x != "__init__.py":
+        if x.endswith(".py") and x not in ("__init__.py", '__main__.py'):
             x = x.split(".py", 1)[0]
             mod_name = nt.getcwd().split(CPY_DIR + "\\Lib\\")[1] + "\\" + x
             mod_name = mod_name.replace("\\", ".")
@@ -143,7 +144,7 @@ def check_package(package_name):
             except (Exception, SystemExit), e:
                 log_broken(mod_name, e)
         
-        elif is_package(x):
+        elif is_package(x) and not x.startswith('test'):
             check_package(x)
 
     nt.chdir(cwd)
@@ -168,8 +169,7 @@ def main(cpy_dir):
     for pack_name in nt.listdir(CPY_LIB_DIR):
         if not is_package(pack_name):
             continue
-        #Importing all tests takes too long
-        elif pack_name in ["test"]:
+        elif pack_name in BLACKLIST:
             continue
         
         check_package(pack_name)
