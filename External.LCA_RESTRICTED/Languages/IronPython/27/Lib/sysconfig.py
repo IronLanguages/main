@@ -56,11 +56,11 @@ _INSTALL_SCHEMES = {
         'data'   : '{userbase}',
         },
     'nt_user': {
-        'stdlib': '{userbase}/Python{py_version_nodot}',
-        'platstdlib': '{userbase}/Python{py_version_nodot}',
-        'purelib': '{userbase}/Python{py_version_nodot}/site-packages',
-        'platlib': '{userbase}/Python{py_version_nodot}/site-packages',
-        'include': '{userbase}/Python{py_version_nodot}/Include',
+        'stdlib': '{userbase}/IronPython{py_version_nodot}',
+        'platstdlib': '{userbase}/IronPython{py_version_nodot}',
+        'purelib': '{userbase}/IronPython{py_version_nodot}/site-packages',
+        'platlib': '{userbase}/IronPython{py_version_nodot}/site-packages',
+        'include': '{userbase}/IronPython{py_version_nodot}/Include',
         'scripts': '{userbase}/Scripts',
         'data'   : '{userbase}',
         },
@@ -157,7 +157,7 @@ def _get_default_scheme():
     return os.name
 
 def _getuserbase():
-    env_base = os.environ.get("PYTHONUSERBASE", None)
+    env_base = os.environ.get("IRONPYTHONUSERBASE", None)
     def joinuser(*args):
         return os.path.expanduser(os.path.join(*args))
 
