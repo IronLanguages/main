@@ -10,58 +10,6 @@
         <File Id="F3cr6eov3enu2i56632r83inub" Source="$(var.StdLibPath)\ctypes\macholib\framework.py" />
       </Component>
     </Directory>
-    <Directory Id="D54s0eagi9gjwrc8hggaljrnzo" Name="test">
-      <Component Id="C54s0eagi9gjwrc8hggaljrnzo" DiskId="1" Guid="a0d262e2-f5c9-443c-90b2-8c5881cc42f7">
-        <File Id="F5gk2yc0aavhv1ku6svsrhetzn" Source="$(var.StdLibPath)\ctypes\test\__init__.py" />
-        <File Id="F4fymktbamkg0lxafknn0tlema" Source="$(var.StdLibPath)\ctypes\test\runtests.py" />
-        <File Id="Faoreigfl6tg9fwsvw2v4g3kp9" Source="$(var.StdLibPath)\ctypes\test\test_anon.py" />
-        <File Id="F7mmir5grr0uzlz3swo4po4twg" Source="$(var.StdLibPath)\ctypes\test\test_array_in_pointer.py" />
-        <File Id="Faik0kx973kbov02hql0a0r5mf" Source="$(var.StdLibPath)\ctypes\test\test_arrays.py" />
-        <File Id="Fcrqsgas6nq7lab5umn6gcja06" Source="$(var.StdLibPath)\ctypes\test\test_as_parameter.py" />
-        <File Id="F717yu0k313a3qtfw63c5yy65b" Source="$(var.StdLibPath)\ctypes\test\test_bitfields.py" />
-        <File Id="Fyf1exkm70hli7xjarbmg03l3" Source="$(var.StdLibPath)\ctypes\test\test_buffers.py" />
-        <File Id="F7jqhidhjfhmjfatexepistcg" Source="$(var.StdLibPath)\ctypes\test\test_byteswap.py" />
-        <File Id="Fcb04k2kiyg27vgdhxs96y4dxt" Source="$(var.StdLibPath)\ctypes\test\test_callbacks.py" />
-        <File Id="Fcx5vhrsjh6gc7rkmyv63xsbzg" Source="$(var.StdLibPath)\ctypes\test\test_cast.py" />
-        <File Id="F3aux53cybbli8okrwlvmoi0i5" Source="$(var.StdLibPath)\ctypes\test\test_cfuncs.py" />
-        <File Id="F37xe0hzhwg6we6w2dmfuhxkpy" Source="$(var.StdLibPath)\ctypes\test\test_checkretval.py" />
-        <File Id="F71lc0ocpl7chiolizq61aveu7" Source="$(var.StdLibPath)\ctypes\test\test_delattr.py" />
-        <File Id="F15pysz1rerlv413u8nh38yxet" Source="$(var.StdLibPath)\ctypes\test\test_errcheck.py" />
-        <File Id="F8klg27i221fhzf51eftz8zddn" Source="$(var.StdLibPath)\ctypes\test\test_frombuffer.py" />
-        <File Id="F5ndhnvex0zfl0ozmq7bj2e1g7" Source="$(var.StdLibPath)\ctypes\test\test_funcptr.py" />
-        <File Id="F9l3acmlo3pp2d5wvb3w5ugc1t" Source="$(var.StdLibPath)\ctypes\test\test_functions.py" />
-        <File Id="Fcrehvvsnxl9cmzj3nt5q1k8s3" Source="$(var.StdLibPath)\ctypes\test\test_incomplete.py" />
-        <File Id="F7vut3jqvvj5j7pk6idp6673jo" Source="$(var.StdLibPath)\ctypes\test\test_init.py" />
-        <File Id="F7mqwj9yzkkhub36uqvaxh53yg" Source="$(var.StdLibPath)\ctypes\test\test_integers.py" />
-        <File Id="Fdtikbb4ma5r2pwiwakvzf5szh" Source="$(var.StdLibPath)\ctypes\test\test_internals.py" />
-        <File Id="Fdigod9dnkw8m6urmtxipl94v1" Source="$(var.StdLibPath)\ctypes\test\test_keeprefs.py" />
-        <File Id="F36ct96apltut772uwdmf59u8x" Source="$(var.StdLibPath)\ctypes\test\test_libc.py" />
-        <File Id="F9fgfozcwfw1qxjvbxh6du0rpg" Source="$(var.StdLibPath)\ctypes\test\test_macholib.py" />
-        <File Id="F81bqg9yozbws2nl0vsy74gbtq" Source="$(var.StdLibPath)\ctypes\test\test_memfunctions.py" />
-        <File Id="F4ucvwh69wy8hqx5uu2vbgce4v" Source="$(var.StdLibPath)\ctypes\test\test_numbers.py" />
-        <File Id="F6zx58xrd02t77gyauhe2xm97a" Source="$(var.StdLibPath)\ctypes\test\test_objects.py" />
-        <File Id="F6cyi6k1twuek6b4d9boednds8" Source="$(var.StdLibPath)\ctypes\test\test_parameters.py" />
-        <File Id="Fzwours774pqqt9dkqht2dq17" Source="$(var.StdLibPath)\ctypes\test\test_pep3118.py" />
-        <File Id="Fawcgpfppbwoi47os4n457t0g6" Source="$(var.StdLibPath)\ctypes\test\test_pickling.py" />
-        <File Id="F7ljle6xw89jb01k6etvsjg6gz" Source="$(var.StdLibPath)\ctypes\test\test_pointers.py" />
-        <File Id="Fecksbfv67xl6yd8rxvzegb1js" Source="$(var.StdLibPath)\ctypes\test\test_prototypes.py" />
-        <File Id="F3p75ve2fwy6e2n7v0a7k7ssop" Source="$(var.StdLibPath)\ctypes\test\test_random_things.py" />
-        <File Id="Fep0dlfnjzkvqfloy5z5mbpmp6" Source="$(var.StdLibPath)\ctypes\test\test_refcounts.py" />
-        <File Id="Fcwua80xwr7i3bmykap3qdfqwt" Source="$(var.StdLibPath)\ctypes\test\test_repr.py" />
-        <File Id="F3q3ue2vbei4tc697sb615x4lo" Source="$(var.StdLibPath)\ctypes\test\test_returnfuncptrs.py" />
-        <File Id="Fdtz278p4hvlhyfkvjd5eek6x7" Source="$(var.StdLibPath)\ctypes\test\test_simplesubclasses.py" />
-        <File Id="F16oplyd5p731gap13lt7n4ua2" Source="$(var.StdLibPath)\ctypes\test\test_sizes.py" />
-        <File Id="F5uavpyi9fwrwzr4n9b2r5vko6" Source="$(var.StdLibPath)\ctypes\test\test_slicing.py" />
-        <File Id="F9xomsmhz9viyevt6mlelx9dph" Source="$(var.StdLibPath)\ctypes\test\test_stringptr.py" />
-        <File Id="F28rqk55nnz4q1pduah4xopkfx" Source="$(var.StdLibPath)\ctypes\test\test_struct_fields.py" />
-        <File Id="Fesd8893btsjnmyzhxmwzso5m0" Source="$(var.StdLibPath)\ctypes\test\test_structures.py" />
-        <File Id="F9othpgcb60c3m8jwf4n31dej8" Source="$(var.StdLibPath)\ctypes\test\test_unaligned_structures.py" />
-        <File Id="F8zgiluoofomidwga11iwpg41k" Source="$(var.StdLibPath)\ctypes\test\test_unicode.py" />
-        <File Id="F1ku7rlp4in9amiitr1nym0ft5" Source="$(var.StdLibPath)\ctypes\test\test_values.py" />
-        <File Id="F8hf640eg0azab7p20wgkrt5pc" Source="$(var.StdLibPath)\ctypes\test\test_varsize_struct.py" />
-        <File Id="F79zhntjdv7fqrdq485bonditx" Source="$(var.StdLibPath)\ctypes\test\test_win32.py" />
-      </Component>
-    </Directory>
     <Component Id="Cemq0npjicqfu1nied7gascue9" DiskId="1" Guid="4fc80e69-d6de-4c94-9262-7034e65b51b2">
       <File Id="Fbcd30solwhlp7ms3b50ynd8n4" Source="$(var.StdLibPath)\ctypes\__init__.py" />
       <File Id="Fe0d46c2v1locpdyddyobq39wl" Source="$(var.StdLibPath)\ctypes\_endian.py" />
@@ -94,37 +42,6 @@
         <File Id="F1xwh6eoy8lih5k1umxm3flxyv" Source="$(var.StdLibPath)\distutils\command\register.py" />
         <File Id="Fb11ne8ojqv7s1migme8gsmd40" Source="$(var.StdLibPath)\distutils\command\sdist.py" />
         <File Id="F1d1o9qzv28t8o0t5z1l18x6me" Source="$(var.StdLibPath)\distutils\command\upload.py" />
-      </Component>
-    </Directory>
-    <Directory Id="Dao2gipi0rwlfq8u8mdmvohmlr" Name="tests">
-      <Component Id="Cao2gipi0rwlfq8u8mdmvohmlr" DiskId="1" Guid="c5c2646a-e2f5-4311-b167-8b7b8a5fbdda">
-        <File Id="F7a10fz8ihor324s3gu4a3udnv" Source="$(var.StdLibPath)\distutils\tests\__init__.py" />
-        <File Id="Fa5c0vmvng8y453s2wbmtnh614" Source="$(var.StdLibPath)\distutils\tests\setuptools_build_ext.py" />
-        <File Id="Fe8ei9fop1ck72stbi99rnn10t" Source="$(var.StdLibPath)\distutils\tests\setuptools_extension.py" />
-        <File Id="F8qw3wzsn0jl9ztnekt7bvlrin" Source="$(var.StdLibPath)\distutils\tests\support.py" />
-        <File Id="F3mc70o9c9eizdgfm3abgq4dlu" Source="$(var.StdLibPath)\distutils\tests\test_build.py" />
-        <File Id="Fd4157izxftv4midlpq1bnvj5j" Source="$(var.StdLibPath)\distutils\tests\test_build_clib.py" />
-        <File Id="F4tw61por74bbqg17u27m1cw1q" Source="$(var.StdLibPath)\distutils\tests\test_build_py.py" />
-        <File Id="Faaf9hkork83wvcki9cxzl0i4z" Source="$(var.StdLibPath)\distutils\tests\test_build_scripts.py" />
-        <File Id="F87bmj3kff917tjwp5hsrdapo1" Source="$(var.StdLibPath)\distutils\tests\test_check.py" />
-        <File Id="F6oaqyfbr8nifsuu7qateezlue" Source="$(var.StdLibPath)\distutils\tests\test_clean.py" />
-        <File Id="F6rcskp2qxnm1ow5td6t25eaw6" Source="$(var.StdLibPath)\distutils\tests\test_config.py" />
-        <File Id="Fe5u0greaqpbkxn1n7h05pd1eo" Source="$(var.StdLibPath)\distutils\tests\test_config_cmd.py" />
-        <File Id="Fa5lqg4b5jzyl5u4nylgd0ivti" Source="$(var.StdLibPath)\distutils\tests\test_dep_util.py" />
-        <File Id="Faf4uwx6glul75l9ig4ti6phiw" Source="$(var.StdLibPath)\distutils\tests\test_dir_util.py" />
-        <File Id="F75z1majvxcqi1cdhu8tvodju8" Source="$(var.StdLibPath)\distutils\tests\test_file_util.py" />
-        <File Id="Fboplstm6dbxhduw6m8eqsjvci" Source="$(var.StdLibPath)\distutils\tests\test_install.py" />
-        <File Id="Fb9kyea7b4i4runkhsjjq0etf2" Source="$(var.StdLibPath)\distutils\tests\test_install_data.py" />
-        <File Id="F5rw7740z832oq43vxkatl92bn" Source="$(var.StdLibPath)\distutils\tests\test_install_headers.py" />
-        <File Id="F4cltbcnfybzi9a4by924vhhif" Source="$(var.StdLibPath)\distutils\tests\test_install_lib.py" />
-        <File Id="F5326bis9i69evyhbid5qog2c3" Source="$(var.StdLibPath)\distutils\tests\test_install_scripts.py" />
-        <File Id="F31zvrifbw4x0mf6s2pbhfsf1v" Source="$(var.StdLibPath)\distutils\tests\test_msvc9compiler.py" />
-        <File Id="Fapgheu7z7cd2s4v6sxxxq1cat" Source="$(var.StdLibPath)\distutils\tests\test_text_file.py" />
-        <File Id="Fd73sg314yj7cix2y37p67cu0z" Source="$(var.StdLibPath)\distutils\tests\test_unixccompiler.py" />
-        <File Id="F1p30conj1qbcughsajl0izsg9" Source="$(var.StdLibPath)\distutils\tests\test_upload.py" />
-        <File Id="F5sqo5uyybgyrnt0dzekpjkdxb" Source="$(var.StdLibPath)\distutils\tests\test_util.py" />
-        <File Id="F5f3b4oxher4hg1096n6l3egfd" Source="$(var.StdLibPath)\distutils\tests\test_version.py" />
-        <File Id="Fb6w6grxytgzhz802e95bmv1yw" Source="$(var.StdLibPath)\distutils\tests\test_versionpredicate.py" />
       </Component>
     </Directory>
     <Component Id="C1f5lgitddenr0aw5vnepwpcb7" DiskId="1" Guid="9a17704f-3c25-44c5-8659-664bb6833df5">
@@ -169,11 +86,6 @@
         <File Id="F5us81l4j33njkvl1dv0uo90bm" Source="$(var.StdLibPath)\email\mime\multipart.py" />
         <File Id="F78kkrabhutryhglr5nhaejw6r" Source="$(var.StdLibPath)\email\mime\nonmultipart.py" />
         <File Id="Fckecxwnqemley6xg1z3am0zsa" Source="$(var.StdLibPath)\email\mime\text.py" />
-      </Component>
-    </Directory>
-    <Directory Id="Des7bm0pf1n77oy4j9tpa2o5ip" Name="test">
-      <Component Id="Ces7bm0pf1n77oy4j9tpa2o5ip" DiskId="1" Guid="83e7d475-74e3-4b4b-bd1d-1bb840f21f3f">
-        <File Id="F17178n18kqwuy8ua2y0p1kuvu" Source="$(var.StdLibPath)\email\test\__init__.py" />
       </Component>
     </Directory>
     <Component Id="C87aiijzuercuthqvs1e30pr86" DiskId="1" Guid="22458dfa-e867-4b31-8740-2aeab818c6ef">
@@ -290,46 +202,12 @@
       <File Id="F6z3cmbu17yovstqx2ndxd387i" Source="$(var.StdLibPath)\encodings\zlib_codec.py" />
     </Component>
   </Directory>
-  <Directory Id="Dusdjuyklalbdldeeiqayidqt" Name="idlelib">
-    <Component Id="Cusdjuyklalbdldeeiqayidqt" DiskId="1" Guid="c02e5da5-ceba-43c0-bf12-3be50424c3d4">
-      <File Id="F8crg641b5izoge0t2bk3mdl8l" Source="$(var.StdLibPath)\idlelib\AutoExpand.py" />
-      <File Id="Fd4k30pab2qf1shyo8g2wq97qv" Source="$(var.StdLibPath)\idlelib\Delegator.py" />
-      <File Id="Famdb0asyv3ajt8oiam1fp38kd" Source="$(var.StdLibPath)\idlelib\HyperParser.py" />
-      <File Id="Famfp3ut93kbdh9t6qaugqpot9" Source="$(var.StdLibPath)\idlelib\PyParse.py" />
-      <File Id="F737vv69gh0otqmowqd08091un" Source="$(var.StdLibPath)\idlelib\RemoteObjectBrowser.py" />
-      <File Id="F59yhhqcsa7mszmbwthe0fjrzp" Source="$(var.StdLibPath)\idlelib\RstripExtension.py" />
-      <File Id="F84t8j4fp0tbupkbt1x2ph61ri" Source="$(var.StdLibPath)\idlelib\__init__.py" />
-      <File Id="Fedioo9duxutswodten3nf4tff" Source="$(var.StdLibPath)\idlelib\idlever.py" />
-      <File Id="F8t4vml99g35ojho3h0rba1yz7" Source="$(var.StdLibPath)\idlelib\rpc.py" />
-    </Component>
-  </Directory>
   <Directory Id="Dbnkidw4bqy6u6fzzd55cahmus" Name="importlib">
     <Component Id="Cbnkidw4bqy6u6fzzd55cahmus" DiskId="1" Guid="3c767d28-129f-4330-bf1f-5b8da4b2fb3f">
       <File Id="F53f6tzl3o165lswj3xj6rflqs" Source="$(var.StdLibPath)\importlib\__init__.py" />
     </Component>
   </Directory>
   <Directory Id="D60dax4d25jvpxojnuyu0m2vt4" Name="json">
-    <Directory Id="D9o1vtx5649vwahpwliz5yivrt" Name="tests">
-      <Component Id="C9o1vtx5649vwahpwliz5yivrt" DiskId="1" Guid="d88398c1-3bc9-4557-a5a2-3c2b822edb05">
-        <File Id="Febyh785xr8lns6e6sh09b1re" Source="$(var.StdLibPath)\json\tests\__init__.py" />
-        <File Id="Fbj7kfuwbcvmyarh6cxktclcvz" Source="$(var.StdLibPath)\json\tests\test_check_circular.py" />
-        <File Id="F6qbqi0f3a1z95kew24myg6gcs" Source="$(var.StdLibPath)\json\tests\test_decode.py" />
-        <File Id="Fd85djqwujnrau3ujnrr928ci3" Source="$(var.StdLibPath)\json\tests\test_default.py" />
-        <File Id="F16b7rjiywo9skjhndd6wasasa" Source="$(var.StdLibPath)\json\tests\test_dump.py" />
-        <File Id="Fbc2poztde4qjb81gglmzb265o" Source="$(var.StdLibPath)\json\tests\test_encode_basestring_ascii.py" />
-        <File Id="F55g3txm4n3227w84ctw3fd9ma" Source="$(var.StdLibPath)\json\tests\test_fail.py" />
-        <File Id="F3j15mor6oyszxk50z51eq6w1s" Source="$(var.StdLibPath)\json\tests\test_float.py" />
-        <File Id="Fd4kha3gtp9r55wt3n62u1yqqt" Source="$(var.StdLibPath)\json\tests\test_indent.py" />
-        <File Id="F1n1fr0n8p7q9h0ffa8gpwio4w" Source="$(var.StdLibPath)\json\tests\test_pass1.py" />
-        <File Id="F1huibgtphimcuau2aisgy96k" Source="$(var.StdLibPath)\json\tests\test_pass2.py" />
-        <File Id="Fdbtvvgda0k0sv7cef92ne9va9" Source="$(var.StdLibPath)\json\tests\test_pass3.py" />
-        <File Id="Fc8aw7tvb3jnkaoxlkmfjhs3lw" Source="$(var.StdLibPath)\json\tests\test_recursion.py" />
-        <File Id="F4e16b4s9pnfthpfvfeaqmc2vx" Source="$(var.StdLibPath)\json\tests\test_scanstring.py" />
-        <File Id="F6nevbjmhxgv4wm3ak0m9244w1" Source="$(var.StdLibPath)\json\tests\test_separators.py" />
-        <File Id="F14muexx6es4zhrpn5pp524t6c" Source="$(var.StdLibPath)\json\tests\test_speedups.py" />
-        <File Id="F4kr8648y240c1jyyd9t0zfoga" Source="$(var.StdLibPath)\json\tests\test_unicode.py" />
-      </Component>
-    </Directory>
     <Component Id="C60dax4d25jvpxojnuyu0m2vt4" DiskId="1" Guid="4316eb22-8f4c-4b22-bb42-63e333cc3ae5">
       <File Id="F8ccwjvmq8497tf6y8jge86fz4" Source="$(var.StdLibPath)\json\__init__.py" />
       <File Id="F62yssg0a3zwr6hy3399yu99uk" Source="$(var.StdLibPath)\json\decoder.py" />
@@ -408,47 +286,6 @@
         <File Id="Fafaspllegusomnm8ht6qhlx4l" Source="$(var.StdLibPath)\lib2to3\pgen2\tokenize.py" />
       </Component>
     </Directory>
-    <Directory Id="D6nd7eghi0ywxvw366a8kpvkub" Name="tests">
-      <Directory Id="Dd7yj33v5aoillz2jvjuidr1ou" Name="data">
-        <Directory Id="D7dm0k6e3hzt68lxcuf3j9rjba" Name="fixers">
-          <Directory Id="D82siu4x9umm2pqv10m3wvxkiv" Name="myfixes">
-            <Component Id="C82siu4x9umm2pqv10m3wvxkiv" DiskId="1" Guid="8377fc88-4aec-4150-82a7-f59661bc43d4">
-              <File Id="F2o7lbg8yyljwrg8gzg11iqedy" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\myfixes\__init__.py" />
-              <File Id="Fc575u8c8a4wrmxtw6ujhw8ycf" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\myfixes\fix_explicit.py" />
-              <File Id="F9fkl5i3ij18z8nrhrzbwp22kt" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\myfixes\fix_first.py" />
-              <File Id="F6i01c4vtfw7v5gnvrbqogs0mo" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\myfixes\fix_last.py" />
-              <File Id="Faw3syg7sl6l3xtg3i4yjsx3ue" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\myfixes\fix_parrot.py" />
-              <File Id="F3wcv5cz8h551qp1sohtf4zgfs" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\myfixes\fix_preorder.py" />
-            </Component>
-          </Directory>
-          <Component Id="C7dm0k6e3hzt68lxcuf3j9rjba" DiskId="1" Guid="d9363929-1890-4f39-8ec6-52bf32857108">
-            <File Id="F517n26xfxzg7mj93hgt9v5b2t" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\bad_order.py" />
-            <File Id="Fcamv9tg9lrr3z4ra61k99c5kz" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\no_fixer_cls.py" />
-            <File Id="F5f78xjamp9zy7f4abcdda83hn" Source="$(var.StdLibPath)\lib2to3\tests\data\fixers\parrot_example.py" />
-          </Component>
-        </Directory>
-        <Component Id="Cd7yj33v5aoillz2jvjuidr1ou" DiskId="1" Guid="e1bd0e34-8159-46aa-8988-ebf18ba6bce6">
-          <File Id="F4mmdazi62ffrksd93zz097jqr" Source="$(var.StdLibPath)\lib2to3\tests\data\bom.py" />
-          <File Id="Fcixifn1dojq8vo0vuto63394d" Source="$(var.StdLibPath)\lib2to3\tests\data\crlf.py" />
-          <File Id="F2zysnfbvt7uhhv4cm7vr8b8tj" Source="$(var.StdLibPath)\lib2to3\tests\data\different_encoding.py" />
-          <File Id="Foj8huug051yu9brl62s14nal" Source="$(var.StdLibPath)\lib2to3\tests\data\infinite_recursion.py" />
-          <File Id="F2oznhwh7drrve1txgnick46jl" Source="$(var.StdLibPath)\lib2to3\tests\data\py2_test_grammar.py" />
-          <File Id="F5i0ym0nckqk0e1c15w6184gh0" Source="$(var.StdLibPath)\lib2to3\tests\data\py3_test_grammar.py" />
-        </Component>
-      </Directory>
-      <Component Id="C6nd7eghi0ywxvw366a8kpvkub" DiskId="1" Guid="6ed2fa4c-9b2d-4301-b90f-85624cdcbce4">
-        <File Id="F9tes81qcfscbinpt9n54mgdxq" Source="$(var.StdLibPath)\lib2to3\tests\__init__.py" />
-        <File Id="Fed04pl4cp16avrr2di7qn7nmc" Source="$(var.StdLibPath)\lib2to3\tests\pytree_idempotency.py" />
-        <File Id="F9jpy32b1awd2cfb6bssk0sklz" Source="$(var.StdLibPath)\lib2to3\tests\support.py" />
-        <File Id="F975e9obkc44unkf7ybvxc3h5l" Source="$(var.StdLibPath)\lib2to3\tests\test_all_fixers.py" />
-        <File Id="F5zhborepp5g6csrt5jmv0stcr" Source="$(var.StdLibPath)\lib2to3\tests\test_fixers.py" />
-        <File Id="F1cpu00tqhtbdznii6vjljmi4b" Source="$(var.StdLibPath)\lib2to3\tests\test_main.py" />
-        <File Id="F7mge422sgrcdy3c3rsmv2po05" Source="$(var.StdLibPath)\lib2to3\tests\test_parser.py" />
-        <File Id="Fez0l6jzkxv3f7u5aika3q7d9f" Source="$(var.StdLibPath)\lib2to3\tests\test_pytree.py" />
-        <File Id="F91juv98l0lwyokokcoz62n8it" Source="$(var.StdLibPath)\lib2to3\tests\test_refactor.py" />
-        <File Id="F2mqq5sfkkbj4yo29v3tgqeeua" Source="$(var.StdLibPath)\lib2to3\tests\test_util.py" />
-      </Component>
-    </Directory>
     <Component Id="Ceatgr2es4ita5abtrlpn9ri3z" DiskId="1" Guid="2126e1ea-28b8-4920-b059-26e7799ac226">
       <File Id="Fwqd4et4qlwe2q494vvxmf0hd" Source="$(var.StdLibPath)\lib2to3\__init__.py" />
       <File Id="F4i5m55g9p18azitlh8jlrv9nz" Source="$(var.StdLibPath)\lib2to3\fixer_base.py" />
@@ -479,23 +316,9 @@
     </Component>
   </Directory>
   <Directory Id="Da37f65gsc0xmzucpq6ytaw6kk" Name="unittest">
-    <Directory Id="Ddoyr0ms9xt14abbagbqo1kues" Name="test">
-      <Component Id="Cdoyr0ms9xt14abbagbqo1kues" DiskId="1" Guid="3efecec7-1fed-4839-aba5-50a34ca92e90">
-        <File Id="F1olssdkfn26thwnjvjdt4kho7" Source="$(var.StdLibPath)\unittest\test\__init__.py" />
-        <File Id="F1xyt1qadc4hssulpp23dxhlzt" Source="$(var.StdLibPath)\unittest\test\dummy.py" />
-        <File Id="Fbn40odazy94zv23kz60g1tkre" Source="$(var.StdLibPath)\unittest\test\support.py" />
-        <File Id="F46ebl9qxrw01l2ip7qblsqsr0" Source="$(var.StdLibPath)\unittest\test\test_assertions.py" />
-        <File Id="Fedcqo44tkw5dbs6vy5lsix6t6" Source="$(var.StdLibPath)\unittest\test\test_discovery.py" />
-        <File Id="F5ivuvgw1hpeadbawrjfczc8d8" Source="$(var.StdLibPath)\unittest\test\test_functiontestcase.py" />
-        <File Id="F3x58gisldnavdrxpu9m473ybt" Source="$(var.StdLibPath)\unittest\test\test_program.py" />
-        <File Id="Fdfputv1hsobz81lepqvnksihz" Source="$(var.StdLibPath)\unittest\test\test_runner.py" />
-        <File Id="F15p0rzzkfprgi4nctb2e8arat" Source="$(var.StdLibPath)\unittest\test\test_setups.py" />
-        <File Id="Feq94bc9s0g5uq1b4pp7c1nkam" Source="$(var.StdLibPath)\unittest\test\test_skipping.py" />
-        <File Id="Fpdto662q1aezolxrxayj3ur5" Source="$(var.StdLibPath)\unittest\test\test_suite.py" />
-      </Component>
-    </Directory>
     <Component Id="Ca37f65gsc0xmzucpq6ytaw6kk" DiskId="1" Guid="d3a2ab01-e19b-4882-91de-77473cc86469">
       <File Id="F9k3htfmqaqq05rnpc34cevtfv" Source="$(var.StdLibPath)\unittest\__init__.py" />
+      <File Id="F3s2rryimtkpmz9xgj4sowtlmy" Source="$(var.StdLibPath)\unittest\__main__.py" />
       <File Id="F5v52m9qv72gy32cmb0naseaxi" Source="$(var.StdLibPath)\unittest\case.py" />
       <File Id="Fdsrsfqbee3mlwdi8sl2tq4a7z" Source="$(var.StdLibPath)\unittest\loader.py" />
       <File Id="Fa2ic5elhz2buibit001t5mmbl" Source="$(var.StdLibPath)\unittest\main.py" />
