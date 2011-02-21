@@ -4,7 +4,14 @@ if "%1" == "" (
     set BUILD_FLAVOR=%1
 )
 
+:BuildIronLanguages
+msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=%BUILD_FLAVOR%
+
+:GenerateModulesList
+%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ipy.exe %DLR_ROOT%\Languages\IronPython\StdLib\MakeModuleList.py
+
 :GenerateMSI
+%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ir.exe %DLR_ROOT%\Msi\Python\generate_wxis.rb
 msbuild %DLR_ROOT%\Msi\Installer.proj /p:Configuration=%BUILD_FLAVOR%
 
 :GenerateZip
