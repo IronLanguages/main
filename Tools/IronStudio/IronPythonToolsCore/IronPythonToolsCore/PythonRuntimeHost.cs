@@ -86,15 +86,11 @@ namespace Microsoft.IronPythonTools {
             }
 #endif
             
-            using (var ipy = Registry.LocalMachine.OpenSubKey("SOFTWARE\\IronPython")) {
-                if (ipy != null) {
-                    using (var twoSeven = ipy.OpenSubKey("2.7")) {
-                        if (twoSeven != null) {
-                            var path = twoSeven.GetValue("") as string;
-                            if (path != null) {
-                                return path;
-                            }
-                        }
+            using (var installPath = Registry.LocalMachine.OpenSubKey("SOFTWARE\\IronPython\\2.7\\InstallPath")) {
+                if (installPath != null) {
+                    var path = installPath.GetValue("") as string;
+                    if (path != null) {
+                        return path;
                     }
                 }
             }

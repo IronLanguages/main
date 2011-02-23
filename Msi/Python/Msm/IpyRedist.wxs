@@ -20,7 +20,7 @@
                 <File Id="File_Readme.html" Name="Readme.html" Source="$(var.PythonDir)\Public\Readme.html"/>
               </Component>
               <Component Id="Comp_Installation_Location" Guid="536A8336-C5ED-4192-8B70-A76EA933C705">
-                <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\2.7'
+                <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\2.7\InstallPath'
                           Type='string' Value='[INSTALLDIR]' 
                           KeyPath='yes' /> 
                 <File Id="IronPython_PF.dll" Name="IronPython.dll" />
