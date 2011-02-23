@@ -30,7 +30,7 @@ namespace HostingTest {
 
         [Test]
         public void LanguageDisplayName_Test() {
-            Assert.AreEqual(_runTime.GetEngine("python").Setup.DisplayName, "IronPython 2.7 RC 1");
+            Assert.AreEqual(_runTime.GetEngine("python").Setup.DisplayName, "IronPython 2.7 RC 2");
             Assert.AreEqual(_runTime.GetEngine("ruby").Setup.DisplayName, "IronRuby");
         }
 

@@ -16,13 +16,13 @@
 using System.Reflection;
 
 #if !SILVERLIGHT
-[assembly: AssemblyVersion("2.7.0.30")]
+[assembly: AssemblyVersion("2.7.0.40")]
 #else
-[assembly: AssemblyVersion("2.7.1300.30")]
+[assembly: AssemblyVersion("2.7.1300.40")]
 #endif
 
 [assembly: AssemblyInformationalVersion("2.7")]
-[assembly: AssemblyFileVersion("2.7.0.30")]
+[assembly: AssemblyFileVersion("2.7.0.40")]
 
 [assembly: AssemblyCompany("IronPython Team")]
-[assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCopyright("© IronPython Contributors.")]
