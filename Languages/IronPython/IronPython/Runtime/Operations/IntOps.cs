@@ -422,9 +422,8 @@ namespace IronPython.Runtime.Operations {
 
         public static object __coerce__(CodeContext context, int x, object o) {
             // called via builtin.coerce()
-            int val;
-            if (Converter.TryConvertToInt32(o, out val)) {
-                return PythonTuple.MakeTuple(x, val);
+            if (o is int) {
+                return PythonTuple.MakeTuple(ScriptingRuntimeHelpers.Int32ToObject(x), o);
             }
             return NotImplementedType.Value;
         }

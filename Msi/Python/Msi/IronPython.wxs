@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  IronPython installer root features, upgrades, and product definition
+  2006-01-01 BobArnso Created
+-->
+
+<!-- 
+WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
+1. Update the ProductVersion.  TODO - this should automatically be done from gopackage
+2. Update the ProductVersionText. TODO - this should automatically be done from gopackage
+3. Update the UpgradeCode GUID
+4. Check that the IronPython "ARP*" property links are still valid
+-->
+
+<?include ..\Version.wxi ?> 
+
+<?define UpgradeCode = "a162604e-d515-4155-9b8b-2854502d1588" ?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)">
+    <Package Id="*" Compressed="yes" Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" InstallerVersion="200" ShortNames="no" Manufacturer="$(var.Manufacturer)" />
+    <Media Id="1" Cabinet="IronPy.cab" EmbedCab="yes" CompressionLevel="high" />
+    
+    <!-- Major upgrade -->
+    <Upgrade Id="$(var.UpgradeCode)">
+      <UpgradeVersion Minimum="$(var.ProductVersion)" OnlyDetect="yes" Property="NEWERVERSIONDETECTED" />
+      <UpgradeVersion Minimum="0.0.0" IncludeMinimum="yes" Maximum="$(var.ProductVersion)" IncludeMaximum="no" Property="OLDERVERSIONBEINGUPGRADED" OnlyDetect="no" />
+    </Upgrade>
+
+    <!-- Properties -->
+    <Property Id="ALLUSERS" Value="1" />
+    <Property Id="ARPHELPLINK" Value="http://ironpython.net/support/" />
+    <Property Id="ARPURLINFOABOUT" Value="http://www.ironpython.net" />
+    <Property Id="ARPURLUPDATEINFO" Value="http://ironpython.codeplex.com" />
+
+    <!-- We search for an existing file type for .py files.  If it's found we'll use it, otherwise we'll default to Python.File which matches CPython -->
+    <Property Id="PYTHONFILETYPE" Value="Python.File">
+      <RegistrySearch Id="PythonFileTypeSearch" Root="HKCR" Key=".py" Type="raw" />
+    </Property>
+
+    <!-- Same thing but used to decide if we should install the default info for the file type -->
+    <Property Id="PYTHONFILETYPENODEFAULT" >
+      <RegistrySearch Id="PythonFileTypeNoDefaultSearch" Root="HKCR" Key=".py" Type="raw" />
+    </Property>
+
+    <Property Id="VSINSTALLPATH">
+      <RegistrySearch Id="VSInstallDir" Root="HKLM" Key="Software\Microsoft\VisualStudio\10.0\Setup\VS" Name="EnvironmentDirectory" Type="directory" />
+    </Property>
+
+    <Property Id="VSLAUNCHER" >
+        <DirectorySearch Path="[ProgramFilesFolder]\Common Files\Microsoft Shared\MSEnv" Depth="4" Id="FindVSLauncher">
+            <FileSearch Name="VSLauncher.exe" />
+        </DirectorySearch>
+    </Property>
+
+    <!-- Launch conditions -->
+    <Condition Message="An administrator must approve or install [ProductName]."> Privileged </Condition>
+    <Condition Message="A later version of [ProductName] is already installed."> NOT NEWERVERSIONDETECTED </Condition>
+    <Condition Message="[ProductName] requires .NET Framework 4.0 or later.">  Installed OR MsiNetAssemblySupport >= "4.0.0.0" </Condition>
+
+    <!-- Root directories -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramMenuFolder" Name="PMENU">
+        <Directory Id="Dir_StartMenu" Name="$(var.ProductShortName) $(var.ProductVersionText)">
+          <Component Id="Comp_CompiledHelpShortcut" DiskId="1" Guid="F398FAC1-F78F-4A22-A91A-3BC455556224">
+            <Shortcut Id="Shortcut_CompiledHelp" Directory="Dir_StartMenu" Name="IronPython Documentation" Target="[#File_IronPython.chm]" />
+            <Shortcut Id="Shortcut_Readme" Directory="Dir_StartMenu" Name="IronPython Readme" Target="[#File_Readme.html.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
+            <Shortcut Id="NGENShortcut_Console" Directory="Dir_StartMenu" Name="IronPython Console" Target="[#NGENFile_ipy.exe.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
+            <Shortcut Id="NGEN64Shortcut_Console" Directory="Dir_StartMenu" Name="IronPython Console" Target="[#NGEN64File_ipy.exe.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
+            <Shortcut Id="NGEN6464Shortcut_Console" Directory="Dir_StartMenu" Name="IronPython 64-bit Console" Target="[#NGEN64File_ipy64.exe.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
+            
+            <RemoveFolder Id='Comp_ReadMe' On='uninstall'/>
+            <RegistryValue Root='HKCU' Key='SOFTWARE\IronPython\2.7\Docs' Type='string' Value='Installed' KeyPath='yes' />
+          </Component>
+        </Directory>
+      </Directory>
+      
+      <Directory Id="ProgramFilesFolder" Name="PFILES">
+        <Directory Id="INSTALLDIR" Name="$(var.ProductShortName) $(var.ProductVersionText)">
+          <Merge Id='DLR' Language='1033' src='DLR.msm' DiskId='1' />
+          <Merge Id='IpyRedist' Language='1033' src='$(var.TargetDir)\IpyRedist.msm' DiskId='1' />
+          <Merge Id='IronStudio' Language='1033' src='IronStudio.msm' DiskId='1' />
+
+          <!-- CHM file for documentation -->
+          <Component Id="Comp_CompiledHelp" DiskId="1" Guid="61369245-1BC0-4699-93F7-C206BE678A92">
+            <File Id="File_IronPython.chm" Name="IronPython.chm" Source="$(var.TargetDir)IronPython.chm" />
+          </Component>
+
+          <Directory Id="Dir_Silverlight" Name="Silverlight">
+            <?include Silverlight.wxi ?>
+          </Directory>
+        </Directory>
+        
+        <!-- IronPython Tools for Visual Studio -->
+        <Directory Id="VSINSTALLPATH" Name=".">
+          <Directory Id="ExtensionsDir" Name="Extensions">
+            <Directory Id="MSDir" Name="Microsoft">
+              <Directory Id="IpyToolsDir" Name="IronPython Tools for Visual Studio">
+                <Directory Id="IpyToolsInstallDir" Name="0.4">
+                  <Directory Id="IpyToolsTemplatesDir" Name="Templates" FileSource="$(var.VsTemplatesDir)" />
+
+                  <Component Id="Comp_VSTools" DiskId="1" Guid="2DF41B37-FAEF-4FD8-A2F5-46B57FF9E951">
+                    <File Source="$(var.TargetDir)\IronPythonTools.Core.dll" />
+                    <File Source="$(var.TargetDir)\IronPythonTools.dll" />
+                    <File Source="$(var.TargetDir)\IronPythonTools.pkgdef" />
+                    <File Source="$(var.VsToolsPrivateBinDir)\extension.vsixmanifest" />
+                    <File Source="$(var.VsToolsDir)\PythonProject.ico" />
+                  </Component>
+
+                  <Component Id="Comp_PyProgRegistration" DiskId="1" Guid="A7BC75A8-F418-4133-8BF9-490A76E99108">
+                    <RegistryValue Root='HKCR' Key='.pyproj' Type='string' Name='PerceivedType' Value='text' />
+                    <RegistryValue Root='HKCR' Key='VisualStudio.Launcher.pyproj.10.0\DefaultIcon' Type='string' Value='[IpyToolsInstallDir]PythonProject.ico' />
+
+                    <ProgId Id="VisualStudio.Launcher.pyproj.10.0" Description="IronPython Project">
+                      <Extension Id="pyproj" ContentType="text/plain">
+                        <Verb Id="OpenPyProj" Command="Open" TargetProperty="VSLAUNCHER" Argument="&quot;%1&quot;"/>
+                      </Extension>
+                    </ProgId>
+                  </Component>
+
+                  <Component Id="Comp_PyFileRegistration" DiskId="1" Guid="517102D7-61A0-4F6F-B8C6-AA7CE3D5A620">
+                    <RegistryKey Root='HKCR' Key='[PYTHONFILETYPE]'>
+                      <RegistryValue Type='string' Value='Python source file' />
+
+                      <RegistryKey Key='DefaultIcon'>
+                        <RegistryValue Type='string' Value="[IpyToolsTemplatesDir]\Files\EmptyPyFile\__TemplateIcon.ico" />
+                      </RegistryKey>
+                      
+                      <RegistryKey Key='shell\Edit with Visual Studio'>
+                        <RegistryValue Key='Command' Type='string' Value='[VSINSTALLPATH]devenv.exe /dde "%1"' />
+
+                        <RegistryValue Key='ddeexec' Type='string' Value='Open("%1")' />
+                        <RegistryValue Key='ddeexec\Application' Type='string' Value='VisualStudio.10.0' />
+                        <RegistryValue Key='ddeexec\Topic' Type='string' Value='system' />
+                      </RegistryKey>
+                    </RegistryKey>
+                  </Component>
+
+                  <Component Id="Comp_PyFileExistance" DiskId="1" Guid="3CCD9010-C01F-4284-B6BF-9FD92C9849FD">
+                    <!-- This is only installed if .py is not already registered.  -->
+                    <RegistryValue Root='HKCR' Key='.py' Type='string' Value='[PYTHONFILETYPE]' />
+                    <RegistryValue Root='HKCR' Key='.py' Name='Content Type' Type='string' Value='text/plain' />
+                  </Component>
+                </Directory>
+              </Directory>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+    
+    <!-- Features - listed in the UI in the same order as they appear here -->
+    <Feature Id="Feature_IronPython" ConfigurableDirectory="INSTALLDIR" Absent="disallow" AllowAdvertise="no" Display="expand" Level="1" Title="IronPython">
+      <Feature Id="Feature_Core" Absent="disallow" AllowAdvertise="no" Level="1" Title="IronPython" Description="IronPython binaries for the Desktop CLR.">
+        <MergeRef Id='DLR' />
+        <MergeRef Id='IpyRedist' />
+
+        <ComponentGroupRef Id="DocGroup" Primary="yes"/>
+        <ComponentRef Id="Comp_CompiledHelp" Primary="yes" />
+        <ComponentRef Id="Comp_CompiledHelpShortcut" Primary="yes" />
+      </Feature>
+
+      <!-- Silverlight support -->
+      <Feature Id="Feature_SL" AllowAdvertise="no" Level="1" Title="Silverlight Support" Description="IronPython for Silverlight.">
+        <Feature Id="Feature_SL_Binaries" AllowAdvertise="no" Level="1" Title="Binaries" Description="IronPython binaries targeting Silverlight.">
+          <ComponentRef Id="Comp_SL" />
+        </Feature>
+        <Feature Id="Feature_SLTemplates" AllowAdvertise="no" Level="1" Title="Templates" Description="Templates supporting IronPython Silverlight development.">
+          <ComponentRef Id="Comp_SLScript" />
+          <ComponentRef Id="Comp_templHome" />
+          <ComponentRef Id="Comp_templPy" />
+          <ComponentRef Id="Comp_templJS" />
+          <ComponentRef Id="Comp_templSS" />
+        </Feature>
+      </Feature>
+      
+      <!-- IronPython Tools support -->
+      <Feature Id="Feature_VsTools" AllowAdvertise="yes" Level="1" Title="Tools for Visual Studio" Description="IronPython Tools for Visual Studio.  Extensions which enable intellisense, projects, and other support for Python development.">
+        <Condition Level="0">NOT VSINSTALLPATH</Condition>
+        <ComponentRef Id="Comp_VSTools" />
+        <MergeRef Id='IronStudio' />
+        <ComponentGroupRef Id="ToolsTemplateGroup" />
+        
+        <Feature Id="Feature_PyProj" AllowAdvertise="yes" Level="1" Title="Register .pyproj files" Description="Registers .pyproj files to open with Visual Studio">
+            <ComponentRef Id="Comp_PyProgRegistration" />
+        </Feature>
+
+        <Feature Id="Feature_VsPyFile" AllowAdvertise="yes" Level="1" Title="Register .py context menu." Description="Adds a Edit with Visual Studio context menu for .py files">
+            <ComponentRef Id="Comp_PyFileRegistration" />
+            <Feature Id="Feature_PyFileExist" AllowAdvertise="no" Level="0" Title="Register the pure existance of .py files if not already registered">
+              <Condition Level="1">NOT PYTHONFILETYPENODEFAULT</Condition>
+              <ComponentRef Id="Comp_PyFileExistance" Primary="yes" />
+            </Feature>
+        </Feature>
+      </Feature>
+
+      <Feature Id="Feature_Tools" AllowAdvertise="no" Level="1" Title="Scripts" Description="Some useful scripts that have been written for IronPython.">
+        <ComponentGroupRef Id="ToolsGroup" Primary="yes"/>
+      </Feature>
+      <Feature Id="Feature_Tutorial" AllowAdvertise="no" Level="1" Title="Tutorial" Description="IronPython Tutorial">
+        <ComponentRef Id="Comp_Tutorial" />
+        <ComponentRef Id="Comp_Extend" />
+      </Feature>
+    </Feature>
+
+    <!-- Sequences -->
+    <InstallExecuteSequence>
+      <RemoveExistingProducts After="InstallInitialize"  />
+      <Custom Action='SetInstallLocation' After="InstallValidate" />
+    </InstallExecuteSequence>
+
+    <InstallUISequence>
+      <!-- Because we have a launch condition that uses the results of FindRelatedProducts, put it first. -->
+      <LaunchConditions After="FindRelatedProducts" />
+    </InstallUISequence>
+
+    <!-- User interface -->
+    <UIRef Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.PythonDir)\Public\License.rtf" /> 
+
+    <!-- InstallLocation key -->
+    <CustomAction Id="SetInstallLocation" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
+
+  </Product>
+
+</Wix>

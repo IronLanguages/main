@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<project name="IronLanguages" basedir=".">
+	<target name="all">
+		<!--
+		<call target="dlr" />
+		<call target="ironstudio" />
+		<call target="ironruby.rack" />
+		<call target="ironpythontools" />-->
+		<call target="ironpython" />
+		<call target="ironpython.mono" />
+		<call target="ruby" />
+	</target>
+	
+	<target name="dlr">
+		<property name="solution" value="Dlr" />
+		
+		<call target="build" />
+	</target>
+	
+	<target name="ironpython.mono">
+		<property name="solution" value="IronPython.Mono" />
+		
+		<call target="build" />
+	</target>
+	
+	<target name="ironpython">
+		<property name="solution" value="IronPython" />
+		
+		<call target="build" />
+	</target>
+
+	<target name="ironpythontools">
+		<property name="solution" value="IronPythonTools" />
+		
+		<call target="build" />
+	</target>
+	
+	<target name="ironruby.rack">
+		<property name="solution" value="IronRuby.Rack" />
+		
+		<call target="build" />
+	</target>
+	
+	<target name="ironstudio">
+		<property name="solution" value="IronStudio" />
+		
+		<call target="build" />
+	</target>
+	
+	<target name="ruby">
+		<property name="solution" value="Ruby" />
+		
+		<call target="build" />
+	</target>
+	
+	<target name="build">
+		<msbuild project="Solutions\${solution}.sln">
+              <arg value="/property:Configuration=Debug" />                                  
+              <arg value="/t:Rebuild" />
+       </msbuild>
+	</target>
+</project>

@@ -63,7 +63,8 @@ namespace IronPython.Runtime.Types {
  ICodeFormattable,
         IMembersList,
         IDynamicMetaObjectProvider, 
-        IPythonMembersList {
+        IPythonMembersList,
+        IWeakReferenceable {
 
         [NonSerialized]
         private List<OldClass> _bases;
@@ -75,6 +76,7 @@ namespace IronPython.Runtime.Types {
 
         private int _optimizedInstanceNamesVersion;
         private string[] _optimizedInstanceNames;
+        private WeakRefTracker _tracker;
 
         public static string __doc__ = "classobj(name, bases, dict)";
 
@@ -629,5 +631,22 @@ namespace IronPython.Runtime.Types {
                 }
             }
         }
+
+        #region IWeakReferenceable Members
+
+        WeakRefTracker IWeakReferenceable.GetWeakRef() {
+            return _tracker;
+        }
+
+        bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
+            _tracker = value;
+            return true;
+        }
+
+        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
+            _tracker = value;
+        }
+
+        #endregion
     }
 }

@@ -32,6 +32,7 @@ namespace IronPython.Modules {
         public const string __doc__ = "Provides low level primitives for threading.";
 
         private static readonly object _stackSizeKey = new object();
+        private static object _threadCountKey = new object();
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
@@ -115,6 +116,10 @@ namespace IronPython.Modules {
             return allocate_lock();
         }
 
+        public static int _count(CodeContext context) {
+            return (int)context.LanguageContext.GetOrCreateModuleState<object>(_threadCountKey, () => 0);
+        }
+
         #endregion
 
         [PythonType, PythonHidden]
@@ -151,6 +156,7 @@ namespace IronPython.Modules {
                         continue;
                     }
                     blockEvent.WaitOne();
+                    GC.KeepAlive(this);
                 }
             }
 
@@ -165,6 +171,7 @@ namespace IronPython.Modules {
                 if (blockEvent != null) {
                     // if this isn't set yet we race, it's handled in Acquire()
                     blockEvent.Set();
+                    GC.KeepAlive(this);
                 }
             }
 
@@ -205,18 +212,29 @@ namespace IronPython.Modules {
             }
 
             public void Start() {
+                lock (_threadCountKey) {
+                    int startCount = (int)_context.LanguageContext.GetOrCreateModuleState<object>(_threadCountKey, () => 0);
+                    _context.LanguageContext.SetModuleState(_threadCountKey, startCount + 1);
+                }
                 try {
+#pragma warning disable 618 // TODO: obsolete
                     if (_kwargs != null) {
                         PythonOps.CallWithArgsTupleAndKeywordDictAndContext(_context, _func, ArrayUtils.EmptyObjects, ArrayUtils.EmptyStrings, _args, _kwargs);
                     } else {
                         PythonOps.CallWithArgsTuple(_func, ArrayUtils.EmptyObjects, _args);
                     }
+#pragma warning restore 618
                 } catch (SystemExitException) {
                     // ignore and quit
                 } catch (Exception e) {
                     PythonOps.PrintWithDest(_context, PythonContext.GetContext(_context).SystemStandardError, "Unhandled exception on thread");
                     string result = _context.LanguageContext.FormatException(e);
                     PythonOps.PrintWithDest(_context, PythonContext.GetContext(_context).SystemStandardError, result);
+                } finally {
+                    lock (_threadCountKey) {
+                        int curCount = (int)_context.LanguageContext.GetModuleState(_threadCountKey);
+                        _context.LanguageContext.SetModuleState(_threadCountKey, curCount - 1);
+                    }
                 }
             }
         }

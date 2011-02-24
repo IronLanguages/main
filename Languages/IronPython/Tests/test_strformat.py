@@ -254,10 +254,8 @@ def test_object___format___errors():
     # ensure only the s format type is recognized
     for char in allChars:
         if char != 's' and (char < '0' or char > '9'):
-            if char==',' and is_cpython: 
+            if char==',': 
                 errors.append(('10' + char, "Cannot specify ',' with 's'."))
-            elif char==',': #http://ironpython.codeplex.com/workitem/28377
-                temp = object.__format__(",")
             else:
                 errors.append(('10' + char, "Unknown format code '%s' for object of type 'str'" % char))
 
@@ -336,15 +334,15 @@ def test_float___format__():
                     (999999999999.9,   '1.2',      '1.0e+12'),
                     (999999999999.0,   '',         '999999999999.0'),
                     (-999999999999.0,  '',         '-999999999999.0'),
-                    (10e667,           '+',        '+1.0#INF'),
-                    (-10e667,          '+',        '-1.0#INF'),
-                    (10e667/10e667,    '+',        '-1.0#IND'),
-                    (10e667,           '-',        '1.0#INF'),
-                    (-10e667,          '-',        '-1.0#INF'),
-                    (10e667/10e667,    '-',        '-1.0#IND'),
-                    (10e667,           ' ',        ' 1.0#INF'),
-                    (-10e667,          ' ',        '-1.0#INF'),
-                    (10e667/10e667,    ' ',        '-1.0#IND'),
+                    (10e667,           '+',        '+inf'),
+                    (-10e667,          '+',        '-inf'),
+                    (10e667/10e667,    '+',        '+nan'),
+                    (10e667,           '-',        'inf'),
+                    (-10e667,          '-',        '-inf'),
+                    (10e667/10e667,    '-',        'nan'),
+                    (10e667,           ' ',        ' inf'),
+                    (-10e667,          ' ',        '-inf'),
+                    (10e667/10e667,    ' ',        ' nan'),
                 ]
     
     tests+= [ (2.0,              '',         '2.0'),
@@ -575,9 +573,7 @@ def test_float___format__():
 def test_float___format___errors():
     errors = []
     
-    okChars = set(['\0', '%', 'E', 'F', 'G', 'e', 'f', 'g', 'n'])
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28223
-        okChars.add(',')
+    okChars = set(['\0', '%', 'E', 'F', 'G', 'e', 'f', 'g', 'n', ','])
     # verify the okChars are actually ok
     for char in okChars:
         2.0.__format__('10' + char)

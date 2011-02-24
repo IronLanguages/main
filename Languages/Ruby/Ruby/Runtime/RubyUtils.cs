@@ -94,13 +94,7 @@ namespace IronRuby.Runtime {
         public static bool HasSingletonClass(object obj) {
             return !(obj is int || obj is RubySymbol);
         }
-
-        public static void RequiresNotFrozen(RubyContext/*!*/ context, object/*!*/ obj) {
-            if (context.IsObjectFrozen(obj)) {
-                throw RubyExceptions.CreateObjectFrozenError();
-            }
-        }
-
+        
         public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
             object obj) {
 
@@ -505,6 +499,24 @@ namespace IronRuby.Runtime {
             "Untaint",
         };
 
+        public static void CheckConstantName(string name) {
+            if (!Tokenizer.IsConstantName(name)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a constant name", name));
+            }
+        }
+
+        public static void CheckClassVariableName(string name) {
+            if (!Tokenizer.IsClassVariableName(name)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a class variable name", name));
+            }
+        }
+
+        public static void CheckInstanceVariableName(string name) {
+            if (!Tokenizer.IsInstanceVariableName(name)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as an instance variable name", name));
+            }
+        }
+
         #endregion
 
         #region Constants
@@ -525,7 +537,7 @@ namespace IronRuby.Runtime {
                 }
             }
 
-            globalScope.Context.CheckConstantName(name);
+            RubyUtils.CheckConstantName(name);
             return owner.ConstantMissing(name);
         }
 
@@ -744,7 +756,7 @@ namespace IronRuby.Runtime {
 
             private Dictionary<object, bool> TryPushInfinite(object obj) {
                 if (_infiniteTracker == null) {
-                    _infiniteTracker = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
+                    _infiniteTracker = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
                 }
                 Dictionary<object, bool> infinite = _infiniteTracker;
                 if (infinite.ContainsKey(obj)) {
@@ -865,8 +877,7 @@ namespace IronRuby.Runtime {
         }
 
         private static SourceUnit/*!*/ CreateRubySourceUnit(RubyContext/*!*/ context, MutableString/*!*/ code, string path) {
-            Encoding encoding = (context.KCode ?? code.Encoding).Encoding;
-            return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, encoding, SourceCodeKind.File);
+            return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, code.Encoding.Encoding, SourceCodeKind.File);
         }
 
         public static object Evaluate(MutableString/*!*/ code, RubyScope/*!*/ targetScope, object self, RubyModule module, MutableString file, int line) {
@@ -942,11 +953,9 @@ namespace IronRuby.Runtime {
             block.MethodLookupModule = module;
 
             if (args != null) {
-                result = RubyOps.Yield(args, self, block);
-            } else if (module.Context.RubyOptions.Compatibility < RubyCompatibility.Ruby19) {
-                result = RubyOps.Yield1(self, self, block);
+                result = RubyOps.Yield(args, null, self, block);
             } else {
-                result = RubyOps.Yield0(self, block);
+                result = RubyOps.Yield0(null, self, block);
             }
 
             return block.BlockJumped(result);
@@ -1440,6 +1449,21 @@ namespace IronRuby.Runtime {
         }
 
         #endregion
+
+        #endregion
+
+        #region Streams
+
+        /// <summary>
+        /// Writes binary content of <see cref="MutableString"/> into the given buffer.
+        /// </summary>
+        public static void Write(this Stream/*!*/ stream, MutableString/*!*/ str, int start, int count) {
+            int byteCount;
+            byte[] bytes = str.GetByteArray(out byteCount);
+            if (start < byteCount) {
+                stream.Write(bytes, start, Math.Min(byteCount - start, count));
+            }
+        }
 
         #endregion
     }

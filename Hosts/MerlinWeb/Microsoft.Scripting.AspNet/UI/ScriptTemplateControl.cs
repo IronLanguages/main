@@ -107,7 +107,7 @@ namespace Microsoft.Scripting.AspNet.UI {
             _scopeDictionary = new ScriptTemplateControlDictionary(_templateControl, this);
             _scope = EngineHelper.ScriptRuntime.CreateScope(_scopeDictionary);
 
-            _attribs = new ScriptTemplateControlMemberProxy(_templateControl, _scopeDictionary);
+            _attribs = new ScriptTemplateControlMemberProxy(_scopeDictionary);
 
             EngineHelper.ExecuteCode(_scope, _buildResult.CompiledCode, _buildResult.ScriptVirtualPath);
 
@@ -132,8 +132,7 @@ namespace Microsoft.Scripting.AspNet.UI {
             }
             DynamicFunction handlerFunction = new DynamicFunction(o);
 
-            Delegate handler = EventHandlerWrapper.GetWrapper(this, _templateControl, handlerFunction,
-                _scriptVirtualPath, eventInfo.EventHandlerType);
+            Delegate handler = EventHandlerWrapper.GetWrapper(this, handlerFunction, _scriptVirtualPath, eventInfo.EventHandlerType);
             eventInfo.AddEventHandler(control, handler);
         }
 
@@ -384,7 +383,7 @@ namespace Microsoft.Scripting.AspNet.UI {
                     return;
 
                 foreach (EventHookupHelper helper in _eventHandlers) {
-                    helper.HookupHandler(provider, moduleGlobals, o, o);
+                    helper.HookupHandler(provider, moduleGlobals, o);
                 }
             }
         }

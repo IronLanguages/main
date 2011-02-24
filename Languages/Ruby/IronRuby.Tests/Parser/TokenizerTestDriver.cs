@@ -307,9 +307,9 @@ namespace IronRuby.Tests {
 
                 case Tokens.StringContent:
                     if (value.StringContent is string) {
-                        output.Write("String(\"{0}\")", Parser.EscapeString((string)value.StringContent));
+                        output.Write("String(\"{0}\", {1})", Parser.EscapeString((string)value.StringContent), value.Encoding);
                     } else {
-                        output.Write("String({0})", BitConverter.ToString((byte[])value.StringContent));
+                        output.Write("String({0}), {1}", BitConverter.ToString((byte[])value.StringContent), value.Encoding);
                     }
                     break;
 
@@ -408,7 +408,7 @@ namespace IronRuby.Tests {
                 try {
                     parseTime.Start();
                     var parser = new Parser();
-                    var rubyTree = parser.Parse(source, options, ErrorSink.Null);
+                    parser.Parse(source, options, ErrorSink.Null);
                     //int mt;
                     //stackSizes[parser.StackMaxTop] = stackSizes.TryGetValue(parser.StackMaxTop, out mt) ? mt + 1 : 1;
                     parseTime.Stop();

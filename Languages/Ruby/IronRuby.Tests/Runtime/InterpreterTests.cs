@@ -405,9 +405,6 @@ namespace IronRuby.Tests {
         /// </summary>
         [Options(NoRuntime = true)]
         public void Interpreter1C() {
-            var label1 = Ast.Label();
-            var label2 = Ast.Label();
-
             var inner =
                 Ast.TryFinally(
                     Ast.TryCatch(
@@ -1173,6 +1170,41 @@ namespace IronRuby.Tests {
             );
 
             TraceTestLambda(l);
+        }
+
+        public struct S1 {
+            public int X;
+            public int Y;
+
+            public S1(int x, int y) {
+                X = x;
+                Y = y;
+            }
+
+            public void SetX() {
+                X = 1;
+            }
+        }
+
+        [Options(NoRuntime = true)]
+        public void InterpreterValueTypes1() {
+            var arg = Ast.Parameter(typeof(object));
+            var l = Ast.Lambda<Action<object>>(
+                Ast.Call(
+                    Ast.MakeUnary(ExpressionType.Unbox, arg, typeof(S1)),
+                    typeof(S1).GetMethod("SetX")
+                ),
+                new[] { arg } 
+            );
+
+            object s = new S1(3, 4);
+
+            var f = l.LightCompile();
+            f(s);
+
+            S1 unboxed = (S1)s;
+            Assert(unboxed.X == 1);
+            Assert(unboxed.Y == 4);
         }
     }
 }

@@ -1371,7 +1371,7 @@ namespace Microsoft.Scripting.Math {
             BigInteger factor = this;
             BigInteger result = One % mod;
             while (power != Zero) {
-                if (power.IsOdd()) {
+                if (!power.IsEven) {
                     result = result * factor;
                     result = result % mod;
                 }
@@ -1451,11 +1451,9 @@ namespace Microsoft.Scripting.Math {
             return sign > 0;
         }
 
-        private bool IsOdd() {
-            // must have the lowest-order bit set to 1
-            return (data != null && data.Length > 0 && ((data[0] & 1) != 0));
+        public bool IsEven {
+            get { return data.Length == 0 || (data[0] & 1) == 0; }
         }
-
 
         public double Log(Double newBase) {
             if (IsNegative() || newBase == 1.0D || this == Zero || (newBase == 0.0D && this != One)) {
@@ -1507,7 +1505,7 @@ namespace Microsoft.Scripting.Math {
             return Log(10);
         }
 
-        #region IComparable Members
+#region IComparable Members
 
         public int CompareTo(object obj) {
             if (obj == null) {
@@ -1522,7 +1520,7 @@ namespace Microsoft.Scripting.Math {
 
         #endregion
 
-        #region IConvertible Members
+#region IConvertible Members
 
         [Confined]
         public TypeCode GetTypeCode() {
@@ -1702,7 +1700,7 @@ namespace Microsoft.Scripting.Math {
 
         #endregion
 
-        #region IFormattable Members
+#region IFormattable Members
 
         string IFormattable.ToString(string format, IFormatProvider formatProvider) {
             if (format == null) return this.ToString();

@@ -59,10 +59,6 @@ namespace Microsoft.Scripting.AspNet.UI {
         private string _script;
         private int _scriptLine;
 
-        private static Type _pageBaseType = typeof(ScriptPage);
-        private static Type _userControlBaseType = typeof(ScriptUserControl);
-        private static Type _masterPageBaseType = typeof(ScriptMaster);
-
         protected override void Initialize() {
             // Make sure we're running with a System.Web.dll that has the new API's we need
             CheckCorrectSystemWebSupport();

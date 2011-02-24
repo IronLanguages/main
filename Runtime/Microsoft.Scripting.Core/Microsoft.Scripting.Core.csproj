@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
-  <Import Project="$(SolutionDir)..\Solutions\Common.proj" />
+  <Import Project="$(ProjectDir)..\..\Solutions\Common.proj" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">v2Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -11,10 +11,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Scripting</RootNamespace>
     <AssemblyName>Microsoft.Scripting.Core</AssemblyName>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\Microsoft.Scripting.Core.XML</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>618</WarningsNotAsErrors>
@@ -195,11 +191,6 @@
     <Compile Include="Utils\TrueReadOnlyCollection.cs" />
     <Compile Include="Utils\TypeExtensions.cs" />
     <Compile Include="Stubs.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="..\..\System\Linq\Expressions\System.Linq.Expressions.txt">
-      <Link>Ast\System.Linq.Expressions.txt</Link>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <None Include="Microsoft.Scripting.Core.ruleset" />

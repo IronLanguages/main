@@ -18,7 +18,9 @@ using System;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime;
 using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 #if !CLR2
 using MSAst = System.Linq.Expressions;
@@ -29,7 +31,6 @@ using MSAst = Microsoft.Scripting.Ast;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
-    using IronPython.Runtime.Operations;
 
     public class TupleExpression : SequenceExpression {
         private bool _expandable;
@@ -108,6 +109,10 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override object GetConstantValue() {
+            if (Items.Count == 0) {
+                return PythonTuple.EMPTY;
+            }
+
             object[] items = new object[Items.Count];
             for (int i = 0; i < items.Length; i++) {
                 items[i] = Items[i].GetConstantValue();

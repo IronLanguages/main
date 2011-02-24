@@ -156,13 +156,14 @@ namespace IronPython.Runtime.Binding {
 #endif
  !(args[0] is IDynamicMetaObjectProvider)) {
                 Type selfType = typeof(T).GetMethod("Invoke").GetParameters()[1].ParameterType;
+                CodeContext context = (CodeContext)args[1];
                 T res = null;
                 if (selfType == typeof(object)) {
-                    res = (T)(object)MakeGetMemberTarget<object>(Name, args[0]);
+                    res = (T)(object)MakeGetMemberTarget<object>(Name, args[0], context);
                 } else if (selfType == typeof(List)) {
-                    res = (T)(object)MakeGetMemberTarget<List>(Name, args[0]);
+                    res = (T)(object)MakeGetMemberTarget<List>(Name, args[0], context);
                 } else if (selfType == typeof(string)) {
-                    res = (T)(object)MakeGetMemberTarget<string>(Name, args[0]);
+                    res = (T)(object)MakeGetMemberTarget<string>(Name, args[0], context);
                 }
 
                 if (res != null) {
@@ -178,10 +179,12 @@ namespace IronPython.Runtime.Binding {
         class FastErrorGet<TSelfType> : FastGetBase {
             private readonly Type _type;
             private readonly string _name;
+            private readonly ExtensionMethodSet _extMethods;
 
-            public FastErrorGet(Type type, string name) {
+            public FastErrorGet(Type type, string name, ExtensionMethodSet extMethodSet) {
                 _type = type;
                 _name = name;
+                _extMethods = extMethodSet;
             }
 
             public override bool IsValid(PythonType type) {
@@ -190,7 +193,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             public object GetError(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
+                if (target != null && target.GetType() == _type && (object)_extMethods == (object)context.ModuleContext.ExtensionMethods) {
                     throw PythonOps.AttributeErrorForObjectMissingAttribute(target, _name);
                 }
 
@@ -198,7 +201,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             public object GetErrorLightThrow(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
+                if (target != null && target.GetType() == _type && (object)_extMethods == (object)context.ModuleContext.ExtensionMethods) {
                     return LightExceptions.Throw(PythonOps.AttributeErrorForObjectMissingAttribute(target, _name));
                 }
 
@@ -206,7 +209,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             public object GetErrorNoThrow(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
+                if (target != null && target.GetType() == _type && (object)_extMethods == (object)context.ModuleContext.ExtensionMethods) {
                     return OperationFailed.Value;
                 }
 
@@ -214,7 +217,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             public object GetAmbiguous(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
+                if (target != null && target.GetType() == _type && (object)_extMethods == (object)context.ModuleContext.ExtensionMethods) {
                     throw new AmbiguousMatchException(_name);
                 }
 
@@ -330,7 +333,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private Func<CallSite, TSelfType, CodeContext, object> MakeGetMemberTarget<TSelfType>(string name, object target) {
+        private Func<CallSite, TSelfType, CodeContext, object> MakeGetMemberTarget<TSelfType>(string name, object target, CodeContext context) {
             Type type = CompilerHelpers.GetType(target);
 
             // needed for GetMember call until DynamicAction goes away
@@ -429,13 +432,20 @@ namespace IronPython.Runtime.Binding {
                             return null;
                         }
 
-                        if (IsNoThrow) {
-                            return new FastErrorGet<TSelfType>(type, name).GetErrorNoThrow;
-                        } else if (SupportsLightThrow) {
-                            return new FastErrorGet<TSelfType>(type, name).GetErrorLightThrow;
-                        } else {
-                            return new FastErrorGet<TSelfType>(type, name).GetError;
+                        if (members.Count == 0) {
+                            // we don't yet support fast bindings to extension methods
+                            members = context.ModuleContext.ExtensionMethods.GetBinder(_context).GetMember(MemberRequestKind.Get, type, name);
+                            if (members.Count == 0) {
+                                if (IsNoThrow) {
+                                    return new FastErrorGet<TSelfType>(type, name, context.ModuleContext.ExtensionMethods).GetErrorNoThrow;
+                                } else if (SupportsLightThrow) {
+                                    return new FastErrorGet<TSelfType>(type, name, context.ModuleContext.ExtensionMethods).GetErrorLightThrow;
+                                } else {
+                                    return new FastErrorGet<TSelfType>(type, name, context.ModuleContext.ExtensionMethods).GetError;
+                                }
+                            }
                         }
+                        return null;
                     default:
                         PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "GetNoFast " + memberType);
                         return null;
@@ -449,7 +459,7 @@ namespace IronPython.Runtime.Binding {
                     sb.Append(mi.ToString());
                 }
 
-                return new FastErrorGet<TSelfType>(type, sb.ToString()).GetAmbiguous;
+                return new FastErrorGet<TSelfType>(type, sb.ToString(), context.ModuleContext.ExtensionMethods).GetAmbiguous;
             }
         }
 
@@ -607,7 +617,23 @@ namespace IronPython.Runtime.Binding {
                 }
             }
             
-            var res = PythonContext.GetPythonContext(action).Binder.GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);
+            var res = context.Binder.GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);
+            if (res is ErrorMetaObject) {
+                // see if we can bind to any extension methods...
+                var codeCtx = (CodeContext)codeContext.Value;
+                var extMethods = codeCtx.ModuleContext.ExtensionMethods;
+
+                if (extMethods != null) {
+                    // try again w/ the extension method binder
+                    res = extMethods.GetBinder(context).GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);                    
+                }
+
+                // and add any restrictions (we need an empty restriction even if it's an error so later adds work)
+                res = new DynamicMetaObject(
+                    res.Expression,
+                    res.Restrictions.Merge(extMethods.GetRestriction(codeContext.Expression))
+                );
+            }
 
             // Default binder can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.

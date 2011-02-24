@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
-  <Import Project="$(SolutionDir)..\Solutions\Common.proj" />
+  <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,10 +10,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPython.Modules</RootNamespace>
     <AssemblyName>IronPython.Modules</AssemblyName>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\IronPython.Modules.xml</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>1591</NoWarn>
@@ -112,10 +108,25 @@
     <Compile Include="array.cs" />
     <Compile Include="binascii.cs" />
     <Compile Include="cmath.cs" />
+    <Compile Include="msvcrt.cs" />
     <Compile Include="NativeSignal.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
     <Compile Include="signal.cs" />
+    <Compile Include="zlib\Compress.cs" />
+    <Compile Include="zlib\Decompress.cs" />
+    <Compile Include="zlib\zlib.net\Adler32.cs" />
+    <Compile Include="zlib\zlib.net\Deflate.cs" />
+    <Compile Include="zlib\zlib.net\InfBlocks.cs" />
+    <Compile Include="zlib\zlib.net\InfCodes.cs" />
+    <Compile Include="zlib\zlib.net\Inflate.cs" />
+    <Compile Include="zlib\zlib.net\InfTree.cs" />
+    <Compile Include="zlib\zlib.net\StaticTree.cs" />
+    <Compile Include="zlib\zlib.net\Tree.cs" />
+    <Compile Include="zlib\zlib.net\Zlib.cs" />
+    <Compile Include="zlib\zlib.net\ZStream.cs" />
+    <Compile Include="zlib\zlib.net\ZStreamException.cs" />
+    <Compile Include="zlib\ZlibModule.cs" />
     <Compile Include="_codecs.cs" />
     <Compile Include="ModuleOps.cs" />
     <Compile Include="_bytesio.cs" />
@@ -178,6 +189,7 @@
     <Compile Include="_random.cs" />
     <Compile Include="_sre.cs" />
     <Compile Include="_ssl.cs" />
+    <Compile Include="_subprocess.cs" />
     <Compile Include="_warnings.cs" />
     <Compile Include="_weakref.cs" />
     <Compile Include="..\AssemblyVersion.cs">

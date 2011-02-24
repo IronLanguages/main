@@ -169,7 +169,7 @@ namespace IronPython.Compiler.Ast {
             get { return false; }
         }
 
-        internal virtual bool NeedsLocalContext {
+        internal bool NeedsLocalContext {
             get {
                 return NeedsLocalsDictionary || ContainsNestedFreeVariables;
             }
@@ -704,7 +704,7 @@ namespace IronPython.Compiler.Ast {
             return ((ClosureExpression)GetVariableExpression(variable.Variable)).ClosureCell;
         }
 
-        internal MSAst.Expression GetVariableExpression(PythonVariable variable) {
+        internal virtual MSAst.Expression GetVariableExpression(PythonVariable variable) {
             if (variable.IsGlobal) {
                 return GlobalParent.ModuleVariables[variable];
             }

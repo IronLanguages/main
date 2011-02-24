@@ -1,2 +1,0 @@
-fails:Array#uniq! properly handles recursive arrays
-fails:Array#uniq! raises a RuntimeError on a frozen array

@@ -1,5 +1,3 @@
-require 'rubygems'
-
 ##
 # Available list of platforms for targeting Gem installations.
 
@@ -72,6 +70,8 @@ class Gem::Platform
                       when /hpux(\d+)/ then            [ 'hpux',      $1  ]
                       when /^java$/, /^jruby$/ then    [ 'java',      nil ]
                       when /^java([\d.]*)/ then        [ 'java',      $1  ]
+                      when /^dotnet$/ then             [ 'dotnet',    nil ]                       
+                      when /^dotnet([\d.]*)/ then      [ 'dotnet',    $1  ]
                       when /linux/ then                [ 'linux',     $1  ]
                       when /mingw32/ then              [ 'mingw32',   nil ]
                       when /(mswin\d+)(\_(\d+))?/ then
@@ -104,6 +104,10 @@ class Gem::Platform
 
   def to_s
     to_a.compact.join '-'
+  end
+
+  def empty?
+    to_s.empty?
   end
 
   ##
@@ -143,14 +147,15 @@ class Gem::Platform
     when String then
       # This data is from http://gems.rubyforge.org/gems/yaml on 19 Aug 2007
       other = case other
-              when /^i686-darwin(\d)/ then     ['x86',       'darwin',  $1]
-              when /^i\d86-linux/ then         ['x86',       'linux',   nil]
-              when 'java', 'jruby' then        [nil,         'java',    nil]
-              when /mswin32(\_(\d+))?/ then    ['x86',       'mswin32', $2]
-              when 'powerpc-darwin' then       ['powerpc',   'darwin',  nil]
-              when /powerpc-darwin(\d)/ then   ['powerpc',   'darwin',  $1]
-              when /sparc-solaris2.8/ then     ['sparc',     'solaris', '2.8']
-              when /universal-darwin(\d)/ then ['universal', 'darwin',  $1]
+              when /^i686-darwin(\d)/     then ['x86',       'darwin',  $1    ]
+              when /^i\d86-linux/         then ['x86',       'linux',   nil   ]
+              when 'java', 'jruby'        then [nil,         'java',    nil   ]
+              when /dotnet(\-(\d+\.\d+))?/ then ['universal','dotnet',  $2    ]
+              when /mswin32(\_(\d+))?/    then ['x86',       'mswin32', $2    ]
+              when 'powerpc-darwin'       then ['powerpc',   'darwin',  nil   ]
+              when /powerpc-darwin(\d)/   then ['powerpc',   'darwin',  $1    ]
+              when /sparc-solaris2.8/     then ['sparc',     'solaris', '2.8' ]
+              when /universal-darwin(\d)/ then ['universal', 'darwin',  $1    ]
               else                             other
               end
 

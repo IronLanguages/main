@@ -32,6 +32,7 @@ using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime.Conversions {
     using Ast = Expression;
+    using System.Collections.Generic;
 
     public enum CompositeConversion {
         ToFixnumToStr,
@@ -39,6 +40,7 @@ namespace IronRuby.Runtime.Conversions {
         ToIntToI,
         ToAryToInt,
         ToPathToStr,
+        ToHashToStr,
     }
 
     public sealed class CompositeConversionAction : RubyConversionAction {
@@ -85,6 +87,11 @@ namespace IronRuby.Runtime.Conversions {
                 case CompositeConversion.ToPathToStr:
                     return new CompositeConversionAction(conversion,
                         typeof(MutableString), ConvertToPathAction.Make(context), ConvertToStrAction.Make(context)
+                    );
+
+                case CompositeConversion.ToHashToStr:
+                    return new CompositeConversionAction(conversion,
+                        typeof(Union<IDictionary<object, object>, MutableString>), ConvertToHashAction.Make(context), ConvertToStrAction.Make(context)
                     );
 
                 default:

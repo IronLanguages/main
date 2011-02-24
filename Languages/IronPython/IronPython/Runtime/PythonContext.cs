@@ -56,7 +56,7 @@ namespace IronPython.Runtime {
     public delegate int HashDelegate(object o, ref HashDelegate dlg);
 
     public sealed partial class PythonContext : LanguageContext {
-        internal const string/*!*/ IronPythonDisplayName = "IronPython 2.7 Alpha 1";
+        internal const string/*!*/ IronPythonDisplayName = "IronPython 2.7 RC 2";
         internal const string/*!*/ IronPythonNames = "IronPython;Python;py";
         internal const string/*!*/ IronPythonFileExtensions = ".py";
 
@@ -202,6 +202,7 @@ namespace IronPython.Runtime {
 
         internal readonly List<FunctionStack> _mainThreadFunctionStack;
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0LightEh;
+        private List<WeakReference> _weakExtensionMethodSets;
 
         #region Generated Python Shared Call Sites Storage
 
@@ -351,7 +352,6 @@ namespace IronPython.Runtime {
                 }
 
                 lock (_codeUpdateLock) {
-                    int oldRecLimit = _recursionLimit;
                     _recursionLimit = value;
 
                     if ((_recursionLimit == Int32.MaxValue) != (value == Int32.MaxValue)) {
@@ -1932,7 +1932,7 @@ namespace IronPython.Runtime {
             dict["executable"] = _initialExecutable;
             SystemState.__dict__["prefix"] =  _initialPrefix;
             dict["exec_prefix"] = _initialPrefix;
-            SetVersionVariables(dict, 2, 7, 0, "alpha", _initialVersionString);
+            SetVersionVariables(dict, 2, 7, 0, "beta", _initialVersionString);
         }
 
         private static void SetVersionVariables(PythonDictionary dict, byte major, byte minor, byte build, string level, string versionString) {
@@ -4047,6 +4047,37 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        internal ExtensionMethodSet UniqifyExtensions(ExtensionMethodSet newSet) {
+            int deadIndex = -1;
+
+            // we shouldn't have tons of different sets so we just run through the list of possible sets...
+            if (_weakExtensionMethodSets == null) {
+                Interlocked.CompareExchange(ref _weakExtensionMethodSets, new List<WeakReference>(), null);
+            }
+
+            lock (_weakExtensionMethodSets) {
+                for (int i = 0; i < _weakExtensionMethodSets.Count; i++) {
+                    var weakSet = _weakExtensionMethodSets[i];
+
+                    var set = (ExtensionMethodSet)weakSet.Target;
+                    if (set != null) {
+                        if (set == newSet) {
+                            return set;
+                        }
+                    } else {
+                        deadIndex = i;
+                    }
+                }
+
+                if (deadIndex == -1) {
+                    _weakExtensionMethodSets.Add(new WeakReference(newSet));
+                } else {
+                    _weakExtensionMethodSets[deadIndex].Target = newSet;
+                }
+                return newSet;
+            }
+        }
     }
 
     /// <summary>

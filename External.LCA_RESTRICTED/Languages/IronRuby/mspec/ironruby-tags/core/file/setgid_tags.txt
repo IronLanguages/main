@@ -1,1 +1,0 @@
-fails:File.setgid? should be false if the file doesn't exist

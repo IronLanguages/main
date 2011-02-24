@@ -1067,7 +1067,6 @@ namespace Microsoft.Scripting.Interpreter {
             BranchLabel end = _instructions.MakeLabel();
             BranchLabel gotoEnd = _instructions.MakeLabel();
 
-            int tryStackDepth = _instructions.CurrentStackDepth;
             int tryStart = _instructions.Count;
 
             BranchLabel startOfFinally = null;
@@ -1088,8 +1087,6 @@ namespace Microsoft.Scripting.Interpreter {
             
             // keep the result on the stack:     
             if (node.Handlers.Count > 0) {
-                int handlerContinuationDepth = _instructions.CurrentContinuationsDepth;
-
                 // TODO: emulates faults (replace by true fault support)
                 if (node.Finally == null && node.Handlers.Count == 1) {
                     var handler = node.Handlers[0];
@@ -1205,15 +1202,32 @@ namespace Microsoft.Scripting.Interpreter {
                 _forceCompile = true;
             }
 
-            if (!node.Method.IsStatic) {
-                Compile(node.Object);
-            }
+            // CF bug workaround
+            // TODO: can we do better if the delegate targets LightLambda.Run* method?
+            if (PlatformAdaptationLayer.IsCompactFramework && 
+                node.Method.Name == "Invoke" && typeof(Delegate).IsAssignableFrom(node.Object.Type) && !node.Method.IsStatic) {
+                    
+                Compile(
+                    AstUtils.Convert(
+                        Expression.Call(
+                            node.Object,
+                            node.Object.Type.GetMethod("DynamicInvoke"),
+                            Expression.NewArrayInit(typeof(object), node.Arguments.Map((e) => AstUtils.Convert(e, typeof(object))))
+                        ),
+                        node.Type
+                    )
+                );
 
-            foreach (var arg in node.Arguments) {
-                Compile(arg);
-            }
+            } else {
+                if (!node.Method.IsStatic) {
+                    Compile(node.Object);
+                }
 
-            _instructions.EmitCall(node.Method, parameters);
+                foreach (var arg in node.Arguments) {
+                    Compile(arg);
+                }
+                _instructions.EmitCall(node.Method, parameters);
+            }
         }
 
         private void CompileNewExpression(Expression expr) {

@@ -1,0 +1,121 @@
+
+;;; Just some example list funs to show SymPL and importing modules.
+;;;
+;;; NOTE, we use capitalized member names First and Rest because when running
+;;; the python implementation, python's DynamicMetaObjects for the Cons class
+;;; handles the member accesses, and they don't respect the IgnoreCase flag yet.
+;;; The C# implementation executes by going directly to our SymplGetMemberBinder
+;;; and uses our .NET binding which is case-insensitive, so First and Rest can
+;;; be lowercase there.
+;;;
+
+;(import system)
+
+(defun member (x lst)
+   ;; No type test, so just trust the caller.
+ ;  (system.console.write "In member ...")
+ ;  (system.console.writeline (lst.GetType)) ;need fallback invoke member impl
+   (if lst
+       (if (eq x lst.First) ; (or (eq ...) (member x lst.Rest))
+           true
+           (member x lst.Rest))))
+
+(defun assoc (x lst)
+   (if lst ;(eq lst nil) ; just (if lst, but don't have that yet
+       ;; should check structure, but assume for now ...
+       (if (eq x lst.First.First)
+           lst.First.Rest
+           (assoc x lst.Rest))))
+
+;;; Destructively reverses lst returning the new head.  O(N^2): boogie down lst
+;;; and for each element boogie down the result being built up.  See below for
+;;; O(n) version.
+;;;
+(defun nreverse-on2 (lst)
+     (if (eq lst nil)
+         nil
+         (if (eq lst.Rest nil)
+             lst
+             (let* ((rest lst.Rest))
+			    (set lst.Rest nil)
+			    (nconc (nreverse rest) lst)))))
+			 
+;;; Destructively appends lst2 to lst1.
+;;;
+(defun nconc (lst1 lst2)
+   (if (eq lst2 nil)
+       lst1
+       (if (eq lst1 nil)
+           lst2
+           (block (if (eq lst1.Rest nil)
+                      (set lst1.Rest lst2)
+                      (nconc lst1.Rest lst2))
+                  lst1))))
+
+;;; Functional reverse, written before SymPL had loops.
+;;;
+(defun reverse (l)
+   (let* ((reverse-aux nil))
+      (set reverse-aux
+	    (lambda (remainder result)
+	       (if remainder
+	          (reverse-aux remainder.Rest (cons remainder.First result))
+	          result)))
+      (reverse-aux l nil)))
+
+;;; O(n) destructive reverse, written before SymPL had loops.
+;;;
+(defun nreverse (l)
+   (let* ((nreverse-aux nil))
+      (set nreverse-aux
+	     (lambda (remainder result)
+	        (if remainder
+	            (let* ((new-remainder remainder.Rest))
+		           (set remainder.Rest result)
+		           (nreverse-aux new-remainder remainder))
+	            result)))
+    (nreverse-aux l nil)))
+
+;;; Functional append lst2 to lst1.
+;;;
+(defun append (lst1 lst2)
+   (if (eq lst2 nil)
+       lst1
+       (if (eq lst1 nil)
+           lst2
+           (cons lst1.First (append lst1.Rest lst2)))))
+
+;;; After adding loops and binary operators, we can define length.
+;;;
+(defun length (l)
+   (set len 0)
+   (loop
+      (if l
+	      (set len (+ len 1))
+		  (break))
+	  (set l l.Rest))
+   len)
+
+(defun zip (l1 l2)
+   ;; Assume lists aren't empty
+   (let* ((res (list (cons l1.First l2.First)))
+          (tail res))
+      (set l1 l1.Rest)
+      (set l2 l2.Rest)
+      (loop
+         (if (and l1 l2)
+             (block
+                (set tail.Rest (list (cons l1.First l2.First)))
+                (set tail tail.Rest)
+                (set l1 l1.Rest)
+                (set l2 l2.Rest))
+             (break res)))))
+
+
+
+
+
+
+
+
+

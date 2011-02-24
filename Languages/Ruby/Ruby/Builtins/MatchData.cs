@@ -28,7 +28,6 @@ namespace IronRuby.Builtins {
 
         private int _flags;
         private Match/*!*/ _match;
-        private int[] _kIndices;
         private MutableString/*!*/ _originalString;
 
         public MutableString/*!*/ OriginalString { get { return _originalString; } }
@@ -53,7 +52,7 @@ namespace IronRuby.Builtins {
 
         #region Construction
 
-        private MatchData(Match/*!*/ match, MutableString/*!*/ originalString, int[] kIndices) {
+        private MatchData(Match/*!*/ match, MutableString/*!*/ originalString) {
             Debug.Assert(match.Success);
             
             _match = match;
@@ -61,7 +60,6 @@ namespace IronRuby.Builtins {
             // TODO (opt): create groups instead?
             _originalString = originalString;
 
-            _kIndices = kIndices;
             IsTainted = originalString.IsTainted;
             IsUntrusted = originalString.IsUntrusted;
         }
@@ -72,7 +70,7 @@ namespace IronRuby.Builtins {
         }
 
         protected MatchData(MatchData/*!*/ data)
-            : this(data._match, data._originalString, data._kIndices) {
+            : this(data._match, data._originalString) {
         }
 
         object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
@@ -87,40 +85,18 @@ namespace IronRuby.Builtins {
         
         public void InitializeFrom(MatchData/*!*/ other) {
             _match = other._match;
-            _kIndices = other._kIndices;
             _originalString = other._originalString;
         }
 
-        internal static MatchData Create(Match/*!*/ match, MutableString/*!*/ input, bool freezeInput, string/*!*/ encodedInput, RubyEncoding kcoding, int kStart) {
+        internal static MatchData Create(Match/*!*/ match, MutableString/*!*/ input, bool freezeInput, string/*!*/ encodedInput) {
             if (!match.Success) {
                 return null;
-            }
-            
-            int[] kIndices;
-            if (kcoding != null) {
-                // TODO (opt): minimize GetByteCount calls, remove ToCharArray:
-                char[] kCodedChars = encodedInput.ToCharArray();
-                Encoding encoding = kcoding.StrictEncoding;
-                kIndices = new int[match.Groups.Count * 2];
-                for (int i = 0; i < match.Groups.Count; i++) {
-                    var group = match.Groups[i];
-                    if (group.Success) {
-                        // group start index:
-                        kIndices[i * 2] = kStart + encoding.GetByteCount(kCodedChars, 0, group.Index);
-                        // group length:
-                        kIndices[i * 2 + 1] = encoding.GetByteCount(kCodedChars, group.Index, group.Length);
-                    } else {
-                        kIndices[i * 2] = -1;
-                    }
-                }
-            } else {
-                kIndices = null;
             }
 
             if (freezeInput) {
                 input = input.Clone().Freeze();
             }
-            return new MatchData(match, input, kIndices);
+            return new MatchData(match, input);
         }
         
         #endregion
@@ -167,12 +143,12 @@ namespace IronRuby.Builtins {
 
         public int GetGroupStart(int groupIndex) {
             ContractUtils.Requires(groupIndex >= 0);
-            return _kIndices != null ? _kIndices[groupIndex * 2] : _match.Groups[groupIndex].Index;
+            return _match.Groups[groupIndex].Index;
         }
 
         public int GetGroupLength(int groupIndex) {
             ContractUtils.Requires(groupIndex >= 0);
-            return _kIndices != null ? _kIndices[groupIndex * 2 + 1] : _match.Groups[groupIndex].Length;
+            return _match.Groups[groupIndex].Length;
         }
         
         public int GetGroupEnd(int groupIndex) {

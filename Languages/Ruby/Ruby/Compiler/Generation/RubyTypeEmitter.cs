@@ -23,6 +23,7 @@ using System;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Microsoft.Scripting.Generation;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
@@ -95,7 +96,7 @@ namespace IronRuby.Compiler.Generation {
         [Emitted]
         public static CallSite<Func<CallSite, RubyContext, object, T>>/*!*/ GetConversionSite<T>() {
             if (_conversionSites == null) {
-                _conversionSites = new Dictionary<Type, CallSite>();
+                Interlocked.CompareExchange(ref _conversionSites, new Dictionary<Type, CallSite>(), null);
             }
             Type toType = typeof(T);
 

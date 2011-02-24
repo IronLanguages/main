@@ -1,0 +1,54 @@
+;;; Tests for op expressions
+
+(import system)
+
+(defun print (x)
+   (system.console.writeline x)
+   x)
+
+
+(print (+ 20 30))
+(set str "hello")
+(set len str.length)
+(print len) ; 5
+(print (+ len 2)) ; 7
+(print (- len 2)) ; 3
+(print (* len 2)) ; 10
+(print (/ len 2)) ; 2
+(print (/ (* (+ len len) 
+             (- len 100))
+          5)) ; -190
+
+(print (= len 2)) ; false
+(print (= len 5)) ; true
+(print (!= len 2)) ; true
+(print (!= 5 len)) ; false
+(print (> len 2)) ; true
+(print (> len 8)) ; false
+(print (< len 2)) ; false
+(print (< len 8)) ; true
+
+(print (and 5 3)) ; 3
+(print (and false 3)) ; false
+(print (and nil 3)) ; false
+(print (or 5 3))  ; 5
+(print (or false 3)) ; 3
+(print (or nil 3))  ; 3
+(print (or nil nil)) ; false
+(print (or nil false)) ; false
+(print (or false false)) ; false
+(print (and (> len 2) 
+            (< len 8))) ; true
+(print (and (> len 6) 
+            (< len 8))) ; false
+(print (or (< len 2) 
+           (= len 5))) ; true
+(print (or (< len 2) 
+           (> len 8))) ; false
+
+(print (not true))  ; false
+(print (not false)) ; true
+(print (not nil))   ; true
+(print (not 0))     ; false
+(print (not ""))    ; false
+

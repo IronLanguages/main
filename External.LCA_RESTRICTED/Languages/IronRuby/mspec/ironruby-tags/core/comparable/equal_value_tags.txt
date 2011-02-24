@@ -1,1 +1,0 @@
-fails:Comparable#== calls #<=> on self with other and returns true if #<=> returns 0

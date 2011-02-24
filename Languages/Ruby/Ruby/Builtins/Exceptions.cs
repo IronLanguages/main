@@ -161,6 +161,42 @@ namespace IronRuby.Builtins {
     }
 
     [Serializable]
+    public class UndefinedConversionError : EncodingError {
+        public UndefinedConversionError() : this(null, null) { }
+        public UndefinedConversionError(string message) : this(message, null) { }
+        public UndefinedConversionError(string message, Exception inner) : base(message, inner) { }
+
+#if !SILVERLIGHT
+        protected UndefinedConversionError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
+    public class InvalidByteSequenceError : EncodingError {
+        public InvalidByteSequenceError() : this(null, null) { }
+        public InvalidByteSequenceError(string message) : this(message, null) { }
+        public InvalidByteSequenceError(string message, Exception inner) : base(message, inner) { }
+
+#if !SILVERLIGHT
+        protected InvalidByteSequenceError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
+    public class ConverterNotFoundError : EncodingError {
+        public ConverterNotFoundError() : this(null, null) { }
+        public ConverterNotFoundError(string message) : this(message, null) { }
+        public ConverterNotFoundError(string message, Exception inner) : base(message, inner) { }
+
+#if !SILVERLIGHT
+        protected ConverterNotFoundError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
     public class RuntimeError : SystemException {
         public RuntimeError() : this(null, null) { }
         public RuntimeError(string message) : this(message, null) { }

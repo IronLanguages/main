@@ -1121,7 +1121,7 @@ namespace IronPython.Runtime.Operations {
                         throw PythonOps.OverflowError("%c arg not in range(0x10000)");
                     }
 
-                    digits = digits = ScriptingRuntimeHelpers.CharToString((char)iVal);
+                    digits = ScriptingRuntimeHelpers.CharToString((char)iVal);
                     break;
                 default:
                     throw PythonOps.ValueError("Unknown format code '{0}'", spec.Type.ToString());

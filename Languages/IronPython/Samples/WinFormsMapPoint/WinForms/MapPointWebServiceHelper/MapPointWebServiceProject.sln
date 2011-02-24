@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapPointWebServiceProject", "MapPointWebServiceProject.csproj", "{DB01ACC4-9655-4317-B371-2F276220CBDD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DB01ACC4-9655-4317-B371-2F276220CBDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB01ACC4-9655-4317-B371-2F276220CBDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB01ACC4-9655-4317-B371-2F276220CBDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB01ACC4-9655-4317-B371-2F276220CBDD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(TextTemplating) = postSolution
+		TextTemplating = 1
+	EndGlobalSection
+EndGlobal

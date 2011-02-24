@@ -1,1 +1,0 @@
-fails:Hash#each_value raises a LocalJumpError when called on a non-empty hash without a block

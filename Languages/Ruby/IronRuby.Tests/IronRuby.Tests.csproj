@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
-  <Import Project="$(SolutionDir)..\Solutions\Common.proj" />
+  <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,13 +10,11 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronRuby.Tests</RootNamespace>
     <AssemblyName>IronRuby.Tests</AssemblyName>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <OldToolsVersion>2.0</OldToolsVersion>
     <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- TODO: xbuild ignores DisabledWarnings -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DisabledWarnings>219,168</DisabledWarnings>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
@@ -73,7 +71,7 @@
     <Compile Include="Runtime\AssignmentTests.cs" />
     <Compile Include="Runtime\BacktraceTests.cs" />
     <Compile Include="Runtime\BoolAndConditionalTests.cs" />
-    <Compile Include="Runtime\BigIntegerTests.cs" />
+    <Compile Include="Runtime\IntegerTests.cs" />
     <Compile Include="Runtime\CloningTests.cs" />
     <Compile Include="Runtime\ClrTests.cs" />
     <Compile Include="Runtime\ArrayTests.cs" />
@@ -130,7 +128,7 @@
       <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
       <Name>Microsoft.Dynamic</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj">
+    <ProjectReference Include="..\Libraries\IronRuby.Libraries.csproj">
       <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
       <Name>IronRuby.Libraries</Name>
     </ProjectReference>

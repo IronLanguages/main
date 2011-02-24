@@ -24,6 +24,7 @@ using System.Reflection;
 using System.Threading;
 using System.IO;
 using System.Globalization;
+using System.Text;
 
 namespace IronRuby.Hosting {
    
@@ -39,18 +40,13 @@ namespace IronRuby.Hosting {
         }
 
         protected override string Logo {
-            get {
-                return String.Format(CultureInfo.InvariantCulture, 
-                    "IronRuby {1} on {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
-                    Environment.NewLine, RubyContext.IronRubyVersion, GetRuntime());
-            }
+            get { return GetLogo(); }
         }
 
-        private static string GetRuntime() {
-            Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
-            return mono != null ?
-                (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
-                : String.Format(CultureInfo.InvariantCulture, ".NET {0}", Environment.Version);
+        public static string GetLogo() {
+            return String.Format(CultureInfo.InvariantCulture,
+                "IronRuby {1} on {2}{0}Copyright (c) Microsoft Corporation. All rights reserved.{0}{0}",
+                Environment.NewLine, RubyContext.IronRubyVersion, RubyContext.MakeRuntimeDesriptionString());
         }
 
         protected override int? TryInteractiveAction() {
@@ -68,25 +64,9 @@ namespace IronRuby.Hosting {
             }
         }
 
-        protected override int Run() {
-            if (Options.ChangeDirectory != null) {
-                Environment.CurrentDirectory = Options.ChangeDirectory;
-            }
-
-            if (Options.DisplayVersion && (Options.Command != null || Options.FileName != null)) {
-                Console.WriteLine(String.Format(CultureInfo.InvariantCulture, "IronRuby {0} on {1}", RubyContext.IronRubyVersion, GetRuntime()
-                ), Style.Out);
-            }
-
-            return base.Run();
-        }
-
-        // overridden to set the default encoding to KCODE/BINARY
+        // overridden to set the default encoding to -KX
         protected override int RunFile(string fileName) {
-            return RunFile(
-                Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), 
-                (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).StrictEncoding)
-            );
+            return RunFile(Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), GetSourceCodeEncoding()));
         }
 
         protected override ScriptCodeParseResult GetCommandProperties(string code) {
@@ -105,10 +85,13 @@ namespace IronRuby.Hosting {
 #if SILVERLIGHT
             return Engine.CreateScriptSourceFromString(command, kind);
 #else
-            var kcode = ((RubyContext)Language).RubyOptions.KCode;
-            var encoding = kcode != null ? kcode.Encoding : System.Console.InputEncoding;
+            var encoding = GetSourceCodeEncoding();
             return Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), sourceUnitId, encoding, kind);
 #endif
+        }
+
+        private Encoding/*!*/ GetSourceCodeEncoding() {
+            return (((RubyContext)Language).RubyOptions.DefaultEncoding ?? RubyEncoding.Ascii).Encoding;
         }
         
         protected override Scope/*!*/ CreateScope() {

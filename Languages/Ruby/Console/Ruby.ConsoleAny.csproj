@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
-  <Import Project="$(SolutionDir)..\Solutions\Common.proj" />
+  <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,10 +10,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronRuby</RootNamespace>
     <AssemblyName>ir64</AssemblyName>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
   </PropertyGroup>
@@ -84,7 +80,7 @@
       <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
       <Name>Microsoft.Dynamic</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj">
+    <ProjectReference Include="..\Libraries\IronRuby.Libraries.csproj">
       <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
       <Name>IronRuby.Libraries</Name>
     </ProjectReference>

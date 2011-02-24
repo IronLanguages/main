@@ -10,7 +10,7 @@ class UnitTestSetup
   end
 
   def gather_files
-    test_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/TZInfoTests", ENV["DLR_ROOT"])
+    test_dir = File.expand_path("Languages/Ruby/Tests/Libraries/TZInfoTests", ENV["DLR_ROOT"])
     $LOAD_PATH << test_dir
 
 

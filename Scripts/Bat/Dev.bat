@@ -4,6 +4,7 @@ set CURRENT=%CD%
 set BAT=%~dp0
 set TERM=
 set DLR_ROOT=%BAT:~0,-13%
+set DLR_BIN=%DLR_ROOT%\bin\Debug
 set DLR_VM=
 set PROGRAM_FILES_32=%ProgramFiles%
 set PROGRAM_FILES_64=%ProgramFiles%
@@ -14,29 +15,19 @@ if EXIST "%PROGRAM_FILES_x86%" set PROGRAM_FILES_64=%ProgramW6432%
 if EXIST "%DLR_ROOT%\Internal" set INTERNALDEV="1"
 If DEFINED THISISSNAP set INTERNALDEV="1"
 
-if DEFINED INTERNALDEV (
-  REM -- Nullify the existing environment
-  call %DLR_ROOT%\Test\Scripts\SetTestEnv.bat
+set RUBY19_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin
+set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe
 
-  REM -- IronRuby environment variables --
-  set RUBY18_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin
-  set RUBY18_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin\ruby.exe
-  set RUBY19_BIN=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin
-  set RUBY19_EXE=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby19\bin\ruby.exe
 
-  REM -- IronPython environment variables
-  set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
 
-  REM -- Python environment variables
-  set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
-) else (
-  set RUBY18_BIN=
-  set RUBY18_EXE=ruby.exe
-  set RUBY19_BIN=
-  set RUBY19_EXE=ruby.exe
-)
 set RUBYOPT=
 set GEM_PATH=%RUBY19_BIN%\..\lib\ruby\gems\1.9.1
+
+REM -- IronPython environment variables
+set IRONPYTHONPATH=%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib
+
+REM -- Python environment variables
+set PYTHONPATH=.;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\lib;%DLR_ROOT%\Languages\IronPython\IronPython\Lib
 
 if EXIST "%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe" (
   set SN_UTIL="%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\sn.exe"
@@ -112,7 +103,7 @@ if exist "%PROGRAM_FILES_32%\Microsoft.NET\SDK\v2.0\Bin\sdkvars.bat" (
 :EnvDone
 if DEFINED INTERNALDEV set PATH=%PATH%;%DLR_ROOT%\External\Tools;%DLR_ROOT%\Scripts\Bat;%DLR_ROOT%\Util\Internal\Snap\bin;%DLR_ROOT%\Util\tfpt
 
-set PATH=%PATH%;%DLR_ROOT%\Languages\Ruby\Scripts;%DLR_ROOT%\Languages\Ruby\Scripts\bin;%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin;%RUBY19_BIN%
+set PATH=%PATH%;%DLR_ROOT%\Languages\Ruby\Scripts;%DLR_ROOT%\Languages\Ruby\Scripts\bin;%DLR_ROOT%\Languages\Ruby\Tests\mspec\mspec\bin;%RUBY19_BIN%
 
 REM -- Mono
 if defined DLR_VM_PATH goto MonoInitEnd
@@ -155,7 +146,6 @@ if NOT EXIST "%HOME_FOR_MSPECRC%\.mspecrc" (
 )
 
 doskey /macrofile=%BAT%Alias.txt
-doskey /macrofile=%BAT%AliasInternal.txt
 cd /D %CURRENT%
 
 if not DEFINED INTERNALDEV goto Continue2

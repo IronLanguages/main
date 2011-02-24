@@ -1,5 +1,0 @@
-fails:The -K command line option doesn't cause errors
-fails:The -K command line option sets the $KCODE to NONE with A
-fails:The -K command line option sets the $KCODE to NONE with N
-fails:The -K command line option sets the $KCODE to NONE with a
-fails:The -K command line option sets the $KCODE to NONE with n

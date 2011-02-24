@@ -60,7 +60,6 @@ namespace IronPython.Modules {
         public static void warn(CodeContext context, object message, [DefaultParameterValue(null)]PythonType category, [DefaultParameterValue(1)]int stacklevel) {
             PythonContext pContext = PythonContext.GetContext(context);
             List argv = pContext.GetSystemStateValue("argv") as List;
-            PythonDictionary dict = pContext.GetSystemStateValue("__dict__") as PythonDictionary;
 
             if (PythonOps.IsInstance(message, PythonExceptions.Warning)) {
                 category = DynamicHelpers.GetPythonType(message);

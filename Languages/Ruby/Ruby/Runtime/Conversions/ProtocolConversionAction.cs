@@ -202,7 +202,7 @@ namespace IronRuby.Runtime.Conversions {
             }
 
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
-            Expression targetClassNameConstant = AstUtils.Constant(targetClass.GetNonSingletonClass().Name);
+            Expression targetClassNameConstant = AstUtils.Constant(targetClass.GetNonSingletonClass().Name, typeof(string));
             MethodResolutionResult respondToMethod, methodMissing = MethodResolutionResult.NotFound;
             ProtocolConversionAction selectedConversion = null;
             RubyMemberInfo conversionMethod = null;
@@ -425,6 +425,12 @@ namespace IronRuby.Runtime.Conversions {
         protected override Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
             return AstUtils.LightDynamic(ConvertToStrAction.Make(args.RubyContext), AstUtils.Box(result));
         }
+    }
+
+    public sealed class TryConvertToPathAction : TryConvertToReferenceTypeAction<TryConvertToPathAction, MutableString> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToPath; } }
+        protected override string/*!*/ TargetTypeName { get { return "String"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToStringValidator; } }
     }
 
     public sealed class TryConvertToStrAction : TryConvertToReferenceTypeAction<TryConvertToStrAction, MutableString> {

@@ -1,0 +1,18 @@
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <FeatureRef Id="Feature_IronPython" xmlns="">
+      <Feature Id="Feature_Doc" AllowAdvertise="no" Level="1" Title="Documentation" Description="Documentation for IronPython.">
+        <ComponentRef Id="Comp_Doc" />
+      </Feature>
+    </FeatureRef>
+    <DirectoryRef Id="INSTALLDIR" FileSource=".">
+      <Directory Id="Dir_Doc" Name="Doc">
+        <Component Id="Comp_Doc" DiskId="1" Guid="85116d6b-1035-4afc-a77f-aa33d45e71a1">
+          <File Id="File_Chiron.txt" Name="Chiron.txt" />
+          <File Id="File_dotnet_integration.rst" Name="DOTNET_1.RST" LongName="dotnet-integration.rst" />
+          <File Id="File_IronPython.css" Name="IRONPY_1.CSS" LongName="IronPython.css" />
+        </Component>
+      </Directory>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

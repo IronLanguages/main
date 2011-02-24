@@ -53,7 +53,7 @@ namespace IronRuby.Compiler {
 
         public bool AllowNonAsciiIdentifiers {
             get { return _multiByteIdentifier < Int32.MaxValue; }
-            set { _multiByteIdentifier = AllowMultiByteIdentifier(value); }
+            set { _multiByteIdentifier = value ? AllowMultiByteIdentifier : Int32.MaxValue; }
         }
 
         internal RubyEncoding/*!*/ Encoding {
@@ -1072,25 +1072,9 @@ namespace IronRuby.Compiler {
 
                 default:
                     if (!IsIdentifierInitial(c, _multiByteIdentifier)) {
-                        // UTF-8 BOM detection:
-                        if (_compatibility < RubyCompatibility.Ruby19 && _currentLineIndex == 0 && _bufferPos == 1 &&
-                            (c == 0xEF && Peek() == 0xBB && Peek(1) == 0xBF)) {
-                            ReportWarning(Errors.ByteOrderMarkIgnored);
-                            // skip BOM and continue parsing as if it was whitespace:
-                            Read();
-                            Read();
-                            MarkSingleLineTokenEnd();
-                            return Tokens.Whitespace;
-                        } else {
-                            ReportError(Errors.InvalidCharacterInExpression, (char)c);
-                            MarkSingleLineTokenEnd();
-                            return Tokens.InvalidCharacter;
-                        }
-                    } else if (c == 0xfeff && _encoding == RubyEncoding.KCodeUTF8 && _currentLineIndex == 0 && _bufferPos == 1) {
-                        ReportWarning(Errors.ByteOrderMarkIgnored);
-                        // skip BOM and continue parsing as if it was whitespace:
+                        ReportError(Errors.InvalidCharacterInExpression, (char)c);
                         MarkSingleLineTokenEnd();
-                        return Tokens.Whitespace;
+                        return Tokens.InvalidCharacter;
                     }
 
                     return MarkSingleLineTokenEnd(ReadIdentifier(c));
@@ -1346,11 +1330,7 @@ namespace IronRuby.Compiler {
                 case "__LINE__": return ReturnKeyword(Tokens.Line, LexicalState.EXPR_END);
                 case "__FILE__": return ReturnKeyword(Tokens.File, LexicalState.EXPR_END);
                 case "__ENCODING__":
-                    if (_compatibility >= RubyCompatibility.Ruby19) {
-                        return ReturnKeyword(Tokens.Encoding, LexicalState.EXPR_END);
-                    } else {
-                        return Tokens.None;
-                    }
+                    return ReturnKeyword(Tokens.Encoding, LexicalState.EXPR_END);
 
                 default: return Tokens.None;
             }
@@ -2145,7 +2125,6 @@ namespace IronRuby.Compiler {
                 return Tokens.EndOfFile;
             }
 
-            // TODO: ?x, ?\u1234, ?\u{123456} -> string in 1.9
             // ?[:whitespace:]
             if (IsWhiteSpace(c)) {
                 if (!InArgs) {
@@ -2176,22 +2155,50 @@ namespace IronRuby.Compiler {
             }
 
             Skip(c);
-            
+
+            object content;
+            RubyEncoding encoding;
+
             // ?\{escape}
             if (c == '\\') {
-                // TODO: ?\xx, ?\u1234, ?\u{123456} -> string in 1.9
-                c = ReadEscape();
+                c = Peek();
+                if (c == 'u') {
+                    // \uFFFF, \u{xxxxxx}
+                    Skip(c);
+                    int codepoint = Peek() == '{' ? ReadUnicodeEscape6() : ReadUnicodeEscape4();
+                    content = UnicodeCodePointToString(codepoint);
+                    encoding = (codepoint <= 0x7f) ? _encoding : RubyEncoding.UTF8;
+                    MarkSingleLineTokenEnd();
+                } else {
+                    // \xXX, \M-x, ...
+                    c = ReadEscape();
+                    if (c <= 0x7f) {
+                        content = new String((char)c, 1);
+                        encoding = _encoding;
+                    } else {
+                        Debug.Assert(c <= 0xff);
+                        content = new[] { (byte)c };
+                        encoding = (_encoding == RubyEncoding.Ascii) ? RubyEncoding.Binary : _encoding;
+                    }
 
-                // \M-{eoln} eats the eoln:
-                MarkMultiLineTokenEnd();
+                    // \M-{eoln} eats the eoln:
+                    MarkMultiLineTokenEnd();
+                }
             } else {
+                int d;
+                if (IsHighSurrogate(c) && IsLowSurrogate(d = Peek())) {
+                    Skip(d);
+                    content = new String(new[] { (char)c, (char)d });
+                } else {
+                    content = new String((char)c, 1);
+                }
+                encoding = _encoding;
                 MarkSingleLineTokenEnd();
             }
 
-            // TODO: ?x -> string in 1.9
             LexicalState = LexicalState.EXPR_END;
-            _tokenValue.SetString(((char)c).ToString());
-
+            _tokenValue.StringContent = content;
+            _tokenValue.Encoding = encoding;
             return Tokens.Character;
         }
 
@@ -2366,12 +2373,7 @@ namespace IronRuby.Compiler {
                 }
             }
 
-            // encoding is ignored in 1.9:
-            if (_compatibility < RubyCompatibility.Ruby19) {
-                return options | encoding;
-            } else {
-                return options;
-            }
+            return options | encoding;
         }
 
         #endregion
@@ -2461,7 +2463,7 @@ namespace IronRuby.Compiler {
 
             switch (c) {
                 case 'x':
-                    content.Append('\\');
+                    content.AppendAscii('\\');
                     AppendEscapedHexEscape(content);
                     break;
 
@@ -2471,7 +2473,9 @@ namespace IronRuby.Compiler {
                         break;
                     }
 
-                    content.Append('\\', 'M', '-');
+                    content.AppendAscii('\\');
+                    content.AppendAscii('M');
+                    content.AppendAscii('-');
 
                     // escaped:
                     AppendRegularExpressionCompositeEscape(content, term);
@@ -2483,13 +2487,16 @@ namespace IronRuby.Compiler {
                         break;
                     }
 
-                    content.Append('\\', 'C', '-');
-
+                    content.AppendAscii('\\');
+                    content.AppendAscii('C');
+                    content.AppendAscii('-');
+                    
                     AppendRegularExpressionCompositeEscape(content, term);
                     break;
 
                 case 'c':
-                    content.Append('\\', 'c');
+                    content.AppendAscii('\\');
+                    content.AppendAscii('c');
                     AppendRegularExpressionCompositeEscape(content, term);
                     break;
                     
@@ -2499,18 +2506,18 @@ namespace IronRuby.Compiler {
 
                 default:
                     if (IsOctalDigit(c)) {
-                        content.Append('\\');
+                        content.AppendAscii('\\');
                         AppendEscapedOctalEscape(content);
                         break;
                     }
 
                     if (c != '\\' || c != term) {
-                        content.Append('\\');
+                        content.AppendAscii('\\');
                     }
 
                     // ReadEscape is not called if the backslash is followed by an eoln:
                     Debug.Assert(c != '\n' && (c != '\r' || Peek() != '\n'));
-                    content.Append((char)c);
+                    AppendCharacter(content, c);
                     break;
             }
         }
@@ -2522,7 +2529,7 @@ namespace IronRuby.Compiler {
             } else if (c == -1) {
                 InvalidEscapeCharacter();
             } else {
-                content.Append((char)c);
+                AppendCharacter(content, c);
             }
         }
 
@@ -2531,7 +2538,7 @@ namespace IronRuby.Compiler {
             ReadOctalEscape(0);
 
             Debug.Assert(IsOctalDigit(_lineBuffer[start])); // first digit
-            content.Append(_lineBuffer, start, _bufferPos - start);
+            content.AppendAscii(_lineBuffer, start, _bufferPos - start);
         }
 
         private void AppendEscapedHexEscape(MutableStringBuilder/*!*/ content) {
@@ -2539,20 +2546,23 @@ namespace IronRuby.Compiler {
             ReadHexEscape();
 
             Debug.Assert(_lineBuffer[start] == 'x');
-            content.Append(_lineBuffer, start, _bufferPos - start);
+            content.AppendAscii(_lineBuffer, start, _bufferPos - start);
         }
 
-        private void AppendEscapedUnicode(MutableStringBuilder/*!*/ content) {
+        // returns true if any escaped codepoint is non-ascii
+        private bool AppendEscapedUnicode(MutableStringBuilder/*!*/ content) {
+            bool isNonAscii = false;
             int start = _bufferPos - 1;
-
             if (Peek() == '{') {
-                ReadUnicodeCodePoint();
+                // \u{codepoint codepoint ... codepoint}
+                isNonAscii = AppendUnicodeCodePoints(null);
             } else {
-                ReadUnicodeEscape();
+                // \uFFFF
+                isNonAscii = ReadUnicodeEscape4() >= 0x80;
             }
-
             Debug.Assert(_lineBuffer[start] == 'u');
-            content.Append(_lineBuffer, start, _bufferPos - start);
+            content.AppendAscii(_lineBuffer, start, _bufferPos - start);
+            return isNonAscii;
         }
 
         // Reads octal number of at most 3 digits.
@@ -2590,7 +2600,7 @@ namespace IronRuby.Compiler {
         }
 
         // Peeks exactly 4 hexadecimal characters (\uFFFF).
-        private int ReadUnicodeEscape() {
+        private int ReadUnicodeEscape4() {
             int d4 = ToDigit(Peek(0));
             int d3 = ToDigit(Peek(1));
             int d2 = ToDigit(Peek(2));
@@ -2605,56 +2615,143 @@ namespace IronRuby.Compiler {
         }
 
         // Reads {at-most-six-hexa-digits}
-        private int ReadUnicodeCodePoint() {
+        private int ReadUnicodeEscape6() {
             int c = Read();
             Debug.Assert(c == '{');
 
-            int codepoint = 0;
-            int i = 0;
-            while (true) {
-                c = Peek();
-                if (i == 6) {
-                    break;
-                }
+            bool isEmpty;
+            int codepoint = ReadUnicodeCodePoint(out isEmpty);
 
-                int digit = ToDigit(c);
-                if (digit >= 16) {
-                    break;
-                }
-
-                codepoint = (codepoint << 4) | digit;
-                i++;
-                Skip(c);
-            }
-
-            if (c == '}') {
-                Skip(c);
+            if (Peek() == '}') {
+                Skip();
             } else {
-                InvalidEscapeCharacter();
+                ReportError(Errors.UntermintedUnicodeEscape);
+                isEmpty = false;
             }
-            
-            if (codepoint > 0x10ffff) {
-                ReportError(Errors.TooLargeUnicodeCodePoint);
+
+            if (isEmpty) {
+                ReportError(Errors.InvalidUnicodeEscape);
             }
 
             return codepoint;
         }
 
-        // Reads up to 6 hex characters, treats them as a exadecimal code-point value and appends the result to the buffer.
-        private void AppendUnicodeCodePoint(MutableStringBuilder/*!*/ content, StringProperties stringType) {
-            int codepoint = ReadUnicodeCodePoint();
+        // Parses [0-9A-F]{1,6}
+        private int ReadUnicodeCodePoint(out bool isEmpty) {
+            int codepoint = 0;
+            int i = 0;
+            while (true) {
+                int digit = ToDigit(Peek());
+                if (digit >= 16) {
+                    break;
+                }
 
+                if (i < 7) {
+                    codepoint = (codepoint << 4) | digit;
+                }
+
+                i++;
+                Skip();
+            }
+
+            if (codepoint > 0x10ffff) {
+                ReportError(Errors.TooLargeUnicodeCodePoint);
+                codepoint = (int)'?';
+            }
+
+            isEmpty = i == 0;
+            return codepoint;
+        }
+
+        // returns true if any codepoint represents a non-ascii character
+        private bool AppendUnicodeCodePoints(MutableStringBuilder content) {
+            bool isAscii = true;
+            bool isEmpty;
+            Skip('{');
+            while (true) {
+                int codepoint = ReadUnicodeCodePoint(out isEmpty);
+                if (content != null && !isEmpty) {
+                    AppendUnicodeCodePoint(content, codepoint);
+                }
+                isAscii &= codepoint <= 0x7f;
+
+                int c = Peek();
+                if (c == '}') {
+                    Skip();
+                    break;
+                }
+                if (c != ' ') {
+                    ReportError(Errors.UntermintedUnicodeEscape);
+                    isEmpty = false;
+                    break;
+                }
+                Skip();
+            }
+            if (isEmpty) {
+                ReportError(Errors.InvalidUnicodeEscape);
+            }
+            return !isAscii;
+        }
+
+        // Reads \uFFFF or \u{FFFFFF} and appends the character to the string content:
+        private void AppendUnicodeCodePoint(MutableStringBuilder/*!*/ content, int codepoint) {
+            if (codepoint >= 0x80) {
+                SwitchToUtf8(content);
+            }
+            content.AppendUnicodeCodepoint(codepoint);
+        }
+
+        private void SwitchToUtf8(MutableStringBuilder/*!*/ content) {
+            if (content.IsAscii) {
+                content.Encoding = RubyEncoding.UTF8;
+            } else if (content.Encoding != RubyEncoding.UTF8) {
+                ReportError(Errors.EncodingsMixed, content.Encoding, RubyEncoding.UTF8.Name);
+            }
+        }
+        
+        private void AppendByte(MutableStringBuilder/*!*/ content, int b) {
+            if (b >= 0x80 && content.Encoding == RubyEncoding.Ascii) {
+                content.Encoding = RubyEncoding.Binary;
+            }
+            content.Append((byte)b);
+        }
+
+        private void AppendCharacter(MutableStringBuilder/*!*/ content, int c) {
+            // c is encoded via the current source encoding (__ENCODING__):
+            if (c >= 0x80 && !content.IsAscii && content.Encoding != _encoding) {
+                ReportError(Errors.EncodingsMixed, content.Encoding, _encoding);
+            }
+            content.Append((char)c);
+        }
+
+        /// <summary>
+        /// Converts all codepoints in range [0, 0x10ffff] to a string.
+        /// Undefined for codepoint greater than 0x10ffff.
+        /// </summary>
+        public static string/*!*/ UnicodeCodePointToString(int codepoint) {
             if (codepoint < 0x10000) {
-                // code-points [0xd800 .. 0xdffff] are not treated as invalid
-                AppendCharacter(content, codepoint, stringType);
+                // code-points [0xd800 .. 0xdfff] are not treated as invalid
+                return new String((char)codepoint, 1);
             } else {
                 codepoint -= 0x10000;
-                content.Append((char)((codepoint / 0x400) + 0xd800), (char)((codepoint % 0x400) + 0xdc00));
+                return new String(new char[] { (char)((codepoint / 0x400) + 0xd800), (char)((codepoint % 0x400) + 0xdc00) });
             }
         }
 
         public static int ToCodePoint(int highSurrogate, int lowSurrogate) {
             return (highSurrogate - 0xd800) * 0x400 + (lowSurrogate - 0xdc00) + 0x10000;
+        }
+
+        public static bool IsHighSurrogate(int c) {
+            return unchecked((uint)c - 0xd800 <= (uint)0xdbff - 0xd800);
+        }
+
+        public static bool IsLowSurrogate(int c) {
+            return unchecked((uint)c - 0xdc00 <= (uint)0xdfff - 0xdc00);
+        }
+
+        public static bool IsSurrogate(int c) {
+            return unchecked((uint)c - 0xd800 <= (uint)0xdfff - 0xd800);
         }
 
         #endregion
@@ -2721,71 +2818,53 @@ namespace IronRuby.Compiler {
                             if ((stringType & StringProperties.ExpandsEmbedded) != 0) {
                                 continue;
                             }
-                            content.Append('\\');
+                            content.AppendAscii('\\');
                         }
                     } else if (c == '\\') {
                         if ((stringType & StringProperties.RegularExpression) != 0) {
-                            content.Append('\\');
+                            content.AppendAscii('\\');
                         }
                     } else if ((stringType & StringProperties.RegularExpression) != 0) {
                         // \uFFFF, \u{codepoint}
-                        if (c == 'u' && _compatibility >= RubyCompatibility.Ruby19) {
-                            content.Append('\\');
-                            AppendEscapedUnicode(content);
+                        if (c == 'u') {
+                            content.AppendAscii('\\');
+                            if (AppendEscapedUnicode(content)) {
+                                SwitchToUtf8(content);
+                            }
                         } else {
                             SeekRelative(-eolnWidth);
                             AppendEscapedRegexEscape(content, terminator);
                         }
                         continue;
                     } else if ((stringType & StringProperties.ExpandsEmbedded) != 0) {
-                        if (c == 'u' && _compatibility >= RubyCompatibility.Ruby19) {
-                            // TODO: if the string contains ascii characters only => it is ok and the encoding of the string will be UTF8
-                            if (_encoding != RubyEncoding.UTF8) {
-                                ReportWarning(Errors.EncodingsMixed, RubyEncoding.UTF8.Name, _encoding.Name);
-                                content.Append('\\');
-                                content.Append('u');
-                                continue;
-                            }
-
-                            // \uFFFF, \u{codepoint}
+                        if (c == 'u') {
                             if (Peek() == '{') {
-                                AppendUnicodeCodePoint(content, stringType);
-                                continue;
+                                // \u{codepoint codepoint ... codepoint}
+                                if (AppendUnicodeCodePoints(content)) {
+                                    SwitchToUtf8(content);
+                                }
                             } else {
-                                c = ReadUnicodeEscape();
+                                // \uFFFF
+                                int codepoint = ReadUnicodeEscape4();
+                                AppendUnicodeCodePoint(content, codepoint);
+                                if (codepoint >= 0x80) {
+                                    SwitchToUtf8(content);
+                                }
                             }
                         } else {
                             // other escapes:
                             SeekRelative(-eolnWidth);
-                            c = ReadEscape();
-                            Debug.Assert(c <= 0xff);
-                            AppendByte(content, (byte)c, stringType);
-                            continue;
+                            AppendByte(content, ReadEscape());
                         }
+                        continue;
                     } else if ((stringType & StringProperties.Words) != 0 && IsWhiteSpace(c)) {
-                        /* ignore backslashed spaces in %w */
+                        // ignore backslashed spaces in %w
                     } else if (c != terminator && !(openingParenthesis != 0 && c == openingParenthesis)) {
-                        content.Append('\\');
+                        content.AppendAscii('\\');
                     }
                 }
 
-                AppendCharacter(content, c, stringType);
-            }
-        }
-
-        private void AppendCharacter(MutableStringBuilder/*!*/ content, int c, StringProperties stringType) {
-            if (c == 0 && (stringType & StringProperties.Symbol) != 0) {
-                ReportError(Errors.NullCharacterInSymbol);
-            } else {
-                content.Append((char)c);
-            }
-        }
-
-        private void AppendByte(MutableStringBuilder/*!*/ content, byte b, StringProperties stringType) {
-            if (b == 0 && (stringType & StringProperties.Symbol) != 0) {
-                ReportError(Errors.NullCharacterInSymbol);
-            } else {
-                content.Append(b);
+                AppendCharacter(content, c);
             }
         }
 
@@ -2878,7 +2957,7 @@ namespace IronRuby.Compiler {
                         return StringEmbeddedCodeBegin();
                 }
                 content = new MutableStringBuilder(_encoding);
-                content.Append('#');
+                content.AppendAscii('#');
             } else {
                 content = new MutableStringBuilder(_encoding);
                 SeekRelative(-eolnWidth);
@@ -3144,7 +3223,7 @@ namespace IronRuby.Compiler {
                 }
 
                 content = new MutableStringBuilder(_encoding);
-                content.Append('#');
+                content.AppendAscii('#');
             } else {
                 content = new MutableStringBuilder(_encoding);
             }
@@ -3162,7 +3241,7 @@ namespace IronRuby.Compiler {
                 }
 
                 // append \n
-                content.Append((char)ReadNormalizeEndOfLine());
+                content.AppendAscii((char)ReadNormalizeEndOfLine());
 
                 // if we are in verbatim mode we need to yield to heredocs that were defined on the current line:
                 if (c == '\n' && _verbatim && _state.VerbatimHeredocQueue != null) {
@@ -3256,7 +3335,7 @@ namespace IronRuby.Compiler {
                 case -1:
                     _unterminatedToken = true;
                     MarkSingleLineTokenEnd();
-                    ReportError(Errors.UnterminatedQuotedString);
+                    ReportError(Errors.UnterminatedString);
                     return Tokens.EndOfFile;
 
                 case '(': terminator = ')'; break;
@@ -3764,11 +3843,9 @@ namespace IronRuby.Compiler {
             return Int32.MaxValue;
         }
 
-        private static int AllowMultiByteIdentifier(bool allowMultiByteIdentifier) {
-            // MRI 1.9 consideres all characters greater than 0x007f as identifiers.
-            // Surrogate pairs are composed to a single character that is also considered an identifier.
-            return allowMultiByteIdentifier ? 0x07f : Int32.MaxValue;
-        }
+        // MRI 1.9 consideres all characters greater than 0x007f as identifiers.
+        // Surrogate pairs are composed to a single character that is also considered an identifier.
+        private const int AllowMultiByteIdentifier = 0x07f;
 
         private bool IsIdentifier(int c) {
             return IsIdentifier(c, _multiByteIdentifier);
@@ -4100,46 +4177,43 @@ namespace IronRuby.Compiler {
 
         #region Names
 
-        public static bool IsConstantName(string name, bool allowMultiByteCharacters) {
-            int multiByteIdentifier = AllowMultiByteIdentifier(allowMultiByteCharacters);
+        public static bool IsConstantName(string name) {
             return !String.IsNullOrEmpty(name) 
                 && IsUpperLetter(name[0])
-                && IsVariableName(name, 1, 1, multiByteIdentifier)
-                && IsIdentifier(name[name.Length - 1], multiByteIdentifier);
+                && IsVariableName(name, 1, 1, AllowMultiByteIdentifier)
+                && IsIdentifier(name[name.Length - 1], AllowMultiByteIdentifier);
         }
 
-        public static bool IsVariableName(string name, bool allowMultiByteCharacters) {
-            int multiByteIdentifier = AllowMultiByteIdentifier(allowMultiByteCharacters);
+        public static bool IsVariableName(string name) {
             return !String.IsNullOrEmpty(name)
-                && IsIdentifierInitial(name[0], multiByteIdentifier)
-                && IsVariableName(name, 1, 0, multiByteIdentifier);
+                && IsIdentifierInitial(name[0], AllowMultiByteIdentifier)
+                && IsVariableName(name, 1, 0, AllowMultiByteIdentifier);
         }
 
-        public static bool IsMethodName(string name, bool allowMultiByteCharacters) {
-            int multiByteIdentifier = AllowMultiByteIdentifier(allowMultiByteCharacters);
+        public static bool IsMethodName(string name) {
             return !String.IsNullOrEmpty(name)
-                && IsIdentifierInitial(name[0], multiByteIdentifier)
-                && IsVariableName(name, 1, 1, multiByteIdentifier)
-                && IsMethodNameSuffix(name[name.Length - 1], multiByteIdentifier);
+                && IsIdentifierInitial(name[0], AllowMultiByteIdentifier)
+                && IsVariableName(name, 1, 1, AllowMultiByteIdentifier)
+                && IsMethodNameSuffix(name[name.Length - 1], AllowMultiByteIdentifier);
         }
 
-        public static bool IsInstanceVariableName(string name, bool allowMultiByteCharacters) {
+        public static bool IsInstanceVariableName(string name) {
             return name != null && name.Length >= 2
                 && name[0] == '@'
-                && IsVariableName(name, 1, 0, AllowMultiByteIdentifier(allowMultiByteCharacters));
+                && IsVariableName(name, 1, 0, AllowMultiByteIdentifier);
         }
 
-        public static bool IsClassVariableName(string name, bool allowMultiByteCharacters) {
+        public static bool IsClassVariableName(string name) {
             return name != null && name.Length >= 3
                 && name[0] == '@'
                 && name[1] == '@'
-                && IsVariableName(name, 2, 0, AllowMultiByteIdentifier(allowMultiByteCharacters));
+                && IsVariableName(name, 2, 0, AllowMultiByteIdentifier);
         }
 
-        public static bool IsGlobalVariableName(string name, bool allowMultiByteCharacters) {
+        public static bool IsGlobalVariableName(string name) {
             return name != null && name.Length >= 2
                 && name[0] == '$'
-                && IsVariableName(name, 1, 0, AllowMultiByteIdentifier(allowMultiByteCharacters));
+                && IsVariableName(name, 1, 0, AllowMultiByteIdentifier);
         }
 
         private static bool IsVariableName(string name, int trimStart, int trimEnd, int multiByteIdentifier) {

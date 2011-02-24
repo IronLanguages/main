@@ -277,7 +277,7 @@ namespace IronPython.Runtime {
             // only allow 1 thread at a time to do cleanup (other threads can continue adding)
             lock (context._codeCleanupLock) {
                 // the bulk of the work is in scanning the list, this proceeeds lock free
-                int removed = 0, kept = 0, origCount = context._codeCount;
+                int removed = 0, kept = 0;
                 CodeList prev = null;
                 CodeList cur = GetRootCodeNoUpdating(context);
 
@@ -358,7 +358,8 @@ namespace IronPython.Runtime {
             return cur;
         }
 
-        internal SourceSpan Span {
+        public SourceSpan Span {
+            [PythonHidden]
             get {
                 return _lambda.Span;
             }

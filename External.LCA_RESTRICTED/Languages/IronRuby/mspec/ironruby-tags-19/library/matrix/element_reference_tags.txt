@@ -1,2 +1,0 @@
-fails:Matrix#[] returns nil for an invalid index pair
-fails:"Matrix#[] returns nil for an invalid index pair"

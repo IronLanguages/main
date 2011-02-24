@@ -1,0 +1,387 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=windows-1252">
+  <title>Dynamic Web Service Helpers</title>
+  <style>
+p.Normal, li.Normal
+	{margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:Verdana;
+	margin-left:0in; margin-right:0in; margin-top:0in}
+h1
+	{margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	page-break-before:always;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:Verdana;
+	}
+h2
+	{margin-top:14.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	line-height:150%;
+	page-break-after:avoid;
+	font-size:14.0pt;
+	font-family:Verdana;
+	}
+h3
+	{margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	line-height:150%;
+	page-break-after:avoid;
+	font-size:11.0pt;
+	font-family:Verdana;
+	}
+p.Toc1
+	{margin-top:14.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	line-height:14.0pt;
+	font-size:10.0pt;
+	font-family:Verdana;
+	text-transform:uppercase;
+	font-weight:bold;
+	}
+p.Toc2
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:12.0pt;
+	margin-bottom:.0001pt;
+	font-size:10.0pt;
+	font-family:Verdana;
+	}
+p.Toc3
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:24.0pt;
+	margin-bottom:.0001pt;
+	font-size:10.0pt;
+	font-family:Verdana;
+	}
+a:link
+	{color:blue;
+	text-decoration:underline;
+	}
+a:visited
+	{color:purple;
+	text-decoration:underline;
+	}
+p.Body
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:0in;
+	line-height:-116%;
+	font-size:11.0pt;
+	font-family:Verdana;
+	}
+p.TypedExample
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:.5in;
+	line-height:150%;
+	font-size:10.0pt;
+	font-family:Verdana;
+	font-weight:bold}
+p.ContentsHeading
+	{margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	page-break-before:always;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:Verdana;
+	font-weight:bold}
+p.Step
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:0.1in;
+	font-size:11.0pt;
+	font-family:Verdana
+	}
+p.StepNote
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:.25in;
+	line-height:150%;
+	font-size:10.0pt;
+	font-family:Verdana;
+	font-weight:bold
+	}
+p.Code-Background
+	{margin-top:0;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:0;
+	font-size:10.0pt;
+	font-family:"Courier New"
+	}
+p.Title1
+	{margin-bottom:.0001pt;
+	font-size:36.0pt;
+	font-family:Verdana;
+	margin-left:0in; margin-right:0in; margin-top:0in}
+p.Title2
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:12.0pt;
+	margin-left:0in;
+	page-break-after:avoid;
+	font-size:28.0pt;
+	font-family:Verdana;
+	}
+p.CopyrightText
+	{margin-bottom:.0001pt;
+	font-size:10.0pt;
+	font-family:Verdana;
+	margin-left:0in; margin-right:0in; margin-top:0in}
+p.ExerciseList
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:.5in;
+	text-indent:-.25in;
+	line-height:-116%;
+	font-size:11.0pt;
+	font-family:Verdana;
+	}
+p.LabSummary
+	{margin-top:14.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	line-height:150%;
+	page-break-after:avoid;
+	font-size:14.0pt;
+	font-family:Verdana;
+	font-weight:bold;
+	}
+p.Code-Highlighted
+	{margin-top:0;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:0;
+	background:#E6E6E6;
+	font-size:10.0pt;
+	font-family:"Courier New"
+	}
+p.Stepnonumbering
+	{margin-top:0;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:30.25pt;
+	font-size:11.0pt;
+	font-family:Verdana
+	}
+ul
+	{margin-bottom:0in;}
+  .style1 {
+	font-size: 11pt;
+	font-family: Verdana;
+}
+.style2 {
+	margin-bottom: 3px;
+}
+  </style>
+</head>
+<body lang="EN-US" link="#0000FF" vlink="#800080">
+<p class="Normal" align="center"></p>
+<hr>
+<p class="CopyrightText"> Information in this document is subject to
+change without notice. The example companies, organizations, products,
+people, and events depicted herein are fictitious. No association with
+any real company, organization, product, person or event is intended or
+should be inferred. Complying with all applicable copyright laws is the
+responsibility of the user. Without limiting the rights under
+copyright, no part of this document may be reproduced, stored in or
+introduced into a retrieval system, or transmitted in any form or by
+any means (electronic, mechanical, photocopying, recording, or
+otherwise), or for any purpose, without the express written permission
+of Microsoft Corporation.</p>
+<p class="CopyrightText"> &nbsp;</p>
+<p class="CopyrightText"> Microsoft may have patents, patent
+applications, trademarked, copyrights, or other intellectual property
+rights covering subject matter in this document. Except as expressly
+provided in any written license agreement from Microsoft, the
+furnishing of this document does not give you any license to these
+patents, trademarks, copyrights, or other intellectual property.</p>
+<p class="CopyrightText">
+&nbsp;</p>
+<div class="Section1">
+	<p class="CopyrightText">© Microsoft Corporation. All rights reserved.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, 
+	Active Directory, BizTalk, SQL Server, SharePoint, Outlook, PowerPoint, 
+	FrontPage, Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual 
+	SourceSafe, Visual C#, Visual J#,&nbsp; and Visual Studio are either registered 
+	trademarks or trademarks of Microsoft Corporation in the U.S.A. and/or other 
+	countries.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Other product and company names herein may be the 
+	trademarks of their respective owners.</div>
+<hr>
+<p class="body">&nbsp;</p>
+<p class="CopyrightText">This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+<p class="CopyrightText">
+&nbsp;</p>
+<p class="body">&nbsp;</p>
+<p class="Title1">Dynamic Web Service Helpers</p><p class="Body">&nbsp;</p>
+<p class="Normal">&nbsp;</p>
+<p class="Title2"> Prerequisites</p>
+<p class="body"> The prerequisites to successfully run this application
+are:</p>
+<ul>
+  <li class="normal" type="disc">Microsoft .NET Framework Version 3.5
+    SP1
+    <ul>
+		<li>Needed to build a C# project distributed with this sample</li>
+    </ul>
+  </li>
+    <ul>
+		<li><span class="style1">Download from </span>
+		<a href="http://www.microsoft.com/downloads/details.aspx?displaylang=en&amp;FamilyID=ab99342f-5d1a-413d-8319-81da479ab0d7">
+		<span class="style1">here</span></a></li>
+	</ul>
+	<li class="normal">IronPython 2.6 distribution
+	<ul>
+		<li>If you are new to IronPython, please go over the tutorial
+that comes with this distribution</li>
+		<li>Download from 
+		<a
+ href="http://www.codeplex.com/IronPython/Release/ProjectReleases.aspx?ReleaseId=12482">here</a></li>
+	</ul>
+	</li>
+</ul>
+<p>&nbsp;</p>
+<p class="Title2">Getting Started</p>
+<p class="body">Please make sure the folder structure in the 
+<i>DynamicWebServiceHelpers</i> directory is:</p>
+<blockquote>
+  <blockquote>
+      <p class="body">
+      .\bing.py<br>.\flickr.py<br>.\injectors.py<br>.\mathservice.py<br>.\rss.py<br>
+	  .\sources\DynamicWebServiceHelpers.csproj<br>.\stocks.py<br>.\weather.py</p>
+  </blockquote>
+</blockquote>
+<p class="body">At this point, it will be necessary to build <i>DynamicWebServiceHelpers.dll</i>.&nbsp; 
+This can be accomplished by building <i>DynamicWebServiceHelpers.csproj</i> 
+using nothing more than .NET 3.5 and a command prompt (in the 
+DynamicWebServiceHelpers directory) as shown below:</p>
+<ol>
+	<li>
+	<p class="body">copy &quot;%ProgramFiles%\IronPython 2.6\*.dll&quot; .</p>
+	</li>
+	<li>
+	<p class="body">%WINDIR%\Microsoft.NET\Framework\v3.5\MSBuild.exe 
+	sources\DynamicWebServiceHelpers.csproj</p>
+	</li>
+</ol>
+<p class="body">Next, you should verify that the newly built <i>DynamicWebServiceHelpers.dll</i> 
+has indeed been installed into the DynamicWebServiceHelpers directory.</p><p class="body">&nbsp;</p>
+<p class="Title2">Overview</p>
+<p class="Body">The Dynamic Web Service Helpers library is intended to simplify the consumption of web services for IronPython developers. This package includes the DynamicWebServiceHelpers 
+sources and a set of samples that show how to utilize them.</p>
+
+<p class="Body">&nbsp;</p><p class="Body">Consuming web services from code usually requires help from a tool and involves the following steps:</p>
+<ol>
+ <li><p class="Body">Download WSDL</li><li><p class="Body">Generate proxy code</li><li><p class="Body">Include proxy code within the project</li><li><p class="Body">Instantiate web service proxy class from code</li>
+ <li><p class="Body">Call the web method</li></ol>
+
+<p class="Body">&nbsp;</p><p class="Body">The Dynamic Web Service Helpers library allows IronPython users to significantly simplify access to web services.
+All it takes is loading the web service given the URL and calling the web method:</p>
+<pre style="color:Navy">&gt;&gt;&gt; ws = DynamicWebServiceHelpers.WebService.Load(<i>web_service_url</i>)
+&gt;&gt;&gt; result = ws.<i>web_method</i>(<i>args</i>)
+</pre>
+<p class="Body">The Dynamic Web Service Helpers library supports the consumption of WSDL, REST/XML web services, and RSS feeds.
+It also introduces the IronPython concept of attribute injectors, the ability to extend .NET classes
+with dynamic attributes on a per-instance basis.</p>
+
+<div style="text-align: center;"><br>
+</div>
+<p class="Title2">Examples</p>
+<h3>Generic Usage</h3><p class="Body">To use Dynamic Web Service Helpers in IronPython simply load the assembly and import DynamicWebServiceHelpers:</p>
+<pre style="color:Navy">>>> import clr
+>>> clr.AddReference('DynamicWebServiceHelpers.dll')
+>>> import<b> DynamicWebServiceHelpers</b>
+</pre>
+<p class="Body">
+The library contains a public static class, <i>DynamicWebServiceHelpers</i>,
+that has public static properties (for example, <i>WebService</i>). You can use 
+the Python
+command <i>'dir'</i> to view all public properties from this module:</p>
+<pre style="margin: 0 0 0 0; color:Navy" class="style2">>>> dir(<b>DynamicWebServiceHelpers</b>)
+['Equals', 'GetHashCode', 'GetType', 'MemberwiseClone', 'Pluralizer', 'ReferenceEquals', 'Register', 'SimpleXml', 'ToString', 'WebService',</pre>
+<pre style="margin: 0 0 0 0; color:Navy">'__all__', '__class__', '__delattr__', '__doc__', '__format__', '__getattribute__', '__hash__', '__init__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', </pre>
+<pre style="margin: 0 0 0 0; color:Navy">'__setattr__', '__sizeof__', '__str__', '__subclasshook__']</pre>
+<pre style="margin: 0 0 auto 0; color:Navy">
+</pre>
+<p class="Body">
+A beneficial side effect of this design is the ability to execute code while
+importing the static class (static constructor is run at that time). This is a good place to perform operations like registering attribute
+injectors.
+</p><p class="Body">
+&nbsp;</p>
+
+<h3>
+    Simple WSDL Web Service -- mathservice.py</h3>
+<p class="Body">This sample calls a simple web service that adds two numbers.</p><p class="Body">&nbsp;</p>
+
+<h3>WSDL Web Service With Complex Return Values -- weather.py</h3>
+<p class="Body">This sample calls a weather web service that returns the weather forecast as
+a complex object containing a collection of per-day weather data.
+Please note that it is not necessary to know the type names of the data being
+returned in order to process the result from a dynamic language like IronPython.</p><p class="Body">&nbsp;</p>
+
+<h3>Attribute Injectors -- injectors.py</h3>
+<p class="Body">This sample illustrates attribute injectors: English noun string pluralization and 'natural' access to XML.</p><p class="Body">&nbsp;</p>
+
+<h3>WSDL Web Service Returning XML -- stocks.py</h3>
+<p class="Body">
+    This example calls a stock quote web service that returns the data as XML, and XML
+    attribute injectors are then used to access the returned data in a 'natural' way.</p><p class="Body">
+    &nbsp;</p>
+
+<h3>RSS Feeds -- rss.py</h3>
+<p class="Body">
+    This example downloads an RSS feed and accesses it using XML attribute injectors.</p><p class="Body">
+    &nbsp;</p>
+
+<h3>Bing API Web Service to perform a web search -- bing.py</h3>
+<p class="Body">
+    This example calls the Bing API web service to perform a web search.</p><p class="Body">
+    <b>Important Note</b>: the <i>bing.py</i> script requires you to pass your own Bing Web Service AppId to it from the command line.&nbsp; Information on obtaining this key can 
+    be obtained from <a href="http://bing.com/developers">here</a>.</p><p class="Body">
+    &nbsp;</p>
+
+<h3>Flickr.com REST/XML Web Service -- flickr.py</h3>
+<p class="Body">
+    This example calls the Flickr REST web service to perform a photo search. The
+    returned XML is accessed via XML attribute injectors.</p><p class="Body">
+    <b>Important Note</b>: the <i>flickr.py</i> script requires you to pass your own flickr.com Web Service API key to it from the command line.&nbsp; Information on obtaining this key can 
+    be obtained from <a href="http://www.flickr.com/services/api/misc.api_keys.html">here</a>.</p>
+</body>
+</html>

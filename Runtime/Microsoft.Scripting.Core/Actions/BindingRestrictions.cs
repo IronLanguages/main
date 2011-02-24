@@ -282,7 +282,11 @@ namespace System.Dynamic {
             }
 
             public override int GetHashCode() {
+#if SILVERLIGHT && CLR2 // CF RH.GetHashCode throws NullReferenceException if the argument is null
+                return InstanceRestrictionHash ^ (_instance != null ? RuntimeHelpers.GetHashCode(_instance) : 0) ^ _expression.GetHashCode();
+#else
                 return InstanceRestrictionHash ^ RuntimeHelpers.GetHashCode(_instance) ^ _expression.GetHashCode();
+#endif
             }
 
             internal override Expression GetExpression() {

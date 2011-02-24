@@ -1,0 +1,20 @@
+<VSTemplate Version="2.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>Ruby on Rails Application</Name>
+    <Description>Ruby on Rails Application</Description>
+    <Icon>__TemplateIcon.ico</Icon>
+    <ProjectType>IronRuby</ProjectType>
+    <SortOrder>50</SortOrder>
+    <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
+    <CreateNewFolder>false</CreateNewFolder>
+    <DefaultName>WebApp</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="RubyOnRailsApp.rbproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false">__TemplateScript.rb</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true">config\database.yml</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false">Gemfile</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

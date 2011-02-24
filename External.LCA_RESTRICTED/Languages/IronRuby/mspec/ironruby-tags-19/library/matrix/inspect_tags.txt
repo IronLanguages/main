@@ -1,2 +1,0 @@
-fails:Matrix#inspect returns 'Matrix.empty(...)' for empty matrices
-fails:"Matrix#inspect returns 'Matrix.empty(...)' for empty matrices"

@@ -16,8 +16,6 @@ missing implementations for:
     nt  execve                        
     nt  fsync                         
     nt  isatty                        
-    nt  lseek                         
-    nt  pipe                          
     nt  popen4                        
     nt  stat_float_times              
     nt  statvfs_result                

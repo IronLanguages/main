@@ -1,0 +1,39 @@
+﻿Namespace Overview:
+
+	Scripting\
+		Things that logically be long in Microsoft.Scripting (e.g. pure DLR utils)
+			 
+	VisualStudio\
+		MPFProj implementation
+
+	IronStudio\
+		All common base infrastructure sharable by multiple languages
+		Includes misc helpers such as DlrUtils namespace, VsExtensions class
+
+		Navigation\
+			Contains everything related to object browser support and navigating around code
+		Project\
+			Includes everything related to the project system
+		Repl\
+			Common REPL implementation
+
+	IronRubyTools\
+		All IronRuby specific VS code:
+			Intellisense\
+				Includes everything related to intellisense (collapses in Analysis sub directory)
+			Navigation\
+				Includes everything related to code navigation features such as the object browser.
+			Project\
+				Includes everything related to the project system
+			Commands\
+				Includes implementation of IronRuby commands such as displaying the REPL window,
+				showing text in the REPL, etc...
+			Templates\
+				Includes templates for items (single files) and projects.  To add a new template you need
+				to:
+					create a corresponding .vstemplate file w/ associated content and put it into a ZIP file					
+					add the ZIP file to the project
+					set the ZIP file to have a Build Action of type Content and set Include in VSIX true
+					Add the ZIP files directory to the .vsixmanifest file
+	
+	

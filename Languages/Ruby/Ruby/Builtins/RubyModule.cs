@@ -185,6 +185,10 @@ namespace IronRuby.Builtins {
             get { return ReferenceEquals(this, Context.ObjectClass); }
         }
 
+        public bool IsBasicObjectClass {
+            get { return ReferenceEquals(this, Context.BasicObjectClass); }
+        }
+
         public bool IsComClass {
             get { return ReferenceEquals(this, Context.ComObjectClass); }
         }
@@ -625,7 +629,7 @@ namespace IronRuby.Builtins {
         private void Mutate() {
             Debug.Assert(!IsDummySingletonClass);
             if (IsFrozen) {
-                throw RubyExceptions.CreateTypeError(String.Format("can't modify frozen {0}", IsClass ? "class" : "module"));
+                throw RubyExceptions.CreateRuntimeError(String.Format("can't modify frozen {0}", IsClass ? "class" : "module"));
             }
         }
 
@@ -743,7 +747,7 @@ namespace IronRuby.Builtins {
 
         // thread-safe: _instanceData cannot be unset
         internal bool IsModuleFrozen {
-            get { return _instanceData != null && _instanceData.Frozen; }
+            get { return _instanceData != null && _instanceData.IsFrozen; }
         }
 
         // thread-safe:
@@ -753,14 +757,14 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         public bool IsTainted {
-            get { return GetInstanceData().Tainted; }
-            set { GetInstanceData().Tainted = value; }
+            get { return GetInstanceData().IsTainted; }
+            set { GetInstanceData().IsTainted = value; }
         }
 
         // thread-safe:
         public bool IsUntrusted {
-            get { return GetInstanceData().Untrusted; }
-            set { GetInstanceData().Untrusted = value; }
+            get { return GetInstanceData().IsUntrusted; }
+            set { GetInstanceData().IsUntrusted = value; }
         }
 
         int IRubyObject.BaseGetHashCode() {
@@ -1470,8 +1474,8 @@ namespace IronRuby.Builtins {
                 if (_methods.TryGetValue(name, out method)) {
                     if (method.IsHidden || method.IsUndefined) {
                         return false;
-                    } else if (IsObjectClass && name == Symbols.Initialize) {
-                        // We prohibit removing Object#initialize to simplify object construction logic (this is compatible with 1.9 behavior).
+                    } else if (IsBasicObjectClass && name == Symbols.Initialize) {
+                        // We prohibit removing Object#initialize to simplify object construction logic.
                         return false;
                     } else if (method.IsRemovable) {
                         // Method is used in a dynamic site or group => update version of all dependencies of this module.
@@ -1578,6 +1582,7 @@ namespace IronRuby.Builtins {
                 result = MethodResolutionResult.NotFound;
             }
 
+            // TODO: BasicObject
             // Note: all classes include Object in ancestors, so we don't need to search it again:
             if (!result.Found && (options & MethodLookup.FallbackToObject) != 0 && !IsClass) {
                 return _context.ObjectClass.ResolveMethodNoLock(name, visibility, options & ~MethodLookup.FallbackToObject);

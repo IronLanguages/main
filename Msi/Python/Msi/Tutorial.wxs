@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  IronPython doc and tutorial components
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <FeatureRef Id="Feature_IronPython">
+    </FeatureRef>
+    <DirectoryRef Id="INSTALLDIR">
+      <Directory Id="Dir_Tutorial" Name="Tutorial" FileSource="$(var.TutorialDir)">
+        <Component Id="Comp_Tutorial" DiskId="1" Guid="EFB6B47B-0139-4AEF-81D0-EEE78D8AEE09">
+          <File Id="File_avalon.py" Name="avalon.py" />
+          <File Id="File_Calc.xaml"  Name="Calc.xaml" />
+          <File Id="File_calculator.py" Name="calculator.py" />
+          <File Id="File_csx.bat" Name="csx.bat" />
+          <File Id="File_debugcsx.py" Name="debugcsx.py" />
+          <File Id="File_debugging.py" Name="debugging.py" />
+          <File Id="File_dialog1.jpg" Name="dialog1.jpg" />
+          <File Id="File_dialog2.jpg" Name="dialog2.jpg" />
+          <File Id="File_first.py" Name="first.py" />          
+          <File Id="File_load.xml" Name="load.xml" />
+          <File Id="File_pyevent.py" Name="pyevent.py" />
+          <File Id="File_spellcheck.py" Name="spellcheck.py" />
+		  <File Id="File_Tutorial.htm" Name="Tutorial.htm" />
+          <File Id="File_wfdemo.py" Name="wfdemo.py" />
+          <File Id="File_winforms.py" Name="winforms.py" />
+          <File Id="File_xmlutil.py" Name="xmlutil.py" />
+          <Shortcut Id="Shortcut_Tutorial" Directory="Dir_StartMenu" Name="IronPython Tutorial" Target="[#File_Tutorial.htm]" />
+          <RegistryValue Root='HKCU' Key='SOFTWARE\IronPython\2.7\Tutorial'
+                      Type='string' Value='Installed' 
+                      KeyPath='yes' /> 
+        </Component>
+        <Directory Id="Dir_Extend" Name="Extend">
+          <Component Id="Comp_Extend" DiskId="1" Guid="26851D97-52C3-4BC6-8A57-34227C2A03C0">
+            <File Id="File_csextend.cs" Name="csextend.cs" />
+            <File Id="File_csxtest.py" Name="csxtest.py" />
+            <File Id="File_vbextend.vb" Name="vbextend.vb" />
+          </Component>
+        </Directory>
+      </Directory>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

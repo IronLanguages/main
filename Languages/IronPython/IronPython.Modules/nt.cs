@@ -113,8 +113,17 @@ namespace IronPython.Modules {
 
         public static void close(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = PythonContext.GetContext(context);
-            PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-            pf.close();
+            PythonFile file;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                file.close();
+            } else {
+                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+                if (stream == null) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                }
+
+                stream.Close();
+            }
         }
         
 #if !SILVERLIGHT
@@ -145,8 +154,17 @@ namespace IronPython.Modules {
             PythonFile.ValidateMode(mode);
 
             PythonContext pythonContext = PythonContext.GetContext(context);
-            PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-            return pf;
+            PythonFile pf;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out pf)) {
+                return pf;
+            }
+
+            Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+            if (stream == null) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+
+            return PythonFile.Create(context, stream, stream.ToString(), mode);
         }
 
         [LightThrowing]
@@ -171,7 +189,7 @@ namespace IronPython.Modules {
             PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
 
             try {
-                return context.LanguageContext.DomainManager.Platform.GetFullPath(dir);
+                return pal.GetFullPath(dir);
             } catch (ArgumentException) {
                 // .NET validates the path, CPython doesn't... so we replace invalid chars with 
                 // Char.Maxvalue, get the full path, and then replace the Char.Maxvalue's back w/ 
@@ -206,7 +224,7 @@ namespace IronPython.Modules {
                 
                 // walk backwards through the path replacing the same characters.  We should have
                 // only updated the directory leaving the filename which we're fixing.
-                string res = context.LanguageContext.DomainManager.Platform.GetFullPath(newdir);
+                string res = pal.GetFullPath(newdir);
                 int curDir = dir.Length;
                 for (int curRes = res.Length - 1; curRes >= 0; curRes--) {
                     if (res[curRes] == Char.MaxValue) {
@@ -249,10 +267,16 @@ namespace IronPython.Modules {
             }
         }
 
-        // 
-        // lstat(path) -> stat result
-        // Like stat(path), but do not follow symbolic links.
-        // 
+        public static void lseek(CodeContext context, int filedes, long offset, int whence) {
+            PythonFile file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
+
+            file.seek(offset, whence);
+        }
+
+        /// <summary>
+        /// lstat(path) -> stat result 
+        /// Like stat(path), but do not follow symbolic links.
+        /// </summary>
         [LightThrowing]
         public static object lstat(string path) {
             return stat(path);
@@ -333,6 +357,21 @@ namespace IronPython.Modules {
             }
 
             return res;
+        }
+
+        public static PythonTuple pipe(CodeContext context) {
+            IntPtr hRead, hWrite;
+
+            PythonSubprocess.SECURITY_ATTRIBUTES secAttrs = new PythonSubprocess.SECURITY_ATTRIBUTES();
+            secAttrs.nLength = Marshal.SizeOf(secAttrs);
+
+            // TODO: handle unsuccessful call?
+            PythonSubprocess.CreatePipePI(out hRead, out hWrite, ref secAttrs, 0);
+
+            return PythonTuple.MakeTuple(
+                PythonMsvcrt.open_osfhandle(context, new BigInteger(hRead.ToInt64()), 0),
+                PythonMsvcrt.open_osfhandle(context, new BigInteger(hWrite.ToInt64()), 0)
+            );
         }
 
         public static PythonFile popen(CodeContext/*!*/ context, string command) {
@@ -1306,6 +1345,14 @@ namespace IronPython.Modules {
             return PythonBinaryReader.PackDataIntoString(data, n);
         }
 
+        public static object urandom(BigInteger n) {
+            return urandom((int)n);
+        }
+
+        public static object urandom(double n) {
+            throw PythonOps.TypeError("integer argument expected, got float");
+        }
+
         private static readonly object _umaskKey = new object();
 
         public static int umask(CodeContext/*!*/ context, int mask) {
@@ -1360,11 +1407,12 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static void write(CodeContext/*!*/ context, int fd, string text) {
+        public static int write(CodeContext/*!*/ context, int fd, string text) {
             try {
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
                 pf.write(text);
+                return text.Length;
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -1441,6 +1489,10 @@ are defined in the signal module.")]
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
         private static Exception ToPythonException(Exception e, string filename) {
+            if (e is IPythonAwareException) {
+                return e;
+            }
+
             if (e is ArgumentException || e is ArgumentNullException || e is ArgumentTypeException) {
                 // rethrow reasonable exceptions
                 return ExceptionHelpers.UpdateForRethrow(e);

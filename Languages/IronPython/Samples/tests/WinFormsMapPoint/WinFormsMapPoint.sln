@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "WinFormsMapPoint", "WinFormsMapPoint.vbproj", "{CEB25D6D-43F9-45B0-884B-0F76F547D3CC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{43AA80E1-51AB-4CF6-AA08-B0BAEDE646EA}"
+	ProjectSection(SolutionItems) = preProject
+		Local.testsettings = Local.testsettings
+		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
+		WinFormsMapPoint.vsmdi = WinFormsMapPoint.vsmdi
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 2
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://vstfdevdiv:8080/devdiv
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = WinFormsMapPoint.vbproj
+		SccLocalPath1 = .
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = WinFormsMapPoint.vsmdi
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CEB25D6D-43F9-45B0-884B-0F76F547D3CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEB25D6D-43F9-45B0-884B-0F76F547D3CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEB25D6D-43F9-45B0-884B-0F76F547D3CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEB25D6D-43F9-45B0-884B-0F76F547D3CC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

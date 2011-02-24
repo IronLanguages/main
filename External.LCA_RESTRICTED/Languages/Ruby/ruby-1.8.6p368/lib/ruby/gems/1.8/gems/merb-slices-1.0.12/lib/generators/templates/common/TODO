@@ -1,7 +1,0 @@
-TODO:
-
-- Fix <%= module_name %>.description and <%= module_name %>.version
-- Fix LICENSE with your name
-- Fix Rakefile with your name and contact info
-- Add your code to lib/<%= base_name %>.rb
-- Add your Merb rake tasks to lib/<%= base_name %>/merbtasks.rb

@@ -72,10 +72,8 @@ namespace IronRuby.Builtins {
             _context = context;
             _fileDescriptor = -1;
             _stream = null;
-
-            // TODO (encoding): enable setting
-            _externalEncoding = RubyEncoding.Binary;
-            _internalEncoding = null;
+            _externalEncoding = context.DefaultExternalEncoding;
+            _internalEncoding = context.DefaultInternalEncoding;
         }
 
         public RubyIO(RubyContext/*!*/ context, Stream/*!*/ stream, IOMode mode) 
@@ -392,6 +390,17 @@ namespace IronRuby.Builtins {
         public virtual WaitHandle/*!*/ CreateErrorWaitHandle() {
             // TODO:
             throw new NotSupportedException();
+        }
+
+        public virtual int SetReadTimeout(int timeout) {
+            if (timeout > 0) {
+                throw RubyExceptions.CreateEBADF();
+            }
+            return 0;
+        }
+
+        public virtual void NonBlockingOperation(Action operation, bool isRead) {
+            throw RubyExceptions.CreateEBADF();
         }
 
         public virtual int FileControl(int commandId, int arg) {

@@ -1,4 +1,0 @@
-TARGETTYPE=NOTARGET 
-CLR_TARGETTYPE=DLL 
-MSBuildProjectFile=IronPythonTest.Build.csproj 
-SOURCES= 

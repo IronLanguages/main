@@ -55,13 +55,12 @@ namespace IronPython.Modules {
             private byte[] _data;
             private int _pos, _length;
 
-            internal BytesIO(CodeContext/*!*/ context) : base(context) {
-                __init__(null);
+            internal BytesIO(CodeContext/*!*/ context)
+                : base(context) {
             }
 
             public BytesIO(CodeContext/*!*/ context, [DefaultParameterValue(null)]object initial_bytes)
                 : base(context) {
-                    __init__(initial_bytes);
             }
 
             public void __init__([DefaultParameterValue(null)]object initial_bytes) {
@@ -457,41 +456,54 @@ namespace IronPython.Modules {
                 return nbytes;
             }
 
-            private int DoWrite(IEnumerable bytes) {
-                int origPos = _pos;
-                IEnumerator en = ((IEnumerable)bytes).GetEnumerator();
+            private int DoWrite(string bytes) {
+                // CLR strings are natively Unicode (UTF-16 LE, to be precise).
+                // In 2.x, io.BytesIO.write() takes "bytes or bytearray" as a parameter.
+                // On 2.x "bytes" is an alias for str, so str types are accepted by BytesIO.write().
+                // When given a unicode object, 2.x BytesIO.write() complains:
+                //   TypeError: 'unicode' does not have the buffer interface
 
-                if (en.MoveNext()) {
-                    byte b = ByteOps.GetByte(en.Current);
-                    EnsureSizeSetLength(_pos + 1);
-                    _data[_pos++] = b;
-                } else {
+                // We will accept CLR strings, but only if the data in it is in Latin 1 (iso-8859-1)
+                // encoding (i.e. ord(c) for all c is within 0-255.
+
+                // Alternatively, we could support strings containing any Unicode character by ignoring
+                // any 0x00 bytes, but as CPython doesn't support that it is unlikely that we will need to.
+
+                int nbytes = bytes.Length;
+                if (nbytes == 0) {
                     return 0;
                 }
 
-                while (en.MoveNext()) {
-                    byte b = ByteOps.GetByte(en.Current);
-                    EnsureSize(_pos + 1);
-                    _data[_pos++] = b;
+                byte[] _raw_string = new byte[nbytes];
+                for (int i = 0; i < nbytes; i++) {
+                    int ord = (int)bytes[i];
+                    if(ord < 256) {
+                        _raw_string[i] = (byte)ord;
+                    } else {
+                        // A character outside the range 0x00-0xFF is present in the original string.
+                        // Ejecting, emulating the cPython 2.x behavior when it enounters "unicode".
+                        // This should keep the unittest gods at bay.
+                        throw PythonOps.TypeError("'unicode' does not have the buffer interface");
+                    }
                 }
 
-                _length = Math.Max(_length, _pos);
-                return _pos - origPos;
+                return DoWrite(_raw_string);
             }
 
             private int DoWrite(object bytes) {
                 if (bytes is byte[]) {
                     return DoWrite((byte[])bytes);
                 } else if (bytes is Bytes) {
-                    return DoWrite(((Bytes)bytes)._bytes);
+                    return DoWrite(((Bytes)bytes)._bytes); // as byte[]
                 } else if (bytes is ArrayModule.array) {
-                    return DoWrite(((ArrayModule.array)bytes).ToByteArray());
-                } else if (bytes is PythonBuffer) {
-                    return DoWrite(((PythonBuffer)bytes).ToString());
+                    return DoWrite(((ArrayModule.array)bytes).ToByteArray()); // as byte[]
                 } else if (bytes is ICollection<byte>) {
                     return DoWrite((ICollection<byte>)bytes);
+                } else if (bytes is PythonBuffer) {
+                    return DoWrite(((PythonBuffer)bytes).ToString()); // as string
                 } else if (bytes is string) {
-                    return DoWrite((IEnumerable)bytes);
+                    // TODO Remove this when we move to 3.x
+                    return DoWrite((string)bytes); // as string
                 }
 
                 throw PythonOps.TypeError("expected a readable buffer object");

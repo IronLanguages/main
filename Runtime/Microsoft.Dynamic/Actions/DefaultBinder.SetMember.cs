@@ -188,12 +188,12 @@ namespace Microsoft.Scripting.Actions {
                     case TrackerTypes.TypeGroup:
                     case TrackerTypes.Type:
                     case TrackerTypes.Constructor:
-                        memInfo.Body.FinishCondition(
+                        memInfo.Body.FinishError(
                             errorSuggestion ?? MakeError(MakeReadOnlyMemberError(type, memInfo.Name), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     case TrackerTypes.Event:
-                        memInfo.Body.FinishCondition(
+                        memInfo.Body.FinishError(
                             errorSuggestion ?? MakeError(MakeEventValidation(members, self, value, memInfo.ResolutionFactory), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
@@ -212,7 +212,7 @@ namespace Microsoft.Scripting.Actions {
                             return;
                         }
 
-                        memInfo.Body.FinishCondition(
+                        memInfo.Body.FinishError(
                             errorSuggestion ?? MakeError(MakeMissingMemberErrorForAssign(type, self, memInfo.Name), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
@@ -220,7 +220,7 @@ namespace Microsoft.Scripting.Actions {
                         throw new InvalidOperationException();
                 }
             } else {
-                memInfo.Body.FinishCondition(error);
+                memInfo.Body.FinishError(error);
             }
         }
 
@@ -234,7 +234,7 @@ namespace Microsoft.Scripting.Actions {
             if (val != null) {
                 memInfo.Body.FinishCondition(val);
             } else {
-                memInfo.Body.FinishCondition(
+                memInfo.Body.FinishError(
                     MakeError(tracker.GetError(this), typeof(object))
                 );
             }
@@ -256,7 +256,7 @@ namespace Microsoft.Scripting.Actions {
                 setter = CompilerHelpers.GetCallableMethod(setter, PrivateBinding);
 
                 if (info.IsStatic != (instance == null)) {
-                    memInfo.Body.FinishCondition(
+                    memInfo.Body.FinishError(
                         errorSuggestion ?? MakeError(
                             MakeStaticPropertyInstanceAccessError(
                                 info,
@@ -268,7 +268,7 @@ namespace Microsoft.Scripting.Actions {
                         )
                     );
                 } else if (info.IsStatic && info.DeclaringType != targetType) {
-                    memInfo.Body.FinishCondition(
+                    memInfo.Body.FinishError(
                         errorSuggestion ?? MakeError(
                             MakeStaticAssignFromDerivedTypeError(targetType, instance, info, target, memInfo.ResolutionFactory), 
                             typeof(object)
@@ -326,7 +326,7 @@ namespace Microsoft.Scripting.Actions {
                     );
                 }
             } else {
-                memInfo.Body.FinishCondition(
+                memInfo.Body.FinishError(
                     errorSuggestion ?? MakeError(
                         MakeMissingMemberErrorForAssignReadOnlyProperty(targetType, instance, memInfo.Name), typeof(object)
                     )
@@ -354,21 +354,21 @@ namespace Microsoft.Scripting.Actions {
                     )
                 );
             } else if (field.IsInitOnly || field.IsLiteral) {
-                memInfo.Body.FinishCondition(
+                memInfo.Body.FinishError(
                     errorSuggestion ?? MakeError(
                         MakeReadOnlyMemberError(targetType, memInfo.Name), 
                         typeof(object)
                     )
                 );
             } else if (field.IsStatic && targetType != field.DeclaringType) {
-                memInfo.Body.FinishCondition(
+                memInfo.Body.FinishError(
                     errorSuggestion ?? MakeError(
                         MakeStaticAssignFromDerivedTypeError(targetType, instance, field, target, memInfo.ResolutionFactory), 
                         typeof(object)
                     )
                 );
             } else if (field.DeclaringType.IsValueType && !field.IsStatic) {
-                memInfo.Body.FinishCondition(
+                memInfo.Body.FinishError(
                     errorSuggestion ?? MakeError(
                         MakeSetValueTypeFieldError(field, instance, target),
                         typeof(object)
@@ -376,7 +376,7 @@ namespace Microsoft.Scripting.Actions {
                 );
             } else if (field.IsPublic && field.DeclaringType.IsVisible) {
                 if (!field.IsStatic && instance == null) {
-                    memInfo.Body.FinishCondition(
+                    memInfo.Body.FinishError(
                         Ast.Throw(
                             Ast.New(
                                 typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }),

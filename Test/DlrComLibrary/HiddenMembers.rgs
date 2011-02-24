@@ -1,0 +1,27 @@
+HKCR
+{
+	DlrComLibrary.HiddenMembers.1 = s 'HiddenMembers Class'
+	{
+		CLSID = s '{F8779AC6-3725-4427-96FB-A8236CAEBDAB}'
+	}
+	DlrComLibrary.HiddenMembers = s 'HiddenMembers Class'
+	{
+		CLSID = s '{F8779AC6-3725-4427-96FB-A8236CAEBDAB}'
+		CurVer = s 'DlrComLibrary.HiddenMembers.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {F8779AC6-3725-4427-96FB-A8236CAEBDAB} = s 'HiddenMembers Class'
+		{
+			ProgID = s 'DlrComLibrary.HiddenMembers.1'
+			VersionIndependentProgID = s 'DlrComLibrary.HiddenMembers'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			val AppID = s '%APPID%'
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+		}
+	}
+}

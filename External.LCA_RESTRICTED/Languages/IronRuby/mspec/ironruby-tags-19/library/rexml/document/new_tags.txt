@@ -1,4 +1,0 @@
-fails:REXML::Document#new clones source attributes
-fails:REXML::Document#new does not perform XML validation
-fails:"REXML::Document#new clones source attributes"
-fails:"REXML::Document#new does not perform XML validation"

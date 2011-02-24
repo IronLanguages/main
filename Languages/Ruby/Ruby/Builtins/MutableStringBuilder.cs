@@ -22,8 +22,9 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
-    public sealed class MutableStringBuilder {
-        private readonly RubyEncoding/*!*/ _encoding;
+    internal sealed class MutableStringBuilder {
+        private RubyEncoding/*!*/ _encoding;
+        private bool _isAscii;
 
         // character cache: converted to bytes each time a byte is appended:
         private char[] _chars;
@@ -37,37 +38,56 @@ namespace IronRuby.Builtins {
         public MutableStringBuilder(RubyEncoding/*!*/ encoding) {
             Assert.NotNull(encoding);
             _encoding = encoding;
+            _isAscii = true;
         }
 
-        public MutableStringBuilder(string/*!*/ value, RubyEncoding/*!*/ encoding) 
-            : this(encoding) {
-            Assert.NotNull(value);
-            _chars = value.ToCharArray();
-            _charCount = _chars.Length;
+        public bool IsAscii {
+            get { return _isAscii; }
+        }
+
+        public RubyEncoding/*!*/ Encoding {
+            get { 
+                return _encoding; 
+            }
+            set {
+                Debug.Assert(value != null);
+                _encoding = value; 
+            }
         }
 
         public void Append(char c) {
+            if (c >= 0x80) {
+                _isAscii = false;
+            }
             int oldCount = _charCount;
             Ensure(ref _chars, _charCount = oldCount + 1);
             _chars[oldCount] = c;
         }
 
-        public void Append(char c1, char c2) {
+        public void AppendAscii(char c) {
+            Debug.Assert(c < 0x80);
             int oldCount = _charCount;
-            Ensure(ref _chars, _charCount = oldCount + 2);
-            _chars[oldCount] = c1;
-            _chars[oldCount + 1] = c2;
+            Ensure(ref _chars, _charCount = oldCount + 1);
+            _chars[oldCount] = c;
         }
 
-        public void Append(char c1, char c2, char c3) {
-            int oldCount = _charCount;
-            Ensure(ref _chars, _charCount = oldCount + 3);
-            _chars[oldCount] = c1;
-            _chars[oldCount + 1] = c2;
-            _chars[oldCount + 2] = c3;
+        public void AppendUnicodeCodepoint(int codepoint) {
+            if (codepoint < 0x10000) {
+                // code-points [0xd800 .. 0xdffff] are not treated as invalid
+                Append((char)codepoint);
+            } else {
+                int oldCount = _charCount;
+                Ensure(ref _chars, _charCount = oldCount + 2);
+
+                codepoint -= 0x10000;
+                _chars[oldCount] = (char)((codepoint / 0x400) + 0xd800);
+                _chars[oldCount + 1] = (char)((codepoint % 0x400) + 0xdc00);
+                _isAscii = false;
+            }
         }
 
-        public void Append(char[] chars, int start, int count) {
+        public void AppendAscii(char[] chars, int start, int count) {
+            Debug.Assert(Utils.IsAscii(chars, start, count));
             int oldCount = _charCount;
             Ensure(ref _chars, _charCount = oldCount + count);
             Buffer.BlockCopy(chars, start << 1, _chars, oldCount << 1, count << 1);
@@ -76,7 +96,9 @@ namespace IronRuby.Builtins {
         public void Append(byte b) {
             // b is ASCII => we can treat b as char if there are any characters cached or if no bytes were appended.
             // otherwise => b needs to be appended to byte[].
-            if (_encoding == RubyEncoding.Binary || b <= 0x7f && (_charCount != 0 || _byteCount == 0)) {
+            if (b < 0x80 && (_charCount != 0 || _byteCount == 0)) {
+                AppendAscii((char)b);
+            } else if (_encoding == RubyEncoding.Binary) {
                 Append((char)b);
             } else {
                 AppendByte(b);
@@ -99,6 +121,10 @@ namespace IronRuby.Builtins {
                 oldCount = _byteCount;
                 Ensure(ref _bytes, _byteCount = oldCount + 1);
                 _bytes[oldCount] = b;
+            }
+
+            if (b >= 0x80) {
+                _isAscii = false;
             }
         }
 

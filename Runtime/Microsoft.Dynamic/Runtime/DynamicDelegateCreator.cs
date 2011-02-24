@@ -48,7 +48,7 @@ namespace Microsoft.Scripting.Runtime {
         /// The stub should be executed within a context of this object's language.
         /// </summary>
         /// <returns>The converted delegate.</returns>
-        /// <exception cref="Microsoft.Scripting.ArgumentTypeException">The object is either a subclass of Delegate but not the requested type or does not implement IDynamicMetaObjectProvider.</exception>
+        /// <exception cref="T:Microsoft.Scripting.ArgumentTypeException">The object is either a subclass of Delegate but not the requested type or does not implement IDynamicMetaObjectProvider.</exception>
         public Delegate GetDelegate(object callableObject, Type delegateType) {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
 

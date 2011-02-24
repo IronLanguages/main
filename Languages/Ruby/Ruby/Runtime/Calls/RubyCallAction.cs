@@ -326,7 +326,7 @@ namespace IronRuby.Runtime.Calls {
 
             // TODO: better specialization of method_missing methods
             if (methodMissing == null ||
-                methodMissing.DeclaringModule == methodMissing.Context.KernelModule && methodMissing is RubyLibraryMethodInfo) {
+                methodMissing.DeclaringModule == methodMissing.Context.BasicObjectClass && methodMissing is RubyLibraryMethodInfo) {
 
                 if (isSuperCall) {
                     metaBuilder.SetError(Methods.MakeMissingSuperException.OpCall(AstUtils.Constant(methodName)));

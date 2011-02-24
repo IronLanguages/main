@@ -46,7 +46,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        public object tb_frame {
+        public TraceBackFrame tb_frame {
             get {
                 return _frame;
             }
@@ -148,7 +148,7 @@ namespace IronPython.Runtime.Exceptions {
             get {
                 object context;
                 if (_scopeCallback != null &&
-                    _scopeCallback().TryGetValue(Compiler.Ast.PythonAst.GlobalContextName, out context)) {
+                    _scopeCallback().TryGetValue(Compiler.Ast.PythonAst.GlobalContextName, out context) && context != null) {
                     return ((CodeContext)context).GlobalDict;
                 } else {
                     return _globals;
@@ -232,8 +232,12 @@ namespace IronPython.Runtime.Exceptions {
 
         private void SetLineNumber(int newLineNum) {
             var pyThread = PythonOps.GetFunctionStackNoCreate();
-            if (!TracingThisFrame(pyThread)) {
-                throw PythonOps.ValueError("f_lineno can only be set by a trace function");
+            if (!IsTopMostFrame(pyThread)) {
+                if (!TracingThisFrame(pyThread)) {
+                    throw PythonOps.ValueError("f_lineno can only be set by a trace function");
+                } else {
+                    return;
+                }
             }
 
             FunctionCode funcCode = _debugProperties.Code;
@@ -296,7 +300,12 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         private bool TracingThisFrame(List<FunctionStack> pyThread) {
-            return pyThread != null &&  pyThread.Count != 0 && Type.ReferenceEquals(this, pyThread[pyThread.Count - 1].Frame);
+            return pyThread != null &&
+                pyThread.FindIndex(x => x.Frame == this) != -1;
+        }
+
+        private bool IsTopMostFrame(List<FunctionStack> pyThread) {
+            return pyThread != null && pyThread.Count != 0 && Type.ReferenceEquals(this, pyThread[pyThread.Count - 1].Frame);
         }
 
         private static Exception BadForOrFinallyJump(int newLineNum, Dictionary<int, bool> jumpIntoLoopIds) {

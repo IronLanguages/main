@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(ProjectDir)..\..\Solutions\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5B4E8D5A-1066-4FFE-894A-448CDD868F0B}</ProjectGuid>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <OutputPath>$(SolutionDir)..\bin\$(Configuration)\</OutputPath>
+    <PrivateBinDir>$(SolutionDir)..\Tools\IronStudio\IronStudio\obj\$(Configuration)\</PrivateBinDir>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- The location pointing where WiX is installed -->
+    <WixToolPath>$(SolutionDir)..\Util\Wix35\</WixToolPath>
+    <WixExtDir>$(SolutionDir)..\Util\Wix35\</WixExtDir>
+    <WixTasksPath>$(WixExtDir)\WixTasks.dll</WixTasksPath>
+    <OutputName Condition="$(OutputName)==''">IronStudio</OutputName>
+    <OutputType Condition="$(OutputType)==''">Module</OutputType>
+    <DefineConstants>
+      PrivateBinDir=$(PrivateBinDir);
+      OutputPath=$(OutputPath);
+      $(DefineConstants)
+    </DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="$(UseExistingBinaries) != 'true'">
+    <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronStudio\IronStudio.csproj">
+      <Project>{C98DE16D-417E-4079-8939-1F8C8E28E2C8}</Project>
+      <Name>IronStudio</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\IronStudioCore\IronStudioCore.csproj">
+      <Project>{843716AE-38B3-4723-963C-950DD06BC4B8}</Project>
+      <Name>IronStudioCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\Tools\IronStudio\RemoteScriptFactory\RemoteScriptFactory.csproj">
+      <Project>{D10C905C-7F15-41DF-9FF9-CCE461F571FD}</Project>
+      <Name>RemoteScriptFactory</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WixExtension Include="$(WixToolPath)WixNetFxExtension.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(ProjectDir)\IronStudio.wxs" />
+  </ItemGroup>
+  <Import Project="$(WixToolPath)wix2010.targets" />
+</Project>

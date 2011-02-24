@@ -1,4 +1,0 @@
-critical:TCPSocket.open has an address once it has connected to a listening server
-fails:TCPSocket.open refuses the connection when there is no server to connect to
-fails:TCPSocket.open connects to a listening server
-fails:TCPSocket.open requires local_port to be 0 when local_host is not specified

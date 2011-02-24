@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{AA18A245-E342-4368-A474-83178311A742}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>IronRuby.Libraries.Yaml</RootNamespace>
+    <AssemblyName>IronRuby.Libraries.Yaml</AssemblyName>
+    <CodeAnalysisRuleSet>IronRuby.Libraries.Yaml.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\FxCop\</OutputPath>
+    <DefineConstants>TRACE;$(SignedSym);CLR4</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\v2Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym);CLR2</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\v2Release\</OutputPath>
+    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight3Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR2</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
+    <OutputPath>$(SolutionDir)..\bin\Silverlight3Release</OutputPath>
+    <DefineConstants>TRACE;SILVERLIGHT;CLR2</DefineConstants>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;CLR4;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Release\</OutputPath>
+    <DefineConstants>TRACE;CLR4;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight4Debug</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>$(SolutionDir)..\bin\Silverlight4Release</OutputPath>
+    <DefineConstants>TRACE;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
+      <Link>Properties\SilverlightVersion.cs</Link>
+    </Compile>
+    <Compile Include="Engine\ScalarProperties.cs" />
+    <Compile Include="Engine\ScalarQuotingStyle.cs" />
+    <Compile Include="Engine\FlowStyle.cs" />
+    <Compile Include="Engine\Tags.cs" />
+    <Compile Include="Engine\YamlUtils.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="BuiltinsOps.cs" />
+    <Compile Include="Engine\NodeProvider.cs" />
+    <Compile Include="Initializer.Generated.cs" />
+    <Compile Include="MutableStringReader.cs" />
+    <Compile Include="MutableStringWriter.cs" />
+    <Compile Include="Engine\BaseConstructor.cs" />
+    <Compile Include="Engine\Composer.cs" />
+    <Compile Include="Engine\Emitter.cs" />
+    <Compile Include="Engine\Events.cs" />
+    <Compile Include="Engine\Exceptions.cs" />
+    <Compile Include="Engine\LiteralParser.cs" />
+    <Compile Include="Engine\Nodes.cs" />
+    <Compile Include="Engine\Parser.cs" />
+    <Compile Include="Engine\PrivateType.cs" />
+    <Compile Include="Engine\Representer.cs" />
+    <Compile Include="Engine\ResolverScanner.cs" />
+    <Compile Include="Engine\Scanner.cs" />
+    <Compile Include="Engine\Serializer.cs" />
+    <Compile Include="Engine\Tokens.cs" />
+    <Compile Include="Engine\YamlOptions.cs" />
+    <Compile Include="RubyConstructor.cs" />
+    <Compile Include="RubyIOReader.cs" />
+    <Compile Include="RubyIOWriter.cs" />
+    <Compile Include="RubyRepresenter.cs" />
+    <Compile Include="RubyYaml.cs" />
+    <Compile Include="Syck.cs" />
+    <Compile Include="YamlCallSiteStorage.cs" />
+    <Compile Include="YamlStream.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Engine\resolver_scanner.rl" />
+    <None Include="IronRuby.Libraries.Yaml.ruleset" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Numerics" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightSdkPath)\System.Numerics.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' != 'v4.0'">
+      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
+      <Name>Microsoft.Scripting.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Libraries\IronRuby.Libraries.csproj">
+      <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
+      <Name>IronRuby.Libraries</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Ruby\Ruby.csproj">
+      <Project>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</Project>
+      <Name>Ruby %28Languages\Ruby\Ruby%29</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

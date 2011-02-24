@@ -109,21 +109,25 @@ namespace IronRuby.Compiler.Ast {
             if (method.Method.DeclaringType == null || !method.Method.DeclaringType.IsPublic || !method.Method.IsPublic) {
                 // do not inline:
                 return Ast.Call(AstUtils.Constant(method), method.GetType().GetMethod("Invoke"), arguments);
-            } else if (method.Target != null) {
+            } 
+            
+            if (method.Target != null) {
+                // inline a closed static delegate:
                 if (method.Method.IsStatic) {
-                    // inline a closed static delegate:
                     return Ast.Call(null, method.Method, ArrayUtils.Insert(AstUtils.Constant(method.Target), arguments));
-                } else {
-                    // inline a closed instance delegate:
-                    return Ast.Call(AstUtils.Constant(method.Target), method.Method, arguments);
-                }
-            } else if (method.Method.IsStatic) {
-                // inline an open static delegate:
-                return Ast.Call(null, method.Method, arguments);
-            } else {
-                // inline an open instance delegate:
-                return Ast.Call(arguments[0], method.Method, ArrayUtils.RemoveFirst(arguments));
+                } 
+
+                // inline a closed instance delegate:
+                return Ast.Call(AstUtils.Constant(method.Target), method.Method, arguments);
             }
+
+            // inline an open static delegate:
+            if (method.Method.IsStatic) {
+                return Ast.Call(null, method.Method, arguments);
+            } 
+         
+            // inline an open instance delegate:
+            return Ast.Call(arguments[0], method.Method, ArrayUtils.RemoveFirst(arguments));
         }
 
         internal static MSA.Expression/*!*/ YieldExpression(
@@ -131,6 +135,7 @@ namespace IronRuby.Compiler.Ast {
             ICollection<MSA.Expression>/*!*/ arguments, 
             MSA.Expression splattedArgument,
             MSA.Expression rhsArgument,
+            MSA.Expression blockArgument,
             MSA.Expression/*!*/ bfcVariable,
             MSA.Expression/*!*/ selfArgument) {
 
@@ -156,6 +161,8 @@ namespace IronRuby.Compiler.Ast {
             if (rhsArgument != null) {
                 args.Add(AstUtils.Box(rhsArgument));
             }
+
+            args.Add(blockArgument != null ? AstUtils.Convert(blockArgument, typeof(Proc)) : AstFactory.NullOfProc);
 
             args.Add(AstUtils.Box(selfArgument));
             args.Add(bfcVariable);

@@ -1,0 +1,32 @@
+<?xml version='1.0'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Module Id='IronStudio' Language='1033' Version='1.0.0.0'>
+    <Package Id='83191C78-A44E-4155-A454-A459149A7150' Description='IronStudio Merge Module'
+              Manufacturer='Microsoft Corporation' InstallerVersion='200' />
+
+    <Property Id="VSINSTALLPATH">
+      <RegistrySearch Id="VSInstallDir" Root="HKLM" Key="Software\Microsoft\VisualStudio\10.0\Setup\VS" Name="EnvironmentDirectory" Type="directory" />
+    </Property>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="VSINSTALLPATH" Name=".">
+        <Directory Id="ExtensionsDir" Name="Extensions">
+          <Directory Id="MSDir" Name="Microsoft">
+            <Directory Id="IronStudioDir" Name="IronStudio">
+              <Directory Id="IronStudioVersionedInstallDir" Name="0.4">
+                <Component Id="Comp_IronStudio" DiskId="1" Guid="95EF4ADE-ED2C-4ED6-BED3-A550D7BD6D1E">
+                  <File Source="$(var.TargetDir)\IronStudio.Core.dll" />
+                  <File Source="$(var.TargetDir)\IronStudio.dll" />
+                  <File Source="$(var.TargetDir)\RemoteScriptFactory.exe" />
+                  <File Source="$(var.TargetDir)\IronStudio.Custom.pkgdef" />
+                  <File Source="$(var.TargetDir)\IronStudio.pkgdef" />
+                  <File Source="$(var.PrivateBinDir)\extension.vsixmanifest" />
+                </Component>
+              </Directory>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+  </Module>
+</Wix>

@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if CLR2
 #if MONO
 using Mono.Unix.Native;
 #endif
@@ -113,18 +114,20 @@ namespace Microsoft.Scripting.Metadata {
             RuntimeHelpers.PrepareConstrainedRegions();
             try { } finally {
                 fileDescriptor = Syscall.open(path, OpenFlags.O_RDONLY);
-                if (fileDescriptor < 0) {
+                if (fileDescriptor > 0) {
                     Stat stat;
                     if (Syscall.fstat(fileDescriptor, out stat) >= 0) {
                         size = unchecked((int)stat.st_size);
-                        mapping._capacity = size;
-                        mapping._pointer = (byte*)Syscall.mmap(IntPtr.Zero, (ulong)size, MmapProts.PROT_READ, MmapFlags.MAP_SHARED, fileDescriptor, 0);
+                        mapping = new MemoryMapping {
+                            _capacity = size,
+                            _pointer = (byte*)Syscall.mmap(IntPtr.Zero, (ulong)size, MmapProts.PROT_READ, MmapFlags.MAP_SHARED, fileDescriptor, 0)
+						};
                     }
                     Syscall.close(fileDescriptor);
                 }
             }
 
-            if (mapping._pointer == null) {
+            if (mapping == null || mapping._pointer == null) {
                 throw new IOException("Unable to create memory map: " + path, Marshal.GetLastWin32Error());
             }
 
@@ -192,3 +195,4 @@ namespace Microsoft.Scripting.Metadata {
         internal static extern bool CloseHandle(IntPtr handle);
     }
 }
+#endif

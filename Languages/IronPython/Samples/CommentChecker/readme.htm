@@ -1,0 +1,1153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html>
+
+<head>
+<link rel="stylesheet" type="text/css" href="../Samples.css">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>Comment Checker</title>
+<style type="text/css">
+  .style1 {
+	font-size: 11pt;
+	font-family: Verdana;
+}
+.style5 {
+	margin-left: 40px;
+}
+  .style3 {
+	font-weight: normal;
+}
+.style6 {
+	text-align: center;
+}
+.style7 {
+	background-color: #FF0000;
+}
+.style8 {
+	text-indent: -.25in;
+	line-height: 11.0pt;
+	font-size: 9.0pt;
+	font-family: Arial, sans-serif;
+	margin-left: .05in;
+	margin-right: 0in;
+	margin-top: 2.0pt;
+	margin-bottom: 3.0pt;
+}
+.style9 {
+	line-height: 11.0pt;
+	font-size: 9.0pt;
+	font-family: Arial, sans-serif;
+	margin-left: .05in;
+	margin-right: 0in;
+	margin-top: 2.0pt;
+	margin-bottom: 3.0pt;
+	background: #D9D9D9;
+}
+.style10 {
+	font-size: 10.0pt;
+	font-family: Arial, sans-serif;
+	border-style: none;
+	border-color: inherit;
+	border-width: medium;
+	margin-left: .75in;
+	margin-right: 9.35pt;
+	margin-top: 12.0pt;
+	margin-bottom: 12.0pt;
+	padding: 0in;
+	background: #C9E9FF;
+}
+.style11 {
+	font-weight: bold;
+}
+.style13 {
+	margin-left: 92px;
+}
+</style>
+</head>
+
+<body class="body">
+
+<hr>
+<p class="CopyrightText">Information in this document is subject to change without notice. The example companies, organizations, 
+products, people, and events depicted herein are fictitious. No association with any real company, organization, product, 
+person or event is intended or should be inferred. Complying with all applicable copyright laws is the responsibility of 
+the user. Without limiting the rights under copyright, no part of this document may be reproduced, stored in or introduced 
+into a retrieval system, or transmitted in any form or by any means (electronic, mechanical, photocopying, recording, or 
+otherwise), or for any purpose, without the express written permission of Microsoft Corporation.</p>
+<p class="CopyrightText">&nbsp;</p>
+<p class="CopyrightText">Microsoft may have patents, patent applications, trademarked, copyrights, or other intellectual 
+property rights covering subject matter in this document. Except as expressly provided in any written license agreement 
+from Microsoft, the furnishing of this document does not give you any license to these patents, trademarks, copyrights, 
+or other intellectual property.</p>
+<p class="CopyrightText">&nbsp;</p>
+<div class="Section1">
+	<p class="CopyrightText">© Microsoft Corporation. All rights reserved.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, Active Directory, BizTalk, SQL Server, SharePoint, 
+	Outlook, PowerPoint, FrontPage, Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual SourceSafe, Visual C#, 
+	Visual J#,&nbsp; and Visual Studio are either registered trademarks or trademarks of Microsoft Corporation in the 
+	U.S.A. and/or other countries.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Other product and company names herein may be the trademarks of their respective owners.</p>
+</div>
+<hr>
+<p class="body">&nbsp;</p>
+<p class="CopyrightText">This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+<p class="CopyrightText">&nbsp;</p>
+<p class="body">&nbsp;</p>
+<p class="title2">Comment Checker</p>
+<p class="body">A brief example which utilizes Microsoft Word to check the 
+spelling of “#” style code comments.&nbsp; The application will then display 
+suggestions for misspelled words in a visually appealing manner via Microsoft’s 
+Windows Presentation Foundation libraries. </p>
+<p class="body">&nbsp;</p>
+<p class="contentsheading">Overview</p>
+<p class="Body">One of the key benefits of programming in the Microsoft 
+ecosystem is the wide breadth of existing libraries and tools available to the 
+developer.&nbsp; For example, included with every installation of Microsoft 
+Office are .NET wrappers for Word/Excel/etc objects.&nbsp; Not only do these 
+wrappers allow one to generate Office documents programmatically, they also 
+allow you to use features built directly into Office applications from <strong>
+your</strong> .NET application.&nbsp; Just imagine for a moment what you 
+could do with access to Word's spell checker.&nbsp; Perhaps an English teacher 
+would want to couple Office 2007's Optical Character Recognition (OCR) 
+technology with spell checking to automatically grade students' essays.&nbsp; 
+The possibilities here are truly unlimited!</p>
+<p class="Body">What could possibly make these Office libraries better?&nbsp; 
+Couple them one of the easiest, most productive programming languages on the 
+planet today - Python.&nbsp; In this sample/tutorial, not only will we show how 
+to utilize Word's spell checking functionality from IronPython; we'll also use 
+it to make <strong>our own</strong> Python code better!&nbsp; You see, this 
+sample processes Python files looking for code comments that contain 
+misspellings.&nbsp; Once these mistakes have been identified we utilize Word 
+again to present you with the correct spellings.&nbsp; All of this is tied 
+together with an elegant, user-friendly interface constructed from .NET's 
+Windows Presentation Framework.</p>
+<p class="contentsheading">Prerequisites</p>
+<p class="body">The prerequisites to successfully run the Comment Checker demo are:</p>
+<ul>
+  <li class="normal" type="disc">Microsoft .NET Framework Version 3.5 SP1<ul>
+		<li>Windows 7 already includes a compatible version of the .NET Framework,
+		so this requirement is not necessary on this particulr platform</li>
+    </ul>
+  </li>
+    <ul>
+		<li><span class="style1">Download from </span>
+		<a href="http://www.microsoft.com/downloads/details.aspx?familyid=AB99342F-5D1A-413D-8319-81DA479AB0D7&amp;displaylang=en">
+		<span class="style1">here</span></a></li>
+	</ul>
+	<li class="normal">IronPython 2.6 distribution
+	<ul>
+		<li>If you are new to IronPython, please go over the tutorial
+that comes with this distribution</li>
+		<li>Download from 
+		<a href="http://ironpython.codeplex.com/Release/ProjectReleases.aspx?ReleaseId=12482">here</a></li>
+	</ul>
+	</li>
+	<li>
+	<span class="style1">Microsoft Word 2007</span></li>
+	<ul>
+		<li><span class="style1">Available</span><font face="Verdana" style="font-size: 11pt"> from
+		<a href="http://store.microsoft.com">here</a></font></li>
+	</ul>
+</ul>
+<p class="contentsheading">Getting Started<br>
+</p>
+<p class="body">Please make sure the sample folder, <i>CommentChecker, </i>(where this readme.htm is located)<i> </i>
+contains at least the following:</p>
+<blockquote>
+	<blockquote>
+		<p class="body">.\main.py<br>.\misspelled.py<br>
+		.\spelling.py<br>
+		</p>
+	</blockquote>
+</blockquote>
+<p class="body">HINT: if the folder containing the IronPython distribution
+is not already in your <strong>PATH</strong> environment variable, please add it from the command 
+prompt you'll be working in.&nbsp; By doing this you will be able to run the &quot;ipy&quot; 
+command from any arbitrary directory: </p>
+<p class="style5"><strong>s</strong><span class="style3">e<span class="typedexample"><strong>t 
+PATH=%PATH%;%ProgramFiles%\IronPython 2.6</strong></span></span></p>
+<p class="style5">&nbsp;</p>
+<hr>
+<p class="contentsheading">Playing with the Pre-written Sample</p>
+<p class="body">From the command prompt, navigate to the <em>CommentChecker</em> 
+directory and type the following: </p>
+<p class="typedexample">&gt; ipyw.exe main.py misspelled.py</p><p class="typedexample">&nbsp;</p>
+<p class="body">This starts an IronPython Windows application that displays the
+<em>misspelled.py</em> file and highlights each spelling mistake inside code 
+comments in a <span class="style7">red</span> background. If you click on any of 
+the misspelled words, you'll be presented with a drop-down list of alternate 
+spellings to use.&nbsp; You can run Comment Checker against your own Python files 
+as well by changing the second parameter passed to ipyw (e.g., <em>misspelled.py</em> 
+in the command above).&nbsp; The running application should look similar to the 
+following:</p>
+<p class="style6"><img alt="CommentChecker Screenshot" src="screenshot.jpg"></p>
+<p class="style6">&nbsp;</p>
+<hr>
+<p class="contentsheading">Step-by-step Instructions on Implementing the Sample</p>
+
+<p class="body">While a fully implemented &quot;comment checker&quot; is already provided 
+for your enjoyment (see previous section), you can discover exactly how it works 
+by following this section which is deemed suitable for both Python/.NET 
+beginners and experts.</p>
+<div style="page: Section3;">
+
+<h3><a name="_Toc196122512">Create a New Python File to Edit</a><![if !supportLists]><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:
+"Times New Roman"'><span style='mso-list:Ignore'>.<span style='font:7.0pt "Times New Roman"'>&nbsp;</span></span></span><![endif]></h3>
+
+<p class=style8 style='mso-list:l17 level1 lfo17'><![if !supportLists]><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:
+"Times New Roman"'><span style='mso-list:Ignore'>3.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]>From a<span style='font-size:11.0pt;font-family:"Times New Roman","serif"'> new <b style='mso-bidi-font-weight:normal'>Command Prompt</b> window 
+navigate to your favorite directory and please
+type:<o:p></o:p></span></p>
+
+<p class=style9 style='mso-background-themecolor:
+background1;mso-background-themeshade:217'><b style='mso-bidi-font-weight:normal'><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif"'>notepad</span></b><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif"'> <b
+style='mso-bidi-font-weight:normal'>spelling.py</b><o:p></o:p></span></p>
+
+<div style='mso-element:para-border-div;border:solid windowtext 1.5pt;
+padding:4.0pt 6.0pt 4.0pt 6.0pt;background:#C9E9FF;margin-left:.75in;
+margin-right:9.35pt'>
+
+<p class=style10><span class=style11>Note:</span> Do not
+close the <b>Command Prompt</b> window as we’ll be using this later.</p>
+	<p class=style10><strong>Note: </strong>From
+this point you should add Python code described in later steps to <b>spelling.py</b>.</p>
+
+</div>
+
+<p class=style8 style='mso-list:l17 level1 lfo17'><![if !supportLists]><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:
+"Times New Roman"'><span style='mso-list:Ignore'>4.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><b style='mso-bidi-font-weight:normal'><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif"'>notepad</span></b><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif"'> should now
+start a new window and inform you that ‘<b style='mso-bidi-font-weight:normal'><i
+style='mso-bidi-font-style:normal'>spelling.py</i></b><i style='mso-bidi-font-style:
+normal'> not found</i>’.<span style='mso-spacerun:yes'>  </span>When asked if
+you’d like to create this new file, click the <b style='mso-bidi-font-weight:
+normal'>Yes</b> button<o:p>.</o:p></span></p>
+	<p class=style8 style='mso-list:l17 level1 lfo17'>
+	<o:p></o:p></p>
+
+	<h3><a name="_Toc196122513">Use the clr Module to Access MS Word APIs</a></h3>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l11 level1 lfo21'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Add
+the following to <b style='mso-bidi-font-weight:normal'>spelling.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>import</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> clr<o:p></o:p></span></p>
+
+<p class=MsoNormal>The <b style='mso-bidi-font-weight:normal'>import</b>
+statement is used to import other Python modules.<span
+style='mso-spacerun:yes'>  </span>The <b style='mso-bidi-font-weight:normal'>clr</b>
+module is provided by IronPython to do Common Language Runtime oriented tasks such
+as adding .NET assembly references.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l11 level1 lfo21'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Add
+the following to <b style='mso-bidi-font-weight:normal'>spelling.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>clr.AddReferenceByPartialName(<span
+style='color:maroon'>&quot;Microsoft.Office.Interop.Word&quot;</span>)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>from</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> Microsoft.Office.Interop.Word <span
+style='color:blue'>import</span> ApplicationClass<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+mso-layout-grid-align:none;text-autospace:none'><span style='font-size:10.0pt;
+font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal>These two lines inject Microsoft Word’s <b style='mso-bidi-font-weight:
+normal'>ApplicationClass</b> COM class into our namespace.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l11 level1 lfo21'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Add
+the following to <b style='mso-bidi-font-weight:normal'>spelling.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+ms_word
+= ApplicationClass()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+ms_word.Documents.Add()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+mso-layout-grid-align:none;text-autospace:none'><span style='font-size:10.0pt;
+font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal>Here we create a global variable, <b style='mso-bidi-font-weight:
+normal'>ms_word</b>, which is really an instance of the winword.exe
+process.<span style='mso-spacerun:yes'>  </span>Also, we add a document to it
+so that we can get Word to offer spelling suggestions later on in this
+exercise.</p>
+
+<h3><a name="_Toc196122514">Checkpoint</a></h3>
+
+<p class=MsoNormal>At this point your copy of <b style='mso-bidi-font-weight:
+normal'>spelling.py</b> should be capable of displaying functionality provided
+by the Microsoft Word API:</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l9 level1 lfo20'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Save
+<b style='mso-bidi-font-weight:normal'>spelling.py</b> in <b style='mso-bidi-font-weight:
+normal'>notepad</b> by holding down the <b style='mso-bidi-font-weight:normal'>Ctrl</b>
+key and pressing <b style='mso-bidi-font-weight:normal'>S </b>once.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l9 level1 lfo20'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>From
+the <b style='mso-bidi-font-weight:normal'>Command Prompt</b> started earlier
+in this exercise, start IronPython in interactive mode.<span
+style='mso-spacerun:yes'>  </span>This is accomplished by running the following
+in the <b style='mso-bidi-font-weight:normal'>Command Prompt</b> window:</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:.25in;background:#D9D9D9;
+mso-background-themecolor:background1;mso-background-themeshade:217'>ipy –i spelling.py</p>
+
+<p class=MsoNormal style='margin-left:.75in'>The <i style='mso-bidi-font-style:
+normal'>“-i”</i> flag tells IronPython to run in interactive mode. <span
+style='mso-spacerun:yes'> </span>The Python module specified after <i
+style='mso-bidi-font-style:normal'>“-i”</i> (e.g., <b style='mso-bidi-font-weight:
+normal'>spelling.py</b>) will be automatically run and its contents injected into
+the global namespace.<span style='mso-spacerun:yes'>  </span>In the <b
+style='mso-bidi-font-weight:normal'>Command Prompt</b> you should now see the
+following:</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:.25in;background:#D9D9D9;
+mso-background-themecolor:background1;mso-background-themeshade:217'>&gt;&gt;&gt;<o:p>&nbsp;</o:p></p>
+
+<div style='mso-element:para-border-div;border:solid windowtext 1.5pt;
+padding:4.0pt 6.0pt 4.0pt 6.0pt;background:#C9E9FF;margin-left:.75in;
+margin-right:9.35pt'>
+
+<p class=style10><span class=style11>Note:</span> If you cut and paste the ipy 
+command above directly from your web browser into the Command Prompt,
+you may end up seeing an error message such as:</p>
+
+<p class=style10><span style='mso-tab-count:1'>      </span>File
+-i does not exist.</p>
+
+<p class=style10>To get around this, simply type out the
+command by hand in the Command Prompt.</p>
+
+</div>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l9 level1 lfo20'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Type:</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:.25in;background:#D9D9D9;
+mso-background-themecolor:background1;mso-background-themeshade:217'>dir(ms_word)</p>
+
+<p class=MsoNormal style='margin-left:.75in'>in the <b style='mso-bidi-font-weight:
+normal'>Command Prompt</b> and press the <b style='mso-bidi-font-weight:normal'>Enter</b>
+key.<span style='mso-spacerun:yes'>  </span>You should now see all methods and
+properties Word provides us with.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l9 level1 lfo20'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>4.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Type:
+</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:.25in;background:#D9D9D9;
+mso-background-themecolor:background1;mso-background-themeshade:217'>ms_word.Visible
+= True</p>
+
+<p class=style13 style="width: 1010px">&nbsp;in the <b style='mso-bidi-font-weight:normal'>Command Prompt</b>
+and press <b style='mso-bidi-font-weight:normal'>Enter</b>.<span
+style='mso-spacerun:yes'>  </span>Microsoft Word should open a new window.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l9 level1 lfo20'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>5.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Type:</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:.25in;background:#D9D9D9;
+mso-background-themecolor:background1;mso-background-themeshade:217'>ms_word.Quit()</p>
+
+<p class=MsoNormal style='margin-left:.75in'>in the <b style='mso-bidi-font-weight:
+normal'>Command Prompt</b> and press <b style='mso-bidi-font-weight:normal'>Enter</b>.<span
+style='mso-spacerun:yes'>  </span>This shuts down the new instance of Word.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l9 level1 lfo20'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>6.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Hold
+down the <b style='mso-bidi-font-weight:normal'>Ctrl</b> key and press <b
+style='mso-bidi-font-weight:normal'>Z</b> in the <b style='mso-bidi-font-weight:
+normal'>Command Prompt</b>.<span style='mso-spacerun:yes'>  </span>Now press <b
+style='mso-bidi-font-weight:normal'>Enter</b> to exit out of the interactive
+session.</p>
+
+<div style='mso-element:para-border-div;border:solid windowtext 1.5pt;
+padding:4.0pt 6.0pt 4.0pt 6.0pt;background:#C9E9FF;margin-left:.75in;
+margin-right:9.35pt'>
+
+<p class=style10><span class=style11>Important Note:</span>
+It’s advisable that you save your changes in <b>notepad</b> by pressing <b>Ctrl+S</b>
+after completing every section!</p>
+
+</div>
+
+<h3><a name="_Toc196122515">Check the Spelling of a Word</a></h3>
+
+<p class=MsoNormal>Add the following to <b style='mso-bidi-font-weight:normal'>spelling.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>def</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> check_word(x):<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span><span style='color:blue'>return</span>
+ms_word.CheckSpelling(x)<o:p></o:p></span></p>
+
+<p class=MsoNormal><b style='mso-bidi-font-weight:normal'>check_word</b>
+returns <i style='mso-bidi-font-style:normal'>True</i> if Microsoft Word thinks
+the spelling of the input parameter, <b style='mso-bidi-font-weight:normal'>x</b>,
+is correct.</p>
+
+<h3><a name="_Toc196122516">Spelling Suggestions</a></h3>
+
+<p class=MsoNormal>Add the following to <b style='mso-bidi-font-weight:normal'>spelling.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>def</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> suggestions(x):<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span>res_objects =
+ms_word.GetSpellingSuggestions(x)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span><span style='color:blue'>return</span>
+[y.Name <span style='color:blue'>for</span> y <span style='color:blue'>in</span>
+res_objects.GetEnumerator()]</span></p>
+
+<p class=MsoNormal>The <b style='mso-bidi-font-weight:normal'>suggestions</b>
+function asks MS Word for spelling suggestions of the misspelled word <b
+style='mso-bidi-font-weight:normal'>x.</b> <span
+style='mso-spacerun:yes'>  </span>It then returns these suggestions in the form
+of a Python list using list comprehension (i.e., the “<i style='mso-bidi-font-style:
+normal'>[y.Name for y in …]</i>”<i style='mso-bidi-font-style:normal'> </i>line).<span
+style='mso-spacerun:yes'>  </span>Specifics about Python list comprehension are
+beyond the scope of this exercise, but you can learn more about them here - <a
+href="http://docs.python.org/tut/node7.html#SECTION007140000000000000000">http://docs.python.org/tut/node7.html#SECTION007140000000000000000</a>.
+</p>
+
+<h3><a name="_Toc196122517">Checkpoint</a> </h3>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l14 level1 lfo22'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Save
+<b style='mso-bidi-font-weight:normal'>spelling.py</b> in <b style='mso-bidi-font-weight:
+normal'>notepad</b>.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l14 level1 lfo22'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>From
+the <b style='mso-bidi-font-weight:normal'>Command Prompt</b>, run spelling.py
+in interactive mode again:</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:.25in;background:#D9D9D9;
+mso-background-themecolor:background1;mso-background-themeshade:217'>ipy –i spelling.py</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l14 level1 lfo22'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Play
+around with the functions you created:</p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'>&gt;&gt;&gt;
+check_word(&quot;ab&quot;)</p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'>False</p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'>&gt;&gt;&gt;
+suggestions(&quot;ab&quot;)</p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'>['abs', 'alb', 'am', 'an', 'as',
+'at', 'a', 'bad', 'ad', 'ax']</p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'>&gt;&gt;&gt;<o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l14 level1 lfo22'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>4.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Once
+you’re satisfied that the functions work as intended, press <b
+style='mso-bidi-font-weight:normal'>Ctrl+Z</b> followed by <b style='mso-bidi-font-weight:
+normal'>Enter</b> to exit out of the interactive session.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l14 level1 lfo22'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>5.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>You’ve
+now completed the first part of this exercise and may close <b
+style='mso-bidi-font-weight:normal'>notepad</b>.</p>
+
+<h3><a name="_Toc196122518">Create Ano</a>ther Python Module</h3>
+
+<p class=style8 style='mso-list:l16 level1 lfo25'><![if !supportLists]><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:
+"Times New Roman"'><span style='mso-list:Ignore'>1.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span style='font-size:11.0pt;font-family:"Times New Roman","serif"'>In
+the <b style='mso-bidi-font-weight:normal'>Command Prompt</b> window please type:<o:p></o:p></span></p>
+
+<p class=style9 style='mso-background-themecolor:
+background1;mso-background-themeshade:217'><b style='mso-bidi-font-weight:normal'><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif"'>notepad</span></b><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif"'> <b
+style='mso-bidi-font-weight:normal'>main.py</b><o:p></o:p></span></p>
+
+<p class=style8 style='mso-list:l16 level1 lfo25'><![if !supportLists]><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:
+"Times New Roman"'><span style='mso-list:Ignore'>2.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><b style='mso-bidi-font-weight:normal'><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif"'>notepad</span></b><span
+style='font-size:11.0pt;font-family:"Times New Roman","serif"'> should now
+start a new window and inform you that ‘<b style='mso-bidi-font-weight:normal'><i
+style='mso-bidi-font-style:normal'>main.py</i></b><i style='mso-bidi-font-style:
+normal'> not found</i>’.<span style='mso-spacerun:yes'>  </span>When asked if
+you’d like to create this new file, click the <b style='mso-bidi-font-weight:
+normal'>Yes</b> button.<o:p></o:p></span></p>
+
+<div style='mso-element:para-border-div;border:solid windowtext 1.5pt;
+padding:4.0pt 6.0pt 4.0pt 6.0pt;background:#C9E9FF;margin-left:.3in;margin-right:
+9.35pt'>
+
+<p class=style10><span class=style11>Note:</span> From
+this point on you should add Python code described in later steps to <b>main.py</b>.</p>
+
+</div>
+
+<h3><a name="_Toc196122519">Open a Source File With “#”Style Comments</a></h3>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l24 level1 lfo27'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Add
+the following to <b style='mso-bidi-font-weight:normal'>main.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>import </span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'>sys<span style='color:blue'><o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>import</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> clr<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>from<span style='mso-spacerun:yes'>  </span></span><span
+style='font-size:10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;
+mso-no-proof:yes'><span style='mso-spacerun:yes'> </span>spelling <span
+style='color:blue'>import</span> *<o:p></o:p></span></p>
+
+<p class=MsoNormal><b style='mso-bidi-font-weight:normal'>sys</b> is a standard
+CPython module which we use to access command-line parameters.<span
+style='mso-spacerun:yes'>  </span>The <b style='mso-bidi-font-weight:normal'>clr</b>
+module was described previously.<span style='mso-spacerun:yes'>  </span>The
+third line above shows how to import all functions and global variables defined
+in the <b style='mso-bidi-font-weight:normal'>spelling.py</b> module you
+created into <b style='mso-bidi-font-weight:normal'>main.py</b>’s namespace.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l24 level1 lfo27'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Add
+the following to <b style='mso-bidi-font-weight:normal'>main.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+_temp_file
+= open(sys.argv[1], <span style='color:maroon'>&quot;r&quot;</span>)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+lines_in_file
+= _temp_file.readlines()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'><span style='font-size:10.0pt;
+font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+_temp_file.close()<o:p></o:p></span></p>
+
+<p class=MsoNormal>This little snippet opens a file and stores all of its lines
+to a list/array called <b style='mso-bidi-font-weight:normal'>lines_in_file</b>.<span
+style='mso-spacerun:yes'>  </span>The name of the file is passed into
+IronPython from the command-line and obtained via the <b style='mso-bidi-font-weight:
+normal'>argv</b> module attribute of <b style='mso-bidi-font-weight:normal'>sys</b>.</p>
+
+<h3><a name="_Toc196122520">Access Windows Presentation Foundation Types</a></h3>
+
+<p class=MsoNormal>Add the following to <b style='mso-bidi-font-weight:normal'>main.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>clr.AddReferenceByPartialName(<span
+style='color:maroon'>&quot;PresentationCore&quot;</span>)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>clr.AddReferenceByPartialName(<span
+style='color:maroon'>&quot;PresentationFramework&quot;</span>) <o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>from</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> System.Windows <span
+style='color:blue'>import</span> Window, Application, HorizontalAlignment<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>from</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> System.Windows.Controls <span
+style='color:blue'>import</span> FlowDocumentScrollViewer, ComboBox<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>from</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> System.Windows.Documents <span
+style='color:blue'>import</span> FlowDocument, Paragraph, Run<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'><span style='font-size:10.0pt;
+font-family:"Courier New";color:blue;mso-fareast-language:EN-US;mso-no-proof:
+yes'>from</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> System.Windows.Media.Brushes <span
+style='color:blue'>import</span> Black, PaleGreen, Red</span></p>
+
+<p class=MsoNormal>Here we import various types from Microsoft’s Windows
+Presentation Foundation assemblies which we will later use to display our file.</p>
+
+<h3><a name="_Toc196122521">Create a Window</a></h3>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l7 level1 lfo24'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Add
+the following to <b style='mso-bidi-font-weight:normal'>main.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+main_window
+= Window()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+main_window.Title
+= <span style='color:maroon'>&quot;IronPython Comment Checker&quot;<o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+main_window.Background
+= Black<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'><span style='font-size:10.0pt;
+font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+main_window.Foreground
+= PaleGreen</span></p>
+
+<p class=MsoNormal>We’ve now created our main <b style='mso-bidi-font-weight:
+normal'>Window</b> and set a few of its properties.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l7 level1 lfo24'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Add
+the following text to <b style='mso-bidi-font-weight:normal'>main.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+main_window.Content
+= FlowDocumentScrollViewer()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'><span style='font-size:10.0pt;
+font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+main_window.Content.Document
+= FlowDocument()<o:p></o:p></span></p>
+
+<p class=MsoNormal>Our <b style='mso-bidi-font-weight:normal'>main_window</b> object
+would not be very useful without any content attached to it.<span
+style='mso-spacerun:yes'>  </span>For this reason we attach a document viewer which
+is used to dynamically display documents.</p>
+
+<h3><a name="_Toc196122522">Generate a Paragraph</a></h3>
+
+<p class=MsoNormal>In this part of the exercise, we will add a function to
+create, populate, and return a <b style='mso-bidi-font-weight:normal'>Paragraph</b>
+object which we will later add to the document.<span style='mso-spacerun:yes'> 
+</span>This paragraph will consist of the entire file passed in from the
+command prompt (e.g., misspelled.py) with suggestions for all misspelled words
+in “#” style comments.</p>
+
+<p class=MsoNormal>Add the following to <b style='mso-bidi-font-weight:normal'>main.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:blue;mso-fareast-language:EN-US;
+mso-no-proof:yes'>def</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'> create_paragraph(file_lines):<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span><span style='color:green'>#Create a
+&quot;Paragraph&quot; object to hold all text from the file<o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span>paragraph = Paragraph()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span><span style='color:green'>#Text in the
+paragraph will have a font size of 16<o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:green;mso-fareast-language:EN-US;
+mso-no-proof:yes'><span style='mso-spacerun:yes'>    </span></span><span
+style='font-size:10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;
+mso-no-proof:yes'>paragraph.FontSize = 16.0<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span><span style='color:green'>#Go through every
+line in the file passed in from the command<o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:green;mso-fareast-language:EN-US;
+mso-no-proof:yes'><span style='mso-spacerun:yes'>    </span>#line...</span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span><span style='color:blue'>for</span> x <span
+style='color:blue'>in</span> file_lines:<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>        </span><span style='color:green'>#...looking
+for Python/Ruby/PowerShell style comments<o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>        </span><span style='color:blue'>if</span> <span
+style='color:maroon'>&quot;#&quot;</span> <span style='color:blue'>in</span> x:<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span><span style='color:green'>#Split
+the line whenever a comment is found</span><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span>first, second = x.split(<span
+style='color:maroon'>&quot;#&quot;</span>, 1)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span><span style='color:green'>#Add the
+first part of the line to the paragraph</span><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span>paragraph.Inlines.Add(Run(first +
+&quot;#&quot;))<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span><span style='color:green'>#Split
+the second part of the line based on whitespace</span><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span><span style='color:blue'>for</span>
+y <span style='color:blue'>in</span> second.split():<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                </span><span style='color:green'>#If
+the word is misspelled...</span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                </span><span style='color:blue'>if</span>
+<span style='color:blue'>not</span> check_word(y):<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span><span style='color:green'>#Add
+a drop down menu to offer alternative<o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:green;mso-fareast-language:EN-US;
+mso-no-proof:yes'><span style='mso-spacerun:yes'>                   
+</span>#spelling suggestions</span><span style='font-size:10.0pt;font-family:
+"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span>c = ComboBox()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span>c.Background = Red<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span>c.HorizontalAlignment =
+HorizontalAlignment.Left<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span><span style='color:green'>#Add
+the misspelled word to the drop down menu<o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:green;mso-fareast-language:EN-US;
+mso-no-proof:yes'><span style='mso-spacerun:yes'>                   
+</span>#and make it the first item</span><span style='font-size:10.0pt;
+font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span>c.AddText(y)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span>c.SelectedItem = y<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span><span style='color:green'>#Offer
+alternative spellings in the drop down menu</span><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span><span style='color:blue'>for</span>
+suggest <span style='color:blue'>in</span> suggestions(y):<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                        </span>c.AddText(suggest)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span><span style='color:green'>#Add
+the combo box to the drop down menu</span><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                    </span>paragraph.Inlines.Add(c)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                </span><span style='color:blue'>else</span>:<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                   
+</span>paragraph.Inlines.Add(Run(y))<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>                </span>paragraph.Inlines.Add(<span
+style='color:maroon'>&quot; &quot;</span>)<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span>paragraph.Inlines.Add(Run(<span
+style='color:maroon'>&quot;\n&quot;</span>))<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>        </span><span style='color:blue'>else</span>:<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span><span style='color:green'>#If
+there's no comment in the line, just directly<o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";color:green;mso-fareast-language:EN-US;
+mso-no-proof:yes'><span style='mso-spacerun:yes'>            </span>#add it to
+the paragraph</span><span style='font-size:10.0pt;font-family:"Courier New";
+mso-fareast-language:EN-US;mso-no-proof:yes'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>            </span>paragraph.Inlines.Add(Run(x))<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:0in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'><span style='font-size:10.0pt;
+font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'><span
+style='mso-spacerun:yes'>    </span><span style='color:blue'>return</span>
+paragraph</span></p>
+
+<h3><a name="_Toc196122523">Attach the Paragraph to the Document</a></h3>
+
+<p class=MsoNormal>Add the following to <b style='mso-bidi-font-weight:normal'>main.py</b>:</p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+main_window.Content.Document.Blocks.Add(create_paragraph(lines_in_file))<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+main_window.Show()<span
+style='color:green'><o:p></o:p></span></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>Application().Run()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+background:#D9D9D9;mso-background-themecolor:background1;mso-background-themeshade:
+217;mso-layout-grid-align:none;text-autospace:none'><span style='font-size:
+10.0pt;font-family:"Courier New";mso-fareast-language:EN-US;mso-no-proof:yes'>
+ms_word.Quit()<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin:0in;margin-bottom:.0001pt;line-height:normal;
+mso-layout-grid-align:none;text-autospace:none'><span style='font-size:10.0pt;
+font-family:"Courier New";color:green;mso-fareast-language:EN-US;mso-no-proof:
+yes'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal>Last but not least we:</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l2 level1 lfo23'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>
+Add the paragraph created in the previous step to our document</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l2 level1 lfo23'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Make
+<b style='mso-bidi-font-weight:normal'>main_window</b> visible by calling the <b
+style='mso-bidi-font-weight:normal'>Show</b> method</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l2 level1 lfo23'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Call
+<i style='mso-bidi-font-style:normal'>Application().Run()</i> to begin
+accepting events and stop ipy.exe from exiting out of <b style='mso-bidi-font-weight:
+normal'>main.py</b> until the end-user closes the window.</p>
+
+<p class=MsoNormal style='margin-left:.75in;text-indent:-.25in;mso-list:l2 level1 lfo23'><![if !supportLists]><span
+style='mso-fareast-font-family:"Times New Roman"'><span style='mso-list:Ignore'>4.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>Finally
+when the main window has finished running, we tell Microsoft Word to terminate.<span
+style='mso-spacerun:yes'>  </span>Take note that this is the same <b
+style='mso-bidi-font-weight:normal'>ms_word</b> object found in the <b
+style='mso-bidi-font-weight:normal'>spelling.py</b> module.</p>
+
+<h3><a name="_Toc196122524">Run Your Application</a></h3>
+
+<p class=MsoNormal>Now that you’ve finished coding this part of the exercise,
+it’s time to run it!<span style='mso-spacerun:yes'>  </span>Due to the <i
+style='mso-bidi-font-style:normal'>Application().Run()</i> call made in the
+last step, you cannot pass the “<i style='mso-bidi-font-style:normal'>-i</i>”
+flag to ipy.<span style='mso-spacerun:yes'>  </span>Instead you should call <b
+style='mso-bidi-font-weight:normal'>main.py</b> using one of the following two
+patterns:</p>
+
+<p class=MsoNormal style='text-indent:.5in;background:#D9D9D9;mso-background-themecolor:
+background1;mso-background-themeshade:217'>ipy main.py misspelled.py</p>
+
+<p class=MsoNormal>or preferably:</p>
+
+<p class=MsoNormal style='background:#D9D9D9;mso-background-themecolor:background1;
+mso-background-themeshade:217'><span style='mso-tab-count:1'>            </span>ipyw
+main.py misspelled.py</p>
+
+<p class=MsoNormal>from the <b style='mso-bidi-font-weight:normal'>Command
+Prompt</b>.<span style='mso-spacerun:yes'>  </span>ipy is a console process and
+ipyw returns control immediately from the <b style='mso-bidi-font-weight:normal'>Command
+Prompt</b>.<span style='mso-spacerun:yes'>  </span>The second parameter to
+ipy/ipyw above, misspelled.py, is a file containing “#” style code comments and
+many misspelled words.<span style='mso-spacerun:yes'>  </span>This file is
+denoted by “sys.argv[1]” in main.py.</p>
+
+</div>
+<h2>
+<o:p>&nbsp;</o:p></h2>
+<p class="body">This concludes our tutorial. Have fun playing with this sample!</p>
+
+</body>
+
+</html>

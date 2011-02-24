@@ -55,7 +55,6 @@ namespace IronRuby.Compiler.Ast {
 
         private IList<MSA.Expression> _fileInitializers; // lazy
         private MSA.Expression _sourcePathConstant; // lazy
-        private readonly MSA.Expression/*!*/ _encodingConstant;
 
         internal AstGenerator(RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, MSA.SymbolDocumentInfo document, RubyEncoding/*!*/ encoding,
             bool printInteractiveResult) {
@@ -68,7 +67,6 @@ namespace IronRuby.Compiler.Ast {
             _document = document;
             _sequencePointClearance = (document != null) ? Ast.ClearDebugInfo(document) : null;
             _encoding = encoding;
-            _encodingConstant = Ast.Constant(encoding);
             _profiler = context.RubyOptions.Profile ? Profiler.Instance : null;
             _savingToDisk = context.RubyOptions.SavePath != null;
             _printInteractiveResult = printInteractiveResult;
@@ -126,10 +124,6 @@ namespace IronRuby.Compiler.Ast {
 
         public RubyEncoding/*!*/ Encoding {
             get { return _encoding; }
-        }
-
-        public MSA.Expression/*!*/ EncodingConstant {
-            get { return _encodingConstant; }
         }
 
         internal RubyContext/*!*/ Context {

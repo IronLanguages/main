@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    </PropertyGroup>
+    <ItemGroup>
+        <!-- Needed to be built ahead of time for the MSIs to include the Silverlight binaries -->
+        <ProjectToBuild Include="..\Solutions\Dlr.sln">
+            <Properties>Configuration=Silverlight4$(Configuration)</Properties>
+        </ProjectToBuild>  
+        <ProjectToBuild Include="Python\Chm\IronPython.Chm.proj">
+          <Name>IronPython.Chm</Name>
+        </ProjectToBuild>  
+        <ProjectToBuild Include="Python\Msi\IronPython.Msi.wproj">
+            <Properties>Configuration=$(Configuration)</Properties>
+        </ProjectToBuild>
+        <ProjectToBuild Include="Ruby\Msi\IronRuby.Msi.wproj">
+            <Properties>Configuration=$(Configuration)</Properties>
+        </ProjectToBuild>
+    </ItemGroup>
+
+    <Target Name="Build">
+        <MSBuild Projects="@(ProjectToBuild)"/>
+    </Target>
+    <Target Name="Rebuild">
+        <!-- WiX deosn't clean up properly -->
+        <RemoveDir Directories="
+             IronStudio\obj;
+             Python\Msi\obj;
+             Python\Msm\obj;
+             Ruby\Msi\obj;
+             Ruby\Msm\obj;
+             Runtime\obj;
+        "/>
+        <MSBuild Projects="@(ProjectToBuild)" Targets="Rebuild"/>
+    </Target>
+</Project>

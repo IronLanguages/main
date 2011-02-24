@@ -14,9 +14,9 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Diagnostics;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -27,6 +27,7 @@ namespace IronPython.Runtime {
         private readonly PythonDictionary/*!*/ _globals;
         private readonly CodeContext/*!*/ _globalContext;
         private readonly PythonModule _module;
+        private ExtensionMethodSet _extensionMethods = ExtensionMethodSet.Empty;
         private ModuleOptions _features;
 
         /// <summary>
@@ -133,6 +134,15 @@ namespace IronPython.Runtime {
                 } else {
                     _features &= ~ModuleOptions.ShowClsMethods;
                 }
+            }
+        }
+
+        internal ExtensionMethodSet ExtensionMethods {
+            get {
+                return _extensionMethods;
+            }
+            set {
+                _extensionMethods = value;
             }
         }
 

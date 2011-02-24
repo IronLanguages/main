@@ -1,2 +1,0 @@
-fails:SimpleDelegator when frozen is not writeable
-fails:SimpleDelegator when frozen creates a frozen clone

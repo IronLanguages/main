@@ -25,65 +25,61 @@ namespace IronRuby.Runtime.Calls {
     using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
 
     // L(n, *)
-    internal sealed class BlockDispatcherUnsplatN : BlockDispatcher<BlockCallTargetUnsplatN> {
-        private readonly int _parameterCount; // doesn't include the * parameter
-
-        public override int ParameterCount { get { return _parameterCount; } }
-
-        internal BlockDispatcherUnsplatN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) 
-            : base(attributesAndArity, sourcePath, sourceLine) {
+    internal sealed class BlockDispatcherUnsplatN : BlockDispatcherN<BlockCallTargetUnsplatN> {
+        internal BlockDispatcherUnsplatN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+            : base(parameterCount, attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(HasUnsplatParameter);
-
-            _parameterCount = parameterCount;
         }
 
         // R(0, -)
-        public override object Invoke(BlockParam/*!*/ param, object self) {
-            return InvokeInternal(param, self, ArrayUtils.EmptyObjects);
+        public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg) {
+            return InvokeInternal(param, self, procArg, ArrayUtils.EmptyObjects);
         }
 
         // R(1, -)
-        public override object InvokeNoAutoSplat(BlockParam/*!*/ param, object self, object arg1) {
-            return InvokeInternal(param, self, new object[] { arg1 }); // TODO: optimize
+        public override object InvokeNoAutoSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
+            return InvokeInternal(param, self, procArg, new object[] { arg1 }); // TODO: optimize
         }
         
         // R(1, -)
-        public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
+        public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1) {
             if (_parameterCount > 0) {
                 IList list = arg1 as IList ?? Protocols.ImplicitTrySplat(param.RubyContext, arg1) ?? new object[] { arg1 }; // TODO: optimize
-                return InvokeSplatInternal(param, self, ArrayUtils.EmptyObjects, list); 
+                return InvokeSplatInternal(param, self, procArg, ArrayUtils.EmptyObjects, list); 
             } else {
-                return InvokeInternal(param, self, new object[] { arg1 }); // TODO: optimize
+                return InvokeInternal(param, self, procArg, new object[] { arg1 }); // TODO: optimize
             }
         }
 
         // R(2, -)
-        public override object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2) {
-            return InvokeInternal(param, self, new object[] { arg1, arg2 });// TODO: optimize
+        public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2) {
+            return InvokeInternal(param, self, procArg, new object[] { arg1, arg2 });// TODO: optimize
         }
 
         // R(3, -)
-        public override object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3) {
-            return InvokeInternal(param, self, new object[] { arg1, arg2, arg3 });// TODO: optimize
+        public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3) {
+            return InvokeInternal(param, self, procArg, new object[] { arg1, arg2, arg3 });// TODO: optimize
         }
 
         // R(4, -)
-        public override object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4) {
-            return InvokeInternal(param, self, new object[] { arg1, arg2, arg3, arg4 });// TODO: optimize
+        public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, object arg4) {
+            return InvokeInternal(param, self, procArg, new object[] { arg1, arg2, arg3, arg4 });// TODO: optimize
         }
 
         // R(N, -)
-        public override object Invoke(BlockParam/*!*/ param, object self, object[]/*!*/ args) {
-            return InvokeInternal(param, self, args);
+        public override object Invoke(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args) {
+            return InvokeInternal(param, self, procArg, args);
         }
 
-        private object InvokeInternal(BlockParam/*!*/ param, object self, object[]/*!*/ args) {
-            // TODO
+        private object InvokeInternal(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args) {
+            // TODO: optimize
             if (args.Length < _parameterCount) {
                 Array.Resize(ref args, _parameterCount);
                 return _block(param, self, args, RubyOps.MakeArray0());
             } else if (args.Length == _parameterCount) {
                 return _block(param, self, args, RubyOps.MakeArray0());
+            } else if (_parameterCount == 0) {
+                return _block(param, self, ArrayUtils.EmptyObjects, RubyOps.MakeArrayN(args));
             } else {
                 var actualArgs = new object[_parameterCount];
 
@@ -101,46 +97,54 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(0, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, ArrayUtils.EmptyObjects, splattee);
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, IList/*!*/ splattee) {
+            if (splattee.Count == 1) {
+                return Invoke(param, self, procArg, splattee[0]);
+            } else {
+                return InvokeSplatInternal(param, self, procArg, ArrayUtils.EmptyObjects, splattee);
+            }
         }
 
         // R(1, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, new object[] { arg1 }, splattee);
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, IList/*!*/ splattee) {
+            if (splattee.Count == 0) {
+                return Invoke(param, self, procArg, arg1);
+            } else {
+                return InvokeSplatInternal(param, self, procArg, new object[] { arg1 }, splattee);
+            }
         }
 
         // R(2, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, new object[] { arg1, arg2 }, splattee);
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, IList/*!*/ splattee) {
+            return InvokeSplatInternal(param, self, procArg, new object[] { arg1, arg2 }, splattee);
         }
 
         // R(3, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, new object[] { arg1, arg2, arg3 }, splattee);
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
+            return InvokeSplatInternal(param, self, procArg, new object[] { arg1, arg2, arg3 }, splattee);
         }
 
         // R(4, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, new object[] { arg1, arg2, arg3, arg4 }, splattee);
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
+            return InvokeSplatInternal(param, self, procArg, new object[] { arg1, arg2, arg3, arg4 }, splattee);
         }
 
         // R(N, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
-            return InvokeSplatInternal(param, self, args, splattee);
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args, IList/*!*/ splattee) {
+            return InvokeSplatInternal(param, self, procArg, args, splattee);
         }
 
         // R(N, *, =)
-        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
+        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
             var list = new RubyArray(splattee.Count + 1);
             list.AddRange(splattee);
             list.Add(rhs);
             splattee = list;
 
-            return InvokeSplatInternal(param, self, args, list);
+            return InvokeSplatInternal(param, self, procArg, args, list);
         }
 
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
+        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, Proc procArg, object[]/*!*/ args, IList/*!*/ splattee) {
             int argsLength = args.Length;
 
             int nextArg, nextItem;

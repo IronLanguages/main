@@ -1,1 +1,0 @@
-fails:Digest::SHA384#inspect returns a Ruby object representation

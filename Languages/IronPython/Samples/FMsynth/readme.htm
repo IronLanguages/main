@@ -1,0 +1,269 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="../Samples.css">
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=windows-1252">
+  <title>FMsynth</title>
+  </head>
+<body>
+<hr>
+<p class="CopyrightText"> Information in this document is subject to
+change without notice. The example companies, organizations, products,
+people, and events depicted herein are fictitious. No association with
+any real company, organization, product, person or event is intended or
+should be inferred. Complying with all applicable copyright laws is the
+responsibility of the user. Without limiting the rights under
+copyright, no part of this document may be reproduced, stored in or
+introduced into a retrieval system, or transmitted in any form or by
+any means (electronic, mechanical, photocopying, recording, or
+otherwise), or for any purpose, without the express written permission
+of Microsoft Corporation.</p>
+<p class="CopyrightText"> &nbsp;</p>
+<p class="CopyrightText"> Microsoft may have patents, patent
+applications, trademarked, copyrights, or other intellectual property
+rights covering subject matter in this document. Except as expressly
+provided in any written license agreement from Microsoft, the
+furnishing of this document does not give you any license to these
+patents, trademarks, copyrights, or other intellectual property.</p>
+<p class="CopyrightText">
+&nbsp;</p>
+<div class="Section1">
+	<p class="CopyrightText">© Microsoft Corporation. All rights reserved.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, 
+	Active Directory, BizTalk, SQL Server, SharePoint, Outlook, PowerPoint, 
+	FrontPage, Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual 
+	SourceSafe, Visual C#, Visual J#,&nbsp; and Visual Studio are either registered 
+	trademarks or trademarks of Microsoft Corporation in the U.S.A. and/or other 
+	countries.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Other product and company names herein may be the 
+	trademarks of their respective owners.</div>
+<hr>
+<p class="body"> &nbsp;</p>
+<p class="CopyrightText">This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+<p class="CopyrightText"> &nbsp;</p>
+<p class="CopyrightText"> &nbsp;</p>
+<p class="Title2"> FMsynth </p>
+<p class="body"> A frequency modulation synthesizer implemented in
+IronPython </p>
+<p class="body"> Contributor: Matt Gruskin</p>
+<p class="contentsheading"> &nbsp;</p>
+<p class="contentsheading"> Prerequisites</p>
+<p class="body"> The prerequisites to successfully run FMSynth are:</p>
+<ul>
+	<li class="normal">IronPython 2.6 distribution
+	<ul>
+		<li>If you are new to IronPython, please go over the tutorial
+that comes with this distribution</li>
+		<li>Download from 
+		<a href="http://ironpython.codeplex.com/Release/ProjectReleases.aspx?ReleaseId=12482">here</a></li>
+	</ul>
+	</li>
+	<li class="normal">DirectX 9.0c and a compatible sound card
+    <ul>
+		<li>Download from 
+		<a
+ href="http://www.microsoft.com/downloads/details.aspx?FamilyId=2DA43D38-DB71-4C1B-BC6A-9B6652CD92A3&amp;displaylang=en">here</a></li>
+	</ul>
+	</li>
+</ul>
+<p class="ContentsHeading">Contents</p>
+<p class="Toc1"><a href="#Introduction">Introduction</a></p>
+<p class="Toc1"><a href="#HowToUse">How To Use FMsynth</a></p>
+<p class="Toc1"><a href="#Design">Design and Implementation</a></p>
+<p class="Toc2"><a href="#UserInterface">User Interface</a></p>
+<p class="Toc2"><a href="#BufferPlayer">The BufferPlayer Object</a></p>
+<p class="Toc2"><a href="#WaveSource">The WaveSource Object</a></p>
+<h1> <a name="Introduction">Introduction</a> </h1>
+<p class="Body"> FMsynth is a frequency modulation synthesizer
+implemented in IronPython. Frequency modulation synthesis is a
+technique for combining audio waveforms to generate interesting musical
+tones and sound effects, used in many classic music synthesizers. </p>
+<p class="Body"> FMsynth demonstrates the use of many different
+technologies in IronPython. </p>
+<ul type="disc">
+  <li class="Normal">Managed DirectSound is used to output the audio
+data. FMsynth contains examples of the use of the following classes:
+    <ul type="circle">
+      <li class="Normal">Microsoft.DirectX.DirectSound.Device</li>
+      <li class="Normal">Microsoft.DirectX.DirectSound.SecondaryBuffer</li>
+      <li class="Normal">Microsoft.DirectX.DirectSound.WaveFormat</li>
+      <li class="Normal">Microsoft.DirectX.DirectSound.BufferDescription</li>
+    </ul>
+  </li>
+  <li class="Normal">System.Array is used for storing and manipulating
+audio data.</li>
+  <li class="Normal">System.Windows.Forms is used to create the user
+interface. FMsynth contains examples of the use of the following
+classes:
+    <ul type="circle">
+      <li class="Normal">System.Windows.Forms.TreeView</li>
+      <li class="Normal">System.Windows.Forms.PictureBox</li>
+      <li class="Normal">System.Windows.Forms.HScrollBar</li>
+      <li class="Normal">System.Windows.Forms.VScrollBar</li>
+      <li class="Normal">System.Windows.Forms.Label</li>
+      <li class="Normal">System.Windows.Forms.TextBox</li>
+      <li class="Normal">System.Windows.Forms.CheckBox</li>
+      <li class="Normal">System.Windows.Forms.ComboBox</li>
+      <li class="Normal">System.Windows.Forms.Button</li>
+      <li class="Normal">System.Windows.Forms.OpenFileDialog</li>
+      <li class="Normal">System.Windows.Forms.SaveFileDialog</li>
+      <li class="Normal">System.Drawing.Font</li>
+    </ul>
+  </li>
+  <li class="Normal">System.Xml is used to save and load synthesizer
+description files. FMsynth contains examples of the use of the
+following classes:
+    <ul type="circle">
+      <li class="Normal">System.Xml.XmlTextWriter</li>
+      <li class="Normal">System.Xml.XmlDocument</li>
+    </ul>
+  </li>
+</ul>
+<h1><a name="HowToUse">How To Use FMsynth</a></h1>
+<img src="fmsynth.png">
+<p class="Body"> Using FMsynth, you can define a frequency modulation
+synthesizer by combining any number of carrier and modulator wave
+sources together. You can then listen to your synthesizer by specifying
+a test frequency and clicking "Play", or by clicking a note on the
+piano keyboard. You can load and save synthesizers using XML files, by
+clicking on the "Load Synth" or "Save Synth" buttons. </p>
+<p class="Body"> A synthesizer is made up of carrier and modulator wave
+sources. A synthesizer can have any number of carriers, and each
+carrier can have any number of modulators, and each modulator can have
+any number of modulators. Modulators affect the frequency of the wave
+they are modulating - by adding modulators to wave sources you can
+create very interesting sounds! </p>
+<p class="Body"> Each wave source has a type which is "sine", "square",
+or "sawtooth" - these are the three wave types FMsynth knows how to
+generate. You can see the differences between these by playing a single
+carrier source set to one of these types, and observing the drawing of
+the waveform. Each wave source also has either an absolute frequency or
+a ratio. A ratio setting causes the wave source to change its frequency
+based on the base frequency selected. Ratios allow you to create
+synthesizers that will play different notes when different keys on the
+piano keyboard are clicked. Each waveform also has an amplitude, which
+affects the volume of a carrier with respect to the other carriers, or
+the magnitude of the effect of a modulator. </p>
+<p class="Body"> There are a number of sample synthesizers provided in
+the "synths\" folder. Some of these samples are musical in nature,
+while others use very low frequency modulators to create sound effects.<br>
+</p>
+<p class="Body">To run the synthesizer, simply issue the following
+command from the FMsynth folder:<br>
+&nbsp;&nbsp;&nbsp; <big><span style="font-weight: bold;"><small>ipy.exe
+fmsynth.py</small><br>
+</span></big> </p>
+<h1><a name="Design">Design and Implementation</a></h1>
+<p class="Body"> The source code for FMsynth is split into two Python
+source files. </p>
+<ul type="disc">
+  <li class="Normal"> fmsynth.py contains the code to create the user
+interface and handle user interface events. </li>
+  <li class="Normal"> fmsynthlib.py contains code for the BufferPlayer
+and WaveSource objects, which generate all of the sound data and
+interact with DirectSound. </li>
+</ul>
+<h1><a name="UserInterface">User Interface</a></h1>
+<p class="Body"> The user interface code is located in fmsynth.py. Some
+of the more interesting methods are described below. </p>
+<ul type="disc">
+  <li class="Normal"> createUI() is run when the program is launched,
+and sets up all of the user interface elements. This method sets
+coordinates, text, and other properties for each control, adds event
+handlers to the necessary controls, and adds each control to the form. </li>
+  <li class="Normal"> pianoClick() is the event handler for clicks on
+the piano picturebox. It uses findPianoNote() to determine which piano
+key was pressed, and then uses noteToFreq to convert this note number
+into a sound frequency. It then utilizes play() to begin playing a
+sound buffer at that frequency. </li>
+  <li class="Normal"> load() and save() are the event handlers for
+clicks on the "Load Synth" and "Save Synth" buttons, and present
+OpenFileDialog and SaveFileDialog objects to the user. If the user
+chooses a file, the BufferPlayer is used to either load or save an XML
+file describing the current synth. After a file is loaded, load() uses
+buildTree() to populate the TreeView control with WaveSource nodes. </li>
+  <li class="Normal"> buildTree() is a recursive method used to add
+nodes to the TreeView control after a synth is loaded. It traverses the
+BufferPlayer's tree of WaveSource objects, creating a node for each
+WaveSource and setting that node's Tag property to the WaveSource
+object. </li>
+  <li class="Normal"> stop() and stopall() are the event handlers for
+the "Stop" and "Stop All" buttons, and stop buffers that the
+BufferPlayer is currently playing. </li>
+  <li class="Normal"> play() is the event handler for the "Play"
+button, and starts a buffer playing at the current base frequency. </li>
+  <li class="Normal"> paint() is the event handler for the form's Paint
+event, and draws a waveform image of the current sound on the form. The
+data for this image is generated by the BufferPlayer as it generates
+the actual sound data, and is saved as BufferPlayer.drawdata. </li>
+  <li class="Normal"> addCarrier() and addModulator() are the event
+handlers for the "Add Carrier" and "Add Modulator" buttons, and add new
+nodes to the TreeView control and new WaveSource objects to the
+BufferPlayer. </li>
+  <li class="Normal"> removeNode() is the event handler for the "Remove
+Source" button. It removes a node and all of its children from the
+TreeView control, and removes the associated WaveSource and all of its
+modulators. </li>
+</ul>
+<p class="Body">There are also several methods which are event handlers
+for when user interface controls are changed, which are fairly
+self-explanatory.</p>
+<h1><a name="BufferPlayer">The BufferPlayer Object</a></h1>
+<p class="Body"> The BufferPlayer class is defined in fmsynthlib.py,
+and is responsible for managing DirectSound buffers as well as mixing
+all of the carrier signals of a synthesizer together. It also reads and
+writes XML files which contain synthesizer definitions. </p>
+<p class="Body"> The addBuffer() method creates a new DirectSound
+buffer to store sound data at the provided base frequency. It creates a
+DirectSound.WaveFormat object which is initialized to describe
+1-channel, 16-bit, 44100 Hz PCM audio. It then creates a
+DirectSound.BufferDescription object, and sets the BufferBytes property
+to the desired buffer size. findGCDFreq() is used to calculate the
+smallest buffer size which will still be long enough to contain an
+entire cycle of audio for this particular synthesizer. Finally, a
+DirectSound.SecondayBuffer object is created, filled with audio data by
+genWaveSources(), and added to the bufs dictionary. </p>
+<p class="Body"> The genWaveSources() method generates audio data from
+each carrier wave source, normalizes and mixes them together, and then
+writes the audio data into the SecondaryBuffer. This method also fills
+the drawdata array which is later used to draw the audio data on
+screen. The audio data is mixed in two passes. In the first pass, each
+audio sample is summed together, and the maximum sample is found. In
+the second pass, the audio data is normalized using the maximum value
+found before, and is converted from floating point numbers to unsigned
+integers in the appropriate range for the DirectSound buffer. The final
+audio data is then written to the buffer using SecondaryBuffer.Write().
+</p>
+<p class="Body"> readXML() creates an XmlDocument object which is used
+to load the synthesizer XML file. FMsynth iterates through the child
+nodes of the BufferPlayer node. As it encounters WaveSource nodes, it
+creates new WaveSource objects and calls readXML() on these objects,
+having each WaveSource read its own properties from the XmlDocument.
+writeXML() works similarly, first writing the root BufferPlayer node
+and then having each WaveSource write itself to the XML file using an
+XmlTextWriter object. </p>
+<h1><a name="WaveSource">The WaveSource Object</a></h1>
+<p class="Body"> The WaveSource class is defined in fmsynthlib.py and
+is responsible for storing the parameters for each wave source as well
+as generating audio data. It also provides methods for reading and
+writing wave sources as XML data. The WaveSource class is a base class
+which is inherited by SineSource, SquareSource, and SawSource, which
+implement algorithms for generating the different wave source types. </p>
+<p class="Body"> Each WaveSource has a list of modulators, where each
+modulator is also a WaveSource. prepModData() generates the audio data
+for each modulation source, while addModData() combines and returns the
+modulation data for a given sample. </p>
+<p class="Body"> Each child class of WaveSource implements the
+genData() method, which generates the audio data. This method
+calculates the number of samples needed for a complete cycle, and then
+generates this many samples of data. It then uses fillData() to repeat
+that data for the full length of the buffer. </p>
+</body>
+</html>

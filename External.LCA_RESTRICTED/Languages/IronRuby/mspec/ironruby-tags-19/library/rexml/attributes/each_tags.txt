@@ -1,2 +1,0 @@
-fails:REXML::Attributes#each iterates over the attributes yielding expanded-name/value
-fails:"REXML::Attributes#each iterates over the attributes yielding expanded-name/value"

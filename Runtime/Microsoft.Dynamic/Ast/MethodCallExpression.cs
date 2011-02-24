@@ -216,7 +216,7 @@ namespace Microsoft.Scripting.Ast {
 
         private static Expression CreateDefaultValueExpression(ParameterInfo parameter) {
             if (parameter.HasDefaultValue()) {
-                return AstUtils.Constant(parameter.DefaultValue, parameter.ParameterType);
+                return AstUtils.Constant(parameter.GetDefaultValue(), parameter.ParameterType);
             } else {
                 throw new NotSupportedException("missing parameter value not supported");
             }

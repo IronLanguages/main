@@ -146,9 +146,9 @@ namespace IronRuby.Compiler {
                 _sourceUnit = sourceUnit;
                 _tokenizer.Initialize(null, reader, sourceUnit, options.InitialLocation);
 
-                // Default encoding when hosted (ignore KCODE, we are reading from Unicode buffer):
+                // Default encoding when hosted:
                 _tokenizer.Encoding = (reader.Encoding != null) ? RubyEncoding.GetRubyEncoding(reader.Encoding) : RubyEncoding.UTF8;
-                _tokenizer.AllowNonAsciiIdentifiers = _tokenizer.Encoding != RubyEncoding.Binary;
+                _tokenizer.AllowNonAsciiIdentifiers = _tokenizer.Encoding != RubyEncoding.Ascii;
                 
                 try {
                     Parse();
@@ -632,7 +632,11 @@ namespace IronRuby.Compiler {
         }
 
         public static StringLiteral/*!*/ MakeStringLiteral(TokenValue token, SourceSpan location) {
-            return new StringLiteral(token.StringContent, location);
+            return new StringLiteral(token.StringContent, token.Encoding, location);
+        }
+
+        public SymbolLiteral/*!*/ MakeSymbolLiteral(string/*!*/ symbol, SourceSpan location) {
+            return new SymbolLiteral(symbol, symbol.IsAscii() ? RubyEncoding.Ascii : Encoding, location);
         }
 
         private StringConstructor/*!*/ MakeSymbolConstructor(List<Expression>/*!*/ content, SourceSpan location) {

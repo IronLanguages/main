@@ -327,7 +327,7 @@ def test_getrefcount():
 def test_version():
     import re
     #E.g., 2.5.0 (IronPython 2.0 Alpha (2.0.0.800) on .NET 2.0.50727.1433)
-    regex = "^\d\.\d\.\d \(IronPython \d\.\d(\.\d)? ((Alpha \d+ )|(Beta \d+ )|())((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on \.NET \d(\.\d{1,5}){3}\)$"
+    regex = "^\d\.\d\.\d \(IronPython \d\.\d(\.\d)? ((Alpha \d+ )|(Beta \d+ )|(RC \d+ )|())((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on \.NET \d(\.\d{1,5}){3}\)$"
     Assert(re.match(regex, sys.version) != None)
 
 def test_winver():
@@ -422,6 +422,73 @@ f()
              ['call', None, 'line', None, 'line', None, 'line', None, 'line', 
               None, 'line', None, 'call', None, 'line', None, 'return', None, 
               'return', None])
+
+def test_cp30129():
+    frames = []
+    def f(*args):
+        if args[1] == 'call':
+            frames.append(args[0])
+            if len(frames) == 3:
+                res.append('setting' + str(frames[1].f_lineno))
+                frames[1].f_lineno = 447
+        return f
+    
+    
+    import sys
+    sys.settrace(f)
+    
+    res = []
+    def a():
+        res.append('foo')
+        res.append('bar')
+        res.append('baz')
+    
+    def b():
+        a()
+        res.append('x')
+        res.append('y')
+        res.append('z')
+    
+    def c():
+        b()
+        res.append('hello')
+        res.append('goodbye')
+        res.append('see ya')
+    
+    
+    c()
+    
+    AreEqual(res, ['setting447', 'foo', 'bar', 'baz', 'x', 'y', 'z', 'hello', 'goodbye', 'see ya'])
+    
+    sys.settrace(None)
+    
+
+def test_cp30130():
+    def f(frame, event, arg):
+        if event == 'exception':
+                global ex
+                ex = arg
+        return f
+    
+    sys.settrace(f)
+    
+    def g():
+        raise Exception()
+    
+    try:
+        g()
+    except:
+        pass
+    
+    exc_type = ex[0]
+    exc_value = ex[1]
+    tb_value = ex[2]
+    
+    print tb_value
+    import traceback
+    Assert(''.join(traceback.format_exception(exc_type, exc_value, tb_value)).find('line') != -1)
+    
+    sys.settrace(None)
 
 #--MAIN------------------------------------------------------------------------    
 

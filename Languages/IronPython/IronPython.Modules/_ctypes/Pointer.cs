@@ -28,7 +28,9 @@ namespace IronPython.Modules {
     public static partial class CTypes {
         [PythonType("_Pointer")]
         public abstract class Pointer : CData {
-            private CData _object;
+#pragma warning disable 414 // unused field - we need to keep the object alive
+            private readonly CData _object;
+#pragma warning restore 414
 
             public Pointer() {
                 _memHolder = new MemoryHolder(IntPtr.Size);

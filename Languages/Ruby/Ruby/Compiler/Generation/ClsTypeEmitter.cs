@@ -341,8 +341,8 @@ namespace IronRuby.Compiler.Generation {
                 );
             }
 
-            if ((from.Attributes & ParameterAttributes.HasDefault) != 0) {
-                to.SetConstant(from.DefaultValue);
+            if (from.HasDefaultValue()) {
+                to.SetConstant(from.GetDefaultValue());
             }
         }
 

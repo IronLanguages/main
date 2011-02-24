@@ -27,9 +27,11 @@ namespace IronRuby.Tests {
                 MutableString_Factories,
                 MutableString_GetHashCode,
                 MutableString_IsAscii,
+                MutableString_Surrogates1,
+                MutableString_Surrogates2,
                 MutableString_Length,
-                MutableString_CompareTo,
-                MutableString_Equals,
+                MutableString_CompareTo1,
+                MutableString_CompareTo2,
                 MutableString_Append_Byte,
                 MutableString_Append_Char,
                 MutableString_Append,
@@ -49,12 +51,14 @@ namespace IronRuby.Tests {
                 MutableString_Characters1,
                 MutableString_Bytes1,
                 MutableString_ChangeEncoding1,
+                MutableString_ValidEncoding1,
                 RubyArray_Ctors,
                 RubyArray_Basic,
                 RubyArray_Add,
                 RubyArray_Remove,
                 RubyArray_Insert,
                 RubyArray_Misc,
+                RubyArray_Indexer,
      
                 Scenario_ParserLogging,
                 Parser1,
@@ -109,6 +113,7 @@ namespace IronRuby.Tests {
                 InterpreterLoops2,
                 InterpreterLoops3,
                 InterpreterLoops4,
+                InterpreterValueTypes1,
 
                 SimpleCall1,
                 SimpleCall2, 
@@ -130,6 +135,7 @@ namespace IronRuby.Tests {
                 NumericLiterals1,
                 NumericOps1,
                 UnicodeEscapes1,
+                CharacterToken1,
 
                 Encoding1,
                 Encoding2,
@@ -174,8 +180,6 @@ namespace IronRuby.Tests {
                 RegexEscape1,
                 RegexCondition1,
                 RegexCondition2,
-                RegexEncoding1,
-                RegexEncoding2,
                 
                 Scenario_RubyScopeParsing,
                 Scenario_RubyScopes1,
@@ -296,6 +300,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyProcYieldArgs1,
                 Scenario_RubyProcYieldArgs2,
                 Scenario_RubyProcYieldArgs3,
+                Scenario_RubyProcYieldArgs4,
                 Scenario_RubyProcCallArgs1,
                 Scenario_RubyProcCallArgs2A,
                 Scenario_RubyProcCallArgs2B,
@@ -307,6 +312,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyBlockArgs5,
                 Scenario_RubyBlockArgs6,
                 Proc_RhsAndBlockArguments1,
+                Block_ProcParams1,
 
                 RubyProcs1,
                 RubyProcs2,
@@ -373,6 +379,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyArrays4,
                 Scenario_RubyArrays5,
                 Scenario_RubyArrays6,
+                IListOps_EnumerateRecursively1,
 
                 Scenario_RubyHashes1A,
                 Scenario_RubyHashes1B,
@@ -430,6 +437,7 @@ namespace IronRuby.Tests {
                 RubyHosting5,
                 RubyHosting_Scopes1,
                 RubyHosting_Scopes2,
+                RubyHosting_Scopes3,
                 CrossRuntime1,
                 CrossRuntime2,
 
@@ -541,6 +549,9 @@ namespace IronRuby.Tests {
                 ClrToString1,
                 ClrHashEquals4,
                 ClrTypeVariance1,
+                // TODO: fails with /noadaptive
+                // ClrValueTypes1,
+                ClrValueTypes2,
                 HostingDefaultOptions1,
                 Interactive1,
                 Interactive2,
@@ -695,6 +706,8 @@ namespace IronRuby.Tests {
                 ProtocolCaching3,
                 ProtocolCaching4,
                 MethodAliasExpression,
+                BasicObject1,
+                BasicObject2,
                 ClassDuplication1,
                 ClassDuplication2,
                 ClassDuplication3,
@@ -780,6 +793,7 @@ namespace IronRuby.Tests {
                 Dlr_Indexable,
                 Dlr_Number,
                 Dlr_Comparable,
+                Dlr_Equatable,
                 Dlr_RubyObjects,
                 Dlr_Methods,
                 Dlr_Visibility,
@@ -792,6 +806,8 @@ namespace IronRuby.Tests {
 #if !CLR2
                 ClrBigIntegerV4,
 #endif
+                BigInteger1,
+                GcdLcm1,
             };
         }
     }

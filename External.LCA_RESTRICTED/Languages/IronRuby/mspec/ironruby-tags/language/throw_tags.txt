@@ -1,2 +1,0 @@
-fails:The throw keyword only allows symbols and strings as its argument
-fails:The throw keyword raises a ThreadError if used to exit a thread

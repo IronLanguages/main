@@ -520,12 +520,14 @@ namespace IronPython.Runtime {
             }
 
             if (forceDot) {
-                FixupAltFormDot();
+                FixupAltFormDot(v);
             }
         }
 
-        private void FixupAltFormDot() {
-            _buf.Append('.');
+        private void FixupAltFormDot(double v) {
+            if (!double.IsInfinity(v) && !double.IsNaN(v)) {
+                _buf.Append('.');
+            }
             if (_opts.FieldWidth != 0) {
                 // try and remove the extra character we're adding.
                 for (int i = 0; i < _buf.Length; i++) {
@@ -806,15 +808,23 @@ namespace IronPython.Runtime {
             if (val < 0) val *= -1;
 
             // convert value to octal
-            StringBuilder str = new StringBuilder();
-            if (val == 0) str.Append('0');
-            while (val != 0) {
-                int digit = (int)(val % radix);
-                if (digit < 10) str.Append((char)((digit) + '0'));
-                else if (Char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
-                else str.Append((char)((digit - 10) + 'A'));
 
-                val /= radix;
+            StringBuilder str = new StringBuilder();
+            // use .NETs faster conversion if we can
+            if (radix == 16) {
+                AppendNumberReversed(str, Char.IsLower(format) ? val.ToString("x") : val.ToString("X"));
+            } else if (radix == 10) {
+                AppendNumberReversed(str, val.ToString());
+            } else {
+                if (val == 0) str.Append('0');
+                while (val != 0) {
+                    int digit = (int)(val % radix);
+                    if (digit < 10) str.Append((char)((digit) + '0'));
+                    else if (Char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
+                    else str.Append((char)((digit - 10) + 'A'));
+
+                    val /= radix;
+                }
             }
 
             // pad out for additional precision
@@ -865,6 +875,16 @@ namespace IronPython.Runtime {
             // append the final value
             for (int i = str.Length - 1; i >= 0; i--) {
                 _buf.Append(str[i]);
+            }
+        }
+
+        private static void AppendNumberReversed(StringBuilder str, string res) {
+            int start = 0;
+            while (start < (res.Length - 1) && res[start] == '0') {
+                start++;
+            }
+            for (int i = res.Length - 1; i >= start; i--) {
+                str.Append(res[i]);
             }
         }
 

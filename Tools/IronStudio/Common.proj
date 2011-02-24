@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\Solutions\Common.proj" />
+  <PropertyGroup>
+    <SolutionDir Condition=" '$(SolutionDir)' == '' ">$(MSBuildThisFileDirectory)..\..\Solutions\</SolutionDir>
+    <DevEnvDir Condition=" '$(DevEnvDir)' == '' ">$(VS100COMNTOOLS)\..\IDE</DevEnvDir>
+    <VSSDK100Install Condition=" '$(VSSDK100Install)' == '' ">C:\Program Files (x86)\Microsoft Visual Studio 2010 SDK</VSSDK100Install>
+  </PropertyGroup>
+</Project>

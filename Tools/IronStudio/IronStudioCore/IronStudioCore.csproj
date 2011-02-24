@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{843716AE-38B3-4723-963C-950DD06BC4B8}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft.IronStudio.Core</RootNamespace>
+    <AssemblyName>IronStudio.Core</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
+    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- TODO: Remove this reference. We shouldn't depend on IronPython -->
+    <Reference Include="Microsoft.VisualStudio.ComponentModelHost, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(DevEnvDir)\PublicAssemblies\Microsoft.VisualStudio.ComponentModelHost.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Language.Intellisense.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Language.StandardClassification, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Language.StandardClassification.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Text.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.UI, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Text.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\Microsoft Visual Studio 2010 SDK\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Text.UI.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Remoting" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.XML" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="IronStudioCore\CoreConstants.cs" />
+    <Compile Include="IronStudioCore\Dlr.cs" />
+    <Compile Include="IronStudioCore\DlrClassifier.cs" />
+    <Compile Include="IronStudioCore\DlrClassifierProvider.cs" />
+    <Compile Include="IronStudioCore\DlrPredefinedClassificationTypeNames.cs" />
+    <Compile Include="IronStudioCore\IDlrClassifier.cs" />
+    <Compile Include="IronStudioCore\IDlrClassifierProvider.cs" />
+    <Compile Include="IronStudioCore\IMixedBuffer.cs" />
+    <Compile Include="IronStudioCore\Intellisense\AnalysisPriority.cs" />
+    <Compile Include="IronStudioCore\Intellisense\AnalysisQueue.cs" />
+    <Compile Include="IronStudioCore\Intellisense\IAnalyzer.cs" />
+    <Compile Include="IronStudioCore\Intellisense\IParser.cs" />
+    <Compile Include="IronStudioCore\Intellisense\ParseQueue.cs" />
+    <Compile Include="IronStudioCore\Intellisense\XamlAnalysis.cs" />
+    <Compile Include="IronStudioCore\ISnapshotTextContentProvider.cs" />
+    <Compile Include="IronStudioCore\Navigation\IScopeNode.cs" />
+    <Compile Include="IronStudioCore\RemoteEvaluation\AsyncAccess.cs" />
+    <Compile Include="IronStudioCore\RemoteEvaluation\ExecutionQueue.cs" />
+    <Compile Include="IronStudioCore\RemoteEvaluation\ExecutionQueueItem.cs" />
+    <Compile Include="IronStudioCore\RemoteEvaluation\RemoteProxy.cs" />
+    <Compile Include="IronStudioCore\RemoteEvaluation\RemoteScriptFactory.cs" />
+    <Compile Include="IronStudioCore\Repl\Reader.cs" />
+    <Compile Include="IronStudioCore\Repl\ReplIntellisenseMode.cs" />
+    <Compile Include="IronStudioCore\Repl\ReplPrompt.cs" />
+    <Compile Include="IronStudioCore\SnapshotMultipleSpanTextContentProvider.cs" />
+    <Compile Include="IronStudioCore\SnapshotMultpleSpanSourceCodeReader.cs" />
+    <Compile Include="IronStudioCore\SnapshotSpanSourceCodeReader.cs" />
+    <Compile Include="IronStudioCore\SnapshotSpanTextContentProvider.cs" />
+    <Compile Include="IronStudioCore\SnapshotTextContentProvider.cs" />
+    <Compile Include="IronStudioCore\TokenCache.cs" />
+    <Compile Include="IronStudioCore\CoreUtils.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="IronStudioCore\Repl\AutoIndent.cs" />
+    <Compile Include="IronStudioCore\Repl\OutputStream.cs" />
+    <Compile Include="IronStudioCore\Repl\Commands\CancelExecutionCommand.cs" />
+    <Compile Include="IronStudioCore\Repl\Commands\ClearScreenReplCommand.cs" />
+    <Compile Include="IronStudioCore\Repl\Commands\EchoReplCommand.cs" />
+    <Compile Include="IronStudioCore\Repl\Commands\LoadReplCommand.cs" />
+    <Compile Include="IronStudioCore\Repl\Commands\ResetReplCommand.cs" />
+    <Compile Include="IronStudioCore\Repl\Commands\WaitReplCommand.cs" />
+    <Compile Include="IronStudioCore\Repl\DlrEvaluator.cs" />
+    <Compile Include="IronStudioCore\Repl\ReplEvaluator.cs" />
+    <Compile Include="IronStudioCore\Repl\History.cs" />
+    <Compile Include="IronStudioCore\Repl\IReplEvaluator.cs" />
+    <Compile Include="IronStudioCore\Repl\IMultipleScopeEvaluator.cs" />
+    <Compile Include="IronStudioCore\Repl\IReplCommand.cs" />
+    <Compile Include="IronStudioCore\Repl\IReplWindow.cs" />
+    <Compile Include="IronStudioCore\Repl\IReplWindowCommands.cs" />
+    <Compile Include="IronStudioCore\Repl\OutputBuffer.cs" />
+    <Compile Include="IronStudioCore\Repl\ReplSpan.cs" />
+    <Compile Include="IronStudioCore\Repl\ReplWindow.cs" />
+    <Compile Include="IronStudioCore\Repl\ResizingAdorner.cs" />
+    <Compile Include="IronStudioCore\Repl\Writer.cs" />
+    <Compile Include="Scripting\CollectingErrorSink.cs" />
+    <Compile Include="Scripting\ErrorResult.cs" />
+    <Compile Include="Scripting\FileTextContentProvider.cs" />
+    <Compile Include="Scripting\StringTextContentProvider.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\CancelEvaluation.gif" />
+    <EmbeddedResource Include="Resources\ResetSession.gif" />
+    <EmbeddedResource Include="Resources\clearscr.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Include Id="LibsInclude_Silverlight">
+  <Directory Id="Dir_Silverlight_bin" Name="bin" FileSource="$(var.SilverlightDir)">
+    <Component Id="Comp_SL" DiskId="1" Guid="55992BA3-6E0D-485D-AB7E-A8724612F221">
+      <File Name="Microsoft.Scripting.dll" />
+      <File Name="Microsoft.Dynamic.dll" />
+      <File Name="Microsoft.Scripting.Silverlight.dll" />
+      <File Name="Chiron.exe" />
+      <File Name="Chiron.exe.Config" />
+      <File Name="IronPython.dll" />
+      <File Name="IronPython.Modules.dll" />
+      <File Name="System.Numerics.dll" />
+    </Component>
+  </Directory>
+  <Directory Id="Dir_SLScript" Name="script" FileSource="$(var.SilverlightScriptDir)">
+    <Component Id="Comp_SLScript" DiskId="1" Guid="398FEF2E-1071-4B0F-BB4F-69ED43AC8F58">
+      <File Name="server" />
+      <File Name="server.bat" />
+      <File Name="sl" />
+      <File Name="sl.bat" />
+    </Component>
+    <Directory Id="Dir_Templates" Name="templates">
+      <Directory Id="Dir_python" Name="python">
+        <Directory Id="Dir_javascripts" Name="js">
+          <Component Id="Comp_templJS" DiskId="1" Guid="5F474E92-61BF-45A8-AB87-FC1BCB48C3B1">
+            <File Name="error.js" />
+          </Component>
+        </Directory>
+        <Directory Id="Dir_pypython" Name="app">
+          <Component Id="Comp_templPy" DiskId="1" Guid="AE4A34D0-3CBE-47F2-A71A-5DCC6E3191E7">
+            <File Name="app.py" />
+            <File Name="app.xaml" />
+          </Component>
+        </Directory>
+        <Directory Id="Dir_stylesheets" Name="css">
+          <Component Id="Comp_templSS" DiskId="1" Guid="01AEE5EB-47B5-4877-9096-5C3AB7C3238C">
+            <File Name="screen.css" />
+          </Component>
+        </Directory>
+        <Component Id="Comp_templHome" DiskId="1" Guid="9B92D16E-2CD0-4B10-A800-C51483972E75">
+          <File Name="index.html" />
+        </Component>
+      </Directory>
+    </Directory>
+  </Directory>
+</Include>

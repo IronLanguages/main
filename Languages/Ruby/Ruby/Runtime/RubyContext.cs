@@ -41,6 +41,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace IronRuby.Runtime {
     [ReflectionCached]
@@ -53,25 +54,31 @@ namespace IronRuby.Runtime {
 
         // MRI compliance:
         public string/*!*/ MriVersion { 
-            get { return "1.9.1"; } 
+            get { return "1.9.2"; } 
+        }
+
+        public string/*!*/ StandardLibraryVersion {
+            get { return "1.9.1"; }
         }
 
         public string/*!*/ MriReleaseDate {
-            get { return "2010-01-10"; }
+            get { return "2010-08-18"; }
         }
 
         public int MriPatchLevel {
-            get { return 378; }
+            get { return 0; }
         }
 
+        public const string BinDirEnvironmentVariable = "IRONRUBY_11";
+
         // IronRuby:
-        public const string IronRubyInformationalVersion = "1.1";
+        public const string IronRubyInformationalVersion = "1.1.3";
 #if !SILVERLIGHT
-        public const string/*!*/ IronRubyVersionString = "1.1.0.0";
-        public static readonly Version IronRubyVersion = new Version(1, 1, 0, 0);
+        public const string/*!*/ IronRubyVersionString = "1.1.3.0";
+        public static readonly Version IronRubyVersion = new Version(1, 1, 3, 0);
 #else
-        public const string/*!*/ IronRubyVersionString = "1.1.1300.0";
-        public static readonly Version IronRubyVersion = new Version(1, 1, 1300, 0);
+        public const string/*!*/ IronRubyVersionString = "1.1.1302.0";
+        public static readonly Version IronRubyVersion = new Version(1, 1, 1302, 0);
         
 #endif
         internal const string/*!*/ IronRubyDisplayName = "IronRuby";
@@ -140,7 +147,7 @@ namespace IronRuby.Runtime {
 
         #region Random Number Generator
 
-        private object _randomNumberGeneratorLock = new object();
+        private readonly object _randomNumberGeneratorLock = new object();
         private Random _randomNumberGenerator; // lazy
         private object _randomNumberGeneratorSeed = ScriptingRuntimeHelpers.Int32ToObject(0);
 
@@ -250,6 +257,7 @@ namespace IronRuby.Runtime {
         }
 
         // classes used by runtime (we need to update initialization generator if any of these are added):
+        private RubyClass/*!*/ _basicObjectClass;
         private RubyModule/*!*/ _kernelModule;
         private RubyClass/*!*/ _objectClass;
         private RubyClass/*!*/ _classClass;
@@ -264,6 +272,7 @@ namespace IronRuby.Runtime {
         private Action<RubyModule>/*!*/ _mainSingletonTrait;
 
         // internally set by Initializer:
+        public RubyClass/*!*/ BasicObjectClass { get { return _basicObjectClass; } }
         public RubyModule/*!*/ KernelModule { get { return _kernelModule; } }
         public RubyClass/*!*/ ObjectClass { get { return _objectClass; } }
         public RubyClass/*!*/ ClassClass { get { return _classClass; } set { _classClass = value; } }
@@ -386,8 +395,6 @@ namespace IronRuby.Runtime {
         }
         private EqualityComparer _equalityComparer;
 
-        public object Verbose { get; set; }
-
         public override Version LanguageVersion {
             get { return IronRubyVersion; }
         }
@@ -408,6 +415,20 @@ namespace IronRuby.Runtime {
             get { return _namespaces; }
         }
 
+        public object Verbose { get; set; }
+
+        private RubyEncoding/*!*/ _defaultExternalEncoding;
+
+        public RubyEncoding/*!*/ DefaultExternalEncoding {
+            get { return _defaultExternalEncoding; }
+            set {
+                ContractUtils.RequiresNotNull(value, "value");
+                _defaultExternalEncoding = value;
+            }
+        }
+
+        public RubyEncoding DefaultInternalEncoding { get; set; }
+        
         #endregion
 
         #region Initialization
@@ -432,7 +453,8 @@ namespace IronRuby.Runtime {
             _namespaceCache = new Dictionary<NamespaceTracker, RubyModule>();
             _referenceTypeInstanceData = new WeakTable<object, RubyInstanceData>();
             _valueTypeInstanceData = new Dictionary<object, RubyInstanceData>();
-            _inputProvider = new RubyInputProvider(this, _options.Arguments, _options.ArgumentEncoding);
+            _inputProvider = new RubyInputProvider(this, _options.Arguments, _options.LocaleEncoding);
+            _defaultExternalEncoding = _options.DefaultEncoding ?? _options.LocaleEncoding;
             _globalScope = DomainManager.Globals;
             _loader = new Loader(this);
             _emptyScope = new RubyTopLevelScope(this);            
@@ -445,12 +467,6 @@ namespace IronRuby.Runtime {
             _itemSeparator = null;
             _mainThread = Thread.CurrentThread;
             
-            if (_options.KCode != null) {
-                Utils.Log("Initialized to " + _options.KCode.Name, "KCODE");
-                KCode = _options.KCode;
-            }
-            
-            // uses k-coding:
             if (_options.MainFile != null) {
                 CommandLineProgramPath = EncodePath(_options.MainFile);
             }
@@ -571,6 +587,7 @@ namespace IronRuby.Runtime {
                 obj.SetConstantNoMutateNoLock("RUBY_PATCHLEVEL", MriPatchLevel);
                 obj.SetConstantNoMutateNoLock("RUBY_PLATFORM", platform);
                 obj.SetConstantNoMutateNoLock("RUBY_RELEASE_DATE", releaseDate);
+                obj.SetConstantNoMutateNoLock("RUBY_DESCRIPTION", MutableString.CreateAscii(MakeDescriptionString()));
 
                 obj.SetConstantNoMutateNoLock("VERSION", version);
                 obj.SetConstantNoMutateNoLock("PLATFORM", platform);
@@ -592,6 +609,17 @@ namespace IronRuby.Runtime {
                 // Hash
                 // SCRIPT_LINES__
             }
+        }
+
+        public static string/*!*/ MakeDescriptionString() {
+            return String.Format(CultureInfo.InvariantCulture, "IronRuby {0} on {1}", IronRubyVersion, MakeRuntimeDesriptionString());
+        }
+
+        internal static string MakeRuntimeDesriptionString() {
+            Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
+            return mono != null ?
+                (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
+                : String.Format(CultureInfo.InvariantCulture, ".NET {0}", Environment.Version);
         }
 
         private static MutableString/*!*/ MakePlatformString() {
@@ -626,6 +654,10 @@ namespace IronRuby.Runtime {
         public void RegisterPrimitives(
             Action<RubyModule>/*!*/ mainSingletonTrait,
 
+            Action<RubyModule>/*!*/ basicObjectInstanceTrait,
+            Action<RubyModule>/*!*/ basicObjectClassTrait,
+            Action<RubyModule> basicObjectConstantsInitializer,
+
             Action<RubyModule>/*!*/ kernelInstanceTrait,
             Action<RubyModule>/*!*/ kernelClassTrait,
             Action<RubyModule> kernelConstantsInitializer,
@@ -642,7 +674,7 @@ namespace IronRuby.Runtime {
             Action<RubyModule>/*!*/ classClassTrait,
             Action<RubyModule> classConstantsInitializer) {
 
-            Assert.NotNull(mainSingletonTrait);
+            Assert.NotNull(mainSingletonTrait, basicObjectInstanceTrait, basicObjectClassTrait);
             Assert.NotNull(objectInstanceTrait, kernelInstanceTrait, moduleInstanceTrait, classInstanceTrait);
             Assert.NotNull(objectClassTrait, kernelClassTrait, moduleClassTrait, classClassTrait);
 
@@ -650,15 +682,17 @@ namespace IronRuby.Runtime {
 
             // inheritance hierarchy:
             //
-            //           Class
-            //             ^
-            // Object -> Object'  
-            //   ^         ^
-            // Module -> Module'
-            //   ^         ^
-            // Class  -> Class'
-            //   ^
-            // Object'
+            //                   Class
+            //                     ^
+            // BasicObject -> BasicObject'
+            //      ^              ^
+            //    Object   ->    Object'  
+            //      ^              ^
+            //    Module   ->    Module'
+            //      ^              ^
+            //    Class    ->    Class'
+            //      ^
+            //    Object'
             //
 
             // only Object should expose CLR methods:
@@ -674,30 +708,35 @@ namespace IronRuby.Runtime {
 
             // locks to comply with lock requirements:
             using (ClassHierarchyLocker()) {
+                _basicObjectClass = new RubyClass(this, Symbols.BasicObject, null, null, basicObjectInstanceTrait, basicObjectConstantsInitializer, null, null, null, null, null, false, false, ModuleRestrictions.Builtin & ~ModuleRestrictions.NoOverrides);
                 _kernelModule = new RubyModule(this, Symbols.Kernel, kernelInstanceTrait, kernelConstantsInitializer, null, null, null, ModuleRestrictions.Builtin);
-                _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, objectConstantsInitializer, null, null, new[] { _kernelModule }, objectTracker, null, false, false, ModuleRestrictions.Builtin & ~ModuleRestrictions.NoOverrides);
+                _objectClass = new RubyClass(this, Symbols.Object, objectTracker.Type, null, objectInstanceTrait, objectConstantsInitializer, null, _basicObjectClass, new[] { _kernelModule }, objectTracker, null, false, false, ModuleRestrictions.Builtin & ~ModuleRestrictions.NoOverrides);
                 _moduleClass = new RubyClass(this, Symbols.Module, typeof(RubyModule), null, moduleInstanceTrait, moduleConstantsInitializer, moduleFactories, _objectClass, null, null, null, false, false, ModuleRestrictions.Builtin);
                 _classClass = new RubyClass(this, Symbols.Class, typeof(RubyClass), null, classInstanceTrait, classConstantsInitializer, classFactories, _moduleClass, null, null, null, false, false, ModuleRestrictions.Builtin);
-                
-                _objectClass.InitializeImmediateClass(_objectClass.CreateSingletonClass(_classClass, objectClassTrait));
+
+                _basicObjectClass.InitializeImmediateClass(_basicObjectClass.CreateSingletonClass(_classClass, basicObjectClassTrait));
+                _objectClass.InitializeImmediateClass(_objectClass.CreateSingletonClass(_basicObjectClass.ImmediateClass, objectClassTrait));
                 _moduleClass.InitializeImmediateClass(_moduleClass.CreateSingletonClass(_objectClass.ImmediateClass, moduleClassTrait));
                 _classClass.InitializeImmediateClass(_classClass.CreateSingletonClass(_moduleClass.ImmediateClass, classClassTrait));
 
                 _moduleClass.InitializeDummySingleton();
                 _classClass.InitializeDummySingleton();
 
+                _basicObjectClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
                 _objectClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
                 _moduleClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
                 _classClass.ImmediateClass.InitializeImmediateClass(_classClass.GetDummySingletonClass());
                 
                 _kernelModule.InitializeImmediateClass(_moduleClass, kernelClassTrait);
-                
+
+                _objectClass.SetConstantNoMutateNoLock(_basicObjectClass.Name, _basicObjectClass);
                 _objectClass.SetConstantNoMutateNoLock(_moduleClass.Name, _moduleClass);
                 _objectClass.SetConstantNoMutateNoLock(_classClass.Name, _classClass);
                 _objectClass.SetConstantNoMutateNoLock(_objectClass.Name, _objectClass);
                 _objectClass.SetConstantNoMutateNoLock(_kernelModule.Name, _kernelModule);
             }
 
+            AddModuleToCacheNoLock(typeof(BasicObject), _basicObjectClass);
             AddModuleToCacheNoLock(typeof(Kernel), _kernelModule);
             AddModuleToCacheNoLock(objectTracker.Type, _objectClass);
             AddModuleToCacheNoLock(typeof(RubyObject), _objectClass);
@@ -1763,6 +1802,14 @@ namespace IronRuby.Runtime {
             }
         }
 
+        public IRubyObjectState/*!*/ GetObjectState(object/*!*/ obj) {
+            return obj as IRubyObjectState ?? GetInstanceData(obj);
+        }
+
+        public IRubyObjectState TryGetObjectState(object/*!*/ obj) {
+            return obj as IRubyObjectState ?? TryGetInstanceData(obj);
+        }
+
         public bool IsObjectFrozen(object obj) {
             RubyInstanceData data;
             return IsObjectFrozen(obj, out data);
@@ -1776,41 +1823,24 @@ namespace IronRuby.Runtime {
             }
 
             data = TryGetInstanceData(obj);
-            return data != null ? data.Frozen : false;
+            return data != null ? data.IsFrozen : false;
         }
 
         public bool IsObjectTainted(object obj) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                return state.IsTainted;
-            }
-
-            RubyInstanceData data = TryGetInstanceData(obj);
-            return data != null ? data.Tainted : false;
+            var state = TryGetObjectState(obj);
+            return state != null ? state.IsTainted : false;
         }
 
         public bool IsObjectUntrusted(object obj) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                return state.IsUntrusted;
-            }
-
-            RubyInstanceData data = TryGetInstanceData(obj);
-            return data != null ? data.Untrusted : false;
+            var state = TryGetObjectState(obj);
+            return state != null ? state.IsUntrusted : false;
         }
 
         public void GetObjectTrust(object obj, out bool tainted, out bool untrusted) {
-            var state = obj as IRubyObjectState;
+            var state = TryGetObjectState(obj);
             if (state != null) {
                 tainted = state.IsTainted;
                 untrusted = state.IsUntrusted;
-                return;
-            }
-
-            RubyInstanceData data = TryGetInstanceData(obj);
-            if (data != null) {
-                tainted = data.Tainted;
-                untrusted = data.Untrusted;
             } else {
                 tainted = false;
                 untrusted = false; // TODO: default?
@@ -1818,42 +1848,36 @@ namespace IronRuby.Runtime {
         }
 
         public void FreezeObject(object obj) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                state.Freeze();
-            } else {
-                GetInstanceData(obj).Freeze();
-            }
+            GetObjectState(obj).Freeze();
         }
 
         public void SetObjectTaint(object obj, bool taint) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                state.IsTainted = taint;
-            } else {
-                GetInstanceData(obj).Tainted = taint;
-            }
+            GetObjectState(obj).IsTainted = taint;
         }
 
         public void SetObjectTrustiness(object obj, bool untrusted) {
-            var state = obj as IRubyObjectState;
-            if (state != null) {
-                state.IsUntrusted = untrusted;
-            } else {
-                GetInstanceData(obj).Untrusted = untrusted;
-            }
+            GetObjectState(obj).IsUntrusted = untrusted;
         }
 
-        public T TaintObjectBy<T>(T obj, object taintSource) {
-            if (IsObjectTainted(taintSource)) {
-                SetObjectTaint(obj, true);
+        public object TaintObjectBy(object obj, object source) {
+            var sourceState = TryGetObjectState(source);
+            if (sourceState != null) {
+                bool tainted = sourceState.IsTainted;
+                bool untrusted = sourceState.IsUntrusted;
+                if (tainted || untrusted) {
+                    var state = GetObjectState(obj);
+                    state.IsTainted |= tainted;
+                    state.IsUntrusted |= untrusted;
+                }
             }
+
             return obj;
         }
 
-        public T FreezeObjectBy<T>(T obj, object frozenStateSource) {
-            if (IsObjectFrozen(frozenStateSource)) {
-                FreezeObject(obj);
+        public object FreezeObjectBy(object obj, object source) {
+            var sourceState = TryGetObjectState(source);
+            if (sourceState != null && sourceState.IsFrozen) {
+                GetObjectState(obj).Freeze();
             }
             return obj;
         }
@@ -2005,11 +2029,6 @@ namespace IronRuby.Runtime {
             RubyExceptionData.GetInstance(e).Backtrace = array;
             return array;
         }
-
-        /// <summary>
-        /// $KCODE
-        /// </summary>
-        public RubyEncoding KCode { get; internal set; }
         
         /// <summary>
         /// $SAFE
@@ -2038,35 +2057,35 @@ namespace IronRuby.Runtime {
         private object SymbolsLock { get { return _symbols; } }
 
         public RubySymbol/*!*/ CreateSymbol(MutableString/*!*/ str) {
-            return CreateSymbolInternal(str, true);
+            return CreateSymbol(str, true);
         }
 
         public RubySymbol/*!*/ CreateAsciiSymbol(string/*!*/ str) {
             // TODO: do not allocate the MutableString if not needed?
-            return CreateSymbolInternal(MutableString.CreateAscii(str), false);
+            return CreateSymbol(MutableString.CreateAscii(str), false);
         }
 
         public RubySymbol/*!*/ CreateSymbol(string/*!*/ str, RubyEncoding/*!*/ encoding) {
             // TODO: do not allocate the MutableString if not needed?
-            return CreateSymbolInternal(MutableString.CreateMutable(str, encoding), false);
+            return CreateSymbol(MutableString.CreateMutable(str, encoding), false);
         }
 
         public RubySymbol/*!*/ CreateSymbol(byte[]/*!*/ bytes, RubyEncoding/*!*/ encoding) {
             var mstr = MutableString.CreateBinary(bytes, encoding);
             // TODO: do not allocate the MutableString if not needed?
-            return CreateSymbolInternal(mstr, false);
+            return CreateSymbol(mstr, false);
         }
 
-        internal RubySymbol/*!*/ CreateSymbolInternal(MutableString/*!*/ mstr) {
-            return CreateSymbolInternal(mstr, false);
-        }
-
-        private RubySymbol/*!*/ CreateSymbolInternal(MutableString/*!*/ mstr, bool clone) {
+        /// <summary>
+        /// Creates a symbol that holds on a given string or its copy, if <c>clone</c> is true.
+        /// Freezes the string the symbol holds on.
+        /// </summary>
+        public RubySymbol/*!*/ CreateSymbol(MutableString/*!*/ str, bool clone) {
             RubySymbol result;
             lock (SymbolsLock) {
-                if (!_symbols.TryGetValue(mstr, out result)) {
-                    result = new RubySymbol((clone ? mstr.Clone() : mstr).Freeze(), _symbols.Count + RubySymbol.MinId, _runtimeId);
-                    _symbols.Add(mstr, result);
+                if (!_symbols.TryGetValue(str, out result)) {
+                    result = new RubySymbol((clone ? str.Clone() : str).Freeze(), _symbols.Count + RubySymbol.MinId, _runtimeId);
+                    _symbols.Add(str, result);
                 }
             }
             return result;
@@ -2136,7 +2155,8 @@ namespace IronRuby.Runtime {
         /// </para>
         /// </summary>
         public RubyEncoding/*!*/ GetIdentifierEncoding() {
-            return _options.Compatibility < RubyCompatibility.Ruby19 ? (KCode ?? RubyEncoding.KCodeUTF8) : RubyEncoding.UTF8;
+            // TODO:
+            return RubyEncoding.UTF8;
         }
 
         public RubySymbol/*!*/ EncodeIdentifier(string/*!*/ identifier) {
@@ -2147,11 +2167,8 @@ namespace IronRuby.Runtime {
         /// Returns an identifier encoded as MutableStrings (Ruby 1.8) or Symbols (Ruby 1.9).
         /// </summary>
         public object/*!*/ StringifyIdentifier(string/*!*/ identifier) {
-            if (_options.Compatibility >= RubyCompatibility.Ruby19) {
-                return CreateSymbol(identifier, RubyEncoding.UTF8);
-            } else {
-                return MutableString.CreateMutable(identifier, KCode ?? RubyEncoding.KCodeUTF8);
-            }
+            // TODO:
+            return CreateSymbol(identifier, RubyEncoding.UTF8);
         }
         
         /// <summary>
@@ -2310,12 +2327,11 @@ namespace IronRuby.Runtime {
         }
 
         public RubyEncoding/*!*/ GetPathEncoding() {
-            // we need to force UTF8 encoding since the path can contain non-ascii characters:
-            return _options.Compatibility < RubyCompatibility.Ruby19 ? (KCode ?? RubyEncoding.KCodeUTF8) : RubyEncoding.UTF8;
+            return RubyEncoding.UTF8;
         }
 
         /// <summary>
-        /// Creates a mutable string encoded using the current KCODE or (K-)UTF8 if KCODE is not set.
+        /// Creates a mutable string encoded using the path (file system) encoding.
         /// </summary>
         /// <exception cref="EncoderFallbackException">Invalid characters present.</exception>
         public MutableString/*!*/ EncodePath(string/*!*/ path) {
@@ -2323,22 +2339,23 @@ namespace IronRuby.Runtime {
         }
 
         public MutableString TryEncodePath(string/*!*/ path) {
-            try {
-                return MutableString.Create(path, GetPathEncoding()).CheckEncodingInternal();
-            } catch (EncoderFallbackException) {
-                return null;
-            }
+            var result = MutableString.Create(path, GetPathEncoding());
+            return result.ContainsInvalidCharacters() ? null : result;
         }
 
         internal static MutableString/*!*/ EncodePath(string/*!*/ path, RubyEncoding/*!*/ encoding) {
+            var result = MutableString.Create(path, encoding);
+            if (result.ContainsInvalidCharacters()) {
+
+            }
             try {
-                return MutableString.Create(path, encoding).CheckEncodingInternal();
+                return MutableString.Create(path, encoding).CheckEncoding();
             } catch (EncoderFallbackException e) {
                 throw RubyExceptions.CreateEINVAL(
                     e,
                     "Path \"{0}\" contains characters that cannot be represented in encoding {1}: {2}",
                     path.ToAsciiString(),
-                    encoding.RealEncoding.Name,
+                    encoding.Name,
                     e.Message
                 );
             }
@@ -2350,18 +2367,14 @@ namespace IronRuby.Runtime {
         /// <exception cref="InvalidError">Invalid characters present.</exception>
         public string/*!*/ DecodePath(MutableString/*!*/ path) {
             try {
-                if (KCode != null) {
-                    return path.ToString(KCode.StrictEncoding);
-                } else if (path.Encoding.IsKCoding || path.IsBinaryEncoded) {
+                if (path.Encoding == RubyEncoding.Binary) {
                     // force UTF8 encoding to make round-trip work:
                     return path.ToString(Encoding.UTF8);
                 } else {
                     return path.ConvertToString();
                 }
             } catch (DecoderFallbackException) {
-                throw RubyExceptions.CreateEINVAL("Invalid multi-byte sequence in path `{0}'", path.ToAsciiString(
-                    _options.Compatibility < RubyCompatibility.Ruby19
-                ));
+                throw RubyExceptions.CreateEINVAL("Invalid multi-byte sequence in path `{0}'", path.ToAsciiString());
             }
         }
 
@@ -2521,24 +2534,6 @@ namespace IronRuby.Runtime {
             return new RubyScriptCode((Func<RubyScope, object, object>)method, su, TopScopeFactoryKind.Hosted);
         }
 
-        public void CheckConstantName(string name) {
-            if (!Tokenizer.IsConstantName(name, _options.Compatibility >= RubyCompatibility.Ruby19 || KCode != null)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a constant name", name));
-            }
-        }
-
-        public void CheckClassVariableName(string name) {
-            if (!Tokenizer.IsClassVariableName(name, _options.Compatibility >= RubyCompatibility.Ruby19 || KCode != null)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a class variable name", name));
-            }
-        }
-
-        public void CheckInstanceVariableName(string name) {
-            if (!Tokenizer.IsInstanceVariableName(name, _options.Compatibility >= RubyCompatibility.Ruby19 || KCode != null)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as an instance variable name", name));
-            }
-        }
-
         #endregion
 
         #region Global Scope (thread-safe)
@@ -2610,7 +2605,7 @@ namespace IronRuby.Runtime {
 
                 foreach (var handler in handlers) {
                     try {
-                        handler.Call();
+                        handler.Call(null);
                     } catch (SystemExit e) {
                         // Kernel#at_exit can call exit and set the exitcode. Furthermore, exit can be called 
                         // from multiple blocks registered with Kernel#at_exit.
@@ -2724,6 +2719,8 @@ namespace IronRuby.Runtime {
             _loader.SaveCompiledCode();
 
             ExecuteShutdownHandlers();
+
+            _currentException = null;
         }
 
         #endregion
@@ -2836,14 +2833,10 @@ namespace IronRuby.Runtime {
 #if SILVERLIGHT
             return base.GetSourceReader(stream, defaultEncoding, path);
 #else
-            return GetSourceReader(stream, defaultEncoding, _options.Compatibility);
+            return GetSourceReader(stream, defaultEncoding);
         }
 
-        private static SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, RubyCompatibility compatibility) {
-            if (compatibility <= RubyCompatibility.Ruby186) {
-                return new SourceCodeReader(new StreamReader(stream, defaultEncoding, false), defaultEncoding);
-            }
-
+        private SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding) {
             long initialPosition = stream.Position;
             var reader = new StreamReader(stream, BinaryEncoding.Instance, true);
 
@@ -2856,11 +2849,11 @@ namespace IronRuby.Runtime {
             // header:
             string encodingName;
             if (Tokenizer.TryParseEncodingHeader(reader, out encodingName)) {
-                rubyPreambleEncoding = RubyEncoding.GetEncodingByRubyName(encodingName);
+                rubyPreambleEncoding = GetEncodingByRubyName(encodingName);
 
                 // Check if the preamble encoding is an identity on preamble bytes.
                 // If not we shouldn't allow such encoding since the encoding of the preamble would be different from the encoding of the file.
-                if (!RubyEncoding.IsAsciiIdentity(rubyPreambleEncoding)) {
+                if (!RubyEncoding.AsciiIdentity(rubyPreambleEncoding)) {
                     throw new IOException(String.Format("Encoding '{0}' is not allowed in preamble.", rubyPreambleEncoding.WebName));
                 }
             }
@@ -2876,6 +2869,66 @@ namespace IronRuby.Runtime {
             var encoding = rubyPreambleEncoding ?? preambleEncoding ?? defaultEncoding;
             return new SourceCodeReader(new StreamReader(stream, encoding, false), encoding);
 #endif
+        }
+
+        /// <exception cref="ArgumentException">Unknown encoding.</exception>
+        public Encoding/*!*/ GetEncodingByRubyName(string/*!*/ name) {
+            ContractUtils.RequiresNotNull(name, "name");
+
+            var upperName = name.ToUpperInvariant();
+            switch (upperName) {
+                case "BINARY":
+                case "ASCII-8BIT": return BinaryEncoding.Instance;
+                case "FILESYSTEM": return GetPathEncoding().StrictEncoding;
+                case "LOCALE": return _options.LocaleEncoding.StrictEncoding;
+                case "EXTERNAL": return _defaultExternalEncoding.StrictEncoding;
+#if SILVERLIGHT
+                case "UTF-8": return Encoding.UTF8;
+                default: throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name));
+#else
+                // Mono doesn't recognize 'SJIS' encoding name:
+                case "SJIS": return Encoding.GetEncoding(RubyEncoding.CodePageSJIS);
+                case "WINDOWS-31J": return Encoding.GetEncoding(932);
+                case "MACCYRILLIC": return Encoding.GetEncoding(10007);
+
+                // encodings whose name only differs in casing are returned by Windows:
+                case "EUC-JP": return Encoding.GetEncoding(RubyEncoding.CodePageEUCJP);
+                case "ISO-2022-JP": return Encoding.GetEncoding(50220);
+
+                // the encoding name doesn't correspond to its code page:
+                case "CP1025": return Encoding.GetEncoding(21025);
+
+                default:
+                    string alias;
+                    if (RubyEncoding.Aliases.TryGetValue(name, out alias)) {
+                        return GetEncodingByRubyName(alias);
+                    }
+                    if (upperName.StartsWith("CP", StringComparison.Ordinal)) {
+                        int codepage;
+                        if (Int32.TryParse(upperName.Substring(2), out codepage)) {
+                            try {
+                                return Encoding.GetEncoding(codepage);
+                            } catch (NotSupportedException) {
+                                // the encoding name is not correct
+                            }
+                        }
+                    }
+                    return Encoding.GetEncoding(name);
+#endif
+            }
+        }
+
+        /// <exception cref="ArgumentException">Unknown encoding.</exception>
+        public RubyEncoding/*!*/ GetRubyEncoding(MutableString/*!*/ name) {
+            if (!name.IsAscii()) {
+                throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name.ToAsciiString()));
+            }
+            return RubyEncoding.GetRubyEncoding(GetEncodingByRubyName(name.ToString()));
+        }
+
+        /// <exception cref="ArgumentException">Unknown encoding.</exception>
+        public RubyEncoding/*!*/ GetRubyEncoding(string/*!*/ name) {
+            return RubyEncoding.GetRubyEncoding(GetEncodingByRubyName(name));
         }
 
         public override string/*!*/ FormatObject(DynamicOperations/*!*/ operations, object obj) {
@@ -3013,7 +3066,7 @@ namespace IronRuby.Runtime {
                 try {
                     _traceListenerSuspended = true;
 
-                    _traceListener.Call(new[] {
+                    _traceListener.Call(null, new[] {
                         MutableString.CreateAscii(operation),                                         // event
                         fileName != null ? scope.RubyContext.EncodePath(fileName) : null,             // file
                         ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                            // line

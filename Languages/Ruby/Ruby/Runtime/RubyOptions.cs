@@ -26,8 +26,10 @@ namespace IronRuby.Runtime {
     [Serializable]
     public sealed class RubyOptions : LanguageOptions {
         private readonly ReadOnlyCollection<string>/*!*/ _arguments;
-        private readonly RubyEncoding/*!*/ _argumentEncoding;
-        private readonly ReadOnlyCollection<string>/*!*/ _libraryPaths;
+        private readonly RubyEncoding/*!*/ _localeEncoding;
+        private readonly RubyEncoding _defaultEncoding;
+        private readonly string _standardLibraryPath;
+        private readonly string _applicationBase;
         private readonly ReadOnlyCollection<string> _requirePaths;
         private readonly string _mainFile;
         private readonly bool _enableTracing;
@@ -49,8 +51,12 @@ namespace IronRuby.Runtime {
             get { return _arguments; }
         }
 
-        public RubyEncoding/*!*/ ArgumentEncoding {
-            get { return _argumentEncoding; }
+        public RubyEncoding/*!*/ LocaleEncoding {
+            get { return _localeEncoding; }
+        }
+
+        public RubyEncoding DefaultEncoding {
+            get { return _defaultEncoding; }
         }
 
         public string MainFile {
@@ -81,8 +87,12 @@ namespace IronRuby.Runtime {
             get { return _noAssemblyResolveHook; }
         }
 
-        public ReadOnlyCollection<string>/*!*/ LibraryPaths {
-            get { return _libraryPaths; }
+        public string StandardLibraryPath {
+            get { return _standardLibraryPath; }
+        }
+
+        public string ApplicationBase {
+            get { return _applicationBase; }
         }
 
         public ReadOnlyCollection<string> RequirePaths {
@@ -97,10 +107,6 @@ namespace IronRuby.Runtime {
             get { return RubyCompatibility.Default; }
         }
 
-        public RubyEncoding KCode {
-            get { return null; }
-        }
-
         /// <summary>
         /// The initial value of $DEBUG variable.
         /// </summary>
@@ -111,7 +117,8 @@ namespace IronRuby.Runtime {
         public RubyOptions(IDictionary<string, object>/*!*/ options)
             : base(options) {
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
-            _argumentEncoding = GetOption(options, "ArgumentEncoding", RubyEncoding.Default);
+            _localeEncoding = GetOption(options, "LocaleEncoding", RubyEncoding.UTF8);
+            _defaultEncoding = GetOption<RubyEncoding>(options, "DefaultEncoding", null);
 
             _mainFile = GetOption(options, "MainFile", (string)null);
             _verbosity = GetOption(options, "Verbosity", 1);
@@ -123,8 +130,8 @@ namespace IronRuby.Runtime {
             _noAssemblyResolveHook = GetOption(options, "NoAssemblyResolveHook", false);
             _requirePaths = GetStringCollectionOption(options, "RequiredPaths", ';', ',');
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
-            _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
-
+            _standardLibraryPath = GetOption(options, "StandardLibrary", (string)null);
+            _applicationBase = GetOption(options, "ApplicationBase", (string)null);
         }
     }
 }

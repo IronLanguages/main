@@ -43,7 +43,7 @@ namespace IronPython.Runtime {
     internal class StringFormatSpec {
         internal readonly char? Fill, Alignment, Sign, Type;
         internal readonly int? Width, Precision;
-        internal readonly bool IncludeType, ZeroPad, ThousandsComma;
+        internal readonly bool IncludeType, ThousandsComma;
 
         private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, int? precision, char? type, bool includeType) {
             Fill = fill;

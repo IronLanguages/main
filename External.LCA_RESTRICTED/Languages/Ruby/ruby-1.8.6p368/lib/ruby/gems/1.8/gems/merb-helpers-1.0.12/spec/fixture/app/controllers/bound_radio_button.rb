@@ -1,2 +1,0 @@
-class BoundRadioButtonSpecs < SpecController
-end

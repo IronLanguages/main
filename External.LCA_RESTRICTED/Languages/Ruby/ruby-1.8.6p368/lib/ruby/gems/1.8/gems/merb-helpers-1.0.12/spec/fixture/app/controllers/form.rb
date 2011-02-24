@@ -1,2 +1,0 @@
-class FormSpecs < SpecController
-end

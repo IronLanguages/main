@@ -1,0 +1,13 @@
+<VSTemplate Version="2.0.0" Type="Item" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>RSpec test file</Name>
+    <Description>RSpec test file</Description>
+    <Icon>__TemplateIcon.ico</Icon>
+    <ProjectType>IronRuby</ProjectType>
+    <DefaultName>my_spec.rb</DefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <References/>
+    <ProjectItem SubType="Code" TargetFileName="$fileinputname$.rb">RSpecFile.rb</ProjectItem>
+  </TemplateContent>
+</VSTemplate>

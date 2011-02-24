@@ -281,7 +281,6 @@ bar
             if (_driver.PartialTrust) return;
 
             var searchPaths = Engine.GetSearchPaths();
-            Assert(new List<string>(searchPaths)[searchPaths.Count - 1] == ".");
 
             bool result = Engine.RequireFile("fcntl");
             Assert(result == true);
@@ -323,26 +322,12 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
 #endif
         }
 
-        [Options(NoRuntime = true)]
         public void RubyHosting5() {
             // app-domain creation:
             if (_driver.PartialTrust) return;
 
-            AppDomain domain = AppDomain.CreateDomain("foo");
-
-            var rs = ScriptRuntimeSetup.ReadConfiguration();
-            LanguageSetup ls = rs.GetRubySetup();
-            Debug.Assert(ls.Names.IndexOf("IronRuby") != -1);
-
-            var newSetup = new ScriptRuntimeSetup();
-            newSetup.AddRubySetup((s) => {
-                s.Options["LibraryPaths"] = ls.Options["LibraryPaths"];
-            });
-
-            ScriptRuntime runtime = ScriptRuntime.CreateRemote(domain, newSetup);
-            ScriptEngine engine = runtime.GetRubyEngine();
-            Assert(engine.RequireFile("fcntl") == true);
-            Assert(engine.Execute<bool>("Object.constants.include?(:Fcntl)") == true);
+            Assert(Engine.RequireFile("fcntl") == true);
+            Assert(Engine.Execute<bool>("Object.constants.include?(:Fcntl)") == true);
         }
 
         public void RubyHosting_Scopes1() {
@@ -375,6 +360,29 @@ p S.GetVariable('foo_bar')
 ");
         }
 
+        public void RubyHosting_Scopes3() {
+            // TODO: test other backing storages (not implemented yet):
+
+            var variables = new Dictionary<string, object>();
+            variables["x"] = 1;
+            variables["y"] = 3;
+
+            var scope = Engine.CreateScope(variables);
+
+            string script = @"
+def foo
+  x + y
+end
+";
+            Engine.Execute(script, scope);
+
+            Assert(scope.GetVariable<int>("x") == 1);
+            Assert(scope.GetVariable<int>("y") == 3);
+
+            var foo = scope.GetVariable<Func<int>>("foo");
+            Assert(foo() == 4);
+        }
+
         public void HostingDefaultOptions1() {
             // this reports warnings that the default ErrorSink should ignore:
             Engine.Execute(@"
@@ -405,7 +413,7 @@ a = 'ba'.gsub /b/, '1'
             Assert((s = Engine.Operations.Format(obj)) == "bye");
             
             obj = Engine.Execute(@"class C; def inspect; [7,8,9]; end; new; end");
-            Assert((s = Engine.Operations.Format(obj)) == "789");
+            Assert((s = Engine.Operations.Format(obj)) == "[7, 8, 9]");
 
             var scope = Engine.CreateScope();
             scope.SetVariable("ops", Engine.Operations);

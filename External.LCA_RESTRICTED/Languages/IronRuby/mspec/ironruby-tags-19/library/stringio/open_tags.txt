@@ -1,2 +1,0 @@
-fails:StringIO.open when passed [Object, mode] sets self's string to nil after yielding
-fails:StringIO.open when passed [Object, mode] even sets self's string to nil when an exception is raised while yielding

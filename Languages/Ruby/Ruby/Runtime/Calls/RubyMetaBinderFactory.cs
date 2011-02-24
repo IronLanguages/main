@@ -143,7 +143,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.CreateInstance/*!*/ InteropCreateInstance(CallInfo/*!*/ callInfo) {
             if (_interopCreateInstance == null) {
-                _interopCreateInstance = new Dictionary<CallInfo, InteropBinder.CreateInstance>();
+                Interlocked.CompareExchange(ref _interopCreateInstance, new Dictionary<CallInfo, InteropBinder.CreateInstance>(), null);
             }
 
             lock (_interopCreateInstance) {
@@ -157,7 +157,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.Return/*!*/ InteropReturn(CallInfo/*!*/ callInfo) {
             if (_interopReturn == null) {
-                _interopReturn = new Dictionary<CallInfo, InteropBinder.Return>();
+                Interlocked.CompareExchange(ref _interopReturn, new Dictionary<CallInfo, InteropBinder.Return>(), null);
             }
 
             lock (_interopReturn) {
@@ -171,7 +171,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.Invoke/*!*/ InteropInvoke(CallInfo/*!*/ callInfo) {
             if (_interopInvoke == null) {
-                _interopInvoke = new Dictionary<CallInfo, InteropBinder.Invoke>();
+                Interlocked.CompareExchange(ref _interopInvoke, new Dictionary<CallInfo, InteropBinder.Invoke>(), null);
             }
 
             lock (_interopInvoke) {
@@ -185,7 +185,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.InvokeMember/*!*/ InteropInvokeMember(string/*!*/ name, CallInfo/*!*/ callInfo) {
             if (_interopInvokeMember == null) {
-                _interopInvokeMember = new Dictionary<Key<string, CallInfo>, InteropBinder.InvokeMember>();
+                Interlocked.CompareExchange(ref _interopInvokeMember, new Dictionary<Key<string, CallInfo>, InteropBinder.InvokeMember>(), null);
             }
 
             var key = Key.Create(name, callInfo);
@@ -201,7 +201,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.GetMember/*!*/ InteropGetMember(string/*!*/ name) {
             if (_interopGetMember == null) {
-                _interopGetMember = new Dictionary<string, InteropBinder.GetMember>();
+                Interlocked.CompareExchange(ref _interopGetMember, new Dictionary<string, InteropBinder.GetMember>(), null);
             }
 
             lock (_interopGetMember) {
@@ -215,7 +215,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.TryGetMemberExact/*!*/ InteropTryGetMemberExact(string/*!*/ name) {
             if (_interopTryGetMemberExact == null) {
-                _interopTryGetMemberExact = new Dictionary<string, InteropBinder.TryGetMemberExact>();
+                Interlocked.CompareExchange(ref _interopTryGetMemberExact, new Dictionary<string, InteropBinder.TryGetMemberExact>(), null);
             }
 
             lock (_interopTryGetMemberExact) {
@@ -229,7 +229,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.SetMember/*!*/ InteropSetMember(string/*!*/ name) {
             if (_interopSetMember == null) {
-                _interopSetMember = new Dictionary<string, InteropBinder.SetMember>();
+                Interlocked.CompareExchange(ref _interopSetMember, new Dictionary<string, InteropBinder.SetMember>(), null);
             }
 
             lock (_interopSetMember) {
@@ -243,7 +243,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.SetMemberExact/*!*/ InteropSetMemberExact(string/*!*/ name) {
             if (_interopSetMemberExact == null) {
-                _interopSetMemberExact = new Dictionary<string, InteropBinder.SetMemberExact>();
+                Interlocked.CompareExchange(ref _interopSetMemberExact, new Dictionary<string, InteropBinder.SetMemberExact>(), null);
             }
 
             lock (_interopSetMemberExact) {
@@ -257,7 +257,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.GetIndex/*!*/ InteropGetIndex(CallInfo/*!*/ callInfo) {
             if (_interopGetIndex == null) {
-                _interopGetIndex = new Dictionary<CallInfo, InteropBinder.GetIndex>();
+                Interlocked.CompareExchange(ref _interopGetIndex, new Dictionary<CallInfo, InteropBinder.GetIndex>(), null);
             }
 
             lock (_interopGetIndex) {
@@ -271,7 +271,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.SetIndex/*!*/ InteropSetIndex(CallInfo/*!*/ callInfo) {
             if (_interopSetIndex == null) {
-                _interopSetIndex = new Dictionary<CallInfo, InteropBinder.SetIndex>();
+                Interlocked.CompareExchange(ref _interopSetIndex, new Dictionary<CallInfo, InteropBinder.SetIndex>(), null);
             }
 
             lock (_interopSetIndex) {
@@ -285,7 +285,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.SetIndexedProperty/*!*/ InteropSetIndexedProperty(string/*!*/ name, CallInfo/*!*/ callInfo) {
             if (_interopSetIndexedProperty == null) {
-                _interopSetIndexedProperty = new Dictionary<Key<string, CallInfo>, InteropBinder.SetIndexedProperty>();
+                Interlocked.CompareExchange(ref _interopSetIndexedProperty, new Dictionary<Key<string, CallInfo>, InteropBinder.SetIndexedProperty>(), null);
             }
 
             var key = Key.Create(name, callInfo);
@@ -301,7 +301,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.BinaryOperation/*!*/ InteropBinaryOperation(ExpressionType op) {
             if (_interopOperation == null) {
-                _interopOperation = new Dictionary<ExpressionType, DynamicMetaObjectBinder>();
+                Interlocked.CompareExchange(ref _interopOperation, new Dictionary<ExpressionType, DynamicMetaObjectBinder>(), null);
             }
 
             lock (_interopOperation) {
@@ -315,7 +315,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.UnaryOperation/*!*/ InteropUnaryOperation(ExpressionType op) {
             if (_interopOperation == null) {
-                _interopOperation = new Dictionary<ExpressionType, DynamicMetaObjectBinder>();
+               Interlocked.CompareExchange(ref _interopOperation, new Dictionary<ExpressionType, DynamicMetaObjectBinder>(), null);
             }
 
             lock (_interopOperation) {
@@ -329,7 +329,7 @@ namespace IronRuby.Runtime.Calls {
 
         public InteropBinder.Convert/*!*/ InteropConvert(Type/*!*/ type, bool isExplicit) {
             if (_interopConvert == null) {
-                _interopConvert = new Dictionary<Key<Type, bool>, InteropBinder.Convert>();
+                Interlocked.CompareExchange(ref _interopConvert, new Dictionary<Key<Type, bool>, InteropBinder.Convert>(), null);
             }
 
             var key = Key.Create(type, isExplicit);

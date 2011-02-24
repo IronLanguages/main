@@ -1,3 +1,0 @@
-class NumericExtSpecs < SpecController
-  
-end

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!-- *************************************************************************
+ *
+ * Copyright (c) Microsoft Corporation. 
+ *
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+ * copy of the license can be found in the License.html file at the root of this distribution. If 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
+ * ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * by the terms of the Apache License, Version 2.0.
+ *
+ * You must not remove this notice, or any other, from this software.
+ *
+ *
+ * *************************************************************************** -->
+<BufferPlayer>
+  <sine>
+    <freq>293.664767917</freq>
+    <ampl>0.8</ampl>
+    <isCarrier>True</isCarrier>
+    <ratio>1.0</ratio>
+    <useRatio>True</useRatio>
+    <enabled>True</enabled>
+    <sine>
+      <freq>1174.65907167</freq>
+      <ampl>0.8</ampl>
+      <isCarrier>False</isCarrier>
+      <ratio>4.0</ratio>
+      <useRatio>True</useRatio>
+      <enabled>True</enabled>
+    </sine>
+    <sine>
+      <freq>2055.65337542</freq>
+      <ampl>0.5</ampl>
+      <isCarrier>False</isCarrier>
+      <ratio>7.0</ratio>
+      <useRatio>True</useRatio>
+      <enabled>True</enabled>
+    </sine>
+    <sine>
+      <freq>587.329535834</freq>
+      <ampl>0.8</ampl>
+      <isCarrier>False</isCarrier>
+      <ratio>2.0</ratio>
+      <useRatio>True</useRatio>
+      <enabled>True</enabled>
+    </sine>
+  </sine>
+</BufferPlayer>

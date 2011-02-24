@@ -358,7 +358,7 @@ tutorial "IronRuby Hosting tutorial" do
                         </languages>
                     
                         <options>
-                          <set language="Ruby" option="LibraryPaths" value="..\..\Languages\Ruby\libs\;..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby\1.8\;..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.8\" />
+                          <set language="Ruby" option="LibraryPaths" value="..\..\Languages\Ruby\Libs\;..\..\Languages\Ruby\StdLib\ruby\site_ruby\1.9.1\;..\..\Languages\Ruby\StdLib\ruby\1.9.1\" />
                         </options>
                       </microsoft.scripting>
                     

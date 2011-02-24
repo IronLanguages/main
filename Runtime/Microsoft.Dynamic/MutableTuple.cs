@@ -29,7 +29,12 @@ using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
     public abstract class MutableTuple {
+#if SILVERLIGHT
+        // CF doesn't support more than 64 generic type parameters:
+        public static readonly int MaxSize = PlatformAdaptationLayer.IsCompactFramework ? 64 : 128;
+#else
         public const int MaxSize = 128;
+#endif
         private static readonly Dictionary<Type, int> _sizeDict = new Dictionary<Type, int>();
 
         public abstract object GetValue(int index);
@@ -260,7 +265,6 @@ namespace Microsoft.Scripting {
                     res.SetValue(i, CreateTupleInstance(pi.PropertyType, newStart, newEnd, args));
                 }
             } else {
-                int argCnt = tupleType.GetGenericArguments().Length;
                 for (int i = start; i < end; i++) {
                     res.SetValue(i - start, args[i]);
                 }

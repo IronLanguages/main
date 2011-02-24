@@ -1,6 +1,0 @@
-#!/usr/bin/env ruby
-
-require 'rubygems'
-require 'merb-gen'
-
-Merb::Generators.run_cli(Dir.pwd, 'merb-gen', Merb::VERSION, ARGV)

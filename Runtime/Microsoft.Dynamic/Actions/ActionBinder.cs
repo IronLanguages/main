@@ -128,9 +128,7 @@ namespace Microsoft.Scripting.Actions {
                 return expr;
             }
 
-            Type visType = CompilerHelpers.GetVisibleType(toType);
-
-            return Expression.Convert(expr, toType);
+            return Expression.Convert(expr, CompilerHelpers.GetVisibleType(toType));
         }
 
         /// <summary>
@@ -360,10 +358,12 @@ namespace Microsoft.Scripting.Actions {
                 foreach (MemberInfo mi in ext.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
                     MemberInfo newMember = mi;
                     if (PrivateBinding || (newMember = CompilerHelpers.TryGetVisibleMember(mi)) != null) {
-                        if (ext != declaringType) {
-                            members.Add(MemberTracker.FromMemberInfo(newMember, declaringType));
-                        } else {
-                            members.Add(MemberTracker.FromMemberInfo(newMember));
+                        if (IncludeExtensionMember(newMember)) {
+                            if (ext != declaringType) {
+                                members.Add(MemberTracker.FromMemberInfo(newMember, declaringType));
+                            } else {
+                                members.Add(MemberTracker.FromMemberInfo(newMember));
+                            }
                         }
                     }
                 }
@@ -398,6 +398,10 @@ namespace Microsoft.Scripting.Actions {
                 return MemberGroup.CreateInternal(members.ToArray());
             }
             return MemberGroup.EmptyGroup;
+        }
+
+        public virtual bool IncludeExtensionMember(MemberInfo member) {
+            return true;
         }
 
         public virtual IList<Type> GetExtensionTypes(Type t) {
@@ -442,7 +446,7 @@ namespace Microsoft.Scripting.Actions {
             if (!target.Success) {
                 BindingRestrictions restrictions = BindingRestrictions.Combine(parameters);
                 foreach (DynamicMetaObject mo in parameters) {
-                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(mo.Expression, mo.GetLimitType()));
+                    restrictions = restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(mo.Expression, mo.GetLimitType()));
                 }
                 return DefaultBinder.MakeError(
                     resolver.MakeInvalidParametersError(target),

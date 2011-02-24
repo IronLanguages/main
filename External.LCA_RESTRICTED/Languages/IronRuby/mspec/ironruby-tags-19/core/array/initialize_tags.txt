@@ -1,2 +1,0 @@
-fails:Array#initialize raises a RuntimeError on frozen arrays
-fails:Array#initialize with (size, object=nil) raises an ArgumentError if size is too large

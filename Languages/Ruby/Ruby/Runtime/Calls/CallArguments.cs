@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
@@ -33,7 +34,6 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
     using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
-    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Wraps the arguments of a dynamic call site

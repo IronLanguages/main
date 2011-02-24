@@ -1,0 +1,214 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{B2E267A2-4836-40D7-817E-49D9D0E88435}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft</RootNamespace>
+    <AssemblyName>IronPythonTools.Core</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
+    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.ComponentModelHost, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(DevEnvDir)\PublicAssemblies\Microsoft.VisualStudio.ComponentModelHost.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Language.Intellisense.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Language.StandardClassification, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Text.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.UI, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Text.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.XML" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="IronPythonToolsCore\Intellisense\IPythonAnalyzer.cs" />
+    <Compile Include="IronPythonToolsCore\PythonCoreConstants.cs" />
+    <Compile Include="IronPythonToolsCore\PythonRuntimeHost.cs" />
+    <Compile Include="IronPythonToolsCore\Editor\BraceMatcher.cs" />
+    <Compile Include="IronPythonToolsCore\Editor\EditorExtensions.cs" />
+    <Compile Include="IronPythonToolsCore\Extensions.cs" />
+    <Compile Include="IronPythonToolsCore\IPythonRuntimeHost.cs" />
+    <Compile Include="IronPythonToolsCore\OutliningTaggerProvider.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\PythonAnalyzer.cs" />
+    <Compile Include="IronPythonToolsCore\PythonClassifierProvider.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="IronPythonToolsCore\Repl\PythonEvaluator.cs" />
+    <Compile Include="IronPythonToolsCore\Repl\RemotePythonEvaluator.cs" />
+    <Compile Include="IronPythonToolsCore\Repl\SwitchModuleCommand.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\CompletionAnalysis.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\CompletionSource.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\CompletionSourceProvider.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\ExpressionAnalysis.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\FileCookie.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\FromImportCompletionAnalysis.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\ImportCompletionAnalysis.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\LazyCompletion.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\NormalCompletionAnalysis.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\PythonParameter.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\PythonSignature.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\QuickInfoSource.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\QuickInfoSourceProvider.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\ReverseExpressionParser.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\SignatureAnalysis.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\SignatureHelpSource.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\SignatureHelpSourceProvider.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\SnapshotCookie.cs" />
+    <Compile Include="IronPythonToolsCore\Intellisense\StringLiteralCompletionList.cs" />
+    <Compile Include="IronPythonToolsCore\Navigation\AstScopeNode.cs" />
+    <Compile Include="IronPythonToolsCore\Navigation\ClassScopeNode.cs" />
+    <Compile Include="IronPythonToolsCore\Navigation\FunctionScopeNode.cs" />
+    <Compile Include="PyAnalysis\HashSetExtensions.cs" />
+    <Compile Include="PyAnalysis\IAnalysisCookie.cs" />
+    <Compile Include="PyAnalysis\IAnalysisVariable.cs" />
+    <Compile Include="PyAnalysis\Interpreter\SingleDict.cs" />
+    <Compile Include="PyAnalysis\ModuleReference.cs" />
+    <Compile Include="PyAnalysis\SimpleSrcLocation.cs" />
+    <Compile Include="PyAnalysis\Values\MemberReferences.cs" />
+    <Compile Include="PyAnalysis\Values\GeneratorInfo.cs" />
+    <Compile Include="PyAnalysis\Values\GeneratorNextBoundBuiltinMethodInfo.cs" />
+    <Compile Include="PyAnalysis\Values\GeneratorSendBoundBuiltinMethodInfo.cs" />
+    <Compile Include="PyAnalysis\Values\IReferenceable.cs" />
+    <Compile Include="PyAnalysis\Values\NumericInstanceInfo.cs" />
+    <Compile Include="PyAnalysis\Values\ListAppendBoundBuiltinMethodInfo.cs" />
+    <Compile Include="PyAnalysis\Values\ListExtendBoundBuiltinFunction.cs" />
+    <Compile Include="PyAnalysis\Values\ListInfo.cs" />
+    <Compile Include="PyAnalysis\Values\ListInsertBoundBuiltinFunction.cs" />
+    <Compile Include="PyAnalysis\Values\ListPopBoundBuiltinMethodInfo.cs" />
+    <Compile Include="PyAnalysis\Values\NamespaceSetExtensions.cs" />
+    <Compile Include="PyAnalysis\ResultType.cs" />
+    <Compile Include="PyAnalysis\ProjectEntry.cs" />
+    <Compile Include="PyAnalysis\ProjectState.cs" />
+    <Compile Include="PyAnalysis\ImportInfo.cs" />
+    <Compile Include="PyAnalysis\IOverloadResult.cs" />
+    <Compile Include="PyAnalysis\LocationInfo.cs" />
+    <Compile Include="PyAnalysis\MemberResult.cs" />
+    <Compile Include="PyAnalysis\OverloadResult.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinNamespace.cs" />
+    <Compile Include="PyAnalysis\Values\SetInfo.cs" />
+    <Compile Include="PyAnalysis\Values\SliceInfo.cs" />
+    <Compile Include="PyAnalysis\Values\SpecializedBuiltinFunction.cs" />
+    <Compile Include="PyAnalysis\Values\BoundBuiltinMethodInfo.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinInstanceInfo.cs" />
+    <Compile Include="PyAnalysis\IAnalysisValue.cs" />
+    <Compile Include="PyAnalysis\Interpreter\EmptySet.cs" />
+    <Compile Include="PyAnalysis\Interpreter\SetOfOne.cs" />
+    <Compile Include="PyAnalysis\ModuleAnalysis.cs" />
+    <Compile Include="PyAnalysis\Interpreter\AnalysisUnit.cs" />
+    <Compile Include="PyAnalysis\Interpreter\DDG.cs" />
+    <Compile Include="PyAnalysis\Interpreter\ExpressionEvaluator.cs" />
+    <Compile Include="PyAnalysis\Interpreter\OverviewWalker.cs" />
+    <Compile Include="PyAnalysis\Interpreter\ScopePositionInfo.cs" />
+    <Compile Include="PyAnalysis\Interpreter\VariableDef.cs" />
+    <Compile Include="PyAnalysis\Interpreter\ClassScope.cs" />
+    <Compile Include="PyAnalysis\Interpreter\FunctionScope.cs" />
+    <Compile Include="PyAnalysis\Interpreter\InterpreterScope.cs" />
+    <Compile Include="PyAnalysis\Interpreter\ModuleScope.cs" />
+    <Compile Include="PyAnalysis\Interpreter\TypeUnion.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinClassInfo.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinEventInfo.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinFieldInfo.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinFunctionInfo.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinMethodInfo.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinModule.cs" />
+    <Compile Include="PyAnalysis\Values\BuiltinPropertyInfo.cs" />
+    <Compile Include="PyAnalysis\Values\ClassInfo.cs" />
+    <Compile Include="PyAnalysis\Values\ConstantInfo.cs" />
+    <Compile Include="PyAnalysis\Values\DependencyInfo.cs" />
+    <Compile Include="PyAnalysis\Values\DictionaryInfo.cs" />
+    <Compile Include="PyAnalysis\Values\EnumInstanceInfo.cs" />
+    <Compile Include="PyAnalysis\Values\FunctionInfo.cs" />
+    <Compile Include="PyAnalysis\Values\InstanceInfo.cs" />
+    <Compile Include="PyAnalysis\Values\LazyDotNetDict.cs" />
+    <Compile Include="PyAnalysis\Values\MethodInfo.cs" />
+    <Compile Include="PyAnalysis\Values\ModuleInfo.cs" />
+    <Compile Include="PyAnalysis\Values\Namespace.cs" />
+    <Compile Include="PyAnalysis\Values\NamespaceReferences.cs" />
+    <Compile Include="PyAnalysis\Values\ReflectedNamespace.cs" />
+    <Compile Include="PyAnalysis\Values\SequenceInfo.cs" />
+    <Compile Include="PyAnalysis\Values\UnboundReference.cs" />
+    <Compile Include="PyAnalysis\Values\UserDefinedInfo.cs" />
+    <Compile Include="PyAnalysis\Values\Utils.cs" />
+    <Compile Include="PyAnalysis\Values\RangeInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Languages\IronPython\IronPython.Modules\IronPython.Modules.csproj">
+      <Project>{155CE436-1669-4A48-8095-410F2430237F}</Project>
+      <Name>IronPython.Modules</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Languages\IronPython\IronPython\IronPython.csproj">
+      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
+      <Name>IronPython %28Languages\IronPython\IronPython%29</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IronStudioCore\IronStudioCore.csproj">
+      <Project>{843716AE-38B3-4723-963C-950DD06BC4B8}</Project>
+      <Name>IronStudioCore</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

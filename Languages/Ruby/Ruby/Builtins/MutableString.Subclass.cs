@@ -38,9 +38,20 @@ namespace IronRuby.Builtins {
                 ImmediateClass = rubyClass;
             }
 
+            private Subclass(RubyClass/*!*/ rubyClass, Content/*!*/ content, RubyEncoding/*!*/ encoding)
+                : base(content, encoding) {
+                Assert.NotNull(rubyClass);
+                ImmediateClass = rubyClass;
+            }
+
             private Subclass(Subclass/*!*/ str)
                 : base(str) {
                 ImmediateClass = str.ImmediateClass;
+            }
+
+            // creates an instance of self type with given content and encoding:
+            internal override MutableString/*!*/ CreateInstance(Content/*!*/ content, RubyEncoding/*!*/ encoding) {
+                return new Subclass(ImmediateClass, content, encoding);
             }
 
             // creates a blank instance of self type:

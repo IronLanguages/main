@@ -231,14 +231,16 @@ bar
         }
 
         public void RubyInitializersCaching3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class Object
+  remove_method :initialize
+end
+
+class BasicObject
   remove_method :initialize rescue p $!
 end
-");
-            }, @"
-#<NameError: Cannot remove Object#initialize>
+", @"
+#<NameError: Cannot remove BasicObject#initialize>
 ");
         }
 

@@ -1,5 +1,0 @@
-fails:Kernel#open opens a file when called with a block
-fails:Kernel#open sets permissions of newly created file
-fails:Kernel#open sets the file as writable if perm is nil
-fails:Kernel#open allows nil for perm
-fails:Kernel#open allows Integer-like objects for perm

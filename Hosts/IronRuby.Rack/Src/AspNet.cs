@@ -343,7 +343,7 @@ namespace IronRubyRack.Handler {
         }
 
         private MutableString RubyString(string str) {
-            return MutableString.Create(str, RubyEncoding.Default);
+            return MutableString.Create(str, RubyEncoding.UTF8);
         }
     }
 }

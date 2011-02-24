@@ -1,0 +1,27 @@
+HKCR
+{
+	DlrComLibrary.IndexedProp.1 = s 'IndexedProp Class'
+	{
+		CLSID = s '{71DBF89D-F74B-4444-9083-2CCA88DD7645}'
+	}
+	DlrComLibrary.IndexedProp = s 'IndexedProp Class'
+	{
+		CLSID = s '{71DBF89D-F74B-4444-9083-2CCA88DD7645}'
+		CurVer = s 'DlrComLibrary.IndexedProp.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {71DBF89D-F74B-4444-9083-2CCA88DD7645} = s 'IndexedProp Class'
+		{
+			ProgID = s 'DlrComLibrary.IndexedProp.1'
+			VersionIndependentProgID = s 'DlrComLibrary.IndexedProp'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+			'Version' = s '1.0'
+		}
+	}
+}

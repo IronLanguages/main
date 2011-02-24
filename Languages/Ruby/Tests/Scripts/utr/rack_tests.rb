@@ -19,7 +19,7 @@ class UnitTestSetup
   end
 
   def gather_files
-    @lib_tests_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/rack-#{VERSION}", ENV["DLR_ROOT"])
+    @lib_tests_dir = File.expand_path("Languages/Ruby/Tests/Libraries/rack-#{VERSION}", ENV["DLR_ROOT"])
     @irk_tests_dir = File.expand_path("Hosts/IronRuby.Rack/ironruby-rack/test", ENV["DLR_ROOT"])
     @all_test_files = Dir.glob("#{@lib_tests_dir}/test/test*.rb") + Dir.glob("#{@lib_tests_dir}/test/spec*.rb")
     @all_test_files.concat Dir.glob("#{@irk_tests_dir}/spec*.rb") if ironruby?

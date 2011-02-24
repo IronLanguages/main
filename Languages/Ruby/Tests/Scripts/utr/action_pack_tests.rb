@@ -1,12 +1,10 @@
+=begin
 class Array
-  # RouteSet#deprecated_routes_for_controller_and_action_and_keys in actionpack\lib\action_controller\routing\route_set.rb in v2.3.5
-  # assumes that sorting is stable (ie. if #<=> returns 0, then the relative order of the
-  # elements in the original array is maintained). However, Ruby does not guarantee a stable order
+  # RenderRjs::TestBasic#test_rendering_a_partial_in_an_RJS_template_should_pick_the_JS_template_over_the_HTML_one
+  # relies on stable sorting (ie. if #<=> returns 0, then the relative order of the
+  # elements in the original array is maintained) somewhere. However, Ruby does not guarantee a stable order
   # according to ISO standard draft "15.3.2.1.19 Enumerable#sort" description and
   # http://redmine.ruby-lang.org/issues/show/1089.  
-  #
-  # Its unknown whether the failure in unit tests implies that Rails will misbehave (or if it just 
-  # causes unoptimized routing for example).
   #
   def sort_by
     elements_with_indices = []
@@ -33,6 +31,7 @@ class ActiveRecordTestConnector
     end
   end
 end
+=end
 
 class UnitTestSetup
   def initialize
@@ -40,96 +39,129 @@ class UnitTestSetup
     super
   end
   
+  def gather_files
+    gather_rails_files
+  end
+  
   def require_files
     require 'rubygems'
-    gem 'test-unit', "= 2.0.5"
-    gem 'actionmailer', "= 2.3.5"
-    gem 'activerecord', "= 2.3.5"
-    gem 'activesupport', "= 2.3.5"
-    gem 'actionpack', "= 2.3.5"
+    gem 'test-unit', "= #{TestUnitVersion}"
+    gem 'actionmailer', "= #{RailsVersion}"
+    gem 'activerecord', "= #{RailsVersion}"
+    gem 'activerecord-sqlserver-adapter', "= #{SqlServerAdapterVersion}"
+    gem 'activesupport', "= #{RailsVersion}"
+    gem 'actionpack', "= #{RailsVersion}"
     require 'action_pack/version'
     require 'active_record'
     require 'active_record/fixtures'
   end
-
-  def gather_files
-    @root_dir = File.expand_path 'External.LCA_RESTRICTED\Languages\IronRuby\tests\RailsTests-2.3.5\actionpack', ENV['DLR_ROOT']
-    $LOAD_PATH << @root_dir + '/test'
-    @all_test_files = Dir.glob("#{@root_dir}/test/[cft]*/**/*_test.rb").sort
-  end
-
+  
   def sanity
     # Do some sanity checks
     sanity_size(80)
-    abort("Did not find some expected files...") unless File.exist?(@root_dir + "/test/controller/action_pack_assertions_test.rb")
-    sanity_version('2.3.5', ActionPack::VERSION::STRING)
+    sanity_version(RailsVersion, ActionPack::VERSION::STRING)
   end
+  
+=begin
+  def disable_unstable_tests
+  
+    disable LegacyRouteSetTests,
+      # <"/page/%D1%82%D0%B5%D0"> expected but was
+      # <"/page/%D1%82%D0%B5%D0%BA%D1%81%D1%82">.
+      :test_route_with_text_default
 
-  def disable_mri_failures
-    disable CleanBacktraceTest, 
-      # <["d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/lib/action_controller/abc"]> expected but was
-      # <["d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/lib/action_controller/abc",
-      #  "d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/lib/action_controll
-      :test_should_clean_assertion_lines_from_backtrace
-    
-    disable LayoutSetInResponseTest,
-      # <"abs_path_layout.rhtml hello.rhtml"> expected but was
-      # Exception caught
-      # Template is missing
-      # Missing layout layouts/d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/test/fixtures/layout_tests/abs_path_layout.rhtml in view path 
-      # d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/test/controller/../fixtures/layout_tests.
-      :test_absolute_pathed_layout_without_layouts_in_path
-      
-    disable AssetTagHelperTest,
-     # Errno::EACCES: Permission denied - d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/test/template/../fixtures/public/absolute/test.css
-      :test_concat_stylesheet_link_tag_when_caching_off
+    disable NumberHelperTest,
+      # <"555-1234"> expected but was
+      # <"-555-1234">.
+      # diff:
+      # - 555-1234
+      # + -555-1234
+      # ? +
+      :test_number_to_phone
 
-    disable CompiledTemplatesTest,
-      #Errno::EACCES: Access to the path 'dlr\External.LCA_RESTRICTED\Languages\IronRuby\RailsTests-2.3.5\actionpack\test\fixtures\test\hello_world.erb' is denied.
-      :test_parallel_reloadable_view_paths_are_working,
-      :test_template_changes_are_not_reflected_with_cached_template_loading,
-      :test_template_changes_are_reflected_without_cached_template_loading
+    disable TextHelperTest,
+      # <"...\xEF\xAC\x83ciency could not be..."> expected but was
+      # <"...\x83ciency could not be...">.
+      # diff:
+      # - ...n¼âciency could not be...
+      # ?    --
+      # + ...âciency could not be...
+      :test_excerpt_with_utf8,
+      # <"\xEC\x95\x84\xEB\xA6\xAC\xEB\x9E\x91 \xEC\x95\x84\xEB\xA6\xAC ..."> expected b
+      # ut was
+      # <"\xEC\x95\x84\xEB\xA6\xAC\xEB...">.
+      :test_truncate_multibyte
   end
   
   def disable_tests
-    disable ActionCacheTest,
-      # <"<title></title>\n1264061287.72215"> expected but was
-      # <nil>.
-      :test_action_cache_with_layout
-      
+
+    disable ActionCacheTest, 
+      # <false> is not true.
+      :test_xml_version_of_resource_is_treated_as_different_cache
+
     disable AssetTagHelperTest, 
-      # <"<script src=\"/javascripts/prototype.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/effects.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/dragdrop.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/controls.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/slider.js\" type=\"text/javascript\"></script>\n<script src=\"/j
-      :test_register_javascript_include_default_mixed_defaults,
-      # <"<script src=\"/javascripts/first.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/prototype.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/effects.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/dragdrop.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/controls.js\" type=\"text/javascript\"></script>\n<script src=\"/ja
-      :test_custom_javascript_expansions_and_defaults_puts_application_js_at_the_end,
-      # NameError: uninitialized constant Test::Unit::Diff::ReadableDiffer::Encoding
-      :test_preset_empty_asset_id,
-      # <"<script src=\"/javascripts/prototype.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/effects.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/dragdrop.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/controls.js\" type=\"text/javascript\"></script>\n<script src=\"/javascripts/slider.js\" type=\"text/javascript\"></script>\n<script src=\"/j
-      :test_register_javascript_include_default
+      :test_caching_javascript_include_tag_when_caching_on,
+      :test_caching_javascript_include_tag_when_caching_on_and_using_subdirectory,
+      :test_caching_javascript_include_tag_when_caching_on_with_2_argument_object_asset_host,
+      :test_caching_javascript_include_tag_when_caching_on_with_2_argument_proc_asset_host,
+      :test_caching_javascript_include_tag_when_caching_on_with_proc_asset_host,
+      :test_caching_javascript_include_tag_with_all_and_recursive_puts_defaults_at_the_start_of_the_file,
+      :test_caching_javascript_include_tag_with_all_puts_defaults_at_the_start_of_the_file,
+      :test_caching_javascript_include_tag_with_relative_url_root,
+      :test_caching_stylesheet_link_tag_when_caching_on,
+      :test_caching_stylesheet_link_tag_when_caching_on_with_proc_asset_host,
+      :test_caching_stylesheet_link_tag_with_relative_url_root,
+      :test_concat_stylesheet_link_tag_when_caching_off
 
-    disable CachedRenderTest, 
-      # <"undefined method `doesnt_exist' for #<ActionView::Base:0x000bacc @_rendered={:template=>#<ActionView::Template:0x0004544 @template_path=\"test/_raise.html.erb\", @load_path=\"d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/test/fixtures\", @base_path=\"test\", @name=\"_raise\", @locale=nil, @format=\"html\", @extension=\"erb\", @_memoized_variab
+    disable CachedViewRenderTest, 
+      :test_render_file_with_full_path,
       :test_render_partial_with_errors,
-      # <"undefined method `doesnt_exist' for #<ActionView::Base:0x000bba8 @_rendered={:template=>#<ActionView::Template:0x000450e @template_path=\"test/sub_template_raise.html.erb\", @load_path=\"d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/test/fixtures\", @base_path=\"test\", @name=\"sub_template_raise\", @locale=nil, @format=\"html\", @extension=\"
       :test_render_sub_template_with_errors
 
-    disable IsolatedHelpersTest, 
-      # <NameError> exception expected but was
-      # Class: <NoMethodError>
-      # Message: <"undefined method `shout' for #<ActionView::Base:0x0041ca8 @_rendered={:template=>nil, :partials=>{}}, @assigns={}, @assigns_added=true, @controller=#<IsolatedHelpersTest::A:0x0041ca6 @before_filter_chain_aborted=false, @performed_redirect=false, @performed_render=false, @_request=#<ActionController::TestRequest:0x0041c98 @env=
-      :test_helper_in_a
+    disable CompiledTemplatesTest, 
+      :test_template_changes_are_not_reflected_with_cached_templates,
+      :test_template_changes_are_reflected_with_uncached_templates
 
-    disable ReloadableRenderTest, 
-      # <"undefined method `doesnt_exist' for #<ActionView::Base:0x004e15a @_rendered={:template=>#<ActionView::ReloadableTemplate:0x004e1e6 @template_path=\"test/_raise.html.erb\", @load_path=\"d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/test/fixtures\", @base_path=\"test\", @name=\"_raise\", @locale=nil, @format=\"html\", @extension=\"erb\", @_memoi
+    disable FormTagHelperTest, 
+      :test_boolean_options
+
+    disable LayoutSetInResponseTest, 
+      :test_absolute_pathed_layout
+
+    disable LazyViewRenderTest, 
+      :test_render_file_with_full_path,
       :test_render_partial_with_errors,
-      # <"undefined method `doesnt_exist' for #<ActionView::Base:0x004e51e @_rendered={:template=>#<ActionView::ReloadableTemplate:0x004e574 @template_path=\"test/sub_template_raise.html.erb\", @load_path=\"d:/vs_langs01_s/dlr/External.LCA_RESTRICTED/Languages/IronRuby/tests/RailsTests-2.3.5/actionpack/test/fixtures\", @base_path=\"test\", @name=\"sub_template_raise\", @locale=nil, @format=\"html\", @ex
       :test_render_sub_template_with_errors
+
+    disable RenderFile::TestBasic, 
+      :test_rendering_a_Pathname,
+      :test_rendering_file_with_locals,
+      "test_rendering_path_without_specifying_the_:file_key",
+      "test_rendering_path_without_specifying_the_:file_key_with_ivar",
+      "test_rendering_path_without_specifying_the_:file_key_with_locals",
+      :test_rendering_simple_template,
+      :test_rendering_template_with_ivar
+
+    disable RenderJSTest, 
+      :test_render_with_default_from_accept_header
 
     disable RenderTest, 
-      # The line offset is wrong, perhaps the wrong exception has been raised, exception was: #<RuntimeError: Exception of type 'IronRuby.Builtins.RuntimeError' was thrown.>.
-      # <"1"> expected but was
-      # <"2">.
-      :test_line_offset
+      :test_line_offset,
+      :test_render_file_as_string_with_instance_variables,
+      :test_render_file_as_string_with_locals,
+      :test_render_file_from_template,
+      :test_render_file_using_pathname,
+      :test_render_file_with_instance_variables,
+      :test_render_file_with_locals
+
+    disable SendFileTest, 
+      :test_data,
+      :test_default_send_data_status,
+      :test_headers_after_send_shouldnt_include_charset,
+      :test_send_data_content_length_header,
+      :test_send_data_status
+
 
   end
+=end
 end

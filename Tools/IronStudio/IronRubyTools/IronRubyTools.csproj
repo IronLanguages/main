@@ -1,0 +1,394 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="..\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectTypeGuids>{82b43b9b-a64c-4715-b499-d71e9ca2bd60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft</RootNamespace>
+    <AssemblyName>IronRubyTools</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <ProjectGuid>{3467BF9A-3A0F-42BE-85E3-E818E7D3E2E8}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
+    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IronRubyToolsCore\IronRubyToolsCore.csproj">
+      <Project>{B6C04406-5B05-4E66-AB36-8FD9A8D14165}</Project>
+      <Name>IronRubyToolsCore</Name>
+      <IncludeOutputGroupsInVSIX>
+        BuiltProjectOutputGroup
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+        DebugSymbolsProjectOutputGroup
+      </IncludeOutputGroupsInVSIXLocalOnly>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\IronStudioCore\IronStudioCore.csproj">
+      <Project>{843716AE-38B3-4723-963C-950DD06BC4B8}</Project>
+      <Name>IronStudioCore</Name>
+      <IncludeOutputGroupsInVSIX>
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+      </IncludeOutputGroupsInVSIXLocalOnly>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\IronStudio\IronStudio.csproj">
+      <Project>{C98DE16D-417E-4079-8939-1F8C8E28E2C8}</Project>
+      <Name>IronStudio</Name>
+      <IncludeOutputGroupsInVSIX>
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+      </IncludeOutputGroupsInVSIXLocalOnly>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Languages\Ruby\Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
+      <Project>{AA18A245-E342-4368-A474-83178311A742}</Project>
+      <Name>IronRuby.Libraries.Yaml</Name>
+      <IncludeOutputGroupsInVSIX>
+        BuiltProjectOutputGroup
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+        DebugSymbolsProjectOutputGroup
+      </IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Languages\Ruby\Libraries\IronRuby.Libraries.csproj">
+      <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
+      <Name>IronRuby.Libraries</Name>
+      <IncludeOutputGroupsInVSIX>
+        BuiltProjectOutputGroup
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+        DebugSymbolsProjectOutputGroup
+      </IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Languages\Ruby\Ruby\Ruby.csproj">
+      <Project>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</Project>
+      <Name>Ruby</Name>
+      <IncludeOutputGroupsInVSIX>
+        BuiltProjectOutputGroup
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+        DebugSymbolsProjectOutputGroup
+      </IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+      <IncludeOutputGroupsInVSIX>
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+      </IncludeOutputGroupsInVSIXLocalOnly>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+      <IncludeOutputGroupsInVSIX>
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+      </IncludeOutputGroupsInVSIXLocalOnly>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Accessibility">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="envdte, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="envdte100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="envdte80, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.Build" />
+    <Reference Include="Microsoft.Build.Conversion.v4.0" />
+    <Reference Include="Microsoft.Build.Engine" />
+    <Reference Include="Microsoft.Build.Framework" />
+    <Reference Include="Microsoft.Build.Tasks.v4.0" />
+    <Reference Include="Microsoft.Build.Utilities.v4.0" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.VisualStudio.ComponentModelHost, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Designer.Interfaces, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="microsoft.visualstudio.commonide, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Editor, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Language.NavigateTo.Interfaces, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(DevEnvDir)\PublicAssemblies\Microsoft.VisualStudio.Language.NavigateTo.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Language.StandardClassification, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.OLE.Interop" />
+    <Reference Include="Microsoft.VisualStudio.Shell.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <Aliases>global</Aliases>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.TemplateWizardInterface" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Design, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.8.0" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.9.0" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.10.0" />
+    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.TextManager.Interop" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Immutable.10.0" />
+    <Reference Include="Microsoft.VisualStudio.TextManager.Interop.8.0, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.VSHelp, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="VSLangProj, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="VSLangProj100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="VSLangProj2, Version=7.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="VSLangProj80, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="IronRubyTools\Commands\Command.cs" />
+    <Compile Include="IronRubyTools\Commands\CommandTable.cs" />
+    <Compile Include="IronRubyTools\Commands\ExecuteInReplCommand.cs" />
+    <Compile Include="IronRubyTools\Commands\OpenReplCommand.cs" />
+    <Compile Include="IronRubyTools\Commands\SendToReplCommand.cs" />
+    <Compile Include="IronRubyTools\Editor\TextViewCreationListener.cs" />
+    <Compile Include="IronRubyTools\Intellisense\IntellisenseController.cs" />
+    <Compile Include="IronRubyTools\Intellisense\IntellisenseControllerProvider.cs" />
+    <Compile Include="IronRubyTools\Intellisense\IntellisensePreKeyProcessor.cs" />
+    <Compile Include="IronRubyTools\Intellisense\IntellisensePreKeyProcessorProvider.cs" />
+    <Compile Include="IronRubyTools\RubyVsUtils.cs" />
+    <Compile Include="IronRubyTools\Project\IRubyStarter.cs" />
+    <Compile Include="IronRubyTools\Options\RubyOptionsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="IronRubyTools\Options\RubyOptionsControl.designer.cs">
+      <DependentUpon>RubyOptionsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="IronRubyTools\Options\RubyOptionsPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="IronRubyTools\Repl\RemoteRubyVsEvaluator.cs" />
+    <Compile Include="IronRubyTools\Repl\RubyVsEvaluator.cs" />
+    <Compile Include="IronRubyTools\Navigation\CodeWindowManager.cs" />
+    <Compile Include="IronRubyTools\Navigation\DropDownBarClient.cs" />
+    <Compile Include="IronRubyTools\Navigation\EditFilter.cs" />
+    <Compile Include="IronRubyTools\Navigation\RubyLibraryManager.cs" />
+    <Compile Include="IronRubyTools\Navigation\RubyLibraryNode.cs" />
+    <Compile Include="IronRubyTools\Navigation\RubyLanguageInfo.cs" />
+    <Compile Include="IronRubyTools\Navigation\RubyCodeModel.cs" />
+    <Compile Include="IronRubyTools\Project\RubyEditorFactory.cs" />
+    <Compile Include="IronRubyTools\Project\RubyFileNode.cs" />
+    <Compile Include="IronRubyTools\Project\RubyGeneralPropertyPage.cs" />
+    <Compile Include="IronRubyTools\Project\RubyProjectFactory.cs" />
+    <Compile Include="IronRubyTools\Project\RubyProjectNode.cs" />
+    <Compile Include="IronRubyTools\Project\RubyProjectPackage.cs" />
+    <Compile Include="IronRubyTools\Project\RubyStarter.cs" />
+    <Compile Include="IronRubyTools\SolutionAdvisor.cs" />
+    <Compile Include="Guids.cs" />
+    <Compile Include="RubyConstants.cs" />
+    <Compile Include="Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="IronRubyToolsPackage.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PkgCmdID.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- VSIX -->
+    <VSCTCompile Include="IronRubyTools.vsct">
+      <ResourceName>1000</ResourceName>
+      <SubType>Designer</SubType>
+    </VSCTCompile>
+    <None Include="source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+    <Content Include="IronRuby Tools for VS License.rtf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Rackup.rb">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="RubyProject.ico">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Spec.rb">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Item Templates -->
+    <!-- Empty -->
+    <Content Include="Templates\Files\EmptyRbFile\EmptyRbFile.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Files\EmptyRbFile\empty.vstemplate" />
+    <Content Include="Templates\Files\EmptyRbFile\empty.rb" />
+    <Content Include="Templates\Files\EmptyRbFile\__TemplateIcon.ico" />
+    <!-- RSpec -->
+    <Content Include="Templates\Files\RSpecFile\RSpecFile.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Files\RSpecFile\RSpecFile.vstemplate" />
+    <Content Include="Templates\Files\RSpecFile\RSpecFile.rb" />
+    <Content Include="Templates\Files\RSpecFile\__TemplateIcon.ico" />
+    <!-- Rakefile -->
+    <Content Include="Templates\Files\Rakefile\Rakefile.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Files\Rakefile\rakefile.vstemplate" />
+    <Content Include="Templates\Files\Rakefile\rakefile" />
+    <Content Include="Templates\Files\Rakefile\__TemplateIcon.ico" />
+    <!-- Project Templates -->
+    <!-- Console -->
+    <Content Include="Templates\Projects\ConsoleAppProject\ConsoleApp.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Projects\ConsoleAppProject\IRConsoleApp.vstemplate" />
+    <Content Include="Templates\Projects\ConsoleAppProject\IronRubyApp.rbproj" />
+    <Content Include="Templates\Projects\ConsoleAppProject\Program.rb" />
+    <Content Include="Templates\Projects\ConsoleAppProject\__TemplateIcon.ico" />
+    <!-- WinForms -->
+    <Content Include="Templates\Projects\WinFormsAppProject\WinFormsApp.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Projects\WinFormsAppProject\WinFormsApp.vstemplate" />
+    <Content Include="Templates\Projects\WinFormsAppProject\WinFormsApp.rbproj" />
+    <Content Include="Templates\Projects\WinFormsAppProject\Program.rb" />
+    <Content Include="Templates\Projects\WinFormsAppProject\__TemplateIcon.ico" />
+    <!-- Silverlight -->
+    <Content Include="Templates\Projects\SilverlightProject\SilverlightProject.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Projects\SilverlightProject\SilverlightProject.vstemplate" />
+    <Content Include="Templates\Projects\SilverlightProject\SilverlightProject.rbproj" />
+    <Content Include="Templates\Projects\SilverlightProject\Program.html" />
+    <Content Include="Templates\Projects\SilverlightProject\Program.rb" />
+    <Content Include="Templates\Projects\SilverlightProject\__TemplateIcon.ico" />
+    <!-- Ruby on Rails -->
+    <Content Include="Templates\Projects\RubyOnRailsAppProject\RubyOnRailsApp.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Projects\RubyOnRailsAppProject\RubyOnRailsApp.vstemplate" />
+    <Content Include="Templates\Projects\RubyOnRailsAppProject\RubyOnRailsApp.rbproj" />
+    <Content Include="Templates\Projects\RubyOnRailsAppProject\config\database.yml" />
+    <Content Include="Templates\Projects\RubyOnRailsAppProject\Gemfile" />
+    <Content Include="Templates\Projects\RubyOnRailsAppProject\__TemplateScript.rb" />
+    <Content Include="Templates\Projects\RubyOnRailsAppProject\__TemplateIcon.ico" />
+    <!-- Sinatra -->
+    <Content Include="Templates\Projects\SinatraProject\Sinatra.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Projects\SinatraProject\Sinatra.vstemplate" />
+    <Content Include="Templates\Projects\SinatraProject\Sinatra.rbproj" />
+    <Content Include="Templates\Projects\SinatraProject\app.rb" />
+    <Content Include="Templates\Projects\SinatraProject\config.ru" />
+    <Content Include="Templates\Projects\SinatraProject\__Gems.rb" />
+    <Content Include="Templates\Projects\SinatraProject\__TemplateIcon.ico" />
+    <!-- Gem -->
+    <Content Include="Templates\Projects\GemProject\Gem.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\Projects\GemProject\Gem.vstemplate" />
+    <Content Include="Templates\Projects\GemProject\Gem.rbproj" />
+    <Content Include="Templates\Projects\GemProject\CHANGELOG" />
+    <Content Include="Templates\Projects\GemProject\LICENSE" />
+    <Content Include="Templates\Projects\GemProject\README" />
+    <Content Include="Templates\Projects\GemProject\program.gemspec" />
+    <Content Include="Templates\Projects\GemProject\test\program_spec.rb" />
+    <Content Include="Templates\Projects\GemProject\lib\program.rb" />
+    <Content Include="Templates\Projects\GemProject\__Gems.rb" />
+    <Content Include="Templates\Projects\GemProject\__TemplateIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Resources -->
+    <Content Include="Overview.txt" />
+    <Content Include="Resources\completionset.bmp" />
+    <Content Include="Resources\Images_24bit.bmp" />
+    <Content Include="Resources\Images_32bit.bmp" />
+    <Content Include="Resources\Package.ico" />
+    <EmbeddedResource Include="IronRubyTools\Options\RubyOptionsControl.resx">
+      <DependentUpon>RubyOptionsControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RubyImageList.bmp" />
+    <EmbeddedResource Include="Resources\RubyPackageIcons.bmp" />
+    <EmbeddedResource Include="VSPackage.resx">
+      <SubType>Designer</SubType>
+      <CustomToolNamespace>Microsoft.IronRubyTools</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+      <MergeWithCTO>true</MergeWithCTO>
+      <CustomToolNamespace>Microsoft.IronRubyTools</CustomToolNamespace>
+    </EmbeddedResource>
+  </ItemGroup>
+  <PropertyGroup>
+    <!--
+    To specify a different registry root to register your package, uncomment the TargetRegistryRoot
+    tag and specify a registry root in it.
+    <TargetRegistryRoot></TargetRegistryRoot>
+    -->
+    <RegisterOutputPackage>true</RegisterOutputPackage>
+    <RegisterWithCodebase>true</RegisterWithCodebase>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\VSSDK\Microsoft.VsSDK.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

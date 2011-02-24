@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Binding {
         }
     }
 
-    public sealed class PythonOverloadResolver : DefaultOverloadResolver {
+    internal sealed class PythonOverloadResolver : DefaultOverloadResolver {
         private readonly Expression _context;
 
         public Expression ContextExpression {

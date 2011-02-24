@@ -1,0 +1,377 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{C98DE16D-417E-4079-8939-1F8C8E28E2C8}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft</RootNamespace>
+    <AssemblyName>IronStudio</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>3021</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
+    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Hosts\SilverLight\Chiron\Chiron.csproj">
+      <Project>{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}</Project>
+      <Name>Chiron</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IronStudioCore\IronStudioCore.csproj">
+      <Project>{843716AE-38B3-4723-963C-950DD06BC4B8}</Project>
+      <Name>IronStudioCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RemoteScriptFactory\RemoteScriptFactory.csproj">
+      <Project>{D10C905C-7F15-41DF-9FF9-CCE461F571FD}</Project>
+      <Name>RemoteScriptFactory</Name>
+      <Private>False</Private>
+      <IncludeOutputGroupsInVSIX>
+        BuiltProjectOutputGroup
+      </IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>
+        DebugSymbolsProjectOutputGroup
+      </IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Accessibility">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="envdte, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="envdte100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="envdte80, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.Build" />
+    <Reference Include="Microsoft.Build.Conversion.v4.0" />
+    <Reference Include="Microsoft.Build.Engine" />
+    <Reference Include="Microsoft.Build.Framework" />
+    <Reference Include="Microsoft.Build.Tasks.v4.0" />
+    <Reference Include="Microsoft.Build.Utilities.v4.0" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.VisualStudio.ComponentModelHost, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Designer.Interfaces, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Editor, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Language.StandardClassification, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.OLE.Interop" />
+    <Reference Include="Microsoft.VisualStudio.Shell.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <Aliases>global</Aliases>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Shell.Design, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Immutable.10.0, Version=0.0.0.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(VSSDK100Install)\VisualStudioIntegration\Common\Assemblies\v4.0\Microsoft.VisualStudio.Shell.Immutable.10.0.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.8.0" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.9.0" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.10.0" />
+    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.TextManager.Interop" />
+    <Reference Include="Microsoft.VisualStudio.TextManager.Interop.8.0, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.VSHelp, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.Windows.Design.Host, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE\PrivateAssemblies\Microsoft.Windows.Design.Host.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="VSLangProj, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="VSLangProj100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="VSLangProj2, Version=7.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="VSLangProj80, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Guids.cs" />
+    <Compile Include="IronStudio\CommonConstants.cs" />
+    <Compile Include="IronStudio\CommonUtils.cs" />
+    <Compile Include="IronStudio\IronStudioPackage.cs" />
+    <Compile Include="IronStudio\Navigation\CommonLibraryNode.cs" />
+    <Compile Include="IronStudio\CommonPackage.cs" />
+    <Compile Include="IronStudio\Navigation\HierarchyListener.cs" />
+    <Compile Include="IronStudio\Navigation\ICustomSearchListProvider.cs" />
+    <Compile Include="IronStudio\Navigation\ILibraryManager.cs" />
+    <Compile Include="IronStudio\Navigation\ISimpleObject.cs" />
+    <Compile Include="IronStudio\Navigation\Library.cs" />
+    <Compile Include="IronStudio\Navigation\LibraryManager.cs" />
+    <Compile Include="IronStudio\Navigation\LibraryNode.cs" />
+    <Compile Include="IronStudio\Navigation\LibraryTask.cs" />
+    <Compile Include="IronStudio\Navigation\ModuleId.cs" />
+    <Compile Include="IronStudio\Navigation\Resources.Designer.cs" />
+    <Compile Include="IronStudio\Navigation\SimpleObject.cs" />
+    <Compile Include="IronStudio\Navigation\SimpleObjectList.cs" />
+    <Compile Include="IronStudio\Navigation\SnippetsEnumerator.cs" />
+    <Compile Include="IronStudio\Navigation\TextLineEventListener.cs" />
+    <Compile Include="IronStudio\Navigation\TextViewWrapper.cs" />
+    <Compile Include="IronStudio\Project\BaseSearchPathNode.cs" />
+    <Compile Include="IronStudio\Project\CommonConfigProvider.cs" />
+    <Compile Include="IronStudio\Project\CommonEditorFactory.cs" />
+    <Compile Include="IronStudio\Project\CommonFileNode.cs" />
+    <Compile Include="IronStudio\Project\CommonFileNodeProperties.cs" />
+    <Compile Include="IronStudio\Project\CommonFolderNode.cs" />
+    <Compile Include="IronStudio\Project\CommonGeneralPropertyPage.cs" />
+    <Compile Include="IronStudio\Project\CommonNonCodeFileNode.cs" />
+    <Compile Include="IronStudio\Project\CommonOutputGroup.cs" />
+    <Compile Include="IronStudio\Project\CommonProjectConfig.cs" />
+    <Compile Include="IronStudio\Project\CommonProjectNode.cs" />
+    <Compile Include="IronStudio\Project\CommonProjectNodeProperties.cs" />
+    <Compile Include="IronStudio\Project\CommonProjectPackage.cs" />
+    <Compile Include="IronStudio\Project\CommonPropertyPage.cs" />
+    <Compile Include="IronStudio\Project\CommonReferenceContainerNode.cs" />
+    <Compile Include="IronStudio\Project\CommonReferenceNode.cs" />
+    <Compile Include="IronStudio\Project\CommonSearchPathContainerNode.cs" />
+    <Compile Include="IronStudio\Project\CommonSearchPathNode.cs" />
+    <Compile Include="IronStudio\Project\CommonSearchPathNodeProperties.cs" />
+    <Compile Include="IronStudio\Project\CommonStarter.cs" />
+    <Compile Include="IronStudio\Project\CurrentWorkingDirectoryNode.cs" />
+    <Compile Include="IronStudio\Project\DesignerContext.cs" />
+    <Compile Include="IronStudio\Project\DirectoryBasedProjectNode.cs" />
+    <Compile Include="IronStudio\Project\IStarter.cs" />
+    <Compile Include="IronStudio\Project\ProjectDocumentsListenerForStartupFileUpdates.cs" />
+    <Compile Include="IronStudio\Project\Resources.cs" />
+    <Compile Include="IronStudio\Repl\IReplWindowProvider.cs" />
+    <Compile Include="IronStudio\Repl\VsReplWindow.cs" />
+    <Compile Include="IronStudio\Repl\ReplWindowProvider.cs" />
+    <Compile Include="IronStudio\Utils\ProgressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="IronStudio\Utils\ProgressForm.designer.cs">
+      <DependentUpon>ProgressForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="IronStudio\VsExtensions.cs" />
+    <Compile Include="PkgCmdID.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources.Designer.cs">
+      <DependentUpon>Resources.resx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="VisualStudio\Project\AssemblyReferenceNode.cs" />
+    <Compile Include="VisualStudio\Project\Attributes.cs" />
+    <Compile Include="VisualStudio\Project\Automation\AutomationScope.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAFileItem.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAFolderItem.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OANavigableProjectItems.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OANestedProjectItem.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OANullProperty.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAProject.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAProjectItem.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAProjectItems.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAProperties.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAProperty.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAReferenceFolderItem.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OAReferenceItem.cs" />
+    <Compile Include="VisualStudio\Project\Automation\OASolutionFolder.cs" />
+    <Compile Include="VisualStudio\Project\Automation\VSProject\OAAssemblyReference.cs" />
+    <Compile Include="VisualStudio\Project\Automation\VSProject\OABuildManager.cs" />
+    <Compile Include="VisualStudio\Project\Automation\VSProject\OAComReference.cs" />
+    <Compile Include="VisualStudio\Project\Automation\VSProject\OAProjectReference.cs" />
+    <Compile Include="VisualStudio\Project\Automation\VSProject\OAReferenceBase.cs" />
+    <Compile Include="VisualStudio\Project\Automation\VSProject\OAReferences.cs" />
+    <Compile Include="VisualStudio\Project\Automation\VSProject\OAVSProject.cs" />
+    <Compile Include="VisualStudio\Project\Automation\VSProject\OAVSProjectItem.cs" />
+    <Compile Include="VisualStudio\Project\BuildDependency.cs" />
+    <Compile Include="VisualStudio\Project\BuildPropertyPage.cs" />
+    <Compile Include="VisualStudio\Project\ComReferenceNode.cs" />
+    <Compile Include="VisualStudio\Project\ConfigProvider.cs" />
+    <Compile Include="VisualStudio\Project\ConfigurationProperties.cs" />
+    <Compile Include="VisualStudio\Project\DataObject.cs" />
+    <Compile Include="VisualStudio\Project\DependentFileNode.cs" />
+    <Compile Include="VisualStudio\Project\DesignPropertyDescriptor.cs" />
+    <Compile Include="VisualStudio\Project\DocumentManager.cs" />
+    <Compile Include="VisualStudio\Project\EnumDependencies.cs" />
+    <Compile Include="VisualStudio\Project\FileChangeManager.cs" />
+    <Compile Include="VisualStudio\Project\FileDocumentManager.cs" />
+    <Compile Include="VisualStudio\Project\FileNode.cs" />
+    <Compile Include="VisualStudio\Project\FolderNode.cs" />
+    <Compile Include="VisualStudio\Project\GlobalSuppressions.cs" />
+    <Compile Include="VisualStudio\Project\HierarchyNode.cs" />
+    <Compile Include="VisualStudio\Project\IDEBuildLogger.cs" />
+    <Compile Include="VisualStudio\Project\ImageHandler.cs" />
+    <Compile Include="VisualStudio\Project\Interfaces.cs" />
+    <Compile Include="VisualStudio\Project\LocalizableProperties.cs" />
+    <Compile Include="VisualStudio\Project\UIThread.cs" />
+    <Compile Include="VisualStudio\Project\VisualStudio.Project.cs" />
+    <Compile Include="VisualStudio\Project\Misc\ConnectionPointContainer.cs" />
+    <Compile Include="VisualStudio\Project\Misc\ExternDll.cs" />
+    <Compile Include="VisualStudio\Project\Misc\NativeMethods.cs" />
+    <Compile Include="VisualStudio\Project\Misc\UnsafeNativeMethods.cs" />
+    <Compile Include="VisualStudio\Project\NestedProjectBuildDependency.cs" />
+    <Compile Include="VisualStudio\Project\NestedProjectNode.cs" />
+    <Compile Include="VisualStudio\Project\NodeProperties.cs" />
+    <Compile Include="VisualStudio\Project\OleServiceProvider.cs" />
+    <Compile Include="VisualStudio\Project\Output.cs" />
+    <Compile Include="VisualStudio\Project\OutputGroup.cs" />
+    <Compile Include="VisualStudio\Project\ProjectConfig.cs" />
+    <Compile Include="VisualStudio\Project\ProjectContainerNode.cs" />
+    <Compile Include="VisualStudio\Project\ProjectDesignerDocumentManager.cs" />
+    <Compile Include="VisualStudio\Project\ProjectDocumentsListener.cs" />
+    <Compile Include="VisualStudio\Project\ProjectElement.cs" />
+    <Compile Include="VisualStudio\Project\ProjectFactory.cs" />
+    <Compile Include="VisualStudio\Project\ProjectFileConstants.cs" />
+    <Compile Include="VisualStudio\Project\ProjectNode.CopyPaste.cs" />
+    <Compile Include="VisualStudio\Project\ProjectNode.cs" />
+    <Compile Include="VisualStudio\Project\ProjectNode.Events.cs" />
+    <Compile Include="VisualStudio\Project\ProjectOptions.cs" />
+    <Compile Include="VisualStudio\Project\ProjectPackage.cs" />
+    <Compile Include="VisualStudio\Project\ProjectReferenceNode.cs" />
+    <Compile Include="VisualStudio\Project\PropertiesEditorLauncher.cs" />
+    <Compile Include="VisualStudio\Project\ReferenceContainerNode.cs" />
+    <Compile Include="VisualStudio\Project\ReferenceNode.cs" />
+    <Compile Include="VisualStudio\Project\RegisteredProjectType.cs" />
+    <Compile Include="VisualStudio\Project\SelectionListener.cs" />
+    <Compile Include="VisualStudio\Project\SettingsPage.cs" />
+    <Compile Include="VisualStudio\Project\SingleFileGenerator.cs" />
+    <Compile Include="VisualStudio\Project\SingleFileGeneratorFactory.cs" />
+    <Compile Include="VisualStudio\Project\SolutionListener.cs" />
+    <Compile Include="VisualStudio\Project\SolutionListenerForBuildDependencyUpdate.cs" />
+    <Compile Include="VisualStudio\Project\SolutionListenerForProjectEvents.cs" />
+    <Compile Include="VisualStudio\Project\SolutionListenerForProjectOpen.cs" />
+    <Compile Include="VisualStudio\Project\SolutionListenerForProjectReferenceUpdate.cs" />
+    <Compile Include="VisualStudio\Project\StructuresEnums.cs" />
+    <Compile Include="VisualStudio\Project\SuspendFileChanges.cs" />
+    <Compile Include="VisualStudio\Project\TokenProcessor.cs" />
+    <Compile Include="VisualStudio\Project\Tracing.cs" />
+    <Compile Include="VisualStudio\Project\TrackDocumentsHelper.cs" />
+    <Compile Include="VisualStudio\Project\TypeConverters.cs" />
+    <Compile Include="VisualStudio\Project\UpdateSolutionEventsListener.cs" />
+    <Compile Include="VisualStudio\Project\Utilities.cs" />
+    <Compile Include="VisualStudio\Project\VsCommands.cs" />
+    <Compile Include="VisualStudio\Project\VSShellUtilities.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- VSIX -->
+    <Content Include="IronStudio.Custom.pkgdef">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.</VSIXSubPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Resources -->
+    <EmbeddedResource Include="IronStudio\Navigation\Resources.resx" />
+    <EmbeddedResource Include="IronStudio\Project\Resources.resx">
+      <DependentUpon>Resources.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="IronStudio\Utils\ProgressForm.resx">
+      <DependentUpon>ProgressForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+      <MergeWithCTO>true</MergeWithCTO>
+      <CustomToolNamespace>Microsoft.IronStudio</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Include="VisualStudio.Project.resx">
+      <SubType>Designer</SubType>
+      <CustomToolNamespace>Microsoft.IronStudio</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Include="VisualStudio\Project\VisualStudio.Project.resx">
+      <DependentUpon>VisualStudio.Project.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="VSPackage.resx">
+      <SubType>Designer</SubType>
+      <CustomToolNamespace>Microsoft.IronStudio</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Include="IronStudio\Project\Resources\imagelis.bmp" />
+    <EmbeddedResource Include="VisualStudio\Project\Resources\imagelis.bmp" />
+    <EmbeddedResource Include="Resources\ResetSession.bmp" />
+    <EmbeddedResource Include="Resources\completionset.bmp" />
+    <EmbeddedResource Include="Resources\CancelEvaluation.bmp" />
+    <Content Include="Resources\Package.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="IronStudio\Intellisense\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+    <VSCTCompile Include="IronStudio.vsct">
+      <ResourceName>1000</ResourceName>
+      <SubType>Designer</SubType>
+    </VSCTCompile>
+  </ItemGroup>
+  <PropertyGroup>
+    <!--
+    To specify a different registry root to register your package, uncomment the TargetRegistryRoot
+    tag and specify a registry root in it.
+    <TargetRegistryRoot></TargetRegistryRoot>
+    -->
+    <RegisterOutputPackage>true</RegisterOutputPackage>
+    <RegisterWithCodebase>true</RegisterWithCodebase>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\VSSDK\Microsoft.VsSDK.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

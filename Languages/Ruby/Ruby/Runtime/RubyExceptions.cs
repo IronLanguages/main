@@ -41,12 +41,11 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateTypeError(Exception innerException, string/*!*/ message, params object[] args) {
-            // TODO: RuntimeError in 1.9?
             return new InvalidOperationException(FormatMessage(message, args), innerException);
         }
 
         public static Exception/*!*/ CreateObjectFrozenError() {
-            return CreateTypeError("can't modify frozen object");
+            return CreateRuntimeError("can't modify frozen object");
         }
 
         public static Exception/*!*/ CreateTypeConversionError(string/*!*/ fromType, string/*!*/ toType) {
@@ -123,16 +122,6 @@ namespace IronRuby.Runtime {
             return CreateArgumentError(null, message, args);
         }
 
-        public static Exception/*!*/ CreateArgumentError(EncoderFallbackException/*!*/ e, RubyEncoding/*!*/ encoding) {
-            return RubyExceptions.CreateArgumentError(String.Format("character U+{0:X4} can't be encoded in {1}",
-                e.CharUnknownHigh != '\0' ? Tokenizer.ToCodePoint(e.CharUnknownHigh, e.CharUnknownLow) : (int)e.CharUnknown, encoding));
-        }
-
-        public static Exception/*!*/ CreateArgumentError(DecoderFallbackException/*!*/ e, RubyEncoding/*!*/ encoding) {
-            return RubyExceptions.CreateArgumentError(String.Format("invalid byte sequence {0} in {1}",
-                BitConverter.ToString(e.BytesUnknown), encoding));
-        }
-
         public static Exception/*!*/ CreateArgumentError(Exception innerException, string/*!*/ message, params object[] args) {
             return new ArgumentException(FormatMessage(message, args), innerException);
         }
@@ -145,6 +134,48 @@ namespace IronRuby.Runtime {
             string selfClass = context.GetClassOf(self).Name;
             string otherClass = context.GetClassOf(other).Name;
             return CreateArgumentError("comparison of {0} with {1} failed", selfClass, otherClass);
+        }
+
+        #endregion
+
+        #region Encoding Errors
+
+        public static Exception/*!*/ CreateInvalidByteSequenceError(EncoderFallbackException/*!*/ e, RubyEncoding/*!*/ encoding) {
+            return new InvalidByteSequenceError(
+                FormatMessage(
+                    "character U+{0:X4} can't be encoded in {1}",
+                    e.CharUnknownHigh != '\0' ? Tokenizer.ToCodePoint(e.CharUnknownHigh, e.CharUnknownLow) : (int)e.CharUnknown, 
+                    encoding
+                )
+            );
+        }
+
+        public static Exception/*!*/ CreateInvalidByteSequenceError(DecoderFallbackException/*!*/ e, RubyEncoding/*!*/ encoding) {
+            return new InvalidByteSequenceError(
+                FormatMessage("invalid byte sequence {0} on {1}", BitConverter.ToString(e.BytesUnknown), encoding)
+            );
+        }
+
+        public static Exception/*!*/ CreateTranscodingError(EncoderFallbackException/*!*/ e, RubyEncoding/*!*/ fromEncoding, RubyEncoding/*!*/ toEncoding) {
+            return new UndefinedConversionError(
+                FormatMessage(
+                    "\"{0}\" to UTF-8 in conversion from {1} to UTF-8 to {2}",
+                    e.CharUnknown,
+                    fromEncoding,
+                    toEncoding
+                )
+            );
+        }
+
+        public static Exception/*!*/ CreateTranscodingError(DecoderFallbackException/*!*/ e, RubyEncoding/*!*/ fromEncoding, RubyEncoding/*!*/ toEncoding) {
+            throw new UndefinedConversionError(
+                FormatMessage(
+                    "\"{0}\" to {2} in conversion from {1} to UTF-8 to {2}",
+                    BitConverter.ToString(e.BytesUnknown),
+                    fromEncoding,
+                    toEncoding
+                )
+            );        
         }
 
         #endregion
@@ -255,14 +286,12 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateEncodingCompatibilityError(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
-            return new EncodingCompatibilityError(
-                FormatMessage("incompatible character encodings: {0}{1} and {2}{3}",
-                    encoding1.Name, encoding1.IsKCoding ? " (KCODE)" : null, encoding2.Name, encoding2.IsKCoding ? " (KCODE)" : null
-                )
-            );
+            return new EncodingCompatibilityError(FormatMessage("incompatible character encodings: {0} and {1}", encoding1.Name, encoding2.Name));
         }
 
         #region Errno
+
+        // TODO: initialize errno property
 
         public static string/*!*/ MakeMessage(string message, string/*!*/ baseMessage) {
             Assert.NotNull(baseMessage);
@@ -301,7 +330,7 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateENOENT() {
-            return new FileNotFoundException();
+            return new FileNotFoundException("No such file or directory");
         }
 
         public static Exception/*!*/ CreateENOENT(string/*!*/ message, params object[] args) {
@@ -314,6 +343,10 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateEBADF() {
             return new BadFileDescriptorError();
+        }
+
+        public static Exception/*!*/ CreateEACCES() {
+            return new UnauthorizedAccessException();
         }
 
         #endregion

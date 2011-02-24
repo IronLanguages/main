@@ -210,9 +210,9 @@ namespace Microsoft.Scripting.Actions {
 
             if (members.Count == 0) {
                 if (typeof(TypeTracker).IsAssignableFrom(type)) {
-                    // ensure we don't have a non-generic type, and if we do report an error now.  This matches
-                    // the rule version of the default binder but should probably be removed long term
-                    Type x = ((TypeTracker)target.Value).Type;
+                    // Throws an exception if we don't have a non-generic type, and if we do report an error now.  This matches
+                    // the rule version of the default binder but should probably be removed long term.
+                    EnsureTrackerRepresentsNonGenericType((TypeTracker)target.Value);
                 } else if (type.IsInterface) {
                     // all interfaces have object members
                     type = typeof(object);
@@ -245,6 +245,11 @@ namespace Microsoft.Scripting.Actions {
             return getMemInfo.Body.GetMetaObject(target);
         }
 
+        private static Type EnsureTrackerRepresentsNonGenericType(TypeTracker tracker) {
+            // might throw an exception
+            return tracker.Type;
+        }
+
         private void MakeBodyHelper(GetMemberInfo getMemInfo, DynamicMetaObject self, DynamicMetaObject propSelf, Type type, MemberGroup members) {
             if (self != null) {
                 MakeOperatorGetMemberBody(getMemInfo, propSelf, type, "GetCustomMember");
@@ -256,7 +261,7 @@ namespace Microsoft.Scripting.Actions {
             if (error == null) {
                 MakeSuccessfulMemberAccess(getMemInfo, self, propSelf, type, members, memberType);
             } else {
-                getMemInfo.Body.FinishCondition(getMemInfo.ErrorSuggestion != null ? getMemInfo.ErrorSuggestion.Expression : error);
+                getMemInfo.Body.FinishError(getMemInfo.ErrorSuggestion != null ? getMemInfo.ErrorSuggestion.Expression : error);
             }
         }
 
@@ -338,9 +343,9 @@ namespace Microsoft.Scripting.Actions {
             } else {
                 ErrorInfo ei = tracker.GetError(this);
                 if (ei.Kind != ErrorInfoKind.Success && getMemInfo.IsNoThrow) {
-                    getMemInfo.Body.FinishCondition(MakeOperationFailed());
+                    getMemInfo.Body.FinishError(MakeOperationFailed());
                 } else {
-                    getMemInfo.Body.FinishCondition(MakeError(tracker.GetError(this), typeof(object)));
+                    getMemInfo.Body.FinishError(MakeError(tracker.GetError(this), typeof(object)));
                 }
             }
         }
@@ -380,11 +385,11 @@ namespace Microsoft.Scripting.Actions {
 
         private void MakeMissingMemberRuleForGet(GetMemberInfo getMemInfo, DynamicMetaObject self, Type type) {
             if (getMemInfo.ErrorSuggestion != null) {
-                getMemInfo.Body.FinishCondition(getMemInfo.ErrorSuggestion.Expression);
+                getMemInfo.Body.FinishError(getMemInfo.ErrorSuggestion.Expression);
             } else if (getMemInfo.IsNoThrow) {
-                getMemInfo.Body.FinishCondition(MakeOperationFailed());
+                getMemInfo.Body.FinishError(MakeOperationFailed());
             } else {
-                getMemInfo.Body.FinishCondition(
+                getMemInfo.Body.FinishError(
                     MakeError(MakeMissingMemberError(type, self, getMemInfo.Name), typeof(object))
                 );
             }

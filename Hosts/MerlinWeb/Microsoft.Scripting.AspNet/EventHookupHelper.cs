@@ -54,12 +54,12 @@ namespace Microsoft.Scripting.AspNet {
             _scriptVirtualPath = scriptVirtualPath;
         }
 
-        internal void HookupHandler(IBuildProvider provider, ScriptScope moduleGlobals, object self, object target) {
+        internal void HookupHandler(IBuildProvider provider, ScriptScope moduleGlobals, object target) {
 
             DynamicFunction scriptFunction = new DynamicFunction((object)moduleGlobals.GetVariable(_handlerName));
 
             Delegate handler = EventHandlerWrapper.GetWrapper(
-                provider, self, scriptFunction, _scriptVirtualPath, typeof(EventHandler));
+                provider, scriptFunction, _scriptVirtualPath, typeof(EventHandler));
             _eventInfo.AddEventHandler(target, handler);
         }
     }

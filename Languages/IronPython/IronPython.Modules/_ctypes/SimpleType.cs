@@ -389,7 +389,7 @@ namespace IronPython.Modules {
                         TryBytesConversion(method, done);
 
                         
-                        Label isNull = method.DefineLabel(), nextTry = method.DefineLabel();
+                        Label nextTry = method.DefineLabel();
                         argIndex.Emit(method);
                         if (argumentType.IsValueType) {
                             method.Emit(OpCodes.Box, argumentType);
@@ -609,11 +609,11 @@ namespace IronPython.Modules {
                         break;
                     case SimpleTypeKind.Double:
                         break;
-                    case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.UnsignedInt:
                     case SimpleTypeKind.UnsignedLong:
                         EmitInt32ToObject(method, value);
                         break;
+                    case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.SignedLongLong:
                         EmitInt64ToObject(method, value);
                         break;

@@ -240,11 +240,11 @@ hello
         public void Dir2() {
             RubyClass dir = Context.GetClass(typeof(RubyDir));
             Pal1 pal = (Pal1)Context.Platform;
-            var sjis = RubyEncoding.KCodeSJIS.StrictEncoding.GetBytes("ﾎ");
+            var sjis = RubyEncoding.SJIS.StrictEncoding.GetBytes("ﾎ");
             var toPath = new ConversionStorage<MutableString>(Context);
 
             // use the string encoding if given
-            RubyDir.MakeDirectory(toPath, dir, MutableString.CreateBinary(sjis, RubyEncoding.KCodeSJIS.RealEncoding), null);
+            RubyDir.MakeDirectory(toPath, dir, MutableString.CreateBinary(sjis, RubyEncoding.SJIS), null);
             Assert(pal.Entries["ﾎ"]);
 
             // IO system returns UTF8 encoded strings:

@@ -58,22 +58,28 @@ namespace IronRuby.Compiler.Ast {
 
         public sealed override bool IsDefinition { get { return true; } }
 
-        // The number of parameters excluding splat:
+        // The number of parameters excluding splat and proc:
         private int ParameterCount {
             get {
-                return _parameters.Mandatory.Length + _parameters.Optional.Length + (_parameters.Block != null ? 1 : 0);
+                return _parameters.Mandatory.Length + _parameters.Optional.Length;
             }
         }
 
         private bool HasFormalParametersInArray {
             get {
-                return ParameterCount > MaxBlockArity || HasUnsplatParameter; 
+                return ParameterCount > MaxBlockArity || HasUnsplatParameter || HasProcParameter; 
             }
         }
 
         private bool HasUnsplatParameter {
             get {
                 return _parameters.Unsplat != null;
+            }
+        }
+
+        private bool HasProcParameter {
+            get {
+                return _parameters.Block != null;
             }
         }
 
@@ -94,12 +100,13 @@ namespace IronRuby.Compiler.Ast {
             var parameters = new AstParameters(
                 HiddenParameterCount +
                 (HasFormalParametersInArray ? 1 : ParameterCount) +
-                (HasUnsplatParameter ? 1 : 0)
+                (HasUnsplatParameter ? 1 : 0) +
+                (HasProcParameter ? 1 : 0)
             );
 
             // hidden parameters:
             // #proc must be the first one - it is used as instance target for method invocation:
-            parameters.Add(blockParamVariable = Ast.Parameter(typeof(BlockParam), "#proc"));
+            parameters.Add(blockParamVariable = Ast.Parameter(typeof(BlockParam), "#bp"));
             parameters.Add(selfVariable = Ast.Parameter(typeof(object), "#self"));
 
             if (HasFormalParametersInArray) {
@@ -112,6 +119,10 @@ namespace IronRuby.Compiler.Ast {
 
             if (HasUnsplatParameter) {
                 parameters.Add(Ast.Parameter(typeof(RubyArray), "#array"));
+            }
+
+            if (HasProcParameter) {
+                parameters.Add(Ast.Parameter(typeof(Proc), "#proc"));
             }
 
             return parameters;
@@ -222,7 +233,8 @@ namespace IronRuby.Compiler.Ast {
             var result = new AstExpressions(
                 ParameterCount + 
                 (_parameters.Optional.Length > 0 ? 1 : 0) + 
-                (_parameters.Unsplat != null ? 1 : 0) + 
+                (_parameters.Unsplat != null ? 1 : 0) +
+                (_parameters.Block != null ? 1 : 0) +
                 1
              );
 
@@ -244,14 +256,14 @@ namespace IronRuby.Compiler.Ast {
                 result.Add(_parameters.TransformOptionalsInitialization(gen));
             }
 
-            if (_parameters.Block != null) {
-                result.Add(_parameters.Block.TransformWrite(gen, GetParameterAccess(parameters, paramsArray, parameterIndex)));
-                parameterIndex++;
-            }
-
             if (_parameters.Unsplat != null) {
                 // the last parameter is unsplat:
-                result.Add(_parameters.Unsplat.TransformWrite(gen, parameters[parameters.Count - 1]));
+                result.Add(_parameters.Unsplat.TransformWrite(gen, parameters[parameters.Count - (_parameters.Block != null ? 2 : 1)]));
+            }
+
+            if (_parameters.Block != null) {
+                result.Add(_parameters.Block.TransformWrite(gen, parameters[parameters.Count - 1]));
+                parameterIndex++;
             }
 
             result.Add(AstUtils.Empty());

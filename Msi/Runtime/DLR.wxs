@@ -1,0 +1,49 @@
+<?xml version='1.0'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi' xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+    <Module Id='DynamicLanguageRuntime' Language='1033' Version='1.1.0.20'>
+      <Package Id='4621283F-BB38-4D6F-A7C6-FA1059E2824D' Description='Dynamic Language Runtime Merge Module'
+                Manufacturer='Microsoft Corporation' InstallerVersion='200' />
+
+      <Directory Id="TARGETDIR" Name="SourceDir">
+          <!--NEGENx86 BINARIES-->
+          <Component Id="Comp_32_MSScripting" DiskId="1" Guid="4D441010-9B5D-4963-A277-2831E161925E">
+            <Condition>NOT VersionNT64</Condition>
+            <File Id="NGENFile_Microsoft.Scripting.dll" Name="Microsoft.Scripting.dll" Assembly=".net" KeyPath="yes" Source="Microsoft.Scripting.dll">
+              <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.dll" Priority="1"/>
+            </File>
+          </Component>
+          <Component Id="Comp_32_MSScriptingMetadata" DiskId="1" Guid="4C993FD7-4AE7-4D0D-94E2-6708D7E9F596">
+            <Condition>NOT VersionNT64</Condition>
+            <File Id="NGENFile_Microsoft.Scripting.Metadata.dll" Name="Microsoft.Scripting.Metadata.dll" Assembly=".net" KeyPath="yes" Source="Microsoft.Scripting.Metadata.dll">
+              <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.Metadata.dll" Priority="1"/>
+            </File>
+          </Component>
+          <Component Id="Comp_32_MSDynamic" DiskId="1" Guid="77E05B31-C89B-4C1F-AA4A-05373809067A">
+            <Condition>NOT VersionNT64</Condition>
+            <File Id="NGENFile_Microsoft.Dynamic.dll" Name="Microsoft.Dynamic.dll" Assembly=".net" KeyPath="yes" Source="Microsoft.Dynamic.dll">
+              <netfx:NativeImage Id="NGEN_File_Microsoft.Dynamic.dll" Priority="1"/>
+            </File>
+          </Component>
+          
+          <!--#NEGEN64 BINARIES-->
+          <Component Id="Comp_64_MSScripting" DiskId="1" Guid="493E00F7-4B1D-46DB-B912-46AF8E27C69B">
+            <Condition>VersionNT64</Condition>
+            <File Id="NGEN64File_Microsoft.Scripting.dll" Name="Microsoft.Scripting.dll" Assembly=".net" KeyPath="yes">
+              <netfx:NativeImage Id="NGEN64_File_Microsoft.Scripting.dll" Priority="1" Platform="all" />
+            </File>
+          </Component>
+          <Component Id="Comp_64_MSScriptingMetadata" DiskId="1" Guid="DCF89765-2F2F-4D8B-B8EA-32E888FAC975">
+            <Condition>VersionNT64</Condition>
+            <File Id="NGEN64File_Microsoft.Scripting.Metadata.dll" Name="Microsoft.Scripting.Metadata.dll" Assembly=".net" KeyPath="yes">
+              <netfx:NativeImage Id="NGEN64_File_Microsoft.Scripting.Metadata.dll" Priority="1" Platform="all" />
+            </File>
+          </Component>
+          <Component Id="Comp_64_MSDynamic" DiskId="1" Guid="7636A16F-44F3-463F-8DBB-9BD1207D49BB">
+            <Condition>VersionNT64</Condition>
+            <File Id="NGEN64File_Microsoft.Dynamic.dll" Name="Microsoft.Dynamic.dll" Assembly=".net" KeyPath="yes">
+              <netfx:NativeImage Id="NGEN64_File_Microsoft.Dynamic.dll" Priority="1" Platform="all" />
+            </File>
+          </Component>
+      </Directory>
+   </Module>
+</Wix>

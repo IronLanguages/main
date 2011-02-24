@@ -1,2 +1,0 @@
-fails:BasicObject class has no ancestors
-fails:BasicObject class has no superclass

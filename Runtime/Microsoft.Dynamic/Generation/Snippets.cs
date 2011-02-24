@@ -112,7 +112,7 @@ namespace Microsoft.Scripting.Generation {
                 MethodInfo configSaveAssemblies = assemblyGen.GetMethod("SetSaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
                 //The method may not exist.
                 if (configSaveAssemblies != null) {
-                    string[] coreAssemblyLocations = (string[])configSaveAssemblies.Invoke(null, new object[] { enable, directory });
+                    configSaveAssemblies.Invoke(null, new object[] { enable, directory });
                 }
             }
             Shared.ConfigureSaveAssemblies(enable, directory);

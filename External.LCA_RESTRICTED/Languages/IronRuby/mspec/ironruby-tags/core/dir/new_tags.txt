@@ -1,1 +1,0 @@
-fails:Dir.new returns a Dir instance representing the specified directory

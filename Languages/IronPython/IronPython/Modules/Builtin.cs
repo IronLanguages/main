@@ -293,8 +293,6 @@ namespace IronPython.Modules {
             }
 
             SourceUnit sourceUnit;
-            string unitPath = String.IsNullOrEmpty(filename) ? null : filename;
-
             switch (mode) {
                 case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Statements); break;
                 case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Expression); break;
@@ -979,6 +977,9 @@ namespace IronPython.Modules {
                 return LightExceptions.Throw(PythonOps.TypeError("issubclass() arg 1 must be a class"));
             }
 
+            if (o == typeinfo) {
+                return ScriptingRuntimeHelpers.True;
+            }
             foreach (object baseCls in tupleBases) {
                 PythonType pyType;
                 OldClass oc;
@@ -1079,6 +1080,12 @@ namespace IronPython.Modules {
         public static PythonType @long {
             get {
                 return TypeCache.BigInteger;
+            }
+        }
+
+        public static PythonType memoryview {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(MemoryView));
             }
         }
 
@@ -1991,7 +1998,20 @@ namespace IronPython.Modules {
         }
 
         public static double round(double number, int ndigits) {
-            return MathUtils.RoundAwayFromZero(number, ndigits);
+            return PythonOps.CheckMath(number, MathUtils.RoundAwayFromZero(number, ndigits));
+        }
+
+        public static double round(double number, BigInteger ndigits) {
+            int n;
+            if (ndigits.AsInt32(out n)) {
+                return round(number, n);
+            }
+
+            return ndigits > 0 ? number : 0.0;
+        }
+
+        public static double round(double number, double ndigits) {
+            throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
         }
 
         public static void setattr(CodeContext/*!*/ context, object o, string name, object val) {
@@ -2057,8 +2077,6 @@ namespace IronPython.Modules {
             }
 
             var sumState = new SumState(context.LanguageContext, start);
-            object ret = start;
-            
             while (i.MoveNext()) {
                 SumOne(ref sumState, i.Current);
             }

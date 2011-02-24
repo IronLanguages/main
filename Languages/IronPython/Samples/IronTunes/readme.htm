@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <link rel="stylesheet" type="text/css" href="../Samples.css">
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=windows-1252">
+  <title>IronTunes Tutorial</title>
+</head>
+<body lang="EN-US">
+<hr>
+<p class="CopyrightText"> Information in this document is subject to
+change without notice. The example companies, organizations, products,
+people, and events depicted herein are fictitious. No association with
+any real company, organization, product, person or event is intended or
+should be inferred. Complying with all applicable copyright laws is the
+responsibility of the user. Without limiting the rights under
+copyright, no part of this document may be reproduced, stored in or
+introduced into a retrieval system, or transmitted in any form or by
+any means (electronic, mechanical, photocopying, recording, or
+otherwise), or for any purpose, without the express written permission
+of Microsoft Corporation.</p>
+<p class="CopyrightText"> &nbsp;</p>
+<p class="CopyrightText"> Microsoft may have patents, patent
+applications, trademarked, copyrights, or other intellectual property
+rights covering subject matter in this document. Except as expressly
+provided in any written license agreement from Microsoft, the
+furnishing of this document does not give you any license to these
+patents, trademarks, copyrights, or other intellectual property.</p>
+<p class="CopyrightText"> &nbsp;</p>
+<div class="Section1">
+	<p class="CopyrightText">© Microsoft Corporation. All rights reserved.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Microsoft, MS-DOS, MS, Windows, Windows NT, MSDN, 
+	Active Directory, BizTalk, SQL Server, SharePoint, Outlook, PowerPoint, 
+	FrontPage, Visual Basic, Visual C++, Visual J++, Visual InterDev, Visual 
+	SourceSafe, Visual C#, Visual J#,&nbsp; and Visual Studio are either registered 
+	trademarks or trademarks of Microsoft Corporation in the U.S.A. and/or other 
+	countries.</p>
+	<p class="CopyrightText">&nbsp;</p>
+	<p class="CopyrightText">Other product and company names herein may be the 
+	trademarks of their respective owners.</div>
+<hr>
+<p class="CopyrightText"> &nbsp;</p>
+<p class="CopyrightText">This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+    copy of the license can be found in the License.html file at the root of this distribution. If 
+    you cannot locate the  Apache License, Version 2.0, please send an email to
+    ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+    by the terms of the Apache License, Version 2.0.</p>
+<p class="Title1">&nbsp;</p>
+<p class="Title1">IronTunes</p>
+<p class="Body">A music player built in IronPython</p>
+<p class="Body">Contributor: Brad Dodson</p>
+<p class="contentsheading"> &nbsp;</p>
+<p class="contentsheading"> Prerequisites</p>
+<p class="body"> The prerequisites to successfully run IronTunes are:</p>
+<ul>
+  <li class="normal" type="disc">Microsoft .NET Framework Version 3.5 Service 
+  Pack 1 (or Windows 7)
+    <ul>
+      <li class="Normal">Required to run IronPython</li>
+      <li class="Normal">Download from 
+	  <a href="http://www.microsoft.com/downloads/details.aspx?FamilyId=AB99342F-5D1A-413D-8319-81DA479AB0D7&amp;displaylang=en">here</a></li>
+    </ul>
+  </li>
+  <li class="normal" type="disc">Microsoft Visual Studio 2008
+    <ul>
+      <li class="Normal">Required for the COM interoperability</li>
+      <li class="Normal">Get it
+	  <a href="http://www.microsoft.com/visualstudio/en-us/howtobuy/default.mspx">here</a></li>
+    </ul>
+  </li>
+  <li class="normal"> IronPython 2.6 distribution
+    <ul>
+      <li>If you are new to IronPython, please go over the tutorial
+that comes with this distribution</li>
+      <li>Download from 
+	  <a href="http://ironpython.codeplex.com/Release/ProjectReleases.aspx?ReleaseId=12482">here</a><br>
+      </li>
+    </ul>
+  </li>
+    <li class="normal">DirectX 9.0c and a compatible sound card</li>
+    <ul>
+		<li class="normal">Download from 
+		<a
+ href="http://www.microsoft.com/downloads/details.aspx?FamilyId=2DA43D38-DB71-4C1B-BC6A-9B6652CD92A3&amp;displaylang=en">here</a></li>
+	</ul>
+	<li class="normal">Follow the instructions on generating an Interop
+Assembly for DirectShow (i.e., quartz.dll) found 
+	<a href="#Generating_the_COM_Interop_Assembly_">here</a><br></li>
+</ul>
+<p class="Normal">
+<br>
+<em>Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 SP1</em> can be used in place of the
+<em>Visual Studio 2008</em> installation.</p>
+<h1>Introduction</h1>
+<p class="Normal">IronTunes is a music player built upon the IronPython
+framework and utilizes several Windows libraries to play music
+files. For example, COM Interop is used to connect to the DirectShow
+API which in turn plays the actual files. This simply means that we do
+not
+have to implement the code to convert audio files to actual sounds
+ourselves. Additionally, IronTunes uses
+a Windows Presentation Foundation based graphical
+user interface. One of the major benefits of using WPF from IronPython
+is that it makes writing GUIs very easy.</p>
+<p class="Normal">&nbsp;</p>
+<p class="Normal">IronTunes comes with two separate GUIs to showcase that you 
+can design UI independently from the code.&nbsp; To see this, save a copy of 
+CurrentSkin.xaml, and copy NewSkin.xaml over CurrentSkin.xaml.&nbsp; Then 
+re-launch IronTunes.&nbsp; NewSkin.xaml adds a seek slider and images for the 
+buttons.&nbsp; Use the thinner plus-sign button to add an individual file and 
+the thicker plus-sign button to add an entire directory.<br>
+</p>
+<h2>Using IronTunes</h2>
+<p class="Normal">
+To start IronTunes, run "ipy.exe IronTunes.py" from
+the IronTunes directory. Add files by clicking the "Add File" or "Add
+Dir" buttons. The files you add will show up in the library view below.
+You can select a file and click "Play/Pause" to start playing it. <br>
+Typing in the search box in the top right will filter the library as
+you type.<br>
+The other features work pretty much as expected: Back, Forward, and
+Volume Control. Information about the currently playing track is
+displayed at the top in the center.</p>
+<h2>COM Interop and General Explanation of How IronTunes Functions</h2>
+<p class="Normal">IronTunes uses quartz.dll (in the system32 directory) by 
+generating an interop assembly with the tlbimp.exe tool.&nbsp; See the 
+IronPython tutorial for more info. The Player object (player.py)
+constructs a FilegraphManagerClass object from quartz.dll via the interop 
+assembly QuartzTypeLib.dll.&nbsp; Player calls into the FilegraphManagerClass 
+object to play the audio files. The Player object calls the RenderFile method
+with a filename to setup the filter graph to render the file. Then it
+can call the Run (to play), Stop, and Pause methods. The Player object also registers
+the program's main window with the filter graph manager to send
+notification messages. In order to handle these there is an extra wndproc hooked into the main window which sends notifications to the
+player object when it needs to respond to filter graph events (it calls
+the ProcessEvents method). This allows the program to advance to the
+next item on the playlist when an item finishes playing.<br>
+</p>
+<h3><a name="Generating_the_COM_Interop_Assembly_"></a>Generating the
+COM Interop Assembly<br>
+</h3>
+<p class="Normal">For this example
+to run, it is
+required that you create the quartz (i.e., DirectShow) interop assembly
+on your own by following these simple
+steps:<br>
+</p>
+<ol>
+  <li>
+    <p class="Step">Open the &quot;Visual Studio
+2008 Command Prompt" from the start menu.</p>
+  </li>
+  <li>
+    <p class="Step">Change the current directory to Samples\IronTunes.</p>
+  </li>
+  <li>
+    <p class="Step">Use the tlbimp tool to
+generate the interop assembly for quartz (tlbimp writes to the current
+directory):</p>
+  </li>
+</ol>
+<p class="TypedExample">tlbimp
+%SystemRoot%\System32\quartz.dll<br>
+<br>
+</p>
+<p class="Step">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;
+C:\IronPython\Samples\IronTunes&gt;tlbimp
+%SystemRoot%\System32\quartz.dll<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; Microsoft (R) .NET Framework Type
+Library to Assembly Converter
+2.0.50727.42<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; Copyright (C) Microsoft
+Corporation.&nbsp; All rights reserved.<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; Type library imported to
+QuartzTypeLib.dll<br>
+</p>
+<h2>Windows Presentation Foundation</h2>
+<p class="Normal">IronTunes builds a
+new WPF window and loads the XAML
+file CurrentSkin.xaml. It then sets the window's DataContext to be
+the application's dataModel, so that the bindings in the XAML file can
+allow the user interface to reflect the program's state. It also
+creates an IronTunesWindow object (IronTunesWindow.py) and uses its
+enliven method to attach event handlers to the buttons.
+</p>
+<h2>Library Management</h2>
+<p class="Normal">The Library class
+(library.py) manages the current
+music library. It implements the functionality of adding files and
+directories (recursively) to the current library, and allows the
+current library view to be filtered and sorted (by a SearchFilter
+object implemented in SearchFilter.py).</p>
+</body>
+</html>

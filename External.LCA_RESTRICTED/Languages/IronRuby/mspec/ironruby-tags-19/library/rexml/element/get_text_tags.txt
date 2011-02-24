@@ -1,4 +1,0 @@
-fails:REXML::Element#get_text returns the first text child node
-fails:REXML::Element#get_text returns text from an element matching path
-fails:"REXML::Element#get_text returns the first text child node"
-fails:"REXML::Element#get_text returns text from an element matching path"

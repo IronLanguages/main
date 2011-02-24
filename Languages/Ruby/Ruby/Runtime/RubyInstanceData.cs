@@ -26,33 +26,17 @@ namespace IronRuby.Runtime {
     /// Stores the per-instance data that all Ruby objects need (frozen?, tainted?, untrusted?, instance_variables, etc)
     /// Stored in a lookaside weak hashtable for types that don't implement IRubyObject (i.e. .NET types).
     /// </summary>
-    public sealed class RubyInstanceData {
+    public sealed class RubyInstanceData : IRubyObjectState {
+        // TODO: compress
+        
         private static int _CurrentObjectId = 42; // Last unique Id we gave out.
-
-        // These need to be seperate fields so we get atomic access to them
-        // (which means no synchronization is needed for get/set operations)
         private int _objectId;
+        
+        // The values are unused if the object itself implements IRubyObjectState.
         private bool _frozen, _tainted, _untrusted;
+        
         private Dictionary<string, object> _instanceVars;
         private RubyClass _immediateClass;
-         
-        internal bool Tainted {
-            get { return _tainted; }
-            set { _tainted = value; }
-        }
-
-        internal bool Untrusted {
-            get { return _untrusted; }
-            set { _untrusted = value; }
-        }
-
-        internal bool Frozen {
-            get { return _frozen; }
-        }
-
-        internal void Freeze() {
-            _frozen = true;
-        }
 
         /// <summary>
         /// Null - uninitialized (lazy init'd) => object doesn't have an instance singleton.
@@ -91,6 +75,42 @@ namespace IronRuby.Runtime {
             _objectId = Interlocked.Increment(ref _CurrentObjectId);
         }
 
+        #region Flags
+
+        public bool IsTainted {
+            get { return _tainted; }
+            set {
+                Mutate();
+                _tainted = value;
+            }
+        }
+
+        public bool IsUntrusted {
+            get { return _untrusted; }
+            set {
+                Mutate();
+                _untrusted = value; 
+            }
+        }
+
+        public bool IsFrozen {
+            get { return _frozen; }
+        }
+
+        public void Freeze() {
+            _frozen = true;
+        }
+
+        private void Mutate() {
+            if (_frozen) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+        }
+
+        #endregion
+
+        #region Instance Variables
+
         /// <summary>
         /// Gets the instance variables dictionary, initializing it if it was null.
         /// Only use this if you want to set something into the dictionary, otherwise
@@ -105,9 +125,7 @@ namespace IronRuby.Runtime {
             }
             return _instanceVars;
         }
-
-        #region Instance Variables
-
+        
         internal bool HasInstanceVariables {
             get {
                 return _instanceVars != null;
@@ -167,6 +185,7 @@ namespace IronRuby.Runtime {
         }
 
         internal bool TryRemoveInstanceVariable(string/*!*/ name, out object value) {
+            // frozen state checked by caller
             if (_instanceVars == null) {
                 value = null;
                 return false;
@@ -187,6 +206,7 @@ namespace IronRuby.Runtime {
         }
 
         internal void SetInstanceVariable(string/*!*/ name, object value) {
+            // Frozen state checked by caller. 
             Dictionary<string, object> vars = GetInstanceVariables();
             lock (vars) {
                 vars[name] = value;

@@ -24,6 +24,7 @@ using System.Text;
 using System.Xml;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -301,6 +302,25 @@ the assembly object.")]
             return ((PythonContext)context.LanguageContext).GetSetCommandDispatcher(dispatcher);
         }
 
+
+        public static void ImportExtensions(CodeContext/*!*/ context, PythonType type) {
+            if (type == null) {
+                throw PythonOps.TypeError("type must not be None");
+            } else if (!type.IsSystemType) {
+                throw PythonOps.ValueError("type must be .NET type");
+            }
+
+            lock (context.ModuleContext) {
+                context.ModuleContext.ExtensionMethods = ExtensionMethodSet.AddType(context.LanguageContext, context.ModuleContext.ExtensionMethods, type);
+            }
+        }
+
+        public static void ImportExtensions(CodeContext/*!*/ context, [NotNull]NamespaceTracker @namespace) {
+            lock (context.ModuleContext) {
+                context.ModuleContext.ExtensionMethods = ExtensionMethodSet.AddNamespace(context.LanguageContext, context.ModuleContext.ExtensionMethods, @namespace);
+            }
+        }
+
         #endregion
 
         #region Private implementation methods
@@ -454,7 +474,7 @@ import Namespace.")]
             if (file == null) throw PythonOps.TypeError("Expected string, got NoneType");
 
             // update our path w/ the path of this file...
-            string path = System.IO.Path.GetDirectoryName(file);
+            string path = System.IO.Path.GetDirectoryName(Path.GetFullPath(file));
             List list;
 
             PythonContext pc = PythonContext.GetContext(context);

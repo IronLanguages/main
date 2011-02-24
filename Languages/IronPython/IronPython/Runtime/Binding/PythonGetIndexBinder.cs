@@ -53,8 +53,6 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
-            ParameterInfo[] prms = typeof(T).GetMethod("Invoke").GetParameters();
-
             if (CompilerHelpers.GetType(args[1]) == typeof(int)) {
                 if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
                     if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {

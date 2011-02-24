@@ -161,7 +161,7 @@ namespace IronPython.Runtime {
                     traceEvent = "exception";
                     object pyException = PythonExceptions.ToPython((Exception)payload);
                     object pyType = ((IPythonObject)pyException).PythonType;
-                    args = PythonTuple.MakeTuple(pyType, pyException, null);
+                    args = PythonTuple.MakeTuple(pyType, pyException, new TraceBack(null, pyFrame));
                     break;
                 case Debugging.TraceEventKind.FrameExit:
                     traceEvent = "return";

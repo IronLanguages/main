@@ -1,2 +1,0 @@
-fails:IO#reopen should not raise IOError when called on closed stream with path
-fails:IO#reopen reassociates self with a new stream after some reads

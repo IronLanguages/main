@@ -41,6 +41,7 @@ namespace Microsoft.Scripting.Runtime {
     /// </summary>
     public sealed class Scope : IDynamicMetaObjectProvider {
         private ScopeExtension[] _extensions; // resizable
+        private readonly object _extensionsLock = new object();
         private readonly IDynamicMetaObjectProvider _storage;
 
         /// <summary>
@@ -81,7 +82,7 @@ namespace Microsoft.Scripting.Runtime {
         public ScopeExtension SetExtension(ContextId languageContextId, ScopeExtension extension) {
             ContractUtils.RequiresNotNull(extension, "extension");
 
-            lock (_extensions) {
+            lock (_extensionsLock) {
                 if (languageContextId.Id >= _extensions.Length) {
                     Array.Resize(ref _extensions, languageContextId.Id + 1);
                 }

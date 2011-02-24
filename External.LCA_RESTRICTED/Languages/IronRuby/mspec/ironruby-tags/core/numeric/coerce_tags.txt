@@ -1,1 +1,0 @@
-fails:Numeric#coerce calls #to_f to convert other if self responds to #to_f

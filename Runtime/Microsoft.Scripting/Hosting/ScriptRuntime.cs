@@ -232,7 +232,7 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         /// <summary>
-        /// Looks up the engine for the specified language. It the engine hasn't been created in this Runtime, it is instantiated here.
+        /// Looks up the engine for the specified language. If the engine hasn't been created in this Runtime, it is instantiated here.
         /// The method doesn't lock nor send notifications to the host.
         /// </summary>
         private ScriptEngine GetEngineNoLockNoNotification(LanguageContext language, out bool freshEngineCreated) {

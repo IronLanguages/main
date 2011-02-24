@@ -22,7 +22,7 @@ using IronPython.Runtime;
 namespace IronPython.Modules {
     public static class CTypesTest {
         // TODO: This isn't right
-        public static string __file__ = Environment.GetEnvironmentVariable("DLR_ROOT") + "\\External.LCA_RESTRICTED\\Languages\\IronPython\\26\\DLLs\\_ctypes_test.pyd";
+        public static string __file__ = Environment.GetEnvironmentVariable("DLR_ROOT") + "\\External.LCA_RESTRICTED\\Languages\\IronPython\\27\\DLLs\\_ctypes_test.pyd";
 
         public static void func() {
         }

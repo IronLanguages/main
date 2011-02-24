@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!-- *************************************************************************
+ *
+ * Copyright (c) Microsoft Corporation. 
+ *
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+ * copy of the license can be found in the License.html file at the root of this distribution. If 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
+ * ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * by the terms of the Apache License, Version 2.0.
+ *
+ * You must not remove this notice, or any other, from this software.
+ *
+ *
+ * *************************************************************************** -->
+<BufferPlayer>
+  <sine>
+    <freq>587.329535835</freq>
+    <ampl>0.8</ampl>
+    <isCarrier>True</isCarrier>
+    <ratio>1.0</ratio>
+    <useRatio>True</useRatio>
+    <enabled>True</enabled>
+    <sine>
+      <freq>2349.31814334</freq>
+      <ampl>0.8</ampl>
+      <isCarrier>False</isCarrier>
+      <ratio>4.0</ratio>
+      <useRatio>True</useRatio>
+      <enabled>True</enabled>
+    </sine>
+  </sine>
+  <sine>
+    <freq>734.161919794</freq>
+    <ampl>0.8</ampl>
+    <isCarrier>True</isCarrier>
+    <ratio>1.25</ratio>
+    <useRatio>True</useRatio>
+    <enabled>True</enabled>
+    <sine>
+      <freq>2936.64767918</freq>
+      <ampl>0.8</ampl>
+      <isCarrier>False</isCarrier>
+      <ratio>4.0</ratio>
+      <useRatio>True</useRatio>
+      <enabled>True</enabled>
+    </sine>
+  </sine>
+  <sine>
+    <freq>440.497151876</freq>
+    <ampl>0.8</ampl>
+    <isCarrier>True</isCarrier>
+    <ratio>0.75</ratio>
+    <useRatio>True</useRatio>
+    <enabled>True</enabled>
+    <sine>
+      <freq>1761.98860751</freq>
+      <ampl>0.8</ampl>
+      <isCarrier>False</isCarrier>
+      <ratio>4.0</ratio>
+      <useRatio>True</useRatio>
+      <enabled>True</enabled>
+    </sine>
+  </sine>
+</BufferPlayer>

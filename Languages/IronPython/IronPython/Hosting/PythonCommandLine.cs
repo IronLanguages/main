@@ -168,14 +168,21 @@ namespace IronPython.Hosting {
 
             ImportSite();
 
-            PythonContext.InsertIntoPath(0, ".");
-            PythonContext.InsertIntoPath(++pathIndex, PythonContext.DomainManager.Platform.CurrentDirectory);
+            // If running in console mode (including with -c), the current working directory should be
+            // the first entry in sys.path. If running a script file, however, the CWD should not be added;
+            // instead, the script's containg folder should be added.
+
+            string fullPath = "."; // this is a valid path resolving to current working dir. Pinky-swear.
 
             if (Options.Command == null && Options.FileName != null) {
                 if (Options.FileName == "-") {
                     Options.FileName = "<stdin>";
                 } else {
 #if !SILVERLIGHT
+                    if (Directory.Exists(Options.FileName)) {
+                        Options.FileName = Path.Combine(Options.FileName, "__main__.py");
+                    }
+
                     if (!File.Exists(Options.FileName)) {
                         Console.WriteLine(
                             String.Format(
@@ -186,10 +193,13 @@ namespace IronPython.Hosting {
                         Environment.Exit(1);
                     }
 #endif
-                    string fullPath = Language.DomainManager.Platform.GetFullPath(Options.FileName);
-                    PythonContext.InsertIntoPath(0, Path.GetDirectoryName(fullPath));
+                    fullPath = Path.GetDirectoryName(
+                        Language.DomainManager.Platform.GetFullPath(Options.FileName)
+                    );
                 }
             }
+
+            PythonContext.InsertIntoPath(0, fullPath);
         }
 
         protected override Scope/*!*/ CreateScope() {

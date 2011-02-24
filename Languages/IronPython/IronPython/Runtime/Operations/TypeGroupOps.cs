@@ -57,7 +57,7 @@ namespace IronPython.Runtime.Operations {
         public static object Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, params object[] args) {
             return PythonCalls.Call(
                 context,
-                DynamicHelpers.GetPythonTypeFromType(self.NonGenericType),
+                DynamicHelpers.GetPythonTypeFromType(self.GetNonGenericType()),
                 args ?? ArrayUtils.EmptyObjects
             );
         }
@@ -66,7 +66,7 @@ namespace IronPython.Runtime.Operations {
         public static object Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, [ParamDictionary]PythonDictionary kwArgs, params object[] args) {
             return PythonCalls.CallWithKeywordArgs(
                 context, 
-                DynamicHelpers.GetPythonTypeFromType(self.NonGenericType),
+                DynamicHelpers.GetPythonTypeFromType(self.GetNonGenericType()),
                 args ?? ArrayUtils.EmptyObjects,
                 kwArgs ?? new PythonDictionary()
             );
@@ -98,7 +98,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static PythonType GetItem(TypeGroup self, PythonTuple tuple) {
             if (tuple.__len__() == 0) {
-                return DynamicHelpers.GetPythonTypeFromType(self.NonGenericType);
+                return DynamicHelpers.GetPythonTypeFromType(self.GetNonGenericType());
             }
 
             return GetItem(self, tuple._data);

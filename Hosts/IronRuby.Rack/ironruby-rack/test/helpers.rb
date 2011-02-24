@@ -34,7 +34,7 @@ RackPath = if ENV['DLR_ROOT']
   end
   
   # in a dev-environment, use a set version of Rack
-  File.expand_path 'External.LCA_RESTRICTED/Languages/IronRuby/tests/rack-1.1.0', ENV['DLR_ROOT']
+  File.expand_path 'Languages/Ruby/Tests/Libraries/rack-1.1.0', ENV['DLR_ROOT']
 else
   # in any other environment, use the path to the latest installed version of Rack
   Gem.find_files('rack.rb').first.split('/')[0..-3].join('/')

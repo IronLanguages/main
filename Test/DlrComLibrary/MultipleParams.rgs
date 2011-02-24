@@ -1,0 +1,26 @@
+HKCR
+{
+	DlrComLibrary.MultipleParams.1 = s 'MultipleParams Class'
+	{
+		CLSID = s '{7FB4E1C7-CAD6-4527-9F3B-FC75C18D9BFA}'
+	}
+	DlrComLibrary.MultipleParams = s 'MultipleParams Class'
+	{
+		CLSID = s '{7FB4E1C7-CAD6-4527-9F3B-FC75C18D9BFA}'
+		CurVer = s 'DlrComLibrary.MultipleParams.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {7FB4E1C7-CAD6-4527-9F3B-FC75C18D9BFA} = s 'MultipleParams Class'
+		{
+			ProgID = s 'DlrComLibrary.MultipleParams.1'
+			VersionIndependentProgID = s 'DlrComLibrary.MultipleParams'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{A50D2773-4B1B-428A-B5B4-9300E1B50484}'
+		}
+	}
+}

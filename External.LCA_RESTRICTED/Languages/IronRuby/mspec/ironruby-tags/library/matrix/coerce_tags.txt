@@ -1,1 +1,0 @@
-fails:Matrix#coerce allows the division of fixnum by a Matrix 

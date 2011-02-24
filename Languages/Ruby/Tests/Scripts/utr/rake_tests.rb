@@ -14,7 +14,7 @@ class UnitTestSetup
   end
 
   def gather_files
-    @rake_tests_dir = File.expand_path("External.LCA_RESTRICTED/Languages/IronRuby/tests/Rake-#{Version}", ENV["DLR_ROOT"])
+    @rake_tests_dir = File.expand_path("Languages/Ruby/Tests/Libraries/Rake-#{Version}", ENV["DLR_ROOT"])
     @all_test_files = Dir.glob("#{@rake_tests_dir}/test/test_*.rb") + Dir.glob("#{@rake_tests_dir}/test/contrib/test_*.rb")
   end
 
@@ -49,6 +49,8 @@ class UnitTestSetup
         test_both_pattern_and_test_files(TestTestTask)
         test_pattern(TestTestTask)
         test_X_returns_everything_but_extension(TestPathMap)
+        test_running_multitasks(TestMultiTask)
+        test_array_comparisons(TestFileList)
     }
   end
 end

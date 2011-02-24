@@ -74,11 +74,26 @@ namespace Microsoft.Scripting.Generation {
                     }
 
                     // Add the consant pool variable to the top lambda
-                    body = AstUtils.AddScopedVariable(
-                        body,
+                    // We first create the array and then assign into it so that we can refer to the
+                    // array and read values out that have already been created.
+                    ReadOnlyCollectionBuilder<Expression> assigns = new ReadOnlyCollectionBuilder<Expression>(_constants.Count + 2);
+                    assigns.Add(Expression.Assign(
                         _constantPool,
-                        Expression.NewArrayInit(typeof(object), _constants)
-                    );
+                        Expression.NewArrayBounds(typeof(object), Expression.Constant(_constants.Count))
+                    ));
+
+                    // emit inner most constants first so they're available for outer most constants to consume
+                    for (int i = _constants.Count - 1; i >= 0 ; i--) {
+                        assigns.Add(
+                            Expression.Assign(
+                                Expression.ArrayAccess(_constantPool, Expression.Constant(i)),
+                                _constants[i]
+                            )
+                        );
+                    }
+                    assigns.Add(body);
+
+                    body = Expression.Block(new[] { _constantPool }, assigns);
                 }
 
                 // Rewrite the lambda

@@ -82,6 +82,7 @@ namespace IronRuby.Tests {
             runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
             runtimeSetup.HostType = typeof(TestHost);
             runtimeSetup.HostArguments = new object[] { testCase.Options };
+            languageSetup.Options["ApplicationBase"] = _driver.BaseDirectory;
             languageSetup.Options["NoAdaptiveCompilation"] = _driver.NoAdaptiveCompilation;
             languageSetup.Options["CompilationThreshold"] = _driver.CompilationThreshold;
             languageSetup.Options["Verbosity"] = 2;
@@ -115,7 +116,7 @@ namespace IronRuby.Tests {
         private readonly List<MutableTuple<string, StackFrame, string, object>>/*!*/ _failedAssertions = new List<MutableTuple<string, StackFrame, string, object>>();
         private readonly List<MutableTuple<string, Exception>>/*!*/ _unexpectedExceptions = new List<MutableTuple<string, Exception>>();
 
-        private TestRuntime _testRuntime; 
+        private static TestRuntime _testRuntime; 
         private static bool _excludeSelectedCases;
         private static bool _verbose;
         private static bool _isDebug;
@@ -126,6 +127,11 @@ namespace IronRuby.Tests {
         private static bool _noAdaptiveCompilation;
         private static int _compilationThreshold;
         private static bool _runPython = true;
+        private readonly string/*!*/ _baseDirectory;
+
+        public Driver(string/*!*/ baseDirectory) {
+            _baseDirectory = baseDirectory;
+        }
 
         public TestRuntime TestRuntime {
             get { return _testRuntime; }
@@ -165,6 +171,10 @@ namespace IronRuby.Tests {
 
         public bool RunPython {
             get { return _runPython; }
+        }
+
+        public string BaseDirectory {
+            get { return _baseDirectory; }
         }
 
         private static bool ParseArguments(List<string>/*!*/ args) {
@@ -276,7 +286,7 @@ namespace IronRuby.Tests {
                 setup.ApplicationBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 AppDomain domain = AppDomain.CreateDomain("Tests", null, setup, ps);
 
-                Loader loader = new Loader(args);
+                Loader loader = new Loader(args, setup.ApplicationBase);
                 domain.DoCallBack(new CrossAppDomainDelegate(loader.Run));
                 
                 Environment.ExitCode = loader.ExitCode;
@@ -284,20 +294,22 @@ namespace IronRuby.Tests {
                 if (!String.IsNullOrEmpty(culture)) {
                     Thread.CurrentThread.CurrentCulture = new CultureInfo(culture, false);
                 }
-                Environment.ExitCode = Run(args);
+                Environment.ExitCode = Run(args, AppDomain.CurrentDomain.BaseDirectory);
             }
         }
 
         public sealed class Loader : MarshalByRefObject {
             public int ExitCode;
             public readonly List<string>/*!*/ Args;
+            public readonly string/*!*/ BaseDirectory;
 
-            public Loader(List<string>/*!*/ args) {
+            public Loader(List<string>/*!*/ args, string/*!*/ baseDirectory) {
                 Args = args;
+                BaseDirectory = baseDirectory;
             }
 
             public void Run() {
-                ExitCode = Driver.Run(Args);
+                ExitCode = Driver.Run(Args, BaseDirectory);
             }
         }
 
@@ -326,13 +338,14 @@ namespace IronRuby.Tests {
 
             return setIntersection;
 #else
-            Evidence e = new Evidence();
+            // this functionality is not available on Mono (AddHostEvidence is undefined), use dynamic to resolve it at runtime
+            dynamic e = new Evidence();
             e.AddHostEvidence(new Zone(SecurityZone.Internet));
-            return SecurityManager.GetStandardSandbox(e);
+            return SecurityManager.GetStandardSandbox((Evidence)e);
 #endif
         }       
 
-        public static int Run(List<string>/*!*/ args) {
+        public static int Run(List<string>/*!*/ args, string/*!*/ baseDirectory) {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US") {
                 Console.WriteLine("Current culture: {0}", Thread.CurrentThread.CurrentCulture);
             }
@@ -352,8 +365,8 @@ namespace IronRuby.Tests {
                 status = driver.RunTests();
             } else {
                 InitializeDomain();
-                Driver driver = new Driver();
-
+                Driver driver = new Driver(baseDirectory);
+                
                 if (Manual.TestCode.Trim().Length == 0) {
                     status = driver.RunUnitTests(args);
                 } else {

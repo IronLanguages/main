@@ -26,41 +26,50 @@ namespace IronRuby.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     /// <summary>
-    /// Represents a string literal encoded by the containing source file encoding.
+    /// Represents a string literal.
     /// </summary>
     public partial class StringLiteral : Expression {
         // string or byte[]
         private readonly object/*!*/ _value;
 
-        internal StringLiteral(object/*!*/ value, SourceSpan location) 
+        // TODO: we can save memory if we subclass StringLiteral (EncodedStringLiteral, EncodedSymbolLiteral) for _encoding != __ENCODING__
+        private readonly RubyEncoding/*!*/ _encoding;
+
+        internal StringLiteral(object/*!*/ value, RubyEncoding/*!*/ encoding, SourceSpan location) 
             : base(location) {
             Debug.Assert(value is string || value is byte[]);
+            Debug.Assert(encoding != null);
             _value = value;
+            _encoding = encoding;
         }
 
-        public StringLiteral(string/*!*/ value, SourceSpan location)
-            : this((object)value, location) {
-        }
-
-        public StringLiteral(byte[]/*!*/ value, SourceSpan location)
-            : this((object)value, location) {
-        }
-
-        internal object/*!*/ Value {
+        public object/*!*/ Value {
             get { return _value; }
         }
 
-        public MutableString/*!*/ GetMutableString(RubyEncoding/*!*/ encoding) {
+        public RubyEncoding/*!*/ Encoding {
+            get { return _encoding; }
+        }
+
+        public MutableString/*!*/ GetMutableString() {
             string str = _value as string;
             if (str != null) {
-                return MutableString.Create(str, encoding);
+                return MutableString.Create(str, _encoding);
             } else {
-                return MutableString.CreateBinary((byte[])_value, encoding);
+                return MutableString.CreateBinary((byte[])_value, _encoding);
             }
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return Methods.CreateMutableStringL.OpCall(StringConstructor.MakeConstant(_value), AstUtils.Constant(gen.Encoding));
+            return Transform(_value, _encoding);
+        }
+
+        internal static MSA.Expression/*!*/ Transform(object/*!*/ value, RubyEncoding/*!*/ encoding) {
+            if (value is string) {
+                return Methods.CreateMutableStringL.OpCall(AstUtils.Constant(value), encoding.Expression);
+            } else {
+                return Methods.CreateMutableStringB.OpCall(AstUtils.Constant(value), encoding.Expression);
+            }
         }
     }
 }

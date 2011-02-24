@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "BadPaint", "BadPaint.vbproj", "{76F8166E-594C-49EF-8D86-43E741309C2F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{092BC5A1-2B9A-41D4-9B08-742AC5F0628F}"
+	ProjectSection(SolutionItems) = preProject
+		BadPaint.vsmdi = BadPaint.vsmdi
+		Local.testsettings = Local.testsettings
+		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 2
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://vstfdevdiv:8080/devdiv
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = BadPaint.vbproj
+		SccLocalPath1 = .
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = BadPaint.vsmdi
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{76F8166E-594C-49EF-8D86-43E741309C2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76F8166E-594C-49EF-8D86-43E741309C2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76F8166E-594C-49EF-8D86-43E741309C2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76F8166E-594C-49EF-8D86-43E741309C2F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

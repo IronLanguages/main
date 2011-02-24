@@ -536,7 +536,6 @@ namespace IronPython.Modules {
             private void SliceNoStep(object value, int start, int stop) {
                 // replace between start & stop w/ values
                 IEnumerator ie = PythonOps.GetEnumerator(value);
-                int length = _data.Length;
 
                 ArrayData newData = CreateData(_typeCode);
                 for (int i = 0; i < start; i++) {

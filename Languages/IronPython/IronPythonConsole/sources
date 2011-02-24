@@ -1,4 +1,0 @@
-TARGETTYPE=NOTARGET 
-CLR_TARGETTYPE=EXE 
-MSBuildProjectFile=IronPythonConsole.Build.csproj 
-SOURCES= 

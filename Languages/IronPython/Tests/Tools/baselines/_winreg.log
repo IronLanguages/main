@@ -56,6 +56,7 @@ missing implementations for:
 -------------------------------------------------------
 Complete list of module attributes that should be removed 
 from IronPython:
+    _winreg  CreateKeyEx                   
     _winreg.HKEYType    Close                     # These actually exist in CPython as well but this is a weird type    
     _winreg.HKEYType    Detach                     # These actually exist in CPython as well but this is a weird type   
     _winreg.HKEYType    __enter__                  # These actually exist in CPython as well but this is a weird type   

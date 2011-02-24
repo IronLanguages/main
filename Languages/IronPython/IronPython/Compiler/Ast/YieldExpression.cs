@@ -85,7 +85,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override string CheckAssign() {
-            return "assignment to yield expression not possible";
+            return "can't assign to yield expression";
+        }
+
+        internal override string CheckAugmentedAssign() {
+            return CheckAssign();
         }
 
         public override string NodeName {

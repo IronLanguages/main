@@ -52,7 +52,11 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             public override int GetHashCode() {
+#if SILVERLIGHT && CLR2 // CF RH.GetHashCode throws NullReferenceException if the argument is null
+                return (Value != null ? RuntimeHelpers.GetHashCode(Value) : 0) ^ Type.GetHashCode();
+#else
                 return RuntimeHelpers.GetHashCode(Value) ^ Type.GetHashCode();
+#endif
             }
             public bool Equals(TypedConstant other) {
                 return object.ReferenceEquals(Value, other.Value) && Type.Equals(other.Type);

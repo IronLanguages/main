@@ -94,7 +94,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override string CheckAssign() {
             if (_value == null) {
-                return "assignment to None";
+                return "cannot assign to None";
             }
 
             return "can't assign to literal";

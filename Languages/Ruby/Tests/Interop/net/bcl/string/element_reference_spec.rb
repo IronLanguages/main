@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/../../../../../../../External.LCA_RESTRICTED/Languages/IronRuby/mspec/rubyspec/core/string/fixtures/classes.rb'
-require File.dirname(__FILE__) + '/../../../../../../../External.LCA_RESTRICTED/Languages/IronRuby/mspec/rubyspec/core/string/shared/slice.rb'
+require File.dirname(__FILE__) + '/../../../../mspec/rubyspec/core/string/fixtures/classes.rb'
+require File.dirname(__FILE__) + '/../../../../mspec/rubyspec/core/string/shared/slice.rb'
 
 describe "System::String#[]" do
   before(:each) do

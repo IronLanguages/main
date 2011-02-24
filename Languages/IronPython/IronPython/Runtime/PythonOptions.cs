@@ -24,7 +24,7 @@ using IronPython.Runtime.Exceptions;
 
 namespace IronPython {
 
-    [CLSCompliant(true)]
+    [CLSCompliant(false)]
     public enum PythonDivisionOptions {
         Old,
         New,
@@ -202,6 +202,7 @@ namespace IronPython {
         /// <summary>
         /// The division options (old, new, warn, warnall)
         /// </summary>
+        [CLSCompliant(false)]
         public PythonDivisionOptions DivisionOptions {
             get { return _division; }
         }

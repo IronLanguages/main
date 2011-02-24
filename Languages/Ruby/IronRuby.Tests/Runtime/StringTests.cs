@@ -55,18 +55,15 @@ foobarbaz
         }
 
         public void Strings2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 puts ""foo#{1;2;3}baz""
-");
-            }, @"
+", @"
 foo3baz
 ");
         }
 
         public void Strings3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class String; def to_s; 'S'; end; end
 class Fixnum; def to_s; 'N'; end; end
 
@@ -81,8 +78,7 @@ puts ""-#{1}+#{1}""
 puts ""-#{1}+#{1}-""
 
 puts ""-#{x = 'bob'}-""
-");
-            }, @"
+", @"
 """"
 N
 N-
@@ -244,7 +240,8 @@ SUB
         public void Symbols1() {
             byte[] bytes = Encoding.UTF8.GetBytes("α");
 
-            RubySymbol a, b, c, d;
+            RubySymbol a, b;
+#if OBSOLTE
             a = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.Binary));
             b = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.KCodeSJIS));
             c = Context.CreateSymbolInternal(MutableString.CreateBinary(bytes, RubyEncoding.KCodeUTF8));
@@ -253,9 +250,9 @@ SUB
             Assert(a.Equals(b));
             Assert(a.Equals(c));
             Assert(a.Equals(d));
-
-            a = Context.CreateSymbolInternal(MutableString.CreateBinary(Encoding.ASCII.GetBytes("foo"), RubyEncoding.Binary));
-            b = Context.CreateSymbolInternal(MutableString.CreateMutable("foo", RubyEncoding.KCodeUTF8));
+#endif
+            a = Context.CreateSymbol(MutableString.CreateBinary(Encoding.ASCII.GetBytes("foo"), RubyEncoding.Binary), false);
+            b = Context.CreateSymbol(MutableString.CreateMutable("foo", RubyEncoding.UTF8), false);
             Assert(a.Equals(b));
         }
         
@@ -311,10 +308,11 @@ SUB
         }
 
 #endif
+        [Options(NoRuntime = true)]
         private void Inspect2() {
             const char sq = '\'';
 
-            var sjisEncoding = RubyEncoding.KCodeSJIS.RealEncoding;
+            var sjisEncoding = RubyEncoding.SJIS;
             // あ
             var sjisWide = new byte[] { 0x82, 0xa0 };
             // \u{12345} in UTF-8:
@@ -324,26 +322,26 @@ SUB
 
             string s;
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, false, sq).ToString();
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), false, sq).ToString();
             Assert(s == @"'\xF0\x92\x8D\x85'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), Context, true, sq).ToString();
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.Binary), true, sq).ToString();
             Assert(s == @"'\xF0\x92\x8D\x85'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), Context, false, sq).ToString();
-            Assert(s == "'" + utf16 + "'");
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), false, sq).ToString();
+            Assert(s == @"'\u{12345}'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), Context, true, sq).ToString();
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(utf8, RubyEncoding.UTF8), true, sq).ToString();
             Assert(s == @"'\u{12345}'");
 
             // incomplete character:
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.Create("\ud808\udf45\ud808", RubyEncoding.UTF8), Context, false, sq).ToString();
-            Assert(s == @"'" + utf16 + @"\u{d808}'");
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.Create("\ud808\udf45\ud808", RubyEncoding.UTF8), false, sq).ToString();
+            Assert(s == @"'\u{12345}\u{d808}'");
             
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), Context, false, sq).ToString();
-            Assert(s == @"'あ'");
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), false, sq).ToString();
+            Assert(s == @"'\x82\xA0'");
 
-            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), Context, true, sq).ToString();
+            s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), true, sq).ToString();
             Assert(s == @"'\x82\xA0'");
         }
     }

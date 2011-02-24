@@ -36,7 +36,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         private ConsoleHostOptionsParser _optionsParser;
         private ScriptRuntime _runtime;
         private ScriptEngine _engine;
-        internal OptionsParser _languageOptionsParser;
+        private ConsoleOptions _consoleOptions;
         private IConsole _console;
         private CommandLine _commandLine;
 
@@ -195,21 +195,10 @@ namespace Microsoft.Scripting.Hosting.Shell {
             // inserts search paths for all languages (/paths option):
             InsertSearchPaths(runtimeSetup.Options, Options.SourceUnitSearchPaths);
 
-            _languageOptionsParser = CreateOptionsParser();
-
-            try {
-                _languageOptionsParser.Parse(Options.IgnoredArgs.ToArray(), runtimeSetup, languageSetup, PlatformAdaptationLayer);
-            } catch (InvalidOptionException e) {
-                Console.Error.WriteLine(e.Message);
-                return _exitCode = -1;
+            _consoleOptions = ParseOptions(Options.IgnoredArgs.ToArray(), runtimeSetup, languageSetup);
+            if (_consoleOptions == null) {
+                return _exitCode = 1;
             }
-
-#if !SILVERLIGHT
-            if (typeof(DynamicMethod).GetConstructor(new Type[] { typeof(string), typeof(Type), typeof(Type[]), typeof(bool) }) == null) {
-                Console.WriteLine(string.Format("{0} requires .NET 2.0 SP1 or later to run.", languageSetup.DisplayName));
-                Environment.Exit(1);
-            }
-#endif
 
             _runtime = new ScriptRuntime(runtimeSetup);
 
@@ -222,6 +211,23 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             Execute();
             return _exitCode;
+        }
+
+        protected virtual ConsoleOptions ParseOptions(string/*!*/[]/*!*/ args, ScriptRuntimeSetup/*!*/ runtimeSetup, LanguageSetup/*!*/ languageSetup) {
+            var languageOptionsParser = CreateOptionsParser();
+
+            try {
+                languageOptionsParser.Parse(args, runtimeSetup, languageSetup, PlatformAdaptationLayer);
+            } catch (InvalidOptionException e) {
+                ReportInvalidOption(e);
+                return null;
+            }
+
+            return languageOptionsParser.CommonConsoleOptions;            
+        }
+
+        protected virtual void ReportInvalidOption(InvalidOptionException e) {
+            Console.Error.WriteLine(e.Message);
         }
 
         private static void InsertSearchPaths(IDictionary<string, object> options, ICollection<string> paths) {
@@ -298,7 +304,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
         private void Execute() {
 #if !SILVERLIGHT
-            if (_languageOptionsParser.CommonConsoleOptions.IsMta) {
+            if (_consoleOptions.IsMta) {
                 Thread thread = new Thread(ExecuteInternal);
                 thread.SetApartmentState(ApartmentState.MTA);
                 thread.Start();
@@ -312,17 +318,15 @@ namespace Microsoft.Scripting.Hosting.Shell {
         protected virtual void ExecuteInternal() {
             Debug.Assert(_engine != null);
 
-            ConsoleOptions consoleOptions = _languageOptionsParser.CommonConsoleOptions;
-
-            if (consoleOptions.PrintVersion){
+            if (_consoleOptions.PrintVersion){
                 PrintVersion();
             }
 
-            if (consoleOptions.PrintUsage){
+            if (_consoleOptions.PrintUsage) {
                 PrintUsage();
             }
 
-            if (consoleOptions.Exit){
+            if (_consoleOptions.Exit) {
                 _exitCode = 0;
                 return;
             }
@@ -385,18 +389,17 @@ namespace Microsoft.Scripting.Hosting.Shell {
             Debug.Assert(_engine != null);
 
             _commandLine = CreateCommandLine();
-            ConsoleOptions consoleOptions = _languageOptionsParser.CommonConsoleOptions;
 
             if (_console == null) {
-                _console = CreateConsole(Engine, _commandLine, consoleOptions);
+                _console = CreateConsole(Engine, _commandLine, _consoleOptions);
             }
 
             int? exitCodeOverride = null;
 
             try {
-                if (consoleOptions.HandleExceptions) {
+                if (_consoleOptions.HandleExceptions) {
                     try {
-                        _commandLine.Run(Engine, _console, consoleOptions);
+                        _commandLine.Run(Engine, _console, _consoleOptions);
                     } catch (Exception e) {
                         if (CommandLine.IsFatalException(e)) {
                             // Some exceptions are too dangerous to try to catch
@@ -405,7 +408,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                         UnhandledException(Engine, e);
                     }
                 } else {
-                    _commandLine.Run(Engine, _console, consoleOptions);
+                    _commandLine.Run(Engine, _console, _consoleOptions);
                 }
             } finally {
                 try {

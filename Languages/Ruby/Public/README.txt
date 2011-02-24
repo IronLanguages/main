@@ -7,12 +7,15 @@ Authors:
   Dino Viehland, and everyone else from the community who reports bugs, 
   builds libraries, and helps enrich IronRuby.
 
-Project Contact: Jimmy Schementi <jimmysch@microsoft.com>
+Project Contacts: 
+  Jimmy Schementi <jschementi@gmail.com>
+  Miguel de Icaza <miguel@gnome.org>
+  Tomas Matousek <tomas_matousek@hotmail.com>
 
 == About
 
 IronRuby is a Open Source implementation of the Ruby programming language
-(http://www.ruby-lang.org) for .NET, heavily relying on Microsoft's 
+(http://www.ruby-lang.org) for .NET, heavily relying on the 
 Dynamic Language Runtime (http://dlr.codeplex.com).
 
 The project's #1 goal is to be a true Ruby implementation, meaning it runs
@@ -39,7 +42,7 @@ Will run rubyfile.rb with the IronRuby compiler.
   LICENSE.Ruby.txt    Ruby license
   LICENSE.CPL.txt     Common Public License
   LICENSE.APACHE.html Apache License, Version 2.0
-  README.txt		  This file
+  README.txt          This file
 
 == License
 

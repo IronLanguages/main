@@ -99,7 +99,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override MSAst.Expression LocalContext {
             get {
-                if (NeedsLocalsDictionary || ContainsNestedFreeVariables) {
+                if (NeedsLocalContext) {
                     return base.LocalContext;
                 }
 
@@ -575,7 +575,7 @@ namespace IronPython.Compiler.Ast {
 
             MSAst.ParameterExpression localContext = null;
             ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>();
-            if (NeedsLocalsDictionary || ContainsNestedFreeVariables) {
+            if (NeedsLocalContext) {
                 localContext = LocalCodeContextVariable;
                 locals.Add(localContext);
             }

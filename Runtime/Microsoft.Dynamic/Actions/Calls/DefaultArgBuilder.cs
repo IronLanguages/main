@@ -48,7 +48,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            object value = ParameterInfo.DefaultValue;
+            object value = ParameterInfo.GetDefaultValue();
             if (value is Missing) {
                 value = CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType);
             }

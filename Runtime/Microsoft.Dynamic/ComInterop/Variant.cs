@@ -75,8 +75,8 @@ namespace Microsoft.Scripting.ComInterop {
 
         [StructLayout(LayoutKind.Sequential)]
         private struct Record {
-            private IntPtr _record;
-            private IntPtr _recordInfo;
+            internal IntPtr _record;
+            internal IntPtr _recordInfo;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]

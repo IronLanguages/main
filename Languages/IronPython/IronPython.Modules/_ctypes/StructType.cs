@@ -76,6 +76,8 @@ namespace IronPython.Modules {
 
                 object fields;
                 if (members.TryGetValue("_fields_", out fields)) {
+                    // When we support alternate endianness this should change to:
+                    //__setattr__(context, "_fields_", fields);
                     SetFields(fields);
                 }
 
@@ -145,7 +147,7 @@ namespace IronPython.Modules {
                 throw new NotImplementedException("in dll");
             }
 
-            public new void __setattr__(CodeContext/*!*/ context, string name, object value) {
+            public new virtual void __setattr__(CodeContext/*!*/ context, string name, object value) {
                 if (name == "_fields_") {
                     lock (this) {
                         if (_fields != null) {

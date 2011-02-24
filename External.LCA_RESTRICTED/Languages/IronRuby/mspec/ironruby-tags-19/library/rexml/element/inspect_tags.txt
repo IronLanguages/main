@@ -1,2 +1,0 @@
-fails:REXML::Element#inspect inserts the attributes in the string
-fails:"REXML::Element#inspect inserts the attributes in the string"

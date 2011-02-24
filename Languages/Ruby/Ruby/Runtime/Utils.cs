@@ -68,6 +68,33 @@ namespace IronRuby.Runtime {
             return true;
         }
 
+        public static bool IsAscii(this byte[]/*!*/ bytes, int count) {
+            for (int i = 0; i < count; i++) {
+                if (bytes[i] > 0x7f) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool IsAscii(this char[]/*!*/ str, int count) {
+            for (int i = 0; i < count; i++) {
+                if (str[i] > 0x7f) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool IsAscii(this char[]/*!*/ str, int start, int count) {
+            for (int i = 0; i < count; i++) {
+                if (str[start + i] > 0x7f) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         internal static bool IsBinary(this string/*!*/ str) {
             for (int i = 0; i < str.Length; i++) {
                 if (str[i] > 0xff) {
@@ -75,6 +102,50 @@ namespace IronRuby.Runtime {
                 }
             }
             return true;
+        }
+
+        internal static int GetCharacterCount(this string/*!*/ str) {
+            int surrogateCount = 0;
+            bool wasHighSurrogate = false;
+            for (int i = 0; i < str.Length; i++) {
+                char c = str[i];
+                if (c >= '\uD800') {
+                    if (c <= '\uDBFF') {
+                        wasHighSurrogate = true;
+                    } else if (wasHighSurrogate && c <= '\uDFFF') {
+                        surrogateCount++;
+                        wasHighSurrogate = false;
+                    }
+                }
+            }
+            return str.Length - surrogateCount;
+        }
+
+        /// <summary>
+        /// Calculates the number of Unicode characters in given array.
+        /// Assumes that the content of the array beyond count chars doesn't contain significant data and can be overwritten.
+        /// </summary>
+        internal static int GetCharacterCount(this char[]/*!*/ str, int count) {
+            int surrogateCount = 0;
+            bool wasHighSurrogate = false;
+            if (count < str.Length) {
+                str[count] = '\uffff';
+            }
+
+            for (int i = 0; i < str.Length; i++) {
+                char c = str[i];
+                if (c >= '\uD800') {
+                    if (i >= count) {
+                        break;
+                    } else if (c <= '\uDBFF') {
+                        wasHighSurrogate = true;
+                    } else if (wasHighSurrogate && c <= '\uDFFF') {
+                        surrogateCount++;
+                        wasHighSurrogate = false;
+                    }
+                }
+            }
+            return str.Length - surrogateCount;
         }
 
         public static string/*!*/ ToAsciiString(this string/*!*/ str) {
@@ -654,42 +725,6 @@ namespace IronRuby.Runtime {
             return -1;
         }
 
-        internal static int GetValueHashCode(this string/*!*/ str, out int binarySum) {
-            int result = 5381;
-            int sum = 0;
-            for (int i = 0; i < str.Length; i++) {
-                int c = str[i];
-                result = unchecked(((result << 5) + result) ^ c);
-                sum |= c;
-            }
-            binarySum = sum;
-            return result;
-        }
-
-        internal static int GetValueHashCode(this char[]/*!*/ array, int itemCount, out int binarySum) {
-            int result = 5381;
-            int sum = 0;
-            for (int i = 0; i < itemCount; i++) {
-                int c = array[i];
-                result = unchecked(((result << 5) + result) ^ c);
-                sum |= c;
-            }
-            binarySum = sum;
-            return result;
-        }
-
-        internal static int GetValueHashCode(this byte[]/*!*/ array, int itemCount, out int binarySum) {
-            int result = 5381;
-            int sum = 0;
-            for (int i = 0; i < itemCount; i++) {
-                int c = array[i];
-                result = unchecked(((result << 5) + result) ^ c);
-                sum |= c;
-            }
-            binarySum = sum;
-            return result;
-        }
-
         internal static int ValueCompareTo(this byte[]/*!*/ array, int itemCount, byte[]/*!*/ other) {
             return ValueCompareTo(array, itemCount, other, other.Length);
         }
@@ -927,6 +962,126 @@ namespace IronRuby.Runtime {
             }
         }
 
+#if !SILVERLIGHT
+        private sealed class CheckDecoderFallback : DecoderFallback {
+            public bool HasInvalidCharacters { get; private set; }
+
+            public CheckDecoderFallback() {
+            }
+
+            public override int MaxCharCount {
+                get { return 1; }
+            }
+
+            public override DecoderFallbackBuffer CreateFallbackBuffer() {
+                return new Buffer(this);
+            }
+
+            internal sealed class Buffer : DecoderFallbackBuffer {
+                private readonly CheckDecoderFallback _fallback;
+
+                public Buffer(CheckDecoderFallback/*!*/ fallback) {
+                    _fallback = fallback;
+                }
+
+                public override bool Fallback(byte[]/*!*/ bytesUnknown, int index) {
+                    _fallback.HasInvalidCharacters = true;
+                    return true;
+                }
+
+                public override char GetNextChar() {
+                    return '\0';
+                }
+
+                public override bool MovePrevious() {
+                    return false;
+                }
+
+                public override int Remaining {
+                    get { return 0; }
+                }
+            }
+        }
+
+        private sealed class CheckEncoderFallback : EncoderFallback {
+            public bool HasInvalidCharacters { get; private set; }
+
+            public CheckEncoderFallback() {
+            }
+
+            public override int MaxCharCount {
+                get { return 1; }
+            }
+
+            public override EncoderFallbackBuffer CreateFallbackBuffer() {
+                return new Buffer(this);
+            }
+
+            internal sealed class Buffer : EncoderFallbackBuffer {
+                private readonly CheckEncoderFallback _fallback;
+
+                public Buffer(CheckEncoderFallback/*!*/ fallback) {
+                    _fallback = fallback;
+                }
+
+                public override bool Fallback(char charUnknown, int index) {
+                    _fallback.HasInvalidCharacters = true;
+                    return true;
+                }
+
+                public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
+                    _fallback.HasInvalidCharacters = true;
+                    return true;
+                }
+
+                public override char GetNextChar() {
+                    return '\0';
+                }
+
+                public override bool MovePrevious() {
+                    return false;
+                }
+
+                public override int Remaining {
+                    get { return 0; }
+                }
+            }
+        }
+
+        internal static bool ContainsInvalidCharacters(byte[]/*!*/ bytes, int start, int count, Encoding/*!*/ encoding) {
+            var decoder = encoding.GetDecoder();
+            var fallback = new CheckDecoderFallback();
+            decoder.Fallback = fallback;
+            decoder.GetCharCount(bytes, start, count, true);
+            return fallback.HasInvalidCharacters;
+        }
+
+        internal static bool ContainsInvalidCharacters(char[]/*!*/ chars, int start, int count, Encoding/*!*/ encoding) {
+            var encoder = encoding.GetEncoder();
+            var fallback = new CheckEncoderFallback();
+            encoder.Fallback = fallback;
+            encoder.GetByteCount(chars, start, count, true);
+            return fallback.HasInvalidCharacters;
+        }
+#else
+        internal static bool ContainsInvalidCharacters(byte[]/*!*/ bytes, int start, int count, Encoding/*!*/ encoding) {
+            try {
+                encoding.GetCharCount(bytes, start, count);
+                return true;
+            } catch (DecoderFallbackException){
+                return false;
+            }
+        }
+
+        internal static bool ContainsInvalidCharacters(char[]/*!*/ chars, int start, int count, Encoding/*!*/ encoding) {
+            try {
+                encoding.GetByteCount(chars, start, count);
+                return true;
+            } catch (EncoderFallbackException) {
+                return false;
+            }
+        }
+#endif
     }
 }
 

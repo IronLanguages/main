@@ -41,10 +41,21 @@ class Gem::DocManager
 
     begin
       require 'rdoc/rdoc'
+
+      @rdoc_version = if defined? RDoc::VERSION then
+                        Gem::Version.new RDoc::VERSION
+                      else
+                        Gem::Version.new '1.0.1' # HACK parsing is hard
+                      end
+
     rescue LoadError => e
       raise Gem::DocumentError,
-          "ERROR: RDoc documentation generator not installed!"
+          "ERROR: RDoc documentation generator not installed: #{e}"
     end
+  end
+
+  def self.rdoc_version
+    @rdoc_version
   end
 
   ##
@@ -87,6 +98,13 @@ class Gem::DocManager
   end
 
   ##
+  # Is the RI documentation installed?
+
+  def ri_installed?
+    File.exist?(File.join(@doc_dir, "ri"))
+  end
+
+  ##
   # Generate the RI documents for this gem spec.
   #
   # Note that if both RI and RDoc documents are generated from the same
@@ -94,10 +112,8 @@ class Gem::DocManager
   # RI docs generation to fail if run after RDoc).
 
   def generate_ri
-    if @spec.has_rdoc then
-      setup_rdoc
-      install_ri # RDoc bug, ri goes first
-    end
+    setup_rdoc
+    install_ri # RDoc bug, ri goes first
 
     FileUtils.mkdir_p @doc_dir unless File.exist?(@doc_dir)
   end
@@ -110,10 +126,8 @@ class Gem::DocManager
   # RI docs generation to fail if run after RDoc).
 
   def generate_rdoc
-    if @spec.has_rdoc then
-      setup_rdoc
-      install_rdoc
-    end
+    setup_rdoc
+    install_rdoc
 
     FileUtils.mkdir_p @doc_dir unless File.exist?(@doc_dir)
   end
@@ -151,12 +165,24 @@ class Gem::DocManager
     args << '--quiet'
     args << @spec.require_paths.clone
     args << @spec.extra_rdoc_files
+    args << '--title' << "#{@spec.full_name} Documentation"
     args = args.flatten.map do |arg| arg.to_s end
+
+    if self.class.rdoc_version >= Gem::Version.new('2.4.0') then
+      args.delete '--inline-source'
+      args.delete '--promiscuous'
+      args.delete '-p'
+      args.delete '--one-file'
+      # HACK more
+    end
 
     r = RDoc::RDoc.new
 
     old_pwd = Dir.pwd
-    Dir.chdir(@spec.full_gem_path)
+    Dir.chdir @spec.full_gem_path
+
+    say "rdoc #{args.join ' '}" if Gem.configuration.really_verbose
+
     begin
       r.document args
     rescue Errno::EACCES => e
@@ -170,7 +196,7 @@ class Gem::DocManager
       Gem.configuration.backtrace
       ui.errs.puts "(continuing with the rest of the installation)"
     ensure
-      Dir.chdir(old_pwd)
+      Dir.chdir old_pwd
     end
   end
 
@@ -194,20 +220,20 @@ class Gem::DocManager
     original_name = [
       @spec.name, @spec.version, @spec.original_platform].join '-'
 
-      doc_dir = File.join @spec.installation_path, 'doc', @spec.full_name
-      unless File.directory? doc_dir then
-        doc_dir = File.join @spec.installation_path, 'doc', original_name
-      end
+    doc_dir = File.join @spec.installation_path, 'doc', @spec.full_name
+    unless File.directory? doc_dir then
+      doc_dir = File.join @spec.installation_path, 'doc', original_name
+    end
 
-      FileUtils.rm_rf doc_dir
+    FileUtils.rm_rf doc_dir
 
-      ri_dir = File.join @spec.installation_path, 'ri', @spec.full_name
+    ri_dir = File.join @spec.installation_path, 'ri', @spec.full_name
 
-      unless File.directory? ri_dir then
-        ri_dir = File.join @spec.installation_path, 'ri', original_name
-      end
+    unless File.directory? ri_dir then
+      ri_dir = File.join @spec.installation_path, 'ri', original_name
+    end
 
-      FileUtils.rm_rf ri_dir
+    FileUtils.rm_rf ri_dir
   end
 
 end

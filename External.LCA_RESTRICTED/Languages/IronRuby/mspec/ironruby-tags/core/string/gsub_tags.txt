@@ -1,2 +1,0 @@
-fails:String#gsub with pattern and replacement doesn't freak out when replacing ^
-fails:String#gsub! with pattern and block raises a RuntimeError when self is frozen

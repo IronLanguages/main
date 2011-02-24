@@ -64,7 +64,7 @@ namespace IronRuby.Builtins {
             _options = options & ~RubyRegexOptions.Once;
 
             RubyEncoding encoding = RubyEncoding.GetRegexEncoding(options);
-            if (encoding != null || pattern.Encoding.IsKCoding) {
+            if (encoding != null) {
                 _pattern = MutableString.CreateBinary(pattern.ToByteArray(), encoding ?? RubyEncoding.Binary).Freeze();
             } else {
                 _pattern = pattern.PrepareForCharacterRead().Clone().Freeze();
@@ -95,12 +95,14 @@ namespace IronRuby.Builtins {
         private Regex/*!*/ Transform(ref RubyEncoding encoding, MutableString/*!*/ input, int start, out string strInput) {
             ContractUtils.RequiresNotNull(input, "input");
 
+            // TODO:
+
             // K-coding of the current operation (the current KCODE gets preference over the KCODE regex option):
             RubyRegexOptions kc = _options & RubyRegexOptions.EncodingMask;
             if (kc != 0) {
                 encoding = _pattern.Encoding;
             } else {
-                kc = RubyEncoding.ToRegexOption(encoding);
+                kc = RubyRegexOptions.NONE;
             }
 
             // Convert input to a string. Force k-coding if necessary.
@@ -130,8 +132,6 @@ namespace IronRuby.Builtins {
                 }
                 
                 strInput = ForceEncoding(input, encoding.Encoding, start);
-            } else if (input.Encoding.IsKCoding) {
-                strInput = input.ToString(BinaryEncoding.Instance);
             } else {
                 _pattern.RequireCompatibleEncoding(input);
                 input.PrepareForCharacterRead();
@@ -280,16 +280,18 @@ namespace IronRuby.Builtins {
 
         #region Match, LastMatch, Matches, Split
 
-        public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input) {
+        public MatchData Match(MutableString/*!*/ input) {
             string str;
-            return MatchData.Create(Transform(ref kcode, input, 0, out str).Match(str), input, true, str, kcode, 0);
+            RubyEncoding kcode = null;
+            return MatchData.Create(Transform(ref kcode, input, 0, out str).Match(str), input, true, str);
         }
 
         /// <summary>
         /// Start is a number of bytes if kcode is given, otherwise it's a number of characters.
         /// </summary>
-        public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input, int start, bool freezeInput) {
+        public MatchData Match(MutableString/*!*/ input, int start, bool freezeInput) {
             string str;
+            RubyEncoding kcode = null;
             Regex regex = Transform(ref kcode, input, start, out str);
 
             Match match;
@@ -308,11 +310,11 @@ namespace IronRuby.Builtins {
                 match = regex.Match(str, start);
             }
 
-            return MatchData.Create(match, input, freezeInput, str, kcode, start);
+            return MatchData.Create(match, input, freezeInput, str);
         }
 
-        public MatchData LastMatch(RubyEncoding kcode, MutableString/*!*/ input) {
-            return LastMatch(kcode, input, Int32.MaxValue);
+        public MatchData LastMatch(MutableString/*!*/ input) {
+            return LastMatch(input, Int32.MaxValue);
         }
 
         /// <summary>
@@ -320,8 +322,9 @@ namespace IronRuby.Builtins {
         /// Captures are ordered in the same way as with forward match. This is different from .NET reverse matching.
         /// Start is a number of bytes if kcode is given, otherwise it's a number of characters.
         /// </summary>
-        public MatchData LastMatch(RubyEncoding kcode, MutableString/*!*/ input, int start) {
+        public MatchData LastMatch(MutableString/*!*/ input, int start) {
             string str;
+            RubyEncoding kcode = null;
             Regex regex = Transform(ref kcode, input, 0, out str);
             Debug.Assert(str != null);
 
@@ -356,7 +359,7 @@ namespace IronRuby.Builtins {
                     return null;
                 }
             }
-            return MatchData.Create(match, input, true, str, kcode, 0);
+            return MatchData.Create(match, input, true, str);
         }
 
         /// <summary>
@@ -384,8 +387,9 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Returns a collection of fresh MatchData objects.
         /// </summary>
-        public IList<MatchData>/*!*/ Matches(RubyEncoding kcode, MutableString/*!*/ input, bool inputMayMutate) {
+        public IList<MatchData>/*!*/ Matches(MutableString/*!*/ input, bool inputMayMutate) {
             string str;
+            RubyEncoding kcode = null;
             MatchCollection matches = Transform(ref kcode, input, 0, out str).Matches(str);
 
             var result = new MatchData[matches.Count];
@@ -395,28 +399,30 @@ namespace IronRuby.Builtins {
             }
 
             for (int i = 0; i < result.Length; i++) {
-                result[i] = MatchData.Create(matches[i], input, false, str, kcode, 0);
+                result[i] = MatchData.Create(matches[i], input, false, str);
             }
 
             return result;
         }
 
-        public IList<MatchData>/*!*/ Matches(RubyEncoding kcode, MutableString/*!*/ input) {
-            return Matches(kcode, input, true);
+        public IList<MatchData>/*!*/ Matches(MutableString/*!*/ input) {
+            return Matches(input, true);
         }
 
-        public MutableString[]/*!*/ Split(RubyEncoding kcode, MutableString/*!*/ input) {
+        public MutableString[]/*!*/ Split(MutableString/*!*/ input) {
             string str;
+            RubyEncoding kcode = null;
             return MutableString.MakeArray(Transform(ref kcode, input, 0, out str).Split(str), kcode ?? input.Encoding);
         }
         
-        public MutableString[]/*!*/ Split(RubyEncoding kcode, MutableString/*!*/ input, int count) {
+        public MutableString[]/*!*/ Split(MutableString/*!*/ input, int count) {
             string str;
+            RubyEncoding kcode = null;
             return MutableString.MakeArray(Transform(ref kcode, input, 0, out str).Split(str, count), kcode ?? input.Encoding);
         }
 
         public static MatchData SetCurrentMatchData(RubyScope/*!*/ scope, RubyRegex/*!*/ regex, MutableString str) {
-            return scope.GetInnerMostClosureScope().CurrentMatch = (str != null) ? regex.Match(scope.RubyContext.KCode, str) : null;
+            return scope.GetInnerMostClosureScope().CurrentMatch = (str != null) ? regex.Match(str) : null;
         }
 
         #endregion               
@@ -436,7 +442,7 @@ namespace IronRuby.Builtins {
             result.Append('/');
             AppendEscapeForwardSlash(result, _pattern);
             result.Append('/');
-            AppendOptionString(result, true, true);
+            AppendOptionString(result, true);
             return result;
         }
 
@@ -444,17 +450,17 @@ namespace IronRuby.Builtins {
             Assert.NotNull(result);
 
             result.Append("(?");
-            if (AppendOptionString(result, true, false) < 3) {
+            if (AppendOptionString(result, true) < 3) {
                 result.Append('-');
             }
-            AppendOptionString(result, false, false);
+            AppendOptionString(result, false);
             result.Append(':');
             AppendEscapeForwardSlash(result, _pattern);
             result.Append(')');
             return result;
         }
 
-        private int AppendOptionString(MutableString/*!*/ result, bool enabled, bool includeEncoding) {
+        private int AppendOptionString(MutableString/*!*/ result, bool enabled) {
             int count = 0;
             var options = Options;
 
@@ -473,16 +479,6 @@ namespace IronRuby.Builtins {
                 count++;
             }
 
-            if (includeEncoding) {
-                switch (options & RubyRegexOptions.EncodingMask) {
-                    case RubyRegexOptions.NONE: break;
-                    case RubyRegexOptions.EUC: result.Append('e'); break;
-                    case RubyRegexOptions.FIXED: result.Append('n'); break;
-                    case RubyRegexOptions.UTF8: result.Append('u'); break;
-                    case RubyRegexOptions.SJIS: result.Append('s'); break;
-                    default: throw Assert.Unreachable;
-                }
-            }
             return count;
         }
 

@@ -1,2 +1,0 @@
-fails:IO#eof? returns true on receiving side of Pipe when writing side is closed
-fails:IO#eof? returns false on receiving side of Pipe when writing side wrote some data

@@ -20,7 +20,7 @@ using System.Diagnostics;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
-    [DebuggerDisplay("{Value}", Name = "{_name,nq}", Type = "{GetClassName(),nq}")]
+    [DebuggerDisplay("{Value}", Name = "{GetName(),nq}", Type = "{GetClassName(),nq}")]
     internal class ObjectDebugView {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private readonly string _name;
@@ -41,6 +41,10 @@ namespace IronPython.Runtime {
 
         public string GetClassName() {
             return PythonTypeOps.GetName(_value);
+        }
+
+        public string GetName() {
+            return _name;
         }
     }
 }

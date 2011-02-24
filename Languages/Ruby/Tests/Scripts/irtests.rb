@@ -20,8 +20,15 @@ class IRTest
       end 
     end
     
+    if ENV['DLR_VM'] and ENV['DLR_VM'].include?("mono.exe")
+      options[:mono] = true
+    elsif options[:mono]
+      # assume mono.exe is on path
+      ENV['DLR_VM'] ||= 'mono.exe'
+    end
+    
     @options = options
-    if options[:clr2] or options[:mono]
+    if options[:clr2]
       if options[:release]
         @config = "v2Release"
         @sl_config = "Silverlight3Release"
@@ -51,11 +58,6 @@ class IRTest
     if explicit_config or not ENV["DLR_BIN"]
       ENV["DLR_BIN"] = "#@root/bin/#@config"
     end
-
-    if options[:mono]
-      # assume mono.exe is on path
-      ENV['DLR_VM'] ||= 'mono'
-    end
     
     ENV['HOME'] ||= ENV["USERPROFILE"]
     
@@ -73,36 +75,36 @@ class IRTest
       ]
     else
       @all_tasks = {
-        :ProjGenerator    => lambda { generate_build_projects },
-        :BuildSilverlight => silverlight_build_runner,
-        :Smoke            => safe_ruby_runner(dlr_path('Languages/Ruby/Tests/Scripts/unit_tests.rb')),
-        #:Legacy           => safe_ruby_runner(dlr_path('Languages/Ruby/Tests/run.rb')),
+        :Smoke            => safe_ruby_runner(ruby_tests_path('Scripts/unit_tests.rb')),
         :RubySpec_A       => spec_runner(":lang :cli :netinterop :cominterop :thread :netcli"),
         :RubySpec_B       => spec_runner(":core1 :lib1"),
         :RubySpec_C       => spec_runner(":core2 :lib2"),
-        #:RubyGems         => utr_runner("gem"),
+        :RubyGems         => utr_runner("gem"),
         :TZInfo           => utr_runner("tzinfo"),
         :Rake             => utr_runner("rake"),
-        :Yaml             => ruby_runner(dlr_path('External.LCA_RESTRICTED/Languages/IronRuby/yaml/YamlTest/yaml_test_suite.rb')),
+        :Yaml             => ruby_runner(ruby_tests_path('Libraries/Yaml/yaml_test_suite.rb')),
         
-        # TODO: get rid of .bat file
+        # TODO: fix these or merge them with mspec
+        #:Legacy           => safe_ruby_runner(ruby_tests_path('Legacy/run.rb')),
+        
+        # TODO: fix these and get rid of .bat file
         #:Tutorial         => shell_runner("#{dlr_path('Languages/Ruby/Samples/Tutorial/tutorial.bat')} #{dlr_path('Languages/Ruby/Samples/Tutorial/test/test_console.rb')}"),
       }
+      
+      @all_tasks[:BuildSilverlight] = silverlight_build_runner unless options[:nocompile]
     
       if not options[:minimum]
         @all_tasks.merge!({
-          #:ActionMailer   => utr_runner("action_mailer"),
+          :ActionMailer   => utr_runner("action_mailer"),
           #:ActionPack     => utr_runner("action_pack"),
-          #:ActiveSupport  => utr_runner("active_support"),
-          #:ActiveRecord   => utr_runner("active_record"),
-          #:ActiveResource => utr_runner("active_resource"),
-          #:ActionPack3    => utr_runner("action_pack_3", "-1.8.7"),
-          #:ActiveSupport3 => utr_runner("active_support_3", "-1.8.7"),
+          :ActiveSupport  => utr_runner("active_support"),
+          :ActiveRecord   => utr_runner("active_record"),
+          :ActiveResource => utr_runner("active_resource"),
         })
       end
     
       @parallel_tasks = [
-         [:Smoke, :Legacy, :ProjGenerator, :BuildSilverlight],
+         [:Smoke, :BuildSilverlight],
          [:RubySpec_A],
          [:RubySpec_B],
          [:RubySpec_C],
@@ -111,9 +113,8 @@ class IRTest
     
       if not options[:minimum]
          @parallel_tasks += [
-           #[:ActionPack, :ActionSupport, :ActionMailer],
-           #[:ActionPack3, :ActionSupport3],
-           #[:ActiveRecord, :ActiveResource],
+           [:ActionMailer, :ActiveSupport, :ActionPack, :ActiveResource],
+           [:ActiveRecord],
          ]
       end 
     end
@@ -136,6 +137,10 @@ class IRTest
   
   def dlr_path(path)
     q File.join(@root, path)
+  end
+
+  def ruby_tests_path(path)
+    q File.join(@root, 'Languages/Ruby/Tests', path)
   end
   
   def q(str)
@@ -163,11 +168,11 @@ class IRTest
   end
   
   def utr_runner(suite, version = nil)
-    shell_runner "#@ir #{version} #{dlr_path('Languages/Ruby/Tests/Scripts/utr.rb')} #{suite}"
+    shell_runner "#@ir #{version} #{ruby_tests_path('Scripts/utr.rb')} #{suite}"
   end
   
   def spec_runner(specs)
-    safe_ruby_runner "#{dlr_path('External.LCA_RESTRICTED/Languages/IronRuby/mspec/mspec/bin/mspec')} ci -fd #{specs}"
+    safe_ruby_runner "#{ruby_tests_path('mspec/mspec/bin/mspec')} ci -fd #{specs}"
   end
   
   def build_cmd(solution, build_config = @config, options = "")
@@ -176,29 +181,18 @@ class IRTest
   end
   
   def silverlight_build_runner
-    if git?
-      program_files = ENV['ProgramFiles(x86)'] ? ENV['ProgramFiles(x86)'] : ENV['ProgramFiles']
-      sl_path = Dir[File.expand_path("Microsoft Silverlight", program_files) + "/4.0.*"].first
-      sl_found = !!sl_path
-    else
-      sl_found = true
-    end
-    
-    lambda do 
-      if not sl_found
-        warn "\nSkipping Silverlight build since a Silverlight installation was not found at #{program_files} ...\n"
-        true
-      else
-        run_cmd build_cmd("Ruby", @sl_config, sl_path ? "/p:SilverlightPath=#{q sl_path}" : "")
-      end
-    end
+    lambda { run_cmd build_cmd("Ruby", @sl_config) }
   end
   
-  def generate_build_projects
-    script = dlr_path('Scripts/Python/GenerateSystemCoreCsproj.py')
-    if File.exists?(script)
-      run_cmd "#{vm_shim} #{dlr_path('Util/IronPython/ipy.exe')} #{script}"
-    end
+  def on_windows
+	case System::Environment.OSVersion.Platform
+	  when System::PlatformID.Win32S
+	  when System::PlatformID.Win32Windows
+	  when System::PlatformID.Win32NT
+		true
+	  else
+		false
+	end
   end
   
   def run
@@ -333,10 +327,7 @@ class IRTest
   end
   
   def git?
-    git = File.exists? dlr_path("../../.git") # exists only for github.com
-    tfs = File.exists? dlr_path("Internal/Dlr.sln") # exists only in TFS
-    abort("Could not determine if this is a GIT repo or not") if git == tfs
-    git
+    not File.exists? dlr_path("Internal/Dlr.sln")
   end
   
   def prereqs

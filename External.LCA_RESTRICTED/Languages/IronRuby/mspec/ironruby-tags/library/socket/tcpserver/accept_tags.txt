@@ -1,2 +1,0 @@
-critical:TCPServer#accept can be interrupted by Thread#raise
-fails:TCPServer#accept can be interrupted by Thread#kill

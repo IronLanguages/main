@@ -1207,6 +1207,24 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        public static double CheckMath(double input, double output) {
+            if (double.IsInfinity(input) && double.IsInfinity(output) ||
+                double.IsNaN(input) && double.IsNaN(output)) {
+                return output;
+            } else {
+                return CheckMath(output);
+            }
+        }
+
+        public static double CheckMath(double in0, double in1, double output) {
+            if ((double.IsInfinity(in0) || double.IsInfinity(in1)) && double.IsInfinity(output) ||
+                (double.IsNaN(in0) || double.IsNaN(in1)) && double.IsNaN(output)) {
+                return output;
+            } else {
+                return CheckMath(output);
+            }
+        }
+
         public static object IsMappingType(CodeContext/*!*/ context, object o) {
             if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object> || o is PythonDictionary) {
                 return ScriptingRuntimeHelpers.True;
@@ -2228,7 +2246,8 @@ namespace IronPython.Runtime.Operations {
                         context,
                         context.GlobalDict,
                         context.Dict,
-                        code);
+                        code,
+                        tb != null ? tb.tb_frame : null);
 
                     tb = new TraceBack(tb, tbf);
                     tb.SetLine(frame.GetFileLineNumber());
@@ -2418,7 +2437,7 @@ namespace IronPython.Runtime.Operations {
                 return val;
             }
 
-            throw PythonOps.TypeError("{0}() takes exactly {1} non-keyword arguments ({2} given)",
+            throw PythonOps.TypeError("{0}() takes exactly {1} arguments ({2} given)",
                 function.__name__,
                 function.NormalArgumentCount,
                 argCnt);
@@ -3188,7 +3207,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 result = obj;
             }
-            return (T)obj;
+            return (T)result;
         }
 
         public static DynamicMetaObjectBinder MakeComplexCallAction(int count, bool list, string[] keywords) {
@@ -4245,7 +4264,7 @@ namespace IronPython.Runtime.Operations {
         /// <param name="type">original type of exception requested</param>
         /// <returns>a TypeEror exception</returns>
         internal static Exception MakeExceptionTypeError(object type) {
-            return PythonOps.TypeError("exceptions must be classes or instances, not {0}", PythonTypeOps.GetName(type));
+            return PythonOps.TypeError("exceptions must be classes, or instances, not {0}", PythonTypeOps.GetName(type));
         }
 
         public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {
@@ -4357,7 +4376,7 @@ namespace IronPython.Runtime.Operations {
                 if (pyFrames == null) {
                     e.SetFrameList(pyFrames = new List<DynamicStackFrame>());
                 }
-
+                
                 var frame = new PythonDynamicStackFrame(context, funcCode, line);
                 funcCode.LightThrowCompile(context);
                 pyFrames.Add(frame);
@@ -4467,6 +4486,14 @@ namespace IronPython.Runtime.Operations {
 
         public static BuiltinFunction GetUnicodeFuntion() {
             return UnicodeHelper.Function;
+        }
+
+        public static bool IsExtensionSet(CodeContext codeContext, int id) {
+            return codeContext.ModuleContext.ExtensionMethods.Id == id;
+        }
+
+        public static object GetExtensionMethodSet(CodeContext context) {
+            return context.ModuleContext.ExtensionMethods;
         }
     }
 

@@ -25,6 +25,8 @@ using Microsoft.Scripting.Math;
 using System.Numerics;
 #endif
 
+#pragma warning disable 675
+
 namespace IronPython.Runtime.Operations {
 
     #region Generated IntOps

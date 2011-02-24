@@ -490,7 +490,6 @@ namespace IronPython.Compiler.Ast {
             private object _value;
 
             public ConstantExpression(int offset, object value) : base(offset) {
-                Type returnType = value.GetType();
                 _value = value;
             }
 

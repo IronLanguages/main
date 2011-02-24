@@ -1,1 +1,0 @@
-fails:Hash#initialize raises a RuntimeError if called on a frozen instance

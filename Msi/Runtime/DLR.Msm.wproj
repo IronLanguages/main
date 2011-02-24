@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(ProjectDir)..\..\Solutions\Common.proj" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{81A2FD44-53F8-47E3-9B3B-C0883D140867}</ProjectGuid>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>$(SolutionDir)..\bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>$(SolutionDir)..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- The location pointing where WiX is installed -->
+    <WixToolPath>$(SolutionDir)..\Util\Wix35\</WixToolPath>
+    <WixExtDir>$(SolutionDir)..\Util\Wix35\</WixExtDir>
+    <WixTasksPath>$(WixExtDir)\WixTasks.dll</WixTasksPath>
+    <OutputName Condition="$(OutputName)==''">DLR</OutputName>
+    <OutputType Condition="$(OutputType)==''">Module</OutputType>
+    <!-- Input path to source files  -->
+    <BaseInputPaths Condition="$(BaseInputPaths)==''">$(SolutionDir)..\Bin\$(Configuration)</BaseInputPaths>
+  </PropertyGroup>
+  <ItemGroup Condition="$(UseExistingBinaries) != 'true'">
+    <ProjectReference Include="$(SolutionDir)..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\Runtime\Microsoft.Scripting.Metadata\Microsoft.Scripting.Metadata.csproj">
+      <Project>{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WixExtension Include="$(WixToolPath)WixNetFxExtension.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(ProjectDir)\DLR.wxs" />
+  </ItemGroup>
+  <Import Project="$(WixToolPath)wix2010.targets" />
+</Project>

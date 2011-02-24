@@ -188,8 +188,6 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
-            ParameterExpression tmp = Expression.Parameter(typeof(bool));
-
             // fallback w/ an error suggestion that does a late bound set
             return binder.FallbackSetMember(
                 this,
@@ -297,7 +295,8 @@ namespace IronPython.Runtime.Binding {
             private List<Expression> _init;                         // a set of initialization code (e.g. creating a list for the params array)
             private Expression _error;                              // a custom error expression if the default needs to be overridden.
             private bool _extractedParams;                          // true if we needed to extract a parameter from the parameter list.
-            private bool _extractedKeyword;                         // true if we needed to extract a parameter from the kw list.
+            private bool _extractedDefault;                         // true if we needed to extract a parameter from the kw list.
+            private bool _needCodeTest;                             // true if we need to test the code object
             private Expression _deferTest;                          // non-null if we have a test which could fail at runtime and we need to fallback to deferal
             private Expression _userProvidedParams;                 // expression the user provided that should be expanded for params.
             private Expression _paramlessCheck;                     // tests when we have no parameters
@@ -413,8 +412,18 @@ namespace IronPython.Runtime.Binding {
             /// </summary>
             /// <returns></returns>
             private BindingRestrictions/*!*/ GetComplexRestriction() {
-                if (_extractedKeyword) {
+                if (_extractedDefault) {
                     return BindingRestrictions.GetInstanceRestriction(_func.Expression, _func.Value);
+                } else if (_needCodeTest) {
+                    return GetSimpleRestriction().Merge(
+                        BindingRestrictions.GetInstanceRestriction(
+                            Expression.Property(
+                                GetFunctionParam(),
+                                "__code__"
+                            ),
+                            _func.Value.__code__
+                        )
+                    );
                 }
 
                 return GetSimpleRestriction();
@@ -445,7 +454,7 @@ namespace IronPython.Runtime.Binding {
                             continue;
 
                         case ArgumentType.Named:
-                            _extractedKeyword = true;
+                            _needCodeTest = true;
                             bool foundName = false;
                             for (int j = 0; j < _func.Value.NormalArgumentCount; j++) {
                                 if (_func.Value.ArgNames[j] == Signature.GetArgumentName(i)) {
@@ -738,7 +747,7 @@ namespace IronPython.Runtime.Binding {
             /// Helper function to get the specified variable from the dictionary.
             /// </summary>
             private Expression ExtractDictionaryArgument(string name) {
-                _extractedKeyword = true;
+                _needCodeTest = true;
 
                 return Ast.Call(
                         typeof(PythonOps).GetMethod("ExtractDictionaryArgument"),
@@ -766,7 +775,7 @@ namespace IronPython.Runtime.Binding {
                     if (_userProvidedParams != null) {
                         EnsureParams();
                     }
-                    _extractedKeyword = true;
+                    _extractedDefault = true;
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("GetFunctionParameterValue"),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
@@ -785,7 +794,7 @@ namespace IronPython.Runtime.Binding {
             private Expression ExtractFromListOrDictionary(string name) {
                 EnsureParams();
 
-                _extractedKeyword = true;
+                _needCodeTest = true;
 
                 return Ast.Call(
                     typeof(PythonOps).GetMethod("ExtractAnyArgument"),
@@ -929,8 +938,6 @@ namespace IronPython.Runtime.Binding {
                 _temps.Add(_dict = Ast.Variable(typeof(PythonDictionary), "$dict"));
 
                 Expression dictCreator;
-                ParameterExpression dictRef = _dict;
-
                 if (namedArgs != null) {
                     Debug.Assert(namedArgs.Count > 0);
 

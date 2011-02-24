@@ -1,0 +1,4 @@
+Downloaded from 
+
+http://github.com/rails/rails/zipball/v3.0.0
+

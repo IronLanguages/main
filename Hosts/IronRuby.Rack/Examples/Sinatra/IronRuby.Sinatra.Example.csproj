@@ -57,11 +57,11 @@
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\Yaml\IronRuby.Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
+    <ProjectReference Include="..\..\..\Languages\Ruby\Libraries.Yaml\IronRuby.Libraries.Yaml.csproj">
       <Project>{AA18A245-E342-4368-A474-83178311A742}</Project>
       <Name>IronRuby.Libraries.Yaml</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Languages\Ruby\Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj">
+    <ProjectReference Include="..\..\..\Languages\Ruby\Libraries\IronRuby.Libraries.csproj">
       <Project>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</Project>
       <Name>IronRuby.Libraries</Name>
     </ProjectReference>
