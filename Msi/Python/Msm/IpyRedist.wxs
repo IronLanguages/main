@@ -23,6 +23,8 @@
                 <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\2.7\InstallPath'
                           Type='string' Value='[INSTALLDIR]' 
                           KeyPath='yes' /> 
+                <RegistryValue Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v4.0.30319\AssemblyFoldersEx\$(var.ProductShortName)$(var.ProductVersionText)'
+                          Type='string' Value='[INSTALLDIR]' /> 
                 <File Id="IronPython_PF.dll" Name="IronPython.dll" />
                 <File Id="IronPython.Modules_PF.dll" Name="IronPython.Modules.dll" />
                 <File Id="Microsoft.Dynamic_PF.dll" Name="Microsoft.Dynamic.dll" />
