@@ -78,7 +78,7 @@ using IronRuby.Compiler.Ast;
 
 %type<ElseIfClause> else_opt 
 %type<ElseIfClauses> if_tail
-%type<Identifiers> undef_list 
+%type<ConstructedSymbols> undef_list                                     
 %type<BlockReference> block_reference block_reference_opt 
 %type<BlockDefinition> cmd_brace_block brace_block do_block 
 %type<LambdaDefinition> lambda 
@@ -110,10 +110,10 @@ using IronRuby.Compiler.Ast;
 
 %type<Expression> regexp 
 %type<Expression> numeric_literal 
-%type<Expression> immutable_string 
+%type<ConstructedSymbol> symbol method_name_or_symbol         
 %type<RegexMatchReference> match_reference 
 
-%type<String> operation variable sym operation2 operation3 module_name op method_name symbol method_name_or_symbol
+%type<String> operation variable sym operation2 operation3 module_name op method_name
 
 %type<Parameters> block_parameters block_parameters_opt lambda_parameters  // Parameters?
 %type<Parameters> method_parameters block_parameter_list parameters
@@ -713,7 +713,7 @@ method_name:
 method_name_or_symbol: 
       method_name
         {
-            $$ = $1;
+            $$ = new ConstructedSymbol($1);
         }
     | symbol
         {
@@ -721,10 +721,36 @@ method_name_or_symbol:
         }
 ;
 
+symbol:
+      SYMBOL_BEGIN sym
+        {
+            _tokenizer.LexicalState = LexicalState.EXPR_END;
+            $$ = new ConstructedSymbol($2);
+        }
+    | SYMBOL_BEGIN string_contents STRING_END
+        {
+            $$ = new ConstructedSymbol(MakeSymbolConstructor($2, @$));
+        }
+;
+
+sym: 
+    method_name
+  | INSTANCE_VARIABLE
+  | GLOBAL_VARIABLE
+      {
+          $$ = "$" + $1;
+      }
+  | CLASS_VARIABLE
+  | match_reference 
+      {
+          $$ = $1.FullName;
+      }
+;
+
 undef_list:
       method_name_or_symbol
         {
-            $$ = CollectionUtils.MakeList<Identifier>(new Identifier($1, @1));
+            $$ = CollectionUtils.MakeList<ConstructedSymbol>($1);
         }
    | undef_list COMMA 
         {
@@ -732,7 +758,7 @@ undef_list:
         } 
      method_name_or_symbol
         {
-            ($$ = $1).Add(new Identifier($4, @4));
+            ($$ = $1).Add($4);
         }
 ;
 
@@ -1127,9 +1153,8 @@ primary:
       numeric_literal
     | symbol
         {
-            $$ = MakeSymbolLiteral($1, @$);
+            $$ = MakeSymbolLiteral($1, @1);
         }
-    | immutable_string
     | string_concatenation
         {
             $$ = new StringConstructor($1, StringKind.Mutable, @1);
@@ -1824,13 +1849,6 @@ shell_string:
         }
 ;
 
-immutable_string:
-      SYMBOL_BEGIN string_contents STRING_END
-        {
-            $$ = MakeSymbolConstructor($2, @$);
-        }
-;
-
 regexp:
       REGEXP_BEGIN string_contents REGEXP_END
         {
@@ -1941,28 +1959,6 @@ string_embedded_variable:
     | CLASS_VARIABLE 
       { 
           $$ = new ClassVariable($1, @$); 
-      }
-;
-
-symbol:
-    SYMBOL_BEGIN sym
-      {
-          _tokenizer.LexicalState = LexicalState.EXPR_END;
-          $$ = $2;
-      }
-;
-
-sym: 
-    method_name
-  | INSTANCE_VARIABLE
-  | GLOBAL_VARIABLE
-      {
-          $$ = "$" + $1;
-      }
-  | CLASS_VARIABLE
-  | match_reference 
-      {
-          $$ = $1.FullName;
       }
 ;
 

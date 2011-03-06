@@ -29,17 +29,17 @@ namespace HostingTest {
     internal class TestHelpers {
 
         /// <summary>
-        /// Config file containing the 5 standard langs - py,rb,vb,js,ts
+        /// Config file containing the tested languages - py,rb,ts
         /// </summary>
         public static string StandardConfigFile { get; private set; }
 
         /// <summary>
         ///Directory where tests execute and binaries are loaded from 
         /// </summary>
-        public static string CurrentDirectory { get; private set; }
+        public static string BinDirectory { get; private set; }
 
         static TestHelpers() {
-            CurrentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            BinDirectory = Path.GetDirectoryName(Uri.UnescapeDataString(new Uri(typeof(HAPITestBase).Assembly.CodeBase).AbsolutePath));
             StandardConfigFile = GetStandardConfigFile();
         }
 
@@ -135,8 +135,7 @@ namespace HostingTest {
         /// <param name="contents">Contents of code</param>
         /// <param name="extention">File extension like ".py" or ".js"</param>
         /// <returns></returns>
-        internal static string CreateTempSourceFile(string contents, string extention)
-        {
+        internal static string CreateTempSourceFile(string contents, string extention) {
             // TODO: Add temp file to a list for tear down(deletion)
             string tempFile = Path.GetTempFileName();
             string newFile = Path.ChangeExtension(tempFile, extention);
@@ -146,8 +145,7 @@ namespace HostingTest {
 
 
         public static AppDomain CreateAppDomain(string name) {
-            return AppDomain.CreateDomain(name, null, CurrentDirectory,
-                                            CurrentDirectory, false);
+            return AppDomain.CreateDomain(name, null, BinDirectory, BinDirectory, false);
         }
 
         public class EnvSetupTearDown {
@@ -163,24 +161,6 @@ namespace HostingTest {
             ~EnvSetupTearDown() {
                 //Rest old values
                 Environment.SetEnvironmentVariable(_envName, _oldEnvEntry);
-            }
-        }
-
-        public static void DeployItem(string path)
-        {
-            var targetDir = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, path));
-            if (!Directory.Exists(targetDir))
-                throw new Exception(string.Format("Deployment directory '{0}' doesn't exist", targetDir));
-
-            foreach (string file in Directory.GetFiles(Environment.CurrentDirectory))
-            {
-                string newFile = Path.Combine(targetDir, Path.GetFileName(file));
-
-                if (File.Exists(newFile))
-                    File.Delete(newFile);
-
-                File.Copy(file, newFile);
-                File.SetAttributes(newFile, FileAttributes.Normal);
             }
         }
     }

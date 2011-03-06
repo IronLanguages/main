@@ -83,9 +83,10 @@ namespace IronRuby.Compiler {
         public Body Body { get { return (Body)_obj1; } set { _obj1 = value; } }
         public JumpStatement JumpStatement { get { return (JumpStatement)_obj1; } set { _obj1 = value; } }
         public RegexMatchReference RegexMatchReference { get { return (RegexMatchReference)_obj1; } set { _obj1 = value; } }
+        public ConstructedSymbol ConstructedSymbol { get { return new ConstructedSymbol(_obj1); } set { _obj1 = value.Value; } }
+        public List<ConstructedSymbol> ConstructedSymbols { get { return (List<ConstructedSymbol>)_obj1; } set { _obj1 = value; } }
 
         public List<LeftValue> LeftValues { get { return (List<LeftValue>)_obj1; } set { _obj1 = value; } }
-        public List<Identifier>/*!*/ Identifiers { get { return (List<Identifier>)_obj1; } set { _obj1 = value; } }
         public List<ElseIfClause>/*!*/ ElseIfClauses { get { return (List<ElseIfClause>)_obj1; } set { _obj1 = value; } }
         public List<WhenClause>/*!*/ WhenClauses { get { return (List<WhenClause>)_obj1; } set { _obj1 = value; } }
         public List<RescueClause> RescueClauses { get { return (List<RescueClause>)_obj1; } set { _obj1 = value; } }

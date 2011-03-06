@@ -552,7 +552,9 @@ namespace IronRuby.Builtins {
 
             if (maxDepth == 0) {
                 return ToArray(self);
-            } else if (maxDepth > 0) {
+            } 
+            
+            if (maxDepth > 0) {
                 maxDepth--;
             }
 

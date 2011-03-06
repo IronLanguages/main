@@ -201,7 +201,6 @@
     <Compile Include="Compiler\Ast\Expressions\RegexMatchReference.cs" />
     <Compile Include="Compiler\Ast\Expressions\RescueExpression.cs" />
     <Compile Include="Compiler\Ast\Expressions\UnlessExpression.cs" />
-    <Compile Include="Compiler\Ast\Identifier.cs" />
     <Compile Include="Compiler\Ast\Instructions\FrameTracking.cs" />
     <Compile Include="Compiler\Ast\LeftValues\Placeholder.cs" />
     <Compile Include="Compiler\Ast\Instructions\ReducibleEmptyExpression.cs" />
@@ -218,6 +217,7 @@
     <Compile Include="Compiler\Generation\IRubyType.cs" />
     <Compile Include="Compiler\Generation\RubyTypeFeature.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
+    <Compile Include="Compiler\Ast\ConstructedSymbol.cs" />
     <Compile Include="Hosting\RubyConsoleHost.cs" />
     <Compile Include="Hosting\RubyService.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />

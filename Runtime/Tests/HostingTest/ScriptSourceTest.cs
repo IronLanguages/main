@@ -221,14 +221,8 @@ namespace HostingTest {
             string scriptName = TestHelpers.CreateTempSourceFile(sourceInput, ".py");
             ScriptSource source = _testEng.CreateScriptSourceFromFile(scriptName);
 
-            // Count the code lines
-            Regex regex = new Regex("\r\n", RegexOptions.Multiline);
-            MatchCollection theMatches = regex.Matches(sourceInput);
-            // Split the lines with a regex
-            string[] expected = regex.Split(sourceInput);
-            int lines = theMatches.Count + 1;
-
-            ValidateGetCodeLines(sourceInput, 1, lines, expected);
+            string[] expected = sourceInput.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
+            ValidateGetCodeLines(sourceInput, 1, expected.Length, expected);
         }
 
         [Test]
