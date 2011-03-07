@@ -13,6 +13,7 @@ using Microsoft.Scripting.Runtime;
 [assembly: PythonModule("_csv", typeof(IronPython.Modules.PythonCsvModule))]
 namespace IronPython.Modules
 {
+    using DialectRegistry = Dictionary<string, PythonCsvModule.Dialect>;
     public static class PythonCsvModule
     {
         public const string __doc__ = "";
@@ -24,29 +25,39 @@ namespace IronPython.Modules
         public const int QUOTE_NONNUMERIC = 2;
         public const int QUOTE_NONE = 3;
 
-        private static int _field_size_limit = 128 * 1024;   /* max parsed field size */
+        private static readonly object _fieldSizeLimitKey = new object();
+        private static readonly object _dialectRegistryKey = new object();
 
-        /* Dialect registry */
-        private static Dictionary<string, Dialect> _dialects =
-            new Dictionary<string, Dialect>();
+        private const int FieldSizeLimit = 128 * 1024;   /* max parsed field size */
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, PythonDictionary dict)
         {
+            if (!context.HasModuleState(_fieldSizeLimitKey))
+            {
+                context.SetModuleState(_fieldSizeLimitKey, FieldSizeLimit);
+            }
+
+            if (!context.HasModuleState(_dialectRegistryKey))
+            {
+                context.SetModuleState(_dialectRegistryKey,
+                    new DialectRegistry());
+            }
             InitModuleExceptions(context, dict);
         }
 
-        public static int field_size_limit(int new_limit)
+        public static int field_size_limit(CodeContext /*!*/ context, int new_limit)
         {
-            int old_limit = _field_size_limit;
-            _field_size_limit = new_limit;
-
+            PythonContext ctx = PythonContext.GetContext(context);
+            int old_limit = (int)ctx.GetModuleState(_fieldSizeLimitKey);
+            ctx.SetModuleState(_fieldSizeLimitKey, new_limit);
             return old_limit;
         }
 
-        public static int field_size_limit()
+        public static int field_size_limit(CodeContext/*!*/ context)
         {
-            return _field_size_limit;
+            return (int)PythonContext.GetContext(context).
+                GetModuleState(_fieldSizeLimitKey);
         }
 
         [Documentation(@"Create a mapping from a string name to a dialect class.
@@ -86,34 +97,65 @@ dialect = csv.register_dialect(name, dialect)")]
                 Dialect.Create(context, kwArgs);
 
             if (dialect != null)
-                _dialects[name] = dialect;
+                GetDialects(context)[name] = dialect;
+        }
+
+        /// <summary>
+        /// Returns the dialects from the code context.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        private static DialectRegistry GetDialects(CodeContext/*!*/ context)
+        {
+            PythonContext ctx = PythonContext.GetContext(context);
+            if (!ctx.HasModuleState(_dialectRegistryKey))
+            {
+                ctx.SetModuleState(_dialectRegistryKey,
+                    new DialectRegistry());
+            }
+
+            return (DialectRegistry)ctx.GetModuleState(_dialectRegistryKey);
+        }
+
+        private static int GetFieldSizeLimit(CodeContext/*!*/ context)
+        {
+            PythonContext ctx = PythonContext.GetContext(context);
+            if (!ctx.HasModuleState(_fieldSizeLimitKey))
+            {
+                ctx.SetModuleState(_fieldSizeLimitKey, FieldSizeLimit);
+            }
+
+            return (int)ctx.GetModuleState(_fieldSizeLimitKey);
         }
 
         [Documentation(@"Delete the name/dialect mapping associated with a string name.\n
     csv.unregister_dialect(name)")]
-        public static void unregister_dialect(string name)
+        public static void unregister_dialect(CodeContext/*!*/ context,
+            string name)
         {
-            if (name == null || !_dialects.ContainsKey(name))
+            DialectRegistry dialects = GetDialects(context);
+            if (name == null || !dialects.ContainsKey(name))
                 throw MakeError("unknown dialect");
 
-            if (_dialects.ContainsKey(name))
-                _dialects.Remove(name);
+            if (dialects.ContainsKey(name))
+                dialects.Remove(name);
         }
 
         [Documentation(@"Return the dialect instance associated with name.
     dialect = csv.get_dialect(name)")]
-        public static object get_dialect(string name)
+        public static object get_dialect(CodeContext/*!*/ context, string name)
         {
-            if (name == null || !_dialects.ContainsKey(name))
+            DialectRegistry dialects = GetDialects(context);
+            if (name == null || !dialects.ContainsKey(name))
                 throw MakeError("unknown dialect");
-            return _dialects[name];
+            return dialects[name];
         }
 
         [Documentation(@"Return a list of all know dialect names
     names = csv.list_dialects()")]
-        public static List list_dialects()
+        public static List list_dialects(CodeContext/*!*/ context)
         {
-            return new List(_dialects.Keys);
+            return new List(GetDialects(context).Keys);
         }
 
         [Documentation(@"csv_reader = reader(iterable [, dialect='excel']
@@ -136,6 +178,7 @@ dialect = csv.register_dialect(name, dialect)")]
             object dialectObj = null;
             Dialect dialect = null;
             IEnumerator e = null;
+            DialectRegistry dialects = GetDialects(context);
 
             if (args.Length < 1)
             {
@@ -159,11 +202,11 @@ dialect = csv.register_dialect(name, dialect)")]
             if (args.Length > 1)
                 dialectObj = args[1];
 
-            if (dialectObj is string && !_dialects.ContainsKey((string)dialectObj))
+            if (dialectObj is string && !dialects.ContainsKey((string)dialectObj))
                 throw MakeError("unknown dialect");
             else if (dialectObj is string)
             {
-                dialect = _dialects[(string)dialectObj];
+                dialect = dialects[(string)dialectObj];
                 dialectObj = dialect;
             }
 
@@ -171,7 +214,7 @@ dialect = csv.register_dialect(name, dialect)")]
                 Dialect.Create(context, kwArgs, dialectObj) :
                 Dialect.Create(context, kwArgs);
 
-            return new Reader(e, dialect);
+            return new Reader(context, e, dialect);
         }
 
         public static object writer(CodeContext/*!*/ context,
@@ -181,6 +224,7 @@ dialect = csv.register_dialect(name, dialect)")]
             object output_file = null;
             object dialectObj = null;
             Dialect dialect = null;
+            DialectRegistry dialects = GetDialects(context);
 
             if (args.Length < 1)
             {
@@ -198,11 +242,11 @@ dialect = csv.register_dialect(name, dialect)")]
             if (args.Length > 1)
                 dialectObj = args[1];
 
-            if (dialectObj is string && !_dialects.ContainsKey((string)dialectObj))
+            if (dialectObj is string && !dialects.ContainsKey((string)dialectObj))
                 throw MakeError("unknown dialect");
             else if (dialectObj is string)
             {
-                dialect = _dialects[(string)dialectObj];
+                dialect = dialects[(string)dialectObj];
                 dialectObj = dialect;
             }
 
@@ -258,6 +302,7 @@ The Dialect type records CSV parsing and generation options.")]
                 object quoting = null;
                 object skipinitialspace = null;
                 object strict = null;
+                DialectRegistry dialects = GetDialects(context);
 
                 if (args.Length > 0 && args[0] != null)
                     dialect = args[0];
@@ -278,8 +323,8 @@ The Dialect type records CSV parsing and generation options.")]
                     if (dialect is string)
                     {
                         string dialectName = (string)dialect;
-                        if (_dialects.ContainsKey(dialectName))
-                            return _dialects[dialectName];
+                        if (dialects.ContainsKey(dialectName))
+                            return dialects[dialectName];
                         else
                             throw MakeError("unknown dialect");
                     }
@@ -569,8 +614,6 @@ The Dialect type records CSV parsing and generation options.")]
             }
         }
 
-
-
         [Documentation(@"CSV reader
 
 Reader objects are responsible for reading and parsing tabular data
@@ -583,11 +626,12 @@ in CSV format.")]
             private int _line_num;
             private ReaderIterator _iterator;
 
-            public Reader(IEnumerator input_iter, Dialect dialect)
+            public Reader(CodeContext/*!*/ context, IEnumerator input_iter,
+                Dialect dialect)
             {
                 _input_iter = input_iter;
                 _dialect = dialect;
-                _iterator = new ReaderIterator(this);
+                _iterator = new ReaderIterator(context, this);
             }
 
             public object next()
@@ -607,6 +651,7 @@ in CSV format.")]
 
             private sealed class ReaderIterator : IEnumerator, IEnumerable
             {
+                private CodeContext _context;
                 private Reader _reader;
                 private List _fields = new List();
                 private bool _is_numeric_field;
@@ -626,8 +671,9 @@ in CSV format.")]
                     EatCrNl
                 }
 
-                public ReaderIterator(Reader reader)
+                public ReaderIterator(CodeContext/*!*/ context, Reader reader)
                 {
+                    _context = context;
                     _reader = reader;
                     _iterator = _reader._input_iter;
                 }
@@ -904,11 +950,12 @@ in CSV format.")]
 
                 private void ParseAddChar(char c)
                 {
-                    if (_field.Length >= _field_size_limit)
+                    int field_size_limit = GetFieldSizeLimit(_context);
+                    if (_field.Length >= field_size_limit)
                     {
                         throw MakeError(
                             string.Format("field larger than field " +
-                                "limit ({0})", _field_size_limit));
+                                "limit ({0})", field_size_limit));
                     }
 
                     _field.Append(c);
