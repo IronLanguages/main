@@ -151,6 +151,8 @@ def _expand_vars(scheme, vars):
     return res
 
 def _get_default_scheme():
+    if sys.platform == 'cli':
+        return 'nt'
     if os.name == 'posix':
         # the default scheme for posix is posix_prefix
         return 'posix_prefix'
@@ -415,7 +417,7 @@ def get_config_vars(*args):
         _CONFIG_VARS['platbase'] = _EXEC_PREFIX
         _CONFIG_VARS['projectbase'] = _PROJECT_BASE
 
-        if os.name in ('nt', 'os2'):
+        if os.name in ('nt', 'os2') or sys.platform == 'cli':
             _init_non_posix(_CONFIG_VARS)
         if os.name == 'posix':
             _init_posix(_CONFIG_VARS)
