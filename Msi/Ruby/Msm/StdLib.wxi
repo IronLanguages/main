@@ -30,6 +30,7 @@
       <File Id="Fct37mnrr8fqtai2mssw36jr08" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ironruby\System.Core.rb" />
       <File Id="F75r8by1d7g6aajbpf78dam64j" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ironruby\System.Data.rb" />
       <File Id="F58147r5c5xvvd5te89lwbe7oe" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ironruby\System.Drawing.rb" />
+      <File Id="F3o04i0wcsougf1kvgkqi12tf8" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ironruby\System.Numerics.rb" />
       <File Id="Fcv8hlo7j2uaealo6jva9kduzn" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ironruby\System.Windows.Forms.rb" />
       <File Id="Fe7dq8v16lnak9aoxmazqsv3rx" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ironruby\System.Xml.Linq.rb" />
       <File Id="Fa6goz94in6c9cr2q87iuvv1re" Source="$(var.DlrRoot)Languages\Ruby\StdLib\ironruby\System.Xml.rb" />
