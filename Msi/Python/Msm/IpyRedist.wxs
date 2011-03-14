@@ -5,7 +5,7 @@
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi' xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
     <!-- Merge module for IronPython Redist.  This includes the core binaries, XML docs, licence, all ngen'd and installed -->
     
-    <Module Id='IronPythonRedist' Language='1033' Version='2.7.0.40'>
+    <Module Id='IronPythonRedist' Language='1033' Version='3.0.0.0'>
       <Package Id='B25C469D-12C7-4327-AEF1-B2D3505E115E' Description='IronPython Redist Merge Module'
                 Manufacturer='Microsoft Corporation' InstallerVersion='200' />
 
@@ -20,7 +20,7 @@
                 <File Id="File_Readme.html" Name="Readme.html" Source="$(var.PythonDir)\Public\Readme.html"/>
               </Component>
               <Component Id="Comp_Installation_Location" Guid="536A8336-C5ED-4192-8B70-A76EA933C705">
-                <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\2.7\InstallPath'
+                <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\$(var.ProductVersionText)\InstallPath'
                           Type='string' Value='[INSTALLDIR]' 
                           KeyPath='yes' /> 
                 <RegistryValue Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v4.0.30319\AssemblyFoldersEx\$(var.ProductShortName)$(var.ProductVersionText)'
@@ -40,7 +40,7 @@
                 <File Id="NGENFile_ipyw.exe" Name="ipyw.exe">
                   <netfx:NativeImage Id="NGEN_File_ipyw.exe" Priority="1" />
                 </File>
-                <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\2.7' Type='string' Value='ipy' KeyPath='yes' /> 
+                <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\$(var.ProductVersionText)' Type='string' Value='ipy' KeyPath='yes' /> 
               </Component>
               
               <!-- Ngen'd 64-bit binaries for for entry points (ipy.exe/ipyw.exe) and config -->
@@ -58,7 +58,7 @@
                 <File Id="NGEN64File_ipyw64.exe" Name="ipyw64.exe" >
                   <netfx:NativeImage Id="NGEN64_File_ipyw64.exe" Priority="1" Platform="64bit"/>
                 </File>
-                <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\2.7'
+                <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\$(var.ProductVersionText)'
                           Type='string' Value='ipy64' 
                           KeyPath='yes' /> 
               </Component>
