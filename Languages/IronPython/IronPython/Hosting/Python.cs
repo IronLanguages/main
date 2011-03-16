@@ -81,7 +81,7 @@ namespace IronPython.Hosting {
 
         /// <summary>
         /// Creates a new ScriptRuntime and returns the ScriptEngine for IronPython. If
-        /// the ScriptRuntime is requierd it can be acquired from the Runtime property
+        /// the ScriptRuntime is required it can be acquired from the Runtime property
         /// on the engine.
         /// </summary>
         public static ScriptEngine/*!*/ CreateEngine() {
@@ -90,7 +90,7 @@ namespace IronPython.Hosting {
 
         /// <summary>
         /// Creates a new ScriptRuntime with the specified options and returns the 
-        /// ScriptEngine for IronPython. If the ScriptRuntime is requierd it can be 
+        /// ScriptEngine for IronPython. If the ScriptRuntime is required it can be 
         /// acquired from the Runtime property on the engine.
         /// </summary>
         public static ScriptEngine/*!*/ CreateEngine(IDictionary<string, object> options) {
@@ -101,7 +101,7 @@ namespace IronPython.Hosting {
 
         /// <summary>
         /// Creates a new ScriptRuntime and returns the ScriptEngine for IronPython. If
-        /// the ScriptRuntime is requierd it can be acquired from the Runtime property
+        /// the ScriptRuntime is required it can be acquired from the Runtime property
         /// on the engine.
         /// 
         /// The remote ScriptRuntime may be manipulated from the local domain but 
@@ -113,7 +113,7 @@ namespace IronPython.Hosting {
 
         /// <summary>
         /// Creates a new ScriptRuntime with the specified options and returns the 
-        /// ScriptEngine for IronPython. If the ScriptRuntime is requierd it can be 
+        /// ScriptEngine for IronPython. If the ScriptRuntime is required it can be 
         /// acquired from the Runtime property on the engine.
         /// 
         /// The remote ScriptRuntime may be manipulated from the local domain but 

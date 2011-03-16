@@ -139,6 +139,7 @@
     <Compile Include="errno.cs" />
     <Compile Include="gc.cs" />
     <Compile Include="IterTools.cs" />
+    <Compile Include="_csv.cs" />
     <Compile Include="_io.cs" />
     <Compile Include="_locale.cs" />
     <Compile Include="marshal.cs" />
