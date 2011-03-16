@@ -22,7 +22,7 @@ using System.Reflection;
 #endif
 
 [assembly: AssemblyInformationalVersion("2.7")]
-[assembly: AssemblyFileVersion("2.7.0.40")]
+[assembly: AssemblyFileVersion("2.7.1.0")]
 
 [assembly: AssemblyCompany("IronPython Team")]
 [assembly: AssemblyCopyright("© IronPython Contributors.")]
