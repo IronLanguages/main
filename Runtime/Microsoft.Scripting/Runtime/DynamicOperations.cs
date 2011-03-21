@@ -40,7 +40,7 @@ namespace Microsoft.Scripting.Runtime {
     /// of the operations.  There is a default instance of ObjectOperations you can share across all uses of the 
     /// engine.  However, very advanced hosts can create new instances.
     /// </summary>
-    public sealed class DynamicOperations {
+    public sealed partial class DynamicOperations {
         private readonly LanguageContext _lc;
 
         /// <summary> a dictionary of SiteKey's which are used to cache frequently used operations, logically a set </summary>
@@ -638,46 +638,6 @@ namespace Microsoft.Scripting.Runtime {
 #endif
         }
 
-        private Func<DynamicOperations, CallSiteBinder, object, object[], object> GetInvoker(int paramCount) {
-            Func<DynamicOperations, CallSiteBinder, object, object[], object> invoker;
-            lock (_invokers) {
-                if (!_invokers.TryGetValue(paramCount, out invoker)) {
-                    ParameterExpression dynOps = Expression.Parameter(typeof(DynamicOperations));
-                    ParameterExpression callInfo = Expression.Parameter(typeof(CallSiteBinder));
-                    ParameterExpression target = Expression.Parameter(typeof(object));
-                    ParameterExpression args = Expression.Parameter(typeof(object[]));
-                    Type funcType = DelegateUtils.GetObjectCallSiteDelegateType(paramCount);
-                    ParameterExpression site = Expression.Parameter(typeof(CallSite<>).MakeGenericType(funcType));
-                    Expression[] siteArgs = new Expression[paramCount + 2];
-                    siteArgs[0] = site;
-                    siteArgs[1] = target;
-                    for (int i = 0; i < paramCount; i++) {
-                        siteArgs[i + 2] = Expression.ArrayIndex(args, Expression.Constant(i));
-                    }
-
-                    var getOrCreateSiteFunc = new Func<CallSiteBinder, CallSite<Func<object>>>(GetOrCreateSite<Func<object>>).Method.GetGenericMethodDefinition();
-                    _invokers[paramCount] = invoker = Expression.Lambda<Func<DynamicOperations, CallSiteBinder, object, object[], object>>(
-                        Expression.Block(
-                            new[] { site },
-                            Expression.Assign(
-                                site,
-                                Expression.Call(dynOps, getOrCreateSiteFunc.MakeGenericMethod(funcType), callInfo)
-                            ),
-                            Expression.Invoke(
-                                Expression.Field(
-                                    site,
-                                    site.Type.GetField("Target")
-                                ),
-                                siteArgs
-                            )
-                        ),
-                        new[] { dynOps, callInfo, target, args }
-                    ).Compile();
-                }
-            }
-            return invoker;
-        }
-       
         #endregion
     }
 }
