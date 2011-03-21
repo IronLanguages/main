@@ -2470,6 +2470,16 @@ namespace IronRuby.Runtime {
             RubyOps.GetInstanceData(ref instanceData).IsUntrusted = untrusted;
         }
 
+        [Emitted]
+        public static string/*!*/ GetDebuggerDisplayValue(RubyClass/*!*/ cls, object obj) {
+            return cls.Context.Inspect(obj).ConvertToString();
+        }
+
+        [Emitted]
+        public static string/*!*/ GetDebuggerDisplayType(RubyClass/*!*/ cls) {
+            return cls.Name;
+        }
+
 #if !SILVERLIGHT // serialization
         [Emitted(UseReflection = true)] //RubyTypeBuilder
         public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {

@@ -28,9 +28,9 @@ namespace IronRuby.Builtins {
             _obj = obj;
         }
 
-        [DebuggerDisplay("{GetModuleName(A),nq}", Name = "{GetClassKind(),nq}", Type = "")]
-        public object A {
-            get { return _obj.ImmediateClass; }
+        [DebuggerDisplay("{A,nq}", Name = "{GetClassKind(),nq}", Type = "")]
+        public string A {
+            get { return GetModuleName(_obj.ImmediateClass); }
         }
 
         [DebuggerDisplay("{B}", Name = "tainted?", Type = "")]

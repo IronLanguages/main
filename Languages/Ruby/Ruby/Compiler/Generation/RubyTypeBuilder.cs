@@ -270,12 +270,27 @@ namespace IronRuby.Compiler.Generation {
 
             _tb.SetCustomAttribute(new CustomAttributeBuilder(
                 typeof(DebuggerDisplayAttribute).GetConstructor(new[] { typeof(string) }),
-                new[] { RubyObject.DebuggerDisplayValue },
+                new[] { RubyObject.DebuggerDisplayValueStr},
                 new[] { typeof(DebuggerDisplayAttribute).GetProperty("Type") },
-                new[] { RubyObject.DebuggerDisplayType }
+                new[] { RubyObject.DebuggerDisplayTypeStr }
             ));
 
             ILGen il;
+
+            // private string GetDebuggerDisplayValue() { return RubyOps.GetDebuggerDisplayValue(_immediateClass, this); }
+            var ilg = _tb.DefineMethod("GetDebuggerDisplayValue", MethodAttributes.Private, typeof(string), Type.EmptyTypes).GetILGenerator();
+            ilg.Emit(OpCodes.Ldarg_0);
+            ilg.Emit(OpCodes.Ldfld, ImmediateClassField);
+            ilg.Emit(OpCodes.Ldarg_0);
+            ilg.Emit(OpCodes.Call, Methods.GetDebuggerDisplayValue);
+            ilg.Emit(OpCodes.Ret);
+            
+            // private string GetDebuggerDisplayType() { return RubyOps.GetDebuggerDisplayType(_immediateClass); }
+            ilg = _tb.DefineMethod("GetDebuggerDisplayType", MethodAttributes.Private, typeof(string), Type.EmptyTypes).GetILGenerator();
+            ilg.Emit(OpCodes.Ldarg_0);
+            ilg.Emit(OpCodes.Ldfld, ImmediateClassField);
+            ilg.Emit(OpCodes.Call, Methods.GetDebuggerDisplayType);
+            ilg.Emit(OpCodes.Ret);
 
             // RubyClass! get_ImmediateClass { get { return _immediateClassField; } }
             il = DefineMethodOverride(_tb, Methods.IRubyObject_get_ImmediateClass);

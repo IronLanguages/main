@@ -81,9 +81,9 @@ namespace Microsoft.Scripting.Runtime {
             switch (paramCount) {
 #if GENERATOR 
                 def generate; $PregeneratedInvokerCount.times { |n| @n = n + 1; super }; end
+                def n; @n; end
                 def objects; "object, " * @n; end
                 def args; (0..@n-1).map { |i| ", args[#{i}]" }.join; end
-                def n; @n; end
 #else
                 case /*$n{*/0/*}*/:
                     return (ops, binder, target, args) => {

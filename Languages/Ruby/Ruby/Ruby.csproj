@@ -158,7 +158,7 @@
     <Compile Include="Builtins\Binding.cs" />
     <Compile Include="Builtins\CharacterMap.cs" />
     <Compile Include="Builtins\ConsoleStream.cs" />
-    <None Include="Builtins\Subclasses.Generator.rb" />
+    <Compile Include="Builtins\RubyException.Subclass.cs" />
     <Compile Include="Builtins\RubyIO.Subclass.cs" />
     <Compile Include="Builtins\IOMode.cs" />
     <Compile Include="Builtins\MutableStringBuilder.cs" />

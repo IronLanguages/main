@@ -48,6 +48,7 @@ namespace IronRuby.Compiler.Generation {
             AddBuiltinType(typeof(RubyArray), typeof(RubyArray.Subclass), true);
             AddBuiltinType(typeof(MatchData), typeof(MatchData.Subclass), true);
             AddBuiltinType(typeof(RubyIO), typeof(RubyIO.Subclass), true);
+            AddBuiltinType(typeof(Exception), typeof(RubyException.Subclass), true);
         }
       
         internal static Type/*!*/ GetOrCreateType(Type/*!*/ baseType, IList<Type/*!*/>/*!*/ interfaces, bool noOverrides) {
