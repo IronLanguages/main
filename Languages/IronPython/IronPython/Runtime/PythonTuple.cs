@@ -651,7 +651,7 @@ namespace IronPython.Runtime {
 
         #region IExpressionSerializable Members
 
-        public System.Linq.Expressions.Expression CreateExpression() {
+        public MSAst.Expression CreateExpression() {
             Ast[] items = new Ast[Count];
             for (int i = 0; i < items.Length; i++) {
                 items[i] = Utils.Constant(this[i]);
