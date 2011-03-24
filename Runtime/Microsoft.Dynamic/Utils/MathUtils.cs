@@ -218,7 +218,7 @@ namespace Microsoft.Scripting.Utils {
 #if SILVERLIGHT // BitConverter.DoubleToInt64Bits
             if ( self != 0.0 ) {
               return false;
-            }py
+            }
             byte[] bits = BitConverter.GetBytes(self);
             return (bits[7] == 0x80 && bits[6] == 0x00 && bits[5] == 0x00 && bits[4] == 0x00
                 && bits[3] == 0x00 && bits[2] == 0x00 && bits[1] == 0x00 && bits[0] == 0x00);
