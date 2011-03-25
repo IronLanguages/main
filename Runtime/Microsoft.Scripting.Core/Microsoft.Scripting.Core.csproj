@@ -14,7 +14,7 @@
     <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\Microsoft.Scripting.Core.XML</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>618</WarningsNotAsErrors>
-    <NoWarn>1591</NoWarn>
+    <NoWarn>1591, 1584, 1574</NoWarn>
     <BaseAddress>855638016</BaseAddress>
     <CodeAnalysisRuleSet>Microsoft.Scripting.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
