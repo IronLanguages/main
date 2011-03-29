@@ -2051,7 +2051,7 @@ namespace IronPython.Modules
                     _lower = Convert(expr.SliceStart);
                 if (expr.SliceStop != null)
                     _upper = Convert(expr.SliceStop);
-                if (expr.StepProvided)
+                if (expr.StepProvided && expr.SliceStep != null)
                     _step = Convert(expr.SliceStep);
             }
 
