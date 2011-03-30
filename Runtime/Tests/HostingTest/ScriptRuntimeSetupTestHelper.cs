@@ -57,7 +57,7 @@ namespace HostingTest {
             string xmlPrefix = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +  
 "<configuration>" +
   "<configSections>"+
-    "<section name=\"microsoft.scripting\" type=\"Microsoft.Scripting.Hosting.Configuration.Section, Microsoft.Scripting, Version=1.1.0.20, Culture=neutral, PublicKeyToken=31bf3856ad364e35\" requirePermission=\"false\" />"+
+    "<section name=\"microsoft.scripting\" type=\"Microsoft.Scripting.Hosting.Configuration.Section, Microsoft.Scripting, Version=1.1.0.30, Culture=neutral, PublicKeyToken=31bf3856ad364e35\" requirePermission=\"false\" />"+
   "</configSections>"+
 
   "<microsoft.scripting>"+
@@ -66,10 +66,6 @@ namespace HostingTest {
             string xmlSuffix ="</languages>"+
   "</microsoft.scripting>"+
 "</configuration>";
-
-    //"<options>"+
-    //  "<set language=\"Ruby\" option=\"LibraryPaths\" value=\"..\\..\\Languages\\Ruby\\libs;..\\..\\External.LCA_RESTRICTED\\Languages\\Ruby\\Ruby-1.8.6p287\\lib\\ruby\\site_ruby\\1.8;..\\..\\..\\External.LCA_RESTRICTED\\Languages\\Ruby\\Ruby-1.8.6p287\\lib\\ruby\\site_ruby;..\\..\\..\\External.LCA_RESTRICTED\\Languages\\Ruby\\Ruby-1.8.6p287\\lib\\ruby\\1.8\" />"+
-    //"</options>"+
 
             StringBuilder ret = new StringBuilder();
             Array.ForEach(langs, lang => ret.AppendLine(lang.ToString()));

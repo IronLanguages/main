@@ -39,12 +39,12 @@ namespace HostingTest{
         }
 
         static LangSetup() {
-            Python = new LangSetup( new[] { "IronPython","Python","py" },new[] { ".py" }, "IronPython 2.7",
-                "IronPython.Runtime.PythonContext", "IronPython, Version=2.7.0.40, Culture=neutral"
+            Python = new LangSetup( new[] { "IronPython","Python","py" },new[] { ".py" }, "IronPython 3.0",
+                "IronPython.Runtime.PythonContext", "IronPython, Version=3.0.0.0, Culture=neutral"
             );
 
             Ruby = new LangSetup( new[] { "IronRuby", "Ruby", "rb" }, new[] { ".rb" },"IronRuby",
-                "IronRuby.Runtime.RubyContext", "IronRuby, Version=1.1.3.0, Culture=neutral"
+                "IronRuby.Runtime.RubyContext", "IronRuby, Version=1.1.4.0, Culture=neutral"
             );
         }
 

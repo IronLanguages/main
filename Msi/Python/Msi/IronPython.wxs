@@ -71,7 +71,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
             <Shortcut Id="NGEN6464Shortcut_Console" Directory="Dir_StartMenu" Name="IronPython 64-bit Console" Target="[#NGEN64File_ipy64.exe.B25C469D_12C7_4327_AEF1_B2D3505E115E]" />
             
             <RemoveFolder Id='Comp_ReadMe' On='uninstall'/>
-            <RegistryValue Root='HKCU' Key='SOFTWARE\IronPython\2.7\Docs' Type='string' Value='Installed' KeyPath='yes' />
+            <RegistryValue Root='HKCU' Key='SOFTWARE\IronPython\$(var.ProductVersionText)\Docs' Type='string' Value='Installed' KeyPath='yes' />
           </Component>
         </Directory>
       </Directory>

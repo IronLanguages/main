@@ -303,7 +303,7 @@ namespace IronPython.Modules {
         // version and version_info are set by PythonContext
         public static PythonTuple subversion = PythonTuple.MakeTuple("IronPython", "", "");
 
-        public const string winver = "2.7";
+        public const string winver = "3.0";
 
         #region Special types
 

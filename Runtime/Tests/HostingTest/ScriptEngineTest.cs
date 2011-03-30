@@ -30,7 +30,7 @@ namespace HostingTest {
 
         [Test]
         public void LanguageDisplayName_Test() {
-            Assert.AreEqual(_runTime.GetEngine("python").Setup.DisplayName, "IronPython 2.7 RC 2");
+            Assert.AreEqual(_runTime.GetEngine("python").Setup.DisplayName, "IronPython 3.0");
             Assert.AreEqual(_runTime.GetEngine("ruby").Setup.DisplayName, "IronRuby");
         }
 
@@ -639,50 +639,6 @@ def f(arg):
 
         }
 
-        /// <summary>
-        /// Test     : Trying to access an unmodified global environment module
-        /// Expected : Should throw ImportException 
-        /// 
-        /// Note     : Might be testing IPY?
-        /// </summary>
-        [Test]
-        [Negative]
-        [ExpectedException(typeof(IronPython.Runtime.Exceptions.ImportException))]
-        //[Ignore]//this test is useless from HAPI perspective. Should be deleted altogether
-        public void TestFromFuture_RepoFailure() {
-
-            // Get future import code
-            string testSrc = _codeSnippets[CodeType.ImportFutureDiv];
-            ScriptRuntime sr = CreateRuntime();
-
-            ScriptScope globalScope = sr.CreateScope();
-
-            // Set __future__ module with value in Script Runtime associated
-            // with this engine
-            globalScope.SetVariable("division", true);
-            sr.Globals.SetVariable("__future__", globalScope);
-            
-
-            ScriptEngine pyeng = sr.GetEngine("py");
-
-            // Exception is cause by this helper function CreateScriptSourceFRomTempFile 
-            // since this method uses the default _PYEng who's env has not been modified 
-            // by the module being set in the local env.
-            ScriptSource source = CreateScriptSourceFromTempFile(testSrc, Encoding.ASCII);
-
-            ScriptScope localScope = pyeng.CreateScope();
-
-            object result = source.Execute(localScope);
-            //object result = source.Execute(globalScope);
-
-            // Wouldn't expect global scope to se local "r" value! unless
-            // globalScope is used in the Execute statement
-            object r2 = globalScope.GetVariable("r");
-            //object r2 = localScope.GetVariable("r");
-            Assert.AreEqual((double)r2, 0.5);
-
-        }
-
         [Test]
         public void TestFromFuture_globalScope() {
 
@@ -704,8 +660,6 @@ def f(arg):
             Assert.AreEqual((double)r2, 0.5);
 
         }
-
-
         
         /// <summary>
         /// Make sure this throws the Null Argument Exception

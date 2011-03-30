@@ -706,6 +706,7 @@ namespace IronRuby.Tests {
                 ProtocolCaching3,
                 ProtocolCaching4,
                 MethodAliasExpression,
+                AliasUndefWithQuotedSymbols,
                 BasicObject1,
                 BasicObject2,
                 ClassDuplication1,

@@ -588,7 +588,7 @@ namespace Microsoft.Scripting.Utils {
         private static readonly uint[] maxCharsPerDigit = { 0, 0, 31, 20, 15, 13, 12, 11, 10, 10, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 };
         private static readonly uint[] groupRadixValues = { 0, 0, 2147483648, 3486784401, 1073741824, 1220703125, 2176782336, 1977326743, 1073741824, 3486784401, 1000000000, 2357947691, 429981696, 815730721, 1475789056, 2562890625, 268435456, 410338673, 612220032, 893871739, 1280000000, 1801088541, 2494357888, 3404825447, 191102976, 244140625, 308915776, 387420489, 481890304, 594823321, 729000000, 887503681, 1073741824, 1291467969, 1544804416, 1838265625, 2176782336 };
 
-        internal static string BigIntegerToString(uint[] d, int sign, int radix) {
+        internal static string BigIntegerToString(uint[] d, int sign, int radix, bool lowerCase) {
             if (radix < 2) {
                 throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be >= 2");
             }
@@ -618,9 +618,9 @@ namespace Microsoft.Scripting.Utils {
 
             char[] tmpDigits = new char[maxCharsPerDigit[radix]];
 
-            AppendRadix((uint)digitGroups[digitIndex--], (uint)radix, tmpDigits, ret, false);
+            AppendRadix((uint)digitGroups[digitIndex--], (uint)radix, tmpDigits, ret, false, lowerCase);
             while (digitIndex >= 0) {
-                AppendRadix((uint)digitGroups[digitIndex--], (uint)radix, tmpDigits, ret, true);
+                AppendRadix((uint)digitGroups[digitIndex--], (uint)radix, tmpDigits, ret, true, lowerCase);
             }
             return ret.Length == 0 ? "0" : ret.ToString();
         }
@@ -646,8 +646,8 @@ namespace Microsoft.Scripting.Utils {
             return (uint)rem;
         }
 
-        private static void AppendRadix(uint rem, uint radix, char[] tmp, StringBuilder buf, bool leadingZeros) {
-            const string symbols = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        private static void AppendRadix(uint rem, uint radix, char[] tmp, StringBuilder buf, bool leadingZeros, bool lowerCase) {
+            string symbols = lowerCase ? "0123456789abcdefghijklmnopqrstuvwxyz" : "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
             int digits = tmp.Length;
             int i = digits;

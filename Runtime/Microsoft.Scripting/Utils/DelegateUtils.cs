@@ -53,41 +53,24 @@ namespace Microsoft.Scripting.Utils {
         }
 
         /// <summary>
-        /// Gets a Func of CallSite, object * paramCnt, object delegate type
-        /// that's suitable for use in a non-strongly typed call site.
+        /// Emits an object delegate(CallSite, object * paramCount, object) that's suitable for use in a non-strongly typed call site.
+        /// Use this helper only for delegates with more parameters than Func has.
         /// </summary>
-        public static Type GetObjectCallSiteDelegateType(int paramCnt) {
-            switch (paramCnt) {
-                case 0: return typeof(Func<CallSite, object, object>);
-                case 1: return typeof(Func<CallSite, object, object, object>);
-                case 2: return typeof(Func<CallSite, object, object, object, object>);
-                case 3: return typeof(Func<CallSite, object, object, object, object, object>);
-                case 4: return typeof(Func<CallSite, object, object, object, object, object, object>);
-                case 5: return typeof(Func<CallSite, object, object, object, object, object, object, object>);
-                case 6: return typeof(Func<CallSite, object, object, object, object, object, object, object, object>);
-                case 7: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object>);
-                case 8: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object>);
-                case 9: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object>);
-                case 10: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object>);
-                case 11: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object>);
-                case 12: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
-                case 13: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
-                case 14: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
-                default:
-                    Type[] paramTypes = new Type[paramCnt + 2];
+        internal static Type EmitCallSiteDelegateType(int paramCount) {
+            Debug.Assert(paramCount > 14);
+            Type[] paramTypes = new Type[paramCount + 2];
                     
-                    paramTypes[0] = typeof(CallSite);
-                    paramTypes[1] = typeof(object);
-                    for (int i = 0; i < paramCnt; i++) {
-                        paramTypes[i + 2] = typeof(object);
-                    }
-                    TypeBuilder tb = DefineDelegateType("Delegate");
-                    tb.DefineConstructor(
-                        MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public,
-                        CallingConventions.Standard, _DelegateCtorSignature).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
-                    tb.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual, typeof(object), paramTypes).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
-                    return tb.CreateType();
+            paramTypes[0] = typeof(CallSite);
+            paramTypes[1] = typeof(object);
+            for (int i = 0; i < paramCount; i++) {
+                paramTypes[i + 2] = typeof(object);
             }
+            TypeBuilder tb = DefineDelegateType("Delegate");
+            tb.DefineConstructor(
+                MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public,
+                CallingConventions.Standard, _DelegateCtorSignature).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            tb.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual, typeof(object), paramTypes).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            return tb.CreateType();
         }
 
 

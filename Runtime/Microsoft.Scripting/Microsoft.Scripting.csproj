@@ -125,6 +125,7 @@
     <Compile Include="Hosting\ParameterDoc.cs" />
     <Compile Include="Hosting\ParameterFlags.cs" />
     <Compile Include="IndexSpan.cs" />
+    <Compile Include="Runtime\DynamicOperations.Generated.cs" />
     <Compile Include="Runtime\ObjectDictionaryExpando.cs" />
     <Compile Include="Runtime\DocumentationProvider.cs" />
     <Compile Include="Runtime\DynamicStackFrame.cs" />

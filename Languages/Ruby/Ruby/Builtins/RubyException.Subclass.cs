@@ -13,21 +13,23 @@
  *
  * ***************************************************************************/
 
-using System.Dynamic;
-using Microsoft.Scripting;
+using IronRuby.Runtime;
+using Microsoft.Scripting.Utils;
+using IronRuby.Compiler.Generation;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System;
+using System.Runtime.Serialization;
 
-namespace IronRuby.Compiler.Ast {
-    public struct Identifier {
-        private readonly string/*!*/ _name;
-        private readonly SourceSpan _location;
-
-        public string/*!*/ Name { get { return _name; } }
-        public SourceSpan Location { get { return _location; } }
-
-        public Identifier(string/*!*/ name, SourceSpan location) {
-            _name = name;
-            _location = location;
+namespace IronRuby.Builtins {
+    public static partial class RubyException {
+        public partial class Subclass : Exception {
+            // called by Class#new rule when creating a Ruby subclass of Exception:
+            public Subclass(RubyClass/*!*/ rubyClass) {
+                Assert.NotNull(rubyClass);
+                Debug.Assert(!rubyClass.IsSingletonClass);
+                ImmediateClass = rubyClass;
+            }
         }
     }
-
 }

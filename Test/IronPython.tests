@@ -5585,7 +5585,7 @@
           <Arguments>harness.py modules.system_related</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>

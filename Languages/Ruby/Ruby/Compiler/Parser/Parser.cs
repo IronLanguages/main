@@ -343,12 +343,12 @@ namespace IronRuby.Compiler {
         }
 
         private AliasStatement/*!*/ MakeGlobalAlias(string/*!*/ newVar, string/*!*/ existingVar, SourceSpan location) {
-            return new AliasStatement(false, newVar, existingVar, location);
+            return new AliasStatement(false, new ConstructedSymbol(newVar), new ConstructedSymbol(existingVar), location);
         }
 
         private Expression/*!*/ MakeGlobalAlias(string/*!*/ newVar, RegexMatchReference/*!*/ existingVar, SourceSpan location) {
             if (existingVar.CanAlias) {
-                return new AliasStatement(false, newVar, existingVar.VariableName, location);
+                return new AliasStatement(false, new ConstructedSymbol(newVar), new ConstructedSymbol(existingVar.VariableName), location);
             } else {
                 _tokenizer.ReportError(Errors.CannotAliasGroupMatchVariable);
                 return new ErrorExpression(location);
@@ -356,12 +356,12 @@ namespace IronRuby.Compiler {
         }
 
         private AliasStatement/*!*/ MakeGlobalAlias(RegexMatchReference/*!*/ newVar, string/*!*/ existingVar, SourceSpan location) {
-            return new AliasStatement(false, newVar.VariableName, existingVar, location);
+            return new AliasStatement(false, new ConstructedSymbol(newVar.VariableName), new ConstructedSymbol(existingVar), location);
         }
 
         private Expression/*!*/ MakeGlobalAlias(RegexMatchReference/*!*/ newVar, RegexMatchReference/*!*/ existingVar, SourceSpan location) {
             if (existingVar.CanAlias) {
-                return new AliasStatement(false, newVar.VariableName, existingVar.VariableName, location);
+                return new AliasStatement(false, new ConstructedSymbol(newVar.VariableName), new ConstructedSymbol(existingVar.VariableName), location);
             } else {
                 _tokenizer.ReportError(Errors.CannotAliasGroupMatchVariable);
                 return new ErrorExpression(location);
@@ -638,11 +638,17 @@ namespace IronRuby.Compiler {
         public SymbolLiteral/*!*/ MakeSymbolLiteral(string/*!*/ symbol, SourceSpan location) {
             return new SymbolLiteral(symbol, symbol.IsAscii() ? RubyEncoding.Ascii : Encoding, location);
         }
+        
+        internal Expression/*!*/ MakeSymbolLiteral(ConstructedSymbol symbol, SourceSpan location) {
+            string str = symbol.Value as string;
+            if (str != null) {
+                return MakeSymbolLiteral(str, location);
+            } else {
+                return (StringConstructor)symbol.Value;
+            }
+        }
 
         private StringConstructor/*!*/ MakeSymbolConstructor(List<Expression>/*!*/ content, SourceSpan location) {
-            if (content.Count == 0 && _tokenizer.Compatibility < RubyCompatibility.Ruby19) {
-                _tokenizer.ReportError(Errors.EmptySymbolLiteral);
-            }
             return new StringConstructor(content, StringKind.Symbol, location);
         }
 

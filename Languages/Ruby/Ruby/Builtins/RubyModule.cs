@@ -2139,16 +2139,6 @@ namespace IronRuby.Builtins {
 
         #region Debug View
 
-        // see: RubyObject.DebuggerDisplayValue
-        internal string/*!*/ GetDebuggerDisplayValue(object obj) {
-            return Context.Inspect(obj).ConvertToString();
-        }
-
-        // see: RubyObject.DebuggerDisplayType
-        internal string/*!*/ GetDebuggerDisplayType() {
-            return Name;
-        }
-
         internal sealed class DebugView {
             private readonly RubyModule/*!*/ _obj;
 
@@ -2159,9 +2149,9 @@ namespace IronRuby.Builtins {
 
             #region RubyObjectDebugView
 
-            [DebuggerDisplay("{GetModuleName(A),nq}", Name = "{GetClassKind(),nq}", Type = "")]
-            public object A {
-                get { return _obj.ImmediateClass; }
+            [DebuggerDisplay("{A,nq}", Name = "{GetClassKind(),nq}", Type = "")]
+            public string A {
+                get { return GetModuleName(_obj.ImmediateClass); }
             }
 
             [DebuggerDisplay("{B}", Name = "tainted?", Type = "")]
@@ -2205,9 +2195,9 @@ namespace IronRuby.Builtins {
 
             #endregion
 
-            [DebuggerDisplay("{GetModuleName(F),nq}", Name = "super", Type = "")]
-            public object F {
-                get { return _obj.GetSuperClass(); }
+            [DebuggerDisplay("{F,nq}", Name = "super", Type = "")]
+            public string F {
+                get { return GetModuleName(_obj.GetSuperClass()); }
             }
 
             [DebuggerDisplay("", Name = "mixins", Type = "")]

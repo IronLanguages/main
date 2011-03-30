@@ -908,9 +908,10 @@ namespace IronRuby.StandardLibrary.ParseTree {
                             CreateSymbol("$" + node.OldName)
                         );
                     } else {
+                        // TODO: handle constructed symbols
                         _result = MakeNode(NodeKind.alias,
-                            MakeNode(NodeKind.lit, CreateSymbol(node.NewName)),
-                            MakeNode(NodeKind.lit, CreateSymbol(node.OldName))
+                            MakeNode(NodeKind.lit, CreateSymbol((string)node.NewName.Value)),
+                            MakeNode(NodeKind.lit, CreateSymbol((string)node.OldName.Value))
                         );
                     }
                     return false;
@@ -918,11 +919,13 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
                 public override bool Enter(UndefineStatement/*!*/ node) {
                     if (node.Items.Count == 1) {
-                        _result = MakeNode(NodeKind.undef, MakeNode(NodeKind.lit, CreateSymbol(node.Items[0].Name)));
+                        // TODO: handle constructed symbols
+                        _result = MakeNode(NodeKind.undef, MakeNode(NodeKind.lit, CreateSymbol((string)node.Items[0].Value)));
                     } else {
                         var block = MakeNode(NodeKind.block, node.Items.Count);
                         foreach (var item in node.Items) {
-                            block.Add(MakeNode(NodeKind.undef, MakeNode(NodeKind.lit, CreateSymbol(item.Name))));
+                            // TODO: handle constructed symbols
+                            block.Add(MakeNode(NodeKind.undef, MakeNode(NodeKind.lit, CreateSymbol((string)item.Value))));
                         }
                         _result = block;
                     }

@@ -23,7 +23,6 @@ using Microsoft.Scripting.Generation;
 
 
 namespace HostingTest {
-    [TestFixture]
     public class HAPITestBase {
 
         static internal PreDefinedCodeSnippets _codeSnippets;
@@ -59,12 +58,6 @@ namespace HostingTest {
             _codeSnippets = new PreDefinedCodeSnippets();
         }
 
-        [TestFixtureSetUp]
-        public void FixtureSetup()
-        {
-            TestHelpers.DeployItem(@"..\Debug");
-        }
-
         public static ScriptRuntime CreateRuntime() {
             return new ScriptRuntime(CreateSetup());
         }
@@ -74,7 +67,7 @@ namespace HostingTest {
         }
 
         public static ScriptRuntimeSetup CreateSetup() {
-            var configFile = Path.GetFullPath(Uri.UnescapeDataString(new Uri(typeof(HAPITestBase).Assembly.CodeBase).AbsolutePath)) + ".config";
+            var configFile = TestHelpers.StandardConfigFile;
             Debug.Assert(File.Exists(configFile), configFile);
             return ScriptRuntimeSetup.ReadConfiguration(configFile);
         }

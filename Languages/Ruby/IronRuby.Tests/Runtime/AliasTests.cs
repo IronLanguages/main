@@ -265,5 +265,28 @@ p ((alias a b))
 ", 1, 0);
             }, "nil");
         }
+
+        public void AliasUndefWithQuotedSymbols() {
+            TestOutput(@"
+class A
+  def ab
+  end
+
+  def c
+  end
+
+  alias :'d' :'c'  
+  
+  p instance_methods(false).sort
+  
+  undef :""a#{'b'}"", :'c'
+  
+  p instance_methods(false).sort
+end
+", @"
+[:ab, :c, :d]
+[:d]
+");
+        }
     }
 }

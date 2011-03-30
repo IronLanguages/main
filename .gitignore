@@ -3,6 +3,8 @@ obj/
 /bin/
 Solutions/*.suo
 *.csproj.user
+TestResult.xml
+Solutions/TestResults/
 
 # TODO - testing scripts should not created this file here
 debug.log

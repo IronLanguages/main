@@ -11,15 +11,12 @@
     <RootNamespace>HostingTest</RootNamespace>
     <AssemblyName>HostingTest</AssemblyName>
     <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <WarningsNotAsErrors>1685</WarningsNotAsErrors>
-  </PropertyGroup>
+    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>    <WarningsNotAsErrors>1685</WarningsNotAsErrors>  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <!-- test directory hardcoded in Dlr.vsmdi -->
-    <OutputPath>$(SolutionDir)..\Bin\test</OutputPath>
+    <OutputPath>$(SolutionDir)..\Bin\v2Debug</OutputPath>
     <DefineConstants>TRACE;DEBUG;CLR2;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -36,8 +33,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
-    <!-- test directory hardcoded in Dlr.vsmdi -->
-    <OutputPath>$(SolutionDir)..\bin\test</OutputPath>
+    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
     <DefineConstants>TRACE;DEBUG;CLR4;$(SignedSym)</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>

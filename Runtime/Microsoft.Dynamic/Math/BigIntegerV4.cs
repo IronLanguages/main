@@ -515,7 +515,11 @@ namespace Microsoft.Scripting.Math {
         }
 
         public string ToString(int @base) {
-            return MathUtils.BigIntegerToString(GetWords(), Sign, @base);
+            return MathUtils.BigIntegerToString(GetWords(), Sign, @base, false);
+        }
+
+        public string ToString(string format) {
+            return Value.ToString(format);
         }
 
         public override int GetHashCode() {
@@ -571,7 +575,7 @@ namespace Microsoft.Scripting.Math {
             return BigInt.Log10(Value);
         }
 
-        #region IComparable Members
+#region IComparable Members
 
         public int CompareTo(object obj) {
             if (obj == null) {
@@ -600,7 +604,7 @@ namespace Microsoft.Scripting.Math {
             return Value.ToString(provider);
         }
 
-        #region IFormattable Members
+#region IFormattable Members
 
         string IFormattable.ToString(string format, IFormatProvider formatProvider) {
             return Value.ToString(format, formatProvider);

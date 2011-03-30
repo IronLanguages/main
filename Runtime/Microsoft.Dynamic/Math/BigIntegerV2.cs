@@ -1394,7 +1394,21 @@ namespace Microsoft.Scripting.Math {
 
         [Confined]
         public string ToString(int radix) {
-            return MathUtils.BigIntegerToString(copy(data), sign, radix);
+            return MathUtils.BigIntegerToString(copy(data), sign, radix, false);
+        }
+
+        [Confined]
+        public string ToString(string format) {
+            switch (format) {
+                case "x":
+                    return MathUtils.BigIntegerToString(copy(data), sign, 16, true);
+
+                case "X":
+                    return MathUtils.BigIntegerToString(copy(data), sign, 16, false);
+
+                default:
+                    throw new NotSupportedException();
+            }
         }
 
         [Confined]

@@ -28,12 +28,14 @@ namespace IronRuby.Builtins {
     /// Note that for classes that inherit from some other class, RubyTypeDispenser gets used
     /// </summary>
     [DebuggerTypeProxy(typeof(RubyObjectDebugView))]
-    [DebuggerDisplay(RubyObject.DebuggerDisplayValue, Type = RubyObject.DebuggerDisplayType)]
+    [DebuggerDisplay(DebuggerDisplayValueStr, Type = DebuggerDisplayTypeStr)]
     public partial class RubyObject : IRubyObject, IDuplicable, ISerializable {
         internal const string ImmediateClassFieldName = "_immediateClass"; 
         internal const string InstanceDataFieldName = "_instanceData";
-        internal const string DebuggerDisplayValue = "{" + ImmediateClassFieldName + ".GetDebuggerDisplayValue(this),nq}";
-        internal const string DebuggerDisplayType = "{" + ImmediateClassFieldName + ".GetDebuggerDisplayType(),nq}";
+        internal const string DebuggerDisplayValueMethodName = "GetDebuggerDisplayValue";
+        internal const string DebuggerDisplayTypeMethodName = "GetDebuggerDisplayType";
+        internal const string DebuggerDisplayValueStr = "{" + DebuggerDisplayValueMethodName + "(),nq}";
+        internal const string DebuggerDisplayTypeStr = "{" + DebuggerDisplayTypeMethodName + "(),nq}";
 
         private RubyInstanceData _instanceData;
         private RubyClass/*!*/ _immediateClass;
@@ -175,6 +177,18 @@ namespace IronRuby.Builtins {
             RubyOps.SerializeObject(_instanceData, _immediateClass, info);
         }
 #endif
+
+        #endregion
+
+        #region Debugger Display
+
+        private string GetDebuggerDisplayValue() {
+            return RubyOps.GetDebuggerDisplayValue(_immediateClass, this);
+        }
+
+        private string GetDebuggerDisplayType() {
+            return RubyOps.GetDebuggerDisplayType(_immediateClass);
+        }
 
         #endregion
     }

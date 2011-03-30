@@ -9,10 +9,9 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using NUnit.Framework;
 using System.Reflection;
+using Microsoft.Scripting.Runtime;
 
 namespace HostingTest{
-    using Microsoft.Scripting.Runtime;
-
     [TestFixture]
     public partial class ScriptRuntimeTest : HAPITestBase
     {
@@ -98,7 +97,7 @@ namespace HostingTest{
         public void Create_PartialTrust() {
             // basic check of running a host in partial trust
             AppDomainSetup info = new AppDomainSetup();
-            info.ApplicationBase = TestHelpers.CurrentDirectory;
+            info.ApplicationBase = TestHelpers.BinDirectory;
             info.ApplicationName = "Test";
             Evidence evidence = new Evidence();
             evidence.AddHost(new Zone(SecurityZone.Internet));

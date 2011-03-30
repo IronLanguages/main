@@ -28,15 +28,15 @@ namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
 
     public partial class AliasStatement : Expression {
-        private readonly string/*!*/ _newName;
-        private readonly string/*!*/ _oldName;
+        private readonly ConstructedSymbol _newName;
+        private readonly ConstructedSymbol _oldName;
         private readonly bool _isMethodAlias;
 
-        public string/*!*/ NewName {
+        public ConstructedSymbol NewName {
             get { return _newName; }
         }
 
-        public string/*!*/ OldName {
+        public ConstructedSymbol OldName {
             get { return _oldName; }
         }
 
@@ -48,7 +48,7 @@ namespace IronRuby.Compiler.Ast {
             get { return !_isMethodAlias; }
         }
 
-        public AliasStatement(bool isMethodAlias, string/*!*/ newName, string/*!*/ oldName, SourceSpan location)
+        public AliasStatement(bool isMethodAlias, ConstructedSymbol newName, ConstructedSymbol oldName, SourceSpan location)
             : base(location) {
             Assert.NotNull(newName, oldName);
             _newName = newName;
@@ -58,7 +58,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
             return (_isMethodAlias ? Methods.AliasMethod : Methods.AliasGlobalVariable).
-                OpCall(gen.CurrentScopeVariable, AstUtils.Constant(_newName), AstUtils.Constant(_oldName));
+                OpCall(gen.CurrentScopeVariable, _newName.Transform(gen), _oldName.Transform(gen));
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
