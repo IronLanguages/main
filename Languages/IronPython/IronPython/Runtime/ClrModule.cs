@@ -804,7 +804,7 @@ import Namespace.")]
             PythonContext pc = PythonContext.GetContext(context);
 
             for (int i = 0; i < filenames.Length; i++) {
-                filenames[i] = Path.GetFullPath(filenames[i]);
+                filenames[i] = pc.DomainManager.Platform.GetFullPath(filenames[i]);
             }
 
             Dictionary<string, string> packageMap = BuildPackageMap(filenames);

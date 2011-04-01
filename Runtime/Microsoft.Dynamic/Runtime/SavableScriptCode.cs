@@ -70,8 +70,11 @@ namespace Microsoft.Scripting {
 
             // break the assemblyName into it's dir/name/extension
             string dir = Path.GetDirectoryName(assemblyName);
-            if (String.IsNullOrEmpty(dir)) {
-                dir = Environment.CurrentDirectory;
+            if (!Path.IsPathRooted(dir)) {
+                dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, dir ?? string.Empty);
+            }
+            if (!Directory.Exists(dir)) {
+                Directory.CreateDirectory(dir);
             }
 
             string name = Path.GetFileNameWithoutExtension(assemblyName);
