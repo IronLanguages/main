@@ -19,6 +19,7 @@ using System.Text;
 using SRC = System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Diagnostics;
+using Microsoft.Scripting;
 
 namespace IronRuby.Runtime {
 
@@ -157,7 +158,9 @@ namespace IronRuby.Runtime {
             Cleanup();
             // _dict might be a new Dictionary after Cleanup(),
             // so use the field directly
-            _dict.Add(new WeakReference(key, true), value);
+
+            // CF throws doesn't support long weak references (NotSuportedException is thrown)
+            _dict.Add(new WeakReference(key, !PlatformAdaptationLayer.IsCompactFramework), value);
         }
     }
 
