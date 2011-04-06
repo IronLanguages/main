@@ -210,17 +210,29 @@ namespace Microsoft.Scripting.Generation {
             // We need to replace a transient delegateType with one stored in
             // the assembly we're saving to disk.
             //
+            // When the delegateType is a function that accepts 14 or more parameters,
+            // it is transient, but it is an InternalModuleBuilder, not a ModuleBuilder
+            // so some reflection is done here to determine if a delegateType is an
+            // InternalModuleBuilder and if it is, if it is transient.
+            //
             // One complication:
             // SaveAssemblies mode prevents us from detecting the module as
             // transient. If that option is turned on, always replace delegates
             // that live in another AssemblyBuilder
 
             var module = delegateType.Module as ModuleBuilder;
-            if (module == null) {
-                return false;
-            }
 
-            if (module.IsTransient()) {
+            if (module == null) {
+                if (delegateType.Module.GetType() == typeof(ModuleBuilder).Assembly.GetType("System.Reflection.Emit.InternalModuleBuilder")) {
+                    if ((bool)delegateType.Module.GetType().InvokeMember("IsTransientInternal", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, delegateType.Module, null)) {
+                        return true;
+                    }
+                }
+                else {
+                    return false;
+                }
+            }
+            else if (module.IsTransient()) {
                 return true;
             }
 
