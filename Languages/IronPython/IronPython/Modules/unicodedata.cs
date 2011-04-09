@@ -27,11 +27,11 @@ namespace IronPython.Modules
             EnsureLoaded();
         }
 
-        public static char lookup(string name)
+        public static string lookup(string name)
         {
             EnsureLoaded();
 
-            return (char)nameLookup[name];
+            return Convert.ToChar(nameLookup[name]).ToString();
         }
 
         public static string name(char unichr, string @default = null)
