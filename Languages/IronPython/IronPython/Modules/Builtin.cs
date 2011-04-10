@@ -284,7 +284,7 @@ namespace IronPython.Modules {
             }
 
             bool astOnly = false;
-            int iflags = Converter.ConvertToInt32(flags);
+            int iflags = flags != null ? Converter.ConvertToInt32(flags) : 0;
             if ((iflags & _ast.PyCF_ONLY_AST) != 0) {
                 astOnly = true;
                 iflags &= ~_ast.PyCF_ONLY_AST;
