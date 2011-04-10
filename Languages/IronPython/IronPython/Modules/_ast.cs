@@ -33,6 +33,7 @@ using System.Runtime.InteropServices;
 
 #if CLR2
 using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #else
 using System.Numerics;
 #endif
