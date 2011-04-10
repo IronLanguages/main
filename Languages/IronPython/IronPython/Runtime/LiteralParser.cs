@@ -101,6 +101,7 @@ namespace IronPython.Runtime {
                             case '\"': buf.Append('\"'); continue;
                             case '\r': if (i < l && text[i] == '\n') i++; continue;
                             case '\n': continue;
+#if !SILVERLIGHT
                             case 'N': {
                                     if (i < l && text[i] == '{') {
                                         i++;
@@ -131,6 +132,7 @@ namespace IronPython.Runtime {
                                     }
                                 }
                                 continue;
+#endif
                             case 'x': //hex
                                 if (!TryParseInt(text, i, 2, 16, out val)) {
                                     goto default;
