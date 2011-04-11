@@ -101,6 +101,38 @@ namespace IronPython.Runtime {
                             case '\"': buf.Append('\"'); continue;
                             case '\r': if (i < l && text[i] == '\n') i++; continue;
                             case '\n': continue;
+#if !SILVERLIGHT
+                            case 'N': {
+                                    if (i < l && text[i] == '{') {
+                                        i++;
+                                        StringBuilder namebuf = new StringBuilder();
+                                        bool namecomplete = false;
+                                        while (i < l) {
+                                            char namech = text[i++];
+                                            if (namech != '}') {
+                                                namebuf.Append(namech);
+                                            } else {
+                                                namecomplete = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if(!namecomplete || namebuf.Length  == 0)
+                                            throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: malformed \N character escape", i);
+                                        
+                                        try {
+                                            string uval = IronPython.Modules.unicodedata.lookup(namebuf.ToString());
+                                            buf.Append(uval);
+                                        } catch(KeyNotFoundException) {
+                                            throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: unknown Unicode character name", i);
+                                        }
+
+                                    } else {
+                                        throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: malformed \N character escape", i);
+                                    }
+                                }
+                                continue;
+#endif
                             case 'x': //hex
                                 if (!TryParseInt(text, i, 2, 16, out val)) {
                                     goto default;

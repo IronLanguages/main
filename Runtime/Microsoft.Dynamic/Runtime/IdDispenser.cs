@@ -129,7 +129,8 @@ namespace Microsoft.Scripting.Runtime {
             private long _id;
 
             public Wrapper(Object obj, long uniqueId) {
-                _weakReference = new WeakReference(obj, true);
+                // CF throws doesn't support long weak references (NotSuportedException is thrown)
+                _weakReference = new WeakReference(obj, !PlatformAdaptationLayer.IsCompactFramework);
 
                 _hashCode = (obj == null) ? 0 : SRC.RuntimeHelpers.GetHashCode(obj);
                 _id = uniqueId;
