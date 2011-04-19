@@ -1090,6 +1090,14 @@ namespace IronPython.Modules {
                 return PythonTime.strftime(context, dateFormat, _dateTime, _lostMicroseconds);
             }
 
+            public static datetime strptime(CodeContext/*!*/ context, string date_string, string format) {
+                var res = PythonTime.strptime(context, date_string, format) as PythonTuple;
+                if(res == null)
+                    throw PythonOps.ValueError("time.strptime returned an invalid value.");
+
+                return new datetime((int)res[0], (int)res[1], (int)res[2], (int)res[3], (int)res[4], (int)res[5], 0, null);
+            }
+
             #region IRichComparable Members
 
             internal override int CompareTo(object other) {
