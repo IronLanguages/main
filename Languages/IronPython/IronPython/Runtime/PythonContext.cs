@@ -3311,8 +3311,10 @@ namespace IronPython.Runtime {
             }
 
             CallSite<Func<CallSite, object, object, bool>> res;
-            if (!_equalSites.TryGetValue(type, out res)) {
-                _equalSites[type] = res = MakeEqualSite();
+            lock (_equalSites) { 
+                if (!_equalSites.TryGetValue(type, out res)) {
+                    _equalSites[type] = res = MakeEqualSite();
+                }
             }
 
             return res;
