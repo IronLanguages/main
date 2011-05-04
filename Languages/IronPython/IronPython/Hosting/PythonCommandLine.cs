@@ -200,6 +200,7 @@ namespace IronPython.Hosting {
             }
 
             PythonContext.InsertIntoPath(0, fullPath);
+            PythonContext.MainThread = Thread.CurrentThread;
         }
 
         protected override Scope/*!*/ CreateScope() {
