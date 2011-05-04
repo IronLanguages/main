@@ -203,6 +203,7 @@ namespace IronPython.Runtime {
         internal readonly List<FunctionStack> _mainThreadFunctionStack;
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0LightEh;
         private List<WeakReference> _weakExtensionMethodSets;
+        private Thread _mainThread;
 
         #region Generated Python Shared Call Sites Storage
 
@@ -396,6 +397,18 @@ namespace IronPython.Runtime {
         internal TopNamespaceTracker TopNamespace {
             get {
                 return _topNamespace;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the main thread which should be interupted by thread.interrupt_main
+        /// </summary>
+        public Thread MainThread {
+            get {
+                return _mainThread;
+            }
+            set {
+                _mainThread = value;
             }
         }
 
