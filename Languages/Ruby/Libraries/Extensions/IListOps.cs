@@ -1546,13 +1546,44 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region length, size, empty?, nitems
+        #region length, size, count, empty?, nitems
 
         [RubyMethod("length")]
         [RubyMethod("size")]
         [RubyMethod("count")]
         public static int Length(IList/*!*/ self) {
             return self.Count;
+        }
+
+        [RubyMethod("count")]
+        public static int Count(BinaryOpStorage/*!*/ equals, BlockParam predicate, IList self, object value) {
+            if (predicate != null) {
+                equals.Context.ReportWarning("given block not used");
+            }
+
+            int result = 0;
+            for (int i = 0; i < self.Count; i++) {
+                if (Protocols.IsEqual(equals, self[i], value)) {
+                    result++;
+                }
+            }
+            return result;
+        }
+
+        [RubyMethod("count")]
+        public static object Count(BinaryOpStorage/*!*/ equals, [NotNull]BlockParam/*!*/ predicate, IList self) {
+            int result = 0;
+            for (int i = 0; i < self.Count; i++) {
+                object blockResult;
+                if (predicate.Yield(self[i], out blockResult)) {
+                    return blockResult;
+                }
+
+                if (Protocols.IsTrue(blockResult)) {
+                    result++;
+                }
+            }
+            return result;
         }
 
         [RubyMethod("empty?")]
