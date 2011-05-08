@@ -1,6 +1,6 @@
 #replace the Assert popup window with a message
 engine = RUBY_ENGINE rescue 'notironruby'
-if (ENV["THISISSNAP"] || ENV["SILENTASSERT"]) && engine == 'ironruby'
+if ENV["SILENTASSERT"] && engine == 'ironruby'
   class MyTraceListener < System::Diagnostics::DefaultTraceListener
     def fail(msg, detailMsg=nil)
       puts "ASSERT FAILED: #{msg}"
@@ -14,6 +14,15 @@ if engine == 'ironruby'
   $" << "resolv.rb"
 end
 class MSpecScript
+  # Filters the items in the 'config[:prefix]' direcotry to a set 
+  # of files.
+  #
+  # Looks in +path+ for all files and filters with +filter+ as a part
+  # of a regular expression (/^#{filter}.*/i)
+  def self.filtered(path, filter="")
+    Dir.chdir(config[:prefix] || ".") { Dir.entries(path).grep(/^#{filter}.*/i) }.map {|e| File.join(path, e)}
+  end
+
   # The default implementation to run the specs.
   if ENV['DLR_BIN']
     set :target, File.join(ENV['DLR_BIN'], "ir.exe")
@@ -23,7 +32,7 @@ class MSpecScript
   # config[:prefix] must be set before filtered is used
   set :prefix, File.join(ENV['DLR_ROOT'], "Languages", "Ruby", "Tests", "mspec", "rubyspec")
   
-  set :core1sub1,filtered("core","[ac-i]")
+  set :core1sub1, filtered("core","[ac-i]")
   set :core1sub2,[ #want to keep basicobject out of the 1.8 list
     File.join("core","bignum"),
     File.join("core","binding"),
