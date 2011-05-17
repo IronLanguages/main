@@ -63,6 +63,23 @@ namespace Microsoft.PyAnalysis {
 
         private static object _nullKey = new object();
 
+        /// <summary>
+        /// Search paths for user imported modules.
+        /// </summary>
+        private List<string> _searchPaths;
+
+        /// <summary>
+        /// Search paths for user imported modules.
+        /// </summary>
+        public List<string> SearchPaths {
+            get {
+                return _searchPaths ?? (_searchPaths = new List<string>());
+            }
+            set {
+                _searchPaths = value;
+            }
+        }
+
         public ProjectState(ScriptEngine pythonEngine) {
             _pythonEngine = pythonEngine;
             _projectEntries = new List<ProjectEntry>();
@@ -470,6 +487,19 @@ namespace Microsoft.PyAnalysis {
                                 asm = ClrModule.LoadAssemblyByName(_codeContext, asmName);
                             } catch {
                                 asm = ClrModule.LoadAssemblyByPartialName(asmName);
+
+                                if (asm == null) {
+                                    // Could not load assembly using partial name. Try loading assembly from
+                                    // search paths.
+                                    foreach (var searchPath in this.SearchPaths) {
+                                        var asmPath = System.IO.Path.Combine(searchPath, asmName);
+                                        if (System.IO.File.Exists(asmPath)) {
+                                            // Found assembly in search path, load it.
+                                            asm = ClrModule.LoadAssemblyFromFileWithPath(_codeContext, asmPath);
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         }
                     } catch {

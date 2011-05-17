@@ -16,6 +16,7 @@ using Microsoft.IronPythonTools.Intellisense;
 using Microsoft.PyAnalysis;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using System.Collections.Generic;
 
 namespace Microsoft.IronPythonTools.Intellisense {
 
@@ -33,7 +34,10 @@ namespace Microsoft.IronPythonTools.Intellisense {
         /// <summary>
         /// Analyzes the specified file on disk.
         /// </summary>
-        IProjectEntry AnalyzeFile(string path);
+        /// <param name="path">The name of the file to analyze.</param>
+        /// <param name="searchPaths">A list of strings containing search paths for imported
+        /// modules.</param>
+        IProjectEntry AnalyzeFile(string path, List<string> searchPaths);
 
         /// <summary>
         /// Returns the project entry for the given file name or null if the file is not being analyzed.

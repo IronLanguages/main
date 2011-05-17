@@ -324,6 +324,7 @@ namespace Microsoft.IronStudio.Project {
         public override void Load(string filename, string location, string name, uint flags, ref Guid iidProject, out int canceled) {
             base.Load(filename, location, name, flags, ref iidProject, out canceled);
             LibraryManager libraryManager = Site.GetService(GetLibraryManagerType()) as LibraryManager;
+            libraryManager.SearchPaths = ParseSearchPath().ToList();
             if (null != libraryManager) {
                 libraryManager.RegisterHierarchy(InteropSafeHierarchy);
             }
