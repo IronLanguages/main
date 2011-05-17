@@ -39,7 +39,25 @@ namespace Microsoft.IronStudio.Navigation {
         private readonly Library _library;
         private readonly IVsEditorAdaptersFactoryService _adapterFactory;
         private uint _objectManagerCookie;
-        private uint _runningDocTableCookie;         
+        private uint _runningDocTableCookie;
+
+
+        /// <summary>
+        /// Search paths for user imported modules.
+        /// </summary>
+        private List<string> _searchPaths;
+
+        /// <summary>
+        /// Search paths for user imported modules.
+        /// </summary>
+        public List<string> SearchPaths {
+            get {
+                return _searchPaths ?? (_searchPaths = new List<string>());
+            }
+            set {
+                _searchPaths = value;
+            }
+        }
         
         public LibraryManager(CommonPackage/*!*/ package) {
             ContractUtils.RequiresNotNull(package, "package");
