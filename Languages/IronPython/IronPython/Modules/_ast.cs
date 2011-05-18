@@ -307,8 +307,11 @@ namespace IronPython.Modules
 
                 if (expr.Value == null)
                     return new Name("None", Load.Instance);
-
+#if CLR2
+                if (expr.Value is int || expr.Value is double || expr.Value is Int64 || expr.Value is BigInteger)
+#else
                 if (expr.Value is int || expr.Value is double || expr.Value is Int64 || expr.Value is BigInteger || expr.Value is Complex)
+#endif
                     ast = new Num(expr.Value);
                 else if (expr.Value is string)
                     ast = new Str((string)expr.Value);
