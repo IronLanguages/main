@@ -32,7 +32,13 @@ namespace Microsoft.IronStudio {
     public abstract class CommonPackage : Package, IOleComponent {
         private uint _componentID;
         private LibraryManager _libraryManager;
-        private ScriptEngine/*!*/ _engine;        
+        private ScriptEngine/*!*/ _engine;
+
+        public LibraryManager LibraryManager {
+            get {
+                return _libraryManager;
+            }
+        }
 
         public ScriptEngine/*!*/ Engine {
             get {

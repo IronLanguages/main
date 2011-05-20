@@ -50,7 +50,7 @@ namespace Microsoft.IronPythonTools.Navigation {
             if (task.TextBuffer != null) {
                 item = task.TextBuffer.GetAnalysis();
             } else {
-                item = IronPythonToolsPackage.Instance.Analyzer.AnalyzeFile(task.FileName, this.SearchPaths);
+                item = IronPythonToolsPackage.Instance.Analyzer.AnalyzeFile(task.FileName);
             }
 
             IPythonProjectEntry pyCode;

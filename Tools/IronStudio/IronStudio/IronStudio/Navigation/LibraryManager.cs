@@ -41,7 +41,6 @@ namespace Microsoft.IronStudio.Navigation {
         private uint _objectManagerCookie;
         private uint _runningDocTableCookie;
 
-
         /// <summary>
         /// Search paths for user imported modules.
         /// </summary>
@@ -56,9 +55,46 @@ namespace Microsoft.IronStudio.Navigation {
             }
             set {
                 _searchPaths = value;
+                if (SearchPathsChangedEvent != null) {
+                    SearchPathsChangedEvent(this, new SearchPathsChangedEventArgs(_searchPaths));
+                }
             }
         }
-        
+
+        /// <summary>
+        /// Event args which are sent whenever the SearchPaths property in the
+        /// LibraryManager object is modified.
+        /// </summary>
+        public class SearchPathsChangedEventArgs : EventArgs {
+            /// <summary>
+            /// The search paths which were set in the LibraryManager object.
+            /// </summary>
+            private List<string> _searchPaths;
+
+            /// <summary>
+            /// The search paths which were set in the LibraryManager object.
+            /// </summary>
+            public List<string> SearchPaths {
+                get {
+                    return _searchPaths;
+                }
+            }
+
+            /// <summary>
+            /// Creates the search paths changed event args object.
+            /// </summary>
+            /// <param name="searchPaths">The search paths which were set in the LibraryManager
+            /// object.</param>
+            public SearchPathsChangedEventArgs(List<string> searchPaths) {
+                _searchPaths = searchPaths;
+            }
+        }
+
+        /// <summary>
+        /// Whenever the search paths is modified, this event is fired.
+        /// </summary>
+        public event EventHandler<SearchPathsChangedEventArgs> SearchPathsChangedEvent;
+       
         public LibraryManager(CommonPackage/*!*/ package) {
             ContractUtils.RequiresNotNull(package, "package");
             _package = package;

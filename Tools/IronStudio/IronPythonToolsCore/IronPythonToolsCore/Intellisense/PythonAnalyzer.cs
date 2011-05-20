@@ -51,7 +51,6 @@ namespace Microsoft.IronPythonTools.Intellisense {
         private readonly Dictionary<string, IProjectEntry> _projectFiles;
         private readonly ProjectState _analysisState;
         private bool _implicitProject = true;
-
         private static PythonOptions EmptyOptions = new PythonOptions();
 
         [ImportingConstructor]
@@ -66,6 +65,33 @@ namespace Microsoft.IronPythonTools.Intellisense {
         }
 
         #region IPythonAnalyzer
+
+        /// <summary>
+        /// Adds the given search paths to this Python analyzer object. Returns
+        /// true if any path was added, false otherwise.
+        /// </summary>
+        /// <param name="searchPaths">The paths to add.</param>
+        public bool AddSearchPaths(List<string> searchPaths) {
+            if (searchPaths == null || searchPaths.Count == 0)
+                return false;
+
+            var anyPathsAdded = false;
+            foreach (var searchPath in searchPaths) {
+                if (!_analysisState.SearchPaths.Contains(searchPath)) {
+                    _analysisState.SearchPaths.Add(searchPath);
+                    anyPathsAdded = true;
+                }
+            }
+
+            return anyPathsAdded;
+        }
+
+        /// <summary>
+        /// Clears the search paths in this analyzer object.
+        /// </summary>
+        public void ClearSearchPaths() {
+            _analysisState.SearchPaths.Clear();
+        }
 
         public IProjectEntry AnalyzeTextView(ITextView textView) {
             // Get an AnalysisItem for this file, creating one if necessary
@@ -109,7 +135,7 @@ namespace Microsoft.IronPythonTools.Intellisense {
             return res;
         }
 
-        public IProjectEntry AnalyzeFile(string path, List<string> searchPaths) {
+        public IProjectEntry AnalyzeFile(string path) {
             IProjectEntry item;
             if (!_projectFiles.TryGetValue(path, out item)) {
                 if (path.EndsWith(".py", StringComparison.OrdinalIgnoreCase)) {
@@ -120,14 +146,6 @@ namespace Microsoft.IronPythonTools.Intellisense {
                         path,
                         null
                     );
-
-                    if (searchPaths != null) {
-                        foreach (var searchPath in searchPaths) {
-                            if (!_analysisState.SearchPaths.Contains(searchPath)) {
-                                _analysisState.SearchPaths.Add(searchPath);
-                            }
-                        }
-                    }
                 } else if (path.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase)) {
                     item = _analysisState.AddXamlFile(path);
                 }
@@ -588,7 +606,7 @@ namespace Microsoft.IronPythonTools.Intellisense {
 
         private void AddImplicitFiles(string dir) {
             foreach (string filename in Directory.GetFiles(dir, "*.py")) {
-                AnalyzeFile(filename, null);
+                AnalyzeFile(filename);
             }
 
             foreach (string innerDir in Directory.GetDirectories(dir)) {
