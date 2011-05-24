@@ -139,10 +139,19 @@ namespace Microsoft.IronPythonTools {
                 if (_analyzer == null) {
                     var model = GetService(typeof(SComponentModel)) as IComponentModel;
                     _analyzer = model.GetService<IPythonAnalyzer>();
+                    _analyzer.AddSearchPaths(this.LibraryManager.SearchPaths);
+                    this.LibraryManager.SearchPathsChangedEvent += OnLibraryManagerSearchPathsChanged;
                     //_analyzer = new PythonAnalyzer(model);
                 }
                 return _analyzer;
             }
+        }
+
+        private void OnLibraryManagerSearchPathsChanged(object sender, LibraryManager.SearchPathsChangedEventArgs args) {
+            if (_analyzer == null)
+                return;
+            _analyzer.ClearSearchPaths();
+            _analyzer.AddSearchPaths(args.SearchPaths);
         }
 
         public override LibraryManager CreateLibraryManager(CommonPackage package) {

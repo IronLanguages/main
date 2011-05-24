@@ -12,6 +12,7 @@
  *
  * ***************************************************************************/
 
+using System.Collections.Generic;
 using Microsoft.IronPythonTools.Intellisense;
 using Microsoft.PyAnalysis;
 using Microsoft.VisualStudio.Text;
@@ -38,6 +39,18 @@ namespace Microsoft.IronPythonTools.Intellisense {
         /// <param name="searchPaths">A list of strings containing search paths for imported
         /// modules.</param>
         IProjectEntry AnalyzeFile(string path, List<string> searchPaths);
+
+        /// <summary>
+        /// Adds the given search paths to this Python analyzer object. Returns
+        /// true if any path was added, false otherwise.
+        /// </summary>
+        /// <param name="searchPaths">The paths to add.</param>
+        bool AddSearchPaths(List<string> searchPaths);
+
+        /// <summary>
+        /// Clears the search paths for this Python analyzer object.
+        /// </summary>
+        void ClearSearchPaths();
 
         /// <summary>
         /// Returns the project entry for the given file name or null if the file is not being analyzed.
