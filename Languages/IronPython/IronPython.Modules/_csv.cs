@@ -739,7 +739,12 @@ in CSV format.")]
                     _state = State.StartRecord;
                     _fields.Clear();
                     _is_numeric_field = false;
+#if CLR2
+                    _field.Length = 0;
+#else
                     _field.Clear();
+#endif
+
                 }
 
                 #endregion
@@ -982,7 +987,11 @@ in CSV format.")]
                     else
                         _fields.Add(field);
 
+#if CLR2
+                    _field.Length = 0;
+#else
                     _field.Clear();
+#endif
                 }
             }
 
