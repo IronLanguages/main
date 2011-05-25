@@ -45,13 +45,6 @@ namespace IronPython.Modules
         public const string __version__ = "62047";
         public const int PyCF_ONLY_AST = 0x400;
 
-        private static PythonContext _context;
-
-        [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            _context = context;
-        }
-
         private class ThrowingErrorSink : ErrorSink
         {
             public static new readonly ThrowingErrorSink/*!*/ Default = new ThrowingErrorSink();

@@ -64,10 +64,9 @@ namespace IronRuby.Builtins {
             if (sym != null) {
                 return Equals(sym);
             }
-            var ms = other as MutableString;
-            if (ms != null) {
-                return Equals(ms);
-            }
+            
+            // MRI doesn't compare Symbol.eql?(MutableString)
+
             return false;
         }
 
@@ -76,10 +75,9 @@ namespace IronRuby.Builtins {
             if (sym != null) {
                 return CompareTo(sym);
             }
-            var ms = other as MutableString;
-            if (ms != null) {
-                return CompareTo(ms);
-            }
+
+            // MRI doesn't compare Symbol.eql?(MutableString)
+            
             return -1;
         }
 

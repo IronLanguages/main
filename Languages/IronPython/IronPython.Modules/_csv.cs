@@ -271,9 +271,6 @@ The Dialect type records CSV parsing and generation options.")]
             private string _quotechar = "\"";
             private string _lineterminator = "\r\n";
 
-            private Dictionary<string, object> __dict__ =
-                new Dictionary<string, object>();
-
             private static readonly string[] VALID_KWARGS = {
                                                             "dialect",
                                                             "delimiter",
