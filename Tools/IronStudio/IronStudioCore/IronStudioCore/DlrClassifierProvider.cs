@@ -59,22 +59,22 @@ namespace Microsoft.IronStudio.Core {
 
         [Export]
         [Name(DlrPredefinedClassificationTypeNames.OpenGrouping)]
-        [BaseDefinition(PredefinedClassificationTypeNames.Operator)]
+        [BaseDefinition(DlrPredefinedClassificationTypeNames.ScriptOperator)]
         internal static ClassificationTypeDefinition OpenGroupingClassificationDefinition = null; // Set via MEF
 
         [Export]
         [Name(DlrPredefinedClassificationTypeNames.CloseGrouping)]
-        [BaseDefinition(PredefinedClassificationTypeNames.Operator)]
+        [BaseDefinition(DlrPredefinedClassificationTypeNames.ScriptOperator)]
         internal static ClassificationTypeDefinition CloseGroupingClassificationDefinition = null; // Set via MEF
 
         [Export]
         [Name(DlrPredefinedClassificationTypeNames.Dot)]
-        [BaseDefinition(PredefinedClassificationTypeNames.Operator)]
+        [BaseDefinition(DlrPredefinedClassificationTypeNames.ScriptOperator)]
         internal static ClassificationTypeDefinition DotClassificationDefinition = null; // Set via MEF
 
         [Export]
         [Name(DlrPredefinedClassificationTypeNames.Comma)]
-        [BaseDefinition(PredefinedClassificationTypeNames.Operator)]
+        [BaseDefinition(DlrPredefinedClassificationTypeNames.ScriptOperator)]
         internal static ClassificationTypeDefinition CommaClassificationDefinition = null; // Set via MEF
 
         #endregion
@@ -170,9 +170,9 @@ namespace Microsoft.IronStudio.Core {
             categoryMap[TokenCategory.Keyword] = _keyword = registry.GetClassificationType(PredefinedClassificationTypeNames.Keyword);
             categoryMap[TokenCategory.Directive] = registry.GetClassificationType(PredefinedClassificationTypeNames.Keyword);
             categoryMap[TokenCategory.Identifier] = registry.GetClassificationType(PredefinedClassificationTypeNames.Identifier);
-            categoryMap[TokenCategory.Operator] = _operator = registry.GetClassificationType(PredefinedClassificationTypeNames.Operator);
-            categoryMap[TokenCategory.Delimiter] = registry.GetClassificationType(PredefinedClassificationTypeNames.Operator);
-            categoryMap[TokenCategory.Grouping] = registry.GetClassificationType(PredefinedClassificationTypeNames.Operator);
+            categoryMap[TokenCategory.Operator] = _operator = registry.GetClassificationType(DlrPredefinedClassificationTypeNames.ScriptOperator);
+            categoryMap[TokenCategory.Delimiter] = _operator;
+            categoryMap[TokenCategory.Grouping] = _operator;
             categoryMap[TokenCategory.WhiteSpace] = registry.GetClassificationType(PredefinedClassificationTypeNames.WhiteSpace);
             categoryMap[TokenCategory.RegularExpressionLiteral] = registry.GetClassificationType(PredefinedClassificationTypeNames.Literal);
             _openGroupingClassification = registry.GetClassificationType(DlrPredefinedClassificationTypeNames.OpenGrouping);
