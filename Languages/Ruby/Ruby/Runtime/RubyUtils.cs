@@ -978,8 +978,10 @@ namespace IronRuby.Runtime {
 
             Type baseType = theclass.GetUnderlyingSystemType();
             object obj;
+#if SILVERLIGHT // serialization
+            if (typeof(ISerializable).IsAssignableFrom(baseType) && !typeof(RubyObject).IsAssignableFrom(baseType)) {
+#else
             if (typeof(ISerializable).IsAssignableFrom(baseType)) {
-#if !SILVERLIGHT // serialization
                 BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
                 ConstructorInfo ci = baseType.GetConstructor(bindingFlags, null, _serializableTypeSignature, null);
                 if (ci == null) {
