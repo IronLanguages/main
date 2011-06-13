@@ -1,3 +1,5 @@
+set IPY_VERSION=2.7.1
+
 if "%1" == "" (
     set BUILD_FLAVOR=Release
 ) else (
@@ -5,14 +7,16 @@ if "%1" == "" (
 )
 
 :BuildIronLanguages
-msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=%BUILD_FLAVOR%
+msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=%BUILD_FLAVOR% /v:minimal
+msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=Silverlight4%BUILD_FLAVOR% /v:minimal
 
 :GenerateModulesList
 %DLR_ROOT%\Bin\%BUILD_FLAVOR%\ipy.exe %DLR_ROOT%\Languages\IronPython\StdLib\MakeModuleList.py
 
 :GenerateMSI
 %DLR_ROOT%\Bin\%BUILD_FLAVOR%\ir.exe %DLR_ROOT%\Msi\Python\generate_wxis.rb
-msbuild %DLR_ROOT%\Msi\Installer.proj /p:Configuration=%BUILD_FLAVOR%
+msbuild %DLR_ROOT%\Msi\Installer.proj /p:Configuration=%BUILD_FLAVOR% /v:minimal
+copy /Y %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython.msi %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%.msi
 
 :GenerateZip
 
@@ -24,7 +28,7 @@ if EXIST "%ZIPTEMPDIR%" (
 	goto retry
 )
 
-set ZIPTEMPDIR=%ZIPTEMPDIR%\IronPython-2.7
+set ZIPTEMPDIR=%ZIPTEMPDIR%\IronPython-%IPY_VERSION%
 
 mkdir  %ZIPTEMPDIR%
 pushd %ZIPTEMPDIR%
@@ -75,12 +79,12 @@ xcopy %DLR_ROOT%\Hosts\Silverlight\Public\script\* Silverlight\script
 mkdir Silverlight\script\templates\python
 xcopy /s %DLR_ROOT%\Hosts\Silverlight\Public\script\templates\python Silverlight\script\templates\python
 
-del /Q %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip
+del /Q %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%-Bin.zip
 cd ..
-%DLR_ROOT%\Util\Misc\zip -9 -r %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip IronPython-2.7
+%DLR_ROOT%\Util\Misc\zip -9 -r %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%-Bin.zip IronPython-%IPY_VERSION%
 cd /D %DLR_ROOT%\Bin\%BUILD_FLAVOR%\
 
-dir %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip
+dir %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%-Bin.zip
 
 popd
 :EXIT
