@@ -191,7 +191,12 @@ def urlsplit(url, scheme='', allow_fragments=True):
             if c not in scheme_chars:
                 break
         else:
-            scheme, url = url[:i].lower(), url[i+1:]
+            try:
+                # make sure "url" is not actually a port number (in which case
+                # "scheme" is really part of the path
+                _testportnum = int(url[i+1:])
+            except ValueError:
+                scheme, url = url[:i].lower(), url[i+1:]
 
     if url[:2] == '//':
         netloc, url = _splitnetloc(url, 2)
@@ -255,14 +260,9 @@ def urljoin(base, url, allow_fragments=True):
     if path[:1] == '/':
         return urlunparse((scheme, netloc, path,
                            params, query, fragment))
-    if not path:
+    if not path and not params:
         path = bpath
-        if not params:
-            params = bparams
-        else:
-            path = path[:-1]
-            return urlunparse((scheme, netloc, path,
-                                params, query, fragment))
+        params = bparams
         if not query:
             query = bquery
         return urlunparse((scheme, netloc, path,
@@ -335,10 +335,10 @@ def parse_qs(qs, keep_blank_values=0, strict_parsing=0):
 
         Arguments:
 
-        qs: URL-encoded query string to be parsed
+        qs: percent-encoded query string to be parsed
 
         keep_blank_values: flag indicating whether blank values in
-            URL encoded queries should be treated as blank strings.
+            percent-encoded queries should be treated as blank strings.
             A true value indicates that blanks should be retained as
             blank strings.  The default false value indicates that
             blank values are to be ignored and treated as if they were
@@ -361,10 +361,10 @@ def parse_qsl(qs, keep_blank_values=0, strict_parsing=0):
 
     Arguments:
 
-    qs: URL-encoded query string to be parsed
+    qs: percent-encoded query string to be parsed
 
     keep_blank_values: flag indicating whether blank values in
-        URL encoded queries should be treated as blank strings.  A
+        percent-encoded queries should be treated as blank strings.  A
         true value indicates that blanks should be retained as blank
         strings.  The default false value indicates that blank values
         are to be ignored and treated as if they were  not included.
@@ -395,72 +395,3 @@ def parse_qsl(qs, keep_blank_values=0, strict_parsing=0):
             r.append((name, value))
 
     return r
-
-
-test_input = """
-      http://a/b/c/d
-
-      g:h        = <URL:g:h>
-      http:g     = <URL:http://a/b/c/g>
-      http:      = <URL:http://a/b/c/d>
-      g          = <URL:http://a/b/c/g>
-      ./g        = <URL:http://a/b/c/g>
-      g/         = <URL:http://a/b/c/g/>
-      /g         = <URL:http://a/g>
-      //g        = <URL:http://g>
-      ?y         = <URL:http://a/b/c/d?y>
-      g?y        = <URL:http://a/b/c/g?y>
-      g?y/./x    = <URL:http://a/b/c/g?y/./x>
-      .          = <URL:http://a/b/c/>
-      ./         = <URL:http://a/b/c/>
-      ..         = <URL:http://a/b/>
-      ../        = <URL:http://a/b/>
-      ../g       = <URL:http://a/b/g>
-      ../..      = <URL:http://a/>
-      ../../g    = <URL:http://a/g>
-      ../../../g = <URL:http://a/../g>
-      ./../g     = <URL:http://a/b/g>
-      ./g/.      = <URL:http://a/b/c/g/>
-      /./g       = <URL:http://a/./g>
-      g/./h      = <URL:http://a/b/c/g/h>
-      g/../h     = <URL:http://a/b/c/h>
-      http:g     = <URL:http://a/b/c/g>
-      http:      = <URL:http://a/b/c/d>
-      http:?y         = <URL:http://a/b/c/d?y>
-      http:g?y        = <URL:http://a/b/c/g?y>
-      http:g?y/./x    = <URL:http://a/b/c/g?y/./x>
-"""
-
-def test():
-    import sys
-    base = ''
-    if sys.argv[1:]:
-        fn = sys.argv[1]
-        if fn == '-':
-            fp = sys.stdin
-        else:
-            fp = open(fn)
-    else:
-        try:
-            from cStringIO import StringIO
-        except ImportError:
-            from StringIO import StringIO
-        fp = StringIO(test_input)
-    for line in fp:
-        words = line.split()
-        if not words:
-            continue
-        url = words[0]
-        parts = urlparse(url)
-        print '%-10s : %s' % (url, parts)
-        abs = urljoin(base, url)
-        if not base:
-            base = abs
-        wrapped = '<URL:%s>' % abs
-        print '%-10s = %s' % (url, wrapped)
-        if len(words) == 3 and words[1] == '=':
-            if wrapped != words[2]:
-                print 'EXPECTED', words[2], '!!!!!!!!!!'
-
-if __name__ == '__main__':
-    test()

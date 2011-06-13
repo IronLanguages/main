@@ -65,16 +65,24 @@ __version__ = '1.1'
 __all__ = [
     'ArgumentParser',
     'ArgumentError',
-    'Namespace',
-    'Action',
+    'ArgumentTypeError',
     'FileType',
     'HelpFormatter',
+    'ArgumentDefaultsHelpFormatter',
     'RawDescriptionHelpFormatter',
     'RawTextHelpFormatter',
-    'ArgumentDefaultsHelpFormatter',
+    'Namespace',
+    'Action',
+    'ONE_OR_MORE',
+    'OPTIONAL',
+    'PARSER',
+    'REMAINDER',
+    'SUPPRESS',
+    'ZERO_OR_MORE',
 ]
 
 
+import collections as _collections
 import copy as _copy
 import os as _os
 import re as _re
@@ -95,6 +103,7 @@ ZERO_OR_MORE = '*'
 ONE_OR_MORE = '+'
 PARSER = 'A...'
 REMAINDER = '...'
+_UNRECOGNIZED_ARGS_ATTR = '_unrecognized_args'
 
 # =============================
 # Utility functions and classes
@@ -385,10 +394,16 @@ class HelpFormatter(object):
                     for action in group._group_actions:
                         group_actions.add(action)
                     if not group.required:
-                        inserts[start] = '['
+                        if start in inserts:
+                            inserts[start] += ' ['
+                        else:
+                            inserts[start] = '['
                         inserts[end] = ']'
                     else:
-                        inserts[start] = '('
+                        if start in inserts:
+                            inserts[start] += ' ('
+                        else:
+                            inserts[start] = '('
                         inserts[end] = ')'
                     for i in range(start + 1, end):
                         inserts[i] = '|'
@@ -1023,7 +1038,7 @@ class _SubParsersAction(Action):
 
         self._prog_prefix = prog
         self._parser_class = parser_class
-        self._name_parser_map = {}
+        self._name_parser_map = _collections.OrderedDict()
         self._choices_actions = []
 
         super(_SubParsersAction, self).__init__(
@@ -1066,11 +1081,16 @@ class _SubParsersAction(Action):
             parser = self._name_parser_map[parser_name]
         except KeyError:
             tup = parser_name, ', '.join(self._name_parser_map)
-            msg = _('unknown parser %r (choices: %s)' % tup)
+            msg = _('unknown parser %r (choices: %s)') % tup
             raise ArgumentError(self, msg)
 
         # parse all the remaining options into the namespace
-        parser.parse_args(arg_strings, namespace)
+        # store any unrecognized options on the object, so that the top
+        # level parser can decide what to do with them
+        namespace, arg_strings = parser.parse_known_args(arg_strings, namespace)
+        if arg_strings:
+            vars(namespace).setdefault(_UNRECOGNIZED_ARGS_ATTR, [])
+            getattr(namespace, _UNRECOGNIZED_ARGS_ATTR).extend(arg_strings)
 
 
 # ==============
@@ -1090,7 +1110,7 @@ class FileType(object):
             the builtin open() function.
     """
 
-    def __init__(self, mode='r', bufsize=None):
+    def __init__(self, mode='r', bufsize=-1):
         self._mode = mode
         self._bufsize = bufsize
 
@@ -1102,18 +1122,19 @@ class FileType(object):
             elif 'w' in self._mode:
                 return _sys.stdout
             else:
-                msg = _('argument "-" with mode %r' % self._mode)
+                msg = _('argument "-" with mode %r') % self._mode
                 raise ValueError(msg)
 
         # all other arguments are used as file names
-        if self._bufsize:
+        try:
             return open(string, self._mode, self._bufsize)
-        else:
-            return open(string, self._mode)
+        except IOError as e:
+            message = _("can't open '%s': %s")
+            raise ArgumentTypeError(message % (string, e))
 
     def __repr__(self):
-        args = [self._mode, self._bufsize]
-        args_str = ', '.join([repr(arg) for arg in args if arg is not None])
+        args = self._mode, self._bufsize
+        args_str = ', '.join(repr(arg) for arg in args if arg != -1)
         return '%s(%s)' % (type(self).__name__, args_str)
 
 # ===========================
@@ -1256,13 +1277,20 @@ class _ActionsContainer(object):
         # create the action object, and add it to the parser
         action_class = self._pop_action_class(kwargs)
         if not _callable(action_class):
-            raise ValueError('unknown action "%s"' % action_class)
+            raise ValueError('unknown action "%s"' % (action_class,))
         action = action_class(**kwargs)
 
         # raise an error if the action type is not callable
         type_func = self._registry_get('type', action.type, action.type)
         if not _callable(type_func):
-            raise ValueError('%r is not callable' % type_func)
+            raise ValueError('%r is not callable' % (type_func,))
+
+        # raise an error if the metavar does not match the type
+        if hasattr(self, "_get_formatter"):
+            try:
+                self._get_formatter()._format_args(action, None)
+            except TypeError:
+                raise ValueError("length of metavar tuple does not match nargs")
 
         return self._add_action(action)
 
@@ -1462,6 +1490,7 @@ class _ArgumentGroup(_ActionsContainer):
         self._defaults = container._defaults
         self._has_negative_number_optionals = \
             container._has_negative_number_optionals
+        self._mutually_exclusive_groups = container._mutually_exclusive_groups
 
     def _add_action(self, action):
         action = super(_ArgumentGroup, self)._add_action(action)
@@ -1563,13 +1592,16 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
 
         # add help and version arguments if necessary
         # (using explicit default to override global argument_default)
+        default_prefix = '-' if '-' in prefix_chars else prefix_chars[0]
         if self.add_help:
             self.add_argument(
-                '-h', '--help', action='help', default=SUPPRESS,
+                default_prefix+'h', default_prefix*2+'help',
+                action='help', default=SUPPRESS,
                 help=_('show this help message and exit'))
         if self.version:
             self.add_argument(
-                '-v', '--version', action='version', default=SUPPRESS,
+                default_prefix+'v', default_prefix*2+'version',
+                action='version', default=SUPPRESS,
                 version=self.version,
                 help=_("show program's version number and exit"))
 
@@ -1685,7 +1717,11 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
 
         # parse the arguments and exit if there are any errors
         try:
-            return self._parse_known_args(args, namespace)
+            namespace, args = self._parse_known_args(args, namespace)
+            if hasattr(namespace, _UNRECOGNIZED_ARGS_ATTR):
+                args.extend(getattr(namespace, _UNRECOGNIZED_ARGS_ATTR))
+                delattr(namespace, _UNRECOGNIZED_ARGS_ATTR)
+            return namespace, args
         except ArgumentError:
             err = _sys.exc_info()[1]
             self.error(str(err))
@@ -1786,13 +1822,13 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
                     chars = self.prefix_chars
                     if arg_count == 0 and option_string[1] not in chars:
                         action_tuples.append((action, [], option_string))
-                        for char in self.prefix_chars:
-                            option_string = char + explicit_arg[0]
-                            explicit_arg = explicit_arg[1:] or None
-                            optionals_map = self._option_string_actions
-                            if option_string in optionals_map:
-                                action = optionals_map[option_string]
-                                break
+                        char = option_string[0]
+                        option_string = char + explicit_arg[0]
+                        new_explicit_arg = explicit_arg[1:] or None
+                        optionals_map = self._option_string_actions
+                        if option_string in optionals_map:
+                            action = optionals_map[option_string]
+                            explicit_arg = new_explicit_arg
                         else:
                             msg = _('ignored explicit argument %r')
                             raise ArgumentError(action, msg % explicit_arg)

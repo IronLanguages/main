@@ -35,7 +35,6 @@ given then 8025 is used.  If remotehost is not given then `localhost' is used,
 and if remoteport is not given, then 25 is used.
 """
 
-
 # Overview:
 #
 # This file implements the minimal SMTP protocol as defined in RFC 821.  It
@@ -96,7 +95,6 @@ EMPTYSTRING = ''
 COMMASPACE = ', '
 
 
-
 def usage(code, msg=''):
     print >> sys.stderr, __doc__ % globals()
     if msg:
@@ -104,7 +102,6 @@ def usage(code, msg=''):
     sys.exit(code)
 
 
-
 class SMTPChannel(asynchat.async_chat):
     COMMAND = 0
     DATA = 1
@@ -121,7 +118,15 @@ class SMTPChannel(asynchat.async_chat):
         self.__rcpttos = []
         self.__data = ''
         self.__fqdn = socket.getfqdn()
-        self.__peer = conn.getpeername()
+        try:
+            self.__peer = conn.getpeername()
+        except socket.error, err:
+            # a race condition  may occur if the other end is closing
+            # before we can get the peername
+            self.close()
+            if err[0] != errno.ENOTCONN:
+                raise
+            return
         print >> DEBUGSTREAM, 'Peer:', repr(self.__peer)
         self.push('220 %s %s' % (self.__fqdn, __version__))
         self.set_terminator('\r\n')
@@ -268,7 +273,6 @@ class SMTPChannel(asynchat.async_chat):
         self.push('354 End data with <CR><LF>.<CR><LF>')
 
 
-
 class SMTPServer(asyncore.dispatcher):
     def __init__(self, localaddr, remoteaddr):
         self._localaddr = localaddr
@@ -291,9 +295,11 @@ class SMTPServer(asyncore.dispatcher):
                 localaddr, remoteaddr)
 
     def handle_accept(self):
-        conn, addr = self.accept()
-        print >> DEBUGSTREAM, 'Incoming connection from %s' % repr(addr)
-        channel = SMTPChannel(self, conn, addr)
+        pair = self.accept()
+        if pair is not None:
+            conn, addr = pair
+            print >> DEBUGSTREAM, 'Incoming connection from %s' % repr(addr)
+            channel = SMTPChannel(self, conn, addr)
 
     # API for "doing something useful with the message"
     def process_message(self, peer, mailfrom, rcpttos, data):
@@ -321,7 +327,6 @@ class SMTPServer(asyncore.dispatcher):
         raise NotImplementedError
 
 
-
 class DebuggingServer(SMTPServer):
     # Do something with the gathered message
     def process_message(self, peer, mailfrom, rcpttos, data):
@@ -337,7 +342,6 @@ class DebuggingServer(SMTPServer):
         print '------------ END MESSAGE ------------'
 
 
-
 class PureProxy(SMTPServer):
     def process_message(self, peer, mailfrom, rcpttos, data):
         lines = data.split('\n')
@@ -378,7 +382,6 @@ class PureProxy(SMTPServer):
         return refused
 
 
-
 class MailmanProxy(PureProxy):
     def process_message(self, peer, mailfrom, rcpttos, data):
         from cStringIO import StringIO
@@ -457,13 +460,11 @@ class MailmanProxy(PureProxy):
                 msg.Enqueue(mlist, torequest=1)
 
 
-
 class Options:
     setuid = 1
     classname = 'PureProxy'
 
 
-
 def parseargs():
     global DEBUGSTREAM
     try:
@@ -520,7 +521,6 @@ def parseargs():
     return options
 
 
-
 if __name__ == '__main__':
     options = parseargs()
     # Become nobody

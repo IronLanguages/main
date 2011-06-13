@@ -4,7 +4,6 @@ Tests common to tuple, list and UserList.UserList
 
 import unittest
 import sys
-from test.test_support import due_to_ironpython_bug
 
 # Various iterables
 # This is used for checking the constructor (here and in test_deque.py)
@@ -132,15 +131,8 @@ class CommonTest(unittest.TestCase):
             self.assertRaises(ZeroDivisionError, self.type2test, IterGenExc(s))
 
     def test_truth(self):
-        # IronPython seems to return 0 instead of True and 1 instead of False when
-        # negating any _abcoll.Sequence
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            from UserList import UserList
-            if issubclass(self.type2test, UserList):
-                return
-
-        self.assert_(not self.type2test())
-        self.assert_(self.type2test([42]))
+        self.assertFalse(self.type2test())
+        self.assertTrue(self.type2test([42]))
 
     def test_getitem(self):
         u = self.type2test([0, 1, 2, 3, 4])
@@ -278,7 +270,7 @@ class CommonTest(unittest.TestCase):
             pass
         u3 = subclass([0, 1])
         self.assertEqual(u3, u3*1)
-        self.assert_(u3 is not u3*1)
+        self.assertIsNot(u3, u3*1)
 
     def test_iadd(self):
         u = self.type2test([0, 1])
@@ -318,14 +310,9 @@ class CommonTest(unittest.TestCase):
         if sys.maxint <= 2147483647:
             x = self.type2test([0])
             x *= 2**16
-            if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-                self.assertRaises(OverflowError, x.__mul__, 2**16)
-                if hasattr(x, '__imul__'):
-                    self.assertRaises(OverflowError, x.__imul__, 2**16)
-            else:
-                self.assertRaises(MemoryError, x.__mul__, 2**16)
-                if hasattr(x, '__imul__'):
-                    self.assertRaises(MemoryError, x.__imul__, 2**16)
+            self.assertRaises(MemoryError, x.__mul__, 2**16)
+            if hasattr(x, '__imul__'):
+                self.assertRaises(MemoryError, x.__imul__, 2**16)
 
     def test_subscript(self):
         a = self.type2test([10, 11])

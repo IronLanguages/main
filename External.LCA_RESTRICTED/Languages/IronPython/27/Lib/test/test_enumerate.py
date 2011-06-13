@@ -105,8 +105,6 @@ class EnumerateTestCase(unittest.TestCase):
 
     @test_support.cpython_only
     def test_tuple_reuse(self):
-        if test_support.due_to_ironpython_incompatibility("implementation detail: http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20279"): 
-            return
         # Tests an implementation detail where tuple is reused
         # whenever nothing else holds a reference to it
         self.assertEqual(len(set(map(id, list(enumerate(self.seq))))), len(self.seq))
@@ -156,8 +154,6 @@ class TestReversed(unittest.TestCase):
 
     @test_support.cpython_only
     def test_len(self):
-        if test_support.due_to_ironpython_incompatibility("implementation detail"):
-            return
         # This is an implementation detail, not an interface requirement
         from test.test_iterlen import len
         for s in ('hello', tuple('hello'), list('hello'), xrange(5)):
@@ -193,8 +189,6 @@ class TestReversed(unittest.TestCase):
         self.assertRaises(TypeError, reversed, [], 'extra')
 
     def test_bug1229429(self):
-        if test_support.due_to_ironpython_incompatibility("implementation detail"):
-            return
         # this bug was never in reversed, it was in
         # PyObject_CallMethod, and reversed_new calls that sometimes.
         if not hasattr(sys, "getrefcount"):
@@ -235,15 +229,15 @@ class EnumerateStartTestCase(EnumerateTestCase):
 
 class TestStart(EnumerateStartTestCase):
 
-	enum = lambda self, i: enumerate(i, start=11)
-	seq, res = 'abc', [(11, 'a'), (12, 'b'), (13, 'c')]
+    enum = lambda self, i: enumerate(i, start=11)
+    seq, res = 'abc', [(11, 'a'), (12, 'b'), (13, 'c')]
 
 
 class TestLongStart(EnumerateStartTestCase):
 
-	enum = lambda self, i: enumerate(i, start=sys.maxint+1)
-	seq, res = 'abc', [(sys.maxint+1,'a'), (sys.maxint+2,'b'),
-					   (sys.maxint+3,'c')]
+    enum = lambda self, i: enumerate(i, start=sys.maxint+1)
+    seq, res = 'abc', [(sys.maxint+1,'a'), (sys.maxint+2,'b'),
+                       (sys.maxint+3,'c')]
 
 
 def test_main(verbose=None):

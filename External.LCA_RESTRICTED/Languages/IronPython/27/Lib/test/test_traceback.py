@@ -1,13 +1,11 @@
 """Test cases for traceback module"""
 
+from _testcapi import traceback_print
 from StringIO import StringIO
 import sys
 import unittest
 from imp import reload
-from test.test_support import run_unittest, is_jython, due_to_ironpython_bug, Error
-
-if not due_to_ironpython_bug("no _testcapi module"):
-    from _testcapi import traceback_print
+from test.test_support import run_unittest, is_jython, Error
 
 import traceback
 
@@ -61,8 +59,6 @@ class TracebackCases(unittest.TestCase):
         self.assertTrue(err[1].strip() == "[x for x in x] = x")
 
     def test_bad_indentation(self):
-        if due_to_ironpython_bug('http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=307332'):
-            return
         err = self.get_exception_format(self.syntax_error_bad_indentation,
                                         IndentationError)
         self.assertTrue(len(err) == 4)
@@ -78,8 +74,7 @@ class TracebackCases(unittest.TestCase):
         try:
             sys.path.insert(0, testdir)
             testfile = os.path.join(testdir, 'test_bug737473.py')
-            with open(testfile, 'w') as f:
-                print >> f, """
+            print >> open(testfile, 'w'), """
 def test():
     raise ValueError"""
 
@@ -101,8 +96,7 @@ def test():
             # three seconds are needed for this test to pass reliably :-(
             time.sleep(4)
 
-            with open(testfile, 'w') as f:
-                print >> f, """
+            print >> open(testfile, 'w'), """
 def test():
     raise NotImplementedError"""
             reload(test_bug737473)
@@ -153,8 +147,6 @@ def test():
         self.assertEqual(err[0], str_type + ': ' + str_value + '\n')
 
     def test_format_exception_only_bad__str__(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28021"):
-            return
         class X(Exception):
             def __str__(self):
                 1 // 0
@@ -168,8 +160,6 @@ def test():
         self.assertEqual(err, ['None\n'])
 
     def test_unicode(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28021"):
-            return
         err = AssertionError('\xff')
         lines = traceback.format_exception_only(type(err), err)
         self.assertEqual(lines, ['AssertionError: \xff\n'])
@@ -182,8 +172,6 @@ def test():
 class TracebackFormatTests(unittest.TestCase):
 
     def test_traceback_format(self):
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         try:
             raise KeyError('blah')
         except KeyError:
@@ -197,11 +185,11 @@ class TracebackFormatTests(unittest.TestCase):
             raise Error("unable to create test traceback string")
 
         # Make sure that Python and the traceback module format the same thing
-        self.assertEquals(traceback_fmt, python_fmt)
+        self.assertEqual(traceback_fmt, python_fmt)
 
         # Make sure that the traceback is properly indented.
         tb_lines = python_fmt.splitlines()
-        self.assertEquals(len(tb_lines), 3)
+        self.assertEqual(len(tb_lines), 3)
         banner, location, source_line = tb_lines
         self.assertTrue(banner.startswith('Traceback'))
         self.assertTrue(location.startswith('  File'))

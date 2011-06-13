@@ -1,7 +1,6 @@
 """Verify that warnings are issued for global statements following use."""
 
 from test.test_support import run_unittest, check_syntax_error
-from test import test_support
 import unittest
 import warnings
 
@@ -16,8 +15,7 @@ def wrong1():
     global a
     global b
 """
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317569"):
-            check_syntax_error(self, prog_text_1)
+        check_syntax_error(self, prog_text_1)
 
     def test2(self):
         prog_text_2 = """\
@@ -25,8 +23,7 @@ def wrong2():
     print x
     global x
 """
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317569"):
-            check_syntax_error(self, prog_text_2)
+        check_syntax_error(self, prog_text_2)
 
     def test3(self):
         prog_text_3 = """\
@@ -35,8 +32,7 @@ def wrong3():
     x = 2
     global x
 """
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317569"):
-            check_syntax_error(self, prog_text_3)
+        check_syntax_error(self, prog_text_3)
 
     def test4(self):
         prog_text_4 = """\

@@ -3,13 +3,13 @@ import marshal
 import os
 import py_compile
 import random
-import shutil
 import stat
 import sys
 import unittest
-from test.test_support import (unlink, TESTFN, unload, run_unittest,
+from test.test_support import (unlink, TESTFN, unload, run_unittest, rmtree,
                                is_jython, check_warnings, EnvironmentVarGuard)
-
+import textwrap
+from test import script_helper
 
 def remove_files(name):
     for f in (name + os.extsep + "py",
@@ -254,6 +254,17 @@ class ImportTests(unittest.TestCase):
         self.assertEqual("Import by filename is not supported.",
                          c.exception.args[0])
 
+    def test_import_in_del_does_not_crash(self):
+        # Issue 4236
+        testfn = script_helper.make_script('', TESTFN, textwrap.dedent("""\
+            import sys
+            class C:
+               def __del__(self):
+                  import imp
+            sys.argv.insert(0, C())
+            """))
+        script_helper.assert_python_ok(testfn)
+
 
 class PycRewritingTests(unittest.TestCase):
     # Test that the `co_filename` attribute on code objects always points
@@ -290,8 +301,7 @@ func_filename = func.func_code.co_filename
             unload(self.module_name)
         unlink(self.file_name)
         unlink(self.compiled_name)
-        if os.path.exists(self.dir_name):
-            shutil.rmtree(self.dir_name)
+        rmtree(self.dir_name)
 
     def import_module(self):
         ns = globals()
@@ -354,7 +364,7 @@ class PathsTests(unittest.TestCase):
         self.syspath = sys.path[:]
 
     def tearDown(self):
-        shutil.rmtree(self.path)
+        rmtree(self.path)
         sys.path[:] = self.syspath
 
     # Regression test for http://bugs.python.org/issue1293.
@@ -432,16 +442,13 @@ class RelativeImportTests(unittest.TestCase):
         self.assertRaises(ValueError, check_relative)
 
     def test_absolute_import_without_future(self):
-        # If absolute import syntax is used, then do not try to perform
-        # a relative import in the face of failure.
+        # If explicit relative import syntax is used, then do not try
+        # to perform an absolute import in the face of failure.
         # Issue #7902.
-        try:
+        with self.assertRaises(ImportError):
             from .os import sep
-        except ImportError:
-            pass
-        else:
             self.fail("explicit relative import triggered an "
-                      "implicit relative import")
+                      "implicit absolute import")
 
 
 def test_main(verbose=None):

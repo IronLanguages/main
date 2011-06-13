@@ -53,17 +53,12 @@ class UnicodeNamesTest(unittest.TestCase):
         ]
         string = u"The rEd fOx ate the sheep."
 
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323261"):
-            return
         self.assertEqual(
             u"".join([self.checkletter(*args) for args in zip(chars, string)]),
             string
         )
 
     def test_ascii_letters(self):
-        # no unicodedata module
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-            return
         import unicodedata
 
         for char in "".join(map(chr, xrange(ord("a"), ord("z")))):
@@ -72,8 +67,6 @@ class UnicodeNamesTest(unittest.TestCase):
             self.assertEqual(unicodedata.name(code), name)
 
     def test_hangul_syllables(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323261"):
-            return
         self.checkletter("HANGUL SYLLABLE GA", u"\uac00")
         self.checkletter("HANGUL SYLLABLE GGWEOSS", u"\uafe8")
         self.checkletter("HANGUL SYLLABLE DOLS", u"\ub3d0")
@@ -88,15 +81,10 @@ class UnicodeNamesTest(unittest.TestCase):
         self.checkletter("HANGUL SYLLABLE HWEOK", u"\ud6f8")
         self.checkletter("HANGUL SYLLABLE HIH", u"\ud7a3")
 
-        # no unicodedata module
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-            return
         import unicodedata
         self.assertRaises(ValueError, unicodedata.name, u"\ud7a4")
 
     def test_cjk_unified_ideographs(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323261"):
-            return
         self.checkletter("CJK UNIFIED IDEOGRAPH-3400", u"\u3400")
         self.checkletter("CJK UNIFIED IDEOGRAPH-4DB5", u"\u4db5")
         self.checkletter("CJK UNIFIED IDEOGRAPH-4E00", u"\u4e00")
@@ -105,9 +93,6 @@ class UnicodeNamesTest(unittest.TestCase):
         self.checkletter("CJK UNIFIED IDEOGRAPH-2A6D6", u"\U0002a6d6")
 
     def test_bmp_characters(self):
-        # no unicodedata module
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-            return
         import unicodedata
         count = 0
         for code in xrange(0x10000):
@@ -118,17 +103,12 @@ class UnicodeNamesTest(unittest.TestCase):
                 count += 1
 
     def test_misc_symbols(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323261"):
-            return
         self.checkletter("PILCROW SIGN", u"\u00b6")
         self.checkletter("REPLACEMENT CHARACTER", u"\uFFFD")
         self.checkletter("HALFWIDTH KATAKANA SEMI-VOICED SOUND MARK", u"\uFF9F")
         self.checkletter("FULLWIDTH LATIN SMALL LETTER A", u"\uFF41")
 
     def test_errors(self):
-        # no unicodedata module
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-            return
         import unicodedata
         self.assertRaises(TypeError, unicodedata.name)
         self.assertRaises(TypeError, unicodedata.name, u'xx')
@@ -136,8 +116,6 @@ class UnicodeNamesTest(unittest.TestCase):
         self.assertRaises(KeyError, unicodedata.lookup, u'unknown')
 
     def test_strict_eror_handling(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323116"):
-            return
         # bogus character name
         self.assertRaises(
             UnicodeError,

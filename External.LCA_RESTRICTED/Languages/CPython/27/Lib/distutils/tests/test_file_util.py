@@ -6,6 +6,7 @@ import shutil
 from distutils.file_util import move_file, write_file, copy_file
 from distutils import log
 from distutils.tests import support
+from test.test_support import run_unittest
 
 class FileUtilTestCase(support.TempdirManager, unittest.TestCase):
 
@@ -31,19 +32,21 @@ class FileUtilTestCase(support.TempdirManager, unittest.TestCase):
 
     def test_move_file_verbosity(self):
         f = open(self.source, 'w')
-        f.write('some content')
-        f.close()
+        try:
+            f.write('some content')
+        finally:
+            f.close()
 
         move_file(self.source, self.target, verbose=0)
         wanted = []
-        self.assertEquals(self._logs, wanted)
+        self.assertEqual(self._logs, wanted)
 
         # back to original state
         move_file(self.target, self.source, verbose=0)
 
         move_file(self.source, self.target, verbose=1)
         wanted = ['moving %s -> %s' % (self.source, self.target)]
-        self.assertEquals(self._logs, wanted)
+        self.assertEqual(self._logs, wanted)
 
         # back to original state
         move_file(self.target, self.source, verbose=0)
@@ -53,7 +56,7 @@ class FileUtilTestCase(support.TempdirManager, unittest.TestCase):
         os.mkdir(self.target_dir)
         move_file(self.source, self.target_dir, verbose=1)
         wanted = ['moving %s -> %s' % (self.source, self.target_dir)]
-        self.assertEquals(self._logs, wanted)
+        self.assertEqual(self._logs, wanted)
 
     def test_write_file(self):
         lines = ['a', 'b', 'c']
@@ -61,7 +64,7 @@ class FileUtilTestCase(support.TempdirManager, unittest.TestCase):
         foo = os.path.join(dir, 'foo')
         write_file(foo, lines)
         content = [line.strip() for line in open(foo).readlines()]
-        self.assertEquals(content, lines)
+        self.assertEqual(content, lines)
 
     def test_copy_file(self):
         src_dir = self.mkdtemp()
@@ -75,4 +78,4 @@ def test_suite():
     return unittest.makeSuite(FileUtilTestCase)
 
 if __name__ == "__main__":
-    unittest.main(defaultTest="test_suite")
+    run_unittest(test_suite())

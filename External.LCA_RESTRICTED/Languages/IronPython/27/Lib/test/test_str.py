@@ -33,12 +33,7 @@ class StrTest(
 
     def test_formatting(self):
         string_tests.MixinStrUnicodeUserStringTest.test_formatting(self)
-        # this test expects an unsigned byte integer value but in the managed
-        # world chars are 2 bytes and so 0x1234 is valid for conversion; this
-        # needs to be reconciled when work is done to beef up the formatting
-        # codepath
-        if not test_support.due_to_ironpython_incompatibility('char implementation'):
-            self.assertRaises(OverflowError, '%c'.__mod__, 0x1234)
+        self.assertRaises(OverflowError, '%c'.__mod__, 0x1234)
 
     def test_conversion(self):
         # Make sure __str__() behaves properly
@@ -121,19 +116,15 @@ class StrTest(
         test('abc', '', 'abc')
         test('abc', '.3', 'abc')
         test('ab', '.3', 'ab')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            test('abcdef', '.3', 'abc')
-            test('abcdef', '.0', '')
+        test('abcdef', '.3', 'abc')
+        test('abcdef', '.0', '')
         test('abc', '3.3', 'abc')
         test('abc', '2.3', 'abc')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            test('abc', '2.2', 'ab')
-            test('abc', '3.2', 'ab ')
+        test('abc', '2.2', 'ab')
+        test('abc', '3.2', 'ab ')
         test('result', 'x<0', 'result')
         test('result', 'x<5', 'result')
         test('result', 'x<6', 'result')
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         test('result', 'x<7', 'resultx')
         test('result', 'x<8', 'resultxx')
         test('result', ' <7', 'result ')
@@ -260,40 +251,36 @@ class StrTest(
         # strings
         self.assertEqual('{0:.3s}'.format('abc'), 'abc')
         self.assertEqual('{0:.3s}'.format('ab'), 'ab')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual('{0:.3s}'.format('abcdef'), 'abc')
-            self.assertEqual('{0:.0s}'.format('abcdef'), '')
+        self.assertEqual('{0:.3s}'.format('abcdef'), 'abc')
+        self.assertEqual('{0:.0s}'.format('abcdef'), '')
         self.assertEqual('{0:3.3s}'.format('abc'), 'abc')
         self.assertEqual('{0:2.3s}'.format('abc'), 'abc')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual('{0:2.2s}'.format('abc'), 'ab')
-            self.assertEqual('{0:3.2s}'.format('abc'), 'ab ')
+        self.assertEqual('{0:2.2s}'.format('abc'), 'ab')
+        self.assertEqual('{0:3.2s}'.format('abc'), 'ab ')
         self.assertEqual('{0:x<0s}'.format('result'), 'result')
         self.assertEqual('{0:x<5s}'.format('result'), 'result')
         self.assertEqual('{0:x<6s}'.format('result'), 'result')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual('{0:x<7s}'.format('result'), 'resultx')
-            self.assertEqual('{0:x<8s}'.format('result'), 'resultxx')
-            self.assertEqual('{0: <7s}'.format('result'), 'result ')
-            self.assertEqual('{0:<7s}'.format('result'), 'result ')
-            self.assertEqual('{0:>7s}'.format('result'), ' result')
-            self.assertEqual('{0:>8s}'.format('result'), '  result')
-            self.assertEqual('{0:^8s}'.format('result'), ' result ')
-            self.assertEqual('{0:^9s}'.format('result'), ' result  ')
-            self.assertEqual('{0:^10s}'.format('result'), '  result  ')
-            self.assertEqual('{0:10000}'.format('a'), 'a' + ' ' * 9999)
-            self.assertEqual('{0:10000}'.format(''), ' ' * 10000)
-            self.assertEqual('{0:10000000}'.format(''), ' ' * 10000000)
+        self.assertEqual('{0:x<7s}'.format('result'), 'resultx')
+        self.assertEqual('{0:x<8s}'.format('result'), 'resultxx')
+        self.assertEqual('{0: <7s}'.format('result'), 'result ')
+        self.assertEqual('{0:<7s}'.format('result'), 'result ')
+        self.assertEqual('{0:>7s}'.format('result'), ' result')
+        self.assertEqual('{0:>8s}'.format('result'), '  result')
+        self.assertEqual('{0:^8s}'.format('result'), ' result ')
+        self.assertEqual('{0:^9s}'.format('result'), ' result  ')
+        self.assertEqual('{0:^10s}'.format('result'), '  result  ')
+        self.assertEqual('{0:10000}'.format('a'), 'a' + ' ' * 9999)
+        self.assertEqual('{0:10000}'.format(''), ' ' * 10000)
+        self.assertEqual('{0:10000000}'.format(''), ' ' * 10000000)
 
         # format specifiers for user defined type
         self.assertEqual('{0:abc}'.format(C()), 'abc')
 
-        # !r and !s coersions
+        # !r and !s coercions
         self.assertEqual('{0!s}'.format('Hello'), 'Hello')
         self.assertEqual('{0!s:}'.format('Hello'), 'Hello')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual('{0!s:15}'.format('Hello'), 'Hello          ')
-            self.assertEqual('{0!s:15s}'.format('Hello'), 'Hello          ')
+        self.assertEqual('{0!s:15}'.format('Hello'), 'Hello          ')
+        self.assertEqual('{0!s:15s}'.format('Hello'), 'Hello          ')
         self.assertEqual('{0!r}'.format('Hello'), "'Hello'")
         self.assertEqual('{0!r:}'.format('Hello'), "'Hello'")
         self.assertEqual('{0!r}'.format(F('Hello')), 'F(Hello)')
@@ -303,14 +290,16 @@ class StrTest(
         self.assertEqual('{0}'.format([]), '[]')
         self.assertEqual('{0}'.format([1]), '[1]')
         self.assertEqual('{0}'.format(E('data')), 'E(data)')
-        self.assertEqual('{0:^10}'.format(E('data')), ' E(data)  ')
-        self.assertEqual('{0:^10s}'.format(E('data')), ' E(data)  ')
         self.assertEqual('{0:d}'.format(G('data')), 'G(data)')
-        self.assertEqual('{0:>15s}'.format(G('data')), ' string is data')
         self.assertEqual('{0!s}'.format(G('data')), 'string is data')
 
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual("{0:date: %Y-%m-%d}".format(I(year=2007,
+        msg = 'object.__format__ with a non-empty format string is deprecated'
+        with test_support.check_warnings((msg, PendingDeprecationWarning)):
+            self.assertEqual('{0:^10}'.format(E('data')), ' E(data)  ')
+            self.assertEqual('{0:^10s}'.format(E('data')), ' E(data)  ')
+            self.assertEqual('{0:>15s}'.format(G('data')), ' string is data')
+
+        self.assertEqual("{0:date: %Y-%m-%d}".format(I(year=2007,
                                                        month=8,
                                                        day=27)),
                          "date: 2007-08-27")
@@ -323,12 +312,11 @@ class StrTest(
         self.assertEqual('{0:}'.format('a'), 'a')
 
         # computed format specifiers
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual("{0:.{1}}".format('hello world', 5), 'hello')
-            self.assertEqual("{0:.{1}s}".format('hello world', 5), 'hello')
-            self.assertEqual("{0:.{precision}s}".format('hello world', precision=5), 'hello')
-            self.assertEqual("{0:{width}.{precision}s}".format('hello world', width=10, precision=5), 'hello     ')
-            self.assertEqual("{0:{width}.{precision}s}".format('hello world', width='10', precision='5'), 'hello     ')
+        self.assertEqual("{0:.{1}}".format('hello world', 5), 'hello')
+        self.assertEqual("{0:.{1}s}".format('hello world', 5), 'hello')
+        self.assertEqual("{0:.{precision}s}".format('hello world', precision=5), 'hello')
+        self.assertEqual("{0:{width}.{precision}s}".format('hello world', width=10, precision=5), 'hello     ')
+        self.assertEqual("{0:{width}.{precision}s}".format('hello world', width='10', precision='5'), 'hello     ')
 
         # test various errors
         self.assertRaises(ValueError, '{'.format)
@@ -362,10 +350,9 @@ class StrTest(
         self.assertRaises(ValueError, "{0!}".format, 0)
         self.assertRaises(ValueError, "{0!rs}".format, 0)
         self.assertRaises(ValueError, "{!}".format)
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertRaises(IndexError, "{:}".format)
-            self.assertRaises(IndexError, "{:s}".format)
-            self.assertRaises(IndexError, "{}".format)
+        self.assertRaises(IndexError, "{:}".format)
+        self.assertRaises(IndexError, "{:s}".format)
+        self.assertRaises(IndexError, "{}".format)
 
         # issue 6089
         self.assertRaises(ValueError, "{0[0]x}".format, [None])
@@ -380,10 +367,9 @@ class StrTest(
                           0, 1, 2, 3, 4, 5, 6, 7)
 
         # string format spec errors
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertRaises(ValueError, "{0:-s}".format, '')
-            self.assertRaises(ValueError, format, "", "-")
-            self.assertRaises(ValueError, "{0:=s}".format, '')
+        self.assertRaises(ValueError, "{0:-s}".format, '')
+        self.assertRaises(ValueError, format, "", "-")
+        self.assertRaises(ValueError, "{0:=s}".format, '')
 
     def test_format_auto_numbering(self):
         class C:
@@ -400,27 +386,22 @@ class StrTest(
         self.assertEqual('{[a]}'.format({'a':4, 'b':2}), '4')
         self.assertEqual('a{}b{}c'.format(0, 1), 'a0b1c')
 
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual('a{:{}}b'.format('x', '^10'), 'a    x     b')
-            self.assertEqual('a{:{}x}b'.format(20, '#'), 'a0x14b')
+        self.assertEqual('a{:{}}b'.format('x', '^10'), 'a    x     b')
+        self.assertEqual('a{:{}x}b'.format(20, '#'), 'a0x14b')
 
         # can't mix and match numbering and auto-numbering
         self.assertRaises(ValueError, '{}{1}'.format, 1, 2)
         self.assertRaises(ValueError, '{1}{}'.format, 1, 2)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertRaises(ValueError, '{:{1}}'.format, 1, 2)
-            self.assertRaises(ValueError, '{0:{}}'.format, 1, 2)
+        self.assertRaises(ValueError, '{:{1}}'.format, 1, 2)
+        self.assertRaises(ValueError, '{0:{}}'.format, 1, 2)
 
         # can mix and match auto-numbering and named
         self.assertEqual('{f}{}'.format(4, f='test'), 'test4')
         self.assertEqual('{}{f}'.format(4, f='test'), '4test')
         self.assertEqual('{:{f}}{g}{}'.format(1, 3, g='g', f=2), ' 1g3')
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual('{f:{}}{}{g}'.format(2, 4, f=1, g='g'), ' 14g')
+        self.assertEqual('{f:{}}{}{g}'.format(2, 4, f=1, g='g'), ' 14g')
 
     def test_buffer_is_readonly(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         self.assertRaises(TypeError, sys.stdin.readinto, b"")
 
     def test_encode_and_decode_kwargs(self):

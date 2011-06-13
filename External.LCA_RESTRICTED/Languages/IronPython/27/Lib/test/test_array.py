@@ -14,7 +14,7 @@ class ArraySubclass(array.array):
 
 class ArraySubclassWithKwargs(array.array):
     def __init__(self, typecode, newarg=None):
-        array.array.__init__(typecode)
+        array.array.__init__(self, typecode)
 
 tests = [] # list to accumulate all tests
 typecodes = "cubBhHiIlLfd"
@@ -60,8 +60,6 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(len(a), len(self.example))
 
     def test_buffer_info(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=313665"):
-            return
         a = array.array(self.typecode, self.example)
         self.assertRaises(TypeError, a.buffer_info, 42)
         bi = a.buffer_info()
@@ -72,8 +70,6 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(bi[1], len(a))
 
     def test_byteswap(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=313708"):
-            return
         a = array.array(self.typecode, self.example)
         self.assertRaises(TypeError, a.byteswap, 42)
         if a.itemsize in (1, 2, 4, 8):
@@ -94,8 +90,6 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_deepcopy(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         import copy
         a = array.array(self.typecode, self.example)
         b = copy.deepcopy(a)
@@ -103,8 +97,6 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_pickle(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=313661"):
-            return
         for protocol in range(HIGHEST_PROTOCOL + 1):
             a = array.array(self.typecode, self.example)
             b = loads(dumps(a, protocol))
@@ -120,8 +112,6 @@ class BaseTest(unittest.TestCase):
             self.assertEqual(type(a), type(b))
 
     def test_pickle_for_empty_array(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=313661"):
-            return
         for protocol in range(HIGHEST_PROTOCOL + 1):
             a = array.array(self.typecode)
             b = loads(dumps(a, protocol))
@@ -170,8 +160,6 @@ class BaseTest(unittest.TestCase):
         )
 
     def test_tofromfile(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=313708"):
-            return
         a = array.array(self.typecode, 2*self.example)
         self.assertRaises(TypeError, a.tofile)
         self.assertRaises(TypeError, a.tofile, cStringIO.StringIO())
@@ -198,6 +186,17 @@ class BaseTest(unittest.TestCase):
         finally:
             if not f.closed:
                 f.close()
+            test_support.unlink(test_support.TESTFN)
+
+    def test_fromfile_ioerror(self):
+        # Issue #5395: Check if fromfile raises a proper IOError
+        # instead of EOFError.
+        a = array.array(self.typecode)
+        f = open(test_support.TESTFN, 'wb')
+        try:
+            self.assertRaises(IOError, a.fromfile, f, len(self.example))
+        finally:
+            f.close()
             test_support.unlink(test_support.TESTFN)
 
     def test_filewrite(self):
@@ -230,8 +229,6 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_tofromstring(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=313708"):
-            return
         a = array.array(self.typecode, 2*self.example)
         b = array.array(self.typecode)
         self.assertRaises(TypeError, a.tostring, 42)
@@ -312,12 +309,11 @@ class BaseTest(unittest.TestCase):
             array.array(self.typecode, self.example[::-1]+2*self.example)
         )
         a = array.array(self.typecode, self.example)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28315"):
-            a += a
-            self.assertEqual(
-                a,
-                array.array(self.typecode, self.example + self.example)
-            )
+        a += a
+        self.assertEqual(
+            a,
+            array.array(self.typecode, self.example + self.example)
+        )
 
         b = array.array(self.badtypecode())
         self.assertRaises(TypeError, a.__add__, b)
@@ -619,8 +615,6 @@ class BaseTest(unittest.TestCase):
         self.assertRaises(TypeError, a.__setitem__, slice(0, 1), b)
 
     def test_extended_set_del_slice(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         indices = (0, None, 1, 3, 19, 100, -1, -2, -31, -100)
         for start in indices:
             for stop in indices:
@@ -634,11 +628,11 @@ class BaseTest(unittest.TestCase):
                     data.reverse()
                     L[start:stop:step] = data
                     a[start:stop:step] = array.array(self.typecode, data)
-                    self.assertEquals(a, array.array(self.typecode, L))
+                    self.assertEqual(a, array.array(self.typecode, L))
 
                     del L[start:stop:step]
                     del a[start:stop:step]
-                    self.assertEquals(a, array.array(self.typecode, L))
+                    self.assertEqual(a, array.array(self.typecode, L))
 
     def test_index(self):
         example = 2*self.example
@@ -717,13 +711,12 @@ class BaseTest(unittest.TestCase):
             array.array(self.typecode, self.example+self.example[::-1])
         )
 
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28315"):
-            a = array.array(self.typecode, self.example)
-            a.extend(a)
-            self.assertEqual(
-                a,
-                array.array(self.typecode, self.example+self.example)
-            )
+        a = array.array(self.typecode, self.example)
+        a.extend(a)
+        self.assertEqual(
+            a,
+            array.array(self.typecode, self.example+self.example)
+        )
 
         b = array.array(self.badtypecode())
         self.assertRaises(TypeError, a.extend, b)
@@ -772,8 +765,6 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(b[0], a.tostring()[0])
 
     def test_weakref(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=313703"):
-            return
         s = array.array(self.typecode, self.example)
         p = proxy(s)
         self.assertEqual(p.tostring(), s.tostring())
@@ -791,8 +782,6 @@ class BaseTest(unittest.TestCase):
             self.assertEqual(rc, sys.getrefcount(10))
 
     def test_subclass_with_kwargs(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # SF bug #1486663 -- this used to erroneously raise a TypeError
         ArraySubclassWithKwargs('b', newarg=1)
 
@@ -852,10 +841,7 @@ if test_support.have_unicode:
         minitemsize = 2
 
         def test_unicode(self):
-            if not test_support.due_to_ironpython_incompatibility("IronPython can not tell the difference btw unicode and str"):
-                self.assertRaises(TypeError, array.array, 'b', unicode('foo', 'ascii'))
-            else:
-                self.assertEqual(array.array('b', unicode('foo', 'ascii')), array.array('b', [102, 111, 111]))
+            self.assertRaises(TypeError, array.array, 'b', unicode('foo', 'ascii'))
 
             a = array.array('u', unicode(r'\xa0\xc2\u1234', 'unicode-escape'))
             a.fromunicode(unicode(' ', 'ascii'))

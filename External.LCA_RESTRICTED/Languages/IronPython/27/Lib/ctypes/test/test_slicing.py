@@ -63,13 +63,12 @@ class SlicesTestCase(unittest.TestCase):
         self.assertRaises(ValueError, setitem, a, slice(0, 5), range(32))
 
     def test_char_ptr(self):
-        inp = b"abcdefghijklmnopqrstuvwxyz"
         s = "abcdefghijklmnopqrstuvwxyz"
 
         dll = CDLL(_ctypes_test.__file__)
         dll.my_strdup.restype = POINTER(c_char)
         dll.my_free.restype = None
-        res = dll.my_strdup(inp)        
+        res = dll.my_strdup(s)
         self.assertEqual(res[:len(s)], s)
         self.assertEqual(res[:3], s[:3])
         self.assertEqual(res[:len(s):], s)
@@ -94,7 +93,7 @@ class SlicesTestCase(unittest.TestCase):
         dll.my_free(res)
 
         dll.my_strdup.restype = POINTER(c_byte)
-        res = dll.my_strdup(inp)
+        res = dll.my_strdup(s)
         self.assertEqual(res[:len(s)], range(ord("a"), ord("z")+1))
         self.assertEqual(res[:len(s):], range(ord("a"), ord("z")+1))
         dll.my_free(res)

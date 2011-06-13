@@ -13,7 +13,6 @@ import os
 import platform
 import shutil
 import warnings
-import gc
 import unittest
 import importlib
 import UserDict
@@ -106,7 +105,7 @@ def _save_and_block_module(name, orig_modules):
         orig_modules[name] = sys.modules[name]
     except KeyError:
         saved = False
-    sys.modules[name] = 0
+    sys.modules[name] = None
     return saved
 
 
@@ -341,25 +340,6 @@ except NameError:
 
 is_jython = sys.platform.startswith('java')
 
-is_cli  = sys.platform.startswith('cli')
-is_cli64 = False
-is_net40 = False
-if is_cli:
-    import System
-    is_cli64 = System.IntPtr.Size == 8
-    is_net40 = System.Environment.Version.Major==4
-    
-def due_to_ironpython_bug(*args): return is_cli    
-def due_to_ironpython_incompatibility(*args): return is_cli
-
-def _force_gc_collect():
-    for i in xrange(5):
-        gc.collect()
-
-def force_gc_collect(bug=None):
-    if bug == None and is_cli or due_to_ironpython_bug(bug):
-        _force_gc_collect()
-
 # Filename used for testing
 if os.name == 'java':
     # Jython disallows @ in module names
@@ -380,34 +360,31 @@ else:
         else:
             # 2 latin characters.
             TESTFN_UNICODE = unicode("@test-\xe0\xf2", "latin-1")
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24220"):
-            TESTFN_ENCODING = 'mbcs' 
-        else:
-            TESTFN_ENCODING = sys.getfilesystemencoding()
-        # TESTFN_UNICODE_UNENCODEABLE is a filename that should *not* be
+        TESTFN_ENCODING = sys.getfilesystemencoding()
+        # TESTFN_UNENCODABLE is a filename that should *not* be
         # able to be encoded by *either* the default or filesystem encoding.
         # This test really only makes sense on Windows NT platforms
         # which have special Unicode support in posixmodule.
         if (not hasattr(sys, "getwindowsversion") or
                 sys.getwindowsversion()[3] < 2): #  0=win32s or 1=9x/ME
-            TESTFN_UNICODE_UNENCODEABLE = None
+            TESTFN_UNENCODABLE = None
         else:
             # Japanese characters (I think - from bug 846133)
-            TESTFN_UNICODE_UNENCODEABLE = eval('u"@test-\u5171\u6709\u3055\u308c\u308b"')
+            TESTFN_UNENCODABLE = eval('u"@test-\u5171\u6709\u3055\u308c\u308b"')
             try:
                 # XXX - Note - should be using TESTFN_ENCODING here - but for
                 # Windows, "mbcs" currently always operates as if in
                 # errors=ignore' mode - hence we get '?' characters rather than
                 # the exception.  'Latin1' operates as we expect - ie, fails.
                 # See [ 850997 ] mbcs encoding ignores errors
-                TESTFN_UNICODE_UNENCODEABLE.encode("Latin1")
+                TESTFN_UNENCODABLE.encode("Latin1")
             except UnicodeEncodeError:
                 pass
             else:
                 print \
                 'WARNING: The filename %r CAN be encoded by the filesystem.  ' \
                 'Unicode filename tests may not be effective' \
-                % TESTFN_UNICODE_UNENCODEABLE
+                % TESTFN_UNENCODABLE
 
 
 # Disambiguate TESTFN for parallel testing, while letting it remain a valid
@@ -773,32 +750,65 @@ class TransientResource(object):
                 raise ResourceDenied("an optional resource is not available")
 
 
-_transients = {
-    IOError: (errno.ECONNRESET, errno.ETIMEDOUT),
-    socket.error: (errno.ECONNRESET,),
-    socket.gaierror: [getattr(socket, t)
-                      for t in ('EAI_NODATA', 'EAI_NONAME')
-                      if hasattr(socket, t)],
-    }
 @contextlib.contextmanager
-def transient_internet():
+def transient_internet(resource_name, timeout=30.0, errnos=()):
     """Return a context manager that raises ResourceDenied when various issues
-    with the Internet connection manifest themselves as exceptions.
+    with the Internet connection manifest themselves as exceptions."""
+    default_errnos = [
+        ('ECONNREFUSED', 111),
+        ('ECONNRESET', 104),
+        ('EHOSTUNREACH', 113),
+        ('ENETUNREACH', 101),
+        ('ETIMEDOUT', 110),
+    ]
+    default_gai_errnos = [
+        ('EAI_NONAME', -2),
+        ('EAI_NODATA', -5),
+    ]
 
-    Errors caught:
-        timeout             IOError                  errno = ETIMEDOUT
-        socket reset        socket.error, IOError    errno = ECONNRESET
-        dns no data         socket.gaierror          errno = EAI_NODATA
-        dns no name         socket.gaierror          errno = EAI_NONAME
-    """
+    denied = ResourceDenied("Resource '%s' is not available" % resource_name)
+    captured_errnos = errnos
+    gai_errnos = []
+    if not captured_errnos:
+        captured_errnos = [getattr(errno, name, num)
+                           for (name, num) in default_errnos]
+        gai_errnos = [getattr(socket, name, num)
+                      for (name, num) in default_gai_errnos]
+
+    def filter_error(err):
+        n = getattr(err, 'errno', None)
+        if (isinstance(err, socket.timeout) or
+            (isinstance(err, socket.gaierror) and n in gai_errnos) or
+            n in captured_errnos):
+            if not verbose:
+                sys.stderr.write(denied.args[0] + "\n")
+            raise denied
+
+    old_timeout = socket.getdefaulttimeout()
     try:
+        if timeout is not None:
+            socket.setdefaulttimeout(timeout)
         yield
-    except tuple(_transients) as err:
-        for errtype in _transients:
-            if isinstance(err, errtype) and err.errno in _transients[errtype]:
-                raise ResourceDenied("could not establish network "
-                                     "connection ({})".format(err))
+    except IOError as err:
+        # urllib can wrap original socket errors multiple times (!), we must
+        # unwrap to get at the original error.
+        while True:
+            a = err.args
+            if len(a) >= 1 and isinstance(a[0], IOError):
+                err = a[0]
+            # The error can also be wrapped as args[1]:
+            #    except socket.error as msg:
+            #        raise IOError('socket error', msg).with_traceback(sys.exc_info()[2])
+            elif len(a) >= 2 and isinstance(a[1], IOError):
+                err = a[1]
+            else:
+                break
+        filter_error(err)
         raise
+    # XXX should we catch generic exceptions and look for their
+    # __cause__ or __context__?
+    finally:
+        socket.setdefaulttimeout(old_timeout)
 
 
 @contextlib.contextmanager
@@ -995,7 +1005,7 @@ def _id(obj):
     return obj
 
 def requires_resource(resource):
-    if resource_is_enabled(resource):
+    if is_resource_enabled(resource):
         return _id
     else:
         return unittest.skip("resource {0!r} is not enabled".format(resource))
@@ -1122,9 +1132,15 @@ def run_doctest(module, verbosity=None):
 # at the end of a test run.
 
 def threading_setup():
-	return thread._count(),
+    if thread:
+        return thread._count(),
+    else:
+        return 1,
 
 def threading_cleanup(nb_threads):
+    if not thread:
+        return
+
     _MAX_COUNT = 10
     for count in range(_MAX_COUNT):
         n = thread._count()
@@ -1184,3 +1200,33 @@ def py3k_bytes(b):
             return b"".join(chr(x) for x in b)
         except TypeError:
             return bytes(b)
+
+def args_from_interpreter_flags():
+    """Return a list of command-line arguments reproducing the current
+    settings in sys.flags."""
+    flag_opt_map = {
+        'bytes_warning': 'b',
+        'dont_write_bytecode': 'B',
+        'ignore_environment': 'E',
+        'no_user_site': 's',
+        'no_site': 'S',
+        'optimize': 'O',
+        'py3k_warning': '3',
+        'verbose': 'v',
+    }
+    args = []
+    for flag, opt in flag_opt_map.items():
+        v = getattr(sys.flags, flag)
+        if v > 0:
+            args.append('-' + opt * v)
+    return args
+
+def strip_python_stderr(stderr):
+    """Strip the stderr of a Python process from potential debug output
+    emitted by the interpreter.
+
+    This will typically be run on the result of the communicate() method
+    of a subprocess.Popen object.
+    """
+    stderr = re.sub(br"\[\d+ refs\]\r?\n?$", b"", stderr).strip()
+    return stderr

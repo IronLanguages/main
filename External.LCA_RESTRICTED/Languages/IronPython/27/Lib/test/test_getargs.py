@@ -21,8 +21,6 @@ class GetArgsTest(unittest.TestCase):
     # this test will fail because it does not test the right part of the
     # PyArg_ParseTuple() implementation.
     def test_with_marshal(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314902"):
-            return
         arg = unicode(r'\222', 'unicode-escape')
         self.assertRaises(UnicodeError, marshal.loads, arg)
 

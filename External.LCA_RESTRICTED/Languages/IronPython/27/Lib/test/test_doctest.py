@@ -770,8 +770,7 @@ iff `-v` appears in sys.argv:
 In the remaining examples, the test runner's verbosity will be
 explicitly set, to ensure that the test behavior is consistent.
     """
-    if not test_support.due_to_ironpython_bug(24549):
-        def exceptions(): r"""
+    def exceptions(): r"""
 Tests of `DocTestRunner`'s exception handling.
 
 An expected exception is specified with a traceback message.  The
@@ -981,6 +980,35 @@ unexpected exception:
         ...
         ZeroDivisionError: integer division or modulo by zero
     TestResults(failed=1, attempted=1)
+"""
+    def displayhook(): r"""
+Test that changing sys.displayhook doesn't matter for doctest.
+
+    >>> import sys
+    >>> orig_displayhook = sys.displayhook
+    >>> def my_displayhook(x):
+    ...     print('hi!')
+    >>> sys.displayhook = my_displayhook
+    >>> def f():
+    ...     '''
+    ...     >>> 3
+    ...     3
+    ...     '''
+    >>> test = doctest.DocTestFinder().find(f)[0]
+    >>> r = doctest.DocTestRunner(verbose=False).run(test)
+    >>> post_displayhook = sys.displayhook
+
+    We need to restore sys.displayhook now, so that we'll be able to test
+    results.
+
+    >>> sys.displayhook = orig_displayhook
+
+    Ok, now we can check that everything is ok.
+
+    >>> r
+    TestResults(failed=0, attempted=1)
+    >>> post_displayhook is my_displayhook
+    True
 """
     def optionflags(): r"""
 Tests of `DocTestRunner`'s option flag handling.
@@ -1264,7 +1292,7 @@ marking, as well as interline differences.
         ?     +              ++    ^
     TestResults(failed=1, attempted=1)
 
-The REPORT_ONLY_FIRST_FAILURE supresses result output after the first
+The REPORT_ONLY_FIRST_FAILURE suppresses result output after the first
 failing example:
 
     >>> def f(x):
@@ -1294,7 +1322,7 @@ failing example:
         2
     TestResults(failed=3, attempted=5)
 
-However, output from `report_start` is not supressed:
+However, output from `report_start` is not suppressed:
 
     >>> doctest.DocTestRunner(verbose=True, optionflags=flags).run(test)
     ... # doctest: +ELLIPSIS
@@ -1582,7 +1610,33 @@ source:
     >>> test = doctest.DocTestParser().get_doctest(s, {}, 's', 's.py', 0)
     Traceback (most recent call last):
     ValueError: line 0 of the doctest for s has an option directive on a line with no example: '# doctest: +ELLIPSIS'
-"""
+
+    """
+
+    def test_unicode_output(self): r"""
+
+Check that unicode output works:
+
+    >>> u'\xe9'
+    u'\xe9'
+
+If we return unicode, SpoofOut's buf variable becomes automagically
+converted to unicode. This means all subsequent output becomes converted
+to unicode, and if the output contains non-ascii characters that failed.
+It used to be that this state change carried on between tests, meaning
+tests would fail if unicode has been output previously in the testrun.
+This test tests that this is no longer so:
+
+    >>> print u'abc'
+    abc
+
+And then return a string with non-ascii characters:
+
+    >>> print u'\xe9'.encode('utf-8')
+    é
+
+    """
+
 
 def test_testsource(): r"""
 Unit tests for `testsource()`.
@@ -1624,8 +1678,7 @@ words and expected output are converted to comments:
     <BLANKLINE>
 """
 
-if not test_support.due_to_ironpython_bug(24549):
-    def test_debug(): r"""
+def test_debug(): r"""
 
 Create a docstring that we want to debug:
 
@@ -1656,481 +1709,480 @@ Run the debugger on the docstring, and then restore sys.stdin.
 
 """
 
-if not test_support.due_to_ironpython_bug(24549):
-    def test_pdb_set_trace():
-        """Using pdb.set_trace from a doctest.
-    
-        You can use pdb.set_trace from a doctest.  To do so, you must
-        retrieve the set_trace function from the pdb module at the time
-        you use it.  The doctest module changes sys.stdout so that it can
-        capture program output.  It also temporarily replaces pdb.set_trace
-        with a version that restores stdout.  This is necessary for you to
-        see debugger output.
-    
-          >>> doc = '''
-          ... >>> x = 42
-          ... >>> import pdb; pdb.set_trace()
-          ... '''
-          >>> parser = doctest.DocTestParser()
-          >>> test = parser.get_doctest(doc, {}, "foo", "foo.py", 0)
-          >>> runner = doctest.DocTestRunner(verbose=False)
-    
-        To demonstrate this, we'll create a fake standard input that
-        captures our debugger input:
-    
-          >>> import tempfile
-          >>> real_stdin = sys.stdin
-          >>> sys.stdin = _FakeInput([
-          ...    'print x',  # print data defined by the example
-          ...    'continue', # stop debugging
-          ...    ''])
-    
-          >>> try: runner.run(test)
-          ... finally: sys.stdin = real_stdin
-          --Return--
-          > <doctest foo[1]>(1)<module>()->None
-          -> import pdb; pdb.set_trace()
-          (Pdb) print x
-          42
-          (Pdb) continue
-          TestResults(failed=0, attempted=2)
-    
-          You can also put pdb.set_trace in a function called from a test:
-    
-          >>> def calls_set_trace():
-          ...    y=2
-          ...    import pdb; pdb.set_trace()
-    
-          >>> doc = '''
-          ... >>> x=1
-          ... >>> calls_set_trace()
-          ... '''
-          >>> test = parser.get_doctest(doc, globals(), "foo", "foo.py", 0)
-          >>> real_stdin = sys.stdin
-          >>> sys.stdin = _FakeInput([
-          ...    'print y',  # print data defined in the function
-          ...    'up',       # out of function
-          ...    'print x',  # print data defined by the example
-          ...    'continue', # stop debugging
-          ...    ''])
-    
-          >>> try:
-          ...     runner.run(test)
-          ... finally:
-          ...     sys.stdin = real_stdin
-          --Return--
-          > <doctest test.test_doctest.test_pdb_set_trace[8]>(3)calls_set_trace()->None
-          -> import pdb; pdb.set_trace()
-          (Pdb) print y
-          2
-          (Pdb) up
-          > <doctest foo[1]>(1)<module>()
-          -> calls_set_trace()
-          (Pdb) print x
-          1
-          (Pdb) continue
-          TestResults(failed=0, attempted=2)
-    
-        During interactive debugging, source code is shown, even for
-        doctest examples:
-    
-          >>> doc = '''
-          ... >>> def f(x):
-          ... ...     g(x*2)
-          ... >>> def g(x):
-          ... ...     print x+3
-          ... ...     import pdb; pdb.set_trace()
-          ... >>> f(3)
-          ... '''
-          >>> test = parser.get_doctest(doc, globals(), "foo", "foo.py", 0)
-          >>> real_stdin = sys.stdin
-          >>> sys.stdin = _FakeInput([
-          ...    'list',     # list source from example 2
-          ...    'next',     # return from g()
-          ...    'list',     # list source from example 1
-          ...    'next',     # return from f()
-          ...    'list',     # list source from example 3
-          ...    'continue', # stop debugging
-          ...    ''])
-          >>> try: runner.run(test)
-          ... finally: sys.stdin = real_stdin
-          ... # doctest: +NORMALIZE_WHITESPACE
-          --Return--
-          > <doctest foo[1]>(3)g()->None
-          -> import pdb; pdb.set_trace()
-          (Pdb) list
-            1     def g(x):
-            2         print x+3
-            3  ->     import pdb; pdb.set_trace()
-          [EOF]
-          (Pdb) next
-          --Return--
-          > <doctest foo[0]>(2)f()->None
-          -> g(x*2)
-          (Pdb) list
-            1     def f(x):
-            2  ->     g(x*2)
-          [EOF]
-          (Pdb) next
-          --Return--
-          > <doctest foo[2]>(1)<module>()->None
-          -> f(3)
-          (Pdb) list
-            1  -> f(3)
-          [EOF]
-          (Pdb) continue
-          **********************************************************************
-          File "foo.py", line 7, in foo
-          Failed example:
-              f(3)
-          Expected nothing
-          Got:
-              9
-          TestResults(failed=1, attempted=3)
-          """
+def test_pdb_set_trace():
+    """Using pdb.set_trace from a doctest.
 
-if not test_support.due_to_ironpython_bug(24549):
-    def test_pdb_set_trace_nested():
-        """This illustrates more-demanding use of set_trace with nested functions.
-    
-        >>> class C(object):
-        ...     def calls_set_trace(self):
-        ...         y = 1
-        ...         import pdb; pdb.set_trace()
-        ...         self.f1()
-        ...         y = 2
-        ...     def f1(self):
-        ...         x = 1
-        ...         self.f2()
-        ...         x = 2
-        ...     def f2(self):
-        ...         z = 1
-        ...         z = 2
-    
-        >>> calls_set_trace = C().calls_set_trace
-    
-        >>> doc = '''
-        ... >>> a = 1
-        ... >>> calls_set_trace()
-        ... '''
-        >>> parser = doctest.DocTestParser()
-        >>> runner = doctest.DocTestRunner(verbose=False)
-        >>> test = parser.get_doctest(doc, globals(), "foo", "foo.py", 0)
-        >>> real_stdin = sys.stdin
-        >>> sys.stdin = _FakeInput([
-        ...    'print y',  # print data defined in the function
-        ...    'step', 'step', 'step', 'step', 'step', 'step', 'print z',
-        ...    'up', 'print x',
-        ...    'up', 'print y',
-        ...    'up', 'print foo',
-        ...    'continue', # stop debugging
-        ...    ''])
-    
-        >>> try:
-        ...     runner.run(test)
-        ... finally:
-        ...     sys.stdin = real_stdin
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(5)calls_set_trace()
-        -> self.f1()
-        (Pdb) print y
-        1
-        (Pdb) step
-        --Call--
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(7)f1()
-        -> def f1(self):
-        (Pdb) step
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(8)f1()
-        -> x = 1
-        (Pdb) step
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(9)f1()
-        -> self.f2()
-        (Pdb) step
-        --Call--
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(11)f2()
-        -> def f2(self):
-        (Pdb) step
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(12)f2()
-        -> z = 1
-        (Pdb) step
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(13)f2()
-        -> z = 2
-        (Pdb) print z
-        1
-        (Pdb) up
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(9)f1()
-        -> self.f2()
-        (Pdb) print x
-        1
-        (Pdb) up
-        > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(5)calls_set_trace()
-        -> self.f1()
-        (Pdb) print y
-        1
-        (Pdb) up
-        > <doctest foo[1]>(1)<module>()
-        -> calls_set_trace()
-        (Pdb) print foo
-        *** NameError: name 'foo' is not defined
-        (Pdb) continue
-        TestResults(failed=0, attempted=2)
-    """
+    You can use pdb.set_trace from a doctest.  To do so, you must
+    retrieve the set_trace function from the pdb module at the time
+    you use it.  The doctest module changes sys.stdout so that it can
+    capture program output.  It also temporarily replaces pdb.set_trace
+    with a version that restores stdout.  This is necessary for you to
+    see debugger output.
 
-if not test_support.due_to_ironpython_bug(24549):
-    def test_DocTestSuite():
-        """DocTestSuite creates a unittest test suite from a doctest.
-    
-           We create a Suite by providing a module.  A module can be provided
-           by passing a module object:
-    
-             >>> import unittest
-             >>> import test.sample_doctest
-             >>> suite = doctest.DocTestSuite(test.sample_doctest)
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=9 errors=0 failures=4>
-    
-           We can also supply the module by name:
-    
-             >>> suite = doctest.DocTestSuite('test.sample_doctest')
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=9 errors=0 failures=4>
-    
-           We can use the current module:
-    
-             >>> suite = test.sample_doctest.test_suite()
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=9 errors=0 failures=4>
-    
-           We can supply global variables.  If we pass globs, they will be
-           used instead of the module globals.  Here we'll pass an empty
-           globals, triggering an extra error:
-    
-             >>> suite = doctest.DocTestSuite('test.sample_doctest', globs={})
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=9 errors=0 failures=5>
-    
-           Alternatively, we can provide extra globals.  Here we'll make an
-           error go away by providing an extra global variable:
-    
-             >>> suite = doctest.DocTestSuite('test.sample_doctest',
-             ...                              extraglobs={'y': 1})
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=9 errors=0 failures=3>
-    
-           You can pass option flags.  Here we'll cause an extra error
-           by disabling the blank-line feature:
-    
-             >>> suite = doctest.DocTestSuite('test.sample_doctest',
-             ...                      optionflags=doctest.DONT_ACCEPT_BLANKLINE)
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=9 errors=0 failures=5>
-    
-           You can supply setUp and tearDown functions:
-    
-             >>> def setUp(t):
-             ...     import test.test_doctest
-             ...     test.test_doctest.sillySetup = True
-    
-             >>> def tearDown(t):
-             ...     import test.test_doctest
-             ...     del test.test_doctest.sillySetup
-    
-           Here, we installed a silly variable that the test expects:
-    
-             >>> suite = doctest.DocTestSuite('test.sample_doctest',
-             ...      setUp=setUp, tearDown=tearDown)
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=9 errors=0 failures=3>
-    
-           But the tearDown restores sanity:
-    
-             >>> import test.test_doctest
-             >>> test.test_doctest.sillySetup
-             Traceback (most recent call last):
-             ...
-             AttributeError: 'module' object has no attribute 'sillySetup'
-    
-           The setUp and tearDown funtions are passed test objects. Here
-           we'll use the setUp function to supply the missing variable y:
-    
-             >>> def setUp(test):
-             ...     test.globs['y'] = 1
-    
-             >>> suite = doctest.DocTestSuite('test.sample_doctest', setUp=setUp)
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=9 errors=0 failures=3>
-    
-           Here, we didn't need to use a tearDown function because we
-           modified the test globals, which are a copy of the
-           sample_doctest module dictionary.  The test globals are
-           automatically cleared for us after a test.
-           """
+      >>> doc = '''
+      ... >>> x = 42
+      ... >>> raise Exception('clé')
+      ... Traceback (most recent call last):
+      ... Exception: clé
+      ... >>> import pdb; pdb.set_trace()
+      ... '''
+      >>> parser = doctest.DocTestParser()
+      >>> test = parser.get_doctest(doc, {}, "foo-bär@baz", "foo-bär@baz.py", 0)
+      >>> runner = doctest.DocTestRunner(verbose=False)
 
-if not test_support.due_to_ironpython_bug(24549):
-    def test_DocFileSuite():
-        """We can test tests found in text files using a DocFileSuite.
-    
-           We create a suite by providing the names of one or more text
-           files that include examples:
-    
-             >>> import unittest
-             >>> suite = doctest.DocFileSuite('test_doctest.txt',
-             ...                              'test_doctest2.txt',
-             ...                              'test_doctest4.txt')
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=3 errors=0 failures=3>
-    
-           The test files are looked for in the directory containing the
-           calling module.  A package keyword argument can be provided to
-           specify a different relative location.
-    
-             >>> import unittest
-             >>> suite = doctest.DocFileSuite('test_doctest.txt',
-             ...                              'test_doctest2.txt',
-             ...                              'test_doctest4.txt',
-             ...                              package='test')
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=3 errors=0 failures=3>
-    
-           Support for using a package's __loader__.get_data() is also
-           provided.
-    
-             >>> import unittest, pkgutil, test
-             >>> added_loader = False
-             >>> if not hasattr(test, '__loader__'):
-             ...     test.__loader__ = pkgutil.get_loader(test)
-             ...     added_loader = True
-             >>> try:
-             ...     suite = doctest.DocFileSuite('test_doctest.txt',
-             ...                                  'test_doctest2.txt',
-             ...                                  'test_doctest4.txt',
-             ...                                  package='test')
-             ...     suite.run(unittest.TestResult())
-             ... finally:
-             ...     if added_loader:
-             ...         del test.__loader__
-             <unittest.result.TestResult run=3 errors=0 failures=3>
-    
-           '/' should be used as a path separator.  It will be converted
-           to a native separator at run time:
-    
-             >>> suite = doctest.DocFileSuite('../test/test_doctest.txt')
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=1 errors=0 failures=1>
-    
-           If DocFileSuite is used from an interactive session, then files
-           are resolved relative to the directory of sys.argv[0]:
-    
-             >>> import types, os.path, test.test_doctest
-             >>> save_argv = sys.argv
-             >>> sys.argv = [test.test_doctest.__file__]
-             >>> suite = doctest.DocFileSuite('test_doctest.txt',
-             ...                              package=types.ModuleType('__main__'))
-             >>> sys.argv = save_argv
-    
-           By setting `module_relative=False`, os-specific paths may be
-           used (including absolute paths and paths relative to the
-           working directory):
-    
-             >>> # Get the absolute path of the test package.
-             >>> test_doctest_path = os.path.abspath(test.test_doctest.__file__)
-             >>> test_pkg_path = os.path.split(test_doctest_path)[0]
-    
-             >>> # Use it to find the absolute path of test_doctest.txt.
-             >>> test_file = os.path.join(test_pkg_path, 'test_doctest.txt')
-    
-             >>> suite = doctest.DocFileSuite(test_file, module_relative=False)
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=1 errors=0 failures=1>
-    
-           It is an error to specify `package` when `module_relative=False`:
-    
-             >>> suite = doctest.DocFileSuite(test_file, module_relative=False,
-             ...                              package='test')
-             Traceback (most recent call last):
-             ValueError: Package may only be specified for module-relative paths.
-    
-           You can specify initial global variables:
-    
-             >>> suite = doctest.DocFileSuite('test_doctest.txt',
-             ...                              'test_doctest2.txt',
-             ...                              'test_doctest4.txt',
-             ...                              globs={'favorite_color': 'blue'})
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=3 errors=0 failures=2>
-    
-           In this case, we supplied a missing favorite color. You can
-           provide doctest options:
-    
-             >>> suite = doctest.DocFileSuite('test_doctest.txt',
-             ...                              'test_doctest2.txt',
-             ...                              'test_doctest4.txt',
-             ...                         optionflags=doctest.DONT_ACCEPT_BLANKLINE,
-             ...                              globs={'favorite_color': 'blue'})
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=3 errors=0 failures=3>
-    
-           And, you can provide setUp and tearDown functions:
-    
-             >>> def setUp(t):
-             ...     import test.test_doctest
-             ...     test.test_doctest.sillySetup = True
-    
-             >>> def tearDown(t):
-             ...     import test.test_doctest
-             ...     del test.test_doctest.sillySetup
-    
-           Here, we installed a silly variable that the test expects:
-    
-             >>> suite = doctest.DocFileSuite('test_doctest.txt',
-             ...                              'test_doctest2.txt',
-             ...                              'test_doctest4.txt',
-             ...                              setUp=setUp, tearDown=tearDown)
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=3 errors=0 failures=2>
-    
-           But the tearDown restores sanity:
-    
-             >>> import test.test_doctest
-             >>> test.test_doctest.sillySetup
-             Traceback (most recent call last):
-             ...
-             AttributeError: 'module' object has no attribute 'sillySetup'
-    
-           The setUp and tearDown funtions are passed test objects.
-           Here, we'll use a setUp function to set the favorite color in
-           test_doctest.txt:
-    
-             >>> def setUp(test):
-             ...     test.globs['favorite_color'] = 'blue'
-    
-             >>> suite = doctest.DocFileSuite('test_doctest.txt', setUp=setUp)
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=1 errors=0 failures=0>
-    
-           Here, we didn't need to use a tearDown function because we
-           modified the test globals.  The test globals are
-           automatically cleared for us after a test.
-    
-           Tests in a file run using `DocFileSuite` can also access the
-           `__file__` global, which is set to the name of the file
-           containing the tests:
-    
-             >>> suite = doctest.DocFileSuite('test_doctest3.txt')
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=1 errors=0 failures=0>
-    
-           If the tests contain non-ASCII characters, we have to specify which
-           encoding the file is encoded with. We do so by using the `encoding`
-           parameter:
-    
-             >>> suite = doctest.DocFileSuite('test_doctest.txt',
-             ...                              'test_doctest2.txt',
-             ...                              'test_doctest4.txt',
-             ...                              encoding='utf-8')
-             >>> suite.run(unittest.TestResult())
-             <unittest.result.TestResult run=3 errors=0 failures=2>
-    
-           """
+    To demonstrate this, we'll create a fake standard input that
+    captures our debugger input:
+
+      >>> import tempfile
+      >>> real_stdin = sys.stdin
+      >>> sys.stdin = _FakeInput([
+      ...    'print x',  # print data defined by the example
+      ...    'continue', # stop debugging
+      ...    ''])
+
+      >>> try: runner.run(test)
+      ... finally: sys.stdin = real_stdin
+      --Return--
+      > <doctest foo-bär@baz[2]>(1)<module>()->None
+      -> import pdb; pdb.set_trace()
+      (Pdb) print x
+      42
+      (Pdb) continue
+      TestResults(failed=0, attempted=3)
+
+      You can also put pdb.set_trace in a function called from a test:
+
+      >>> def calls_set_trace():
+      ...    y=2
+      ...    import pdb; pdb.set_trace()
+
+      >>> doc = '''
+      ... >>> x=1
+      ... >>> calls_set_trace()
+      ... '''
+      >>> test = parser.get_doctest(doc, globals(), "foo-bär@baz", "foo-bär@baz.py", 0)
+      >>> real_stdin = sys.stdin
+      >>> sys.stdin = _FakeInput([
+      ...    'print y',  # print data defined in the function
+      ...    'up',       # out of function
+      ...    'print x',  # print data defined by the example
+      ...    'continue', # stop debugging
+      ...    ''])
+
+      >>> try:
+      ...     runner.run(test)
+      ... finally:
+      ...     sys.stdin = real_stdin
+      --Return--
+      > <doctest test.test_doctest.test_pdb_set_trace[8]>(3)calls_set_trace()->None
+      -> import pdb; pdb.set_trace()
+      (Pdb) print y
+      2
+      (Pdb) up
+      > <doctest foo-bär@baz[1]>(1)<module>()
+      -> calls_set_trace()
+      (Pdb) print x
+      1
+      (Pdb) continue
+      TestResults(failed=0, attempted=2)
+
+    During interactive debugging, source code is shown, even for
+    doctest examples:
+
+      >>> doc = '''
+      ... >>> def f(x):
+      ... ...     g(x*2)
+      ... >>> def g(x):
+      ... ...     print x+3
+      ... ...     import pdb; pdb.set_trace()
+      ... >>> f(3)
+      ... '''
+      >>> test = parser.get_doctest(doc, globals(), "foo-bär@baz", "foo-bär@baz.py", 0)
+      >>> real_stdin = sys.stdin
+      >>> sys.stdin = _FakeInput([
+      ...    'list',     # list source from example 2
+      ...    'next',     # return from g()
+      ...    'list',     # list source from example 1
+      ...    'next',     # return from f()
+      ...    'list',     # list source from example 3
+      ...    'continue', # stop debugging
+      ...    ''])
+      >>> try: runner.run(test)
+      ... finally: sys.stdin = real_stdin
+      ... # doctest: +NORMALIZE_WHITESPACE
+      --Return--
+      > <doctest foo-bär@baz[1]>(3)g()->None
+      -> import pdb; pdb.set_trace()
+      (Pdb) list
+        1     def g(x):
+        2         print x+3
+        3  ->     import pdb; pdb.set_trace()
+      [EOF]
+      (Pdb) next
+      --Return--
+      > <doctest foo-bär@baz[0]>(2)f()->None
+      -> g(x*2)
+      (Pdb) list
+        1     def f(x):
+        2  ->     g(x*2)
+      [EOF]
+      (Pdb) next
+      --Return--
+      > <doctest foo-bär@baz[2]>(1)<module>()->None
+      -> f(3)
+      (Pdb) list
+        1  -> f(3)
+      [EOF]
+      (Pdb) continue
+      **********************************************************************
+      File "foo-bär@baz.py", line 7, in foo-bär@baz
+      Failed example:
+          f(3)
+      Expected nothing
+      Got:
+          9
+      TestResults(failed=1, attempted=3)
+      """
+
+def test_pdb_set_trace_nested():
+    """This illustrates more-demanding use of set_trace with nested functions.
+
+    >>> class C(object):
+    ...     def calls_set_trace(self):
+    ...         y = 1
+    ...         import pdb; pdb.set_trace()
+    ...         self.f1()
+    ...         y = 2
+    ...     def f1(self):
+    ...         x = 1
+    ...         self.f2()
+    ...         x = 2
+    ...     def f2(self):
+    ...         z = 1
+    ...         z = 2
+
+    >>> calls_set_trace = C().calls_set_trace
+
+    >>> doc = '''
+    ... >>> a = 1
+    ... >>> calls_set_trace()
+    ... '''
+    >>> parser = doctest.DocTestParser()
+    >>> runner = doctest.DocTestRunner(verbose=False)
+    >>> test = parser.get_doctest(doc, globals(), "foo-bär@baz", "foo-bär@baz.py", 0)
+    >>> real_stdin = sys.stdin
+    >>> sys.stdin = _FakeInput([
+    ...    'print y',  # print data defined in the function
+    ...    'step', 'step', 'step', 'step', 'step', 'step', 'print z',
+    ...    'up', 'print x',
+    ...    'up', 'print y',
+    ...    'up', 'print foo',
+    ...    'continue', # stop debugging
+    ...    ''])
+
+    >>> try:
+    ...     runner.run(test)
+    ... finally:
+    ...     sys.stdin = real_stdin
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(5)calls_set_trace()
+    -> self.f1()
+    (Pdb) print y
+    1
+    (Pdb) step
+    --Call--
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(7)f1()
+    -> def f1(self):
+    (Pdb) step
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(8)f1()
+    -> x = 1
+    (Pdb) step
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(9)f1()
+    -> self.f2()
+    (Pdb) step
+    --Call--
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(11)f2()
+    -> def f2(self):
+    (Pdb) step
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(12)f2()
+    -> z = 1
+    (Pdb) step
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(13)f2()
+    -> z = 2
+    (Pdb) print z
+    1
+    (Pdb) up
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(9)f1()
+    -> self.f2()
+    (Pdb) print x
+    1
+    (Pdb) up
+    > <doctest test.test_doctest.test_pdb_set_trace_nested[0]>(5)calls_set_trace()
+    -> self.f1()
+    (Pdb) print y
+    1
+    (Pdb) up
+    > <doctest foo-bär@baz[1]>(1)<module>()
+    -> calls_set_trace()
+    (Pdb) print foo
+    *** NameError: name 'foo' is not defined
+    (Pdb) continue
+    TestResults(failed=0, attempted=2)
+"""
+
+def test_DocTestSuite():
+    """DocTestSuite creates a unittest test suite from a doctest.
+
+       We create a Suite by providing a module.  A module can be provided
+       by passing a module object:
+
+         >>> import unittest
+         >>> import test.sample_doctest
+         >>> suite = doctest.DocTestSuite(test.sample_doctest)
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=9 errors=0 failures=4>
+
+       We can also supply the module by name:
+
+         >>> suite = doctest.DocTestSuite('test.sample_doctest')
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=9 errors=0 failures=4>
+
+       We can use the current module:
+
+         >>> suite = test.sample_doctest.test_suite()
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=9 errors=0 failures=4>
+
+       We can supply global variables.  If we pass globs, they will be
+       used instead of the module globals.  Here we'll pass an empty
+       globals, triggering an extra error:
+
+         >>> suite = doctest.DocTestSuite('test.sample_doctest', globs={})
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=9 errors=0 failures=5>
+
+       Alternatively, we can provide extra globals.  Here we'll make an
+       error go away by providing an extra global variable:
+
+         >>> suite = doctest.DocTestSuite('test.sample_doctest',
+         ...                              extraglobs={'y': 1})
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=9 errors=0 failures=3>
+
+       You can pass option flags.  Here we'll cause an extra error
+       by disabling the blank-line feature:
+
+         >>> suite = doctest.DocTestSuite('test.sample_doctest',
+         ...                      optionflags=doctest.DONT_ACCEPT_BLANKLINE)
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=9 errors=0 failures=5>
+
+       You can supply setUp and tearDown functions:
+
+         >>> def setUp(t):
+         ...     import test.test_doctest
+         ...     test.test_doctest.sillySetup = True
+
+         >>> def tearDown(t):
+         ...     import test.test_doctest
+         ...     del test.test_doctest.sillySetup
+
+       Here, we installed a silly variable that the test expects:
+
+         >>> suite = doctest.DocTestSuite('test.sample_doctest',
+         ...      setUp=setUp, tearDown=tearDown)
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=9 errors=0 failures=3>
+
+       But the tearDown restores sanity:
+
+         >>> import test.test_doctest
+         >>> test.test_doctest.sillySetup
+         Traceback (most recent call last):
+         ...
+         AttributeError: 'module' object has no attribute 'sillySetup'
+
+       The setUp and tearDown funtions are passed test objects. Here
+       we'll use the setUp function to supply the missing variable y:
+
+         >>> def setUp(test):
+         ...     test.globs['y'] = 1
+
+         >>> suite = doctest.DocTestSuite('test.sample_doctest', setUp=setUp)
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=9 errors=0 failures=3>
+
+       Here, we didn't need to use a tearDown function because we
+       modified the test globals, which are a copy of the
+       sample_doctest module dictionary.  The test globals are
+       automatically cleared for us after a test.
+       """
+
+def test_DocFileSuite():
+    """We can test tests found in text files using a DocFileSuite.
+
+       We create a suite by providing the names of one or more text
+       files that include examples:
+
+         >>> import unittest
+         >>> suite = doctest.DocFileSuite('test_doctest.txt',
+         ...                              'test_doctest2.txt',
+         ...                              'test_doctest4.txt')
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=3 errors=0 failures=3>
+
+       The test files are looked for in the directory containing the
+       calling module.  A package keyword argument can be provided to
+       specify a different relative location.
+
+         >>> import unittest
+         >>> suite = doctest.DocFileSuite('test_doctest.txt',
+         ...                              'test_doctest2.txt',
+         ...                              'test_doctest4.txt',
+         ...                              package='test')
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=3 errors=0 failures=3>
+
+       Support for using a package's __loader__.get_data() is also
+       provided.
+
+         >>> import unittest, pkgutil, test
+         >>> added_loader = False
+         >>> if not hasattr(test, '__loader__'):
+         ...     test.__loader__ = pkgutil.get_loader(test)
+         ...     added_loader = True
+         >>> try:
+         ...     suite = doctest.DocFileSuite('test_doctest.txt',
+         ...                                  'test_doctest2.txt',
+         ...                                  'test_doctest4.txt',
+         ...                                  package='test')
+         ...     suite.run(unittest.TestResult())
+         ... finally:
+         ...     if added_loader:
+         ...         del test.__loader__
+         <unittest.result.TestResult run=3 errors=0 failures=3>
+
+       '/' should be used as a path separator.  It will be converted
+       to a native separator at run time:
+
+         >>> suite = doctest.DocFileSuite('../test/test_doctest.txt')
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=1 errors=0 failures=1>
+
+       If DocFileSuite is used from an interactive session, then files
+       are resolved relative to the directory of sys.argv[0]:
+
+         >>> import types, os.path, test.test_doctest
+         >>> save_argv = sys.argv
+         >>> sys.argv = [test.test_doctest.__file__]
+         >>> suite = doctest.DocFileSuite('test_doctest.txt',
+         ...                              package=types.ModuleType('__main__'))
+         >>> sys.argv = save_argv
+
+       By setting `module_relative=False`, os-specific paths may be
+       used (including absolute paths and paths relative to the
+       working directory):
+
+         >>> # Get the absolute path of the test package.
+         >>> test_doctest_path = os.path.abspath(test.test_doctest.__file__)
+         >>> test_pkg_path = os.path.split(test_doctest_path)[0]
+
+         >>> # Use it to find the absolute path of test_doctest.txt.
+         >>> test_file = os.path.join(test_pkg_path, 'test_doctest.txt')
+
+         >>> suite = doctest.DocFileSuite(test_file, module_relative=False)
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=1 errors=0 failures=1>
+
+       It is an error to specify `package` when `module_relative=False`:
+
+         >>> suite = doctest.DocFileSuite(test_file, module_relative=False,
+         ...                              package='test')
+         Traceback (most recent call last):
+         ValueError: Package may only be specified for module-relative paths.
+
+       You can specify initial global variables:
+
+         >>> suite = doctest.DocFileSuite('test_doctest.txt',
+         ...                              'test_doctest2.txt',
+         ...                              'test_doctest4.txt',
+         ...                              globs={'favorite_color': 'blue'})
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=3 errors=0 failures=2>
+
+       In this case, we supplied a missing favorite color. You can
+       provide doctest options:
+
+         >>> suite = doctest.DocFileSuite('test_doctest.txt',
+         ...                              'test_doctest2.txt',
+         ...                              'test_doctest4.txt',
+         ...                         optionflags=doctest.DONT_ACCEPT_BLANKLINE,
+         ...                              globs={'favorite_color': 'blue'})
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=3 errors=0 failures=3>
+
+       And, you can provide setUp and tearDown functions:
+
+         >>> def setUp(t):
+         ...     import test.test_doctest
+         ...     test.test_doctest.sillySetup = True
+
+         >>> def tearDown(t):
+         ...     import test.test_doctest
+         ...     del test.test_doctest.sillySetup
+
+       Here, we installed a silly variable that the test expects:
+
+         >>> suite = doctest.DocFileSuite('test_doctest.txt',
+         ...                              'test_doctest2.txt',
+         ...                              'test_doctest4.txt',
+         ...                              setUp=setUp, tearDown=tearDown)
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=3 errors=0 failures=2>
+
+       But the tearDown restores sanity:
+
+         >>> import test.test_doctest
+         >>> test.test_doctest.sillySetup
+         Traceback (most recent call last):
+         ...
+         AttributeError: 'module' object has no attribute 'sillySetup'
+
+       The setUp and tearDown funtions are passed test objects.
+       Here, we'll use a setUp function to set the favorite color in
+       test_doctest.txt:
+
+         >>> def setUp(test):
+         ...     test.globs['favorite_color'] = 'blue'
+
+         >>> suite = doctest.DocFileSuite('test_doctest.txt', setUp=setUp)
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=1 errors=0 failures=0>
+
+       Here, we didn't need to use a tearDown function because we
+       modified the test globals.  The test globals are
+       automatically cleared for us after a test.
+
+       Tests in a file run using `DocFileSuite` can also access the
+       `__file__` global, which is set to the name of the file
+       containing the tests:
+
+         >>> suite = doctest.DocFileSuite('test_doctest3.txt')
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=1 errors=0 failures=0>
+
+       If the tests contain non-ASCII characters, we have to specify which
+       encoding the file is encoded with. We do so by using the `encoding`
+       parameter:
+
+         >>> suite = doctest.DocFileSuite('test_doctest.txt',
+         ...                              'test_doctest2.txt',
+         ...                              'test_doctest4.txt',
+         ...                              encoding='utf-8')
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=3 errors=0 failures=2>
+
+       """
 
 def test_trailing_space_in_test():
     """
@@ -2141,84 +2193,83 @@ def test_trailing_space_in_test():
       foo \n
     """
 
-if not test_support.due_to_ironpython_bug(24549):
-    def test_unittest_reportflags():
-        """Default unittest reporting flags can be set to control reporting
-    
-        Here, we'll set the REPORT_ONLY_FIRST_FAILURE option so we see
-        only the first failure of each test.  First, we'll look at the
-        output without the flag.  The file test_doctest.txt file has two
-        tests. They both fail if blank lines are disabled:
-    
-          >>> suite = doctest.DocFileSuite('test_doctest.txt',
-          ...                          optionflags=doctest.DONT_ACCEPT_BLANKLINE)
-          >>> import unittest
-          >>> result = suite.run(unittest.TestResult())
-          >>> print result.failures[0][1] # doctest: +ELLIPSIS
-          Traceback ...
-          Failed example:
-              favorite_color
-          ...
-          Failed example:
-              if 1:
-          ...
-    
-        Note that we see both failures displayed.
-    
-          >>> old = doctest.set_unittest_reportflags(
-          ...    doctest.REPORT_ONLY_FIRST_FAILURE)
-    
-        Now, when we run the test:
-    
-          >>> result = suite.run(unittest.TestResult())
-          >>> print result.failures[0][1] # doctest: +ELLIPSIS
-          Traceback ...
-          Failed example:
-              favorite_color
-          Exception raised:
-              ...
-              NameError: name 'favorite_color' is not defined
-          <BLANKLINE>
-          <BLANKLINE>
-    
-        We get only the first failure.
-    
-        If we give any reporting options when we set up the tests,
-        however:
-    
-          >>> suite = doctest.DocFileSuite('test_doctest.txt',
-          ...     optionflags=doctest.DONT_ACCEPT_BLANKLINE | doctest.REPORT_NDIFF)
-    
-        Then the default eporting options are ignored:
-    
-          >>> result = suite.run(unittest.TestResult())
-          >>> print result.failures[0][1] # doctest: +ELLIPSIS
-          Traceback ...
-          Failed example:
-              favorite_color
-          ...
-          Failed example:
-              if 1:
-                 print 'a'
-                 print
-                 print 'b'
-          Differences (ndiff with -expected +actual):
-                a
-              - <BLANKLINE>
-              +
-                b
-          <BLANKLINE>
-          <BLANKLINE>
-    
-    
-        Test runners can restore the formatting flags after they run:
-    
-          >>> ignored = doctest.set_unittest_reportflags(old)
-    
-        """
 
-if not test_support.due_to_ironpython_bug(24549):
-    def test_testfile(): r"""
+def test_unittest_reportflags():
+    """Default unittest reporting flags can be set to control reporting
+
+    Here, we'll set the REPORT_ONLY_FIRST_FAILURE option so we see
+    only the first failure of each test.  First, we'll look at the
+    output without the flag.  The file test_doctest.txt file has two
+    tests. They both fail if blank lines are disabled:
+
+      >>> suite = doctest.DocFileSuite('test_doctest.txt',
+      ...                          optionflags=doctest.DONT_ACCEPT_BLANKLINE)
+      >>> import unittest
+      >>> result = suite.run(unittest.TestResult())
+      >>> print result.failures[0][1] # doctest: +ELLIPSIS
+      Traceback ...
+      Failed example:
+          favorite_color
+      ...
+      Failed example:
+          if 1:
+      ...
+
+    Note that we see both failures displayed.
+
+      >>> old = doctest.set_unittest_reportflags(
+      ...    doctest.REPORT_ONLY_FIRST_FAILURE)
+
+    Now, when we run the test:
+
+      >>> result = suite.run(unittest.TestResult())
+      >>> print result.failures[0][1] # doctest: +ELLIPSIS
+      Traceback ...
+      Failed example:
+          favorite_color
+      Exception raised:
+          ...
+          NameError: name 'favorite_color' is not defined
+      <BLANKLINE>
+      <BLANKLINE>
+
+    We get only the first failure.
+
+    If we give any reporting options when we set up the tests,
+    however:
+
+      >>> suite = doctest.DocFileSuite('test_doctest.txt',
+      ...     optionflags=doctest.DONT_ACCEPT_BLANKLINE | doctest.REPORT_NDIFF)
+
+    Then the default eporting options are ignored:
+
+      >>> result = suite.run(unittest.TestResult())
+      >>> print result.failures[0][1] # doctest: +ELLIPSIS
+      Traceback ...
+      Failed example:
+          favorite_color
+      ...
+      Failed example:
+          if 1:
+             print 'a'
+             print
+             print 'b'
+      Differences (ndiff with -expected +actual):
+            a
+          - <BLANKLINE>
+          +
+            b
+      <BLANKLINE>
+      <BLANKLINE>
+
+
+    Test runners can restore the formatting flags after they run:
+
+      >>> ignored = doctest.set_unittest_reportflags(old)
+
+    """
+
+def test_testfile(): r"""
 Tests for the `testfile()` function.  This function runs all the
 doctest examples in a given file.  In its simple invokation, it is
 called with the name of a file, which is taken to be relative to the
@@ -2283,7 +2334,7 @@ optional `module_relative` parameter:
     TestResults(failed=0, attempted=2)
     >>> doctest.master = None  # Reset master.
 
-Verbosity can be increased with the optional `verbose` paremter:
+Verbosity can be increased with the optional `verbose` parameter:
 
     >>> doctest.testfile('test_doctest.txt', globs=globs, verbose=True)
     Trying:
@@ -2320,7 +2371,7 @@ parameter:
     TestResults(failed=1, attempted=2)
     >>> doctest.master = None  # Reset master.
 
-The summary report may be supressed with the optional `report`
+The summary report may be suppressed with the optional `report`
 parameter:
 
     >>> doctest.testfile('test_doctest.txt', report=False)

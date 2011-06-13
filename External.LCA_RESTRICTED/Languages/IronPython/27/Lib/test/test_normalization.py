@@ -1,10 +1,8 @@
-from test.test_support import run_unittest, open_urlresource, due_to_ironpython_bug
+from test.test_support import run_unittest, open_urlresource
 import unittest
 
 from httplib import HTTPException
 import sys
-if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-    sys.exit(0)
 import os
 from unicodedata import normalize, unidata_version
 
@@ -54,9 +52,6 @@ class NormalizationTest(unittest.TestCase):
                 continue
             if line.startswith("@Part"):
                 part = line.split()[0]
-                continue
-            if part == "@Part3":
-                # XXX we don't support PRI #29 yet, so skip these tests for now
                 continue
             try:
                 c1,c2,c3,c4,c5 = [unistr(x) for x in line.split(';')[:-1]]

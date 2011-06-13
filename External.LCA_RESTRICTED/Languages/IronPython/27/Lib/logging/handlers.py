@@ -108,8 +108,13 @@ class RotatingFileHandler(BaseRotatingHandler):
 
         If maxBytes is zero, rollover never occurs.
         """
+        # If rotation/rollover is wanted, it doesn't make sense to use another
+        # mode. If for example 'w' were specified, then if there were multiple
+        # runs of the calling application, the logs from previous runs would be
+        # lost if the 'w' is respected, because the log file would be truncated
+        # on each run.
         if maxBytes > 0:
-            mode = 'a' # doesn't make sense otherwise!
+            mode = 'a'
         BaseRotatingHandler.__init__(self, filename, mode, encoding, delay)
         self.maxBytes = maxBytes
         self.backupCount = backupCount
@@ -120,6 +125,7 @@ class RotatingFileHandler(BaseRotatingHandler):
         """
         if self.stream:
             self.stream.close()
+            self.stream = None
         if self.backupCount > 0:
             for i in range(self.backupCount - 1, 0, -1):
                 sfn = "%s.%d" % (self.baseFilename, i)
@@ -319,6 +325,7 @@ class TimedRotatingFileHandler(BaseRotatingHandler):
         """
         if self.stream:
             self.stream.close()
+            self.stream = None
         # get the time that this sequence started at and make it a TimeTuple
         t = self.rolloverAt - self.interval
         if self.utc:
@@ -781,20 +788,19 @@ class SysLogHandler(logging.Handler):
         The record is formatted, and then sent to the syslog server. If
         exception information is present, it is NOT sent to the server.
         """
-        msg = self.format(record)
+        msg = self.format(record) + '\000'
         """
         We need to convert record level to lowercase, maybe this will
         change in the future.
         """
-        msg = self.log_format_string % (
-            self.encodePriority(self.facility,
-                                self.mapPriority(record.levelname)),
-                                msg)
-        # Treat unicode messages as required by RFC 5424
-        if _unicode and type(msg) is unicode:
+        prio = '<%d>' % self.encodePriority(self.facility,
+                                            self.mapPriority(record.levelname))
+        # Message is a string. Convert to bytes as required by RFC 5424
+        if type(msg) is unicode:
             msg = msg.encode('utf-8')
             if codecs:
                 msg = codecs.BOM_UTF8 + msg
+        msg = prio + msg
         try:
             if self.unixsocket:
                 try:
@@ -1018,7 +1024,7 @@ class HTTPHandler(logging.Handler):
         """
         Emit a record.
 
-        Send the record to the Web server as an URL-encoded dictionary
+        Send the record to the Web server as a percent-encoded dictionary
         """
         try:
             import httplib, urllib

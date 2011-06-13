@@ -1,9 +1,4 @@
 # test for xml.dom.minidom
-#no module named pyexpat
-from test import test_support
-if  test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=307405"):
-    import sys
-    sys.exit(0)
 
 import pickle
 from StringIO import StringIO
@@ -753,7 +748,7 @@ class MinidomTest(unittest.TestCase):
     def check_clone_pi(self, deep, testName):
         doc = parseString("<?target data?><doc/>")
         pi = doc.firstChild
-        self.assertEquals(pi.nodeType, Node.PROCESSING_INSTRUCTION_NODE)
+        self.assertEqual(pi.nodeType, Node.PROCESSING_INSTRUCTION_NODE)
         clone = pi.cloneNode(deep)
         self.confirm(clone.target == pi.target
                 and clone.data == pi.data)
@@ -949,6 +944,14 @@ class MinidomTest(unittest.TestCase):
                 , "testNormalize2 -- sibling pointers")
         doc.unlink()
 
+
+    def testBug0777884(self):
+        doc = parseString("<o>text</o>")
+        text = doc.documentElement.childNodes[0]
+        self.assertEqual(text.nodeType, Node.TEXT_NODE)
+        # Should run quietly, doing nothing.
+        text.normalize()
+        doc.unlink()
 
     def testBug1433694(self):
         doc = parseString("<o><i/>t</o>")
@@ -1223,7 +1226,7 @@ class MinidomTest(unittest.TestCase):
         doc = parseString("<doc>a</doc>")
         elem = doc.documentElement
         text = elem.childNodes[0]
-        self.assertEquals(text.nodeType, Node.TEXT_NODE)
+        self.assertEqual(text.nodeType, Node.TEXT_NODE)
 
         self.checkWholeText(text, "a")
         elem.appendChild(doc.createTextNode("b"))
@@ -1479,6 +1482,13 @@ class MinidomTest(unittest.TestCase):
         doc = create_doc_without_doctype()
         doc.appendChild(doc.createComment("foo--bar"))
         self.assertRaises(ValueError, doc.toxml)
+
+    def testEmptyXMLNSValue(self):
+        doc = parseString("<element xmlns=''>\n"
+                          "<foo/>\n</element>")
+        doc2 = parseString(doc.toxml())
+        self.confirm(doc2.namespaceURI == xml.dom.EMPTY_NAMESPACE)
+
 
 def test_main():
     run_unittest(MinidomTest)

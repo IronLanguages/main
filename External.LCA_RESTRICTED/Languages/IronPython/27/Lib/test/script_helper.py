@@ -3,50 +3,89 @@
 
 import sys
 import os
+import re
 import os.path
 import tempfile
-try:
-    import subprocess
-except ImportError:
-    subprocess = None
+import subprocess
 import py_compile
 import contextlib
 import shutil
 import zipfile
 
-if subprocess:
-    # Executing the interpreter in a subprocess
-    def python_exit_code(*args):
-        cmd_line = [sys.executable, '-E']
-        cmd_line.extend(args)
-        with open(os.devnull, 'w') as devnull:
-            return subprocess.call(cmd_line, stdout=devnull,
-                                    stderr=subprocess.STDOUT)
-    
-    def spawn_python(*args, **kwargs):
-        cmd_line = [sys.executable, '-E']
-        cmd_line.extend(args)
-        return subprocess.Popen(cmd_line, stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                **kwargs)
+from test.test_support import strip_python_stderr
 
-    def kill_python(p):
-        p.stdin.close()
-        data = p.stdout.read()
-        p.stdout.close()
-        # try to cleanup the child so we don't appear to leak when running
-        # with regrtest -R.
-        p.wait()
+# Executing the interpreter in a subprocess
+def _assert_python(expected_success, *args, **env_vars):
+    cmd_line = [sys.executable]
+    if not env_vars:
+        cmd_line.append('-E')
+    cmd_line.extend(args)
+    # Need to preserve the original environment, for in-place testing of
+    # shared library builds.
+    env = os.environ.copy()
+    env.update(env_vars)
+    p = subprocess.Popen(cmd_line, stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         env=env)
+    try:
+        out, err = p.communicate()
+    finally:
         subprocess._cleanup()
-        return data
+        p.stdout.close()
+        p.stderr.close()
+    rc = p.returncode
+    err =  strip_python_stderr(err)
+    if (rc and expected_success) or (not rc and not expected_success):
+        raise AssertionError(
+            "Process return code is %d, "
+            "stderr follows:\n%s" % (rc, err.decode('ascii', 'ignore')))
+    return rc, out, err
 
-    def run_python(*args, **kwargs):
-        if __debug__:
-            p = spawn_python(*args, **kwargs)
-        else:
-            p = spawn_python('-O', *args, **kwargs)
-        stdout_data = kill_python(p)
-        return p.wait(), stdout_data
+def assert_python_ok(*args, **env_vars):
+    """
+    Assert that running the interpreter with `args` and optional environment
+    variables `env_vars` is ok and return a (return code, stdout, stderr) tuple.
+    """
+    return _assert_python(True, *args, **env_vars)
+
+def assert_python_failure(*args, **env_vars):
+    """
+    Assert that running the interpreter with `args` and optional environment
+    variables `env_vars` fails and return a (return code, stdout, stderr) tuple.
+    """
+    return _assert_python(False, *args, **env_vars)
+
+def python_exit_code(*args):
+    cmd_line = [sys.executable, '-E']
+    cmd_line.extend(args)
+    with open(os.devnull, 'w') as devnull:
+        return subprocess.call(cmd_line, stdout=devnull,
+                                stderr=subprocess.STDOUT)
+
+def spawn_python(*args, **kwargs):
+    cmd_line = [sys.executable, '-E']
+    cmd_line.extend(args)
+    return subprocess.Popen(cmd_line, stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            **kwargs)
+
+def kill_python(p):
+    p.stdin.close()
+    data = p.stdout.read()
+    p.stdout.close()
+    # try to cleanup the child so we don't appear to leak when running
+    # with regrtest -R.
+    p.wait()
+    subprocess._cleanup()
+    return data
+
+def run_python(*args, **kwargs):
+    if __debug__:
+        p = spawn_python(*args, **kwargs)
+    else:
+        p = spawn_python('-O', *args, **kwargs)
+    stdout_data = kill_python(p)
+    return p.wait(), stdout_data
 
 # Script creation utilities
 @contextlib.contextmanager

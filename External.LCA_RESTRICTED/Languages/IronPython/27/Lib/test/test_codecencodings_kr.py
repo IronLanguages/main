@@ -63,8 +63,7 @@ class Test_JOHAB(test_multibytecodec_support.TestBase, unittest.TestCase):
     )
 
 def test_main():
-    if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=23026"):
-        test_support.run_unittest(__name__)
+    test_support.run_unittest(__name__)
 
 if __name__ == "__main__":
     test_main()

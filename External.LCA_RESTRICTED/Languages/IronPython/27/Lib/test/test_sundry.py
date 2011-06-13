@@ -65,7 +65,6 @@ class TestUntestedModules(unittest.TestCase):
             import pstats
             import py_compile
             import rexec
-            import rlcompleter
             import sched
             import sndhdr
             import statvfs
@@ -86,8 +85,7 @@ class TestUntestedModules(unittest.TestCase):
             # Can't test the "user" module -- if the user has a ~/.pythonrc.py, it
             # can screw up all sorts of things (esp. if it prints!).
             #import user
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=301267"):
-                import webbrowser
+            import webbrowser
             import xml
 
 

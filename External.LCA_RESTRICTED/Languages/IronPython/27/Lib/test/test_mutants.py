@@ -1,4 +1,4 @@
-from test.test_support import verbose, TESTFN, due_to_ironpython_bug
+from test.test_support import verbose, TESTFN
 import random
 import os
 
@@ -140,8 +140,7 @@ def test_one(n):
         if random.random() < 0.5:
             c = cmp(dict1, dict2)
         else:
-            if not due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323668"):
-                c = dict1 == dict2
+            c = dict1 == dict2
     if verbose:
         print
 

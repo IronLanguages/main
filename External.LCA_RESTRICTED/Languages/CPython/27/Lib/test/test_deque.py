@@ -137,6 +137,15 @@ class TestBasic(unittest.TestCase):
         m.d = d
         self.assertRaises(RuntimeError, d.count, 3)
 
+        # test issue11004
+        # block advance failed after rotation aligned elements on right side of block
+        d = deque([None]*16)
+        for i in range(len(d)):
+            d.rotate(-1)
+        d.rotate(1)
+        self.assertEqual(d.count(1), 0)
+        self.assertEqual(d.count(None), 16)
+
     def test_comparisons(self):
         d = deque('xabc'); d.popleft()
         for e in [d, deque('abc'), deque('ab'), deque(), list(d)]:
@@ -234,7 +243,7 @@ class TestBasic(unittest.TestCase):
             d = deque(data[:i])
             r = d.reverse()
             self.assertEqual(list(d), list(reversed(data[:i])))
-            self.assert_(r is None)
+            self.assertIs(r, None)
             d.reverse()
             self.assertEqual(list(d), data[:i])
         self.assertRaises(TypeError, d.reverse, 1)          # Arity is zero

@@ -138,9 +138,8 @@ class TestBasicOps(unittest.TestCase):
                 self.assertEqual(result, list(combinations3(values, r))) # matches second pure python version
 
         # Test implementation detail:  tuple re-use
-        if sys.platform == 'win32':
-            self.assertEqual(len(set(map(id, combinations('abcde', 3)))), 1)
-            self.assertNotEqual(len(set(map(id, list(combinations('abcde', 3))))), 1)
+        self.assertEqual(len(set(map(id, combinations('abcde', 3)))), 1)
+        self.assertNotEqual(len(set(map(id, list(combinations('abcde', 3))))), 1)
 
     def test_combinations_with_replacement(self):
         cwr = combinations_with_replacement
@@ -193,7 +192,7 @@ class TestBasicOps(unittest.TestCase):
 
                 regular_combs = list(combinations(values, r))           # compare to combs without replacement
                 if n == 0 or r <= 1:
-                    self.assertEquals(result, regular_combs)            # cases that should be identical
+                    self.assertEqual(result, regular_combs)            # cases that should be identical
                 else:
                     self.assertTrue(set(result) >= set(regular_combs))     # rest should be supersets of regular combs
 
@@ -209,9 +208,8 @@ class TestBasicOps(unittest.TestCase):
                 self.assertEqual(result, list(cwr2(values, r)))         # matches second pure python version
 
         # Test implementation detail:  tuple re-use
-        if not test_support.due_to_ironpython_incompatibility("tuple reuse"):
-            self.assertEqual(len(set(map(id, cwr('abcde', 3)))), 1)
-            self.assertNotEqual(len(set(map(id, list(cwr('abcde', 3))))), 1)
+        self.assertEqual(len(set(map(id, cwr('abcde', 3)))), 1)
+        self.assertNotEqual(len(set(map(id, list(cwr('abcde', 3))))), 1)
 
     def test_permutations(self):
         self.assertRaises(TypeError, permutations)              # too few arguments
@@ -274,9 +272,8 @@ class TestBasicOps(unittest.TestCase):
                     self.assertEqual(result, list(permutations(values)))       # test default r
 
         # Test implementation detail:  tuple re-use
-        if sys.platform == 'win32':
-            self.assertEqual(len(set(map(id, permutations('abcde', 3)))), 1)
-            self.assertNotEqual(len(set(map(id, list(permutations('abcde', 3))))), 1)
+        self.assertEqual(len(set(map(id, permutations('abcde', 3)))), 1)
+        self.assertNotEqual(len(set(map(id, list(permutations('abcde', 3))))), 1)
 
     def test_combinatorics(self):
         # Test relationships between product(), permutations(),
@@ -291,20 +288,20 @@ class TestBasicOps(unittest.TestCase):
                 comb = list(combinations(s, r))
 
                 # Check size
-                self.assertEquals(len(prod), n**r)
-                self.assertEquals(len(cwr), (fact(n+r-1) // fact(r) // fact(n-1)) if n else (not r))
-                self.assertEquals(len(perm), 0 if r>n else fact(n) // fact(n-r))
-                self.assertEquals(len(comb), 0 if r>n else fact(n) // fact(r) // fact(n-r))
+                self.assertEqual(len(prod), n**r)
+                self.assertEqual(len(cwr), (fact(n+r-1) // fact(r) // fact(n-1)) if n else (not r))
+                self.assertEqual(len(perm), 0 if r>n else fact(n) // fact(n-r))
+                self.assertEqual(len(comb), 0 if r>n else fact(n) // fact(r) // fact(n-r))
 
                 # Check lexicographic order without repeated tuples
-                self.assertEquals(prod, sorted(set(prod)))
-                self.assertEquals(cwr, sorted(set(cwr)))
-                self.assertEquals(perm, sorted(set(perm)))
-                self.assertEquals(comb, sorted(set(comb)))
+                self.assertEqual(prod, sorted(set(prod)))
+                self.assertEqual(cwr, sorted(set(cwr)))
+                self.assertEqual(perm, sorted(set(perm)))
+                self.assertEqual(comb, sorted(set(comb)))
 
                 # Check interrelationships
-                self.assertEquals(cwr, [t for t in prod if sorted(t)==list(t)]) # cwr: prods which are sorted
-                self.assertEquals(perm, [t for t in prod if len(set(t))==r])    # perm: prods with no dups
+                self.assertEqual(cwr, [t for t in prod if sorted(t)==list(t)]) # cwr: prods which are sorted
+                self.assertEqual(perm, [t for t in prod if len(set(t))==r])    # perm: prods with no dups
                 self.assertEqual(comb, [t for t in perm if sorted(t)==list(t)]) # comb: perms that are sorted
                 self.assertEqual(comb, [t for t in cwr if len(set(t))==r])      # comb: cwrs without dups
                 self.assertEqual(comb, filter(set(cwr).__contains__, perm))     # comb: perm that is a cwr
@@ -535,10 +532,9 @@ class TestBasicOps(unittest.TestCase):
         self.assertEqual([pair for pair in izip('abc', 'def')],
                          zip('abc', 'def'))
         ids = map(id, izip('abc', 'def'))
-        if sys.platform == 'win32':
-            self.assertEqual(min(ids), max(ids))
-            ids = map(id, list(izip('abc', 'def')))
-            self.assertEqual(len(dict.fromkeys(ids)), len(ids))
+        self.assertEqual(min(ids), max(ids))
+        ids = map(id, list(izip('abc', 'def')))
+        self.assertEqual(len(dict.fromkeys(ids)), len(ids))
 
     def test_iziplongest(self):
         for args in [
@@ -584,11 +580,10 @@ class TestBasicOps(unittest.TestCase):
                          zip('abc', 'def'))
         self.assertEqual([pair for pair in izip_longest('abc', 'def')],
                          zip('abc', 'def'))
-        if sys.platform == 'win32':
-            ids = map(id, izip_longest('abc', 'def'))
-            self.assertEqual(min(ids), max(ids))
-            ids = map(id, list(izip_longest('abc', 'def')))
-            self.assertEqual(len(dict.fromkeys(ids)), len(ids))
+        ids = map(id, izip_longest('abc', 'def'))
+        self.assertEqual(min(ids), max(ids))
+        ids = map(id, list(izip_longest('abc', 'def')))
+        self.assertEqual(len(dict.fromkeys(ids)), len(ids))
 
     def test_bug_7244(self):
 
@@ -689,9 +684,8 @@ class TestBasicOps(unittest.TestCase):
             self.assertEqual(len(list(product(*args))), expected_len)
 
         # Test implementation detail:  tuple re-use
-        if sys.platform == 'win32':
-            self.assertEqual(len(set(map(id, product('abc', 'def')))), 1)
-            self.assertNotEqual(len(set(map(id, list(product('abc', 'def'))))), 1)
+        self.assertEqual(len(set(map(id, product('abc', 'def')))), 1)
+        self.assertNotEqual(len(set(map(id, list(product('abc', 'def'))))), 1)
 
     def test_repeat(self):
         self.assertEqual(list(repeat(object='a', times=3)), ['a', 'a', 'a'])
@@ -783,6 +777,11 @@ class TestBasicOps(unittest.TestCase):
         self.assertRaises(ValueError, islice, xrange(10), 'a', 1, 1)
         self.assertRaises(ValueError, islice, xrange(10), 1, 'a', 1)
         self.assertEqual(len(list(islice(count(), 1, 10, maxsize))), 1)
+
+        # Issue #10323:  Less islice in a predictable state
+        c = count()
+        self.assertEqual(list(islice(c, 1, 3, 50)), [1])
+        self.assertEqual(next(c), 3)
 
     def test_takewhile(self):
         data = [1, 3, 5, 20, 2, 4, 6, 8]
@@ -892,14 +891,10 @@ class TestBasicOps(unittest.TestCase):
         self.assertTrue(list(t1) == list(t2) == list(t3) == list('abc'))
 
         # test that tee objects are weak referencable
-        def f():
-            a, b = tee(xrange(10))
-            p = proxy(a)
-            self.assertEqual(getattr(p, '__class__'), type(b))
-            del a
-            return p
-        p = f()
-        test_support.force_gc_collect()
+        a, b = tee(xrange(10))
+        p = proxy(a)
+        self.assertEqual(getattr(p, '__class__'), type(b))
+        del a
         self.assertRaises(ReferenceError, getattr, p, '__class__')
 
     def test_StopIteration(self):
@@ -1480,7 +1475,7 @@ Samuele
 ...     return chain(iterable, repeat(None))
 
 >>> def ncycles(iterable, n):
-...     "Returns the seqeuence elements n times"
+...     "Returns the sequence elements n times"
 ...     return chain(*repeat(iterable, n))
 
 >>> def dotproduct(vec1, vec2):
@@ -1595,10 +1590,8 @@ True
 >>> list(islice(padnone('abc'), 0, 6))
 ['a', 'b', 'c', None, None, None]
 
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> list(ncycles('abc', 3))
-#['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c']
+>>> list(ncycles('abc', 3))
+['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c']
 
 >>> dotproduct([1,2,3], [4,5,6])
 32

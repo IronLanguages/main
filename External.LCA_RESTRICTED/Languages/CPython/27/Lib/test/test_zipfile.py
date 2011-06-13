@@ -5,6 +5,7 @@ except ImportError:
     zlib = None
 
 import os
+import io
 import sys
 import time
 import shutil
@@ -114,20 +115,20 @@ class TestsWithSourceFile(unittest.TestCase):
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r", compression) as zipfp:
             zipdata1 = []
-            zipopen1 = zipfp.open(TESTFN)
-            while True:
-                read_data = zipopen1.read(256)
-                if not read_data:
-                    break
-                zipdata1.append(read_data)
+            with zipfp.open(TESTFN) as zipopen1:
+                while True:
+                    read_data = zipopen1.read(256)
+                    if not read_data:
+                        break
+                    zipdata1.append(read_data)
 
             zipdata2 = []
-            zipopen2 = zipfp.open("another.name")
-            while True:
-                read_data = zipopen2.read(256)
-                if not read_data:
-                    break
-                zipdata2.append(read_data)
+            with zipfp.open("another.name") as zipopen2:
+                while True:
+                    read_data = zipopen2.read(256)
+                    if not read_data:
+                        break
+                    zipdata2.append(read_data)
 
             self.assertEqual(''.join(zipdata1), self.data)
             self.assertEqual(''.join(zipdata2), self.data)
@@ -146,7 +147,8 @@ class TestsWithSourceFile(unittest.TestCase):
             infos = zipfp.infolist()
             data = ""
             for info in infos:
-                data += zipfp.open(info).read()
+                with zipfp.open(info) as f:
+                    data += f.read()
             self.assertTrue(data == "foobar" or data == "barfoo")
             data = ""
             for info in infos:
@@ -159,12 +161,12 @@ class TestsWithSourceFile(unittest.TestCase):
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r", compression) as zipfp:
             zipdata1 = []
-            zipopen1 = zipfp.open(TESTFN)
-            while True:
-                read_data = zipopen1.read(randint(1, 1024))
-                if not read_data:
-                    break
-                zipdata1.append(read_data)
+            with zipfp.open(TESTFN) as zipopen1:
+                while True:
+                    read_data = zipopen1.read(randint(1, 1024))
+                    if not read_data:
+                        break
+                    zipdata1.append(read_data)
 
             self.assertEqual(''.join(zipdata1), self.data)
 
@@ -176,16 +178,14 @@ class TestsWithSourceFile(unittest.TestCase):
         f = StringIO()
 
         data = 'a\r\n' * 16 * 1024
-        zipfp = zipfile.ZipFile(f, 'w', zipfile.ZIP_STORED)
-        zipfp.writestr(TESTFN, data)
-        zipfp.close()
+        with zipfile.ZipFile(f, 'w', zipfile.ZIP_STORED) as zipfp:
+            zipfp.writestr(TESTFN, data)
 
         data2 = ''
-        zipfp = zipfile.ZipFile(f, 'r')
-        zipopen = zipfp.open(TESTFN, 'rU')
-        for line in zipopen:
-            data2 += line
-        zipfp.close()
+        with zipfile.ZipFile(f, 'r') as zipfp:
+            with zipfp.open(TESTFN, 'rU') as zipopen:
+                for line in zipopen:
+                    data2 += line
 
         self.assertEqual(data, data2.replace('\n', '\r\n'))
 
@@ -193,42 +193,41 @@ class TestsWithSourceFile(unittest.TestCase):
         self.make_test_archive(f, compression)
 
         # Read the ZIP archive
-        zipfp = zipfile.ZipFile(f, "r")
-        zipopen = zipfp.open(TESTFN)
+        with zipfile.ZipFile(f, "r") as zipfp:
+            with zipfp.open(TESTFN) as zipopen:
+                data = ''
+                while True:
+                    read = zipopen.readline()
+                    if not read:
+                        break
+                    data += read
 
-        data = ''
-        while True:
-            read = zipopen.readline()
-            if not read:
-                break
-            data += read
-
-            read = zipopen.read(100)
-            if not read:
-                break
-            data += read
+                    read = zipopen.read(100)
+                    if not read:
+                        break
+                    data += read
 
         self.assertEqual(data, self.data)
-        zipfp.close()
 
     def zip_readline_test(self, f, compression):
         self.make_test_archive(f, compression)
 
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r") as zipfp:
-            zipopen = zipfp.open(TESTFN)
-            for line in self.line_gen:
-                linedata = zipopen.readline()
-                self.assertEqual(linedata, line + '\n')
+            with zipfp.open(TESTFN) as zipopen:
+                for line in self.line_gen:
+                    linedata = zipopen.readline()
+                    self.assertEqual(linedata, line + '\n')
 
     def zip_readlines_test(self, f, compression):
         self.make_test_archive(f, compression)
 
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r") as zipfp:
-            ziplines = zipfp.open(TESTFN).readlines()
-            for line, zipline in zip(self.line_gen, ziplines):
-                self.assertEqual(zipline, line + '\n')
+            with zipfp.open(TESTFN) as zo:
+                ziplines = zo.readlines()
+                for line, zipline in zip(self.line_gen, ziplines):
+                    self.assertEqual(zipline, line + '\n')
 
     def zip_iterlines_test(self, f, compression):
         self.make_test_archive(f, compression)
@@ -300,9 +299,9 @@ class TestsWithSourceFile(unittest.TestCase):
 
         # Get an open object for strfile
         with zipfile.ZipFile(TESTFN2, "r", zipfile.ZIP_DEFLATED) as zipfp:
-            openobj = zipfp.open("strfile")
-            self.assertEqual(openobj.read(1), '1')
-            self.assertEqual(openobj.read(1), '2')
+            with zipfp.open("strfile") as openobj:
+                self.assertEqual(openobj.read(1), '1')
+                self.assertEqual(openobj.read(1), '2')
 
     def test_absolute_arcnames(self):
         with zipfile.ZipFile(TESTFN2, "w", zipfile.ZIP_STORED) as zipfp:
@@ -653,6 +652,27 @@ class PyZipFileTests(unittest.TestCase):
 
 
 class OtherTests(unittest.TestCase):
+    zips_with_bad_crc = {
+        zipfile.ZIP_STORED: (
+            b'PK\003\004\024\0\0\0\0\0 \213\212;:r'
+            b'\253\377\f\0\0\0\f\0\0\0\005\0\0\000af'
+            b'ilehello,AworldP'
+            b'K\001\002\024\003\024\0\0\0\0\0 \213\212;:'
+            b'r\253\377\f\0\0\0\f\0\0\0\005\0\0\0\0'
+            b'\0\0\0\0\0\0\0\200\001\0\0\0\000afi'
+            b'lePK\005\006\0\0\0\0\001\0\001\0003\000'
+            b'\0\0/\0\0\0\0\0'),
+        zipfile.ZIP_DEFLATED: (
+            b'PK\x03\x04\x14\x00\x00\x00\x08\x00n}\x0c=FA'
+            b'KE\x10\x00\x00\x00n\x00\x00\x00\x05\x00\x00\x00af'
+            b'ile\xcbH\xcd\xc9\xc9W(\xcf/\xcaI\xc9\xa0'
+            b'=\x13\x00PK\x01\x02\x14\x03\x14\x00\x00\x00\x08\x00n'
+            b'}\x0c=FAKE\x10\x00\x00\x00n\x00\x00\x00\x05'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\x01\x00\x00\x00'
+            b'\x00afilePK\x05\x06\x00\x00\x00\x00\x01\x00'
+            b'\x01\x003\x00\x00\x003\x00\x00\x00\x00\x00'),
+    }
+
     def test_unicode_filenames(self):
         with zipfile.ZipFile(TESTFN, "w") as zf:
             zf.writestr(u"foo.txt", "Test for unicode filename")
@@ -753,8 +773,8 @@ class OtherTests(unittest.TestCase):
         self.assertRaises(IOError, zipfile.ZipFile, TESTFN)
 
     def test_empty_file_raises_BadZipFile(self):
-        f = open(TESTFN, 'w')
-        f.close()
+        with open(TESTFN, 'w') as f:
+            pass
         self.assertRaises(zipfile.BadZipfile, zipfile.ZipFile, TESTFN)
 
         with open(TESTFN, 'w') as fp:
@@ -798,11 +818,11 @@ class OtherTests(unittest.TestCase):
         with zipfile.ZipFile(TESTFN, mode="w") as zipf:
             zipf.writestr("foo.txt", "O, for a Muse of Fire!")
             # read the data to make sure the file is there
-            f = zipf.open("foo.txt")
-            for i in xrange(FIXEDTEST_SIZE):
-                self.assertEqual(f.read(0), '')
+            with zipf.open("foo.txt") as f:
+                for i in xrange(FIXEDTEST_SIZE):
+                    self.assertEqual(f.read(0), '')
 
-            self.assertEqual(f.read(), "O, for a Muse of Fire!")
+                self.assertEqual(f.read(), "O, for a Muse of Fire!")
 
     def test_open_non_existent_item(self):
         """Check that attempting to call open() for an item that doesn't
@@ -863,6 +883,94 @@ class OtherTests(unittest.TestCase):
             zipf.writestr("foo.txt", "O, for a Muse of Fire!")
         with zipfile.ZipFile(TESTFN, mode="r") as zipf:
             self.assertEqual(zipf.comment, comment2)
+
+    def check_testzip_with_bad_crc(self, compression):
+        """Tests that files with bad CRCs return their name from testzip."""
+        zipdata = self.zips_with_bad_crc[compression]
+
+        with zipfile.ZipFile(io.BytesIO(zipdata), mode="r") as zipf:
+            # testzip returns the name of the first corrupt file, or None
+            self.assertEqual('afile', zipf.testzip())
+
+    def test_testzip_with_bad_crc_stored(self):
+        self.check_testzip_with_bad_crc(zipfile.ZIP_STORED)
+
+    @skipUnless(zlib, "requires zlib")
+    def test_testzip_with_bad_crc_deflated(self):
+        self.check_testzip_with_bad_crc(zipfile.ZIP_DEFLATED)
+
+    def check_read_with_bad_crc(self, compression):
+        """Tests that files with bad CRCs raise a BadZipfile exception when read."""
+        zipdata = self.zips_with_bad_crc[compression]
+
+        # Using ZipFile.read()
+        with zipfile.ZipFile(io.BytesIO(zipdata), mode="r") as zipf:
+            self.assertRaises(zipfile.BadZipfile, zipf.read, 'afile')
+
+        # Using ZipExtFile.read()
+        with zipfile.ZipFile(io.BytesIO(zipdata), mode="r") as zipf:
+            with zipf.open('afile', 'r') as corrupt_file:
+                self.assertRaises(zipfile.BadZipfile, corrupt_file.read)
+
+        # Same with small reads (in order to exercise the buffering logic)
+        with zipfile.ZipFile(io.BytesIO(zipdata), mode="r") as zipf:
+            with zipf.open('afile', 'r') as corrupt_file:
+                corrupt_file.MIN_READ_SIZE = 2
+                with self.assertRaises(zipfile.BadZipfile):
+                    while corrupt_file.read(2):
+                        pass
+
+    def test_read_with_bad_crc_stored(self):
+        self.check_read_with_bad_crc(zipfile.ZIP_STORED)
+
+    @skipUnless(zlib, "requires zlib")
+    def test_read_with_bad_crc_deflated(self):
+        self.check_read_with_bad_crc(zipfile.ZIP_DEFLATED)
+
+    def check_read_return_size(self, compression):
+        # Issue #9837: ZipExtFile.read() shouldn't return more bytes
+        # than requested.
+        for test_size in (1, 4095, 4096, 4097, 16384):
+            file_size = test_size + 1
+            junk = b''.join(struct.pack('B', randint(0, 255))
+                            for x in range(file_size))
+            with zipfile.ZipFile(io.BytesIO(), "w", compression) as zipf:
+                zipf.writestr('foo', junk)
+                with zipf.open('foo', 'r') as fp:
+                    buf = fp.read(test_size)
+                    self.assertEqual(len(buf), test_size)
+
+    def test_read_return_size_stored(self):
+        self.check_read_return_size(zipfile.ZIP_STORED)
+
+    @skipUnless(zlib, "requires zlib")
+    def test_read_return_size_deflated(self):
+        self.check_read_return_size(zipfile.ZIP_DEFLATED)
+
+    def test_empty_zipfile(self):
+        # Check that creating a file in 'w' or 'a' mode and closing without
+        # adding any files to the archives creates a valid empty ZIP file
+        with zipfile.ZipFile(TESTFN, mode="w") as zipf:
+            pass
+        try:
+            zipf = zipfile.ZipFile(TESTFN, mode="r")
+        except zipfile.BadZipfile:
+            self.fail("Unable to create empty ZIP file in 'w' mode")
+
+        with zipfile.ZipFile(TESTFN, mode="a") as zipf:
+            pass
+        try:
+            zipf = zipfile.ZipFile(TESTFN, mode="r")
+        except:
+            self.fail("Unable to create empty ZIP file in 'a' mode")
+
+    def test_open_empty_file(self):
+        # Issue 1710703: Check that opening a file with less than 22 bytes
+        # raises a BadZipfile exception (rather than the previously unhelpful
+        # IOError)
+        with open(TESTFN, 'w') as f:
+            pass
+        self.assertRaises(zipfile.BadZipfile, zipfile.ZipFile, TESTFN, 'r')
 
     def tearDown(self):
         unlink(TESTFN)
@@ -963,26 +1071,31 @@ class TestsWithRandomBinaryFiles(unittest.TestCase):
         for f in (TESTFN2, TemporaryFile(), StringIO()):
             self.zip_test(f, zipfile.ZIP_STORED)
 
+    @skipUnless(zlib, "requires zlib")
+    def test_deflated(self):
+        for f in (TESTFN2, TemporaryFile(), io.BytesIO()):
+            self.zip_test(f, zipfile.ZIP_DEFLATED)
+
     def zip_open_test(self, f, compression):
         self.make_test_archive(f, compression)
 
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r", compression) as zipfp:
             zipdata1 = []
-            zipopen1 = zipfp.open(TESTFN)
-            while True:
-                read_data = zipopen1.read(256)
-                if not read_data:
-                    break
-                zipdata1.append(read_data)
+            with zipfp.open(TESTFN) as zipopen1:
+                while True:
+                    read_data = zipopen1.read(256)
+                    if not read_data:
+                        break
+                    zipdata1.append(read_data)
 
             zipdata2 = []
-            zipopen2 = zipfp.open("another.name")
-            while True:
-                read_data = zipopen2.read(256)
-                if not read_data:
-                    break
-                zipdata2.append(read_data)
+            with zipfp.open("another.name") as zipopen2:
+                while True:
+                    read_data = zipopen2.read(256)
+                    if not read_data:
+                        break
+                    zipdata2.append(read_data)
 
             testdata1 = ''.join(zipdata1)
             self.assertEqual(len(testdata1), len(self.data))
@@ -996,18 +1109,23 @@ class TestsWithRandomBinaryFiles(unittest.TestCase):
         for f in (TESTFN2, TemporaryFile(), StringIO()):
             self.zip_open_test(f, zipfile.ZIP_STORED)
 
+    @skipUnless(zlib, "requires zlib")
+    def test_open_deflated(self):
+        for f in (TESTFN2, TemporaryFile(), io.BytesIO()):
+            self.zip_open_test(f, zipfile.ZIP_DEFLATED)
+
     def zip_random_open_test(self, f, compression):
         self.make_test_archive(f, compression)
 
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r", compression) as zipfp:
             zipdata1 = []
-            zipopen1 = zipfp.open(TESTFN)
-            while True:
-                read_data = zipopen1.read(randint(1, 1024))
-                if not read_data:
-                    break
-                zipdata1.append(read_data)
+            with zipfp.open(TESTFN) as zipopen1:
+                while True:
+                    read_data = zipopen1.read(randint(1, 1024))
+                    if not read_data:
+                        break
+                    zipdata1.append(read_data)
 
             testdata = ''.join(zipdata1)
             self.assertEqual(len(testdata), len(self.data))
@@ -1016,6 +1134,11 @@ class TestsWithRandomBinaryFiles(unittest.TestCase):
     def test_random_open_stored(self):
         for f in (TESTFN2, TemporaryFile(), StringIO()):
             self.zip_random_open_test(f, zipfile.ZIP_STORED)
+
+    @skipUnless(zlib, "requires zlib")
+    def test_random_open_deflated(self):
+        for f in (TESTFN2, TemporaryFile(), io.BytesIO()):
+            self.zip_random_open_test(f, zipfile.ZIP_DEFLATED)
 
 
 @skipUnless(zlib, "requires zlib")
@@ -1042,12 +1165,11 @@ class TestsWithMultipleOpens(unittest.TestCase):
         # Verify that (when the ZipFile is in control of creating file objects)
         # multiple open() calls can be made without interfering with each other.
         with zipfile.ZipFile(TESTFN2, mode="r") as zipf:
-            zopen1 = zipf.open('ones')
-            zopen2 = zipf.open('twos')
-            data1 = zopen1.read(500)
-            data2 = zopen2.read(500)
-            data1 += zopen1.read(500)
-            data2 += zopen2.read(500)
+            with zipf.open('ones') as zopen1, zipf.open('twos') as zopen2:
+                data1 = zopen1.read(500)
+                data2 = zopen2.read(500)
+                data1 += zopen1.read(500)
+                data2 += zopen2.read(500)
             self.assertEqual(data1, '1'*FIXEDTEST_SIZE)
             self.assertEqual(data2, '2'*FIXEDTEST_SIZE)
 
@@ -1055,12 +1177,11 @@ class TestsWithMultipleOpens(unittest.TestCase):
         # Verify that (when the ZipFile is in control of creating file objects)
         # multiple open() calls can be made without interfering with each other.
         with zipfile.ZipFile(TESTFN2, mode="r") as zipf:
-            zopen1 = zipf.open('ones')
-            data1 = zopen1.read(500)
-            zopen2 = zipf.open('twos')
-            data2 = zopen2.read(500)
-            data1 += zopen1.read(500)
-            data2 += zopen2.read(500)
+            with zipf.open('ones') as zopen1, zipf.open('twos') as zopen2:
+                data1 = zopen1.read(500)
+                data2 = zopen2.read(500)
+                data1 += zopen1.read(500)
+                data2 += zopen2.read(500)
             self.assertEqual(data1, '1'*FIXEDTEST_SIZE)
             self.assertEqual(data2, '2'*FIXEDTEST_SIZE)
 
@@ -1119,7 +1240,8 @@ class UniversalNewlineTests(unittest.TestCase):
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r") as zipfp:
             for sep, fn in self.arcfiles.items():
-                zipdata = zipfp.open(fn, "rU").read()
+                with zipfp.open(fn, "rU") as fp:
+                    zipdata = fp.read()
                 self.assertEqual(self.arcdata[sep], zipdata)
 
     def readline_read_test(self, f, compression):
@@ -1128,18 +1250,18 @@ class UniversalNewlineTests(unittest.TestCase):
         # Read the ZIP archive
         zipfp = zipfile.ZipFile(f, "r")
         for sep, fn in self.arcfiles.items():
-            zipopen = zipfp.open(fn, "rU")
-            data = ''
-            while True:
-                read = zipopen.readline()
-                if not read:
-                    break
-                data += read
+            with zipfp.open(fn, "rU") as zipopen:
+                data = ''
+                while True:
+                    read = zipopen.readline()
+                    if not read:
+                        break
+                    data += read
 
-                read = zipopen.read(5)
-                if not read:
-                    break
-                data += read
+                    read = zipopen.read(5)
+                    if not read:
+                        break
+                    data += read
 
             self.assertEqual(data, self.arcdata['\n'])
 
@@ -1151,10 +1273,10 @@ class UniversalNewlineTests(unittest.TestCase):
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r") as zipfp:
             for sep, fn in self.arcfiles.items():
-                zipopen = zipfp.open(fn, "rU")
-                for line in self.line_gen:
-                    linedata = zipopen.readline()
-                    self.assertEqual(linedata, line + '\n')
+                with zipfp.open(fn, "rU") as zipopen:
+                    for line in self.line_gen:
+                        linedata = zipopen.readline()
+                        self.assertEqual(linedata, line + '\n')
 
     def readlines_test(self, f, compression):
         self.make_test_archive(f, compression)
@@ -1162,7 +1284,8 @@ class UniversalNewlineTests(unittest.TestCase):
         # Read the ZIP archive
         with zipfile.ZipFile(f, "r") as zipfp:
             for sep, fn in self.arcfiles.items():
-                ziplines = zipfp.open(fn, "rU").readlines()
+                with zipfp.open(fn, "rU") as fp:
+                    ziplines = fp.readlines()
                 for line, zipline in zip(self.line_gen, ziplines):
                     self.assertEqual(zipline, line + '\n')
 

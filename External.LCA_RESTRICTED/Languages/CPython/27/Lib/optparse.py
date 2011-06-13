@@ -1008,7 +1008,7 @@ class OptionContainer:
         """add_option(Option)
            add_option(opt_str, ..., kwarg=val, ...)
         """
-        if type(args[0]) is types.StringType:
+        if type(args[0]) in types.StringTypes:
             option = self.option_class(*args, **kwargs)
         elif len(args) == 1 and not kwargs:
             option = args[0]
@@ -1131,6 +1131,11 @@ class OptionParser (OptionContainer):
       prog : string
         the name of the current program (to override
         os.path.basename(sys.argv[0])).
+      description : string
+        A paragraph of text giving a brief overview of your program.
+        optparse reformats this paragraph to fit the current terminal
+        width and prints it when the user requests help (after usage,
+        but before the list of options).
       epilog : string
         paragraph of help text to print after option help
 

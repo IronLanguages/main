@@ -2,7 +2,6 @@ import dis
 import sys
 from cStringIO import StringIO
 import unittest
-from test import test_support
 
 def disassemble(func):
     f = StringIO()
@@ -20,8 +19,6 @@ def dis_single(line):
 class TestTranforms(unittest.TestCase):
 
     def test_unot(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         # UNARY_NOT POP_JUMP_IF_FALSE  -->  POP_JUMP_IF_TRUE
         def unot(x):
             if not x == 2:
@@ -32,8 +29,6 @@ class TestTranforms(unittest.TestCase):
         self.assertIn('POP_JUMP_IF_TRUE', asm)
 
     def test_elim_inversion_of_is_or_in(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         for line, elem in (
             ('not a is b', '(is not)',),
             ('not a in b', '(not in)',),
@@ -44,8 +39,6 @@ class TestTranforms(unittest.TestCase):
             self.assertIn(elem, asm)
 
     def test_none_as_constant(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         # LOAD_GLOBAL None  -->  LOAD_CONST None
         def f(x):
             None
@@ -62,8 +55,6 @@ class TestTranforms(unittest.TestCase):
         self.assertNotIn('LOAD_GLOBAL', disassemble(f))
 
     def test_while_one(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         # Skip over:  LOAD_CONST trueconst  POP_JUMP_IF_FALSE xx
         def f():
             while 1:
@@ -76,8 +67,6 @@ class TestTranforms(unittest.TestCase):
             self.assertIn(elem, asm)
 
     def test_pack_unpack(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         for line, elem in (
             ('a, = a,', 'LOAD_CONST',),
             ('a, b = a, b', 'ROT_TWO',),
@@ -89,8 +78,6 @@ class TestTranforms(unittest.TestCase):
             self.assertNotIn('UNPACK_TUPLE', asm)
 
     def test_folding_of_tuples_of_constants(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         for line, elem in (
             ('a = 1,2,3', '((1, 2, 3))'),
             ('("a","b","c")', "(('a', 'b', 'c'))"),
@@ -120,8 +107,6 @@ class TestTranforms(unittest.TestCase):
             ],)
 
     def test_folding_of_binops_on_constants(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         for line, elem in (
             ('a = 2+3+4', '(9)'),                   # chained fold
             ('"@"*4', "('@@@@')"),                  # check string ops
@@ -152,9 +137,25 @@ class TestTranforms(unittest.TestCase):
         asm = dis_single('a="x"*1000')
         self.assertIn('(1000)', asm)
 
+    def test_binary_subscr_on_unicode(self):
+        # valid code get optimized
+        asm = dis_single('u"foo"[0]')
+        self.assertIn("(u'f')", asm)
+        self.assertNotIn('BINARY_SUBSCR', asm)
+        asm = dis_single('u"\u0061\uffff"[1]')
+        self.assertIn("(u'\\uffff')", asm)
+        self.assertNotIn('BINARY_SUBSCR', asm)
+
+        # invalid code doesn't get optimized
+        # out of range
+        asm = dis_single('u"fuu"[10]')
+        self.assertIn('BINARY_SUBSCR', asm)
+        # non-BMP char (see #5057)
+        asm = dis_single('u"\U00012345"[0]')
+        self.assertIn('BINARY_SUBSCR', asm)
+
+
     def test_folding_of_unaryops_on_constants(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         for line, elem in (
             ('`1`', "('1')"),                       # unary convert
             ('-0.5', '(-0.5)'),                     # unary negative
@@ -174,8 +175,6 @@ class TestTranforms(unittest.TestCase):
             self.assertIn('UNARY_', asm)
 
     def test_elim_extra_return(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         # RETURN LOAD_CONST None RETURN  -->  RETURN
         def f(x):
             return x
@@ -185,8 +184,6 @@ class TestTranforms(unittest.TestCase):
         self.assertEqual(asm.split().count('RETURN_VALUE'), 1)
 
     def test_elim_jump_to_return(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         # JUMP_FORWARD to RETURN -->  RETURN
         def f(cond, true_value, false_value):
             return true_value if cond else false_value
@@ -196,8 +193,6 @@ class TestTranforms(unittest.TestCase):
         self.assertEqual(asm.split().count('RETURN_VALUE'), 2)
 
     def test_elim_jump_after_return1(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         # Eliminate dead code: jumps immediately after returns can't be reached
         def f(cond1, cond2):
             if cond1: return 1
@@ -214,8 +209,6 @@ class TestTranforms(unittest.TestCase):
         self.assertEqual(asm.split().count('RETURN_VALUE'), 6)
 
     def test_elim_jump_after_return2(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
-            return
         # Eliminate dead code: jumps immediately after returns can't be reached
         def f(cond1, cond2):
             while 1:

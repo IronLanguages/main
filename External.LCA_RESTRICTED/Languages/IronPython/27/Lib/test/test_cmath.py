@@ -1,4 +1,4 @@
-from test.test_support import run_unittest, due_to_ironpython_bug
+from test.test_support import run_unittest
 from test.test_math import parse_testfile, test_file
 import unittest
 import cmath, math
@@ -6,13 +6,6 @@ from cmath import phase, polar, rect, pi
 
 INF = float('inf')
 NAN = float('nan')
-
-if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-    global_abs_err = 2e-15
-    global_rel_err = 2e-15
-else:
-    global_abs_err = 5e-323
-    global_rel_err = 2e-15
 
 complex_zeros = [complex(x, y) for x in [0.0, -0.0] for y in [0.0, -0.0]]
 complex_infinities = [complex(x, y) for x, y in [
@@ -68,8 +61,8 @@ class CMathTests(unittest.TestCase):
     def tearDown(self):
         self.test_values.close()
 
-    def rAssertAlmostEqual(self, a, b, rel_err = global_rel_err,
-                           abs_err = global_abs_err, msg=None):
+    def rAssertAlmostEqual(self, a, b, rel_err = 2e-15, abs_err = 5e-323,
+                           msg=None):
         """Fail if the two floating-point numbers are not almost equal.
 
         Determine whether floating-point values a and b are equal to within
@@ -83,20 +76,13 @@ class CMathTests(unittest.TestCase):
         if math.isnan(a):
             if math.isnan(b):
                 return
-            if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-                print(msg or '{!r} should be nan'.format(b))
-            else:
-                self.fail(msg or '{!r} should be nan'.format(b))
+            self.fail(msg or '{!r} should be nan'.format(b))
 
         if math.isinf(a):
             if a == b:
                 return
-            if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-                print(msg or 'finite result where infinity expected: '
-                     'expected {!r}, got {!r}'.format(a, b))
-            else:
-                self.fail(msg or 'finite result where infinity expected: '
-                          'expected {!r}, got {!r}'.format(a, b))
+            self.fail(msg or 'finite result where infinity expected: '
+                      'expected {!r}, got {!r}'.format(a, b))
 
         # if both a and b are zero, check whether they have the same sign
         # (in theory there are examples where it would be legitimate for a
@@ -104,9 +90,8 @@ class CMathTests(unittest.TestCase):
         # occur).
         if not a and not b:
             if math.copysign(1., a) != math.copysign(1., b):
-                if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-                    self.fail(msg or 'zero has wrong sign: expected {!r}, '
-                              'got {!r}'.format(a, b))
+                self.fail(msg or 'zero has wrong sign: expected {!r}, '
+                          'got {!r}'.format(a, b))
 
         # if a-b overflows, or b is infinite, return False.  Again, in
         # theory there are examples where a is within a few ulps of the
@@ -123,12 +108,8 @@ class CMathTests(unittest.TestCase):
             # machine.
             if absolute_error <= max(abs_err, rel_err * abs(a)):
                 return
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            print(msg or
-                 '{!r} and {!r} are not sufficiently close'.format(a, b))
-        else:
-            self.fail(msg or
-                      '{!r} and {!r} are not sufficiently close'.format(a, b))
+        self.fail(msg or
+                  '{!r} and {!r} are not sufficiently close'.format(a, b))
 
     def test_constants(self):
         e_expected = 2.71828182845904523536
@@ -289,9 +270,8 @@ class CMathTests(unittest.TestCase):
             complex_fn = getattr(cmath, fn)
             for v in values:
                 z = complex_fn(v)
-                if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-                    self.rAssertAlmostEqual(float_fn(v), z.real)
-                    self.assertEqual(0., z.imag)
+                self.rAssertAlmostEqual(float_fn(v), z.real)
+                self.assertEqual(0., z.imag)
 
         # test two-argument version of log with various bases
         for base in [0.5, 2., 10.]:
@@ -353,9 +333,9 @@ class CMathTests(unittest.TestCase):
             # for the real part of the log function, we allow an
             # absolute error of up to 2e-15.
             if fn in ('log', 'log10'):
-                real_abs_err = global_rel_err
+                real_abs_err = 2e-15
             else:
-                real_abs_err = global_abs_err
+                real_abs_err = 5e-323
 
             error_message = (
                 '{}: {}(complex({!r}, {!r}))\n'

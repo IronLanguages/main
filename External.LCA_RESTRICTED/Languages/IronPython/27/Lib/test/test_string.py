@@ -110,8 +110,6 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual(string.capwords('\taBc\tDeF\t', '\t'), '\tAbc\tDef\t')
 
     def test_formatter(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         fmt = string.Formatter()
         self.assertEqual(fmt.format("foo"), "foo")
 
@@ -178,7 +176,7 @@ class ModuleTest(unittest.TestCase):
         # test all parameters used
         class CheckAllUsedFormatter(string.Formatter):
             def check_unused_args(self, used_args, args, kwargs):
-                # Track which arguments actuallly got used
+                # Track which arguments actually got used
                 unused_args = set(kwargs.keys())
                 unused_args.update(range(0, len(args)))
 
@@ -204,14 +202,9 @@ class ModuleTest(unittest.TestCase):
 class BytesAliasTest(unittest.TestCase):
 
     def test_builtin(self):
-        # str != bytes in IronPython
-        if test_support.due_to_ironpython_incompatibility("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         self.assertTrue(str is bytes)
 
     def test_syntax(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         self.assertEqual(b"spam", "spam")
         self.assertEqual(br"egg\foo", "egg\\foo")
         self.assertTrue(type(b""), str)

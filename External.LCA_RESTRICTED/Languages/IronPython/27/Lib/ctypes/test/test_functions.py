@@ -116,7 +116,7 @@ class FunctionTestCase(unittest.TestCase):
         self.assertEqual(result, 21)
         self.assertEqual(type(result), int)
 
-        # You cannot assing character format codes as restype any longer
+        # You cannot assign character format codes as restype any longer
         self.assertRaises(TypeError, setattr, f, "restype", "i")
 
     def test_floatresult(self):
@@ -176,7 +176,7 @@ class FunctionTestCase(unittest.TestCase):
         f = dll._testfunc_p_p
         f.argtypes = None
         f.restype = c_char_p
-        result = f(b"123")
+        result = f("123")
         self.assertEqual(result, "123")
 
         result = f(None)

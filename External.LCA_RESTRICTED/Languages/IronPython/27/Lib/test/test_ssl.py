@@ -14,6 +14,8 @@ import pprint
 import urllib, urlparse
 import traceback
 import weakref
+import functools
+import platform
 
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
@@ -53,6 +55,32 @@ class BasicTests(unittest.TestCase):
                 pass
             else:
                 raise
+
+# Issue #9415: Ubuntu hijacks their OpenSSL and forcefully disables SSLv2
+def skip_if_broken_ubuntu_ssl(func):
+    # We need to access the lower-level wrapper in order to create an
+    # implicit SSL context without trying to connect or listen.
+    try:
+        import _ssl
+    except ImportError:
+        # The returned function won't get executed, just ignore the error
+        pass
+    @functools.wraps(func)
+    def f(*args, **kwargs):
+        try:
+            s = socket.socket(socket.AF_INET)
+            _ssl.sslwrap(s._sock, 0, None, None,
+                         ssl.CERT_NONE, ssl.PROTOCOL_SSLv2, None, None)
+        except ssl.SSLError as e:
+            if (ssl.OPENSSL_VERSION_INFO == (0, 9, 8, 15, 15) and
+                platform.linux_distribution() == ('debian', 'squeeze/sid', '')
+                and 'Invalid SSL protocol variant specified' in str(e)):
+                raise unittest.SkipTest("Patched Ubuntu OpenSSL breaks behaviour")
+        return func(*args, **kwargs)
+    return f
+
+
+class BasicSocketTests(unittest.TestCase):
 
     def test_constants(self):
         ssl.PROTOCOL_SSLv2
@@ -128,18 +156,19 @@ class BasicTests(unittest.TestCase):
         if not test_support.is_resource_enabled('network'):
             return
         remote = ("svn.python.org", 443)
-        s = ssl.wrap_socket(socket.socket(socket.AF_INET),
-                            cert_reqs=ssl.CERT_NONE, ciphers="ALL")
-        s.connect(remote)
-        s = ssl.wrap_socket(socket.socket(socket.AF_INET),
-                            cert_reqs=ssl.CERT_NONE, ciphers="DEFAULT")
-        s.connect(remote)
-        # Error checking occurs when connecting, because the SSL context
-        # isn't created before.
-        s = ssl.wrap_socket(socket.socket(socket.AF_INET),
-                            cert_reqs=ssl.CERT_NONE, ciphers="^$:,;?*'dorothyx")
-        with self.assertRaisesRegexp(ssl.SSLError, "No cipher can be selected"):
+        with test_support.transient_internet(remote[0]):
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_NONE, ciphers="ALL")
             s.connect(remote)
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_NONE, ciphers="DEFAULT")
+            s.connect(remote)
+            # Error checking occurs when connecting, because the SSL context
+            # isn't created before.
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_NONE, ciphers="^$:,;?*'dorothyx")
+            with self.assertRaisesRegexp(ssl.SSLError, "No cipher can be selected"):
+                s.connect(remote)
 
     @test_support.cpython_only
     def test_refcycle(self):
@@ -151,96 +180,154 @@ class BasicTests(unittest.TestCase):
         del ss
         self.assertEqual(wr(), None)
 
+    def test_wrapped_unconnected(self):
+        # The _delegate_methods in socket.py are correctly delegated to by an
+        # unconnected SSLSocket, so they will raise a socket.error rather than
+        # something unexpected like TypeError.
+        s = socket.socket(socket.AF_INET)
+        ss = ssl.wrap_socket(s)
+        self.assertRaises(socket.error, ss.recv, 1)
+        self.assertRaises(socket.error, ss.recv_into, bytearray(b'x'))
+        self.assertRaises(socket.error, ss.recvfrom, 1)
+        self.assertRaises(socket.error, ss.recvfrom_into, bytearray(b'x'), 1)
+        self.assertRaises(socket.error, ss.send, b'x')
+        self.assertRaises(socket.error, ss.sendto, b'x', ('0.0.0.0', 0))
+
 
 class NetworkedTests(unittest.TestCase):
 
     def test_connect(self):
-        s = ssl.wrap_socket(socket.socket(socket.AF_INET),
-                            cert_reqs=ssl.CERT_NONE)
-        s.connect(("svn.python.org", 443))
-        c = s.getpeercert()
-        if c:
-            self.fail("Peer cert %s shouldn't be here!")
-        s.close()
-
-        # this should fail because we have no verification certs
-        s = ssl.wrap_socket(socket.socket(socket.AF_INET),
-                            cert_reqs=ssl.CERT_REQUIRED)
-        try:
+        with test_support.transient_internet("svn.python.org"):
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_NONE)
             s.connect(("svn.python.org", 443))
-        except ssl.SSLError:
-            pass
-        finally:
+            c = s.getpeercert()
+            if c:
+                self.fail("Peer cert %s shouldn't be here!")
             s.close()
 
-        # this should succeed because we specify the root cert
-        s = ssl.wrap_socket(socket.socket(socket.AF_INET),
-                            cert_reqs=ssl.CERT_REQUIRED,
-                            ca_certs=SVN_PYTHON_ORG_ROOT_CERT)
-        try:
-            s.connect(("svn.python.org", 443))
-        except ssl.SSLError, x:  # IronPython modified from original test, fails in both CPython and IronPython
-            pass
-        finally:
-            s.close()
+            # this should fail because we have no verification certs
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_REQUIRED)
+            try:
+                s.connect(("svn.python.org", 443))
+            except ssl.SSLError:
+                pass
+            finally:
+                s.close()
+
+            # this should succeed because we specify the root cert
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_REQUIRED,
+                                ca_certs=SVN_PYTHON_ORG_ROOT_CERT)
+            try:
+                s.connect(("svn.python.org", 443))
+            finally:
+                s.close()
+
+    def test_connect_ex(self):
+        # Issue #11326: check connect_ex() implementation
+        with test_support.transient_internet("svn.python.org"):
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_REQUIRED,
+                                ca_certs=SVN_PYTHON_ORG_ROOT_CERT)
+            try:
+                self.assertEqual(0, s.connect_ex(("svn.python.org", 443)))
+                self.assertTrue(s.getpeercert())
+            finally:
+                s.close()
+
+    def test_non_blocking_connect_ex(self):
+        # Issue #11326: non-blocking connect_ex() should allow handshake
+        # to proceed after the socket gets ready.
+        with test_support.transient_internet("svn.python.org"):
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_REQUIRED,
+                                ca_certs=SVN_PYTHON_ORG_ROOT_CERT,
+                                do_handshake_on_connect=False)
+            try:
+                s.setblocking(False)
+                rc = s.connect_ex(('svn.python.org', 443))
+                # EWOULDBLOCK under Windows, EINPROGRESS elsewhere
+                self.assertIn(rc, (0, errno.EINPROGRESS, errno.EWOULDBLOCK))
+                # Wait for connect to finish
+                select.select([], [s], [], 5.0)
+                # Non-blocking handshake
+                while True:
+                    try:
+                        s.do_handshake()
+                        break
+                    except ssl.SSLError as err:
+                        if err.args[0] == ssl.SSL_ERROR_WANT_READ:
+                            select.select([s], [], [], 5.0)
+                        elif err.args[0] == ssl.SSL_ERROR_WANT_WRITE:
+                            select.select([], [s], [], 5.0)
+                        else:
+                            raise
+                # SSL established
+                self.assertTrue(s.getpeercert())
+            finally:
+                s.close()
 
     @unittest.skipIf(os.name == "nt", "Can't use a socket as a file under Windows")
     def test_makefile_close(self):
         # Issue #5238: creating a file-like object with makefile() shouldn't
         # delay closing the underlying "real socket" (here tested with its
         # file descriptor, hence skipping the test under Windows).
-        ss = ssl.wrap_socket(socket.socket(socket.AF_INET))
-        ss.connect(("svn.python.org", 443))
-        fd = ss.fileno()
-        f = ss.makefile()
-        f.close()
-        # The fd is still open
-        os.read(fd, 0)
-        # Closing the SSL socket should close the fd too
-        ss.close()
-        gc.collect()
-        with self.assertRaises(OSError) as e:
+        with test_support.transient_internet("svn.python.org"):
+            ss = ssl.wrap_socket(socket.socket(socket.AF_INET))
+            ss.connect(("svn.python.org", 443))
+            fd = ss.fileno()
+            f = ss.makefile()
+            f.close()
+            # The fd is still open
             os.read(fd, 0)
-        self.assertEqual(e.exception.errno, errno.EBADF)
+            # Closing the SSL socket should close the fd too
+            ss.close()
+            gc.collect()
+            with self.assertRaises(OSError) as e:
+                os.read(fd, 0)
+            self.assertEqual(e.exception.errno, errno.EBADF)
 
     def test_non_blocking_handshake(self):
-        s = socket.socket(socket.AF_INET)
-        s.connect(("svn.python.org", 443))
-        s.setblocking(False)
-        s = ssl.wrap_socket(s,
-                            cert_reqs=ssl.CERT_NONE,
-                            do_handshake_on_connect=False)
-        count = 0
-        while True:
-            try:
-                count += 1
-                s.do_handshake()
-                break
-            except ssl.SSLError, err:
-                if err.args[0] == ssl.SSL_ERROR_WANT_READ:
-                    select.select([s], [], [])
-                elif err.args[0] == ssl.SSL_ERROR_WANT_WRITE:
-                    select.select([], [s], [])
-                else:
-                    raise
-        s.close()
-        if test_support.verbose:
-            sys.stdout.write("\nNeeded %d calls to do_handshake() to establish session.\n" % count)
+        with test_support.transient_internet("svn.python.org"):
+            s = socket.socket(socket.AF_INET)
+            s.connect(("svn.python.org", 443))
+            s.setblocking(False)
+            s = ssl.wrap_socket(s,
+                                cert_reqs=ssl.CERT_NONE,
+                                do_handshake_on_connect=False)
+            count = 0
+            while True:
+                try:
+                    count += 1
+                    s.do_handshake()
+                    break
+                except ssl.SSLError, err:
+                    if err.args[0] == ssl.SSL_ERROR_WANT_READ:
+                        select.select([s], [], [])
+                    elif err.args[0] == ssl.SSL_ERROR_WANT_WRITE:
+                        select.select([], [s], [])
+                    else:
+                        raise
+            s.close()
+            if test_support.verbose:
+                sys.stdout.write("\nNeeded %d calls to do_handshake() to establish session.\n" % count)
 
     def test_get_server_certificate(self):
-        pem = ssl.get_server_certificate(("svn.python.org", 443))
-        if not pem:
-            self.fail("No server certificate on svn.python.org:443!")
+        with test_support.transient_internet("svn.python.org"):
+            pem = ssl.get_server_certificate(("svn.python.org", 443))
+            if not pem:
+                self.fail("No server certificate on svn.python.org:443!")
 
-        try:
-            pem = ssl.get_server_certificate(("svn.python.org", 443), ca_certs=CERTFILE)
-        except ssl.SSLError:
-            #should fail
-            pass
-        else:
-            self.fail("Got server certificate %s for svn.python.org!" % pem)
+            try:
+                pem = ssl.get_server_certificate(("svn.python.org", 443), ca_certs=CERTFILE)
+            except ssl.SSLError:
+                #should fail
+                pass
+            else:
+                self.fail("Got server certificate %s for svn.python.org!" % pem)
 
-        if False:  # fails on both CPython and IronPython on windows
             pem = ssl.get_server_certificate(("svn.python.org", 443), ca_certs=SVN_PYTHON_ORG_ROOT_CERT)
             if not pem:
                 self.fail("No server certificate on svn.python.org:443!")
@@ -254,12 +341,12 @@ class NetworkedTests(unittest.TestCase):
         if ssl.OPENSSL_VERSION_INFO < (0, 9, 8, 0, 15):
             self.skipTest("SHA256 not available on %r" % ssl.OPENSSL_VERSION)
         # NOTE: https://sha256.tbs-internet.com is another possible test host
-        remote = ("sha2.hboeck.de", 443)
+        remote = ("sha256.tbs-internet.com", 443)
         sha256_cert = os.path.join(os.path.dirname(__file__), "sha256.pem")
-        s = ssl.wrap_socket(socket.socket(socket.AF_INET),
-                            cert_reqs=ssl.CERT_REQUIRED,
-                            ca_certs=sha256_cert,)
-        with test_support.transient_internet():
+        with test_support.transient_internet("sha256.tbs-internet.com"):
+            s = ssl.wrap_socket(socket.socket(socket.AF_INET),
+                                cert_reqs=ssl.CERT_REQUIRED,
+                                ca_certs=sha256_cert,)
             try:
                 s.connect(remote)
                 if test_support.verbose:
@@ -305,8 +392,7 @@ else:
                         sys.stdout.write(" cert binary is " + str(len(cert_binary)) + " bytes\n")
                 cipher = self.sslconn.cipher()
                 if test_support.verbose and self.server.chatty:
-                    if not test_support.due_to_ironpython_incompatibility("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21411"):
-                        sys.stdout.write(" server: connection cipher is now " + str(cipher) + "\n")
+                    sys.stdout.write(" server: connection cipher is now " + str(cipher) + "\n")
 
             def wrap_conn(self):
                 try:
@@ -775,8 +861,6 @@ else:
             """A brutal shutdown of an SSL server should raise an IOError
             in the client when attempting handshake.
             """
-            if test_support.due_to_ironpython_incompatibility("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21411"):
-                return
             listener_ready = threading.Event()
             listener_gone = threading.Event()
 
@@ -813,6 +897,7 @@ else:
             finally:
                 t.join()
 
+        @skip_if_broken_ubuntu_ssl
         def test_echo(self):
             """Basic test of an SSL client connecting to a server"""
             if test_support.verbose:
@@ -871,8 +956,6 @@ else:
                                        "badcert.pem"))
         def test_nonexisting_cert(self):
             """Connecting with a non-existing cert file"""
-            if test_support.due_to_ironpython_incompatibility("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21411"):
-                return
             bad_cert_test(os.path.join(os.path.dirname(__file__) or os.curdir,
                                        "wrongcert.pem"))
         def test_malformed_key(self):
@@ -880,6 +963,7 @@ else:
             bad_cert_test(os.path.join(os.path.dirname(__file__) or os.curdir,
                                        "badkey.pem"))
 
+        @skip_if_broken_ubuntu_ssl
         def test_protocol_sslv2(self):
             """Connecting to an SSLv2 server with various client options"""
             if test_support.verbose:
@@ -891,6 +975,7 @@ else:
             try_protocol_combo(ssl.PROTOCOL_SSLv2, ssl.PROTOCOL_SSLv3, False)
             try_protocol_combo(ssl.PROTOCOL_SSLv2, ssl.PROTOCOL_TLSv1, False)
 
+        @skip_if_broken_ubuntu_ssl
         def test_protocol_sslv23(self):
             """Connecting to an SSLv23 server with various client options"""
             if test_support.verbose:
@@ -915,6 +1000,7 @@ else:
             try_protocol_combo(ssl.PROTOCOL_SSLv23, ssl.PROTOCOL_SSLv23, True, ssl.CERT_REQUIRED)
             try_protocol_combo(ssl.PROTOCOL_SSLv23, ssl.PROTOCOL_TLSv1, True, ssl.CERT_REQUIRED)
 
+        @skip_if_broken_ubuntu_ssl
         def test_protocol_sslv3(self):
             """Connecting to an SSLv3 server with various client options"""
             if test_support.verbose:
@@ -923,10 +1009,10 @@ else:
             try_protocol_combo(ssl.PROTOCOL_SSLv3, ssl.PROTOCOL_SSLv3, True, ssl.CERT_OPTIONAL)
             try_protocol_combo(ssl.PROTOCOL_SSLv3, ssl.PROTOCOL_SSLv3, True, ssl.CERT_REQUIRED)
             try_protocol_combo(ssl.PROTOCOL_SSLv3, ssl.PROTOCOL_SSLv2, False)
-            if not test_support.due_to_ironpython_incompatibility("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21411"):
-                tryProtocolCombo(ssl.PROTOCOL_SSLv3, ssl.PROTOCOL_SSLv23, False)
+            try_protocol_combo(ssl.PROTOCOL_SSLv3, ssl.PROTOCOL_SSLv23, False)
             try_protocol_combo(ssl.PROTOCOL_SSLv3, ssl.PROTOCOL_TLSv1, False)
 
+        @skip_if_broken_ubuntu_ssl
         def test_protocol_tlsv1(self):
             """Connecting to a TLSv1 server with various client options"""
             if test_support.verbose:
@@ -1257,7 +1343,7 @@ def test_main(verbose=False):
         not os.path.exists(SVN_PYTHON_ORG_ROOT_CERT)):
         raise test_support.TestFailed("Can't read certificate files!")
 
-    tests = [BasicTests]
+    tests = [BasicTests, BasicSocketTests]
 
     if test_support.is_resource_enabled('network'):
         tests.append(NetworkedTests)

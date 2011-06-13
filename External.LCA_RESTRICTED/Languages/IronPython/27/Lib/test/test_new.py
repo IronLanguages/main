@@ -62,25 +62,24 @@ class NewTest(unittest.TestCase):
         # at module scope, but bound and run in a function.  In CPython, `c' is
         # global (by accident?) while in Jython, `c' is local.  The intent of
         # the test clearly is to make `c' global, so let's be explicit about it.
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321860"):
-            codestr = '''
-            global c
-            a = 1
-            b = 2
-            c = a + b
-            '''
+        codestr = '''
+        global c
+        a = 1
+        b = 2
+        c = a + b
+        '''
 
-            codestr = "\n".join(l.strip() for l in codestr.splitlines())
+        codestr = "\n".join(l.strip() for l in codestr.splitlines())
 
-            ccode = compile(codestr, '<string>', 'exec')
-            # Jython doesn't have a __builtins__, so use a portable alternative
-            import __builtin__
-            g = {'c': 0, '__builtins__': __builtin__}
+        ccode = compile(codestr, '<string>', 'exec')
+        # Jython doesn't have a __builtins__, so use a portable alternative
+        import __builtin__
+        g = {'c': 0, '__builtins__': __builtin__}
 
-            # this test could be more robust
-            func = new.function(ccode, g)
-            func()
-            self.assertEqual(g['c'], 3, 'Could not create a proper function object')
+        # this test could be more robust
+        func = new.function(ccode, g)
+        func()
+        self.assertEqual(g['c'], 3, 'Could not create a proper function object')
 
     def test_function(self):
         # test the various extended flavors of function.new
@@ -89,8 +88,6 @@ class NewTest(unittest.TestCase):
                 return x + y
             return g
         g = f(4)
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         new.function(f.func_code, {}, "blah")
         g2 = new.function(g.func_code, {}, "blah", (2,), g.func_closure)
         self.assertEqual(g2(), 6)
@@ -107,8 +104,6 @@ class NewTest(unittest.TestCase):
     # Note: Jython will never have new.code()
     if hasattr(new, 'code'):
         def test_code(self):
-            if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-                return
             # bogus test of new.code()
             def f(a): pass
 

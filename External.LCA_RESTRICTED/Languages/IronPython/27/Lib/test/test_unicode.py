@@ -1,4 +1,3 @@
-# -*- coding: iso-8859-1 -*-
 """ Test script for the Unicode implementation.
 
 Written by Marc-Andre Lemburg (mal@lemburg.com).
@@ -6,7 +5,7 @@ Written by Marc-Andre Lemburg (mal@lemburg.com).
 (c) Copyright CNRI, All Rights Reserved. NO WARRANTY.
 
 """#"
-import sys, struct, codecs, unittest
+import sys, struct, codecs
 from test import test_support, string_tests
 
 # Error handling (bad decoder return)
@@ -34,6 +33,16 @@ class UnicodeTest(
     ):
     type2test = unicode
 
+    def assertEqual(self, first, second, msg=None):
+        # strict assertEqual method: reject implicit bytes/unicode equality
+        super(UnicodeTest, self).assertEqual(first, second, msg)
+        if isinstance(first, unicode) or isinstance(second, unicode):
+            self.assertIsInstance(first, unicode)
+            self.assertIsInstance(second, unicode)
+        elif isinstance(first, str) or isinstance(second, str):
+            self.assertIsInstance(first, str)
+            self.assertIsInstance(second, str)
+
     def checkequalnofix(self, result, object, methodname, *args):
         method = getattr(object, methodname)
         realresult = method(*args)
@@ -55,28 +64,26 @@ class UnicodeTest(
     def test_literals(self):
         self.assertEqual(u'\xff', u'\u00ff')
         self.assertEqual(u'\uffff', u'\U0000ffff')
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=360192"):
-            self.assertRaises(SyntaxError, eval, 'u\'\\Ufffffffe\'')
-            self.assertRaises(SyntaxError, eval, 'u\'\\Uffffffff\'')
-            self.assertRaises(SyntaxError, eval, 'u\'\\U%08x\'' % 0x110000)
+        self.assertRaises(SyntaxError, eval, 'u\'\\Ufffffffe\'')
+        self.assertRaises(SyntaxError, eval, 'u\'\\Uffffffff\'')
+        self.assertRaises(SyntaxError, eval, 'u\'\\U%08x\'' % 0x110000)
 
     def test_repr(self):
         if not sys.platform.startswith('java'):
             # Test basic sanity of repr()
-            if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=7279"):
-                self.assertEqual(repr(u'abc'), "u'abc'")
-                self.assertEqual(repr(u'ab\\c'), "u'ab\\\\c'")
-                self.assertEqual(repr(u'ab\\'), "u'ab\\\\'")
-                self.assertEqual(repr(u'\\c'), "u'\\\\c'")
-                self.assertEqual(repr(u'\\'), "u'\\\\'")
-                self.assertEqual(repr(u'\n'), "u'\\n'")
-                self.assertEqual(repr(u'\r'), "u'\\r'")
-                self.assertEqual(repr(u'\t'), "u'\\t'")
-                self.assertEqual(repr(u'\b'), "u'\\x08'")
-                self.assertEqual(repr(u"'\""), """u'\\'"'""")
-                self.assertEqual(repr(u"'\""), """u'\\'"'""")
-                self.assertEqual(repr(u"'"), '''u"'"''')
-                self.assertEqual(repr(u'"'), """u'"'""")
+            self.assertEqual(repr(u'abc'), "u'abc'")
+            self.assertEqual(repr(u'ab\\c'), "u'ab\\\\c'")
+            self.assertEqual(repr(u'ab\\'), "u'ab\\\\'")
+            self.assertEqual(repr(u'\\c'), "u'\\\\c'")
+            self.assertEqual(repr(u'\\'), "u'\\\\'")
+            self.assertEqual(repr(u'\n'), "u'\\n'")
+            self.assertEqual(repr(u'\r'), "u'\\r'")
+            self.assertEqual(repr(u'\t'), "u'\\t'")
+            self.assertEqual(repr(u'\b'), "u'\\x08'")
+            self.assertEqual(repr(u"'\""), """u'\\'"'""")
+            self.assertEqual(repr(u"'\""), """u'\\'"'""")
+            self.assertEqual(repr(u"'"), '''u"'"''')
+            self.assertEqual(repr(u'"'), """u'"'""")
             latin1repr = (
                 "u'\\x00\\x01\\x02\\x03\\x04\\x05\\x06\\x07\\x08\\t\\n\\x0b\\x0c\\r"
                 "\\x0e\\x0f\\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17\\x18\\x19\\x1a"
@@ -121,8 +128,7 @@ class UnicodeTest(
         self.assertRaises(TypeError, u'hello'.find, 42)
 
     def test_rfind(self):
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            string_tests.CommonTest.test_rfind(self)
+        string_tests.CommonTest.test_rfind(self)
         # check mixed argument types
         self.checkequalnofix(9,   'abcdefghiabc', 'rfind', u'abc')
         self.checkequalnofix(12,  'abcdefghiabc', 'rfind', u'')
@@ -158,16 +164,14 @@ class UnicodeTest(
 
     def test_translate(self):
         self.checkequalnofix(u'bbbc', u'abababc', 'translate', {ord('a'):None})
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=322200"):
-            self.checkequalnofix(u'iiic', u'abababc', 'translate', {ord('a'):None, ord('b'):ord('i')})
-            self.checkequalnofix(u'iiix', u'abababc', 'translate', {ord('a'):None, ord('b'):ord('i'), ord('c'):u'x'})
-            self.checkequalnofix(u'<i><i><i>c', u'abababc', 'translate', {ord('a'):None, ord('b'):u'<i>'})
-            self.checkequalnofix(u'c', u'abababc', 'translate', {ord('a'):None, ord('b'):u''})
-            self.checkequalnofix(u'xyyx', u'xzx', 'translate', {ord('z'):u'yy'})
+        self.checkequalnofix(u'iiic', u'abababc', 'translate', {ord('a'):None, ord('b'):ord('i')})
+        self.checkequalnofix(u'iiix', u'abababc', 'translate', {ord('a'):None, ord('b'):ord('i'), ord('c'):u'x'})
+        self.checkequalnofix(u'<i><i><i>c', u'abababc', 'translate', {ord('a'):None, ord('b'):u'<i>'})
+        self.checkequalnofix(u'c', u'abababc', 'translate', {ord('a'):None, ord('b'):u''})
+        self.checkequalnofix(u'xyyx', u'xzx', 'translate', {ord('z'):u'yy'})
 
         self.assertRaises(TypeError, u'hello'.translate)
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=322200"):
-            self.assertRaises(TypeError, u'abababc'.translate, {ord('a'):''})
+        self.assertRaises(TypeError, u'abababc'.translate, {ord('a'):''})
 
     def test_split(self):
         string_tests.CommonTest.test_split(self)
@@ -191,8 +195,7 @@ class UnicodeTest(
 
     def test_strip(self):
         string_tests.CommonTest.test_strip(self)
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323303"):
-            self.assertRaises(UnicodeError, u"hello".strip, "\xff")
+        self.assertRaises(UnicodeError, u"hello".strip, "\xff")
 
     def test_replace(self):
         string_tests.CommonTest.test_replace(self)
@@ -203,9 +206,9 @@ class UnicodeTest(
 
     def test_comparison(self):
         # Comparisons:
-        self.assertEqual(u'abc', 'abc')
-        self.assertEqual('abc', u'abc')
-        self.assertEqual(u'abc', u'abc')
+        self.assertTrue(u'abc' == 'abc')
+        self.assertTrue('abc' == u'abc')
+        self.assertTrue(u'abc' == u'abc')
         self.assertTrue(u'abcd' > 'abc')
         self.assertTrue('abcd' > u'abc')
         self.assertTrue(u'abcd' > u'abc')
@@ -304,19 +307,16 @@ class UnicodeTest(
 
     def test_isdigit(self):
         string_tests.MixinStrUnicodeUserStringTest.test_isdigit(self)
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323667"):
-            self.checkequalnofix(True, u'\u2460', 'isdigit')
+        self.checkequalnofix(True, u'\u2460', 'isdigit')
         self.checkequalnofix(False, u'\xbc', 'isdigit')
         self.checkequalnofix(True, u'\u0660', 'isdigit')
 
     def test_isnumeric(self):
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323667"):
-            self.checkequalnofix(False, u'', 'isnumeric')
+        self.checkequalnofix(False, u'', 'isnumeric')
         self.checkequalnofix(False, u'a', 'isnumeric')
         self.checkequalnofix(True, u'0', 'isnumeric')
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323667"):
-            self.checkequalnofix(True, u'\u2460', 'isnumeric')
-            self.checkequalnofix(True, u'\xbc', 'isnumeric')
+        self.checkequalnofix(True, u'\u2460', 'isnumeric')
+        self.checkequalnofix(True, u'\xbc', 'isnumeric')
         self.checkequalnofix(True, u'\u0660', 'isnumeric')
         self.checkequalnofix(True, u'0123456789', 'isnumeric')
         self.checkequalnofix(False, u'0123456789a', 'isnumeric')
@@ -353,9 +353,8 @@ class UnicodeTest(
         # If the following fails either
         # the contains operator does not propagate UnicodeErrors or
         # someone has changed the default encoding
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323303"):
-            self.assertRaises(UnicodeDecodeError, 'g\xe2teau'.__contains__, u'\xe2')
-            self.assertRaises(UnicodeDecodeError, u'g\xe2teau'.__contains__, '\xe2')
+        self.assertRaises(UnicodeDecodeError, 'g\xe2teau'.__contains__, u'\xe2')
+        self.assertRaises(UnicodeDecodeError, u'g\xe2teau'.__contains__, '\xe2')
 
         self.assertIn(u'', '')
         self.assertIn('', u'')
@@ -397,28 +396,29 @@ class UnicodeTest(
         self.assertEqual(u"%s, %s, %i, %f, %5.2f" % (u"abc", "abc", -1, -2, 3.5), u'abc, abc, -1, -2.000000,  3.50')
         self.assertEqual(u"%s, %s, %i, %f, %5.2f" % (u"abc", "abc", -1, -2, 3.57), u'abc, abc, -1, -2.000000,  3.57')
         self.assertEqual(u"%s, %s, %i, %f, %5.2f" % (u"abc", "abc", -1, -2, 1003.57), u'abc, abc, -1, -2.000000, 1003.57')
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323647"):
-            if not sys.platform.startswith('java'):
-                self.assertEqual(u"%r, %r" % (u"abc", "abc"), u"u'abc', 'abc'")
+        if not sys.platform.startswith('java'):
+            self.assertEqual(u"%r, %r" % (u"abc", "abc"), u"u'abc', 'abc'")
         self.assertEqual(u"%(x)s, %(y)s" % {'x':u"abc", 'y':"def"}, u'abc, def')
         self.assertEqual(u"%(x)s, %(\xfc)s" % {'x':u"abc", u'\xfc':"def"}, u'abc, def')
 
         self.assertEqual(u'%c' % 0x1234, u'\u1234')
         self.assertRaises(OverflowError, u"%c".__mod__, (sys.maxunicode+1,))
+        self.assertRaises(ValueError, u"%.1\u1032f".__mod__, (1.0/3))
 
         for num in range(0x00,0x80):
             char = chr(num)
-            self.assertEqual(u"%c" % char, char)
-            self.assertEqual(u"%c" % num, char)
+            self.assertEqual(u"%c" % char, unicode(char))
+            self.assertEqual(u"%c" % num, unicode(char))
+            self.assertTrue(char == u"%c" % char)
+            self.assertTrue(char == u"%c" % num)
         # Issue 7649
         for num in range(0x80,0x100):
             uchar = unichr(num)
             self.assertEqual(uchar, u"%c" % num)   # works only with ints
             self.assertEqual(uchar, u"%c" % uchar) # and unicode chars
             # the implicit decoding should fail for non-ascii chars
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.assertRaises(UnicodeDecodeError, u"%c".__mod__, chr(num))
-                self.assertRaises(UnicodeDecodeError, u"%s".__mod__, chr(num))
+            self.assertRaises(UnicodeDecodeError, u"%c".__mod__, chr(num))
+            self.assertRaises(UnicodeDecodeError, u"%s".__mod__, chr(num))
 
         # formatting jobs delegated from the string implementation:
         self.assertEqual('...%(foo)s...' % {'foo':u"abc"}, u'...abc...')
@@ -496,13 +496,12 @@ class UnicodeTest(
         self.assertEqual(str(o), 'unicode(obj) is compatible to str()')
 
         # %-formatting and .__unicode__()
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323674"):
-            self.assertEqual(u'%s' %
-                             UnicodeCompat(u"u'%s' % obj uses obj.__unicode__()"),
-                             u"u'%s' % obj uses obj.__unicode__()")
-            self.assertEqual(u'%s' %
-                             UnicodeCompat(u"u'%s' % obj falls back to obj.__str__()"),
-                             u"u'%s' % obj falls back to obj.__str__()")
+        self.assertEqual(u'%s' %
+                         UnicodeCompat(u"u'%s' % obj uses obj.__unicode__()"),
+                         u"u'%s' % obj uses obj.__unicode__()")
+        self.assertEqual(u'%s' %
+                         UnicodeCompat(u"u'%s' % obj falls back to obj.__str__()"),
+                         u"u'%s' % obj falls back to obj.__str__()")
 
         for obj in (123, 123.45, 123L):
             self.assertEqual(unicode(obj), unicode(str(obj)))
@@ -510,33 +509,31 @@ class UnicodeTest(
         # unicode(obj, encoding, error) tests (this maps to
         # PyUnicode_FromEncodedObject() at C level)
 
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=360223"):
-            if not sys.platform.startswith('java'):
-                self.assertRaises(
-                    TypeError,
-                    unicode,
-                    u'decoding unicode is not supported',
+        if not sys.platform.startswith('java'):
+            self.assertRaises(
+                TypeError,
+                unicode,
+                u'decoding unicode is not supported',
+                'utf-8',
+                'strict'
+            )
+
+        self.assertEqual(
+            unicode('strings are decoded to unicode', 'utf-8', 'strict'),
+            u'strings are decoded to unicode'
+        )
+
+        if not sys.platform.startswith('java'):
+            with test_support.check_py3k_warnings():
+                buf = buffer('character buffers are decoded to unicode')
+            self.assertEqual(
+                unicode(
+                    buf,
                     'utf-8',
                     'strict'
-                )
-
-                self.assertEqual(
-                    unicode('strings are decoded to unicode', 'utf-8', 'strict'),
-                    u'strings are decoded to unicode'
-                )
-
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=325438"):
-            if not sys.platform.startswith('java'):
-                with test_support.check_py3k_warnings():
-                    buf = buffer('character buffers are decoded to unicode')
-                    self.assertEqual(
-                        unicode(
-                            buf,
-                            'utf-8',
-                            'strict'
-                        ),
-                        u'character buffers are decoded to unicode'
-                    )
+                ),
+                u'character buffers are decoded to unicode'
+            )
 
         self.assertRaises(TypeError, unicode, 42, 42, 42)
 
@@ -558,15 +555,13 @@ class UnicodeTest(
             (u'/', '/'),
         ]
 
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=322765"):
-            for (x, y) in utfTests:
-                self.assertEqual(x.encode('utf-7'), y)
+        for (x, y) in utfTests:
+            self.assertEqual(x.encode('utf-7'), y)
 
         # Unpaired surrogates not supported
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=360541"):
-            self.assertRaises(UnicodeError, unicode, '+3ADYAA-', 'utf-7')
+        self.assertRaises(UnicodeError, unicode, '+3ADYAA-', 'utf-7')
 
-            self.assertEqual(unicode('+3ADYAA-', 'utf-7', 'replace'), u'\ufffd\ufffd')
+        self.assertEqual(unicode('+3ADYAA-', 'utf-7', 'replace'), u'\ufffd\ufffd')
 
         # Direct encoded characters
         set_d = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'(),-./:?"
@@ -574,18 +569,19 @@ class UnicodeTest(
         set_o = '!"#$%&*;<=>@[]^_`{|}'
         for c in set_d:
             self.assertEqual(c.encode('utf7'), c.encode('ascii'))
-            self.assertEqual(c.encode('ascii').decode('utf7'), c)
+            self.assertEqual(c.encode('ascii').decode('utf7'), unicode(c))
+            self.assertTrue(c == c.encode('ascii').decode('utf7'))
         for c in set_o:
-            self.assertEqual(c.encode('ascii').decode('utf7'), c)
+            self.assertEqual(c.encode('ascii').decode('utf7'), unicode(c))
+            self.assertTrue(c == c.encode('ascii').decode('utf7'))
 
     def test_codecs_utf8(self):
         self.assertEqual(u''.encode('utf-8'), '')
         self.assertEqual(u'\u20ac'.encode('utf-8'), '\xe2\x82\xac')
         self.assertEqual(u'\ud800\udc02'.encode('utf-8'), '\xf0\x90\x80\x82')
         self.assertEqual(u'\ud84d\udc56'.encode('utf-8'), '\xf0\xa3\x91\x96')
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321875"):
-            self.assertEqual(u'\ud800'.encode('utf-8'), '\xed\xa0\x80')
-            self.assertEqual(u'\udc00'.encode('utf-8'), '\xed\xb0\x80')
+        self.assertEqual(u'\ud800'.encode('utf-8'), '\xed\xa0\x80')
+        self.assertEqual(u'\udc00'.encode('utf-8'), '\xed\xb0\x80')
         self.assertEqual(
             (u'\ud800\udc02'*1000).encode('utf-8'),
             '\xf0\x90\x80\x82'*1000
@@ -610,16 +606,14 @@ class UnicodeTest(
         )
 
         # UTF-8 specific decoding tests
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=360541"):
-            self.assertEqual(unicode('\xf0\xa3\x91\x96', 'utf-8'), u'\U00023456' )
-            self.assertEqual(unicode('\xf0\x90\x80\x82', 'utf-8'), u'\U00010002' )
-        self.assertEqual(unicode('\xe2\x82\xac', 'utf-8'), u'\u20ac' )
+        self.assertEqual(unicode('\xf0\xa3\x91\x96', 'utf-8'), u'\U00023456')
+        self.assertEqual(unicode('\xf0\x90\x80\x82', 'utf-8'), u'\U00010002')
+        self.assertEqual(unicode('\xe2\x82\xac', 'utf-8'), u'\u20ac')
 
         # Other possible utf-8 test cases:
         # * strict decoding testing for all of the
         #   UTF8_ERROR cases in PyUnicode_DecodeUTF8
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/28171")
     def test_utf8_decode_valid_sequences(self):
         sequences = [
             # single byte
@@ -673,11 +667,17 @@ class UnicodeTest(
         # see http://www.unicode.org/versions/Unicode5.2.0/ch03.pdf
         # (table 3-7) and http://www.rfc-editor.org/rfc/rfc3629.txt
         #for cb in map(chr, range(0xA0, 0xC0)):
-            #sys.__stdout__.write('\\xED\\x%02x\\x80\n' % ord(cb))
             #self.assertRaises(UnicodeDecodeError,
                               #('\xED'+cb+'\x80').decode, 'utf-8')
             #self.assertRaises(UnicodeDecodeError,
                               #('\xED'+cb+'\xBF').decode, 'utf-8')
+        # but since they are valid on Python 2 add a test for that:
+        for cb, surrogate in zip(map(chr, range(0xA0, 0xC0)),
+                                 map(unichr, range(0xd800, 0xe000, 64))):
+            encoded = '\xED'+cb+'\x80'
+            self.assertEqual(encoded.decode('utf-8'), surrogate)
+            self.assertEqual(surrogate.encode('utf-8'), encoded)
+
         for cb in map(chr, range(0x80, 0x90)):
             self.assertRaises(UnicodeDecodeError,
                               ('\xF0'+cb+'\x80\x80').decode, 'utf-8')
@@ -773,15 +773,12 @@ class UnicodeTest(
         ]
         for n, (seq, res) in enumerate(sequences):
             self.assertRaises(UnicodeDecodeError, seq.decode, 'utf-8', 'strict')
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.assertEqual(seq.decode('utf-8', 'replace'), res)
-                self.assertEqual((seq+'b').decode('utf-8', 'replace'), res+'b')
-                self.assertEqual(seq.decode('utf-8', 'ignore'),
-                                 res.replace(u'\uFFFD', ''))
+            self.assertEqual(seq.decode('utf-8', 'replace'), res)
+            self.assertEqual((seq+'b').decode('utf-8', 'replace'), res+'b')
+            self.assertEqual(seq.decode('utf-8', 'ignore'),
+                             res.replace(u'\uFFFD', ''))
 
     def test_codecs_idna(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321506"):
-            return
         # Test whether trailing dot is preserved
         self.assertEqual(u"www.python.org.".encode("idna"), "www.python.org.")
 
@@ -800,19 +797,17 @@ class UnicodeTest(
         self.assertRaises(UnicodeError, unicode, 'Andr\202 x', 'ascii')
         self.assertRaises(UnicodeError, unicode, 'Andr\202 x', 'ascii','strict')
         self.assertEqual(unicode('Andr\202 x','ascii','ignore'), u"Andr x")
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=322420"):
-            self.assertEqual(unicode('Andr\202 x','ascii','replace'), u'Andr\uFFFD x')
+        self.assertEqual(unicode('Andr\202 x','ascii','replace'), u'Andr\uFFFD x')
         self.assertEqual(u'abcde'.decode('ascii', 'ignore'),
                          u'abcde'.decode('ascii', errors='ignore'))
         self.assertEqual(u'abcde'.decode('ascii', 'replace'),
                          u'abcde'.decode(encoding='ascii', errors='replace'))
 
         # Error handling (unknown character names)
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=322774"):
-            self.assertEqual("\\N{foo}xx".decode("unicode-escape", "ignore"), u"xx")
+        self.assertEqual("\\N{foo}xx".decode("unicode-escape", "ignore"), u"xx")
 
-            # Error handling (truncated escape sequence)
-            self.assertRaises(UnicodeError, "\\".decode, "unicode-escape")
+        # Error handling (truncated escape sequence)
+        self.assertRaises(UnicodeError, "\\".decode, "unicode-escape")
 
         self.assertRaises(TypeError, "hello".decode, "test.unicode1")
         self.assertRaises(TypeError, unicode, "hello", "test.unicode2")
@@ -831,8 +826,7 @@ class UnicodeTest(
         self.assertRaises(TypeError, u"hello".encode, 42, 42, 42)
 
         # Error handling (PyUnicode_EncodeDecimal())
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323000"):
-            self.assertRaises(UnicodeError, int, u"\u0200")
+        self.assertRaises(UnicodeError, int, u"\u0200")
 
     def test_codecs(self):
         # Encoding
@@ -850,8 +844,6 @@ class UnicodeTest(
             for encoding in ('utf-7', 'utf-8', 'utf-16', 'utf-16-le',
                              'utf-16-be', 'raw_unicode_escape',
                              'unicode_escape', 'unicode_internal'):
-                if encoding == 'unicode_internal' and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-                    continue
                 self.assertEqual(unicode(u.encode(encoding),encoding), u)
 
         # Roundtrip safety for BMP (just the first 256 chars)
@@ -871,8 +863,6 @@ class UnicodeTest(
         for encoding in ('utf-8', 'utf-16', 'utf-16-le', 'utf-16-be',
                          #'raw_unicode_escape',
                          'unicode_escape', 'unicode_internal'):
-            if encoding == 'unicode_internal' and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-                continue
             self.assertEqual(unicode(u.encode(encoding),encoding), u)
 
         # UTF-8 must be roundtrip safe for all UCS-2 code points
@@ -884,8 +874,6 @@ class UnicodeTest(
             self.assertEqual(unicode(u.encode(encoding),encoding), u)
 
     def test_codecs_charmap(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305366"):
-            return
         # 0-127
         s = ''.join(map(chr, xrange(128)))
         for encoding in (
@@ -969,12 +957,10 @@ class UnicodeTest(
 
         y = r'\U00100000'
         x = y.decode("raw-unicode-escape").encode("raw-unicode-escape")
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(x, y)
+        self.assertEqual(x, y)
         y = r'\U00010000'
         x = y.decode("raw-unicode-escape").encode("raw-unicode-escape")
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(x, y)
+        self.assertEqual(x, y)
 
         try:
             '\U11111111'.decode("raw-unicode-escape")
@@ -982,8 +968,7 @@ class UnicodeTest(
             self.assertEqual(e.start, 0)
             self.assertEqual(e.end, 10)
         else:
-            if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-                self.fail("Should have raised UnicodeDecodeError")
+            self.fail("Should have raised UnicodeDecodeError")
 
     def test_conversion(self):
         # Make sure __unicode__() works properly
@@ -1078,35 +1063,31 @@ class UnicodeTest(
         test(u'abc', u'', u'abc')
         test(u'abc', u'.3', u'abc')
         test(u'ab', u'.3', u'ab')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            test(u'abcdef', u'.3', u'abc')
-            test(u'abcdef', u'.0', u'')
+        test(u'abcdef', u'.3', u'abc')
+        test(u'abcdef', u'.0', u'')
         test(u'abc', u'3.3', u'abc')
         test(u'abc', u'2.3', u'abc')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            test(u'abc', u'2.2', u'ab')
-            test(u'abc', u'3.2', u'ab ')
+        test(u'abc', u'2.2', u'ab')
+        test(u'abc', u'3.2', u'ab ')
         test(u'result', u'x<0', u'result')
         test(u'result', u'x<5', u'result')
         test(u'result', u'x<6', u'result')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            test(u'result', u'x<7', u'resultx')
-            test(u'result', u'x<8', u'resultxx')
-            test(u'result', u' <7', u'result ')
-            test(u'result', u'<7', u'result ')
-            test(u'result', u'>7', u' result')
-            test(u'result', u'>8', u'  result')
-            test(u'result', u'^8', u' result ')
-            test(u'result', u'^9', u' result  ')
-            test(u'result', u'^10', u'  result  ')
-            test(u'a', u'10000', u'a' + u' ' * 9999)
-            test(u'', u'10000', u' ' * 10000)
-            test(u'', u'10000000', u' ' * 10000000)
+        test(u'result', u'x<7', u'resultx')
+        test(u'result', u'x<8', u'resultxx')
+        test(u'result', u' <7', u'result ')
+        test(u'result', u'<7', u'result ')
+        test(u'result', u'>7', u' result')
+        test(u'result', u'>8', u'  result')
+        test(u'result', u'^8', u' result ')
+        test(u'result', u'^9', u' result  ')
+        test(u'result', u'^10', u'  result  ')
+        test(u'a', u'10000', u'a' + u' ' * 9999)
+        test(u'', u'10000', u' ' * 10000)
+        test(u'', u'10000000', u' ' * 10000000)
 
         # test mixing unicode and str
         self.assertEqual(u'abc'.__format__('s'), u'abc')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(u'abc'.__format__('->10s'), u'-------abc')
+        self.assertEqual(u'abc'.__format__('->10s'), u'-------abc')
 
     def test_format(self):
         self.assertEqual(u''.format(), u'')
@@ -1222,42 +1203,38 @@ class UnicodeTest(
         # strings
         self.assertEqual(u'{0:.3s}'.format(u'abc'), u'abc')
         self.assertEqual(u'{0:.3s}'.format(u'ab'), u'ab')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(u'{0:.3s}'.format(u'abcdef'), u'abc')
-            self.assertEqual(u'{0:.0s}'.format(u'abcdef'), u'')
+        self.assertEqual(u'{0:.3s}'.format(u'abcdef'), u'abc')
+        self.assertEqual(u'{0:.0s}'.format(u'abcdef'), u'')
         self.assertEqual(u'{0:3.3s}'.format(u'abc'), u'abc')
         self.assertEqual(u'{0:2.3s}'.format(u'abc'), u'abc')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(u'{0:2.2s}'.format(u'abc'), u'ab')
-            self.assertEqual(u'{0:3.2s}'.format(u'abc'), u'ab ')
+        self.assertEqual(u'{0:2.2s}'.format(u'abc'), u'ab')
+        self.assertEqual(u'{0:3.2s}'.format(u'abc'), u'ab ')
         self.assertEqual(u'{0:x<0s}'.format(u'result'), u'result')
         self.assertEqual(u'{0:x<5s}'.format(u'result'), u'result')
         self.assertEqual(u'{0:x<6s}'.format(u'result'), u'result')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(u'{0:x<7s}'.format(u'result'), u'resultx')
-            self.assertEqual(u'{0:x<8s}'.format(u'result'), u'resultxx')
-            self.assertEqual(u'{0: <7s}'.format(u'result'), u'result ')
-            self.assertEqual(u'{0:<7s}'.format(u'result'), u'result ')
-            self.assertEqual(u'{0:>7s}'.format(u'result'), u' result')
-            self.assertEqual(u'{0:>8s}'.format(u'result'), u'  result')
-            self.assertEqual(u'{0:^8s}'.format(u'result'), u' result ')
-            self.assertEqual(u'{0:^9s}'.format(u'result'), u' result  ')
-            self.assertEqual(u'{0:^10s}'.format(u'result'), u'  result  ')
-            self.assertEqual(u'{0:10000}'.format(u'a'), u'a' + u' ' * 9999)
-            self.assertEqual(u'{0:10000}'.format(u''), u' ' * 10000)
-            self.assertEqual(u'{0:10000000}'.format(u''), u' ' * 10000000)
+        self.assertEqual(u'{0:x<7s}'.format(u'result'), u'resultx')
+        self.assertEqual(u'{0:x<8s}'.format(u'result'), u'resultxx')
+        self.assertEqual(u'{0: <7s}'.format(u'result'), u'result ')
+        self.assertEqual(u'{0:<7s}'.format(u'result'), u'result ')
+        self.assertEqual(u'{0:>7s}'.format(u'result'), u' result')
+        self.assertEqual(u'{0:>8s}'.format(u'result'), u'  result')
+        self.assertEqual(u'{0:^8s}'.format(u'result'), u' result ')
+        self.assertEqual(u'{0:^9s}'.format(u'result'), u' result  ')
+        self.assertEqual(u'{0:^10s}'.format(u'result'), u'  result  ')
+        self.assertEqual(u'{0:10000}'.format(u'a'), u'a' + u' ' * 9999)
+        self.assertEqual(u'{0:10000}'.format(u''), u' ' * 10000)
+        self.assertEqual(u'{0:10000000}'.format(u''), u' ' * 10000000)
 
         # format specifiers for user defined type
         self.assertEqual(u'{0:abc}'.format(C()), u'abc')
 
-        # !r and !s coersions
+        # !r and !s coercions
         self.assertEqual(u'{0!s}'.format(u'Hello'), u'Hello')
         self.assertEqual(u'{0!s:}'.format(u'Hello'), u'Hello')
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(u'{0!s:15}'.format(u'Hello'), u'Hello          ')
-            self.assertEqual(u'{0!s:15s}'.format(u'Hello'), u'Hello          ')
-            self.assertEqual(u'{0!r}'.format(u'Hello'), u"u'Hello'")
-            self.assertEqual(u'{0!r:}'.format(u'Hello'), u"u'Hello'")
+        self.assertEqual(u'{0!s:15}'.format(u'Hello'), u'Hello          ')
+        self.assertEqual(u'{0!s:15s}'.format(u'Hello'), u'Hello          ')
+        self.assertEqual(u'{0!r}'.format(u'Hello'), u"u'Hello'")
+        self.assertEqual(u'{0!r:}'.format(u'Hello'), u"u'Hello'")
         self.assertEqual(u'{0!r}'.format(F(u'Hello')), u'F(Hello)')
 
         # test fallback to object.__format__
@@ -1265,16 +1242,18 @@ class UnicodeTest(
         self.assertEqual(u'{0}'.format([]), u'[]')
         self.assertEqual(u'{0}'.format([1]), u'[1]')
         self.assertEqual(u'{0}'.format(E(u'data')), u'E(data)')
-        self.assertEqual(u'{0:^10}'.format(E(u'data')), u' E(data)  ')
-        self.assertEqual(u'{0:^10s}'.format(E(u'data')), u' E(data)  ')
         self.assertEqual(u'{0:d}'.format(G(u'data')), u'G(data)')
-        self.assertEqual(u'{0:>15s}'.format(G(u'data')), u' string is data')
         self.assertEqual(u'{0!s}'.format(G(u'data')), u'string is data')
 
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(u"{0:date: %Y-%m-%d}".format(I(year=2007,
-                                                       month=8,
-                                                       day=27)),
+        msg = 'object.__format__ with a non-empty format string is deprecated'
+        with test_support.check_warnings((msg, PendingDeprecationWarning)):
+            self.assertEqual(u'{0:^10}'.format(E(u'data')), u' E(data)  ')
+            self.assertEqual(u'{0:^10s}'.format(E(u'data')), u' E(data)  ')
+            self.assertEqual(u'{0:>15s}'.format(G(u'data')), u' string is data')
+
+        self.assertEqual(u"{0:date: %Y-%m-%d}".format(I(year=2007,
+                                                        month=8,
+                                                        day=27)),
                          u"date: 2007-08-27")
 
         # test deriving from a builtin type and overriding __format__
@@ -1285,12 +1264,11 @@ class UnicodeTest(
         self.assertEqual(u'{0:}'.format('a'), u'a')
 
         # computed format specifiers
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(u"{0:.{1}}".format(u'hello world', 5), u'hello')
-            self.assertEqual(u"{0:.{1}s}".format(u'hello world', 5), u'hello')
-            self.assertEqual(u"{0:.{precision}s}".format('hello world', precision=5), u'hello')
-            self.assertEqual(u"{0:{width}.{precision}s}".format('hello world', width=10, precision=5), u'hello     ')
-            self.assertEqual(u"{0:{width}.{precision}s}".format('hello world', width='10', precision='5'), u'hello     ')
+        self.assertEqual(u"{0:.{1}}".format(u'hello world', 5), u'hello')
+        self.assertEqual(u"{0:.{1}s}".format(u'hello world', 5), u'hello')
+        self.assertEqual(u"{0:.{precision}s}".format('hello world', precision=5), u'hello')
+        self.assertEqual(u"{0:{width}.{precision}s}".format('hello world', width=10, precision=5), u'hello     ')
+        self.assertEqual(u"{0:{width}.{precision}s}".format('hello world', width='10', precision='5'), u'hello     ')
 
         # test various errors
         self.assertRaises(ValueError, u'{'.format)
@@ -1324,14 +1302,12 @@ class UnicodeTest(
         self.assertRaises(ValueError, u"{0!}".format, 0)
         self.assertRaises(ValueError, u"{0!rs}".format, 0)
         self.assertRaises(ValueError, u"{!}".format)
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertRaises(IndexError, u"{:}".format)
-            self.assertRaises(IndexError, u"{:s}".format)
-            self.assertRaises(IndexError, u"{}".format)
+        self.assertRaises(IndexError, u"{:}".format)
+        self.assertRaises(IndexError, u"{:s}".format)
+        self.assertRaises(IndexError, u"{}".format)
         big = u"23098475029384702983476098230754973209482573"
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertRaises(ValueError, (u"{" + big + u"}").format)
-            self.assertRaises(ValueError, (u"{[" + big + u"]}").format, [0])
+        self.assertRaises(ValueError, (u"{" + big + u"}").format)
+        self.assertRaises(ValueError, (u"{[" + big + u"]}").format, [0])
 
         # issue 6089
         self.assertRaises(ValueError, u"{0[0]x}".format, [None])
@@ -1346,10 +1322,9 @@ class UnicodeTest(
                           0, 1, 2, 3, 4, 5, 6, 7)
 
         # string format spec errors
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertRaises(ValueError, u"{0:-s}".format, u'')
-            self.assertRaises(ValueError, format, u"", u"-")
-            self.assertRaises(ValueError, u"{0:=s}".format, u'')
+        self.assertRaises(ValueError, u"{0:-s}".format, u'')
+        self.assertRaises(ValueError, format, u"", u"-")
+        self.assertRaises(ValueError, u"{0:=s}".format, u'')
 
         # test combining string and unicode
         self.assertEqual(u"foo{0}".format('bar'), u'foobar')
@@ -1358,8 +1333,7 @@ class UnicodeTest(
         self.assertEqual("foo{0}".format(u'bar'), 'foobar')
         # This will try to convert the argument from unicode to str, which
         #  will fail
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertRaises(UnicodeEncodeError, "foo{0}".format, u'\u1000bar')
+        self.assertRaises(UnicodeEncodeError, "foo{0}".format, u'\u1000bar')
 
     def test_format_auto_numbering(self):
         class C:
@@ -1376,23 +1350,20 @@ class UnicodeTest(
         self.assertEqual(u'{[a]}'.format({'a':4, 'b':2}), u'4')
         self.assertEqual(u'a{}b{}c'.format(0, 1), u'a0b1c')
 
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual(u'a{:{}}b'.format('x', '^10'), u'a    x     b')
-            self.assertEqual(u'a{:{}x}b'.format(20, '#'), u'a0x14b')
+        self.assertEqual(u'a{:{}}b'.format('x', '^10'), u'a    x     b')
+        self.assertEqual(u'a{:{}x}b'.format(20, '#'), u'a0x14b')
 
         # can't mix and match numbering and auto-numbering
         self.assertRaises(ValueError, u'{}{1}'.format, 1, 2)
         self.assertRaises(ValueError, u'{1}{}'.format, 1, 2)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertRaises(ValueError, u'{:{1}}'.format, 1, 2)
-            self.assertRaises(ValueError, u'{0:{}}'.format, 1, 2)
+        self.assertRaises(ValueError, u'{:{1}}'.format, 1, 2)
+        self.assertRaises(ValueError, u'{0:{}}'.format, 1, 2)
 
         # can mix and match auto-numbering and named
         self.assertEqual(u'{f}{}'.format(4, f='test'), u'test4')
         self.assertEqual(u'{}{f}'.format(4, f='test'), u'4test')
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual(u'{:{f}}{g}{}'.format(1, 3, g='g', f=2), u' 1g3')
-            self.assertEqual(u'{f:{}}{}{g}'.format(2, 4, f=1, g='g'), u' 14g')
+        self.assertEqual(u'{:{f}}{g}{}'.format(1, 3, g='g', f=2), u' 1g3')
+        self.assertEqual(u'{f:{}}{}{g}'.format(2, 4, f=1, g='g'), u' 14g')
 
     def test_raiseMemError(self):
         # Ensure that the freelist contains a consistent object, even
@@ -1406,14 +1377,13 @@ class UnicodeTest(
         self.assertRaises(MemoryError, alloc)
         self.assertRaises(MemoryError, alloc)
 
-    @unittest.skipIf(test_support.is_cli, "str/unicode")
     def test_format_subclass(self):
         class U(unicode):
             def __unicode__(self):
                 return u'__unicode__ overridden'
         u = U(u'xxx')
-        self.assertEquals("%s" % u, u'__unicode__ overridden')
-        self.assertEquals("{}".format(u), u'__unicode__ overridden')
+        self.assertEqual("%s" % u, u'__unicode__ overridden')
+        self.assertEqual("{}".format(u), '__unicode__ overridden')
 
 
 def test_main():

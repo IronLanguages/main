@@ -4,11 +4,7 @@ import sys
 import pstats
 import unittest
 from StringIO import StringIO
-from test.test_support import run_unittest, due_to_ironpython_bug
-
-# sys.setprofile not implemented
-if due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=3124"):
-    sys.exit(0)
+from test.test_support import run_unittest
 
 import profile
 from test.profilee import testfunc, timer
@@ -97,7 +93,7 @@ def main():
 # Don't remove this comment. Everything below it is auto-generated.
 #--cut--------------------------------------------------------------------------
 ProfileTest.expected_output['print_stats'] = """\
-         127 function calls (107 primitive calls) in 999.749 CPU seconds
+         127 function calls (107 primitive calls) in 999.749 seconds
 
    Ordered by: standard name
 

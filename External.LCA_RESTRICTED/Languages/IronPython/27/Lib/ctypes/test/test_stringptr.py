@@ -2,7 +2,6 @@ import unittest
 from ctypes import *
 
 import _ctypes_test
-from test import test_support
 
 lib = CDLL(_ctypes_test.__file__)
 
@@ -16,11 +15,10 @@ class StringPtrTestCase(unittest.TestCase):
         # NULL pointer access
         self.assertRaises(ValueError, getattr, x.str, "contents")
         b = c_buffer("Hello, World")
+        from sys import getrefcount as grc
+        self.assertEqual(grc(b), 2)
         x.str = b
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            from sys import getrefcount as grc
-        
-            self.assertEqual(grc(b), 3)
+        self.assertEqual(grc(b), 3)
 
         # POINTER(c_char) and Python string is NOT compatible
         # POINTER(c_char) and c_buffer() is compatible

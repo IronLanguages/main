@@ -876,7 +876,7 @@ class ClassPropertiesAndMethods(unittest.TestCase):
     # see "A Monotonic Superclass Linearization for Dylan",
     # by Kim Barrett et al. (OOPSLA 1996)
     def test_consistency_with_epg(self):
-        # Testing consistentcy with EPG...
+        # Testing consistency with EPG...
         class Pane(object): pass
         class ScrollingMixin(object): pass
         class EditingMixin(object): pass
@@ -1718,6 +1718,7 @@ order (MRO) for bases """
             ("__exit__", run_context, swallow, set(), {"__enter__" : iden}),
             ("__complex__", complex, complex_num, set(), {}),
             ("__format__", format, format_impl, set(), {}),
+            ("__dir__", dir, empty_seq, set(), {}),
             ]
 
         class Checker(object):
@@ -4282,7 +4283,7 @@ order (MRO) for bases """
         except TypeError:
             pass
         else:
-            self.fail("Carlo Verre __setattr__ suceeded!")
+            self.fail("Carlo Verre __setattr__ succeeded!")
         try:
             object.__delattr__(str, "lower")
         except TypeError:
@@ -4534,11 +4535,11 @@ order (MRO) for bases """
             __getattr__ = descr
 
         self.assertRaises(AttributeError, getattr, A(), "attr")
-        self.assertEquals(descr.counter, 1)
+        self.assertEqual(descr.counter, 1)
         self.assertRaises(AttributeError, getattr, B(), "attr")
-        self.assertEquals(descr.counter, 2)
+        self.assertEqual(descr.counter, 2)
         self.assertRaises(AttributeError, getattr, C(), "attr")
-        self.assertEquals(descr.counter, 4)
+        self.assertEqual(descr.counter, 4)
 
         import gc
         class EvilGetattribute(object):
@@ -4553,6 +4554,33 @@ order (MRO) for bases """
 
         self.assertRaises(AttributeError, getattr, EvilGetattribute(), "attr")
 
+    def test_abstractmethods(self):
+        # type pretends not to have __abstractmethods__.
+        self.assertRaises(AttributeError, getattr, type, "__abstractmethods__")
+        class meta(type):
+            pass
+        self.assertRaises(AttributeError, getattr, meta, "__abstractmethods__")
+        class X(object):
+            pass
+        with self.assertRaises(AttributeError):
+            del X.__abstractmethods__
+
+    def test_proxy_call(self):
+        class FakeStr(object):
+            __class__ = str
+
+        fake_str = FakeStr()
+        # isinstance() reads __class__ on new style classes
+        self.assertTrue(isinstance(fake_str, str))
+
+        # call a method descriptor
+        with self.assertRaises(TypeError):
+            str.split(fake_str)
+
+        # call a slot wrapper descriptor
+        with self.assertRaises(TypeError):
+            str.__add__(fake_str, "abc")
+
 
 class DictProxyTests(unittest.TestCase):
     def setUp(self):
@@ -4565,7 +4593,7 @@ class DictProxyTests(unittest.TestCase):
         # Testing dict-proxy iterkeys...
         keys = [ key for key in self.C.__dict__.iterkeys() ]
         keys.sort()
-        self.assertEquals(keys, ['__dict__', '__doc__', '__module__',
+        self.assertEqual(keys, ['__dict__', '__doc__', '__module__',
             '__weakref__', 'meth'])
 
     def test_iter_values(self):

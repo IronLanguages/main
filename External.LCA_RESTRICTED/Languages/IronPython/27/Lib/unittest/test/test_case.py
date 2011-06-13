@@ -495,17 +495,11 @@ class Test_TestCase(unittest.TestCase, TestEquality, TestHashing):
         with self.assertRaises(self.failureException):
             self.assertDictContainsSubset({'a': 1, 'c': 1}, {'a': 1})
 
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
+        with test_support.check_warnings(("", UnicodeWarning)):
             one = ''.join(chr(i) for i in range(255))
             # this used to cause a UnicodeDecodeError constructing the failure msg
             with self.assertRaises(self.failureException):
                 self.assertDictContainsSubset({'foo': one}, {'foo': u'\uFFFD'})
-        else:
-            with test_support.check_warnings(("", UnicodeWarning)):
-                one = ''.join(chr(i) for i in range(255))
-                # this used to cause a UnicodeDecodeError constructing the failure msg
-                with self.assertRaises(self.failureException):
-                    self.assertDictContainsSubset({'foo': one}, {'foo': u'\uFFFD'})
 
     def testAssertEqual(self):
         equal_pairs = [
@@ -692,20 +686,19 @@ class Test_TestCase(unittest.TestCase, TestEquality, TestHashing):
 
         # Test that sequences of unhashable objects can be tested for sameness:
         self.assertItemsEqual([[1, 2], [3, 4], 0], [False, [3, 4], [1, 2]])
-        with test_support.check_warnings(quiet=True) as w:
-            # hashable types, but not orderable
-            self.assertRaises(self.failureException, self.assertItemsEqual,
-                              [], [divmod, 'x', 1, 5j, 2j, frozenset()])
-            # comparing dicts raises a py3k warning
-            self.assertItemsEqual([{'a': 1}, {'b': 2}], [{'b': 2}, {'a': 1}])
-            # comparing heterogenous non-hashable sequences raises a py3k warning
-            self.assertItemsEqual([1, 'x', divmod, []], [divmod, [], 'x', 1])
-            self.assertRaises(self.failureException, self.assertItemsEqual,
-                              [], [divmod, [], 'x', 1, 5j, 2j, set()])
-            # fail the test if warnings are not silenced
-            if w.warnings:
-                self.fail('assertItemsEqual raised a warning: ' +
-                          str(w.warnings[0]))
+        # Test that iterator of unhashable objects can be tested for sameness:
+        self.assertItemsEqual(iter([1, 2, [], 3, 4]),
+                              iter([1, 2, [], 3, 4]))
+
+        # hashable types, but not orderable
+        self.assertRaises(self.failureException, self.assertItemsEqual,
+                          [], [divmod, 'x', 1, 5j, 2j, frozenset()])
+        # comparing dicts
+        self.assertItemsEqual([{'a': 1}, {'b': 2}], [{'b': 2}, {'a': 1}])
+        # comparing heterogenous non-hashable sequences
+        self.assertItemsEqual([1, 'x', divmod, []], [divmod, [], 'x', 1])
+        self.assertRaises(self.failureException, self.assertItemsEqual,
+                          [], [divmod, [], 'x', 1, 5j, 2j, set()])
         self.assertRaises(self.failureException, self.assertItemsEqual,
                           [[1]], [[2]])
 
@@ -717,6 +710,24 @@ class Test_TestCase(unittest.TestCase, TestEquality, TestHashing):
         self.assertRaises(self.failureException, self.assertItemsEqual,
                           [1, {'b': 2}, None, True], [{'b': 2}, True, None])
 
+        # Same elements which don't reliably compare, in
+        # different order, see issue 10242
+        a = [{2,4}, {1,2}]
+        b = a[::-1]
+        self.assertItemsEqual(a, b)
+
+        # test utility functions supporting assertItemsEqual()
+
+        diffs = set(unittest.util._count_diff_all_purpose('aaabccd', 'abbbcce'))
+        expected = {(3,1,'a'), (1,3,'b'), (1,0,'d'), (0,1,'e')}
+        self.assertEqual(diffs, expected)
+
+        diffs = unittest.util._count_diff_all_purpose([[]], [])
+        self.assertEqual(diffs, [(1, 0, [])])
+
+        diffs = set(unittest.util._count_diff_hashable('aaabccd', 'abbbcce'))
+        expected = {(3,1,'a'), (1,3,'b'), (1,0,'d'), (0,1,'e')}
+        self.assertEqual(diffs, expected)
 
     def testAssertSetEqual(self):
         set1 = set()
@@ -844,7 +855,6 @@ class Test_TestCase(unittest.TestCase, TestEquality, TestHashing):
         self.assertRaises(self.failureException, self.assertLessEqual, 'bug', u'ant')
         self.assertRaises(self.failureException, self.assertLessEqual, u'bug', 'ant')
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/28171")
     def testAssertMultiLineEqual(self):
         sample_text = b"""\
 http://www.python.org/doc/2.3/lib/module-unittest.html
@@ -880,6 +890,21 @@ test case
                 # assertMultiLineEqual is hooked up as the default for
                 # unicode strings - so we can't use it for this check
                 self.assertTrue(sample_text_error == error)
+
+    def testAsertEqualSingleLine(self):
+        sample_text = u"laden swallows fly slowly"
+        revised_sample_text = u"unladen swallows fly quickly"
+        sample_text_error = """\
+- laden swallows fly slowly
+?                    ^^^^
++ unladen swallows fly quickly
+? ++                   ^^^^^
+"""
+        try:
+            self.assertEqual(sample_text, revised_sample_text)
+        except self.failureException as e:
+            error = str(e).split('\n', 1)[1]
+            self.assertTrue(sample_text_error == error)
 
     def testAssertIsNone(self):
         self.assertIsNone(None)
@@ -990,6 +1015,58 @@ test case
 
         # This shouldn't blow up
         deepcopy(test)
+
+    def testKeyboardInterrupt(self):
+        def _raise(self=None):
+            raise KeyboardInterrupt
+        def nothing(self):
+            pass
+
+        class Test1(unittest.TestCase):
+            test_something = _raise
+
+        class Test2(unittest.TestCase):
+            setUp = _raise
+            test_something = nothing
+
+        class Test3(unittest.TestCase):
+            test_something = nothing
+            tearDown = _raise
+
+        class Test4(unittest.TestCase):
+            def test_something(self):
+                self.addCleanup(_raise)
+
+        for klass in (Test1, Test2, Test3, Test4):
+            with self.assertRaises(KeyboardInterrupt):
+                klass('test_something').run()
+
+    def testSystemExit(self):
+        def _raise(self=None):
+            raise SystemExit
+        def nothing(self):
+            pass
+
+        class Test1(unittest.TestCase):
+            test_something = _raise
+
+        class Test2(unittest.TestCase):
+            setUp = _raise
+            test_something = nothing
+
+        class Test3(unittest.TestCase):
+            test_something = nothing
+            tearDown = _raise
+
+        class Test4(unittest.TestCase):
+            def test_something(self):
+                self.addCleanup(_raise)
+
+        for klass in (Test1, Test2, Test3, Test4):
+            result = unittest.TestResult()
+            klass('test_something').run(result)
+            self.assertEqual(len(result.errors), 1)
+            self.assertEqual(result.testsRun, 1)
 
 
 if __name__ == '__main__':

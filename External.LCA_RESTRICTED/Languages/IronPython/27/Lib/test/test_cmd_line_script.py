@@ -4,11 +4,6 @@ import unittest
 import os
 import os.path
 import test.test_support
-
-if test.test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-    import sys
-    sys.exit(0)
-
 from test.script_helper import (run_python,
                                 temp_dir, make_script, compile_script,
                                 make_pkg, make_zip_script, make_zip_pkg)
