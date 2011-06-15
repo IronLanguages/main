@@ -288,6 +288,9 @@
     </Directory>
     <Component Id="Ceatgr2es4ita5abtrlpn9ri3z" DiskId="1" Guid="2126e1ea-28b8-4920-b059-26e7799ac226">
       <File Id="Fwqd4et4qlwe2q494vvxmf0hd" Source="$(var.StdLibPath)\lib2to3\__init__.py" />
+      <File Id="F6o505gw4yk87s0n4ug9sfx4kp" Source="$(var.StdLibPath)\lib2to3\__main__.py" />
+      <File Id="Frdewy4dks6cf36t7akty54hc" Source="$(var.StdLibPath)\lib2to3\btm_matcher.py" />
+      <File Id="F2utfvsywhby1ur5tt02b8c5w9" Source="$(var.StdLibPath)\lib2to3\btm_utils.py" />
       <File Id="F4i5m55g9p18azitlh8jlrv9nz" Source="$(var.StdLibPath)\lib2to3\fixer_base.py" />
       <File Id="F9uz9l9zeu9cgw3hx5v6n480bi" Source="$(var.StdLibPath)\lib2to3\fixer_util.py" />
       <File Id="F717uxxne393xpj10qmtgm17zl" Source="$(var.StdLibPath)\lib2to3\main.py" />
@@ -385,7 +388,6 @@
     <File Id="F3e4w8kys2pl02cozedfkc4zuh" Source="$(var.StdLibPath)\Cookie.py" />
     <File Id="F2fhmgmkgc164dfpz4bldj57r8" Source="$(var.StdLibPath)\DocXMLRPCServer.py" />
     <File Id="Fayn1dnadwewszom24umrv8ccc" Source="$(var.StdLibPath)\HTMLParser.py" />
-    <File Id="F8twpxeyxl2ryub374c85s25bv" Source="$(var.StdLibPath)\LICENSE.txt" />
     <File Id="F6p77a8kwlg1rcey0y38j4o376" Source="$(var.StdLibPath)\MimeWriter.py" />
     <File Id="F3u4cw8bcii4op19stlx8kqcof" Source="$(var.StdLibPath)\Queue.py" />
     <File Id="Fevvhugxoxoqh16jjiymiygbbt" Source="$(var.StdLibPath)\SimpleHTTPServer.py" />
@@ -409,6 +411,7 @@
     <File Id="F8tfrvynq86df73f41f3cgz6ak" Source="$(var.StdLibPath)\antigravity.py" />
     <File Id="F9xwh4rimwol79yairdi3byi5f" Source="$(var.StdLibPath)\anydbm.py" />
     <File Id="F9zrdswesvf091i3lvz536ntnh" Source="$(var.StdLibPath)\argparse.py" />
+    <File Id="F2auyf03v1oa0mufz54ns3q8l8" Source="$(var.StdLibPath)\ast.py" />
     <File Id="F3mg1cll2x4ujgg6kqmovojstp" Source="$(var.StdLibPath)\asynchat.py" />
     <File Id="F2klfjdck17h8fzlzg8ug48362" Source="$(var.StdLibPath)\asyncore.py" />
     <File Id="F5o14uqv8o5b6wxv6iep7xut7h" Source="$(var.StdLibPath)\atexit.py" />
@@ -432,6 +435,7 @@
     <File Id="F6b2cs3i217nbvpzjexnjlt4r3" Source="$(var.StdLibPath)\contextlib.py" />
     <File Id="F941b6w2jcjc5k3iny3obajti6" Source="$(var.StdLibPath)\cookielib.py" />
     <File Id="F6gkza6fehpo3c5afykva6k0mh" Source="$(var.StdLibPath)\copy.py" />
+    <File Id="F75n3uxy5i5wvp3t5rnb29kh29" Source="$(var.StdLibPath)\csv.py" />
     <File Id="F5mhjtg9mdi75rxq8gqhgcel1b" Source="$(var.StdLibPath)\decimal.py" />
     <File Id="Fccy7i59wlycvwv5fqz380qhrn" Source="$(var.StdLibPath)\difflib.py" />
     <File Id="Fvxi0qatt7fpf6p4ke2q2nbax" Source="$(var.StdLibPath)\dircache.py" />

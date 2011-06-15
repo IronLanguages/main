@@ -15,9 +15,11 @@
               <Component Id="Comp_Core" DiskId="1" Guid="655DFFDE-C66A-4650-8369-5447CFC1942F">
                 <File Id="File_License.html" Name="License.html" Source="$(var.PythonDir)\Public\License.html" />
                 <File Id="File_License.rtf" Name="License.rtf" Source="$(var.PythonDir)\Public\License.rtf" />
+                <File Id="File_License.txt" Name="License.txt" Source="$(var.PythonDir)\Public\License.txt" />
                 <File Id="File_IronPython.XML" Name="IronPython.XML" />
                 <File Id="File_IronPython.Modules.XML" Name="IronPython.Modules.XML" />
                 <File Id="File_Readme.html" Name="Readme.html" Source="$(var.PythonDir)\Public\Readme.html"/>
+                <File Id="File_License.StdLib.txt" Name="License.StdLib.txt" Source="$(var.PythonDir)\..\..\External.LCA_RESTRICTED\Languages\IronPython\27\LICENSE.txt"/>                
               </Component>
               <Component Id="Comp_Installation_Location" Guid="536A8336-C5ED-4192-8B70-A76EA933C705">
                 <RegistryValue Root='HKLM' Key='SOFTWARE\IronPython\$(var.ProductVersionText)\InstallPath'

@@ -428,6 +428,10 @@ def setcopyright():
         __builtin__.credits = _Printer(
             "credits",
             "Jython is maintained by the Jython developers (www.jython.org).")
+    elif sys.platform == 'cli':
+        __builtin__.credits = _Printer(
+            "credits",
+            "IronPython is maintained by the IronPython developers (www.ironpython.net).")
     else:
         __builtin__.credits = _Printer("credits", """\
     Thanks to CWI, CNRI, BeOpen.com, Zope Corporation and a cast of thousands
