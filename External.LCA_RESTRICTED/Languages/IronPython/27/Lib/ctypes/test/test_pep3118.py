@@ -1,6 +1,5 @@
 import unittest
 from ctypes import *
-from test import test_support
 import re, sys
 
 if sys.byteorder == "little":
@@ -48,8 +47,6 @@ class Test(unittest.TestCase):
                 raise
 
     def test_endian_types(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28754"):
-            return
         for tp, fmt, shape, itemtp in endian_types:
             ob = tp()
             v = memoryview(ob)

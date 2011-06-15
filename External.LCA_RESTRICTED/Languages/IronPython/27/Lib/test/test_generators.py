@@ -185,12 +185,12 @@ Specification: Generators and Exception Propagation
     ...     yield f()  # the zero division exception propagates
     ...     yield 42   # and we'll never get here
     >>> k = g()
-    >>> k.next() # doctest: +ELLIPSIS
+    >>> k.next()
     Traceback (most recent call last):
       File "<stdin>", line 1, in ?
       File "<stdin>", line 2, in g
       File "<stdin>", line 2, in f
-    ZeroDivisionError: ...
+    ZeroDivisionError: integer division or modulo by zero
     >>> k.next()  # and the generator cannot be resumed
     Traceback (most recent call last):
       File "<stdin>", line 1, in ?
@@ -372,6 +372,7 @@ Next one was posted to c.l.py.
 5-combs of [1, 2, 3, 4]:
 
 From the Iterators list, about the types of these things.
+
 >>> def g():
 ...     yield 1
 ...
@@ -382,11 +383,8 @@ From the Iterators list, about the types of these things.
 <type 'generator'>
 >>> [s for s in dir(i) if not s.startswith('_')]
 ['close', 'gi_code', 'gi_frame', 'gi_running', 'next', 'send', 'throw']
-
-#http://ironpython.codeplex.com/workitem/28534
-#>>> print i.next.__doc__
-#x.next() -> the next value, or raise StopIteration
-
+>>> print i.next.__doc__
+x.next() -> the next value, or raise StopIteration
 >>> iter(i) is i
 True
 >>> import types
@@ -402,11 +400,7 @@ And more, added later.
 >>> i.gi_running = 42
 Traceback (most recent call last):
   ...
-AttributeError: can't assign to read-only property gi_running of type 'generator'
-
-#http://ironpython.codeplex.com/workitem/28534
-#TypeError: readonly attribute
-
+TypeError: readonly attribute
 >>> def g():
 ...     yield me.gi_running
 >>> me = g()
@@ -736,26 +730,26 @@ syntax_tests = """
 
 >>> def f():
 ...     return 22
-...     yield 1 # doctest: +ELLIPSIS
+...     yield 1
 Traceback (most recent call last):
   ..
-SyntaxError: 'return' with argument inside generator...
+SyntaxError: 'return' with argument inside generator (<doctest test.test_generators.__test__.syntax[0]>, line 3)
 
 >>> def f():
 ...     yield 1
-...     return 22 # doctest: +ELLIPSIS
+...     return 22
 Traceback (most recent call last):
   ..
-SyntaxError: 'return' with argument inside generator...
+SyntaxError: 'return' with argument inside generator (<doctest test.test_generators.__test__.syntax[1]>, line 3)
 
 "return None" is not the same as "return" in a generator:
 
 >>> def f():
 ...     yield 1
-...     return None # doctest: +ELLIPSIS
+...     return None
 Traceback (most recent call last):
   ..
-SyntaxError: 'return' with argument inside generator...
+SyntaxError: 'return' with argument inside generator (<doctest test.test_generators.__test__.syntax[2]>, line 3)
 
 These are fine:
 
@@ -873,7 +867,7 @@ These are fine:
 <type 'generator'>
 
 
->>> def f(): # doctest: +ELLIPSIS
+>>> def f():
 ...     if 0:
 ...         lambda x:  x        # shouldn't trigger here
 ...         return              # or here
@@ -884,7 +878,7 @@ These are fine:
 ...     if 0:
 ...         yield 2             # because it's a generator (line 10)
 Traceback (most recent call last):
-SyntaxError: 'return' with argument inside generator...
+SyntaxError: 'return' with argument inside generator (<doctest test.test_generators.__test__.syntax[24]>, line 10)
 
 This one caused a crash (see SF bug 567538):
 
@@ -896,17 +890,15 @@ This one caused a crash (see SF bug 567538):
 ...             yield i
 ...
 >>> g = f()
-
-#http://ironpython.codeplex.com/workitem/28534
-#>>> print g.next()
-#0
-#>>> print g.next()
-#1
-#>>> print g.next()
-#2
-#>>> print g.next()
-#Traceback (most recent call last):
-#StopIteration
+>>> print g.next()
+0
+>>> print g.next()
+1
+>>> print g.next()
+2
+>>> print g.next()
+Traceback (most recent call last):
+StopIteration
 
 
 Test the gi_code attribute
@@ -935,19 +927,17 @@ Test the __name__ attribute and the repr()
 >>> g.__name__
 'f'
 >>> repr(g)  # doctest: +ELLIPSIS
-'<generator object ...>'
+'<generator object f at ...>'
 
 Lambdas shouldn't have their usual return behavior.
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> x = lambda: (yield 1)
-#>>> list(x())
-#[1]
+>>> x = lambda: (yield 1)
+>>> list(x())
+[1]
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> x = lambda: ((yield 1), (yield 2))
-#>>> list(x())
-#[1, 2]
+>>> x = lambda: ((yield 1), (yield 2))
+>>> list(x())
+[1, 2]
 """
 
 # conjoin is a simple backtracking generator, named in honor of Icon's
@@ -1496,18 +1486,12 @@ True
 Generator-iterators are weakly referencable as well:
 
 >>> gi = gen()
-
-#http://ironpython.codeplex.com/workitem/28534
-#>>> wr = weakref.ref(gi)
-
-#http://ironpython.codeplex.com/workitem/28534
-#>>> wr() is gi
-#True
-
-#http://ironpython.codeplex.com/workitem/28534
-#>>> p = weakref.proxy(gi)
-#>>> list(p)
-#['foo!']
+>>> wr = weakref.ref(gi)
+>>> wr() is gi
+True
+>>> p = weakref.proxy(gi)
+>>> list(p)
+['foo!']
 
 """
 
@@ -1577,24 +1561,22 @@ A yield expression with augmented assignment.
 
 Check some syntax errors for yield expressions:
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> f=lambda: (yield 1),(yield 2)
-#Traceback (most recent call last):
-#  ...
-#  File "<doctest test.test_generators.__test__.coroutine[21]>", line 1
-#SyntaxError: 'yield' outside function
+>>> f=lambda: (yield 1),(yield 2)
+Traceback (most recent call last):
+  ...
+  File "<doctest test.test_generators.__test__.coroutine[21]>", line 1
+SyntaxError: 'yield' outside function
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> def f(): return lambda x=(yield): 1
-#Traceback (most recent call last):
-#  ...
-#SyntaxError: 'return' with argument inside generator (<doctest test.test_generators.__test__.coroutine[22]>, line 1)
+>>> def f(): return lambda x=(yield): 1
+Traceback (most recent call last):
+  ...
+SyntaxError: 'return' with argument inside generator (<doctest test.test_generators.__test__.coroutine[22]>, line 1)
 
->>> def f(): x = yield = y # doctest: +ELLIPSIS
+>>> def f(): x = yield = y
 Traceback (most recent call last):
   ...
   File "<doctest test.test_generators.__test__.coroutine[23]>", line 1
-SyntaxError: ...assign... yield expression...
+SyntaxError: assignment to yield expression not possible
 
 >>> def f(): (yield bar) = y
 Traceback (most recent call last):
@@ -1636,26 +1618,23 @@ caught ValueError (1)
 >>> g.throw(ValueError, ValueError(1), None)   # explicit None traceback
 caught ValueError (1)
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> g.throw(ValueError(1), "foo")       # bad args
-#Traceback (most recent call last):
-#  ...
-#TypeError: instance exception may not have a separate value
+>>> g.throw(ValueError(1), "foo")       # bad args
+Traceback (most recent call last):
+  ...
+TypeError: instance exception may not have a separate value
 
-#>>> g.throw(ValueError, "foo", 23)      # bad args
-#Traceback (most recent call last):
-#  ...
-#TypeError: throw() third argument must be a traceback object
+>>> g.throw(ValueError, "foo", 23)      # bad args
+Traceback (most recent call last):
+  ...
+TypeError: throw() third argument must be a traceback object
 
 >>> def throw(g,exc):
 ...     try:
 ...         raise exc
 ...     except:
 ...         g.throw(*sys.exc_info())
-
-#http://ironpython.codeplex.com/workitem/28534
-#>>> throw(g,ValueError) # do it with traceback included
-#caught ValueError ()
+>>> throw(g,ValueError) # do it with traceback included
+caught ValueError ()
 
 >>> g.send(1)
 1
@@ -1665,16 +1644,13 @@ Traceback (most recent call last):
   ...
 TypeError
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> print g.gi_frame
-#None
+>>> print g.gi_frame
+None
 
-#http://ironpython.codeplex.com/workitem/28534
-# CLR assertion failure here due to calling throw and send
-#>>> g.send(2)
-#Traceback (most recent call last):
-#  ...
-#StopIteration
+>>> g.send(2)
+Traceback (most recent call last):
+  ...
+StopIteration
 
 >>> g.throw(ValueError,6)       # throw on closed generator
 Traceback (most recent call last):
@@ -1692,15 +1668,6 @@ Traceback (most recent call last):
 TypeError: exceptions must be classes, or instances, not str
 
 Now let's try closing a generator:
-
->>> import gc
->>> def gc_collect():
-...     gc.collect()
-...     gc.collect()
-...     gc.collect()
-...     gc.collect()
-...     gc.collect()
-...     return None
 
 >>> def f():
 ...     try: yield
@@ -1730,20 +1697,19 @@ And finalization:
 
 >>> g = f()
 >>> g.next()
->>> del g; gc_collect()
+>>> del g
 exiting
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> class context(object):
-#...    def __enter__(self): pass
-#...    def __exit__(self, *args): print 'exiting'
-#>>> def f():
-#...     with context():
-#...          yield
-#>>> g = f()
-#>>> g.next()
-#>>> del g; gc_collect()
-#exiting
+>>> class context(object):
+...    def __enter__(self): pass
+...    def __exit__(self, *args): print 'exiting'
+>>> def f():
+...     with context():
+...          yield
+>>> g = f()
+>>> g.next()
+>>> del g
+exiting
 
 
 GeneratorExit is not caught by except Exception:
@@ -1755,7 +1721,7 @@ GeneratorExit is not caught by except Exception:
 
 >>> g = f()
 >>> g.next()
->>> del g; gc_collect()
+>>> del g
 finally
 
 
@@ -1780,13 +1746,11 @@ Our ill-behaved code should be invoked during GC:
 >>> old, sys.stderr = sys.stderr, StringIO.StringIO()
 >>> g = f()
 >>> g.next()
->>> del g; gc_collect()
-
-#http://ironpython.codeplex.com/workitem/28534
-#>>> sys.stderr.getvalue().startswith(
-#...     "Exception RuntimeError: 'generator ignored GeneratorExit' in "
-#... )
-#True
+>>> del g
+>>> sys.stderr.getvalue().startswith(
+...     "Exception RuntimeError: 'generator ignored GeneratorExit' in "
+... )
+True
 >>> sys.stderr = old
 
 
@@ -1815,10 +1779,9 @@ enclosing function a generator:
 >>> type(f())
 <type 'generator'>
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> def f(): lambda x=(yield): 1
-#>>> type(f())
-#<type 'generator'>
+>>> def f(): lambda x=(yield): 1
+>>> type(f())
+<type 'generator'>
 
 >>> def f(): x=(i for i in (yield) if (yield))
 >>> type(f())
@@ -1890,28 +1853,27 @@ explicitly, without generators. We do have to redirect stderr to avoid
 printing warnings and to doublecheck that we actually tested what we wanted
 to test.
 
-#http://ironpython.codeplex.com/workitem/28534
-#>>> import sys, StringIO
-#>>> old = sys.stderr
-#>>> try:
-#...     sys.stderr = StringIO.StringIO()
-#...     class Leaker:
-#...         def __del__(self):
-#...             raise RuntimeError
-#...
-#...     l = Leaker()
-#...     del l
-#...     err = sys.stderr.getvalue().strip()
-#...     err.startswith(
-#...         "Exception RuntimeError: RuntimeError() in <"
-#...     )
-#...     err.endswith("> ignored")
-#...     len(err.splitlines())
-#... finally:
-#...     sys.stderr = old
-#True
-#True
-#1
+>>> import sys, StringIO
+>>> old = sys.stderr
+>>> try:
+...     sys.stderr = StringIO.StringIO()
+...     class Leaker:
+...         def __del__(self):
+...             raise RuntimeError
+...
+...     l = Leaker()
+...     del l
+...     err = sys.stderr.getvalue().strip()
+...     err.startswith(
+...         "Exception RuntimeError: RuntimeError() in <"
+...     )
+...     err.endswith("> ignored")
+...     len(err.splitlines())
+... finally:
+...     sys.stderr = old
+True
+True
+1
 
 
 

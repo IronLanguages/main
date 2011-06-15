@@ -536,8 +536,6 @@ class DictTest(unittest.TestCase):
         d = {}
 
     def test_container_iterator(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25419"):
-            return
         # Bug #3680: tp_traverse was not implemented for dictiter objects
         class C(object):
             pass

@@ -1,6 +1,4 @@
-from unittest import TestCase
-
-import json
+from json.tests import PyTest, CTest
 
 # Fri Dec 30 18:57:26 2005
 JSONDOCS = [
@@ -61,16 +59,29 @@ SKIPS = {
     18: "spec doesn't specify any nesting limitations",
 }
 
-class TestFail(TestCase):
+class TestFail(object):
     def test_failures(self):
         for idx, doc in enumerate(JSONDOCS):
             idx = idx + 1
             if idx in SKIPS:
-                json.loads(doc)
+                self.loads(doc)
                 continue
             try:
-                json.loads(doc)
+                self.loads(doc)
             except ValueError:
                 pass
             else:
                 self.fail("Expected failure for fail{0}.json: {1!r}".format(idx, doc))
+
+    def test_non_string_keys_dict(self):
+        data = {'a' : 1, (1, 2) : 2}
+
+        #This is for c encoder
+        self.assertRaises(TypeError, self.dumps, data)
+
+        #This is for python encoder
+        self.assertRaises(TypeError, self.dumps, data, indent=True)
+
+
+class TestPyFail(TestFail, PyTest): pass
+class TestCFail(TestFail, CTest): pass

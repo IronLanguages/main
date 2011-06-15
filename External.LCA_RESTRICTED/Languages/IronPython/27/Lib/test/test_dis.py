@@ -5,7 +5,6 @@ import unittest
 import sys
 import dis
 import StringIO
-from test import test_support
 
 
 def _f(a):
@@ -147,5 +146,5 @@ def test_main():
     run_unittest(DisTests)
 
 
-if __name__ == "__main__" and not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320502"):
+if __name__ == "__main__":
     test_main()

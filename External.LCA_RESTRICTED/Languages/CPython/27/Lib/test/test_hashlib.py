@@ -1,6 +1,6 @@
 # Test hashlib module
 #
-# $Id: test_hashlib.py 80564 2010-04-27 22:59:35Z victor.stinner $
+# $Id$
 #
 #  Copyright (C) 2005-2010   Gregory P. Smith (greg@krypto.org)
 #  Licensed to PSF under a Contributor Agreement.
@@ -114,6 +114,24 @@ class HashLibTestCase(unittest.TestCase):
             pass
         else:
             self.assertTrue(0 == "hashlib didn't reject bogus hash name")
+
+    def test_get_builtin_constructor(self):
+        get_builtin_constructor = hashlib.__dict__[
+                '__get_builtin_constructor']
+        self.assertRaises(ValueError, get_builtin_constructor, 'test')
+        try:
+            import _md5
+        except ImportError:
+            pass
+        # This forces an ImportError for "import _md5" statements
+        sys.modules['_md5'] = None
+        try:
+            self.assertRaises(ValueError, get_builtin_constructor, 'md5')
+        finally:
+            if '_md5' in locals():
+                sys.modules['_md5'] = _md5
+            else:
+                del sys.modules['_md5']
 
     def test_hexdigest(self):
         for name in self.supported_hash_names:

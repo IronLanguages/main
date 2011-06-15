@@ -8,7 +8,6 @@ from cStringIO import StringIO
 
 
 import unittest
-from test.test_support import due_to_ironpython_bug
 
 
 @unittest.skipUnless(hasattr(os, 'kill'), "Test requires os.kill")
@@ -27,9 +26,6 @@ class TestBreak(unittest.TestCase):
 
 
     def testInstallHandler(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
-        
         default_handler = signal.getsignal(signal.SIGINT)
         unittest.installHandler()
         self.assertNotEqual(signal.getsignal(signal.SIGINT), default_handler)
@@ -56,9 +52,6 @@ class TestBreak(unittest.TestCase):
 
 
     def testInterruptCaught(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
-        
         default_handler = signal.getsignal(signal.SIGINT)
 
         result = unittest.TestResult()
@@ -71,8 +64,7 @@ class TestBreak(unittest.TestCase):
             pid = os.getpid()
             os.kill(pid, signal.SIGINT)
             result.breakCaught = True
-            if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.assertTrue(result.shouldStop)
+            self.assertTrue(result.shouldStop)
 
         try:
             test(result)
@@ -82,9 +74,6 @@ class TestBreak(unittest.TestCase):
 
 
     def testSecondInterrupt(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
-        
         result = unittest.TestResult()
         unittest.installHandler()
         unittest.registerResult(result)
@@ -93,26 +82,20 @@ class TestBreak(unittest.TestCase):
             pid = os.getpid()
             os.kill(pid, signal.SIGINT)
             result.breakCaught = True
-            if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.assertTrue(result.shouldStop)
+            self.assertTrue(result.shouldStop)
             os.kill(pid, signal.SIGINT)
-            if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.fail("Second KeyboardInterrupt not raised")
+            self.fail("Second KeyboardInterrupt not raised")
 
         try:
             test(result)
         except KeyboardInterrupt:
             pass
         else:
-            if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.fail("Second KeyboardInterrupt not raised")
+            self.fail("Second KeyboardInterrupt not raised")
         self.assertTrue(result.breakCaught)
 
 
     def testTwoResults(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
-        
         unittest.installHandler()
 
         result = unittest.TestResult()
@@ -134,31 +117,29 @@ class TestBreak(unittest.TestCase):
         except KeyboardInterrupt:
             self.fail("KeyboardInterrupt not handled")
 
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertTrue(result.shouldStop)
-            self.assertTrue(result2.shouldStop)
+        self.assertTrue(result.shouldStop)
+        self.assertTrue(result2.shouldStop)
         self.assertFalse(result3.shouldStop)
 
 
     def testHandlerReplacedButCalled(self):
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            # If our handler has been replaced (is no longer installed) but is
-            # called by the *new* handler, then it isn't safe to delay the
-            # SIGINT and we should immediately delegate to the default handler
-            unittest.installHandler()
-    
-            handler = signal.getsignal(signal.SIGINT)
-            def new_handler(frame, signum):
-                handler(frame, signum)
-            signal.signal(signal.SIGINT, new_handler)
-    
-            try:
-                pid = os.getpid()
-                os.kill(pid, signal.SIGINT)
-            except KeyboardInterrupt:
-                pass
-            else:            
-                self.fail("replaced but delegated handler doesn't raise interrupt")
+        # If our handler has been replaced (is no longer installed) but is
+        # called by the *new* handler, then it isn't safe to delay the
+        # SIGINT and we should immediately delegate to the default handler
+        unittest.installHandler()
+
+        handler = signal.getsignal(signal.SIGINT)
+        def new_handler(frame, signum):
+            handler(frame, signum)
+        signal.signal(signal.SIGINT, new_handler)
+
+        try:
+            pid = os.getpid()
+            os.kill(pid, signal.SIGINT)
+        except KeyboardInterrupt:
+            pass
+        else:
+            self.fail("replaced but delegated handler doesn't raise interrupt")
 
     def testRunner(self):
         # Creating a TextTestRunner with the appropriate argument should
@@ -182,9 +163,6 @@ class TestBreak(unittest.TestCase):
 
 
     def testRemoveResult(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
-        
         result = unittest.TestResult()
         unittest.registerResult(result)
 

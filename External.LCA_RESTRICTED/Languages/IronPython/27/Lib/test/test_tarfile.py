@@ -318,11 +318,6 @@ class MiscReadTest(CommonReadTest):
     def test_extractall(self):
         # Test if extractall() correctly restores directory permissions
         # and times (see issue1735).
-        if test_support.is_cli:
-            # IronPython has no support for utime() on directories or
-            # fine grained permissions.
-            return
-
         tar = tarfile.open(tarname, encoding="iso8859-1")
         directories = [t for t in tar if t.isdir()]
         tar.extractall(TEMPDIR, directories)
@@ -350,7 +345,6 @@ class MiscReadTest(CommonReadTest):
             else:
                 self.fail("ReadError not raised")
         finally:
-            test_support.gc_collect()
             os.remove(empty)
 
 
@@ -855,11 +849,6 @@ class StreamWriteTest(WriteTestBase):
     mode = "w|"
 
     def test_stream_padding(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321793"):
-            test_support.force_gc_collect()
-            if os.path.exists(tmpname):
-                os.unlink(tmpname)
-
         # Test for bug #1543303.
         tar = tarfile.open(tmpname, self.mode)
         tar.close()
@@ -885,9 +874,7 @@ class StreamWriteTest(WriteTestBase):
     def test_file_mode(self):
         # Test for issue #8464: Create files with correct
         # permissions.
-        if (sys.platform == "win32" or
-            sys.platform == "cli" or
-            not hasattr(os, "umask")):
+        if sys.platform == "win32" or not hasattr(os, "umask"):
             return
 
         if os.path.exists(tmpname):
@@ -1101,8 +1088,6 @@ class UstarUnicodeTest(unittest.TestCase):
         self._test_unicode_filename("iso8859-1")
 
     def test_utf7_filename(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=1214"):
-            return
         self._test_unicode_filename("utf7")
 
     def test_utf8_filename(self):
@@ -1115,10 +1100,7 @@ class UstarUnicodeTest(unittest.TestCase):
         tar.close()
 
         tar = tarfile.open(tmpname, encoding=encoding)
-        if test_support.due_to_ironpython_bug("unicode is an alias of str"):
-            self.assertTrue(type(tar.getnames()[0]) is str)
-        else:
-            self.assertTrue(type(tar.getnames()[0]) is not unicode)
+        self.assertTrue(type(tar.getnames()[0]) is not unicode)
         self.assertEqual(tar.getmembers()[0].name, name.encode(encoding))
         tar.close()
 
@@ -1129,7 +1111,7 @@ class UstarUnicodeTest(unittest.TestCase):
         tarinfo.name = "הצü"
         if self.format == tarfile.PAX_FORMAT:
             self.assertRaises(UnicodeError, tar.addfile, tarinfo)
-        elif not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
+        else:
             tar.addfile(tarinfo)
 
         tarinfo.name = u"הצü"
@@ -1211,7 +1193,6 @@ class AppendTest(unittest.TestCase):
 
     def setUp(self):
         self.tarname = tmpname
-        test_support.force_gc_collect("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321793")
         if os.path.exists(self.tarname):
             os.remove(self.tarname)
 
@@ -1562,7 +1543,6 @@ def test_main():
         test_support.run_unittest(*tests)
     finally:
         if os.path.exists(TEMPDIR):
-            test_support.force_gc_collect()
             shutil.rmtree(TEMPDIR)
 
 if __name__ == "__main__":

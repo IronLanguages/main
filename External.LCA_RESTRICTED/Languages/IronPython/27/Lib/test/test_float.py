@@ -52,11 +52,53 @@ class GeneralFloatCases(unittest.TestCase):
         float('.' + '1'*1000)
         float(unicode('.' + '1'*1000))
 
+    def check_conversion_to_int(self, x):
+        """Check that int(x) has the correct value and type, for a float x."""
+        n = int(x)
+        if x >= 0.0:
+            # x >= 0 and n = int(x)  ==>  n <= x < n + 1
+            self.assertLessEqual(n, x)
+            self.assertLess(x, n + 1)
+        else:
+            # x < 0 and n = int(x)  ==>  n >= x > n - 1
+            self.assertGreaterEqual(n, x)
+            self.assertGreater(x, n - 1)
+
+        # Result should be an int if within range, else a long.
+        if -sys.maxint-1 <= n <= sys.maxint:
+            self.assertEqual(type(n), int)
+        else:
+            self.assertEqual(type(n), long)
+
+        # Double check.
+        self.assertEqual(type(int(n)), type(n))
+
+    def test_conversion_to_int(self):
+        # Check that floats within the range of an int convert to type
+        # int, not long.  (issue #11144.)
+        boundary = float(sys.maxint + 1)
+        epsilon = 2**-sys.float_info.mant_dig * boundary
+
+        # These 2 floats are either side of the positive int/long boundary on
+        # both 32-bit and 64-bit systems.
+        self.check_conversion_to_int(boundary - epsilon)
+        self.check_conversion_to_int(boundary)
+
+        # These floats are either side of the negative long/int boundary on
+        # 64-bit systems...
+        self.check_conversion_to_int(-boundary - 2*epsilon)
+        self.check_conversion_to_int(-boundary)
+
+        # ... and these ones are either side of the negative long/int
+        # boundary on 32-bit systems.
+        self.check_conversion_to_int(-boundary - 1.0)
+        self.check_conversion_to_int(-boundary - 1.0 + 2*epsilon)
+
     @test_support.run_with_locale('LC_NUMERIC', 'fr_FR', 'de_DE')
     def test_float_with_comma(self):
         # set locale to something that doesn't use '.' for the decimal point
         # float must not accept the locale specific decimal point but
-        # it still has to accept the normal python syntac
+        # it still has to accept the normal python syntax
         import locale
         if not locale.localeconv()['decimal_point'] == ',':
             return
@@ -158,8 +200,28 @@ class GeneralFloatCases(unittest.TestCase):
     def assertEqualAndEqualSign(self, a, b):
         # fail unless a == b and a and b have the same sign bit;
         # the only difference from assertEqual is that this test
-        # distingishes -0.0 and 0.0.
+        # distinguishes -0.0 and 0.0.
         self.assertEqual((a, copysign(1.0, a)), (b, copysign(1.0, b)))
+
+    @requires_IEEE_754
+    def test_float_mod(self):
+        # Check behaviour of % operator for IEEE 754 special cases.
+        # In particular, check signs of zeros.
+        mod = operator.mod
+
+        self.assertEqualAndEqualSign(mod(-1.0, 1.0), 0.0)
+        self.assertEqualAndEqualSign(mod(-1e-100, 1.0), 1.0)
+        self.assertEqualAndEqualSign(mod(-0.0, 1.0), 0.0)
+        self.assertEqualAndEqualSign(mod(0.0, 1.0), 0.0)
+        self.assertEqualAndEqualSign(mod(1e-100, 1.0), 1e-100)
+        self.assertEqualAndEqualSign(mod(1.0, 1.0), 0.0)
+
+        self.assertEqualAndEqualSign(mod(-1.0, -1.0), -0.0)
+        self.assertEqualAndEqualSign(mod(-1e-100, -1.0), -1e-100)
+        self.assertEqualAndEqualSign(mod(-0.0, -1.0), -0.0)
+        self.assertEqualAndEqualSign(mod(0.0, -1.0), -0.0)
+        self.assertEqualAndEqualSign(mod(1e-100, -1.0), -1.0)
+        self.assertEqualAndEqualSign(mod(1.0, -1.0), -0.0)
 
     @requires_IEEE_754
     def test_float_pow(self):
@@ -473,15 +535,15 @@ class IEEEFormatTestCase(unittest.TestCase):
             return -0.0, math.atan2(0.0, -1)
         def neg_neg():
             return -0.0, math.atan2(-0.0, -1)
-        self.assertEquals(pos_pos(), neg_pos())
-        self.assertEquals(pos_neg(), neg_neg())
+        self.assertEqual(pos_pos(), neg_pos())
+        self.assertEqual(pos_neg(), neg_neg())
 
     @requires_IEEE_754
     def test_underflow_sign(self):
         # check that -1e-1000 gives -0.0, not 0.0
-        self.assertEquals(math.atan2(-1e-1000, -1), math.atan2(-0.0, -1))
-        self.assertEquals(math.atan2(float('-1e-1000'), -1),
-                          math.atan2(-0.0, -1))
+        self.assertEqual(math.atan2(-1e-1000, -1), math.atan2(-0.0, -1))
+        self.assertEqual(math.atan2(float('-1e-1000'), -1),
+                         math.atan2(-0.0, -1))
 
     def test_format(self):
         # these should be rewritten to use both format(x, spec) and
@@ -497,11 +559,10 @@ class IEEEFormatTestCase(unittest.TestCase):
         # empty presentation type should format in the same way as str
         # (issue 5920)
         x = 100/7.
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual(format(x, ''), str(x))
-            self.assertEqual(format(x, '-'), str(x))
-            self.assertEqual(format(x, '>'), str(x))
-            self.assertEqual(format(x, '2'), str(x))
+        self.assertEqual(format(x, ''), str(x))
+        self.assertEqual(format(x, '-'), str(x))
+        self.assertEqual(format(x, '>'), str(x))
+        self.assertEqual(format(x, '2'), str(x))
 
         self.assertEqual(format(1.0, 'f'), '1.000000')
 
@@ -541,27 +602,25 @@ class IEEEFormatTestCase(unittest.TestCase):
 
     @requires_IEEE_754
     def test_format_testfile(self):
-        for line in open(format_testfile):
-            if line.startswith('--'):
-                continue
-            line = line.strip()
-            if not line:
-                continue
+        with open(format_testfile) as testfile:
+            for line in open(format_testfile):
+                if line.startswith('--'):
+                    continue
+                line = line.strip()
+                if not line:
+                    continue
 
-            lhs, rhs = map(str.strip, line.split('->'))
-            fmt, arg = lhs.split()
-            arg = float(arg)
-            if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                continue
-            self.assertEqual(fmt % arg, rhs)
-            if not math.isnan(arg) and copysign(1.0, arg) > 0.0:
-                self.assertEqual(fmt % -arg, '-' + rhs)
+                lhs, rhs = map(str.strip, line.split('->'))
+                fmt, arg = lhs.split()
+                arg = float(arg)
+                self.assertEqual(fmt % arg, rhs)
+                if not math.isnan(arg) and copysign(1.0, arg) > 0.0:
+                    self.assertEqual(fmt % -arg, '-' + rhs)
 
     def test_issue5864(self):
-        self.assertEquals(format(123.456, '.4'), '123.5')
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEquals(format(1234.56, '.4'), '1.235e+03')
-            self.assertEquals(format(12345.6, '.4'), '1.235e+04')
+        self.assertEqual(format(123.456, '.4'), '123.5')
+        self.assertEqual(format(1234.56, '.4'), '1.235e+03')
+        self.assertEqual(format(12345.6, '.4'), '1.235e+04')
 
 class ReprTestCase(unittest.TestCase):
     def test_repr(self):
@@ -634,8 +693,7 @@ class RoundTestCase(unittest.TestCase):
 
         class MyIndex(object):
             def __index__(self): return 4
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertAlmostEqual(round(-0.123456, MyIndex()), -0.1235)
+        self.assertAlmostEqual(round(-0.123456, MyIndex()), -0.1235)
         # but floats should be illegal
         self.assertRaises(TypeError, round, 3.14159, 2.0)
 
@@ -662,13 +720,11 @@ class RoundTestCase(unittest.TestCase):
             self.assertEqual(round(-123.456, n), -123.456)
             self.assertEqual(round(1e300, n), 1e300)
             self.assertEqual(round(1e-320, n), 1e-320)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual(round(1e150, 300), 1e150)
-            self.assertEqual(round(1e300, 307), 1e300)
-            self.assertEqual(round(-3.1415, 308), -3.1415)
+        self.assertEqual(round(1e150, 300), 1e150)
+        self.assertEqual(round(1e300, 307), 1e300)
+        self.assertEqual(round(-3.1415, 308), -3.1415)
         self.assertEqual(round(1e150, 309), 1e150)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual(round(1.4e-315, 315), 1e-315)
+        self.assertEqual(round(1.4e-315, 315), 1e-315)
 
     def test_small_n(self):
         for n in [-308, -309, -400, 1-2**31, -2**31, -2**31-1, -2**100]:
@@ -790,18 +846,16 @@ class RoundTestCase(unittest.TestCase):
             test(fmt, -NAN, 'nan')
             # When asking for a sign, it's always provided. nans are
             #  always positive.
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                test(pfmt, INF, '+inf')
-                test(pfmt, -INF, '-inf')
-                test(pfmt, NAN, '+nan')
-                test(pfmt, -NAN, '+nan')
+            test(pfmt, INF, '+inf')
+            test(pfmt, -INF, '-inf')
+            test(pfmt, NAN, '+nan')
+            test(pfmt, -NAN, '+nan')
             # When using ' ' for a sign code, only infs can be negative.
             #  Others have a space.
             test(sfmt, INF, ' inf')
             test(sfmt, -INF, '-inf')
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                test(sfmt, NAN, ' nan')
-                test(sfmt, -NAN, ' nan')
+            test(sfmt, NAN, ' nan')
+            test(sfmt, -NAN, ' nan')
 
 
 # Beginning with Python 2.6 float has cross platform compatible

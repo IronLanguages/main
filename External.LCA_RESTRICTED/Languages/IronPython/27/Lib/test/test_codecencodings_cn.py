@@ -51,8 +51,7 @@ class Test_GB18030(test_multibytecodec_support.TestBase, unittest.TestCase):
     has_iso10646 = True
 
 def test_main():
-    if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=23026"):
-        test_support.run_unittest(__name__)
+    test_support.run_unittest(__name__)
 
 if __name__ == "__main__":
     test_main()

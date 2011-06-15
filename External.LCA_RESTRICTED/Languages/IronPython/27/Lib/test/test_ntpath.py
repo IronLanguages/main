@@ -123,6 +123,9 @@ class TestNtpath(unittest.TestCase):
         tester("ntpath.normpath('C:////a/b')", r'C:\a\b')
         tester("ntpath.normpath('//machine/share//a/b')", r'\\machine\share\a\b')
 
+        tester("ntpath.normpath('\\\\.\\NUL')", r'\\.\NUL')
+        tester("ntpath.normpath('\\\\?\\D:/XY\\Z')", r'\\?\D:/XY\Z')
+
     def test_expandvars(self):
         with test_support.EnvironmentVarGuard() as env:
             env.clear()
@@ -175,6 +178,16 @@ class TestNtpath(unittest.TestCase):
         tester('ntpath.relpath("a", "b/c")', '..\\..\\a')
         tester('ntpath.relpath("//conky/mountpoint/a", "//conky/mountpoint/b/c")', '..\\..\\a')
         tester('ntpath.relpath("a", "a")', '.')
+        tester('ntpath.relpath("/foo/bar/bat", "/x/y/z")', '..\\..\\..\\foo\\bar\\bat')
+        tester('ntpath.relpath("/foo/bar/bat", "/foo/bar")', 'bat')
+        tester('ntpath.relpath("/foo/bar/bat", "/")', 'foo\\bar\\bat')
+        tester('ntpath.relpath("/", "/foo/bar/bat")', '..\\..\\..')
+        tester('ntpath.relpath("/foo/bar/bat", "/x")', '..\\foo\\bar\\bat')
+        tester('ntpath.relpath("/x", "/foo/bar/bat")', '..\\..\\..\\x')
+        tester('ntpath.relpath("/", "/")', '.')
+        tester('ntpath.relpath("/a", "/a")', '.')
+        tester('ntpath.relpath("/a/b", "/a/b")', '.')
+        tester('ntpath.relpath("c:/foo", "C:/FOO")', '.')
 
 
 class NtCommonTest(test_genericpath.CommonTest):

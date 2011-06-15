@@ -20,16 +20,12 @@ class ErrnoAttributeTests(unittest.TestCase):
     def test_using_errorcode(self):
         # Every key value in errno.errorcode should be on the module.
         for value in errno.errorcode.itervalues():
-            if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-                return
             self.assertTrue(hasattr(errno, value), 'no %s attr in errno' % value)
 
 
 class ErrorcodeTests(unittest.TestCase):
 
     def test_attributes_in_errorcode(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         for attribute in errno.__dict__.iterkeys():
             if attribute.isupper():
                 self.assertIn(getattr(errno, attribute), errno.errorcode,

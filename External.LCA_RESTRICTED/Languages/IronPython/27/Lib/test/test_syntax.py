@@ -266,7 +266,7 @@ SyntaxError: can't assign to function call
 
 Test continue in finally in weird combinations.
 
-continue in for loop under finally shouuld be ok.
+continue in for loop under finally should be ok.
 
     >>> def test():
     ...     try:
@@ -474,6 +474,12 @@ Traceback (most recent call last):
    File "<doctest test.test_syntax[50]>", line 1
 SyntaxError: can't assign to literal
 
+Corner-case that used to crash:
+
+    >>> def f(*xx, **__debug__): pass
+    Traceback (most recent call last):
+    SyntaxError: cannot assign to __debug__
+
 """
 
 import re
@@ -504,8 +510,6 @@ class SyntaxTestCase(unittest.TestCase):
             self.fail("compile() did not raise SyntaxError")
 
     def test_paren_arg_with_default(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self._check_error("def f((x)=23): pass",
                           "parenthesized arg with default")
 
@@ -559,9 +563,6 @@ class SyntaxTestCase(unittest.TestCase):
 
 def test_main():
     test_support.run_unittest(SyntaxTestCase)
-
-    if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-        return
     from test import test_syntax
     with test_support.check_py3k_warnings(("backquote not supported",
                                              SyntaxWarning)):

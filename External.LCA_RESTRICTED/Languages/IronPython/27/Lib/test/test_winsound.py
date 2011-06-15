@@ -3,15 +3,11 @@
 import unittest
 from test import test_support
 import time
-if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=361876"):
-    import sys
-    sys.exit(0)
-
 import os
 import subprocess
-import ctypes
 
 winsound = test_support.import_module('winsound')
+ctypes = test_support.import_module('ctypes')
 import _winreg
 
 def has_sound(sound):

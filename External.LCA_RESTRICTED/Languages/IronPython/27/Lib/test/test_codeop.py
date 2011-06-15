@@ -3,7 +3,7 @@
    Nick Mathewson
 """
 import unittest
-from test.test_support import run_unittest, is_jython, due_to_ironpython_bug, is_cli
+from test.test_support import run_unittest, is_jython
 
 from codeop import compile_command, PyCF_DONT_IMPLY_DEDENT
 
@@ -37,14 +37,14 @@ class CodeopTests(unittest.TestCase):
                 ctx = {'a': 2}
                 d = { 'value': eval(code,ctx) }
                 r = { 'value': eval(str,ctx) }
-            self.assertEquals(unify_callables(r),unify_callables(d))
+            self.assertEqual(unify_callables(r),unify_callables(d))
         else:
             expected = compile(str, "<input>", symbol, PyCF_DONT_IMPLY_DEDENT)
-            self.assertEquals( compile_command(str, "<input>", symbol), expected)
+            self.assertEqual(compile_command(str, "<input>", symbol), expected)
 
     def assertIncomplete(self, str, symbol='single'):
         '''succeed iff str is the start of a valid piece of code'''
-        self.assertEquals( compile_command(str, symbol=symbol), None)
+        self.assertEqual(compile_command(str, symbol=symbol), None)
 
     def assertInvalid(self, str, symbol='single', is_syntax=1):
         '''succeed iff str is the start of an invalid piece of code'''
@@ -59,17 +59,14 @@ class CodeopTests(unittest.TestCase):
     def test_valid(self):
         av = self.assertValid
 
-        if due_to_ironpython_bug("CodePlex 23740"):
-            return
-
         # special case
-        if not is_jython and not is_cli:
-            self.assertEquals(compile_command(""),
-                            compile("pass", "<input>", 'single',
-                                    PyCF_DONT_IMPLY_DEDENT))
-            self.assertEquals(compile_command("\n"),
-                            compile("pass", "<input>", 'single',
-                                    PyCF_DONT_IMPLY_DEDENT))
+        if not is_jython:
+            self.assertEqual(compile_command(""),
+                             compile("pass", "<input>", 'single',
+                                     PyCF_DONT_IMPLY_DEDENT))
+            self.assertEqual(compile_command("\n"),
+                             compile("pass", "<input>", 'single',
+                                     PyCF_DONT_IMPLY_DEDENT))
         else:
             av("")
             av("\n")
@@ -126,8 +123,6 @@ class CodeopTests(unittest.TestCase):
         av("@a.b.c\ndef f():\n pass\n")
 
     def test_incomplete(self):
-        if due_to_ironpython_bug("CodePlex 23740"):
-            return
         ai = self.assertIncomplete
 
         ai("(a **")
@@ -287,19 +282,18 @@ class CodeopTests(unittest.TestCase):
         ai("if (a == 1 and b = 2): pass")
 
         ai("del 1")
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24756"):
-            ai("del ()")
-            ai("del (1,)")
-            ai("del [1]")
+        ai("del ()")
+        ai("del (1,)")
+        ai("del [1]")
         ai("del '1'")
 
         ai("[i for i in range(10)] = (1, 2, 3)")
 
     def test_filename(self):
-        self.assertEquals(compile_command("a = 1\n", "abc").co_filename,
-                          compile("a = 1\n", "abc", 'single').co_filename)
-        self.assertNotEquals(compile_command("a = 1\n", "abc").co_filename,
-                             compile("a = 1\n", "def", 'single').co_filename)
+        self.assertEqual(compile_command("a = 1\n", "abc").co_filename,
+                         compile("a = 1\n", "abc", 'single').co_filename)
+        self.assertNotEqual(compile_command("a = 1\n", "abc").co_filename,
+                            compile("a = 1\n", "def", 'single').co_filename)
 
 
 def test_main():

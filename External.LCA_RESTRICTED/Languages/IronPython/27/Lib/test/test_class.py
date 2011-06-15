@@ -454,19 +454,16 @@ class ClassTests(unittest.TestCase):
 
         callLst[:] = []
         testme.spam
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertCallStack([('__getattr__', (testme, "spam"))])
+        self.assertCallStack([('__getattr__', (testme, "spam"))])
 
         callLst[:] = []
         testme.eggs = "spam, spam, spam and ham"
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertCallStack([('__setattr__', (testme, "eggs",
-                                                   "spam, spam, spam and ham"))])
+        self.assertCallStack([('__setattr__', (testme, "eggs",
+                                               "spam, spam, spam and ham"))])
 
         callLst[:] = []
         del testme.cardinal
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertCallStack([('__delattr__', (testme, "cardinal"))])
+        self.assertCallStack([('__delattr__', (testme, "cardinal"))])
 
     def testDel(self):
         x = []
@@ -478,7 +475,7 @@ class ClassTests(unittest.TestCase):
         del testme
         import gc
         gc.collect()
-        self.assertEquals(["crab people, crab people"], x)
+        self.assertEqual(["crab people, crab people"], x)
 
     def testBadTypeReturned(self):
         # return values of some method are type-checked
@@ -510,14 +507,14 @@ class ClassTests(unittest.TestCase):
 
         callLst[:] = []
         as_int = int(mixIntAndLong)
-        self.assertEquals(type(as_int), long)
-        self.assertEquals(as_int, 42L)
+        self.assertEqual(type(as_int), long)
+        self.assertEqual(as_int, 42L)
         self.assertCallStack([('__int__', (mixIntAndLong,))])
 
         callLst[:] = []
         as_long = long(mixIntAndLong)
-        self.assertEquals(type(as_long), int)
-        self.assertEquals(as_long, 64)
+        self.assertEqual(type(as_long), long)
+        self.assertEqual(as_long, 64)
         self.assertCallStack([('__long__', (mixIntAndLong,))])
 
     def testHashStuff(self):
@@ -548,20 +545,12 @@ class ClassTests(unittest.TestCase):
         A.__call__ = A()
         a = A()
 
-        if test_support.due_to_ironpython_incompatibility("-X:MaxRecursion"):
-            import sys
-            temp_recursion = sys.getrecursionlimit()
-            sys.setrecursionlimit(100)
-
         try:
             a() # This should not segfault
         except RuntimeError:
             pass
         else:
             self.fail("Failed to raise RuntimeError")
-
-        if test_support.due_to_ironpython_incompatibility("-X:MaxRecursion"):
-            sys.setrecursionlimit(temp_recursion)
 
     def testForExceptionsRaisedInInstanceGetattr2(self):
         # Tests for exceptions raised in instance_getattr2().
@@ -610,18 +599,17 @@ class ClassTests(unittest.TestCase):
 
         a1 = A(1)
         a2 = A(2)
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314165"): 
-            self.assertEquals(a1.f, a1.f)
-            self.assertNotEquals(a1.f, a2.f)
-            self.assertNotEquals(a1.f, a1.g)
-            self.assertEquals(a1.f, A(1).f)
-            self.assertEquals(hash(a1.f), hash(a1.f))
-            self.assertEquals(hash(a1.f), hash(A(1).f))
+        self.assertEqual(a1.f, a1.f)
+        self.assertNotEqual(a1.f, a2.f)
+        self.assertNotEqual(a1.f, a1.g)
+        self.assertEqual(a1.f, A(1).f)
+        self.assertEqual(hash(a1.f), hash(a1.f))
+        self.assertEqual(hash(a1.f), hash(A(1).f))
 
-            self.assertNotEquals(A.f, a1.f)
-            self.assertNotEquals(A.f, A.g)
-            self.assertEquals(B.f, A.f)
-            self.assertEquals(hash(B.f), hash(A.f))
+        self.assertNotEqual(A.f, a1.f)
+        self.assertNotEqual(A.f, A.g)
+        self.assertEqual(B.f, A.f)
+        self.assertEqual(hash(B.f), hash(A.f))
 
         # the following triggers a SystemError in 2.4
         a = A(hash(A.f.im_func)^(-1))

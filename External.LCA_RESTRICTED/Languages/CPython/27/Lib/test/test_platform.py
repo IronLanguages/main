@@ -183,17 +183,36 @@ class PlatformTest(unittest.TestCase):
             # On Snow Leopard, sw_vers reports 10.6.0 as 10.6
             if len_diff > 0:
                 expect_list.extend(['0'] * len_diff)
-            self.assertEquals(result_list, expect_list)
+            self.assertEqual(result_list, expect_list)
 
             # res[1] claims to contain
             # (version, dev_stage, non_release_version)
             # That information is no longer available
-            self.assertEquals(res[1], ('', '', ''))
+            self.assertEqual(res[1], ('', '', ''))
 
             if sys.byteorder == 'little':
-                self.assertEquals(res[2], 'i386')
+                self.assertEqual(res[2], 'i386')
             else:
-                self.assertEquals(res[2], 'PowerPC')
+                self.assertEqual(res[2], 'PowerPC')
+
+
+    @unittest.skipUnless(sys.platform == 'darwin', "OSX only test")
+    def test_mac_ver_with_fork(self):
+        # Issue7895: platform.mac_ver() crashes when using fork without exec
+        #
+        # This test checks that the fix for that issue works.
+        #
+        pid = os.fork()
+        if pid == 0:
+            # child
+            info = platform.mac_ver()
+            os._exit(0)
+
+        else:
+            # parent
+            cpid, sts = os.waitpid(pid, 0)
+            self.assertEqual(cpid, pid)
+            self.assertEqual(sts, 0)
 
     def test_dist(self):
         res = platform.dist()

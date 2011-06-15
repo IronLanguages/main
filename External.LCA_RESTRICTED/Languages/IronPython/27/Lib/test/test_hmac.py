@@ -189,8 +189,6 @@ class TestVectorsTestCase(unittest.TestCase):
                  })
 
     def test_sha224_rfc4231(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=16870"):
-            return
         self._rfc4231_test_cases(hashlib.sha224)
 
     def test_sha256_rfc4231(self):
@@ -213,8 +211,6 @@ class TestVectorsTestCase(unittest.TestCase):
             def digest(self):
                 return self._x.digest()
 
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=365388"):
-            return
         with warnings.catch_warnings():
             warnings.simplefilter('error', RuntimeWarning)
             with self.assertRaises(RuntimeWarning):

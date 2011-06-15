@@ -62,7 +62,7 @@ class CommonTest(unittest.TestCase):
                 pass
             object = subtype(object)
             realresult = getattr(object, methodname)(*args)
-            self.assert_(object is not realresult)
+            self.assertTrue(object is not realresult)
 
     # check that object.method(*args) raises exc
     def checkraises(self, exc, object, methodname, *args):
@@ -90,9 +90,8 @@ class CommonTest(unittest.TestCase):
         self.assertEqual(hash(a), hash(b))
 
     def test_capitalize(self):
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal(' hello ', ' hello ', 'capitalize')
-            self.checkequal('Hello ', 'Hello ','capitalize')
+        self.checkequal(' hello ', ' hello ', 'capitalize')
+        self.checkequal('Hello ', 'Hello ','capitalize')
         self.checkequal('Hello ', 'hello ','capitalize')
         self.checkequal('Aaaa', 'aaaa', 'capitalize')
         self.checkequal('Aaaa', 'AaAa', 'capitalize')
@@ -255,7 +254,7 @@ class CommonTest(unittest.TestCase):
                 r2 = j in i
                 self.assertEqual(r1, r2)
                 if loc != -1:
-                    self.assertEqual(i[loc:loc+len(j)], j)
+                    self.assertEqual(i[loc:loc+len(j)], self.fixtype(j))
 
         # issue 7458
         self.checkequal(-1, 'ab', 'rfind', 'xxx', sys.maxsize + 1, 0)
@@ -510,22 +509,19 @@ class CommonTest(unittest.TestCase):
         self.checkequal('hello', '   hello   ', 'strip')
         self.checkequal('hello   ', '   hello   ', 'lstrip')
         self.checkequal('   hello', '   hello   ', 'rstrip')
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('hello', 'hello', 'strip')
+        self.checkequal('hello', 'hello', 'strip')
 
         # strip/lstrip/rstrip with None arg
         self.checkequal('hello', '   hello   ', 'strip', None)
         self.checkequal('hello   ', '   hello   ', 'lstrip', None)
         self.checkequal('   hello', '   hello   ', 'rstrip', None)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('hello', 'hello', 'strip', None)
+        self.checkequal('hello', 'hello', 'strip', None)
 
         # strip/lstrip/rstrip with str arg
         self.checkequal('hello', 'xyzzyhelloxyzzy', 'strip', 'xyz')
         self.checkequal('helloxyzzy', 'xyzzyhelloxyzzy', 'lstrip', 'xyz')
         self.checkequal('xyzzyhello', 'xyzzyhelloxyzzy', 'rstrip', 'xyz')
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('hello', 'hello', 'strip', 'xyz')
+        self.checkequal('hello', 'hello', 'strip', 'xyz')
 
         # strip/lstrip/rstrip with unicode arg
         if test_support.have_unicode:
@@ -546,27 +542,24 @@ class CommonTest(unittest.TestCase):
     def test_ljust(self):
         self.checkequal('abc       ', 'abc', 'ljust', 10)
         self.checkequal('abc   ', 'abc', 'ljust', 6)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('abc', 'abc', 'ljust', 3)
-            self.checkequal('abc', 'abc', 'ljust', 2)
+        self.checkequal('abc', 'abc', 'ljust', 3)
+        self.checkequal('abc', 'abc', 'ljust', 2)
         self.checkequal('abc*******', 'abc', 'ljust', 10, '*')
         self.checkraises(TypeError, 'abc', 'ljust')
 
     def test_rjust(self):
         self.checkequal('       abc', 'abc', 'rjust', 10)
         self.checkequal('   abc', 'abc', 'rjust', 6)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('abc', 'abc', 'rjust', 3)
-            self.checkequal('abc', 'abc', 'rjust', 2)
+        self.checkequal('abc', 'abc', 'rjust', 3)
+        self.checkequal('abc', 'abc', 'rjust', 2)
         self.checkequal('*******abc', 'abc', 'rjust', 10, '*')
         self.checkraises(TypeError, 'abc', 'rjust')
 
     def test_center(self):
         self.checkequal('   abc    ', 'abc', 'center', 10)
         self.checkequal(' abc  ', 'abc', 'center', 6)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('abc', 'abc', 'center', 3)
-            self.checkequal('abc', 'abc', 'center', 2)
+        self.checkequal('abc', 'abc', 'center', 3)
+        self.checkequal('abc', 'abc', 'center', 2)
         self.checkequal('***abc****', 'abc', 'center', 10, '*')
         self.checkraises(TypeError, 'abc', 'center')
 
@@ -579,18 +572,15 @@ class CommonTest(unittest.TestCase):
         EQ = self.checkequal
 
         # Operations on the empty string
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("", "", "replace", "", "")
+        EQ("", "", "replace", "", "")
         EQ("A", "", "replace", "", "A")
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("", "", "replace", "A", "")
-            EQ("", "", "replace", "A", "A")
-            EQ("", "", "replace", "", "", 100)
-            EQ("", "", "replace", "", "", sys.maxint)
+        EQ("", "", "replace", "A", "")
+        EQ("", "", "replace", "A", "A")
+        EQ("", "", "replace", "", "", 100)
+        EQ("", "", "replace", "", "", sys.maxint)
 
         # interleave (from=="", 'to' gets inserted everywhere)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("A", "A", "replace", "", "")
+        EQ("A", "A", "replace", "", "")
         EQ("*A*", "A", "replace", "", "*")
         EQ("*1A*1", "A", "replace", "", "*1")
         EQ("*-#A*-#", "A", "replace", "", "*-#")
@@ -601,8 +591,7 @@ class CommonTest(unittest.TestCase):
         EQ("*-A*-A*-", "AA", "replace", "", "*-", 3)
         EQ("*-A*-A", "AA", "replace", "", "*-", 2)
         EQ("*-AA", "AA", "replace", "", "*-", 1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("AA", "AA", "replace", "", "*-", 0)
+        EQ("AA", "AA", "replace", "", "*-", 0)
 
         # single character deletion (from=="A", to=="")
         EQ("", "A", "replace", "A", "")
@@ -613,8 +602,7 @@ class CommonTest(unittest.TestCase):
         EQ("", "AAA", "replace", "A", "", 3)
         EQ("A", "AAA", "replace", "A", "", 2)
         EQ("AA", "AAA", "replace", "A", "", 1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("AAA", "AAA", "replace", "A", "", 0)
+        EQ("AAA", "AAA", "replace", "A", "", 0)
         EQ("", "AAAAAAAAAA", "replace", "A", "")
         EQ("BCD", "ABACADA", "replace", "A", "")
         EQ("BCD", "ABACADA", "replace", "A", "", -1)
@@ -624,13 +612,11 @@ class CommonTest(unittest.TestCase):
         EQ("BCDA", "ABACADA", "replace", "A", "", 3)
         EQ("BCADA", "ABACADA", "replace", "A", "", 2)
         EQ("BACADA", "ABACADA", "replace", "A", "", 1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("ABACADA", "ABACADA", "replace", "A", "", 0)
+        EQ("ABACADA", "ABACADA", "replace", "A", "", 0)
         EQ("BCD", "ABCAD", "replace", "A", "")
         EQ("BCD", "ABCADAA", "replace", "A", "")
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("BCD", "BCD", "replace", "A", "")
-            EQ("*************", "*************", "replace", "A", "")
+        EQ("BCD", "BCD", "replace", "A", "")
+        EQ("*************", "*************", "replace", "A", "")
         EQ("^A^", "^"+"A"*1000+"^", "replace", "A", "", 999)
 
         # substring deletion (from=="the", to=="")
@@ -639,9 +625,8 @@ class CommonTest(unittest.TestCase):
         EQ("", "thethe", "replace", "the", "")
         EQ("", "thethethethe", "replace", "the", "")
         EQ("aaaa", "theatheatheathea", "replace", "the", "")
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("that", "that", "replace", "the", "")
-            EQ("thaet", "thaet", "replace", "the", "")
+        EQ("that", "that", "replace", "the", "")
+        EQ("thaet", "thaet", "replace", "the", "")
         EQ("here and re", "here and there", "replace", "the", "")
         EQ("here and re and re", "here and there and there",
            "replace", "the", "", sys.maxint)
@@ -653,43 +638,36 @@ class CommonTest(unittest.TestCase):
            "replace", "the", "", 2)
         EQ("here and re and there", "here and there and there",
            "replace", "the", "", 1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("here and there and there", "here and there and there",
-               "replace", "the", "", 0)
+        EQ("here and there and there", "here and there and there",
+           "replace", "the", "", 0)
         EQ("here and re and re", "here and there and there", "replace", "the", "")
 
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("abc", "abc", "replace", "the", "")
-            EQ("abcdefg", "abcdefg", "replace", "the", "")
+        EQ("abc", "abc", "replace", "the", "")
+        EQ("abcdefg", "abcdefg", "replace", "the", "")
 
         # substring deletion (from=="bob", to=="")
         EQ("bob", "bbobob", "replace", "bob", "")
         EQ("bobXbob", "bbobobXbbobob", "replace", "bob", "")
         EQ("aaaaaaa", "aaaaaaabob", "replace", "bob", "")
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("aaaaaaa", "aaaaaaa", "replace", "bob", "")
+        EQ("aaaaaaa", "aaaaaaa", "replace", "bob", "")
 
         # single character replace in place (len(from)==len(to)==1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("Who goes there?", "Who goes there?", "replace", "o", "o")
+        EQ("Who goes there?", "Who goes there?", "replace", "o", "o")
         EQ("WhO gOes there?", "Who goes there?", "replace", "o", "O")
         EQ("WhO gOes there?", "Who goes there?", "replace", "o", "O", sys.maxint)
         EQ("WhO gOes there?", "Who goes there?", "replace", "o", "O", -1)
         EQ("WhO gOes there?", "Who goes there?", "replace", "o", "O", 3)
         EQ("WhO gOes there?", "Who goes there?", "replace", "o", "O", 2)
         EQ("WhO goes there?", "Who goes there?", "replace", "o", "O", 1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("Who goes there?", "Who goes there?", "replace", "o", "O", 0)
+        EQ("Who goes there?", "Who goes there?", "replace", "o", "O", 0)
 
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("Who goes there?", "Who goes there?", "replace", "a", "q")
+        EQ("Who goes there?", "Who goes there?", "replace", "a", "q")
         EQ("who goes there?", "Who goes there?", "replace", "W", "w")
         EQ("wwho goes there?ww", "WWho goes there?WW", "replace", "W", "w")
         EQ("Who goes there!", "Who goes there?", "replace", "?", "!")
         EQ("Who goes there!!", "Who goes there??", "replace", "?", "!")
 
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("Who goes there?", "Who goes there?", "replace", ".", "!")
+        EQ("Who goes there?", "Who goes there?", "replace", ".", "!")
 
         # substring replace in place (len(from)==len(to) > 1)
         EQ("Th** ** a t**sue", "This is a tissue", "replace", "is", "**")
@@ -699,12 +677,10 @@ class CommonTest(unittest.TestCase):
         EQ("Th** ** a t**sue", "This is a tissue", "replace", "is", "**", 3)
         EQ("Th** ** a tissue", "This is a tissue", "replace", "is", "**", 2)
         EQ("Th** is a tissue", "This is a tissue", "replace", "is", "**", 1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("This is a tissue", "This is a tissue", "replace", "is", "**", 0)
+        EQ("This is a tissue", "This is a tissue", "replace", "is", "**", 0)
         EQ("cobob", "bobob", "replace", "bob", "cob")
         EQ("cobobXcobocob", "bobobXbobobob", "replace", "bob", "cob")
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("bobob", "bobob", "replace", "bot", "bot")
+        EQ("bobob", "bobob", "replace", "bot", "bot")
 
         # replace single character (len(from)==1, len(to)>1)
         EQ("ReyKKjaviKK", "Reykjavik", "replace", "k", "KK")
@@ -712,12 +688,10 @@ class CommonTest(unittest.TestCase):
         EQ("ReyKKjaviKK", "Reykjavik", "replace", "k", "KK", sys.maxint)
         EQ("ReyKKjaviKK", "Reykjavik", "replace", "k", "KK", 2)
         EQ("ReyKKjavik", "Reykjavik", "replace", "k", "KK", 1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("Reykjavik", "Reykjavik", "replace", "k", "KK", 0)
+        EQ("Reykjavik", "Reykjavik", "replace", "k", "KK", 0)
         EQ("A----B----C----", "A.B.C.", "replace", ".", "----")
 
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("Reykjavik", "Reykjavik", "replace", "q", "KK")
+        EQ("Reykjavik", "Reykjavik", "replace", "q", "KK")
 
         # replace substring (len(from)>1, len(to)!=len(from))
         EQ("ham, ham, eggs and ham", "spam, spam, eggs and spam",
@@ -734,14 +708,12 @@ class CommonTest(unittest.TestCase):
            "replace", "spam", "ham", 2)
         EQ("ham, spam, eggs and spam", "spam, spam, eggs and spam",
            "replace", "spam", "ham", 1)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("spam, spam, eggs and spam", "spam, spam, eggs and spam",
-               "replace", "spam", "ham", 0)
+        EQ("spam, spam, eggs and spam", "spam, spam, eggs and spam",
+           "replace", "spam", "ham", 0)
 
         EQ("bobob", "bobobob", "replace", "bobob", "bob")
         EQ("bobobXbobob", "bobobobXbobobob", "replace", "bobob", "bob")
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            EQ("BOBOBOB", "BOBOBOB", "replace", "bob", "bobby")
+        EQ("BOBOBOB", "BOBOBOB", "replace", "bob", "bobby")
 
         with test_support.check_py3k_warnings():
             ba = buffer('a')
@@ -755,19 +727,16 @@ class CommonTest(unittest.TestCase):
         self.checkequal('one@two@three!', 'one!two!three!', 'replace', '!', '@', 2)
         self.checkequal('one@two@three@', 'one!two!three!', 'replace', '!', '@', 3)
         self.checkequal('one@two@three@', 'one!two!three!', 'replace', '!', '@', 4)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('one!two!three!', 'one!two!three!', 'replace', '!', '@', 0)
+        self.checkequal('one!two!three!', 'one!two!three!', 'replace', '!', '@', 0)
         self.checkequal('one@two@three@', 'one!two!three!', 'replace', '!', '@')
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('one!two!three!', 'one!two!three!', 'replace', 'x', '@')
-            self.checkequal('one!two!three!', 'one!two!three!', 'replace', 'x', '@', 2)
+        self.checkequal('one!two!three!', 'one!two!three!', 'replace', 'x', '@')
+        self.checkequal('one!two!three!', 'one!two!three!', 'replace', 'x', '@', 2)
         self.checkequal('-a-b-c-', 'abc', 'replace', '', '-')
         self.checkequal('-a-b-c', 'abc', 'replace', '', '-', 3)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('abc', 'abc', 'replace', '', '-', 0)
-            self.checkequal('', '', 'replace', '', '')
-            self.checkequal('abc', 'abc', 'replace', 'ab', '--', 0)
-            self.checkequal('abc', 'abc', 'replace', 'xy', '--')
+        self.checkequal('abc', 'abc', 'replace', '', '-', 0)
+        self.checkequal('', '', 'replace', '', '')
+        self.checkequal('abc', 'abc', 'replace', 'ab', '--', 0)
+        self.checkequal('abc', 'abc', 'replace', 'xy', '--')
         # Next three for SF bug 422088: [OSF1 alpha] string.replace(); died with
         # MemoryError due to empty result (platform malloc issue when requesting
         # 0 bytes).
@@ -790,21 +759,17 @@ class CommonTest(unittest.TestCase):
         self.checkraises(OverflowError, A2_16, "replace", "AA", A2_16+A2_16)
 
     def test_zfill(self):
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('123', '123', 'zfill', 2)
-            self.checkequal('123', '123', 'zfill', 3)
+        self.checkequal('123', '123', 'zfill', 2)
+        self.checkequal('123', '123', 'zfill', 3)
         self.checkequal('0123', '123', 'zfill', 4)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('+123', '+123', 'zfill', 3)
-            self.checkequal('+123', '+123', 'zfill', 4)
+        self.checkequal('+123', '+123', 'zfill', 3)
+        self.checkequal('+123', '+123', 'zfill', 4)
         self.checkequal('+0123', '+123', 'zfill', 5)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('-123', '-123', 'zfill', 3)
-            self.checkequal('-123', '-123', 'zfill', 4)
+        self.checkequal('-123', '-123', 'zfill', 3)
+        self.checkequal('-123', '-123', 'zfill', 4)
         self.checkequal('-0123', '-123', 'zfill', 5)
         self.checkequal('000', '', 'zfill', 3)
-        if not(self.type2test==bytearray and test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21334")):
-            self.checkequal('34', '34', 'zfill', 1)
+        self.checkequal('34', '34', 'zfill', 1)
         self.checkequal('0034', '34', 'zfill', 4)
 
         self.checkraises(TypeError, '123', 'zfill')
@@ -1149,15 +1114,12 @@ class MixinStrUnicodeUserStringTest:
         self.checkraises(ValueError, '%10', '__mod__', (42,))
 
     def test_floatformatting(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=23020"):
-            return
-        
         # float formatting
         for prec in xrange(100):
             format = '%%.%if' % prec
             value = 0.01
             for x in xrange(60):
-                value = value * 3.141592655 / 3.0 * 10.0
+                value = value * 3.14159265359 / 3.0 * 10.0
                 self.checkcall(format, "__mod__", value)
 
     def test_inplace_rewrites(self):
@@ -1281,34 +1243,34 @@ class MixinStrUnicodeTest:
             pass
         s1 = subclass("abcd")
         s2 = t().join([s1])
-        self.assert_(s1 is not s2)
-        self.assert_(type(s2) is t)
+        self.assertTrue(s1 is not s2)
+        self.assertTrue(type(s2) is t)
 
         s1 = t("abcd")
         s2 = t().join([s1])
-        self.assert_(s1 is s2)
+        self.assertTrue(s1 is s2)
 
         # Should also test mixed-type join.
         if t is unicode:
             s1 = subclass("abcd")
             s2 = "".join([s1])
-            self.assert_(s1 is not s2)
-            self.assert_(type(s2) is t)
+            self.assertTrue(s1 is not s2)
+            self.assertTrue(type(s2) is t)
 
             s1 = t("abcd")
             s2 = "".join([s1])
-            self.assert_(s1 is s2)
+            self.assertTrue(s1 is s2)
 
         elif t is str:
             s1 = subclass("abcd")
             s2 = u"".join([s1])
-            self.assert_(s1 is not s2)
-            self.assert_(type(s2) is unicode) # promotes!
+            self.assertTrue(s1 is not s2)
+            self.assertTrue(type(s2) is unicode) # promotes!
 
             s1 = t("abcd")
             s2 = u"".join([s1])
-            self.assert_(s1 is not s2)
-            self.assert_(type(s2) is unicode) # promotes!
+            self.assertTrue(s1 is not s2)
+            self.assertTrue(type(s2) is unicode) # promotes!
 
         else:
             self.fail("unexpected type for MixinStrUnicodeTest %r" % t)

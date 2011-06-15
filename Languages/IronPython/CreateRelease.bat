@@ -1,3 +1,5 @@
+set IPY_VERSION=2.7.1
+
 if "%1" == "" (
     set BUILD_FLAVOR=Release
 ) else (
@@ -5,14 +7,21 @@ if "%1" == "" (
 )
 
 :BuildIronLanguages
-msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=%BUILD_FLAVOR%
+msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=%BUILD_FLAVOR% /v:minimal
+msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=Silverlight4%BUILD_FLAVOR% /v:minimal
 
 :GenerateModulesList
-%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ipy.exe %DLR_ROOT%\Languages\IronPython\StdLib\MakeModuleList.py
+pushd %DLR_ROOT%\Languages\IronPython\StdLib\
+%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ipy.exe MakeModuleList.py
+popd
 
 :GenerateMSI
-%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ir.exe %DLR_ROOT%\Msi\Python\generate_wxis.rb
-msbuild %DLR_ROOT%\Msi\Installer.proj /p:Configuration=%BUILD_FLAVOR%
+pushd %DLR_ROOT%\Msi\Python
+%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ir.exe generate_wxis.rb
+popd
+
+msbuild %DLR_ROOT%\Msi\Installer.proj /p:Configuration=%BUILD_FLAVOR% /v:minimal
+copy /Y %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython.msi %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%.msi
 
 :GenerateZip
 
@@ -24,7 +33,7 @@ if EXIST "%ZIPTEMPDIR%" (
 	goto retry
 )
 
-set ZIPTEMPDIR=%ZIPTEMPDIR%\IronPython-2.7
+set ZIPTEMPDIR=%ZIPTEMPDIR%\IronPython-%IPY_VERSION%
 
 mkdir  %ZIPTEMPDIR%
 pushd %ZIPTEMPDIR%
@@ -57,7 +66,9 @@ copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython.xml .
 
 copy %DLR_ROOT%\Languages\IronPython\Public\License.html .
 copy %DLR_ROOT%\Languages\IronPython\Public\License.rtf .
+copy %DLR_ROOT%\Languages\IronPython\Public\License.txt .
 copy %DLR_ROOT%\Languages\IronPython\Public\Readme.html .
+copy %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\LICENSE.txt License.StdLib.txt
 
 mkdir Silverlight\bin
 copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\Microsoft.Dynamic.dll Silverlight\bin\
@@ -75,12 +86,12 @@ xcopy %DLR_ROOT%\Hosts\Silverlight\Public\script\* Silverlight\script
 mkdir Silverlight\script\templates\python
 xcopy /s %DLR_ROOT%\Hosts\Silverlight\Public\script\templates\python Silverlight\script\templates\python
 
-del /Q %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip
+del /Q %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%-Bin.zip
 cd ..
-%DLR_ROOT%\Util\Misc\zip -9 -r %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip IronPython-2.7
+%DLR_ROOT%\Util\Misc\zip -9 -r %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%-Bin.zip IronPython-%IPY_VERSION%
 cd /D %DLR_ROOT%\Bin\%BUILD_FLAVOR%\
 
-dir %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-Bin.zip
+dir %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%-Bin.zip
 
 popd
 :EXIT

@@ -23,6 +23,7 @@
     <Content Include="$(StdLibPath)\antigravity.py" />
     <Content Include="$(StdLibPath)\anydbm.py" />
     <Content Include="$(StdLibPath)\argparse.py" />
+    <Content Include="$(StdLibPath)\ast.py" />
     <Content Include="$(StdLibPath)\asynchat.py" />
     <Content Include="$(StdLibPath)\asyncore.py" />
     <Content Include="$(StdLibPath)\atexit.py" />
@@ -51,6 +52,7 @@
     <Content Include="$(StdLibPath)\Cookie.py" />
     <Content Include="$(StdLibPath)\cookielib.py" />
     <Content Include="$(StdLibPath)\copy.py" />
+    <Content Include="$(StdLibPath)\csv.py" />
     <Content Include="$(StdLibPath)\decimal.py" />
     <Content Include="$(StdLibPath)\difflib.py" />
     <Content Include="$(StdLibPath)\dircache.py" />
@@ -88,7 +90,6 @@
     <Content Include="$(StdLibPath)\inspect.py" />
     <Content Include="$(StdLibPath)\io.py" />
     <Content Include="$(StdLibPath)\keyword.py" />
-    <Content Include="$(StdLibPath)\LICENSE.txt" />
     <Content Include="$(StdLibPath)\linecache.py" />
     <Content Include="$(StdLibPath)\locale.py" />
     <Content Include="$(StdLibPath)\macpath.py" />
@@ -390,6 +391,8 @@
     <Content Include="$(StdLibPath)\json\scanner.py" />
     <Content Include="$(StdLibPath)\json\tool.py" />
     <Content Include="$(StdLibPath)\json\__init__.py" />
+    <Content Include="$(StdLibPath)\lib2to3\btm_matcher.py" />
+    <Content Include="$(StdLibPath)\lib2to3\btm_utils.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixer_base.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixer_util.py" />
     <Content Include="$(StdLibPath)\lib2to3\main.py" />
@@ -398,6 +401,7 @@
     <Content Include="$(StdLibPath)\lib2to3\pytree.py" />
     <Content Include="$(StdLibPath)\lib2to3\refactor.py" />
     <Content Include="$(StdLibPath)\lib2to3\__init__.py" />
+    <Content Include="$(StdLibPath)\lib2to3\__main__.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixes\fix_apply.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixes\fix_basestring.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixes\fix_buffer.py" />

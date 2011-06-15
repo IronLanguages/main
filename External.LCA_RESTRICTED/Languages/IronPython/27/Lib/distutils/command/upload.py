@@ -79,7 +79,11 @@ class upload(PyPIRCCommand):
 
         # Fill in the data - send all the meta-data in case we need to
         # register a new release
-        content = open(filename,'rb').read()
+        f = open(filename,'rb')
+        try:
+            content = f.read()
+        finally:
+            f.close()
         meta = self.distribution.metadata
         data = {
             # action
@@ -172,6 +176,9 @@ class upload(PyPIRCCommand):
             result = urlopen(request)
             status = result.getcode()
             reason = result.msg
+            if self.show_response:
+                msg = '\n'.join(('-' * 75, r.read(), '-' * 75))
+                self.announce(msg, log.INFO)
         except socket.error, e:
             self.announce(str(e), log.ERROR)
             return
@@ -185,5 +192,3 @@ class upload(PyPIRCCommand):
         else:
             self.announce('Upload failed (%s): %s' % (status, reason),
                           log.ERROR)
-        if self.show_response:
-            self.announce('-'*75, result.read(), '-'*75)

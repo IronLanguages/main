@@ -1,4 +1,4 @@
-from test.test_support import run_unittest, check_warnings, due_to_ironpython_bug
+from test.test_support import run_unittest, check_warnings
 import cgi
 import os
 import sys
@@ -251,7 +251,7 @@ Content-Disposition: form-data; name="submit"
 -----------------------------721837373350705526688164684--
 """
         fs = cgi.FieldStorage(fp=StringIO(postdata), environ=env)
-        self.assertEquals(len(fs.list), 4)
+        self.assertEqual(len(fs.list), 4)
         expect = [{'name':'id', 'filename':None, 'value':'1234'},
                   {'name':'title', 'filename':None, 'value':''},
                   {'name':'file', 'filename':'test.txt','value':'Testing 123.\n'},
@@ -259,7 +259,7 @@ Content-Disposition: form-data; name="submit"
         for x in range(len(fs.list)):
             for k, exp in expect[x].items():
                 got = getattr(fs.list[x], k)
-                self.assertEquals(got, exp)
+                self.assertEqual(got, exp)
 
     _qs_result = {
         'key1': 'value1',
@@ -340,25 +340,17 @@ this is the content of the fake file
 
     def test_deprecated_parse_qs(self):
         # this func is moved to urlparse, this is just a sanity check
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
+        with check_warnings(('cgi.parse_qs is deprecated, use urlparse.'
+                             'parse_qs instead', PendingDeprecationWarning)):
             self.assertEqual({'a': ['A1'], 'B': ['B3'], 'b': ['B2']},
                              cgi.parse_qs('a=A1&b=B2&B=B3'))
-        else:
-            with check_warnings(('cgi.parse_qs is deprecated, use urlparse.'
-                                 'parse_qs instead', PendingDeprecationWarning)):
-                self.assertEqual({'a': ['A1'], 'B': ['B3'], 'b': ['B2']},
-                                 cgi.parse_qs('a=A1&b=B2&B=B3'))
 
     def test_deprecated_parse_qsl(self):
         # this func is moved to urlparse, this is just a sanity check
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
+        with check_warnings(('cgi.parse_qsl is deprecated, use urlparse.'
+                             'parse_qsl instead', PendingDeprecationWarning)):
             self.assertEqual([('a', 'A1'), ('b', 'B2'), ('B', 'B3')],
                              cgi.parse_qsl('a=A1&b=B2&B=B3'))
-        else:
-            with check_warnings(('cgi.parse_qsl is deprecated, use urlparse.'
-                                 'parse_qsl instead', PendingDeprecationWarning)):
-                self.assertEqual([('a', 'A1'), ('b', 'B2'), ('B', 'B3')],
-                                 cgi.parse_qsl('a=A1&b=B2&B=B3'))
 
     def test_parse_header(self):
         self.assertEqual(

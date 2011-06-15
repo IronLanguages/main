@@ -61,6 +61,7 @@ ImportError exception, it is silently ignored.
 import sys
 import os
 import __builtin__
+import traceback
 
 # Prefixes for site-packages; add additional prefixes like /usr/local here
 PREFIXES = [sys.prefix, sys.exec_prefix]
@@ -76,7 +77,11 @@ USER_BASE = None
 
 
 def makepath(*paths):
-    dir = os.path.abspath(os.path.join(*paths))
+    dir = os.path.join(*paths)
+    try:
+        dir = os.path.abspath(dir)
+    except OSError:
+        pass
     return dir, os.path.normcase(dir)
 
 
@@ -87,8 +92,8 @@ def abs__file__():
             continue   # don't mess with a PEP 302-supplied __file__
         try:
             m.__file__ = os.path.abspath(m.__file__)
-        except AttributeError:
-            continue
+        except (AttributeError, OSError):
+            pass
 
 
 def removeduppaths():
@@ -151,17 +156,26 @@ def addpackage(sitedir, name, known_paths):
     except IOError:
         return
     with f:
-        for line in f:
+        for n, line in enumerate(f):
             if line.startswith("#"):
                 continue
-            if line.startswith(("import ", "import\t")):
-                exec line
-                continue
-            line = line.rstrip()
-            dir, dircase = makepath(sitedir, line)
-            if not dircase in known_paths and os.path.exists(dir):
-                sys.path.append(dir)
-                known_paths.add(dircase)
+            try:
+                if line.startswith(("import ", "import\t")):
+                    exec line
+                    continue
+                line = line.rstrip()
+                dir, dircase = makepath(sitedir, line)
+                if not dircase in known_paths and os.path.exists(dir):
+                    sys.path.append(dir)
+                    known_paths.add(dircase)
+            except Exception as err:
+                print >>sys.stderr, "Error processing line {:d} of {}:\n".format(
+                    n+1, fullname)
+                for record in traceback.format_exception(*sys.exc_info()):
+                    for line in record.splitlines():
+                        print >>sys.stderr, '  '+line
+                print >>sys.stderr, "\nRemainder of file ignored"
+                break
     if reset:
         known_paths = None
     return known_paths
@@ -428,6 +442,10 @@ def setcopyright():
         __builtin__.credits = _Printer(
             "credits",
             "Jython is maintained by the Jython developers (www.jython.org).")
+    elif sys.platform == 'cli':
+        __builtin__.credits = _Printer(
+            "credits",
+            "IronPython is maintained by the IronPython developers (www.ironpython.net).")
     else:
         __builtin__.credits = _Printer("credits", """\
     Thanks to CWI, CNRI, BeOpen.com, Zope Corporation and a cast of thousands

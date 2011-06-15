@@ -47,17 +47,12 @@ Here we add keyword arguments
     >>> f(1, 2, 3, x=4, y=5, *(6, 7), **{'a':8, 'b': 9})
     (1, 2, 3, 6, 7) {'a': 8, 'b': 9, 'x': 4, 'y': 5}
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> f(1, 2, 3, **UserDict(a=4, b=5))
-#    (1, 2, 3) {'a': 4, 'b': 5}
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> f(1, 2, 3, *(4, 5), **UserDict(a=6, b=7))
-#    (1, 2, 3, 4, 5) {'a': 6, 'b': 7}
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> f(1, 2, 3, x=4, y=5, *(6, 7), **UserDict(a=8, b=9))
-#    (1, 2, 3, 6, 7) {'a': 8, 'b': 9, 'x': 4, 'y': 5}
+    >>> f(1, 2, 3, **UserDict(a=4, b=5))
+    (1, 2, 3) {'a': 4, 'b': 5}
+    >>> f(1, 2, 3, *(4, 5), **UserDict(a=6, b=7))
+    (1, 2, 3, 4, 5) {'a': 6, 'b': 7}
+    >>> f(1, 2, 3, x=4, y=5, *(6, 7), **UserDict(a=8, b=9))
+    (1, 2, 3, 6, 7) {'a': 8, 'b': 9, 'x': 4, 'y': 5}
 
 Examples with invalid arguments (TypeErrors). We're also testing the function
 names in the exception messages.
@@ -74,18 +69,15 @@ Verify clearing of SF bug #733667
       ...
     TypeError: g() takes at least 1 argument (0 given)
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> g(*())
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: g() takes at least 1 argument (0 given)
+    >>> g(*())
+    Traceback (most recent call last):
+      ...
+    TypeError: g() takes at least 1 argument (0 given)
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> g(*(), **{})
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: g() takes at least 1 argument (0 given)
-#
+    >>> g(*(), **{})
+    Traceback (most recent call last):
+      ...
+    TypeError: g() takes at least 1 argument (0 given)
 
     >>> g(1)
     1 () {}
@@ -98,24 +90,19 @@ Verify clearing of SF bug #733667
 
     >>> class Nothing: pass
     ...
-    
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> g(*Nothing())
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: g() argument after * must be a sequence, not instance
-#
+    >>> g(*Nothing())
+    Traceback (most recent call last):
+      ...
+    TypeError: g() argument after * must be a sequence, not instance
 
     >>> class Nothing:
     ...     def __len__(self): return 5
     ...
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> g(*Nothing())
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: g() argument after * must be a sequence, not instance
-#
+    >>> g(*Nothing())
+    Traceback (most recent call last):
+      ...
+    TypeError: g() argument after * must be a sequence, not instance
 
     >>> class Nothing():
     ...     def __len__(self): return 5
@@ -138,9 +125,8 @@ Verify clearing of SF bug #733667
     ...         return c
     ...
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> g(*Nothing())
-#    0 (1, 2, 3) {}
+    >>> g(*Nothing())
+    0 (1, 2, 3) {}
 
 Make sure that the function doesn't stomp the dictionary
 
@@ -163,40 +149,35 @@ What about willful misconduct?
     {}
 
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> g(1, 2, 3, **{'x': 4, 'y': 5})
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: g() got multiple values for keyword argument 'x'
+    >>> g(1, 2, 3, **{'x': 4, 'y': 5})
+    Traceback (most recent call last):
+      ...
+    TypeError: g() got multiple values for keyword argument 'x'
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> f(**{1:2})
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: f() keywords must be strings
+    >>> f(**{1:2})
+    Traceback (most recent call last):
+      ...
+    TypeError: f() keywords must be strings
 
     >>> h(**{'e': 2})
     Traceback (most recent call last):
       ...
     TypeError: h() got an unexpected keyword argument 'e'
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> h(*h)
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: h() argument after * must be a sequence, not function
+    >>> h(*h)
+    Traceback (most recent call last):
+      ...
+    TypeError: h() argument after * must be a sequence, not function
 
     >>> dir(*h)
     Traceback (most recent call last):
       ...
     TypeError: dir() argument after * must be a sequence, not function
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> None(*h)
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: NoneType object argument after * must be a sequence, \
-
+    >>> None(*h)
+    Traceback (most recent call last):
+      ...
+    TypeError: NoneType object argument after * must be a sequence, \
 not function
 
     >>> h(**h)
@@ -209,19 +190,16 @@ not function
       ...
     TypeError: dir() argument after ** must be a mapping, not function
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> None(**h)
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: NoneType object argument after ** must be a mapping, \
-
+    >>> None(**h)
+    Traceback (most recent call last):
+      ...
+    TypeError: NoneType object argument after ** must be a mapping, \
 not function
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> dir(b=1, **{'b': 1})
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: dir() got multiple values for keyword argument 'b'
+    >>> dir(b=1, **{'b': 1})
+    Traceback (most recent call last):
+      ...
+    TypeError: dir() got multiple values for keyword argument 'b'
 
 Another helper function
 
@@ -258,63 +236,58 @@ first argument (got int instance instead)
     TypeError: unbound method method() must be called with Foo instance as \
 first argument (got int instance instead)
 
-A PyCFunction that takes only positional parameters shoud allow an
+A PyCFunction that takes only positional parameters should allow an
 empty keyword dictionary to pass without a complaint, but raise a
 TypeError if te dictionary is not empty
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> try:
-#    ...     silence = id(1, *{})
-#    ...     True
-#    ... except:
-#    ...     False
-#    True
+    >>> try:
+    ...     silence = id(1, *{})
+    ...     True
+    ... except:
+    ...     False
+    True
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#    >>> id(1, **{'foo': 1})
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: id() takes no keyword arguments
+    >>> id(1, **{'foo': 1})
+    Traceback (most recent call last):
+      ...
+    TypeError: id() takes no keyword arguments
 
 A corner case of keyword dictionary items being deleted during
 the function call setup. See <http://bugs.python.org/issue2016>.
 
-#http://ironpython.codeplex.com/workitem/28171
-#    >>> class Name(str):
-#    ...     def __eq__(self, other):
-#    ...         try:
-#    ...              del x[self]
-#    ...         except KeyError:
-#    ...              pass
-#    ...         return str.__eq__(self, other)
-#    ...     def __hash__(self):
-#    ...         return str.__hash__(self)
-#
-#    >>> x = {Name("a"):1, Name("b"):2}
-#    >>> def f(a, b):
-#    ...     print a,b
-#    >>> f(**x)
-#    1 2
+    >>> class Name(str):
+    ...     def __eq__(self, other):
+    ...         try:
+    ...              del x[self]
+    ...         except KeyError:
+    ...              pass
+    ...         return str.__eq__(self, other)
+    ...     def __hash__(self):
+    ...         return str.__hash__(self)
+
+    >>> x = {Name("a"):1, Name("b"):2}
+    >>> def f(a, b):
+    ...     print a,b
+    >>> f(**x)
+    1 2
 
 A obscure message:
 
-#http://ironpython.codeplex.com/workitem/28171
-#    >>> def f(a, b):
-#    ...    pass
-#    >>> f(b=1)
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: f() takes exactly 2 arguments (1 given)
+    >>> def f(a, b):
+    ...    pass
+    >>> f(b=1)
+    Traceback (most recent call last):
+      ...
+    TypeError: f() takes exactly 2 arguments (1 given)
 
 The number of arguments passed in includes keywords:
 
-#http://ironpython.codeplex.com/workitem/28171
-#    >>> def f(a):
-#    ...    pass
-#    >>> f(6, a=4, *(1, 2, 3))
-#    Traceback (most recent call last):
-#      ...
-#    TypeError: f() takes exactly 1 argument (5 given)
+    >>> def f(a):
+    ...    pass
+    >>> f(6, a=4, *(1, 2, 3))
+    Traceback (most recent call last):
+      ...
+    TypeError: f() takes exactly 1 argument (5 given)
 """
 
 import unittest

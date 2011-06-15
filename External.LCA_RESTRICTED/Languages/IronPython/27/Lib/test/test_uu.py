@@ -90,7 +90,6 @@ class UUFileTest(unittest.TestCase):
 
     def _kill(self, f):
         # close and remove file
-        test_support.force_gc_collect()
         try:
             f.close()
         except (SystemExit, KeyboardInterrupt):
@@ -133,7 +132,6 @@ class UUFileTest(unittest.TestCase):
 
             # in_file and out_file as filenames
             uu.encode(self.tmpin, self.tmpout, self.tmpin, mode=0644)
-            test_support.force_gc_collect()
             fout = open(self.tmpout, 'r')
             s = fout.read()
             fout.close()
@@ -160,6 +158,23 @@ class UUFileTest(unittest.TestCase):
             f.close()
             self.assertEqual(s, plaintext)
             # XXX is there an xp way to verify the mode?
+        finally:
+            self._kill(f)
+
+    def test_decode_filename(self):
+        f = None
+        try:
+            test_support.unlink(self.tmpin)
+            f = open(self.tmpin, 'w')
+            f.write(encodedtextwrapped % (0644, self.tmpout))
+            f.close()
+
+            uu.decode(self.tmpin)
+
+            f = open(self.tmpout, 'r')
+            s = f.read()
+            f.close()
+            self.assertEqual(s, plaintext)
         finally:
             self._kill(f)
 

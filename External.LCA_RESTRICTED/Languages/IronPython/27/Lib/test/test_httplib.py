@@ -1,7 +1,9 @@
+import httplib
 import array
 import httplib
 import StringIO
 import socket
+import errno
 
 import unittest
 TestCase = unittest.TestCase
@@ -23,6 +25,21 @@ class FakeSocket:
         if mode != 'r' and mode != 'rb':
             raise httplib.UnimplementedFileMode()
         return self.fileclass(self.text)
+
+class EPipeSocket(FakeSocket):
+
+    def __init__(self, text, pipe_trigger):
+        # When sendall() is called with pipe_trigger, raise EPIPE.
+        FakeSocket.__init__(self, text)
+        self.pipe_trigger = pipe_trigger
+
+    def sendall(self, data):
+        if self.pipe_trigger in data:
+            raise socket.error(errno.EPIPE, "gotcha")
+        self.data += data
+
+    def close(self):
+        pass
 
 class NoEOFStringIO(StringIO.StringIO):
     """Like StringIO, but raises AssertionError on EOF.
@@ -47,8 +64,6 @@ class HeaderTests(TestCase):
     def test_auto_headers(self):
         # Some headers are added automatically, but should not be added by
         # .request() if they are explicitly set.
-
-        import httplib
 
         class HeaderCountingBuffer(list):
             def __init__(self):
@@ -75,6 +90,33 @@ class HeaderTests(TestCase):
                 conn.request('POST', '/', body, headers)
                 self.assertEqual(conn._buffer.count[header.lower()], 1)
 
+    def test_putheader(self):
+        conn = httplib.HTTPConnection('example.com')
+        conn.sock = FakeSocket(None)
+        conn.putrequest('GET','/')
+        conn.putheader('Content-length',42)
+        self.assertTrue('Content-length: 42' in conn._buffer)
+
+    def test_ipv6host_header(self):
+        # Default host header on IPv6 transaction should wrapped by [] if
+        # its actual IPv6 address
+        expected = 'GET /foo HTTP/1.1\r\nHost: [2001::]:81\r\n' \
+                   'Accept-Encoding: identity\r\n\r\n'
+        conn = httplib.HTTPConnection('[2001::]:81')
+        sock = FakeSocket('')
+        conn.sock = sock
+        conn.request('GET', '/foo')
+        self.assertTrue(sock.data.startswith(expected))
+
+        expected = 'GET /foo HTTP/1.1\r\nHost: [2001:102A::]\r\n' \
+                   'Accept-Encoding: identity\r\n\r\n'
+        conn = httplib.HTTPConnection('[2001:102A::]')
+        sock = FakeSocket('')
+        conn.sock = sock
+        conn.request('GET', '/foo')
+        self.assertTrue(sock.data.startswith(expected))
+
+
 class BasicTest(TestCase):
     def test_status_lines(self):
         # Test HTTP status lines
@@ -93,7 +135,7 @@ class BasicTest(TestCase):
 
     def test_bad_status_repr(self):
         exc = httplib.BadStatusLine('')
-        self.assertEquals(repr(exc), '''BadStatusLine("\'\'",)''')
+        self.assertEqual(repr(exc), '''BadStatusLine("\'\'",)''')
 
     def test_partial_reads(self):
         # if we have a lenght, the system knows when to close itself
@@ -174,13 +216,13 @@ class BasicTest(TestCase):
         sock = FakeSocket(None)
         conn.sock = sock
         conn.send(expected)
-        self.assertEquals(expected, sock.data)
+        self.assertEqual(expected, sock.data)
         sock.data = ''
         conn.send(array.array('c', expected))
-        self.assertEquals(expected, sock.data)
+        self.assertEqual(expected, sock.data)
         sock.data = ''
         conn.send(StringIO.StringIO(expected))
-        self.assertEquals(expected, sock.data)
+        self.assertEqual(expected, sock.data)
 
     def test_chunked(self):
         chunked_start = (
@@ -194,7 +236,7 @@ class BasicTest(TestCase):
         sock = FakeSocket(chunked_start + '0\r\n')
         resp = httplib.HTTPResponse(sock, method="GET")
         resp.begin()
-        self.assertEquals(resp.read(), 'hello world')
+        self.assertEqual(resp.read(), 'hello world')
         resp.close()
 
         for x in ('', 'foo\r\n'):
@@ -204,10 +246,9 @@ class BasicTest(TestCase):
             try:
                 resp.read()
             except httplib.IncompleteRead, i:
-                self.assertEquals(i.partial, 'hello world')
-                if not test_support.due_to_ironpython_incompatibility("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-                    self.assertEqual(repr(i),'IncompleteRead(11 bytes read)')
-                    self.assertEqual(str(i),'IncompleteRead(11 bytes read)')
+                self.assertEqual(i.partial, 'hello world')
+                self.assertEqual(repr(i),'IncompleteRead(11 bytes read)')
+                self.assertEqual(str(i),'IncompleteRead(11 bytes read)')
             else:
                 self.fail('IncompleteRead expected')
             finally:
@@ -225,9 +266,9 @@ class BasicTest(TestCase):
         sock = FakeSocket(chunked_start + '0\r\n')
         resp = httplib.HTTPResponse(sock, method="HEAD")
         resp.begin()
-        self.assertEquals(resp.read(), '')
-        self.assertEquals(resp.status, 200)
-        self.assertEquals(resp.reason, 'OK')
+        self.assertEqual(resp.read(), '')
+        self.assertEqual(resp.status, 200)
+        self.assertEqual(resp.reason, 'OK')
         self.assertTrue(resp.isclosed())
 
     def test_negative_content_length(self):
@@ -235,19 +276,17 @@ class BasicTest(TestCase):
                           'Content-Length: -1\r\n\r\nHello\r\n')
         resp = httplib.HTTPResponse(sock, method="GET")
         resp.begin()
-        self.assertEquals(resp.read(), 'Hello\r\n')
+        self.assertEqual(resp.read(), 'Hello\r\n')
         resp.close()
 
     def test_incomplete_read(self):
-        if test_support.due_to_ironpython_incompatibility("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         sock = FakeSocket('HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nHello\r\n')
         resp = httplib.HTTPResponse(sock, method="GET")
         resp.begin()
         try:
             resp.read()
         except httplib.IncompleteRead as i:
-            self.assertEquals(i.partial, 'Hello\r\n')
+            self.assertEqual(i.partial, 'Hello\r\n')
             self.assertEqual(repr(i),
                              "IncompleteRead(7 bytes read, 3 more expected)")
             self.assertEqual(str(i),
@@ -257,10 +296,61 @@ class BasicTest(TestCase):
         finally:
             resp.close()
 
+    def test_epipe(self):
+        sock = EPipeSocket(
+            "HTTP/1.0 401 Authorization Required\r\n"
+            "Content-type: text/html\r\n"
+            "WWW-Authenticate: Basic realm=\"example\"\r\n",
+            b"Content-Length")
+        conn = httplib.HTTPConnection("example.com")
+        conn.sock = sock
+        self.assertRaises(socket.error,
+                          lambda: conn.request("PUT", "/url", "body"))
+        resp = conn.getresponse()
+        self.assertEqual(401, resp.status)
+        self.assertEqual("Basic realm=\"example\"",
+                         resp.getheader("www-authenticate"))
+
+    def test_filenoattr(self):
+        # Just test the fileno attribute in the HTTPResponse Object.
+        body = "HTTP/1.1 200 Ok\r\n\r\nText"
+        sock = FakeSocket(body)
+        resp = httplib.HTTPResponse(sock)
+        self.assertTrue(hasattr(resp,'fileno'),
+                'HTTPResponse should expose a fileno attribute')
+
+    # Test lines overflowing the max line size (_MAXLINE in http.client)
+
+    def test_overflowing_status_line(self):
+        self.skipTest("disabled for HTTP 0.9 support")
+        body = "HTTP/1.1 200 Ok" + "k" * 65536 + "\r\n"
+        resp = httplib.HTTPResponse(FakeSocket(body))
+        self.assertRaises((httplib.LineTooLong, httplib.BadStatusLine), resp.begin)
+
+    def test_overflowing_header_line(self):
+        body = (
+            'HTTP/1.1 200 OK\r\n'
+            'X-Foo: bar' + 'r' * 65536 + '\r\n\r\n'
+        )
+        resp = httplib.HTTPResponse(FakeSocket(body))
+        self.assertRaises(httplib.LineTooLong, resp.begin)
+
+    def test_overflowing_chunked_line(self):
+        body = (
+            'HTTP/1.1 200 OK\r\n'
+            'Transfer-Encoding: chunked\r\n\r\n'
+            + '0' * 65536 + 'a\r\n'
+            'hello world\r\n'
+            '0\r\n'
+        )
+        resp = httplib.HTTPResponse(FakeSocket(body))
+        resp.begin()
+        self.assertRaises(httplib.LineTooLong, resp.read)
+
 
 class OfflineTest(TestCase):
     def test_responses(self):
-        self.assertEquals(httplib.responses[httplib.NOT_FOUND], "Not Found")
+        self.assertEqual(httplib.responses[httplib.NOT_FOUND], "Not Found")
 
 
 class SourceAddressTest(TestCase):
@@ -278,7 +368,6 @@ class SourceAddressTest(TestCase):
         self.serv.close()
         self.serv = None
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/28185")
     def testHTTPConnectionSourceAddress(self):
         self.conn = httplib.HTTPConnection(HOST, self.port,
                 source_address=('', self.source_port))
@@ -307,7 +396,6 @@ class TimeoutTest(TestCase):
         self.serv.close()
         self.serv = None
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/28185")
     def testTimeoutAttribute(self):
         '''This will prove that the timeout gets through
         HTTPConnection and into the socket.

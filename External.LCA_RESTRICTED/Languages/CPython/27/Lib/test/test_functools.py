@@ -361,12 +361,14 @@ class TestTotalOrdering(unittest.TestCase):
                 self.value = value
             def __lt__(self, other):
                 return self.value < other.value
-        self.assert_(A(1) < A(2))
-        self.assert_(A(2) > A(1))
-        self.assert_(A(1) <= A(2))
-        self.assert_(A(2) >= A(1))
-        self.assert_(A(2) <= A(2))
-        self.assert_(A(2) >= A(2))
+            def __eq__(self, other):
+                return self.value == other.value
+        self.assertTrue(A(1) < A(2))
+        self.assertTrue(A(2) > A(1))
+        self.assertTrue(A(1) <= A(2))
+        self.assertTrue(A(2) >= A(1))
+        self.assertTrue(A(2) <= A(2))
+        self.assertTrue(A(2) >= A(2))
 
     def test_total_ordering_le(self):
         @functools.total_ordering
@@ -375,12 +377,14 @@ class TestTotalOrdering(unittest.TestCase):
                 self.value = value
             def __le__(self, other):
                 return self.value <= other.value
-        self.assert_(A(1) < A(2))
-        self.assert_(A(2) > A(1))
-        self.assert_(A(1) <= A(2))
-        self.assert_(A(2) >= A(1))
-        self.assert_(A(2) <= A(2))
-        self.assert_(A(2) >= A(2))
+            def __eq__(self, other):
+                return self.value == other.value
+        self.assertTrue(A(1) < A(2))
+        self.assertTrue(A(2) > A(1))
+        self.assertTrue(A(1) <= A(2))
+        self.assertTrue(A(2) >= A(1))
+        self.assertTrue(A(2) <= A(2))
+        self.assertTrue(A(2) >= A(2))
 
     def test_total_ordering_gt(self):
         @functools.total_ordering
@@ -389,12 +393,14 @@ class TestTotalOrdering(unittest.TestCase):
                 self.value = value
             def __gt__(self, other):
                 return self.value > other.value
-        self.assert_(A(1) < A(2))
-        self.assert_(A(2) > A(1))
-        self.assert_(A(1) <= A(2))
-        self.assert_(A(2) >= A(1))
-        self.assert_(A(2) <= A(2))
-        self.assert_(A(2) >= A(2))
+            def __eq__(self, other):
+                return self.value == other.value
+        self.assertTrue(A(1) < A(2))
+        self.assertTrue(A(2) > A(1))
+        self.assertTrue(A(1) <= A(2))
+        self.assertTrue(A(2) >= A(1))
+        self.assertTrue(A(2) <= A(2))
+        self.assertTrue(A(2) >= A(2))
 
     def test_total_ordering_ge(self):
         @functools.total_ordering
@@ -403,24 +409,26 @@ class TestTotalOrdering(unittest.TestCase):
                 self.value = value
             def __ge__(self, other):
                 return self.value >= other.value
-        self.assert_(A(1) < A(2))
-        self.assert_(A(2) > A(1))
-        self.assert_(A(1) <= A(2))
-        self.assert_(A(2) >= A(1))
-        self.assert_(A(2) <= A(2))
-        self.assert_(A(2) >= A(2))
+            def __eq__(self, other):
+                return self.value == other.value
+        self.assertTrue(A(1) < A(2))
+        self.assertTrue(A(2) > A(1))
+        self.assertTrue(A(1) <= A(2))
+        self.assertTrue(A(2) >= A(1))
+        self.assertTrue(A(2) <= A(2))
+        self.assertTrue(A(2) >= A(2))
 
     def test_total_ordering_no_overwrite(self):
         # new methods should not overwrite existing
         @functools.total_ordering
-        class A(int):
+        class A(str):
             pass
-        self.assert_(A(1) < A(2))
-        self.assert_(A(2) > A(1))
-        self.assert_(A(1) <= A(2))
-        self.assert_(A(2) >= A(1))
-        self.assert_(A(2) <= A(2))
-        self.assert_(A(2) >= A(2))
+        self.assertTrue(A("a") < A("b"))
+        self.assertTrue(A("b") > A("a"))
+        self.assertTrue(A("a") <= A("b"))
+        self.assertTrue(A("b") >= A("a"))
+        self.assertTrue(A("b") <= A("b"))
+        self.assertTrue(A("b") >= A("b"))
 
     def test_no_operations_defined(self):
         with self.assertRaises(ValueError):
@@ -428,12 +436,29 @@ class TestTotalOrdering(unittest.TestCase):
             class A:
                 pass
 
+    def test_bug_10042(self):
+        @functools.total_ordering
+        class TestTO:
+            def __init__(self, value):
+                self.value = value
+            def __eq__(self, other):
+                if isinstance(other, TestTO):
+                    return self.value == other.value
+                return False
+            def __lt__(self, other):
+                if isinstance(other, TestTO):
+                    return self.value < other.value
+                raise TypeError
+        with self.assertRaises(TypeError):
+            TestTO(8) <= ()
+
 def test_main(verbose=None):
     test_classes = (
         TestPartial,
         TestPartialSubclass,
         TestPythonPartial,
         TestUpdateWrapper,
+        TestTotalOrdering,
         TestWraps,
         TestReduce,
     )

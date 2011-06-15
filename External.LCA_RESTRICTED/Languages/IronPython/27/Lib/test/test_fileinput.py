@@ -4,7 +4,7 @@ Nick Mathewson
 '''
 
 import unittest
-from test.test_support import verbose, TESTFN, run_unittest, due_to_ironpython_incompatibility, due_to_ironpython_bug
+from test.test_support import verbose, TESTFN, run_unittest
 from test.test_support import unlink as safe_unlink
 import sys, re
 from StringIO import StringIO
@@ -210,18 +210,13 @@ class FileInputTests(unittest.TestCase):
             self.fail("FileInput should check openhook for being callable")
         except ValueError:
             pass
-        if due_to_ironpython_incompatibility("functionality in cpython site.py"): 
-            # without it, lookup('rot13') will fail due to lack of search functions
-            # which was registered in encodings\__init__.py
-            import encodings
-        if not due_to_ironpython_bug('http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148925'): 
-            try:
-                t1 = writeTmp(1, ["A\nB"], mode="wb")
-                fi = FileInput(files=t1, openhook=hook_encoded("rot13"))
-                lines = list(fi)
-                self.assertEqual(lines, ["N\n", "O"])
-            finally:
-                remove_tempfiles(t1)
+        try:
+            t1 = writeTmp(1, ["A\nB"], mode="wb")
+            fi = FileInput(files=t1, openhook=hook_encoded("rot13"))
+            lines = list(fi)
+            self.assertEqual(lines, ["N\n", "O"])
+        finally:
+            remove_tempfiles(t1)
 
 def test_main():
     run_unittest(BufferSizesTests, FileInputTests)

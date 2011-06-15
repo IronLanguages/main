@@ -530,9 +530,9 @@ class LongTest(unittest.TestCase):
                 try:
                     long(TruncReturnsNonIntegral())
                 except TypeError as e:
-                    self.assertEquals(str(e),
-                                      "__trunc__ returned non-Integral"
-                                      " (type NonIntegral)")
+                    self.assertEqual(str(e),
+                                     "__trunc__ returned non-Integral"
+                                     " (type NonIntegral)")
                 else:
                     self.fail("Failed to raise TypeError with %s" %
                               ((base, trunc_result_base),))
@@ -600,6 +600,22 @@ class LongTest(unittest.TestCase):
             # that fit a Py_ssize_t
             slicemin, slicemax = X()[-2L**100:2L**100]
             self.assertEqual(X()[slicemin:slicemax], (slicemin, slicemax))
+
+    def test_issue9869(self):
+        # Issue 9869: Interpreter crash when initializing an instance
+        # of a long subclass from an object whose __long__ method returns
+        # a plain int.
+        class BadLong(object):
+            def __long__(self):
+                return 1000000
+
+        class MyLong(long):
+            pass
+
+        x = MyLong(BadLong())
+        self.assertIsInstance(x, long)
+        self.assertEqual(x, 1000000)
+
 
 # ----------------------------------- tests of auto int->long conversion
 

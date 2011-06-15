@@ -31,17 +31,17 @@ class StringArrayTestCase(unittest.TestCase):
         buf.value = "Hello, World"
         self.assertEqual(buf.value, "Hello, World")
 
-        self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"Hello, World"))
-        self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"abc"))
-        self.assertRaises(ValueError, setattr, buf, "raw", memoryview(b"x" * 100))
+        self.assertRaises(TypeError, setattr, buf, "value", memoryview("Hello, World"))
+        self.assertRaises(TypeError, setattr, buf, "value", memoryview("abc"))
+        self.assertRaises(ValueError, setattr, buf, "raw", memoryview("x" * 100))
 
     def test_c_buffer_raw(self, memoryview=memoryview):
         buf = c_buffer(32)
 
-        buf.raw = memoryview(b"Hello, World")
+        buf.raw = memoryview("Hello, World")
         self.assertEqual(buf.value, "Hello, World")
-        self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"abc"))
-        self.assertRaises(ValueError, setattr, buf, "raw", memoryview(b"x" * 100))
+        self.assertRaises(TypeError, setattr, buf, "value", memoryview("abc"))
+        self.assertRaises(ValueError, setattr, buf, "raw", memoryview("x" * 100))
 
     def test_c_buffer_deprecated(self):
         # Compatibility with 2.x

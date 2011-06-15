@@ -29,10 +29,10 @@ class BinHexTestCase(unittest.TestCase):
         f = open(self.fname1, 'w')
         f.write(self.DATA)
         f.close()
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317834"):
-            binhex.binhex(self.fname1, self.fname2)
 
-            binhex.hexbin(self.fname2, self.fname1)
+        binhex.binhex(self.fname1, self.fname2)
+
+        binhex.hexbin(self.fname2, self.fname1)
 
         f = open(self.fname1, 'r')
         finish = f.readline()

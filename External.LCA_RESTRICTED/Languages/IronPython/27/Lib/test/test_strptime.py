@@ -155,8 +155,6 @@ class TimeRETests(unittest.TestCase):
                          "'%s' using '%s'; group 'a' = '%s', group 'b' = %s'" %
                          (found.string, found.re.pattern, found.group('a'),
                           found.group('b')))
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=409557"):
-           return
         for directive in ('a','A','b','B','c','d','H','I','j','m','M','p','S',
                           'U','w','W','x','X','y','Y','Z','%'):
             compiled = self.time_re.compile("%" + directive)
@@ -300,8 +298,6 @@ class StrptimeTests(unittest.TestCase):
         self.assertEqual(strp_output.tm_isdst, 0)
         strp_output = _strptime._strptime_time("GMT", "%Z")
         self.assertEqual(strp_output.tm_isdst, 0)
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=409557"):
-           return
         time_tuple = time.localtime()
         strf_output = time.strftime("%Z")  #UTC does not have a timezone
         strp_output = _strptime._strptime_time(strf_output, "%Z")
@@ -412,8 +408,6 @@ class CalculationTests(unittest.TestCase):
         self.time_tuple = time.gmtime()
 
     def test_julian_calculation(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=409557"):
-           return
         # Make sure that when Julian is missing that it is calculated
         format_string = "%Y %m %d %H %M %S %w %Z"
         result = _strptime._strptime_time(time.strftime(format_string, self.time_tuple),
@@ -423,8 +417,6 @@ class CalculationTests(unittest.TestCase):
                          (result.tm_yday, self.time_tuple.tm_yday))
 
     def test_gregorian_calculation(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=409557"):
-           return
         # Test that Gregorian date can be calculated from Julian day
         format_string = "%Y %H %M %S %w %j %Z"
         result = _strptime._strptime_time(time.strftime(format_string, self.time_tuple),
@@ -439,8 +431,6 @@ class CalculationTests(unittest.TestCase):
                           self.time_tuple.tm_mday))
 
     def test_day_of_week_calculation(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=409557"):
-           return
         # Test that the day of the week is calculated as needed
         format_string = "%Y %m %d %H %S %j %Z"
         result = _strptime._strptime_time(time.strftime(format_string, self.time_tuple),
@@ -546,7 +536,7 @@ class CacheTests(unittest.TestCase):
                 self.assertIsNot(first_time_re, second_time_re)
             # Possible test locale is not supported while initial locale is.
             # If this is the case just suppress the exception and fall-through
-            # to the reseting to the original locale.
+            # to the resetting to the original locale.
             except locale.Error:
                 pass
         # Make sure we don't trample on the locale setting once we leave the

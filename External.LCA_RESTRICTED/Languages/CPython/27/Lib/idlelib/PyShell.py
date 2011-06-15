@@ -552,7 +552,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
         This method is called from the subprocess, and by returning from this
         method we allow the subprocess to unblock.  After a bit the shell
         requests the subprocess to open the remote stack viewer which returns a
-        static object looking at the last exceptiopn.  It is queried through
+        static object looking at the last exception.  It is queried through
         the RPC mechanism.
 
         """
@@ -1431,6 +1431,13 @@ def main():
         elif script:
             shell.interp.prepend_syspath(script)
             shell.interp.execfile(script)
+
+    # Check for problematic OS X Tk versions and print a warning message
+    # in the IDLE shell window; this is less intrusive than always opening
+    # a separate window.
+    tkversionwarning = macosxSupport.tkVersionWarning(root)
+    if tkversionwarning:
+        shell.interp.runcommand(''.join(("print('", tkversionwarning, "')")))
 
     root.mainloop()
     root.destroy()

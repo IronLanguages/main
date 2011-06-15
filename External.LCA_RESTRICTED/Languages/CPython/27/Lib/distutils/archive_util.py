@@ -3,7 +3,7 @@
 Utility functions for creating archive files (tarballs, zip files,
 that sort of thing)."""
 
-__revision__ = "$Id: archive_util.py 75659 2009-10-24 13:29:44Z tarek.ziade $"
+__revision__ = "$Id$"
 
 import os
 from warnings import warn
@@ -121,7 +121,7 @@ def make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
 def make_zipfile(base_name, base_dir, verbose=0, dry_run=0):
     """Create a zip file from all the files under 'base_dir'.
 
-    The output zip file will be named 'base_dir' + ".zip".  Uses either the
+    The output zip file will be named 'base_name' + ".zip".  Uses either the
     "zipfile" Python module (if available) or the InfoZIP "zip" utility
     (if installed and found on the default search path).  If neither tool is
     available, raises DistutilsExecError.  Returns the name of the output zip

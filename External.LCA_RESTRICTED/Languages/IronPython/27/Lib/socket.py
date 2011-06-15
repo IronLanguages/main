@@ -189,7 +189,9 @@ class _socketobject(object):
         for method in _delegate_methods:
             setattr(self, method, getattr(_sock, method))
 
-    def close(self):
+    def close(self, _closedsocket=_closedsocket,
+              _delegate_methods=_delegate_methods, setattr=setattr):
+        # This function should not reference any globals. See issue #808164.
         self._sock = _closedsocket()
         dummy = self._sock._dummy
         for method in _delegate_methods:
@@ -546,8 +548,8 @@ def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
     An host of '' or port 0 tells the OS to use the default.
     """
 
-    msg = "getaddrinfo returns an empty list"
     host, port = address
+    err = None
     for res in getaddrinfo(host, port, 0, SOCK_STREAM):
         af, socktype, proto, canonname, sa = res
         sock = None
@@ -560,8 +562,12 @@ def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
             sock.connect(sa)
             return sock
 
-        except error, msg:
+        except error as _:
+            err = _
             if sock is not None:
                 sock.close()
 
-    raise error, msg
+    if err is not None:
+        raise err
+    else:
+        raise error("getaddrinfo returns an empty list")

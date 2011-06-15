@@ -15,10 +15,7 @@ class Frm(object):
         return self.format % self.args
 
 # SHIFT should match the value in longintrepr.h for best testing.
-if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-    SHIFT = 32
-else:
-    SHIFT = sys.long_info.bits_per_digit
+SHIFT = sys.long_info.bits_per_digit
 BASE = 2 ** SHIFT
 MASK = BASE - 1
 KARATSUBA_CUTOFF = 70   # from longobject.c
@@ -533,9 +530,9 @@ class LongTest(unittest.TestCase):
                 try:
                     long(TruncReturnsNonIntegral())
                 except TypeError as e:
-                    self.assertEquals(str(e),
-                                      "__trunc__ returned non-Integral"
-                                      " (type NonIntegral)")
+                    self.assertEqual(str(e),
+                                     "__trunc__ returned non-Integral"
+                                     " (type NonIntegral)")
                 else:
                     self.fail("Failed to raise TypeError with %s" %
                               ((base, trunc_result_base),))
@@ -598,14 +595,27 @@ class LongTest(unittest.TestCase):
                 return i, j
 
         with test_support.check_py3k_warnings():
-            # TypeError: len() of unsized object
-            if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-                return
             self.assertEqual(X()[-5L:7L], (-5, 7))
             # use the clamping effect to test the smallest and largest longs
             # that fit a Py_ssize_t
             slicemin, slicemax = X()[-2L**100:2L**100]
             self.assertEqual(X()[slicemin:slicemax], (slicemin, slicemax))
+
+    def test_issue9869(self):
+        # Issue 9869: Interpreter crash when initializing an instance
+        # of a long subclass from an object whose __long__ method returns
+        # a plain int.
+        class BadLong(object):
+            def __long__(self):
+                return 1000000
+
+        class MyLong(long):
+            pass
+
+        x = MyLong(BadLong())
+        self.assertIsInstance(x, long)
+        self.assertEqual(x, 1000000)
+
 
 # ----------------------------------- tests of auto int->long conversion
 
@@ -695,18 +705,12 @@ class LongTest(unittest.TestCase):
         # test round-half-even
         for x, y in [(1, 0), (2, 2), (3, 4), (4, 4), (5, 4), (6, 6), (7, 8)]:
             for p in xrange(15):
-                if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                    if (x == 3 and p >= 11) or (x == 7 and p >= 7):
-                        continue
                 self.assertEqual(long(float(2L**p*(2**53+x))), 2L**p*(2**53+y))
 
         for x, y in [(0, 0), (1, 0), (2, 0), (3, 4), (4, 4), (5, 4), (6, 8),
                      (7, 8), (8, 8), (9, 8), (10, 8), (11, 12), (12, 12),
                      (13, 12), (14, 16), (15, 16)]:
             for p in xrange(15):
-                if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                    if (x == 6 and p >= 10) or (x == 14 and p >= 6):
-                        continue
                 self.assertEqual(long(float(2L**p*(2**54+x))), 2L**p*(2**54+y))
 
         # behaviour near extremes of floating-point range
@@ -716,11 +720,9 @@ class LongTest(unittest.TestCase):
         self.assertEqual(float(long_dbl_max), DBL_MAX)
         self.assertEqual(float(long_dbl_max+1), DBL_MAX)
         self.assertEqual(float(halfway-1), DBL_MAX)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertRaises(OverflowError, float, halfway)
+        self.assertRaises(OverflowError, float, halfway)
         self.assertEqual(float(1-halfway), -DBL_MAX)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertRaises(OverflowError, float, -halfway)
+        self.assertRaises(OverflowError, float, -halfway)
         self.assertRaises(OverflowError, float, top_power-1)
         self.assertRaises(OverflowError, float, top_power)
         self.assertRaises(OverflowError, float, top_power+1)
@@ -728,8 +730,6 @@ class LongTest(unittest.TestCase):
         self.assertRaises(OverflowError, float, 2*top_power)
         self.assertRaises(OverflowError, float, top_power*top_power)
 
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         for p in xrange(100):
             x = long(2**p * (2**53 + 1) + 1)
             y = long(2**p * (2**53+ 2))

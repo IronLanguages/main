@@ -236,23 +236,16 @@ class ImportHooksTestCase(ImportHooksBaseTestCase):
         sys.meta_path.append(i)
         sys.path_hooks.append(ImpWrapper)
         mnames = ("colorsys", "urlparse", "distutils.core", "compiler.misc")
-        if test_support.due_to_ironpython_incompatibility("compiler.misc depends on the 'parser' builtin module"):
-            mnames = tuple([x for x in mnames if x!="compiler.misc"])
         for mname in mnames:
             parent = mname.split(".")[0]
             for n in sys.modules.keys():
                 if n.startswith(parent):
                     del sys.modules[n]
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
+        with test_support.check_warnings(("The compiler package is deprecated "
+                                          "and removed", DeprecationWarning)):
             for mname in mnames:
                 m = __import__(mname, globals(), locals(), ["__dummy__"])
                 m.__loader__  # to make sure we actually handled the import
-        else:
-            with test_support.check_warnings(("The compiler package is deprecated "
-                                              "and removed", DeprecationWarning)):
-                for mname in mnames:
-                    m = __import__(mname, globals(), locals(), ["__dummy__"])
-                    m.__loader__  # to make sure we actually handled the import
 
 
 def test_main():

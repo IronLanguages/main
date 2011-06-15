@@ -243,12 +243,7 @@ class test__mkstemp_inner(TC):
         # _mkstemp_inner can create files in a user-selected directory
         dir = tempfile.mkdtemp()
         try:
-            f = self.do_create(dir=dir)
-            f.write("blat")
-            if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=370828"):
-                f.__del__()
-            else:
-                del f
+            self.do_create(dir=dir).write("blat")
         finally:
             os.rmdir(dir)
 
@@ -256,8 +251,6 @@ class test__mkstemp_inner(TC):
         # _mkstemp_inner creates files with the proper mode
         if not has_stat:
             return            # ugh, can't use SkipTest.
-        if  test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323557"):
-            return
 
         file = self.do_create()
         mode = stat.S_IMODE(os.stat(file.name).st_mode)
@@ -481,7 +474,7 @@ class test_mkdtemp(TC):
             mode = stat.S_IMODE(os.stat(dir).st_mode)
             mode &= 0777 # Mask off sticky bits inherited from /tmp
             expected = 0700
-            if sys.platform in ('win32', 'os2emx', 'cli', 'cli64'):
+            if sys.platform in ('win32', 'os2emx'):
                 # There's no distinction among 'user', 'group' and 'world';
                 # replicate the 'user' bits.
                 user = expected >> 6
@@ -502,12 +495,8 @@ class test_mktemp(TC):
         self.dir = tempfile.mkdtemp()
 
     def tearDown(self):
-        test_support.gc_collect()
         if self.dir:
-            try:
-                os.rmdir(self.dir)
-            except OSError, e:
-                raise e
+            os.rmdir(self.dir)
             self.dir = None
 
     class mktemped:
@@ -597,9 +586,6 @@ class test_NamedTemporaryFile(TC):
             f = tempfile.NamedTemporaryFile(dir=dir)
             f.write('blat')
             f.close()
-            if os.path.exists(f.name) and test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=370828"):
-                os.unlink(f.name)
-                return
             self.assertFalse(os.path.exists(f.name),
                         "NamedTemporaryFile %s exists after close" % f.name)
         finally:
@@ -636,8 +622,7 @@ class test_NamedTemporaryFile(TC):
         # A NamedTemporaryFile can be used as a context manager
         with tempfile.NamedTemporaryFile() as f:
             self.assertTrue(os.path.exists(f.name))
-        if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=370828"):
-            self.assertFalse(os.path.exists(f.name))
+        self.assertFalse(os.path.exists(f.name))
         def use_closed():
             with f:
                 pass
@@ -678,10 +663,6 @@ class test_SpooledTemporaryFile(TC):
             self.assertTrue(f._rolled)
             filename = f.name
             f.close()
-            if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=370828"):
-                if os.path.exists(filename):
-                    os.unlink(filename)
-                    return
             self.assertFalse(os.path.exists(filename),
                         "SpooledTemporaryFile %s exists after close" % filename)
         finally:
@@ -708,9 +689,24 @@ class test_SpooledTemporaryFile(TC):
         f.write('x')
         self.assertTrue(f._rolled)
 
+    def test_writelines(self):
+        # Verify writelines with a SpooledTemporaryFile
+        f = self.do_create()
+        f.writelines((b'x', b'y', b'z'))
+        f.seek(0)
+        buf = f.read()
+        self.assertEqual(buf, b'xyz')
+
+    def test_writelines_sequential(self):
+        # A SpooledTemporaryFile should hold exactly max_size bytes, and roll
+        # over afterward
+        f = self.do_create(max_size=35)
+        f.writelines((b'x' * 20, b'x' * 10, b'x' * 5))
+        self.assertFalse(f._rolled)
+        f.write(b'x')
+        self.assertTrue(f._rolled)
+
     def test_sparse(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # A SpooledTemporaryFile that is written late in the file will extend
         # when that occurs
         f = self.do_create(max_size=30)

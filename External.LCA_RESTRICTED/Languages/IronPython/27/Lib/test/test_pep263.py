@@ -16,8 +16,6 @@ class PEP263Test(unittest.TestCase):
         )
 
     def test_compilestring(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/21116"):
-            return
         # see #1882
         c = compile("\n# coding: utf-8\nu = u'\xc3\xb3'\n", "dummy", "exec")
         d = {}
@@ -36,9 +34,6 @@ class PEP263Test(unittest.TestCase):
         # Ensure that check_bom() restores all bytes in the right order if
         # check_bom() fails in pydebug mode: a buffer starts with the first
         # byte of a valid BOM, but next bytes are different
-
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
 
         # one byte in common with the UTF-16-LE BOM
         self.assertRaises(SyntaxError, eval, '\xff\x20')

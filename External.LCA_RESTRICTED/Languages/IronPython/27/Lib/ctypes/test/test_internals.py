@@ -2,7 +2,6 @@
 import unittest
 from ctypes import *
 from sys import getrefcount as grc
-from test import test_support
 
 # XXX This test must be reviewed for correctness!!!
 
@@ -23,8 +22,6 @@ class ObjectsTestCase(unittest.TestCase):
         self.assertEqual(id(a), id(b))
 
     def test_ints(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            return
         i = 42000123
         refcnt = grc(i)
         ci = c_int(i)
@@ -32,8 +29,6 @@ class ObjectsTestCase(unittest.TestCase):
         self.assertEqual(ci._objects, None)
 
     def test_c_char_p(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            return
         s = "Hello, World"
         refcnt = grc(s)
         cs = c_char_p(s)

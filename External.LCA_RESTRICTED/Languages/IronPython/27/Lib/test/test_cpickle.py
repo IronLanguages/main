@@ -126,21 +126,14 @@ class cPickleDeepRecursive(unittest.TestCase):
 
 
 def test_main():
-    if not test_support.due_to_ironpython_incompatibility('ip do not support fast mode'): 
-        test_support.run_unittest(
-            cPickleTests,
-            cPicklePicklerTests,
-            cPickleListPicklerTests,
-            cPickleFastPicklerTests,
-            cPickleDeepRecursive,
+    test_support.run_unittest(
+        cPickleTests,
+        cPicklePicklerTests,
+        cPickleListPicklerTests,
+        cPickleFastPicklerTests,
+        cPickleDeepRecursive,
         cPicklePicklerUnpicklerObjectTests,
-        )
-    else:
-        test_support.run_unittest(
-            cPickleTests,
-            cPicklePicklerTests,
-            cPickleListPicklerTests,
-        )
+    )
 
 if __name__ == "__main__":
     test_main()

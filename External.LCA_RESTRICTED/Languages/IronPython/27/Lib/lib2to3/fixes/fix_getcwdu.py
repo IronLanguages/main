@@ -8,6 +8,7 @@ from .. import fixer_base
 from ..fixer_util import Name
 
 class FixGetcwdu(fixer_base.BaseFix):
+    BM_compatible = True
 
     PATTERN = """
               power< 'os' trailer< dot='.' name='getcwdu' > any* >
@@ -15,4 +16,4 @@ class FixGetcwdu(fixer_base.BaseFix):
 
     def transform(self, node, results):
         name = results["name"]
-        name.replace(Name(u"getcwd", prefix=name.get_prefix()))
+        name.replace(Name(u"getcwd", prefix=name.prefix))

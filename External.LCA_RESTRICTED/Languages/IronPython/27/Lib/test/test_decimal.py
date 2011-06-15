@@ -32,7 +32,7 @@ import unittest
 from decimal import *
 import numbers
 from test.test_support import (run_unittest, run_doctest,
-                               is_resource_enabled, check_py3k_warnings, due_to_ironpython_bug)
+                               is_resource_enabled, check_py3k_warnings)
 import random
 try:
     import threading
@@ -77,10 +77,41 @@ skip_expected = not os.path.isdir(directory)
 
 # list of individual .decTest test ids that correspond to tests that
 # we're skipping for one reason or another.
-skipped_test_ids = [
-    'scbx164',  # skipping apparently implementation-specific scaleb
-    'scbx165',  # tests, pending clarification of scaleb rules.
-]
+skipped_test_ids = set([
+    # Skip implementation-specific scaleb tests.
+    'scbx164',
+    'scbx165',
+
+    # For some operations (currently exp, ln, log10, power), the decNumber
+    # reference implementation imposes additional restrictions on the context
+    # and operands.  These restrictions are not part of the specification;
+    # however, the effect of these restrictions does show up in some of the
+    # testcases.  We skip testcases that violate these restrictions, since
+    # Decimal behaves differently from decNumber for these testcases so these
+    # testcases would otherwise fail.
+    'expx901',
+    'expx902',
+    'expx903',
+    'expx905',
+    'lnx901',
+    'lnx902',
+    'lnx903',
+    'lnx905',
+    'logx901',
+    'logx902',
+    'logx903',
+    'logx905',
+    'powx1183',
+    'powx1184',
+    'powx4001',
+    'powx4002',
+    'powx4003',
+    'powx4005',
+    'powx4008',
+    'powx4010',
+    'powx4012',
+    'powx4014',
+    ])
 
 # Make sure it actually raises errors when not expected and caught in flags
 # Slower, since it runs some things several times.
@@ -171,27 +202,6 @@ LOGICAL_FUNCTIONS = (
     'same_quantum',
     )
 
-# For some operations (currently exp, ln, log10, power), the decNumber
-# reference implementation imposes additional restrictions on the
-# context and operands.  These restrictions are not part of the
-# specification; however, the effect of these restrictions does show
-# up in some of the testcases.  We skip testcases that violate these
-# restrictions, since Decimal behaves differently from decNumber for
-# these testcases so these testcases would otherwise fail.
-
-decNumberRestricted = ('power', 'ln', 'log10', 'exp')
-DEC_MAX_MATH = 999999
-def outside_decNumber_bounds(v, context):
-    if (context.prec > DEC_MAX_MATH or
-        context.Emax > DEC_MAX_MATH or
-        -context.Emin > DEC_MAX_MATH):
-        return True
-    if not v._is_special and v and (
-        v.adjusted() > DEC_MAX_MATH or
-        v.adjusted() < 1-2*DEC_MAX_MATH):
-        return True
-    return False
-
 class DecimalTest(unittest.TestCase):
     """Class which tests the Decimal class against the test cases.
 
@@ -214,14 +224,15 @@ class DecimalTest(unittest.TestCase):
         if skip_expected:
             raise unittest.SkipTest
             return
-        for line in open(file):
-            line = line.replace('\r\n', '').replace('\n', '')
-            #print line
-            try:
-                t = self.eval_line(line)
-            except DecimalException, exception:
-                #Exception raised where there shoudn't have been one.
-                self.fail('Exception "'+exception.__class__.__name__ + '" raised on line '+line)
+        with open(file) as f:
+            for line in f:
+                line = line.replace('\r\n', '').replace('\n', '')
+                #print line
+                try:
+                    t = self.eval_line(line)
+                except DecimalException as exception:
+                    #Exception raised where there shouldn't have been one.
+                    self.fail('Exception "'+exception.__class__.__name__ + '" raised on line '+line)
 
         return
 
@@ -328,22 +339,6 @@ class DecimalTest(unittest.TestCase):
             vals.append(v)
 
         ans = FixQuotes(ans)
-
-        # skip tests that are related to bounds imposed in the decNumber
-        # reference implementation
-        if fname in decNumberRestricted:
-            if fname == 'power':
-                if not (vals[1]._isinteger() and
-                        -1999999997 <= vals[1] <= 999999999):
-                    if outside_decNumber_bounds(vals[0], self.context) or \
-                            outside_decNumber_bounds(vals[1], self.context):
-                        #print "Skipping test %s" % s
-                        return
-            else:
-                if outside_decNumber_bounds(vals[0], self.context):
-                    #print "Skipping test %s" % s
-                    return
-
 
         if EXTENDEDERRORTEST and fname not in ('to_sci_string', 'to_eng_string'):
             for error in theirexceptions:
@@ -603,15 +598,14 @@ class DecimalExplicitConstructionTest(unittest.TestCase):
         d = nc.create_decimal(prevdec)
         self.assertEqual(str(d), '5.00E+8')
 
-    if not due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=24753"):
-        def test_unicode_digits(self):
-            test_values = {
-                u'\uff11': '1',
-                u'\u0660.\u0660\u0663\u0667\u0662e-\u0663' : '0.0000372',
-                u'-nan\u0c68\u0c6a\u0c66\u0c66' : '-NaN2400',
-                }
-            for input, expected in test_values.items():
-                self.assertEqual(str(Decimal(input)), expected)
+    def test_unicode_digits(self):
+        test_values = {
+            u'\uff11': '1',
+            u'\u0660.\u0660\u0663\u0667\u0662e-\u0663' : '0.0000372',
+            u'-nan\u0c68\u0c6a\u0c66\u0c66' : '-NaN2400',
+            }
+        for input, expected in test_values.items():
+            self.assertEqual(str(Decimal(input)), expected)
 
 
 class DecimalImplicitConstructionTest(unittest.TestCase):
@@ -693,9 +687,6 @@ class DecimalImplicitConstructionTest(unittest.TestCase):
 class DecimalFormatTest(unittest.TestCase):
     '''Unit tests for the format function.'''
     def test_formatting(self):
-        # IPy: fails due to a bug in regex matching
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # triples giving a format, a Decimal, and the expected result
         test_values = [
             ('e', '0E-15', '0e-15'),
@@ -1339,9 +1330,7 @@ class DecimalUsabilityTest(unittest.TestCase):
                                  32, 33, 62, 63, 64, 65, 66]
                        for n in range(-10, 10)
                        for sign in [-1, 1]]
-        # IPy: Some of these hash values are off by 2 or 3
-        if not due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            test_values.extend([
+        test_values.extend([
                 Decimal("-0"), # zeros
                 Decimal("0.00"),
                 Decimal("-0.000"),
@@ -1365,7 +1354,6 @@ class DecimalUsabilityTest(unittest.TestCase):
 
         # check that hash(d) == hash(int(d)) for integral values
         for value in test_values:
-            print value
             self.assertEqual(hash(value), hash(int(value)))
 
         #the same hash that to an int

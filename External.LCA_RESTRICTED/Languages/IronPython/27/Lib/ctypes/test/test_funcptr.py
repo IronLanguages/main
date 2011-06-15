@@ -123,20 +123,5 @@ class CFuncPtrTestCase(unittest.TestCase):
         self.assertEqual(strtok(None, "\n"), "c")
         self.assertEqual(strtok(None, "\n"), None)
 
-    # new IronPython test
-    def test_addressof(self):
-        import ctypes
-        
-        # addressof should return address of memory location, not function itself
-        msvcrt = ctypes.cdll.LoadLibrary("msvcrt")
-        msvcrt2 = ctypes.cdll.LoadLibrary("msvcrt")
-        systemfn = ctypes.c_int.from_address(ctypes.addressof(msvcrt.system))
-        systemfn2 = ctypes.c_int.from_address(ctypes.addressof(msvcrt.system))
-        
-        # but the functions should have the same value
-        self.failIfEqual(systemfn, systemfn2)
-        self.failUnlessEqual(systemfn.value, systemfn2.value)
-        
-
 if __name__ == '__main__':
     unittest.main()
