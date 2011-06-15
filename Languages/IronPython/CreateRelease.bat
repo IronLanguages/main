@@ -11,10 +11,15 @@ msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=%BUILD_FLAVOR% /v:minimal
 msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=Silverlight4%BUILD_FLAVOR% /v:minimal
 
 :GenerateModulesList
-%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ipy.exe %DLR_ROOT%\Languages\IronPython\StdLib\MakeModuleList.py
+pushd %DLR_ROOT%\Languages\IronPython\StdLib\
+%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ipy.exe MakeModuleList.py
+popd
 
 :GenerateMSI
-%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ir.exe %DLR_ROOT%\Msi\Python\generate_wxis.rb
+pushd %DLR_ROOT%\Msi\Python
+%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ir.exe generate_wxis.rb
+popd
+
 msbuild %DLR_ROOT%\Msi\Installer.proj /p:Configuration=%BUILD_FLAVOR% /v:minimal
 copy /Y %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython.msi %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%.msi
 
@@ -61,7 +66,9 @@ copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython.xml .
 
 copy %DLR_ROOT%\Languages\IronPython\Public\License.html .
 copy %DLR_ROOT%\Languages\IronPython\Public\License.rtf .
+copy %DLR_ROOT%\Languages\IronPython\Public\License.txt .
 copy %DLR_ROOT%\Languages\IronPython\Public\Readme.html .
+copy %DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\LICENSE.txt License.StdLib.txt
 
 mkdir Silverlight\bin
 copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\Microsoft.Dynamic.dll Silverlight\bin\
