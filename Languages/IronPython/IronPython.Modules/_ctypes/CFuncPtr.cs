@@ -48,11 +48,13 @@ namespace IronPython.Modules {
     public static partial class CTypes {
 
         [PythonType("CFuncPtr")]
-        public abstract class _CFuncPtr : CData, IDynamicMetaObjectProvider {
+        public abstract class _CFuncPtr : CData, IDynamicMetaObjectProvider, ICodeFormattable {
             private readonly Delegate _delegate;
+            private readonly int _comInterfaceIndex = -1;
             private object _errcheck, _restype = _noResType;
             private IList<object> _argtypes;
             private int _id;
+            
             private static int _curId = 0;
             internal static object _noResType = new object();
             // __nonzero__ 
@@ -128,6 +130,15 @@ namespace IronPython.Modules {
                         
                     }
                 }
+                _id = Interlocked.Increment(ref _curId);
+            }
+
+            /// <summary>
+            /// Creates a new CFuncPtr which calls a COM method.
+            /// </summary>
+            public _CFuncPtr(int index, string name) {
+                _memHolder = new MemoryHolder(IntPtr.Size);
+                _comInterfaceIndex = index;
                 _id = Interlocked.Increment(ref _curId);
             }
 
@@ -236,7 +247,7 @@ namespace IronPython.Modules {
                     _id = Interlocked.Increment(ref _curId);
                 }
             }
-
+            
             #endregion
 
             #region Internal APIs
@@ -306,20 +317,28 @@ namespace IronPython.Modules {
                         restrictions = restrictions.Merge(arg.GetRestrictions());
                     }
 
+                    int argCount = args.Length;
+                    if (Value._comInterfaceIndex != -1) {
+                        argCount--;
+                    }
                     // need to verify we have the correct # of args
                     if (Value._argtypes != null) {
-                        if (args.Length < Value._argtypes.Count || (Value.CallingConvention != CallingConvention.Cdecl && args.Length > Value._argtypes.Count)) {
-                            return IncorrectArgCount(binder, restrictions, Value._argtypes.Count, args.Length);
+                        if (argCount < Value._argtypes.Count || (Value.CallingConvention != CallingConvention.Cdecl && argCount > Value._argtypes.Count)) {
+                            return IncorrectArgCount(binder, restrictions, Value._argtypes.Count, argCount);
                         }
                     } else {
                         CFuncPtrType funcType = ((CFuncPtrType)Value.NativeType);
                         if (funcType._argtypes != null &&
-                            (args.Length  < funcType._argtypes.Length || (Value.CallingConvention != CallingConvention.Cdecl && args.Length > funcType._argtypes.Length))) {
-                            return IncorrectArgCount(binder, restrictions, funcType._argtypes.Length, args.Length);
+                            (argCount < funcType._argtypes.Length || (Value.CallingConvention != CallingConvention.Cdecl && argCount > funcType._argtypes.Length))) {
+                            return IncorrectArgCount(binder, restrictions, funcType._argtypes.Length, argCount);
                         }
                     }
 
-                    Expression call = MakeCall(signature, GetNativeReturnType(), Value.Getrestype() == null);
+                    if (Value._comInterfaceIndex != -1 && args.Length == 0) {
+                        return NoThisParam(binder, restrictions);
+                    }
+
+                    Expression call = MakeCall(signature, GetNativeReturnType(), Value.Getrestype() == null, GetFunctionAddress(args));
                     List<Expression> block = new List<Expression>();
                     Expression res;
 
@@ -400,6 +419,20 @@ namespace IronPython.Modules {
                     );
                 }
 
+                private static DynamicMetaObject NoThisParam(DynamicMetaObjectBinder binder, BindingRestrictions restrictions) {
+                    return new DynamicMetaObject(
+                        binder.Throw(
+                            Expression.Call(
+                                typeof(PythonOps).GetMethod("ValueError"),
+                                Expression.Constant("native com method call without 'this' parameter"),
+                                Expression.NewArrayInit(typeof(object))
+                            ),
+                            typeof(object)
+                        ),
+                        restrictions
+                    );
+                }
+
                 /// <summary>
                 /// we need to keep alive any methods which have arguments for the duration of the
                 /// call.  Otherwise they could be collected on the finalizer thread before we come back.
@@ -413,7 +446,7 @@ namespace IronPython.Modules {
                     }
                 }
 
-                private Expression MakeCall(ArgumentMarshaller[] signature, INativeType nativeRetType, bool retVoid) {
+                private Expression MakeCall(ArgumentMarshaller[] signature, INativeType nativeRetType, bool retVoid, Expression address) {
                     List<object> constantPool = new List<object>();
                     MethodInfo interopInvoker = CreateInteropInvoker(
                         GetCallingConvention(),
@@ -425,10 +458,8 @@ namespace IronPython.Modules {
 
                     // build the args - IntPtr, user Args, constant pool
                     Expression[] callArgs = new Expression[signature.Length + 2];
-                    callArgs[0] = Expression.Property(
-                        Expression.Convert(Expression, typeof(_CFuncPtr)),
-                        "addr"
-                    );
+                    callArgs[0] = address;
+
                     for (int i = 0; i < signature.Length; i++) {
                         callArgs[i + 1] = signature[i].ArgumentExpression;
                     }
@@ -436,6 +467,28 @@ namespace IronPython.Modules {
                     callArgs[callArgs.Length - 1] = Expression.Constant(constantPool.ToArray());
 
                     return Expression.Call(interopInvoker, callArgs);
+                }
+
+                private Expression GetFunctionAddress(DynamicMetaObject[] args) {
+                    Expression address;
+                    if (Value._comInterfaceIndex != -1) {
+                        Debug.Assert(args.Length != 0); // checked earlier
+
+                        address = Expression.Call(
+                            typeof(ModuleOps).GetMethod("GetInterfacePointer"),
+                            Expression.Call(
+                                typeof(ModuleOps).GetMethod("GetPointer"),
+                                args[0].Expression
+                            ),
+                            Expression.Constant(Value._comInterfaceIndex)
+                        );
+                    } else {
+                        address = Expression.Property(
+                            Expression.Convert(Expression, typeof(_CFuncPtr)),
+                            "addr"
+                        );
+                    }
+                    return address;
                 }
 
                 private CallingConvention GetCallingConvention() {
@@ -449,13 +502,20 @@ namespace IronPython.Modules {
                 private ArgumentMarshaller/*!*/[]/*!*/ GetArgumentMarshallers(DynamicMetaObject/*!*/[]/*!*/ args) {
                     CFuncPtrType funcType = ((CFuncPtrType)Value.NativeType);
                     ArgumentMarshaller[] res = new ArgumentMarshaller[args.Length];
+                    
+
+                    // first arg is taken by self if we're a com method
                     for (int i = 0; i < args.Length; i++) {
                         DynamicMetaObject mo = args[i];
                         object argType = null;
-                        if (Value._argtypes != null && i < Value._argtypes.Count) {
-                            argType = Value._argtypes[i];
-                        } else if (funcType._argtypes != null && i < funcType._argtypes.Length) {
-                            argType = funcType._argtypes[i];
+                        if (Value._comInterfaceIndex == -1 || i != 0) {
+                            int argtypeIndex = Value._comInterfaceIndex == -1 ? i : i - 1;
+
+                            if (Value._argtypes != null && argtypeIndex < Value._argtypes.Count) {
+                                argType = Value._argtypes[argtypeIndex];
+                            } else if (funcType._argtypes != null && argtypeIndex < funcType._argtypes.Length) {
+                                argType = funcType._argtypes[argtypeIndex];
+                            }
                         }
 
                         res[i] = GetMarshaller(mo.Expression, mo.Value, i, argType);
@@ -891,6 +951,14 @@ namespace IronPython.Modules {
             }
 
             #endregion
+
+            public string __repr__(CodeContext context) {
+                if (_comInterfaceIndex != -1) {
+                    return string.Format("<COM method offset {0}: {1} at {2}>", _comInterfaceIndex, DynamicHelpers.GetPythonType(this).Name, _id);
+                }
+
+                return ObjectOps.__repr__(this);
+            }
         }
     }
 }
