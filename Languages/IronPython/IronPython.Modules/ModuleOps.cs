@@ -254,6 +254,25 @@ namespace IronPython.Modules {
             throw PythonOps.TypeErrorForTypeMismatch("wchar pointer", value);
         }
 
+        public static IntPtr GetBSTR(object value) {
+            string strVal = value as string;
+            if (strVal != null) {
+                return Marshal.StringToBSTR(strVal);
+            }
+
+
+            if (value == null) {
+                return IntPtr.Zero;
+            }
+
+            object asParam;
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
+                return GetBSTR(asParam);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("BSTR", value);
+        }
+
         public static IntPtr GetCharPointer(object value) {
             string strVal = value as string;
             if (strVal != null) {
@@ -315,6 +334,11 @@ namespace IronPython.Modules {
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("pointer", value);
+        }
+
+        public static IntPtr GetInterfacePointer(IntPtr self, int offset) {
+            var vtable = Marshal.ReadIntPtr(self);
+            return Marshal.ReadIntPtr(vtable, offset * IntPtr.Size);
         }
 
         public static IntPtr GetObject(object value) {
@@ -444,6 +468,11 @@ namespace IronPython.Modules {
             int? res = Converter.ImplicitConvertToInt32(value);
             if (res != null) {
                 return res.Value;
+            }
+
+            uint unsigned;
+            if (value is BigInteger && ((BigInteger)value).AsUInt32(out unsigned)) {
+                return (int)unsigned;
             }
 
             object asParam;

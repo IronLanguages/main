@@ -64,7 +64,9 @@ namespace IronPython.Modules {
             /// <summary> '?' </summary>
             Boolean,
             /// <summary> 'v' </summary>
-            VariantBool
+            VariantBool,
+            /// <summary> 'X' </summary>
+            BStr
         }
     }
 }
