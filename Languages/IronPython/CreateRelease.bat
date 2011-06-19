@@ -1,10 +1,13 @@
-set IPY_VERSION=2.7.1
+set IPY_VERSION=2.7.1-Beta1
 
 if "%1" == "" (
     set BUILD_FLAVOR=Release
 ) else (
     set BUILD_FLAVOR=%1
 )
+
+rmdir /S /Q %DLR_ROOT%\bin\Release
+rmdir /S /Q %DLR_ROOT%\bin\Silverlight4Release
 
 :BuildIronLanguages
 msbuild %DLR_ROOT%\Solutions\Dlr.sln /p:Configuration=%BUILD_FLAVOR% /v:minimal
