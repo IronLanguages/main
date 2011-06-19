@@ -176,7 +176,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
       </Feature>
       
       <!-- IronPython Tools support -->
-      <Feature Id="Feature_VsTools" AllowAdvertise="yes" Level="1" Title="Tools for Visual Studio" Description="IronPython Tools for Visual Studio.  Extensions which enable intellisense, projects, and other support for Python development.">
+      <Feature Id="Feature_VsTools" AllowAdvertise="yes" Level="2" Title="Tools for Visual Studio" Description="IronPython Tools for Visual Studio. These are included for legacy users only. See http://pytools.codeplex.com for the next generation of Python Visual Studio support.">
         <Condition Level="0">NOT VSINSTALLPATH</Condition>
         <ComponentRef Id="Comp_VSTools" />
         <MergeRef Id='IronStudio' />
