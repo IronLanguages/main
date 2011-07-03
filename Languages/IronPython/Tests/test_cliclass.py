@@ -1908,6 +1908,60 @@ AreEqual(System.Array[int]([2,3,4]).ArrayAndGenericMethod(), 23)
 AreEqual(System.Array[int]([2,3,4]).GenericMethod(), 23)
 
 AreEqual(object().GenericMethod(), 23)
+""",
+"""
+import clr
+clr.AddReference("System.Core")
+import System
+from System import Linq
+
+clr.ImportExtensions(Linq) 
+
+class Product(object):
+    def __init__(self, cat, id, qtyOnHand ):
+        self.Cat = cat
+        self.ID = id
+        self.QtyOnHand = qtyOnHand
+        self.Q = self.QtyOnHand
+
+products = [Product(prod[0], prod[1], prod[2]) for prod in 
+    ('DrillRod', 'DR123', 45), ('Flange', 'F423', 12), ('Gizmo', 'G9872', 214), ('Sprocket', 'S534', 42)]
+    
+pd = products.Where(lambda prod: prod.Q < 40).Select(lambda prod: (prod.Cat, prod.ID) ) 
+AreEqual(''.join(str(prod) for prod in pd), "('Flange', 'F423')")
+# blows: "Type System.Collections.Generic.IEnumerable`1[TSource] contains generic parameters"
+
+pd = products.Where(lambda prod: prod.Q < 40).AsEnumerable().Select(lambda prod: (prod.Cat, prod.ID) ) 
+AreEqual(''.join(str(prod) for prod in pd), "('Flange', 'F423')")
+
+pd = products.Where(lambda prod: prod.Q < 40)               #ok
+AreEqual(''.join((str(prod.Cat) + str(prod.ID) + str(prod.Q) for prod in pd)), 'FlangeF42312')
+    
+pd2 = pd.Select(lambda prod: (prod.Cat, prod.ID) )        #blows, same exception
+AreEqual(''.join("Cat: {0}, ID: {1}".format(prod[0], prod[1]) for prod in pd2), "Cat: Flange, ID: F423")
+
+pd2 = products.Select(lambda prod: (prod.Cat, prod.ID) )    #ok
+
+AreEqual(''.join("Cat: {0}, ID: {1}".format(prod[0], prod[1]) for prod in pd2), 'Cat: DrillRod, ID: DR123Cat: Flange, ID: F423Cat: Gizmo, ID: G9872Cat: Sprocket, ID: S534')
+
+pd2 = list(pd).Select(lambda prod: (prod.Cat, prod.ID) )    #ok
+AreEqual(''.join("Cat: {0}, ID: {1}".format(prod[0], prod[1]) for prod in pd2), 'Cat: Flange, ID: F423')
+   
+pd = products.Where(lambda prod: prod.Q < 30).ToList()    #blows, same exception
+AreEqual(''.join("Cat: {0}, ID: {1}".format(prod.Cat, prod.ID) for prod in pd), 'Cat: Flange, ID: F423')
+
+pd = list( products.Where(lambda prod: prod.Q < 30) )       #ok
+AreEqual(''.join("Cat: {0}, ID: {1}".format(prod.Cat, prod.ID) for prod in pd), 'Cat: Flange, ID: F423')
+
+# ok
+pd = list( products.Where(lambda prod: prod.Q < 40) ).Select(lambda prod: "Cat: {0}, ID: {1}, Qty: {2}".format(prod.Cat, prod.ID, prod.Q))
+AreEqual(''.join(prod for prod in pd), 'Cat: Flange, ID: F423, Qty: 12')
+
+# ok
+pd = ( list(products.Where(lambda prod: prod.Q < 40))
+        .Select(lambda prod: "Cat: {0}, ID: {1}, Qty: {2}".format(prod.Cat, prod.ID, prod.Q)) )
+AreEqual(''.join(prod for prod in pd), 'Cat: Flange, ID: F423, Qty: 12')
+
 """
 ]
     

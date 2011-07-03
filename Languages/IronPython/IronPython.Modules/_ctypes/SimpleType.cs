@@ -85,7 +85,8 @@ namespace IronPython.Modules {
                     case 'Z': _type = SimpleTypeKind.WCharPointer; break;
                     case 'u': _type = SimpleTypeKind.WChar; break;
                     case 'v': _type = SimpleTypeKind.VariantBool; break;
-                    case 'X':
+                    case 'X': _type = SimpleTypeKind.BStr; break;
+                    default:
                         throw new NotImplementedException("simple type " + sVal);
                 }
             }
@@ -190,6 +191,7 @@ namespace IronPython.Modules {
                         case SimpleTypeKind.Pointer:
                         case SimpleTypeKind.CharPointer:
                         case SimpleTypeKind.WCharPointer:
+                        case SimpleTypeKind.BStr:
                             return IntPtr.Size;
                     }
                     throw new InvalidOperationException(_type.ToString());
@@ -225,6 +227,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.Pointer: res = owner.ReadIntPtr(offset).ToPython(); break;
                     case SimpleTypeKind.CharPointer: res = owner.ReadMemoryHolder(offset).ReadAnsiString(0); break;
                     case SimpleTypeKind.WCharPointer: res = owner.ReadMemoryHolder(offset).ReadUnicodeString(0); break;
+                    case SimpleTypeKind.BStr: res = Marshal.PtrToStringBSTR(owner.ReadIntPtr(offset)); break;
                     default:
                         throw new InvalidOperationException();
                 }
@@ -280,6 +283,9 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.WCharPointer: 
                         owner.WriteIntPtr(offset, ModuleOps.GetWCharPointer(value));
                         return value;
+                    case SimpleTypeKind.BStr:
+                        owner.WriteIntPtr(offset, ModuleOps.GetBSTR(value));
+                        return value;
                     default:
                         throw new InvalidOperationException();
                 }
@@ -322,6 +328,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.Pointer:
                     case SimpleTypeKind.CharPointer:
                     case SimpleTypeKind.WCharPointer:
+                    case SimpleTypeKind.BStr:
                         return typeof(IntPtr);
                 }
 
@@ -439,6 +446,8 @@ namespace IronPython.Modules {
                         
                         method.MarkLabel(done);
                         break;
+                    case SimpleTypeKind.BStr:
+                        throw new NotImplementedException("BSTR marshalling");
                 }
 
                 method.MarkLabel(marshalled);
@@ -566,6 +575,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.WCharPointer:
                     case SimpleTypeKind.WChar:
                     case SimpleTypeKind.Char:
+                    case SimpleTypeKind.BStr:
                         return typeof(string);
                     case SimpleTypeKind.VariantBool:
                     case SimpleTypeKind.SignedByte:
@@ -625,6 +635,9 @@ namespace IronPython.Modules {
                         break;
                     case SimpleTypeKind.CharPointer:
                         method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringAnsi", new[] { typeof(IntPtr) }));
+                        break;
+                    case SimpleTypeKind.BStr:
+                        method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringBSTR", new[] { typeof(IntPtr) }));
                         break;
                     case SimpleTypeKind.Char:
                         method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CharToString"));

@@ -240,6 +240,46 @@ namespace IronPython.Runtime.Binding {
 
                 if (selfType == typeof(object) && Value.DeclaringType.IsInterface) {
                     selfType = Value.DeclaringType;
+
+                    Type genericTypeDefinition = null;
+                    if (Value.DeclaringType.IsGenericType &&
+                        Value.DeclaringType.FullName == null && 
+                        Value.DeclaringType.ContainsGenericParameters &&
+                        !Value.DeclaringType.IsGenericTypeDefinition) {
+                        // from MSDN: If the current type contains generic type parameters that have not been replaced by 
+                        // specific types (that is, the ContainsGenericParameters property returns true), but the type 
+                        // is not a generic type definition (that is, the IsGenericTypeDefinition property returns false), 
+                        // this property returns Nothing. For example, consider the classes Base and Derived in the following code.
+
+                        // if this type is completely generic (no type arguments specified) then we'll go ahead and get the
+                        // generic type definition for the this parameter - that'll let us successfully type infer on it later.
+                        var genericArgs = Value.DeclaringType.GetGenericArguments();
+                        bool hasOnlyGenerics = genericArgs.Length > 0;
+                        foreach (var genericParam in genericArgs) {
+                            if (!genericParam.IsGenericParameter) {
+                                hasOnlyGenerics = false;
+                                break;
+                            }
+                        }
+                        if (hasOnlyGenerics) {
+                            genericTypeDefinition = Value.DeclaringType.GetGenericTypeDefinition();
+                        }
+                    } else if (Value.DeclaringType.IsGenericTypeDefinition) {
+                        genericTypeDefinition = Value.DeclaringType;
+                    }
+
+                    if (genericTypeDefinition != null) {
+                        // we're a generic interface method on a non-public type.  
+                        // We need to see if we can match any types implemented on 
+                        // the concrete selfType.
+                        var interfaces = CompilerHelpers.GetType(Value.BindingSelf).GetInterfaces();
+                        foreach (var iface in interfaces) {
+                            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == genericTypeDefinition) {
+                                selfType = iface;
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 if (Value.DeclaringType.IsInterface && selfType.IsValueType) {
