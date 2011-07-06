@@ -143,7 +143,16 @@ namespace IronPython.Hosting {
                 return 0;
             }
 
-            return base.Run();
+            int result = base.Run();
+
+            // Check if IRONPYTHONINSPECT was set during execution
+            string inspectLine = Environment.GetEnvironmentVariable("IRONPYTHONINSPECT");
+            if (inspectLine != null && !Options.Introspection)
+                result = RunInteractiveLoop();
+
+            return result;
+
+
         }
 
         #region Initialization
@@ -167,6 +176,12 @@ namespace IronPython.Hosting {
             InitializeExtensionDLLs();
 
             ImportSite();
+
+            // Equivalent to -i command line option
+            // Check if IRONPYTHONINSPECT was set before execution
+            string inspectLine = Environment.GetEnvironmentVariable("IRONPYTHONINSPECT");
+            if (inspectLine != null)
+                Options.Introspection = true;
 
             // If running in console mode (including with -c), the current working directory should be
             // the first entry in sys.path. If running a script file, however, the CWD should not be added;
