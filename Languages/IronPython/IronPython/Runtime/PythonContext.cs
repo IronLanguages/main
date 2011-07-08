@@ -1945,12 +1945,35 @@ namespace IronPython.Runtime {
             dict["executable"] = _initialExecutable;
             SystemState.__dict__["prefix"] =  _initialPrefix;
             dict["exec_prefix"] = _initialPrefix;
-            SetVersionVariables(dict, 2, 7, 0, "beta", _initialVersionString);
+            SetVersionVariables(dict, 3, 0, 0, "alpha", _initialVersionString);
+        }
+
+        [PythonType("sys.version_info")]
+        public class VersionInfo : PythonTuple {
+            internal VersionInfo(int major, int minor, int build, string releaselevel, int serial)
+                    : base(new object[] { major, minor, build, releaselevel, serial }) {
+                this.major = major;
+                this.minor = minor;
+                this.build = build;
+                this.releaselevel = releaselevel;
+                this.serial = serial;
+            }
+
+            public readonly int major;
+            public readonly int minor;
+            public readonly int build;
+            public readonly string releaselevel;
+            public readonly int serial;
+
+            public override string __repr__(CodeContext context) {
+                return string.Format("sys.version_info(major={0}, minor={1}, build={2}, releaselevel='{3}', serial={4})",
+                    major, minor, build, releaselevel, serial);
+            }
         }
 
         private static void SetVersionVariables(PythonDictionary dict, byte major, byte minor, byte build, string level, string versionString) {
             dict["hexversion"] = ((int)major << 24) + ((int)minor << 16) + ((int)build << 8);
-            dict["version_info"] = PythonTuple.MakeTuple((int)major, (int)minor, (int)build, level, 0);
+            dict["version_info"] = new VersionInfo((int)major, (int)minor, (int)build, level, 0);
             dict["version"] = String.Format("{0}.{1}.{2} ({3})", major, minor, build, versionString);
         }
 
