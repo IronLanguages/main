@@ -562,7 +562,8 @@ namespace IronPython.Modules {
             public override bool Equals(object obj) {
                 if (obj == null) return false;
 
-                if (obj.GetType() == typeof(date)) {
+                Type t = obj.GetType();
+                if (t == typeof(date) || t == typeof(datetime)) {
                     date other = (date)obj;
                     return this._dateTime == other._dateTime;
                 } else {
