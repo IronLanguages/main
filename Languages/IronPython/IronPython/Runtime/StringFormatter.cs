@@ -412,6 +412,12 @@ namespace IronPython.Runtime {
 
             if (_opts.LeftAdj) {
                 AppendLeftAdj(val, fPos, 'D');
+            } else if (_opts.Precision > 0) {
+                // in this case the precision means
+                // the minimum number of characters
+                _opts.FieldWidth = (_opts.Space || _opts.SignChar) ?
+                     _opts.Precision + 1 : _opts.Precision;
+                AppendZeroPad(val, fPos, 'D');
             } else if (_opts.ZeroPad) {
                 AppendZeroPad(val, fPos, 'D');
             } else {
