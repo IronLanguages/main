@@ -61,6 +61,10 @@ namespace IronPython.Modules {
         public static Sha512Object sha512(Bytes data) {
             return new Sha512Object(data);
         }
+		
+        public static Sha512Object sha512(PythonBuffer buffer) {
+            return new Sha512Object(buffer);	
+        }
 
         public static Sha512Object sha512() {
             return new Sha512Object();
@@ -74,6 +78,10 @@ namespace IronPython.Modules {
             return new Sha384Object(data);
         }
 
+        public static Sha384Object sha384(PythonBuffer buffer) {
+            return new Sha384Object(buffer);	
+        }
+		
         public static Sha384Object sha384() {
             return new Sha384Object();
         }
@@ -90,6 +98,11 @@ namespace IronPython.Modules {
             internal Sha384Object(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
+            }
+
+            internal Sha384Object(PythonBuffer initialBuffer) {
+                _bytes = new byte[0];
+                update(initialBuffer);
             }
 
             internal override HashAlgorithm Hasher {
@@ -125,6 +138,11 @@ namespace IronPython.Modules {
             internal Sha512Object(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
+            }
+
+            internal Sha512Object(PythonBuffer initialBuffer) {
+                _bytes = new byte[0];
+				update(initialBuffer);
             }
 
             internal override HashAlgorithm Hasher {
