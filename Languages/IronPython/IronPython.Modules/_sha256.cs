@@ -53,6 +53,10 @@ namespace IronPython.Modules {
             return new Sha256Object(data);
         }
 
+        public static Sha256Object sha256(PythonBuffer data) {
+            return new Sha256Object(data);
+        }
+
         public static Sha256Object sha256() {
             return new Sha256Object();
         }
@@ -81,6 +85,11 @@ namespace IronPython.Modules {
             internal Sha256Object(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
+            }
+
+            internal Sha256Object(PythonBuffer initialBuffer) {
+                _bytes = new byte[0];
+                update(initialBuffer);
             }
 
             internal override HashAlgorithm Hasher {
@@ -136,6 +145,10 @@ namespace IronPython.Modules {
         public void update(object newData) {
             update(Converter.ConvertToString(newData).MakeByteArray());
         }
+
+        public void update(PythonBuffer buffer) {
+            update(buffer.ToString().MakeByteArray());
+         }
 
         [Documentation("digest() -> int (current digest value)")]
         public string digest() {
