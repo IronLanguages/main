@@ -57,6 +57,10 @@ namespace IronPython.Modules {
             return new Sha256Object(data);
         }
 
+        public static Sha256Object sha256(PythonBuffer data) {
+            return new Sha256Object(data);
+        }
+
         public static Sha256Object sha256(ByteArray data) {
             return new Sha256Object((IList<byte>)data);
         }

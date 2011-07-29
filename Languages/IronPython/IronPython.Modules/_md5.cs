@@ -69,6 +69,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("new([data]) -> object (new md5 object)")]
+        public static MD5Type @new(PythonBuffer data) {
+            return new MD5Type(data);
+        }
+
+        [Documentation("new([data]) -> object (new md5 object)")]
         public static MD5Type @new() {
             return new MD5Type();
         }
