@@ -74,6 +74,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("new([data]) -> object (new md5 object)")]
+        public static MD5Type @new(ByteArray data) {
+            return new MD5Type((IList<byte>)data);
+        }
+
+        [Documentation("new([data]) -> object (new md5 object)")]
         public static MD5Type @new() {
             return new MD5Type();
         }
