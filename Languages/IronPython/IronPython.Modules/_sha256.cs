@@ -50,11 +50,15 @@ namespace IronPython.Modules {
         }
 
         public static Sha256Object sha256(Bytes data) {
-            return new Sha256Object(data);
+            return new Sha256Object((IList<byte>)data);
         }
 
         public static Sha256Object sha256(PythonBuffer data) {
             return new Sha256Object(data);
+        }
+
+        public static Sha256Object sha256(ByteArray data) {
+            return new Sha256Object((IList<byte>)data);
         }
 
         public static Sha256Object sha256() {
@@ -133,6 +137,10 @@ namespace IronPython.Modules {
             update((IList<byte>)newBytes);
         }
 
+        public void update(ByteArray newBytes) {
+            update((IList<byte>)newBytes);
+        }
+
         internal void update(IList<byte> newBytes) {
             byte[] updatedBytes = new byte[_bytes.Length + newBytes.Count];
             Array.Copy(_bytes, updatedBytes, _bytes.Length);
@@ -148,7 +156,7 @@ namespace IronPython.Modules {
 
         public void update(PythonBuffer buffer) {
             update(buffer.ToString().MakeByteArray());
-         }
+        }
 
         [Documentation("digest() -> int (current digest value)")]
         public string digest() {
