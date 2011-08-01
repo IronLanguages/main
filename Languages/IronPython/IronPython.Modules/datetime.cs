@@ -196,7 +196,6 @@ namespace IronPython.Modules {
             public timedelta __pos__() { return +this; }
             public timedelta __neg__() { return -this; }
             public timedelta __abs__() { return (_days > 0) ? this : -this; }
-
             [SpecialName]
             public timedelta FloorDivide(int y) {
                 return this / y;
@@ -563,7 +562,8 @@ namespace IronPython.Modules {
             public override bool Equals(object obj) {
                 if (obj == null) return false;
 
-                if (obj.GetType() == typeof(date)) {
+                Type t = obj.GetType();
+                if (t == typeof(date) || t == typeof(datetime)) {
                     date other = (date)obj;
                     return this._dateTime == other._dateTime;
                 } else {
@@ -666,6 +666,10 @@ namespace IronPython.Modules {
 
             public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
                 return string.Format("datetime.date({0}, {1}, {2})", _dateTime.Year, _dateTime.Month, _dateTime.Day);
+            }
+
+            public virtual string __format__(CodeContext/*!*/ context, string dateFormat){
+                return this.strftime(context, dateFormat);
             }
 
             #endregion

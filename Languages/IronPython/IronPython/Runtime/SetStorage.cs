@@ -1056,6 +1056,7 @@ namespace IronPython.Runtime {
             if (_itemType == null) {
                 _hashFunc = other._hashFunc;
                 _eqFunc = other._eqFunc;
+                _itemType = other._itemType;
                 return;
             }
 

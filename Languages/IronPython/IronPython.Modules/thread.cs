@@ -68,6 +68,7 @@ namespace IronPython.Modules {
             return t.ManagedThreadId;
         }
 
+#if !SILVERLIGHT
         /// <summary>
         /// Stops execution of Python or other .NET code on the main thread.  If the thread is
         /// blocked in native code the thread will be interrupted after it returns back to Python
@@ -81,6 +82,7 @@ namespace IronPython.Modules {
                 throw PythonOps.SystemError("no main thread has been registered");
             }
         }
+#endif
 
         public static void exit() {
             PythonOps.SystemExit();

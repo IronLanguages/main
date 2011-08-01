@@ -66,7 +66,17 @@ namespace IronPython.Modules {
 
         [Documentation("new([data]) -> object (object used to calculate hash)")]
         public static sha @new(Bytes data) {
+            return new sha((IList<byte>)data);
+        }
+
+        [Documentation("new([data]) -> object (object used to calculate hash)")]
+        public static sha @new(PythonBuffer data) {
             return new sha(data);
+        }
+
+        [Documentation("new([data]) -> object (object used to calculate hash)")]
+        public static sha @new(ByteArray data) {
+            return new sha((IList<byte>)data);
         }
 
         [Documentation("new([data]) -> object (object used to calculate hash)")]
@@ -98,12 +108,25 @@ namespace IronPython.Modules {
                 update(initialBytes);
             }
 
+            internal sha(PythonBuffer initialBuffer) {
+                _bytes = new byte[0];
+                update(initialBuffer);
+            }
+
             [Documentation("update(string) -> None (update digest with string data)")]
             public void update(object newData) {
                 update(Converter.ConvertToString(newData).MakeByteArray());
             }
 
             public void update(Bytes newBytes) {
+                update((IList<byte>)newBytes);
+            }
+
+            public void update(PythonBuffer newBytes) {
+                update(newBytes.ToString().MakeByteArray());
+            }
+
+            public void update(ByteArray newBytes) {
                 update((IList<byte>)newBytes);
             }
 

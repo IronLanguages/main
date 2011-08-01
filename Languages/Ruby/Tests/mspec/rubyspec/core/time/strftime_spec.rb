@@ -165,6 +165,11 @@ describe "Time#strftime" do
     time.strftime('%M').should == '06'
   end
   
+  it "returns the fractional seconds digits, default is 9 digits (nanosecond) with %N" do
+    time = Time.local(2009, 9, 18, 12, 0, 6, 123456)
+    time.strftime('%N').should == '123456000'
+  end
+
   it "returns the second with %S" do
     time = Time.local(2009, 9, 18, 12, 0, 6)
     time.strftime('%S').should == '06'
