@@ -941,6 +941,10 @@ namespace IronRuby.Builtins {
                         dateTimeFormat = "mm";
                         break;
 
+                    case 'N':
+                        dateTimeFormat = "fffffff00";
+                        break;
+
                     case 'p':
                         dateTimeFormat = "tt";
                         break;
