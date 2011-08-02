@@ -998,6 +998,9 @@ namespace IronRuby.Builtins {
                         break;
 
                     default:
+                        if (context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19) {
+                            result.Append('%');
+                        } 
                         if (context.RubyOptions.Compatibility > RubyCompatibility.Ruby186) {
                             result.Append(character);
                             break;
