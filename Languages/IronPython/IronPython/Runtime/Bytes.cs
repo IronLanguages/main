@@ -785,6 +785,32 @@ namespace IronPython.Runtime {
             }
         }
 
+        /// <summary>
+        /// Returns a copy of the internal byte array.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.Byte[]"/>
+        /// </returns>
+        public byte[] ToByteArray() {
+            byte[] res = null;
+            if(_bytes != null) {
+                res = new byte[_bytes.Length];
+                _bytes.CopyTo(res, 0);
+            }
+            return res;
+        }
+
+        /// <summary>
+        /// This method returns the underlying byte array directly.
+        /// It should be used sparingly!
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.Byte[]"/>
+        /// </returns>
+        public byte[] GetUnsafeByteArray() {
+            return _bytes;
+        }
+
         #endregion
 
         #region Implementation Details
