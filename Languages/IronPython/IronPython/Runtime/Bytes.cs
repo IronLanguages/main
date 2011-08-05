@@ -791,6 +791,7 @@ namespace IronPython.Runtime {
         /// <returns>
         /// A <see cref="System.Byte[]"/>
         /// </returns>
+        [PythonHidden]
         public byte[] ToByteArray() {
             byte[] res = null;
             if(_bytes != null) {
@@ -807,6 +808,7 @@ namespace IronPython.Runtime {
         /// <returns>
         /// A <see cref="System.Byte[]"/>
         /// </returns>
+        [PythonHidden]
         public byte[] GetUnsafeByteArray() {
             return _bytes;
         }
