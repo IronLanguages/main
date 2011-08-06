@@ -1,0 +1,6 @@
+[submodule "Languages/Ruby/Tests/mspec/rubyspec"]
+	path = Languages/Ruby/Tests/mspec/rubyspec
+	url = git://github.com/enricosada/rubyspec
+[submodule "Languages/Ruby/Tests/mspec/mspec"]
+	path = Languages/Ruby/Tests/mspec/mspec
+	url = git://github.com/rubyspec/mspec.git
