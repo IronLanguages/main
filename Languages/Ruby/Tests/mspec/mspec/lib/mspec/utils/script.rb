@@ -37,15 +37,6 @@ class MSpecScript
     config[key]
   end
 
-  # Filters the items in the 'config[:prefix]' direcotry to a set 
-  # of files.
-  #
-  # Looks in +path+ for all files and filters with +filter+ as a part
-  # of a regular expression (/^#{filter}.*/i)
-  def self.filtered(path, filter="")
-    Dir.chdir(config[:prefix] || ".") { Dir.entries(path).grep(/^#{filter}.*/i) }.map {|e| File.join(path, e)}
-  end
-
   def initialize
     config[:formatter] = nil
     config[:includes]  = []
@@ -150,6 +141,7 @@ class MSpecScript
   def signals
     if config[:abort]
       Signal.trap "INT" do
+        MSpec.actions :abort
         puts "\nProcess aborted!"
         exit! 1
       end
@@ -219,13 +211,7 @@ class MSpecScript
     $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']
     script = new
     script.load_default
-    begin
-      script.load '~/.mspecrc' 
-    rescue ArgumentError => e
-      unless e.message.include?("HOME")
-        puts e.message
-      end
-    end
+    script.load '~/.mspecrc'
     script.options
     script.signals
     script.register

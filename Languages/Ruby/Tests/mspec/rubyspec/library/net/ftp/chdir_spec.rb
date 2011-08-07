@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'net/ftp'
-require File.dirname(__FILE__) + "/fixtures/server"
+require File.expand_path('../fixtures/server', __FILE__)
 
 describe "Net::FTP#chdir" do
   before(:each) do
@@ -16,13 +16,13 @@ describe "Net::FTP#chdir" do
     @ftp.close
     @server.stop
   end
-  
+
   describe "when switching to the parent directory" do
     it "sends the 'CDUP' command to the server" do
       @ftp.chdir("..")
       @ftp.last_response.should == "200 Command okay. (CDUP)\n"
     end
-    
+
     it "returns nil" do
       @ftp.chdir("..").should be_nil
     end
@@ -64,7 +64,7 @@ describe "Net::FTP#chdir" do
     @ftp.chdir("test")
     @ftp.last_response.should == "200 Command okay. (CWD test)\n"
   end
-  
+
   it "returns nil" do
     @ftp.chdir("test").should be_nil
   end

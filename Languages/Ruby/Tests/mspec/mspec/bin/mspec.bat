@@ -1,1 +1,1 @@
-@"%RUBY19_EXE%" "%~dpn0" %*
+@"ruby.exe" "%~dpn0" %*

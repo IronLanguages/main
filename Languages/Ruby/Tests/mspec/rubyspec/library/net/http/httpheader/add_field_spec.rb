@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
-require File.dirname(__FILE__) + "/fixtures/classes"
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Net::HTTPHeader#add_field when passed key, value" do
   before(:each) do
@@ -17,7 +17,7 @@ describe "Net::HTTPHeader#add_field when passed key, value" do
     @headers.add_field("My-Header", "c")
     @headers.get_fields("My-Header").should == ["a", "b", "c"]
   end
-  
+
   it "is case-insensitive" do
     @headers.add_field("My-Header", "a")
     @headers.get_fields("My-Header").should == ["a"]

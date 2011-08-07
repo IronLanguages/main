@@ -1,4 +1,5 @@
 require File.dirname(__FILE__) + '/../spec_helper'
+require 'mspec/guards'
 require 'mspec/helpers/tmp'
 require 'mspec/helpers/fs'
 
@@ -38,6 +39,11 @@ describe Object, "#touch" do
     File.exists?(@name).should be_true
   end
 
+  it "accepts an optional mode argument" do
+    touch @name, "wb"
+    File.exists?(@name).should be_true
+  end
+
   it "overwrites an existing file" do
     File.open(@name, "w") { |f| f.puts "used" }
     File.size(@name).should > 0
@@ -54,13 +60,11 @@ end
 
 describe Object, "#touch" do
   before :all do
-    @dir = tmp("subdir")
     @name = tmp("subdir/touched.txt")
   end
 
   after :each do
-    File.delete @name if File.exists? @name
-    Dir.rmdir @dir if File.directory? @dir
+    rm_r File.dirname(@name)
   end
 
   it "creates all the directories in the path to the file" do
@@ -135,17 +139,19 @@ describe Object, "#rm_r" do
     File.exists?(@subfile).should be_false
   end
 
-  it "removes a symlink" do
-    File.symlink @topfile, @link
-    rm_r @link
-    File.exists?(@link).should be_false
-  end
+  platform_is_not :windows do
+    it "removes a symlink" do
+      File.symlink @topfile, @link
+      rm_r @link
+      File.exists?(@link).should be_false
+    end
 
-  it "removes a socket" do
-    require 'socket'
-    UNIXServer.new(@socket).close
-    rm_r @socket
-    File.exists?(@socket).should be_false
+    it "removes a socket" do
+      require 'socket'
+      UNIXServer.new(@socket).close
+      rm_r @socket
+      File.exists?(@socket).should be_false
+    end
   end
 
   it "removes a single directory" do

@@ -1,5 +1,5 @@
 require 'mspec/expectations/expectations'
-require 'mspec/helpers/metaclass'
+require 'mspec/helpers/singleton_class'
 
 class Object
   alias_method :__mspec_object_id__, :object_id
@@ -38,6 +38,11 @@ module Mock
     has_key?(mocks.keys, sym) or has_key?(stubs.keys, sym)
   end
 
+  def self.clear_replaced(key)
+    mocks.delete key
+    stubs.delete key
+  end
+
   def self.mock_respond_to?(obj, sym)
     name = replaced_name(obj, :respond_to?)
     if replaced? name
@@ -48,7 +53,7 @@ module Mock
   end
 
   def self.install_method(obj, sym, type=nil)
-    meta = obj.metaclass
+    meta = obj.singleton_class
 
     key = replaced_key obj, sym
     sym = sym.to_sym
@@ -113,7 +118,8 @@ module Mock
 
   def self.verify_call(obj, sym, *args, &block)
     compare = *args
-    if (behaves_like_ruby_1_9 = *[])
+    behaves_like_ruby_1_9 = *[]
+    if (behaves_like_ruby_1_9)
       compare = compare.first if compare.length <= 1
     end
 
@@ -151,7 +157,12 @@ module Mock
 
         if pass
           proxy.called
-          return proxy.returning
+
+          if proxy.raising?
+            raise proxy.raising
+          else
+            return proxy.returning
+          end
         end
       end
     end
@@ -164,36 +175,27 @@ module Mock
     end
   end
 
-  def self.uninstall_method(obj, sym, replaced)
-    meta = obj.metaclass
-    if mock_respond_to? obj, replaced
-      meta.__send__ :alias_method, sym, replaced
-      meta.__send__ :remove_method, replaced
-    else
-      meta.__send__ :remove_method, sym
-    end
-  end
-
   def self.cleanup
-    replaced_respond_tos = []
-    
     objects.each do |key, obj|
+      if obj.kind_of? MockIntObject
+        clear_replaced key
+        next
+      end
+
       replaced = key.first
       sym = key.last
-      
-      if sym != :respond_to?
-        uninstall_method obj, sym, replaced
-      else
-        replaced_respond_tos << [obj, sym, replaced]
-      end
-    end
-      
-    
-    # remove respond_to? last so that we don't remove it while we still use it in mock_respond_to?
-    replaced_respond_tos.each do |obj, sym, replaced|
-      uninstall_method obj, sym, replaced
-    end
+      meta = obj.singleton_class
 
+      if mock_respond_to? obj, replaced
+        meta.__send__ :alias_method, sym, replaced
+        meta.__send__ :remove_method, replaced
+      else
+        meta.__send__ :remove_method, sym
+      end
+
+      clear_replaced key
+    end
+  ensure
     reset
   end
 end

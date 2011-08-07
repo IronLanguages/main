@@ -215,6 +215,8 @@ class MSpecOptions
         config[:target] = 'ruby1.9'
       when 'x', 'rubinius'
         config[:target] = './bin/rbx'
+      when 'x19', 'rubinius19'
+        config[:target] = './bin/rbx -X19'
       when 'X', 'rbx'
         config[:target] = 'rbx'
       when 'j', 'jruby'
@@ -229,14 +231,14 @@ class MSpecOptions
     end
 
     doc ""
-    doc "     r or ruby              invokes ruby in PATH"
-    doc "     r19, ruby19 or ruby1.9 invokes ruby1.9 in PATH"
-    doc "     x or rubinius          invokes ./bin/rbx"
-    doc "     X or rbx               invokes rbx in PATH"
-    doc "     j or jruby             invokes jruby in PATH"
-    doc "     i or ironruby          invokes ir in PATH"
-    doc "     m or maglev            invokes maglev-ruby in PATH"
-    doc "     full path to EXE       invokes EXE directly\n"
+    doc "     r or ruby        invokes ruby in PATH"
+    doc "     r19, ruby19      invokes ruby1.9 in PATH"
+    doc "     x or rubinius    invokes ./bin/rbx"
+    doc "     X or rbx         invokes rbx in PATH"
+    doc "     j or jruby       invokes jruby in PATH"
+    doc "     i or ironruby    invokes ir in PATH"
+    doc "     m or maglev      invokes maglev-ruby in PATH"
+    doc "     full path to EXE invokes EXE directly\n"
 
     on("-T", "--target-opt", "OPT",
        "Pass OPT as a flag to the target implementation") do |t|
@@ -276,6 +278,8 @@ class MSpecOptions
         config[:formatter] = MethodFormatter
       when 'y', 'yaml'
         config[:formatter] = YamlFormatter
+      when 'p', 'profile'
+        config[:formatter] = ProfileFormatter
       else
         puts "Unknown format: #{o}"
         puts @parser

@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
-require File.dirname(__FILE__) + "/fixtures/classes"
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Net::HTTPHeader#type_params" do
   before(:each) do
@@ -14,7 +14,7 @@ describe "Net::HTTPHeader#type_params" do
     @headers["Content-Type"] = "text/html; charset=utf-8; rubyspec=rocks"
     @headers.type_params.should == {"charset" => "utf-8", "rubyspec" => "rocks"}
   end
-  
+
   it "returns an empty Hash when no additional 'Content-Type' information is set" do
     @headers.type_params.should == {}
 

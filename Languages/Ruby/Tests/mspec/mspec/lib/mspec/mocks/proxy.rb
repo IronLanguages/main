@@ -7,6 +7,7 @@ class MockObject
   def method_missing(sym, *args, &block)
     @null ? self : super
   end
+  private :method_missing
 end
 
 class NumericMockObject < Numeric
@@ -23,10 +24,36 @@ class NumericMockObject < Numeric
   end
 end
 
+class MockIntObject
+  def initialize(val)
+    @value = val
+    @calls = 0
+
+    key = [self, :to_int]
+
+    Mock.objects[key] = self
+    Mock.mocks[key] << self
+  end
+
+  attr_reader :calls
+
+  def to_int
+    @calls += 1
+    @value
+  end
+
+  def count
+    [:at_least, 1]
+  end
+end
+
 class MockProxy
+  attr_reader :raising, :yielding
+
   def initialize(type=nil)
     @multiple_returns = nil
     @returning = nil
+    @raising   = nil
     @yielding  = []
     @arguments = :any_args
     @type      = type || :mock
@@ -102,7 +129,8 @@ class MockProxy
   def with(*args)
     raise ArgumentError, "you must specify the expected arguments" if args.empty?
     @arguments = *args
-    if (behaves_like_ruby_1_9 = *[])
+    behaves_like_ruby_1_9 = *[]
+    if (behaves_like_ruby_1_9)
       @arguments = @arguments.first if @arguments.length <= 1
     end
     self
@@ -122,13 +150,21 @@ class MockProxy
     self
   end
 
+  def and_raise(exception)
+    if exception.kind_of? String
+      @raising = RuntimeError.new exception
+    else
+      @raising = exception
+    end
+  end
+
+  def raising?
+    @raising != nil
+  end
+
   def and_yield(*args)
     @yielding << args
     self
-  end
-
-  def yielding
-    @yielding
   end
 
   def yielding?

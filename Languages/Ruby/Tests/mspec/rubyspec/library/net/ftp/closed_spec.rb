@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'net/ftp'
 
 describe "Net::FTP#closed?" do
@@ -13,7 +13,7 @@ describe "Net::FTP#closed?" do
     @socket.should_receive(:closed?).and_return(true)
     @ftp.closed?.should be_true
   end
-  
+
   it "returns true when the socket is nil" do
     @ftp.instance_variable_set(:@sock, nil)
     @ftp.closed?.should be_true

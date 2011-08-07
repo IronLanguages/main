@@ -21,6 +21,7 @@ module MSpec
   @modes   = []
   @shared  = {}
   @guarded = []
+  @features     = {}
   @exception    = nil
   @randomize    = nil
   @expectation  = nil
@@ -162,6 +163,18 @@ module MSpec
     retrieve(:modes).include? mode
   end
 
+  def self.enable_feature(feature)
+    retrieve(:features)[feature] = true
+  end
+
+  def self.disable_feature(feature)
+    retrieve(:features)[feature] = false
+  end
+
+  def self.feature_enabled?(feature)
+    retrieve(:features)[feature] || false
+  end
+
   def self.retrieve(symbol)
     instance_variable_get :"@#{symbol}"
   end
@@ -265,10 +278,9 @@ module MSpec
     tags = []
     file = tags_file
     if File.exist? file
-      File.open(file, "r") do |f|
+      File.open(file, "rb") do |f|
         f.each_line do |line|
           line.chomp!
-          line.strip!
           next if line.empty?
           tag = SpecTag.new line.chomp
           tags << tag if keys.include? tag.tag
@@ -284,7 +296,7 @@ module MSpec
     file = tags_file
     path = File.dirname file
     FileUtils.mkdir_p path unless File.exist? path
-    File.open(file, "w") do |f|
+    File.open(file, "wb") do |f|
       tags.each { |t| f.puts t }
     end
   end
@@ -297,11 +309,11 @@ module MSpec
     path = File.dirname file
     FileUtils.mkdir_p path unless File.exist? path
     if File.exist? file
-      File.open(file, "r") do |f|
-        f.each_line { |line| return false if line.chomp.strip == string }
+      File.open(file, "rb") do |f|
+        f.each_line { |line| return false if line.chomp == string }
       end
     end
-    File.open(file, "a") { |f| f.puts string }
+    File.open(file, "ab") { |f| f.puts string }
     return true
   end
 
@@ -310,13 +322,13 @@ module MSpec
   # file if it is empty.
   def self.delete_tag(tag)
     deleted = false
-    pattern = /#{tag.tag}.*#{Regexp.escape(tag.escape(tag.description.strip))}/
+    pattern = /#{tag.tag}.*#{Regexp.escape(tag.escape(tag.description))}/
     file = tags_file
     if File.exist? file
       lines = IO.readlines(file)
-      File.open(file, "w") do |f|
+      File.open(file, "wb") do |f|
         lines.each do |line|
-          unless pattern =~ line.chomp.strip
+          unless pattern =~ line.chomp
             f.puts line unless line.empty?
           else
             deleted = true

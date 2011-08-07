@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
-require File.dirname(__FILE__) + "/fixtures/classes"
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Net::HTTPHeader#[]= when passed key, value" do
   before(:each) do
@@ -17,18 +17,18 @@ describe "Net::HTTPHeader#[]= when passed key, value" do
     @headers["My-Other-Header"] = "another test"
     @headers["My-Other-Header"].should == "another test"
   end
-  
+
   it "is case-insensitive" do
     @headers['My-Header'] = "test"
     @headers['my-Header'] = "another test"
     @headers['My-header'] = "and one more test"
     @headers['my-header'] = "and another one"
     @headers['MY-HEADER'] = "last one"
-    
+
     @headers["My-Header"].should == "last one"
     @headers.size.should eql(1)
   end
-  
+
   it "removes the header entry with the passed key when the value is false or nil" do
     @headers['My-Header'] = "test"
     @headers['My-Header'] = nil

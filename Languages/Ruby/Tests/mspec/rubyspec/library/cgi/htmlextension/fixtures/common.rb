@@ -1,3 +1,5 @@
+require 'cgi/html'
+
 module CGISpecs
   class HtmlExtension
     def initialize

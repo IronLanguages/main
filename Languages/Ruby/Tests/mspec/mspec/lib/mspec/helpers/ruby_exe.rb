@@ -1,5 +1,5 @@
 require 'mspec/utils/ruby_name'
-require 'mspec/guards/guard'
+require 'mspec/guards/platform'
 
 # The ruby_exe helper provides a wrapper for invoking the
 # same Ruby interpreter as the one running the specs and
@@ -73,7 +73,11 @@ class Object
     when :engine
       case RUBY_NAME
       when 'rbx'
-        "bin/rbx"
+        if SpecGuard.ruby_version < "1.9"
+          "bin/rbx"
+        else
+          "bin/rbx -X19"
+        end
       when 'jruby'
         "bin/jruby"
       when 'maglev'
@@ -82,27 +86,25 @@ class Object
         "ir"
       end
     when :name
-      bin = RUBY_NAME + (Config::CONFIG['EXEEXT'] || Config::CONFIG['exeext'] || '')
+      bin = RUBY_NAME + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
       File.join(".", bin)
     when :install_name
-      bin = Config::CONFIG["RUBY_INSTALL_NAME"] || Config::CONFIG["ruby_install_name"]
-      bin << (Config::CONFIG['EXEEXT'] || Config::CONFIG['exeext'] || '')
-      File.join(File.expand_path(Config::CONFIG['bindir']), bin)
+      bin = RbConfig::CONFIG["RUBY_INSTALL_NAME"] || RbConfig::CONFIG["ruby_install_name"]
+      bin << (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
+      File.join(RbConfig::CONFIG['bindir'], bin)
     end
   end
 
   def resolve_ruby_exe
     [:env, :engine, :name, :install_name].each do |option|
       next unless cmd = ruby_exe_options(option)
-      exes = [cmd.split.first, cmd]
+      exe = cmd.split.first
 
       # It has been reported that File.executable is not reliable
       # on Windows platforms (see commit 56bc555c). So, we check the
       # platform. 
-      exes.each do |exe|
-        if File.exists?(exe) and (SpecGuard.windows? or File.executable?(exe))
-          return cmd
-        end
+      if File.exists?(exe) and (PlatformGuard.windows? or File.executable?(exe))
+        return cmd
       end
     end
     nil
@@ -112,8 +114,15 @@ class Object
     body = code
     working_dir = opts[:dir] || "."
     Dir.chdir(working_dir) do
-      body = "-e #{code.inspect}" if code and not File.exists?(code)
-      cmd = [RUBY_EXE.inspect, ENV['RUBY_FLAGS'], opts[:options], body, opts[:args]]
+      if code and not File.exists?(code)
+        if opts[:escape]
+          code = "'#{code}'"
+        else
+          code = code.inspect
+        end
+        body = "-e #{code}"
+      end
+      cmd = [RUBY_EXE, ENV['RUBY_FLAGS'], opts[:options], body, opts[:args]]
       `#{cmd.compact.join(' ')}`
     end
   end

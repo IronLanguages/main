@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'net/ftp'
-require File.dirname(__FILE__) + "/fixtures/server"
+require File.expand_path('../fixtures/server', __FILE__)
 
 describe "Net::FTP#delete" do
   before(:each) do
@@ -16,7 +16,7 @@ describe "Net::FTP#delete" do
     @ftp.close
     @server.stop
   end
-  
+
   it "sends the DELE command with the passed filename to the server" do
     @ftp.delete("test.file")
     @ftp.last_response.should == "250 Requested file action okay, completed. (DELE test.file)\n"
@@ -36,7 +36,7 @@ describe "Net::FTP#delete" do
     @server.should_receive(:dele).and_respond("500 Syntax error, command unrecognized.")
     lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
   end
-  
+
   it "raises a Net::FTPPermError when the response code is 501" do
     @server.should_receive(:dele).and_respond("501 Syntax error in parameters or arguments.")
     lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)

@@ -1,11 +1,11 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
 
 describe "Net::HTTP.newobj" do
   before(:each) do
     @net = Net::HTTP.newobj("localhost")
   end
-  
+
   describe "when passed address" do
     it "returns a new Net::HTTP instance" do
       @net.should be_kind_of(Net::HTTP)
