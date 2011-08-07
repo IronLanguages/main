@@ -285,7 +285,9 @@ namespace IronRuby.StandardLibrary.Yaml {
                         if (atLineStart) { 
                             return FetchDirective();
                         } 
-                        break;
+                        else {
+                            return FetchPlain();
+                        }
 
                     case '-':
                         if ((atLineStart || _docStart) && IsEnding()) {
