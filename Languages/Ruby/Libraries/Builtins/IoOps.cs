@@ -908,7 +908,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region readchar, readbyte (1.9), readline, readlines
+        #region readchar, readbyte (1.9), readline, readlines, binread (1.9)
 
         // returns a string in 1.9
         [RubyMethod("readchar")]
@@ -1007,6 +1007,36 @@ namespace IronRuby.Builtins {
                 return ReadLines(self.Context, io, separator, limit);
             }
         }
+
+        [RubyMethod("binread", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString/*!*/ Binread(
+            ConversionStorage<int>/*!*/ fixnumCast,
+            RubyClass/*!*/ self,
+            [DefaultProtocol, NotNull]MutableString path, [Optional]object optionalLength, [Optional, DefaultParameterValue(0)]int offset)
+        {
+            var site = fixnumCast.GetSite(ConvertToFixnumAction.Make(fixnumCast.Context));
+
+            bool useLengthParameter = (optionalLength != Missing.Value && optionalLength != null);
+            int length = useLengthParameter ? site.Target(site, optionalLength) : 0;
+
+            if (offset < 0) 
+                throw RubyExceptions.CreateEINVAL();
+
+            if (useLengthParameter && length < 0)
+                throw RubyExceptions.CreateArgumentError("negative length {0} given", length);
+
+            using (RubyIO io = new RubyFile(self.Context, path.ToString(), IOMode.ReadOnly))
+            {
+                if (offset > 0)
+                    io.Seek(offset, SeekOrigin.Begin);
+
+                if (useLengthParameter)
+                    return Read(io, length, null);
+
+                return Read(io);
+            }
+        }
+
 
         #endregion
 
