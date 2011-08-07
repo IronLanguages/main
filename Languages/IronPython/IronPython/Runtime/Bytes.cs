@@ -789,7 +789,7 @@ namespace IronPython.Runtime {
         /// Returns a copy of the internal byte array.
         /// </summary>
         /// <returns>
-        /// A <see cref="T:System.Byte[]"/>
+        /// <see cref="T:System.Byte[]"/>
         /// </returns>
         [PythonHidden]
         public byte[] ToByteArray() {
