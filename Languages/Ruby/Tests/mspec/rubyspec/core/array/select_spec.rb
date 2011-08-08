@@ -1,6 +1,7 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
-require File.dirname(__FILE__) + '/shared/enumeratorize'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../shared/enumeratorize', __FILE__)
+require File.expand_path('../shared/keep_if', __FILE__)
 
 describe "Array#select" do
   it_behaves_like :enumeratorize, :select
@@ -10,7 +11,7 @@ describe "Array#select" do
   end
 
   it "does not return subclass instance on Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].select { true }.class.should == Array
+    ArraySpecs::MyArray[1, 2, 3].select { true }.should be_kind_of(Array)
   end
 
   it "properly handles recursive arrays" do
@@ -21,5 +22,15 @@ describe "Array#select" do
     array = ArraySpecs.recursive_array
     array.select { true }.should == [1, 'two', 3.0, array, array, array, array, array]
     array.select { false }.should == []
+  end
+end
+
+ruby_version_is "1.9" do
+  describe "Array#select!" do
+    it "returns nil if no changes were made in the array" do
+      [1, 2, 3].select! { true }.should be_nil
+    end
+
+    it_behaves_like :keep_if, :select!
   end
 end

@@ -1,4 +1,7 @@
-describe "Array#count" do
+require File.expand_path('../../../spec_helper', __FILE__)
+
+ruby_version_is "1.9" do
+  describe "Array#count" do
     before :each do
       @array = [1, 2, 4, 2]
     end
@@ -22,4 +25,5 @@ describe "Array#count" do
     it "ignores the block when given an argument" do
       @array.count(4){|x| x%2==0 }.should == 1
     end
+  end
 end

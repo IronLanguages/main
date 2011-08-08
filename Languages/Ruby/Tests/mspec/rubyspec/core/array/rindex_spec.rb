@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 # Modifying a collection while the contents are being iterated
 # gives undefined behavior. See
@@ -45,11 +45,27 @@ describe "Array#rindex" do
 
   ruby_version_is "1.8.7" do
     it "accepts a block instead of an argument" do
-      [4, 2, 1, 5, 1, 3].rindex{|x| x < 2}.should == 4
+      [4, 2, 1, 5, 1, 3].rindex { |x| x < 2 }.should == 4
     end
 
     it "ignore the block if there is an argument" do
-      [4, 2, 1, 5, 1, 3].rindex(5){|x| x < 2}.should == 3
+      [4, 2, 1, 5, 1, 3].rindex(5) { |x| x < 2 }.should == 3
+    end
+
+    it "rechecks the array size during iteration" do
+      ary = [4, 2, 1, 5, 1, 3]
+      seen = []
+      ary.rindex { |x| seen << x; ary.clear; false }
+
+      seen.should == [3]
+    end
+
+    describe "given no argument and no block" do
+      it "produces an Enumerator" do
+        enum = [4, 2, 1, 5, 1, 3].rindex
+        enum.should be_kind_of(enumerator_class)
+        enum.each { |x| x < 2 }.should == 4
+      end
     end
   end
 end

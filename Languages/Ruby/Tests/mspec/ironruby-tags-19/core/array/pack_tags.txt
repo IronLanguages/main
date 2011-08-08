@@ -367,3 +367,6 @@ fails:Array#pack with '@' returns a String in ASCII 8-bit
 fails:Array#pack with '@' doesn't care even if breaks a character
 fails:Array#pack with format 'x' returns an US-ASCII string
 fails:String#unpack with 'w' directive produces a BER-compressed integer
+fails:Array#pack with format 'Z' comsumes only one array item per a format
+fails:Array#pack with format 'Z' handles nil
+fails:Array#pack with format 'P' returns a String who's size is equal to the number of bytes in a machine word

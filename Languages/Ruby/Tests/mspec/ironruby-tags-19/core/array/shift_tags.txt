@@ -8,3 +8,5 @@ fails:Array#shift passed a number n as an argument raises a TypeError when the p
 fails:Array#shift passed a number n as an argument does not return subclass instances with Array subclass
 fails:Array#shift passed a number n as an argument returns an untainted array even if the array is tainted
 fails:Array#shift passed a number n as an argument keeps taint status
+fails:Array#shift raises a RuntimeError on an empty frozen array
+fails:Array#shift passed a number n as an argument does not corrupt the array when shift without arguments is followed by shift with an argument

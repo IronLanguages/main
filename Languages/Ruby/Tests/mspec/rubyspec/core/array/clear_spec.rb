@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#clear" do
   it "removes all elements" do
@@ -28,7 +28,7 @@ describe "Array#clear" do
     a.clear
     a.tainted?.should be_true
   end
-  
+
   it "does not accept any arguments" do
     lambda { [1].clear(true) }.should raise_error(ArgumentError)
   end

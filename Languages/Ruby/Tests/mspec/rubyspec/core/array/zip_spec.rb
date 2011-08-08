@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#zip" do
   it "returns an array of arrays containing corresponding elements of each array" do
@@ -28,6 +28,18 @@ describe "Array#zip" do
     [1, 2].zip(obj).should == [[1, 3], [2, 4]]
   end
 
+  ruby_version_is "1.9.2" do
+    it "uses #each to extract arguments' elements when #to_ary fails" do
+      obj = Class.new do
+        def each(&b)
+          [3,4].each(&b)
+        end
+      end.new
+      
+      [1, 2].zip(obj).should == [[1, 3], [2, 4]]
+    end
+  end
+
   it "calls block if supplied" do
     values = []
     [1, 2, 3, 4].zip(["a", "b", "c", "d", "e"]) { |value|
@@ -38,6 +50,6 @@ describe "Array#zip" do
   end
 
   it "does not return subclass instance on Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].zip(["a", "b"]).class.should == Array
+    ArraySpecs::MyArray[1, 2, 3].zip(["a", "b"]).should be_kind_of(Array)
   end
 end
