@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'net/ftp'
-require File.dirname(__FILE__) + "/fixtures/server"
+require File.expand_path('../fixtures/server', __FILE__)
 
 describe "Net::FTP#system" do
   before(:each) do
@@ -21,7 +21,7 @@ describe "Net::FTP#system" do
     @ftp.system
     @ftp.last_response.should == "215 FTP Dummy Server (SYST)\n"
   end
-  
+
   it "returns the received information" do
     @ftp.system.should == "FTP Dummy Server (SYST)\n"
   end

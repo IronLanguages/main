@@ -621,11 +621,10 @@ namespace IronRuby.Builtins {
         }
 
         public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding) {
-            var kcoding = encoding as KCoding;
             ContractUtils.RequiresNotNull(encoding, "encoding");
             if (encoding == BinaryEncoding.Instance) {
                 return Binary;
-            } else if (encoding == Encoding.UTF8 || (kcoding != null && kcoding.KCodeName == "UTF8")) {
+            } else if (encoding == Encoding.UTF8) {
                 return UTF8;
             } else {
                 throw new ArgumentException(String.Format("Unknown encoding: '{0}'", encoding));

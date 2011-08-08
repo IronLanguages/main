@@ -207,6 +207,8 @@ describe Mock, ".install_method" do
   end
 end
 
+class MockAndRaiseError < Exception; end
+
 describe Mock, ".verify_call" do
   before :each do
     MSpec.stub!(:actions)
@@ -303,6 +305,13 @@ describe Mock, ".verify_call" do
     lambda {
       Mock.verify_call(@mock, :method_call) {|*a|}
     }.should_not raise_error(SpecExpectationNotMetError)
+  end
+
+  it "raises an exception when expected to" do
+    @proxy.and_raise(MockAndRaiseError)
+    lambda {
+      Mock.verify_call @mock, :method_call
+    }.should raise_error(MockAndRaiseError)
   end
 end
 
@@ -445,5 +454,16 @@ describe Mock, ".cleanup" do
     Mock.stubs.should == { Mock.replaced_key(@mock, :method_call) => [@stub] }
     Mock.cleanup
     Mock.stubs.should == {}
+  end
+
+  it "removes the replaced name for mocks" do
+    replaced_key = Mock.replaced_key(@mock, :method_call)
+    Mock.should_receive(:clear_replaced).with(replaced_key)
+
+    replaced_name = Mock.replaced_name(@mock, :method_call)
+    Mock.replaced?(replaced_name).should be_true
+
+    Mock.cleanup
+    Mock.replaced?(replaced_name).should be_false
   end
 end

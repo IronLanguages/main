@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
-require File.dirname(__FILE__) + "/fixtures/classes"
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Net::HTTPHeader#key? when passed key" do
   before(:each) do
@@ -12,7 +12,7 @@ describe "Net::HTTPHeader#key? when passed key" do
     @headers["My-Header"] = "test"
     @headers.key?("My-Header").should be_true
   end
-  
+
   it "is case-insensitive" do
     @headers["My-Header"] = "test"
     @headers.key?("my-header").should be_true

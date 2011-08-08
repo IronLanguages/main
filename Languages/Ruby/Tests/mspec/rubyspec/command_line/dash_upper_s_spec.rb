@@ -1,30 +1,20 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
-describe "The -S command line option" do
-  def push_path(dir)
+def push_path(dir)
     ENV['PATH'] = "#{dir};#{ENV['PATH']}"
-  end
+end
 
-  def pop_path
-    ENV['PATH'] = ENV['PATH'].split(';')[1..-1].join(';')
-  end
+def pop_path
+  ENV['PATH'] = ENV['PATH'].split(';')[1..-1].join(';')
+end
 
-  def with_path(*dirs)
-    dirs.each{|dir| push_path dir}
-    yield
-    dirs.size.times{ pop_path }
-  end
-
-  it 'finds the file on the path' do
-    this_dir = File.expand_path(File.dirname(__FILE__))
-    fixture_dir = File.expand_path(this_dir + '/../fixtures')
-    
-    dash_s = nil
-    with_path(fixture_dir) do
-      dash_s = ruby_exe(nil, :options => '-S file.rb')
-    end
-  end
-
+def with_path(*dirs)
+  dirs.each{|dir| push_path dir}
+  yield
+  dirs.size.times{ pop_path }
+end
+  
+describe "The -S command line option" do
   it 'finds the first file on the path' do
     this_dir = File.expand_path(File.dirname(__FILE__))
     expected = [

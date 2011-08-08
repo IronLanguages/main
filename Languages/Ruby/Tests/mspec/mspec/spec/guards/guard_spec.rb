@@ -3,6 +3,21 @@ require 'mspec/utils/ruby_name'
 require 'mspec/guards/guard'
 require 'rbconfig'
 
+describe SpecGuard, "#ruby_version_override=" do
+  after :each do
+    SpecGuard.ruby_version_override = nil
+  end
+
+  it "returns nil by default" do
+    SpecGuard.ruby_version_override.should be_nil
+  end
+
+  it "returns the value set by #ruby_version_override=" do
+    SpecGuard.ruby_version_override = "8.3.2"
+    SpecGuard.ruby_version_override.should == "8.3.2"
+  end
+end
+
 describe SpecGuard, ".ruby_version" do
   before :all do
     @ruby_version = Object.const_get :RUBY_VERSION
@@ -45,32 +60,44 @@ describe SpecGuard, ".ruby_version" do
   it "returns major for :major" do
     SpecGuard.ruby_version(:major).should == "8"
   end
-end
 
-describe SpecGuard, ".windows?" do
-  before :all do
-    @ruby_platform = Object.const_get :RUBY_PLATFORM
-  end
+  describe "with ruby_version_override set" do
+    before :each do
+      SpecGuard.ruby_version_override = "8.3.2"
+    end
 
-  after :all do
-    Object.const_set :RUBY_PLATFORM, @ruby_platform
-  end
+    after :each do
+      SpecGuard.ruby_version_override = nil
+    end
 
-  it "returns true if key is mswin32" do
-    SpecGuard.windows?("mswin32").should be_true
-  end
+    it "returns the version and patchlevel for :full" do
+      SpecGuard.ruby_version(:full).should == "8.3.2.71"
+    end
 
-  it "returns true if key is mingw" do
-    SpecGuard.windows?("mingw").should be_true
-  end
+    it "returns 0 for negative RUBY_PATCHLEVEL values" do
+      Object.const_set :RUBY_PATCHLEVEL, -1
+      SpecGuard.ruby_version(:full).should == "8.3.2.0"
+    end
 
-  it "returns false for non-windows" do
-    SpecGuard.windows?("notwindows").should be_false
-  end
+    it "returns major.minor.tiny for :tiny" do
+      SpecGuard.ruby_version(:tiny).should == "8.3.2"
+    end
 
-  it "uses RUBY_PLATFORM by default" do
-    Object.const_set :RUBY_PLATFORM, "mswin32"
-    SpecGuard.windows?.should be_true
+    it "returns major.minor.tiny for :teeny" do
+      SpecGuard.ruby_version(:tiny).should == "8.3.2"
+    end
+
+    it "returns major.minor for :minor" do
+      SpecGuard.ruby_version(:minor).should == "8.3"
+    end
+
+    it "defaults to :minor" do
+      SpecGuard.ruby_version.should == "8.3"
+    end
+
+    it "returns major for :major" do
+      SpecGuard.ruby_version(:major).should == "8"
+    end
   end
 end
 
@@ -264,12 +291,12 @@ describe SpecGuard, "#platform?" do
     @guard.platform?(:windows).should == true
   end
 
-  it "returns false when arg is not :windows and Config::CONFIG['host_os'] contains 'mswin'" do
+  it "returns false when arg is not :windows and RbConfig::CONFIG['host_os'] contains 'mswin'" do
     Object.const_set :RUBY_PLATFORM, 'i386-mswin32'
     @guard.platform?(:linux).should == false
   end
 
-  it "returns false when arg is not :windows and Config::CONFIG['host_os'] contains 'mingw'" do
+  it "returns false when arg is not :windows and RbConfig::CONFIG['host_os'] contains 'mingw'" do
     Object.const_set :RUBY_PLATFORM, 'i386-mingw32'
     @guard.platform?(:linux).should == false
   end
@@ -300,12 +327,12 @@ describe SpecGuard, "#platform? on JRuby" do
   end
 
   it "returns true when arg is :windows and RUBY_PLATFORM contains 'java' and os?(:windows) is true" do
-    Config::CONFIG.stub!(:[]).and_return('mswin32')
+    RbConfig::CONFIG.stub!(:[]).and_return('mswin32')
     @guard.platform?(:windows).should == true
   end
 
   it "returns true when RUBY_PLATFORM contains 'java' and os?(argument) is true" do
-    Config::CONFIG.stub!(:[]).and_return('amiga')
+    RbConfig::CONFIG.stub!(:[]).and_return('amiga')
     @guard.platform?(:amiga).should == true
   end
 end
@@ -327,47 +354,47 @@ end
 describe SpecGuard, "#os?" do
   before :each do
     @guard = SpecGuard.new
-    Config::CONFIG.stub!(:[]).and_return('unreal')
+    RbConfig::CONFIG.stub!(:[]).and_return('unreal')
   end
 
-  it "returns true if argument matches Config::CONFIG['host_os']" do
+  it "returns true if argument matches RbConfig::CONFIG['host_os']" do
     @guard.os?(:unreal).should == true
   end
 
-  it "returns true if any argument matches Config::CONFIG['host_os']" do
+  it "returns true if any argument matches RbConfig::CONFIG['host_os']" do
     @guard.os?(:bsd, :unreal, :amiga).should == true
   end
 
-  it "returns false if no argument matches Config::CONFIG['host_os']" do
+  it "returns false if no argument matches RbConfig::CONFIG['host_os']" do
     @guard.os?(:bsd, :netbsd, :amiga, :msdos).should == false
   end
 
-  it "returns false if argument does not match Config::CONFIG['host_os']" do
+  it "returns false if argument does not match RbConfig::CONFIG['host_os']" do
     @guard.os?(:amiga).should == false
   end
 
-  it "returns true when arg is :windows and Config::CONFIG['host_os'] contains 'mswin'" do
-    Config::CONFIG.stub!(:[]).and_return('i386-mswin32')
+  it "returns true when arg is :windows and RbConfig::CONFIG['host_os'] contains 'mswin'" do
+    RbConfig::CONFIG.stub!(:[]).and_return('i386-mswin32')
     @guard.os?(:windows).should == true
   end
 
-  it "returns true when arg is :windows and Config::CONFIG['host_os'] contains 'mingw'" do
-    Config::CONFIG.stub!(:[]).and_return('i386-mingw32')
+  it "returns true when arg is :windows and RbConfig::CONFIG['host_os'] contains 'mingw'" do
+    RbConfig::CONFIG.stub!(:[]).and_return('i386-mingw32')
     @guard.os?(:windows).should == true
   end
 
-  it "returns false when arg is not :windows and Config::CONFIG['host_os'] contains 'mswin'" do
-    Config::CONFIG.stub!(:[]).and_return('i386-mingw32')
+  it "returns false when arg is not :windows and RbConfig::CONFIG['host_os'] contains 'mswin'" do
+    RbConfig::CONFIG.stub!(:[]).and_return('i386-mingw32')
     @guard.os?(:linux).should == false
   end
 
-  it "returns false when arg is not :windows and Config::CONFIG['host_os'] contains 'mingw'" do
-    Config::CONFIG.stub!(:[]).and_return('i386-mingw32')
+  it "returns false when arg is not :windows and RbConfig::CONFIG['host_os'] contains 'mingw'" do
+    RbConfig::CONFIG.stub!(:[]).and_return('i386-mingw32')
     @guard.os?(:linux).should == false
   end
 end
 
-describe SpecGuard, "windows?" do
+describe SpecGuard, "#windows?" do
   before :each do
     @guard = SpecGuard.new
   end

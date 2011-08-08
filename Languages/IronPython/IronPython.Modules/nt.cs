@@ -67,7 +67,8 @@ namespace IronPython.Modules {
             if (path == null) throw PythonOps.TypeError("expected string, got None");
 
             if (mode == F_OK) {
-                return context.LanguageContext.DomainManager.Platform.FileExists(path);
+                return context.LanguageContext.DomainManager.Platform.FileExists(path) ||
+			context.LanguageContext.DomainManager.Platform.DirectoryExists(path);
             }
 #if !SILVERLIGHT
             // match the behavior of the VC C Runtime

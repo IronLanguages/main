@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
 
 describe "Net::HTTPGenericRequest#body_exist?" do
@@ -15,7 +15,7 @@ describe "Net::HTTPGenericRequest#body_exist?" do
   # describe "when $VERBOSE is true" do
   #   it "emits a warning" do
   #     old_verbose, $VERBOSE = $VERBOSE, true
-  #     
+  #
   #     begin
   #       request = Net::HTTPGenericRequest.new("POST", true, false, "/some/path")
   #       lambda { request.body_exist? }.should complain("")

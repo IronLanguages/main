@@ -29,7 +29,7 @@ class OutputToFDMatcher
     # Replacing with a file handle so that Readline etc. work
     @to.reopen out
 
-    block.call 
+    block.call
 
   ensure
     begin

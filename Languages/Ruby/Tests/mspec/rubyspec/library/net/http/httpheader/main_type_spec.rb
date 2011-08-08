@@ -1,19 +1,19 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
-require File.dirname(__FILE__) + "/fixtures/classes"
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Net::HTTPHeader#main_type" do
   before(:each) do
     @headers = NetHTTPHeaderSpecs::Example.new
   end
-  
+
   it "returns the 'main-content-type', as per 'Content-Type' header entry" do
     @headers["Content-Type"] = "text/html"
     @headers.main_type.should == "text"
-    
+
     @headers["Content-Type"] = "application/pdf"
     @headers.main_type.should == "application"
-    
+
     @headers["Content-Type"] = "text/html;charset=utf-8"
     @headers.main_type.should == "text"
   end

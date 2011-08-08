@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'net/ftp'
-require File.dirname(__FILE__) + "/fixtures/server"
+require File.expand_path('../fixtures/server', __FILE__)
 
 describe "Net::FTP#quit" do
   before(:each) do
@@ -21,12 +21,12 @@ describe "Net::FTP#quit" do
     @ftp.quit
     @ftp.last_response.should == "221 OK, bye\n"
   end
-  
+
   it "does not close the socket automagically" do
     @ftp.quit
     @ftp.closed?.should be_false
   end
-  
+
   it "returns nil" do
     @ftp.quit.should be_nil
   end

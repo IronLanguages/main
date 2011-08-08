@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
-require File.dirname(__FILE__) + "/fixtures/classes"
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Net::HTTPHeader#get_fields when passed key" do
   before(:each) do
@@ -14,10 +14,10 @@ describe "Net::HTTPHeader#get_fields when passed key" do
     @headers.add_field("My-Header", "b")
     @headers.get_fields("My-Header").should == ["a", "b"]
   end
-  
+
   it "returns a copy of the header entry values" do
     @headers["My-Header"] = "a"
-    
+
     @headers.get_fields("My-Header").clear
     @headers.get_fields("My-Header").should == ["a"]
 

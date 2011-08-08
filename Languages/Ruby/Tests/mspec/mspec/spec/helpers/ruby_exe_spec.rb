@@ -31,11 +31,6 @@ describe "#ruby_exe_options" do
     @script.ruby_exe_options(:env).should == "kowabunga"
   end
 
-  it "returns 'bin/rbx' when passed :engine and RUBY_NAME is 'rbx'" do
-    Object.const_set :RUBY_NAME, 'rbx'
-    @script.ruby_exe_options(:engine).should == 'bin/rbx'
-  end
-
   it "returns 'bin/jruby' when passed :engine and RUBY_NAME is 'jruby'" do
     Object.const_set :RUBY_NAME, 'jruby'
     @script.ruby_exe_options(:engine).should == 'bin/jruby'
@@ -52,15 +47,39 @@ describe "#ruby_exe_options" do
   end
 
   it "returns RUBY_NAME + $(EXEEXT) when passed :name" do
-    bin = RUBY_NAME + (Config::CONFIG['EXEEXT'] || Config::CONFIG['exeext'] || '')
+    bin = RUBY_NAME + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
     name = File.join ".", bin
     @script.ruby_exe_options(:name).should == name
   end
 
   it "returns $(bindir)/$(RUBY_INSTALL_NAME) + $(EXEEXT) when passed :install_name" do
-    bin = Config::CONFIG['RUBY_INSTALL_NAME'] + (Config::CONFIG['EXEEXT'] || Config::CONFIG['exeext'] || '')
-    name = File.join Config::CONFIG['bindir'], bin
+    bin = RbConfig::CONFIG['RUBY_INSTALL_NAME'] + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
+    name = File.join RbConfig::CONFIG['bindir'], bin
     @script.ruby_exe_options(:install_name).should == name
+  end
+
+  describe "under Rubinius" do
+    before :each do
+      @ruby_version = RUBY_VERSION
+    end
+
+    after :each do
+      Object.const_set :RUBY_VERSION, @ruby_version
+    end
+
+    it "returns 'bin/rbx' when passed :engine, RUBY_NAME is 'rbx' and RUBY_VERSION < 1.9" do
+      Object.const_set :RUBY_VERSION, "1.8.7"
+      Object.const_set :RUBY_NAME, 'rbx'
+
+      @script.ruby_exe_options(:engine).should == 'bin/rbx'
+    end
+
+    it "returns 'bin/rbx -X19' when passed :engine, RUBY_NAME is 'rbx' and RUBY_VERSION >= 1.9" do
+      Object.const_set :RUBY_VERSION, "1.9.2"
+      Object.const_set :RUBY_NAME, 'rbx'
+
+      @script.ruby_exe_options(:engine).should == 'bin/rbx -X19'
+    end
   end
 end
 
@@ -73,13 +92,7 @@ describe "#resolve_ruby_exe" do
   end
 
   before :each do
-    @ruby_platform = Object.const_get :RUBY_PLATFORM
-
     @script = RubyExeSpecs.new
-  end
-
-  after :each do
-    Object.const_set :RUBY_PLATFORM, @ruby_platform
   end
 
   after :all do
@@ -87,7 +100,7 @@ describe "#resolve_ruby_exe" do
   end
 
   it "returns the value returned by #ruby_exe_options if it exists and is executable" do
-    Object.const_set :RUBY_PLATFORM, "notwindows"
+    PlatformGuard.stub!(:windows?).and_return(false)
     @script.should_receive(:ruby_exe_options).and_return(@name)
     File.should_receive(:exists?).with(@name).and_return(true)
     File.should_receive(:executable?).with(@name).and_return(true)
@@ -95,7 +108,7 @@ describe "#resolve_ruby_exe" do
   end
 
   it "returns the value returned by #ruby_exe_options if it exists on Windows platforms" do
-    Object.const_set :RUBY_PLATFORM, "mswin"
+    PlatformGuard.stub!(:windows?).and_return(true)
     @script.should_receive(:ruby_exe_options).and_return(@name)
     File.should_receive(:exists?).with(@name).and_return(true)
     File.should_not_receive(:executable?)

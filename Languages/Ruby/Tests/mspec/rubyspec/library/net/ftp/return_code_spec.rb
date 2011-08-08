@@ -1,11 +1,11 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'net/ftp'
 
 describe "Net::FTP#return_code" do
   before(:each) do
     @ftp = Net::FTP.new
   end
-  
+
   it "outputs a warning and returns a newline" do
     lambda do
       @ftp.return_code.should == "\n"

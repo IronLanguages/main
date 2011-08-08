@@ -1,11 +1,11 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
 
 describe "Net::HTTP#initialize" do
   it "is private" do
     Net::HTTP.should have_private_instance_method(:initialize)
   end
-  
+
   describe "when passed address" do
     before(:each) do
       @net = Net::HTTP.allocate
@@ -24,7 +24,7 @@ describe "Net::HTTP#initialize" do
       @net.started?.should be_false
     end
   end
-  
+
   describe "when passed address, port" do
     before(:each) do
       @net = Net::HTTP.allocate

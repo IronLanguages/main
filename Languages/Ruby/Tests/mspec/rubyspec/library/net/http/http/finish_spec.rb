@@ -1,12 +1,12 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
-require File.dirname(__FILE__) + '/fixtures/http_server'
+require File.expand_path('../fixtures/http_server', __FILE__)
 
 describe "Net::HTTP#finish" do
   before(:all) do
     NetHTTPSpecs.start_server
   end
-  
+
   after(:all) do
     NetHTTPSpecs.stop_server
   end

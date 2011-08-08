@@ -5,7 +5,7 @@ describe :net_httpheader_each_name, :shared => true do
     @headers.add_field("My-Other-Header", "a")
     @headers.add_field("My-Other-Header", "b")
   end
-  
+
   describe "when passed a block" do
     it "yields each header key to the passed block (keys in lower case)" do
       res = []
@@ -26,8 +26,8 @@ describe :net_httpheader_each_name, :shared => true do
     ruby_version_is "1.8.7" do
       it "returns an Enumerator" do
         enumerator = @headers.send(@method)
-        enumerator.should be_kind_of(enumerator_class)
-      
+        enumerator.should be_an_instance_of(enumerator_class)
+
         res = []
         enumerator.each do |key|
           res << key

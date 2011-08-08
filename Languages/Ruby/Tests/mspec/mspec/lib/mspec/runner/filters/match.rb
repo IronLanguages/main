@@ -2,7 +2,6 @@ class MatchFilter
   def initialize(what, *strings)
     @what = what
     @descriptions = to_regexp(*strings)
-    
   end
 
   def to_regexp(*strings)

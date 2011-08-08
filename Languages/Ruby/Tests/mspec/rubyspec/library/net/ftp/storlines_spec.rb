@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'net/ftp'
-require File.dirname(__FILE__) + "/fixtures/server"
+require File.expand_path('../fixtures/server', __FILE__)
 
 describe "Net::FTP#storlines" do
   before(:each) do
@@ -8,7 +8,7 @@ describe "Net::FTP#storlines" do
     @server.serve_once
 
     @local_fixture_file  = File.dirname(__FILE__) + "/fixtures/puttextfile"
-    @tmp_file = tmp("textfile")
+    @tmp_file = tmp("textfile", false)
 
     @ftp = Net::FTP.new
     @ftp.connect("localhost", 9921)
@@ -21,7 +21,7 @@ describe "Net::FTP#storlines" do
 
     rm_r @tmp_file
   end
-  
+
   it "sends the passed command and the passed File object's content to the server" do
     File.open(@local_fixture_file) do |f|
       @ftp.storlines("STOR text", f) {}

@@ -1,6 +1,8 @@
 require 'mspec/runner/mspec'
 require 'mspec/runner/actions/tally'
 
+require 'rbconfig'
+
 class SpecGuard
   def self.report
     @report ||= Hash.new { |h,k| h[k] = [] }
@@ -30,6 +32,16 @@ class SpecGuard
     @guards = []
   end
 
+  @@ruby_version_override = nil
+
+  def self.ruby_version_override=(version)
+    @@ruby_version_override = version
+  end
+
+  def self.ruby_version_override
+    @@ruby_version_override
+  end
+
   # Returns a partial Ruby version string based on +which+. For example,
   # if RUBY_VERSION = 8.2.3 and RUBY_PATCHLEVEL = 71:
   #
@@ -52,12 +64,8 @@ class SpecGuard
 
     patch = RUBY_PATCHLEVEL.to_i
     patch = 0 if patch < 0
-    version = "#{RUBY_VERSION}.#{patch}"
+    version = "#{ruby_version_override || RUBY_VERSION}.#{patch}"
     version.split('.')[0,n].join('.')
-  end
-
-  def self.windows?(key = RUBY_PLATFORM)
-    !!key.match(/(mswin|mingw)/)
   end
 
   attr_accessor :name, :parameters
@@ -136,7 +144,7 @@ class SpecGuard
   end
 
   def windows?(sym, key)
-    sym == :windows && SpecGuard.windows?(key)
+    sym == :windows && !key.match(/(mswin|mingw)/).nil?
   end
 
   def platform?(*args)
@@ -154,9 +162,8 @@ class SpecGuard
   end
 
   def os?(*oses)
-    require 'rbconfig'
     oses.any? do |os|
-      host_os = Config::CONFIG['host_os'] || RUBY_PLATFORM
+      host_os = RbConfig::CONFIG['host_os'] || RUBY_PLATFORM
       host_os.downcase!
       host_os.match(os.to_s) || windows?(os, host_os)
     end

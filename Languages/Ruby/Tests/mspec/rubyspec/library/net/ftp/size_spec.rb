@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'net/ftp'
-require File.dirname(__FILE__) + "/fixtures/server"
+require File.expand_path('../fixtures/server', __FILE__)
 
 describe "Net::FTP#size" do
   before(:each) do
@@ -16,12 +16,12 @@ describe "Net::FTP#size" do
     @ftp.close
     @server.stop
   end
-  
+
   it "sends the SIZE command to the server" do
     @ftp.size("test.file")
     @ftp.last_response.should == "213 1024\n"
   end
-  
+
   it "returns the size of the passed file as Integer" do
     @ftp.size("test.file").should eql(1024)
   end

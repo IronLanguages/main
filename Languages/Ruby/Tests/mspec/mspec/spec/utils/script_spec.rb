@@ -19,25 +19,6 @@ describe MSpecScript, ".set" do
   end
 end
 
-describe MSpecScript, ".filtered" do
-  before(:each) do
-    Dir.stub!(:entries).and_return(["abc","def","xyz"])
-  end
-  
-  it "creates an unfiltered array of file entries if the second param is omitted" do
-    MSpecScript.filtered("core").should == ["core/abc","core/def","core/xyz"]
-  end
-  
-  it "creates an array of file entries filtered by the second param" do
-    MSpecScript.filtered("core", "[a-d]").should == ["core/abc", "core/def"]  
-  end
-  
-  it "uses config[:prefix]" do
-    MSpecScript.config.should_receive(:[]).with(:prefix)
-    MSpecScript.filtered("core")
-  end
-end
-
 describe MSpecScript, ".get" do
   it "gets the config hash value for a key" do
     MSpecScript.set :a, 10
@@ -83,6 +64,7 @@ describe MSpecScript, "#load_default" do
   end
 
   it "attempts to load 'default.mspec'" do
+    @script.stub!(:load)
     @script.should_receive(:load).with('default.mspec').and_return(true)
     @script.load_default
   end

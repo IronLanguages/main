@@ -1,12 +1,12 @@
-require File.dirname(__FILE__) + '/../../../../spec_helper'
+require File.expand_path('../../../../../spec_helper', __FILE__)
 require 'net/http'
-require File.dirname(__FILE__) + '/fixtures/http_server'
+require File.expand_path('../fixtures/http_server', __FILE__)
 
 describe "Net::HTTP.start" do
   before(:all) do
     NetHTTPSpecs.start_server
   end
-  
+
   after(:all) do
     NetHTTPSpecs.stop_server
   end
@@ -17,11 +17,11 @@ describe "Net::HTTP.start" do
     net.address.should == "localhost"
     net.port.should == 3333
   end
-  
+
   it "opens the tcp connection" do
     Net::HTTP.start("localhost", 3333).started?.should be_true
   end
-  
+
   describe "when passed a block" do
     it "returns the blocks return value" do
       Net::HTTP.start("localhost", 3333) { :test }.should == :test
@@ -69,7 +69,7 @@ describe "Net::HTTP#start" do
     @http.start
     @http.started?.should be_true
   end
-  
+
   describe "when self has already been started" do
     it "raises an IOError" do
       @http.start
