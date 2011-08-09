@@ -1,10 +1,10 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "Bignum#*" do
   before(:each) do
     @bignum = bignum_value(772)
   end
-  
+
   it "returns self multiplied by the given Integer" do
     (@bignum * (1/bignum_value(0xffff).to_f)).should be_close(0.999999999999992894572642398998, 3e-29)
     (@bignum * 10).should == 92233720368547765800
