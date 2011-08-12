@@ -1272,25 +1272,22 @@ namespace IronPython.Modules {
             string resultPort = null;
 
             // Host
-            IPHostEntry hostEntry = null;
+            IList<IPAddress> addrs = null;
             try {
-                // Do double lookup to force reverse DNS lookup to match CPython behavior
-                hostEntry = Dns.GetHostEntry(host);
-                if (hostEntry.AddressList.Length < 1) {
+                addrs = HostToAddresses(context, host, AddressFamily.InterNetwork);
+                if (addrs.Count < 1) {
                     throw PythonExceptions.CreateThrowable(error(context), "sockaddr resolved to zero addresses");
                 }
-                hostEntry = Dns.GetHostEntry(hostEntry.AddressList[0]);
             } catch (SocketException e) {
                 throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, e.Message);
             } catch (IndexOutOfRangeException) {
                 throw PythonExceptions.CreateThrowable(gaierror(context), "sockaddr resolved to zero addresses");
             }
 
-            IList<IPAddress> addrs = hostEntry.AddressList;
             if (addrs.Count > 1) {
                 // ignore non-IPV4 addresses
                 List<IPAddress> newAddrs = new List<IPAddress>(addrs.Count);
-                foreach (IPAddress addr in hostEntry.AddressList) {
+                foreach (IPAddress addr in addrs) {
                     if (addr.AddressFamily == AddressFamily.InterNetwork) {
                         newAddrs.Add(addr);
                     }
@@ -1305,6 +1302,12 @@ namespace IronPython.Modules {
                 throw PythonExceptions.CreateThrowable(error(context), "sockaddr resolved to zero addresses");
             }
 
+            IPHostEntry hostEntry = null;
+            try {
+                hostEntry = Dns.GetHostEntry(addrs[0]);
+            } catch (SocketException e) {
+                throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, e.Message);
+            }
             if ((flags & (int)NI_NUMERICHOST) != 0) {
                 resultHost = addrs[0].ToString();
             } else if ((flags & (int)NI_NOFQDN) != 0) {
