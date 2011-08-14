@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 describe "Hash literal" do
   it "{} should return an empty hash" do
@@ -44,4 +44,13 @@ describe "Hash literal" do
     h.keys.size.should == 1
     h.should == {:foo => :foo}
   end
+
+  it "accepts a hanging comma" do
+    h = {:a => 1, :b => 2,}
+    h.size.should == 2
+    h.should == {:a => 1, :b => 2}
+  end
 end
+
+language_version __FILE__, "hash"
+

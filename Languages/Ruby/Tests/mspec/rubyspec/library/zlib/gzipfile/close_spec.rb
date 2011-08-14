@@ -1,35 +1,23 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+# -*- encoding: ascii-8bit -*-
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'stringio'
 require 'zlib'
 
 describe 'Zlib::GzipFile#close' do
-  before(:each) do
-	@io = StringIO.new
-	@gzip_writer = Zlib::GzipWriter.new @io
-  end
-  
-  it 'closes the GzipFile' do
-    @gzip_writer.close      
-    @gzip_writer.closed?.should be_true
-  end
-  
-  it 'closes the IO object' do
-    @gzip_writer.close
-    @io.closed?.should be_true
-  end
-  
-  it 'returns the associated IO object' do
-    @gzip_writer.close.should eql(@io)
-  end
-  
-  it 'raises Zlib::GzipFile::Error if called multiple times' do
-    @gzip_writer.close
-    lambda { @gzip_writer.close }.should raise_error(Zlib::GzipFile::Error)
-  end
+  it 'finishes the stream and closes the io' do
+    io = StringIO.new ""
+    Zlib::GzipWriter.wrap io do |gzio|
+      gzio.close
 
-  it 'raises Zlib::GzipFile::Error if called after Zlib#finish' do
-    @gzip_writer.finish
-    lambda { @gzip_writer.close }.should raise_error(Zlib::GzipFile::Error)
+      gzio.closed?.should == true
+
+      lambda { gzio.orig_name }.should \
+        raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
+      lambda { gzio.comment }.should \
+        raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
+    end
+
+    io.string[10..-1].should == "\003\000\000\000\000\000\000\000\000\000"
   end
 end
 

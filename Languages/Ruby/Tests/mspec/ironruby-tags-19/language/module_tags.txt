@@ -1,1 +1,2 @@
 fails:An anonymous module returns nil for its name
+fails:module reopens a module included into Object

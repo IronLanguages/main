@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 describe "Splat operator" do
   describe "used to assign a splatted object to an object" do
@@ -56,6 +56,12 @@ describe "Splat operator" do
         o = mock(Object)
         o.should_receive(:to_a).once.and_return(["foo"])
         a = *o; a.should == ["foo"]
+      end
+
+      it "assigns the object in a new array when it responds to to_a but to_a returns nil" do
+        o = mock(Object)
+        o.should_receive(:to_a).once.and_return(nil)
+        a = *o; a.should == [o]
       end
 
       it "assigns an array with nil object if the content of the splatted array is nil" do

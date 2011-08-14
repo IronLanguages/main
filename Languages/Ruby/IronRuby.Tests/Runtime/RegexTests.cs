@@ -18,6 +18,7 @@ using System.Text.RegularExpressions;
 using IronRuby.Builtins;
 using System.Text;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -63,7 +64,7 @@ puts(/b#{/a/}/)
             TestCorrectPatternTranslation(@"abc\0\01\011", "abc\\0\\01\\011");
             TestCorrectPatternTranslation(@"\n\t\r\f\v\a\e\b\A\B\Z\z", "\\\n\\\t\\\r\f\v\a\u001B\\b\\A\\B\\Z\\z");
             TestCorrectPatternTranslation(@"[\n\t\r\f\v\a\e\b\A\B\Z\z]", "[\\\n\\\t\\\r\f\v\a\u001B\bABZz]");
-            TestCorrectPatternTranslation(@"\G", RubyRegexOptions.NONE, @"\G", true);
+            TestCorrectPatternTranslation(@"\G", RubyRegexOptions.NONE, @"\G", true, null);
             
             // meta-characters
             TestCorrectPatternTranslation(@"\xd", "\\\u000d");
@@ -151,6 +152,12 @@ puts(/b#{/a/}/)
             TestCorrectPatternTranslation(@"x{1*+", @"x{(?>1*)");
             TestCorrectPatternTranslation(@"x{*+", @"x(?>{*)");
 
+            // nested quantifiers
+            TestCorrectPatternTranslation("ab**c", RubyRegexOptions.NONE, "ab*c", false, new[] { "redundant nested repeat operator" });
+            TestCorrectPatternTranslation("ab?*c", RubyRegexOptions.NONE, "ab*c", false, new[] { "nested repeat operator ? and * was replaced with '*'" });
+            TestCorrectPatternTranslation("ab+*c", RubyRegexOptions.NONE, "ab*c", false, new[] { "nested repeat operator + and * was replaced with '*'" });
+            TestCorrectPatternTranslation("a{2}*", "(?:a{2})*");
+
             // ranges
             TestCorrectPatternTranslation("[a-z]", "[a-z]");
             TestCorrectPatternTranslation(@"[\u{40}-z]", "[\u0040-z]");
@@ -209,16 +216,26 @@ puts(/b#{/a/}/)
 
         //[DebuggerHidden]
         private void TestCorrectPatternTranslation(string/*!*/ pattern, string/*!*/ expected) {
-            TestCorrectPatternTranslation(pattern, RubyRegexOptions.NONE, expected, false);
+            TestCorrectPatternTranslation(pattern, RubyRegexOptions.NONE, expected, false, null);
         }
 
         //[DebuggerHidden]
-        private void TestCorrectPatternTranslation(string/*!*/ pattern, RubyRegexOptions options, string/*!*/ expected, bool expectedGAnchor) {
+        private void TestCorrectPatternTranslation(string/*!*/ pattern, RubyRegexOptions options, string/*!*/ expected, bool expectedGAnchor, IList<string> expectedWarnings) {
             bool hasGAnchor;
-            string actual = RegexpTransformer.Transform(pattern, options, out hasGAnchor);
+            List<string> warnings;
+            string actual = RegexpTransformer.Transform(pattern, options, out hasGAnchor, out warnings);
             AreEqual(expected, actual);
             new Regex(expected);
             Assert(hasGAnchor == expectedGAnchor);
+            if (warnings != null) {
+                Assert(expectedWarnings != null);
+                Assert(expectedWarnings.Count == warnings.Count);
+                foreach (var warning in expectedWarnings) {
+                    Assert(warnings.IndexOf(warning) >= 0);
+                }
+            } else {
+                Assert(expectedWarnings == null || expectedWarnings.Count == 0);
+            }
         }
 
         [Options(NoRuntime = true)]
@@ -264,9 +281,11 @@ puts(/b#{/a/}/)
       $";
             
             bool hasGAnchor;
-            string t = RegexpTransformer.Transform(p, RubyRegexOptions.Extended | RubyRegexOptions.Multiline, out hasGAnchor);
+            List<string> warnings;
+            string t = RegexpTransformer.Transform(p, RubyRegexOptions.Extended | RubyRegexOptions.Multiline, out hasGAnchor, out warnings);
             Assert(e == t);
             Assert(!hasGAnchor);
+            Assert(warnings == null);
             new Regex(t);
         }
 

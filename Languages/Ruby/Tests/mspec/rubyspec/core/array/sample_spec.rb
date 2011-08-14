@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#sample" do
   ruby_version_is "1.8.8" do
@@ -53,7 +53,7 @@ describe "Array#sample" do
       end
 
       it "does not return subclass instances with Array subclass" do
-        ArraySpecs::MyArray[1, 2, 3].sample(2).class.should == Array
+        ArraySpecs::MyArray[1, 2, 3].sample(2).should be_kind_of(Array)
       end
     end
   end

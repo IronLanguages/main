@@ -1,0 +1,4 @@
+fails:Array#product does not attempt to produce an unreasonable number of products
+fails:Array#product when given a block yields all combinations in turn
+fails:Array#product when given a block will ignore unreasonable numbers of products and yield anyway
+fails:Array#product when given an empty block returns self

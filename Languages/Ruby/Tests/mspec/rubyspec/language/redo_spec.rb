@@ -1,11 +1,6 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 describe "The redo statement" do
-  it "raises a LocalJumpError if used not within block or while/for loop" do
-    def bad_meth_redo; redo; end
-    lambda { bad_meth_redo() }.should raise_error(LocalJumpError)
-  end
-
   it "restarts block execution if used within block" do
     a = []
     lambda {

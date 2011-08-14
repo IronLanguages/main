@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/return'
+require File.expand_path('../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/return', __FILE__)
 
 describe "The return keyword" do
   it "returns any object directly" do
@@ -250,6 +250,11 @@ describe "The return keyword" do
 
     it "returns from the lexically enclosing method even in case of chained calls(in yield)" do
       ReturnSpecs::NestedBlocks.new.enclosing_method.should == :return_value
+      ScratchPad.recorded.should == :before_return
+    end
+
+    it "causes the method to return even when the immediate parent has already returned" do
+      ReturnSpecs::SavedInnerBlock.new.start.should == :return_value
       ScratchPad.recorded.should == :before_return
     end
 

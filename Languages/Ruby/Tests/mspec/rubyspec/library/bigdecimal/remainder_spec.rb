@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 require 'bigdecimal'
 
 describe "BigDecimal#remainder" do
@@ -29,13 +29,11 @@ describe "BigDecimal#remainder" do
     @neg_int.remainder(@neg_frac).should == @neg_int % @neg_frac
   end
 
-  ruby_bug "Bug #585", "1.8" do
-    it "it is the modulus minus the value divided by, if values have opposite sign" do
-      @mixed.remainder(@neg_frac).should == (@mixed % @neg_frac) - @neg_frac
-      @pos_int.remainder(@neg_frac).should == (@pos_int % @neg_frac) - @neg_frac
-      @neg_frac.remainder(@pos_int).should == (@neg_frac % @pos_int) - @pos_int
-      @neg_int.remainder(@pos_frac).should == (@neg_int % @pos_frac) - @pos_frac
-    end
+  it "means self-arg*(self/arg).truncate" do
+    @mixed.remainder(@neg_frac).should == @mixed - @neg_frac * (@mixed / @neg_frac).truncate
+    @pos_int.remainder(@neg_frac).should == @pos_int - @neg_frac * (@pos_int / @neg_frac).truncate
+    @neg_frac.remainder(@pos_int).should == @neg_frac - @pos_int * (@neg_frac / @pos_int).truncate
+    @neg_int.remainder(@pos_frac).should == @neg_int - @pos_frac * (@neg_int / @pos_frac).truncate
   end
 
   it "returns NaN used with zero" do
@@ -46,7 +44,7 @@ describe "BigDecimal#remainder" do
   it "returns zero if used on zero" do
     @zero.remainder(@mixed).should == @zero
   end
-  
+
   it "returns NaN if NaN is involved" do
     @nan.remainder(@nan).nan?.should == true
     @nan.remainder(@one).nan?.should == true
@@ -71,7 +69,7 @@ describe "BigDecimal#remainder" do
     @infinity.remainder(@infinity_minus).nan?.should == true
     @infinity_minus.remainder(@infinity).nan?.should == true
   end
-  
+
   it "coerces arguments to BigDecimal if possible" do
     @one.remainder(2).should == @one
   end

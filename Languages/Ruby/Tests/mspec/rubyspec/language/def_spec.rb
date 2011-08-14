@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 # Language-level method behaviour
 describe "Redefining a method" do
@@ -12,7 +12,7 @@ describe "Redefining a method" do
 end
 
 describe "Defining an 'initialize' method" do
-  it "should make it private" do
+  it "sets the method's visibility to private" do
     class DefInitializeSpec
       def initialize
       end
@@ -22,7 +22,7 @@ describe "Defining an 'initialize' method" do
 end
 
 describe "Defining an 'initialize_copy' method" do
-  it "should make it private" do
+  it "sets the method's visibility to private" do
     class DefInitializeCopySpec
       def initialize_copy
       end
@@ -219,7 +219,7 @@ describe "A method defined with extreme default arguments" do
     def foo(x = caller())
       x
     end
-    foo.shift.class.should == String
+    foo.shift.should be_kind_of(String)
   end
 
   it "evaluates the defaults in the method's scope" do
@@ -239,7 +239,7 @@ describe "A method defined with extreme default arguments" do
     def foo(output = 'a', prc = lambda {|n| output * n})
       prc.call(5)
     end
-    foo.should == 'aaaaa' 
+    foo.should == 'aaaaa'
   end
 end
 
@@ -258,7 +258,7 @@ describe "A singleton method defined with extreme default arguments" do
     def a.foo(x = caller())
       x
     end
-    a.foo.shift.class.should == String
+    a.foo.shift.should be_kind_of(String)
   end
 
   it "evaluates the defaults in the singleton scope" do
@@ -275,13 +275,13 @@ describe "A singleton method defined with extreme default arguments" do
     end
     a.foo('abcde').should == 5
   end
-  
+
   it "may use a lambda as a default" do
     a = 'hi'
     def a.foo(output = 'a', prc = lambda {|n| output * n})
       prc.call(5)
     end
-    a.foo.should == 'aaaaa' 
+    a.foo.should == 'aaaaa'
   end
 end
 
@@ -487,6 +487,22 @@ describe "a method definition that sets more than one default parameter all to t
     bar(3).should == [3,nil,nil,2]
     bar(3,4).should == [3,nil,nil,4]
     lambda { bar(3,4,5) }.should raise_error(ArgumentError)
+  end
+end
+
+describe "The def keyword" do
+  describe "within a closure" do
+    it "looks outside the closure for the visibility" do
+      module DefSpecsLambdaVisibility
+        private
+
+        lambda {
+          def some_method; end
+        }.call
+      end
+
+      DefSpecsLambdaVisibility.should have_private_instance_method("some_method")
+    end
   end
 end
 

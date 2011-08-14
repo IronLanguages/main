@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 require 'zlib'
 
 describe 'Zlib::Deflate#params' do
@@ -13,8 +13,7 @@ describe 'Zlib::Deflate#params' do
     d.params Zlib::BEST_COMPRESSION, Zlib::DEFAULT_STRATEGY
     d << data
 
-    d.finish.should ==
-      "x\001\000\v\000\364\377abcdefghijk\002,'\027\000\#\364\005<"
+    Zlib::Inflate.inflate(d.finish).should == 'abcdefghijklm'
   end
   end
 end

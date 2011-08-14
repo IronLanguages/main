@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 describe "The 'case'-construct" do
   it "evaluates the body of the when clause matching the case target expression" do
@@ -105,41 +105,41 @@ describe "The 'case'-construct" do
   it "takes lists of values" do
     case 'z'
       when 'a', 'b', 'c', 'd'
-        "foo" 
+        "foo"
       when 'x', 'y', 'z'
-        "bar" 
+        "bar"
     end.should == "bar"
 
     case 'b'
       when 'a', 'b', 'c', 'd'
-        "foo" 
+        "foo"
       when 'x', 'y', 'z'
-        "bar" 
+        "bar"
     end.should == "foo"
   end
-  
+
   it "expands arrays to lists of values" do
     case 'z'
       when *['a', 'b', 'c', 'd']
-        "foo" 
+        "foo"
       when *['x', 'y', 'z']
-        "bar" 
+        "bar"
     end.should == "bar"
   end
 
   it "takes an expanded array in addition to a list of values" do
     case 'f'
       when 'f', *['a', 'b', 'c', 'd']
-        "foo" 
+        "foo"
       when *['x', 'y', 'z']
-        "bar" 
+        "bar"
     end.should == "foo"
 
     case 'b'
       when 'f', *['a', 'b', 'c', 'd']
-        "foo" 
+        "foo"
       when *['x', 'y', 'z']
-        "bar" 
+        "bar"
     end.should == "foo"
   end
 
@@ -150,9 +150,9 @@ describe "The 'case'-construct" do
 
     case 'f'
       when 'f', *a|b
-        "foo" 
+        "foo"
       when *['x', 'y', 'z']
-        "bar" 
+        "bar"
     end.should == "foo"
   end
 

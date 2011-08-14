@@ -1,10 +1,10 @@
-require File.dirname(__FILE__) + '/../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/array'
+require File.expand_path('../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/array', __FILE__)
 
 describe "Array literals" do
   it "[] should return a new array populated with the given elements" do
     array = [1, 'a', nil]
-    array.class.should == Array
+    array.should be_kind_of(Array)
     array[0].should == 1
     array[1].should == 'a'
     array[2].should == nil
@@ -108,7 +108,7 @@ describe "The unpacking splat operator (*)" do
 end
 
 describe "The packing splat operator (*)" do
-  
+
 end
 
 language_version __FILE__, "array"

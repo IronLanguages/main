@@ -1,0 +1,3 @@
+fails:Array#inspect taints the result String if the Array is tainted
+fails:Array#inspect taints the result String if an element is tainted
+fails:Array#inspect propagates untrust from itself or elements

@@ -1,6 +1,5 @@
 require 'zlib'
-require File.dirname(__FILE__) + '/../../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../../spec_helper', __FILE__)
 
 describe 'Zlib::Inflate#inflate' do
 
@@ -40,10 +39,6 @@ describe 'Zlib::Inflate#inflate' do
     @inflator.finish.should == 'uncompressed_data'
   end
 
-  it 'inflates Lorem Ipsum' do
-     @inflator.inflate(InflateSpecs::DeflatedLoremIpsum).should == InflateSpecs::LoremIpsum
-  end
-
 end
 
 describe 'Zlib::Inflate::inflate' do
@@ -72,10 +67,6 @@ describe 'Zlib::Inflate::inflate' do
     data.each_byte { |d| result << z.inflate(d.chr)}
     result << z.finish
     result.should == "foo"
-  end
-
-  it 'inflates Lorem Ipsum' do
-     Zlib::Inflate.inflate(InflateSpecs::DeflatedLoremIpsum).should == InflateSpecs::LoremIpsum
   end
 
   it 'properly handles incomplete data' do

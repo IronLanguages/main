@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 require 'bigdecimal'
 
 describe "BigDecimal#<=>" do
@@ -69,7 +69,7 @@ describe "BigDecimal#<=>" do
       (@nan <=> val).should == nil
     }
   end
-  
+
   it "returns nil if the argument is nil" do
     (@zero <=> nil).should == nil
     (@infinity <=> nil).should == nil

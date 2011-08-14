@@ -1,11 +1,34 @@
 module ClassSpecs
+
+  def self.sclass_with_block
+    class << self
+      yield
+    end
+  end
+
+  def self.sclass_with_return
+    class << self
+      return :inner
+    end
+    return :outer
+  end
+
   class A; end
-  
+
+  def self.string_class_variables(obj)
+    obj.class_variables.map { |x| x.to_s }
+  end
+
+  def self.string_instance_variables(obj)
+    obj.instance_variables.map { |x| x.to_s }
+  end
+
   class B
     @@cvar = :cvar
     @ivar = :ivar
+
   end
-  
+
   class C
     def self.make_class_variable
       @@cvar = :cvar
@@ -15,24 +38,24 @@ module ClassSpecs
       @civ = :civ
     end
   end
-  
+
   class D
     def make_class_variable
       @@cvar = :cvar
     end
   end
-  
+
   class E
     def self.cmeth() :cmeth end
     def meth() :meth end
-    
+
     class << self
       def smeth() :smeth end
     end
-    
+
     CONSTANT = :constant!
   end
-  
+
   class F; end
   class F
     def meth() :meth end
@@ -40,12 +63,12 @@ module ClassSpecs
   class F
     def another() :another end
   end
-  
+
   class G
     def override() :nothing end
     def override() :override end
   end
-  
+
   class Container
     class A; end
     class B; end
@@ -57,21 +80,21 @@ module ClassSpecs
       :smeth
     end
   end
-  
+
   class H
     def self.inherited(sub)
       track_inherited << sub
     end
-    
+
     def self.track_inherited
       @inherited_modules ||= []
     end
   end
-  
+
   class K < H; end
-  
+
   class I
-    class J < self 
+    class J < self
     end
   end
 
@@ -85,40 +108,6 @@ module ClassSpecs
   class L; end
 
   class M < L; end
-
-#TODO: Can this be replaced with thie IO helper?  
-
-  class StubWriter
-    def write(s)
-      s && s.size || 0
-    end    
-  end
-  class StubWriterWithClose < StubWriter    
-    def close(*args)
-    end
-  end
-
-  class StubReader
-    def initialize(s)
-      @s = s
-    end
-    
-    def read(size=2048)
-      s, @s = @s, nil
-      s
-    end    
-  end
-  
-  class StubReaderWithClose < StubReader    
-    def close(*args)
-    end
-  end
-  
-  class Undef_to_s
-    if self.methods.include?(:to_s) then
-      undef to_s
-    end
-  end
 end
 
 class Class
@@ -126,8 +115,8 @@ class Class
   def self.example_class_method_of_class; end
 end
 class << Class
-  def example_instance_method_of_metaclass; end
-  def self.example_class_method_of_metaclass; end
+  def example_instance_method_of_singleton_class; end
+  def self.example_class_method_of_singleton_class; end
 end
 class Object
   def example_instance_method_of_object; end

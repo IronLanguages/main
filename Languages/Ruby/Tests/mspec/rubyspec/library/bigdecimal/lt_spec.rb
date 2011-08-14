@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 require 'bigdecimal'
 
 describe "BigDecimal#<" do
@@ -30,7 +30,7 @@ describe "BigDecimal#<" do
     @infinity_neg = BigDecimal("-Infinity")
     @nan = BigDecimal("NaN")
   end
-  
+
   it "returns true if a < b" do
     one = BigDecimal("1")
     two = BigDecimal("2")

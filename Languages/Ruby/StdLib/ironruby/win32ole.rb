@@ -23,12 +23,12 @@ class WIN32OLE
   # inteorp of passing RCW arguments, better perf since it will avail of call-site
   # caching, and object identity.
   
-  def initialize(arg)
+  def initialize(arg, server = nil)
     if arg.respond_to? :to_str
       if guid? arg
-        type = System::Type.GetTypeFromCLSID arg
+        type = System::Type.GetTypeFromCLSID arg, server, true
       else
-        type = System::Type.GetTypeFromProgID arg
+        type = System::Type.GetTypeFromProgID arg, server, true
       end
       @com_object = System::Activator.create_instance type
     else

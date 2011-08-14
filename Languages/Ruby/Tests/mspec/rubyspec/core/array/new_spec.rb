@@ -1,13 +1,13 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array.new" do
   it "returns an instance of Array" do
-    Array.new.class.should == Array
+    Array.new.should be_kind_of(Array)
   end
 
   it "returns an instance of a subclass" do
-    ArraySpecs::MyArray.new.class.should == ArraySpecs::MyArray
+    ArraySpecs::MyArray.new(1, 2).should be_an_instance_of(ArraySpecs::MyArray)
   end
 
   it "raise an ArgumentError if passed 3 or more arguments" do
