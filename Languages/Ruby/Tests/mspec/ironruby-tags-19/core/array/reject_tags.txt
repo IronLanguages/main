@@ -1,0 +1,1 @@
+fails:Array#reject! raises a RuntimeError on an empty frozen array

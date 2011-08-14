@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
-require  File.dirname(__FILE__) + '/../../shared/array/join'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../shared/join', __FILE__)
 
 describe "Array#*" do
   it "tries to convert the passed argument to a String using #to_str" do
@@ -52,7 +52,7 @@ describe "Array#* with an integer" do
     ary = [1, 2, 3]
     (ary * 1).should_not equal(ary)
   end
-  
+
   it "properly handles recursive arrays" do
     empty = ArraySpecs.empty_recursive_array
     (empty * 0).should == []
@@ -68,11 +68,30 @@ describe "Array#* with an integer" do
     lambda { [ 1, 2, 3 ] * -1 }.should raise_error(ArgumentError)
     lambda { [] * -1 }.should raise_error(ArgumentError)
   end
-  
+
   it "returns subclass instance with Array subclasses" do
     (ArraySpecs::MyArray[1, 2, 3] * 0).class.should == ArraySpecs::MyArray
     (ArraySpecs::MyArray[1, 2, 3] * 1).class.should == ArraySpecs::MyArray
     (ArraySpecs::MyArray[1, 2, 3] * 2).class.should == ArraySpecs::MyArray
+  end
+  
+  describe "with a subclass of Array" do
+    before :each do
+      ScratchPad.clear
+
+      @array = ArraySpecs::MyArray[1, 2, 3, 4, 5]
+    end
+
+    it "returns a subclass instance" do
+      (@array * 0).should be_an_instance_of(ArraySpecs::MyArray)
+      (@array * 1).should be_an_instance_of(ArraySpecs::MyArray)
+      (@array * 2).should be_an_instance_of(ArraySpecs::MyArray)
+    end
+
+    it "does not call #initialize on the subclass instance" do
+      (@array * 2).should == [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]
+      ScratchPad.recorded.should be_nil
+    end
   end
 
   ruby_version_is '' ... '1.8' do

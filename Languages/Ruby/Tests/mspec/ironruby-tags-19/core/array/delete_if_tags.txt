@@ -1,0 +1,1 @@
+fails:Array#delete_if raises a RuntimeError on an empty frozen array

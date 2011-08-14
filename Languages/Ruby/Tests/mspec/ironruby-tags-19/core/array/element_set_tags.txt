@@ -1,0 +1,1 @@
+fails:Array#[]= checks frozen before attempting to coerce arguments

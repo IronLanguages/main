@@ -1,11 +1,11 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#partition" do
   it "returns two arrays" do
     [].partition {}.should == [[], []]
   end
-  
+
   it "returns in the left array values for which the block evaluates to true" do
     ary = [0, 1, 2, 3, 4, 5]
 
@@ -36,8 +36,8 @@ describe "Array#partition" do
 
   it "does not return subclass instances on Array subclasses" do
     result = ArraySpecs::MyArray[1, 2, 3].partition { |x| x % 2 == 0 }
-    result.class.should == Array
-    result[0].class.should == Array
-    result[1].class.should == Array
+    result.should be_kind_of(Array)
+    result[0].should be_kind_of(Array)
+    result[1].should be_kind_of(Array)
   end
 end

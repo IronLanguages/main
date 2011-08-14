@@ -1,0 +1,1 @@
+fails:Array#flatten with a non-Array object in the Array ignores the return value of #to_ary if it is nil

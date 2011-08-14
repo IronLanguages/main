@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#[]=" do
   it "sets the value of the element at index" do
@@ -47,6 +47,15 @@ describe "Array#[]=" do
       a = ['a', 'b', 'c', 'd', 'e']
       a[1, 3] = nil
       a.should == ["a", "e"]
+    end
+
+    it "is not confused by shift when removing elements with nil" do
+      a = [1,2,3]
+
+      a.shift
+      a[1,1] = nil
+
+      a.should == [2]
     end
   end
   ruby_version_is '1.9' do
@@ -106,6 +115,14 @@ describe "Array#[]=" do
     a.should == [1, 2, 4]
     a[obj] = -1
     a.should == [1, 2, -1]
+  end
+
+  ruby_version_is '1.9' do
+    it "checks frozen before attempting to coerce arguments" do
+      a = [1,2,3,4].freeze
+      lambda {a[:foo] = 1}.should raise_error(RuntimeError)
+      lambda {a[:foo, :bar] = 1}.should raise_error(RuntimeError)
+    end
   end
 
   it "sets elements in the range arguments when passed ranges" do

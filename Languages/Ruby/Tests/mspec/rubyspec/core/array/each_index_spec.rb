@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
-require File.dirname(__FILE__) + '/shared/enumeratorize'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../shared/enumeratorize', __FILE__)
 
 # Modifying a collection while the contents are being iterated
 # gives undefined behavior. See
@@ -20,6 +20,20 @@ describe "Array#each_index" do
   it "returns self" do
     a = [:a, :b, :c]
     a.each_index { |i| }.should equal(a)
+  end
+
+  it "is not confused by removing elements from the front" do
+    a = [1, 2, 3]
+
+    a.shift
+    ScratchPad.record []
+    a.each_index { |i| ScratchPad << i }
+    ScratchPad.recorded.should == [0, 1]
+
+    a.shift
+    ScratchPad.record []
+    a.each_index { |i| ScratchPad << i }
+    ScratchPad.recorded.should == [0]
   end
 
   it_behaves_like :enumeratorize, :each_index

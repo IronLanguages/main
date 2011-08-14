@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
-require File.dirname(__FILE__) + '/shared/enumeratorize'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../shared/enumeratorize', __FILE__)
 
 describe "Array#reject" do
   it "returns a new array without elements for which block is true" do
@@ -13,6 +13,12 @@ describe "Array#reject" do
     ary.reject { |i| i % 2 == 0 }.should == [1, 3, 5]
   end
 
+  it "returns self when called on an Array emptied with #shift" do
+    array = [1]
+    array.shift
+    array.reject { |x| true }.should == []
+  end
+
   it "properly handles recursive arrays" do
     empty = ArraySpecs.empty_recursive_array
     empty.reject { false }.should == [empty]
@@ -23,19 +29,33 @@ describe "Array#reject" do
     array.reject { true }.should == []
   end
 
-  not_compliant_on :rubinius do
-    it "returns subclass instance on Array subclasses" do
-      ArraySpecs::MyArray[1, 2, 3].reject { |x| x % 2 == 0 }.class.should == ArraySpecs::MyArray
+  ruby_version_is "" ... "1.9.3" do
+    not_compliant_on :ironruby do
+      it "returns subclass instance on Array subclasses" do
+        ArraySpecs::MyArray[1, 2, 3].reject { |x| x % 2 == 0 }.should be_kind_of(ArraySpecs::MyArray)
+      end
+    end
+
+    deviates_on :ironruby do
+      it "does not return subclass instance on Array subclasses" do
+        ArraySpecs::MyArray[1, 2, 3].reject { |x| x % 2 == 0 }.should be_kind_of(Array)
+      end
     end
   end
 
-  deviates_on :rubinius do
+  ruby_version_is "1.9.3" do
     it "does not return subclass instance on Array subclasses" do
-      ArraySpecs::MyArray[1, 2, 3].reject { |x| x % 2 == 0 }.class.should == Array
+      ArraySpecs::MyArray[1, 2, 3].reject { |x| x % 2 == 0 }.should be_kind_of(Array)
+    end
+
+    it "does not retain instance variables" do
+      array = []
+      array.instance_variable_set("@variable", "value")
+      array.reject { false }.instance_variable_get("@variable").should == nil
     end
   end
-  
-  it_behaves_like :enumeratorize, :reject 
+
+  it_behaves_like :enumeratorize, :reject
 end
 
 describe "Array#reject!" do
@@ -75,6 +95,12 @@ describe "Array#reject!" do
     array.should == []
   end
 
+  it "returns nil when called on an Array emptied with #shift" do
+    array = [1]
+    array.shift
+    array.reject! { |x| true }.should == nil
+  end
+
   it "returns nil if no changes are made" do
     a = [1, 2, 3]
 
@@ -88,13 +114,19 @@ describe "Array#reject!" do
     it "raises a TypeError on a frozen array" do
       lambda { ArraySpecs.frozen_array.reject! {} }.should raise_error(TypeError)
     end
+    it "raises a TypeError on an empty frozen array" do
+      lambda { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(TypeError)
+    end
   end
 
   ruby_version_is "1.9" do
     it "raises a RuntimeError on a frozen array" do
       lambda { ArraySpecs.frozen_array.reject! {} }.should raise_error(RuntimeError)
     end
+    it "raises a RuntimeError on an empty frozen array" do
+      lambda { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(RuntimeError)
+    end
   end
-  
+
   it_behaves_like :enumeratorize, :reject!
 end

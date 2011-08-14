@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#include?" do
   it "returns true if object is present, false otherwise" do
@@ -9,7 +9,7 @@ describe "Array#include?" do
 
   it "determines presence by using element == obj" do
     o = mock('')
-  
+
     [1, 2, "a", "b"].include?(o).should == false
 
     def o.==(other); other == 'a'; end

@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#pop" do
   it "removes and returns the last element of the array" do
@@ -42,11 +42,18 @@ describe "Array#pop" do
     it "raises a TypeError on a frozen array" do
       lambda { ArraySpecs.frozen_array.pop }.should raise_error(TypeError)
     end
+    it "raises a TypeError on an empty frozen array" do
+      lambda { ArraySpecs.empty_frozen_array.pop }.should raise_error(TypeError)
+    end
   end
 
   ruby_version_is '1.9' do
     it "raises a RuntimeError on a frozen array" do
       lambda { ArraySpecs.frozen_array.pop }.should raise_error(RuntimeError)
+    end
+
+    it "raises a RuntimeError on an empty frozen array" do
+      lambda { ArraySpecs.empty_frozen_array.pop }.should raise_error(RuntimeError)
     end
 
     it "keeps untrusted status" do
@@ -66,7 +73,7 @@ describe "Array#pop" do
 
   describe "passed a number n as an argument" do
     ruby_version_is '1.8.7' do
-      it "removes and returns an array with the last n element of the array" do
+      it "removes and returns an array with the last n elements of the array" do
         a = [1, 2, 3, 4, 5, 6]
 
         a.pop(0).should == []
@@ -80,6 +87,12 @@ describe "Array#pop" do
 
         a.pop(3).should == [1, 2, 3]
         a.should == []
+      end
+
+      it "returns an array with the last n elements even if shift was invoked" do
+        a = [1, 2, 3, 4]
+        a.shift
+        a.pop(3).should == [2, 3, 4]
       end
 
       it "returns a new empty array if there are no more elements" do
@@ -134,7 +147,7 @@ describe "Array#pop" do
       end
 
       it "does not return subclass instances with Array subclass" do
-        ArraySpecs::MyArray[1, 2, 3].pop(2).class.should == Array
+        ArraySpecs::MyArray[1, 2, 3].pop(2).should be_kind_of(Array)
       end
 
       it "returns an untainted array even if the array is tainted" do

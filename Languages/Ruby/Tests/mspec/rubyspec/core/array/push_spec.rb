@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#push" do
   it "appends the arguments to the array" do
@@ -39,6 +39,6 @@ describe "Array#push" do
     it "raises a RuntimeError on a frozen array" do
       lambda { ArraySpecs.frozen_array.push(1) }.should raise_error(RuntimeError)
       lambda { ArraySpecs.frozen_array.push }.should raise_error(RuntimeError)
-    end  
+    end
   end
 end

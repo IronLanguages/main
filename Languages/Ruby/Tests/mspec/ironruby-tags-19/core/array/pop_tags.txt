@@ -1,0 +1,1 @@
+fails:Array#pop raises a RuntimeError on an empty frozen array

@@ -1,7 +1,7 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
-ruby_version_is "1.9.2" do
+ruby_version_is "1.9" do
 
   describe "Array#sort_by!" do
     it "sorts array in place by passing each element to the given block" do
@@ -11,17 +11,17 @@ ruby_version_is "1.9.2" do
     end
 
     it "returns an Enumerator if not given a block" do
-      (1..10).to_a.sort_by!.should be_kind_of(Enumerator)
-    end 
+      (1..10).to_a.sort_by!.should be_an_instance_of(enumerator_class)
+    end
 
     it "completes when supplied a block that always returns the same result" do
       a = [2, 3, 5, 1, 4]
       a.sort_by!{  1 }
-      a.class.should == Array
+      a.should be_kind_of(Array)
       a.sort_by!{  0 }
-      a.class.should == Array
+      a.should be_kind_of(Array)
       a.sort_by!{ -1 }
-      a.class.should == Array
+      a.should be_kind_of(Array)
     end
 
     ruby_version_is '' ... '1.9' do
@@ -36,11 +36,12 @@ ruby_version_is "1.9.2" do
       end
     end
 
-    ruby_version_is '1.9' do
-      it "raises a RuntimeError on a frozen array" do
-        lambda { ArraySpecs.frozen_array.sort_by! {}}.should raise_error(RuntimeError)
-      end
+    it "raises a RuntimeError on a frozen array" do
+      lambda { ArraySpecs.frozen_array.sort_by! {}}.should raise_error(RuntimeError)
+    end
 
+    it "raises a RuntimeError on an empty frozen array" do
+      lambda { ArraySpecs.empty_frozen_array.sort_by! {}}.should raise_error(RuntimeError)
     end
 
     it "returns the specified value when it would break in the given block" do
@@ -56,4 +57,4 @@ ruby_version_is "1.9.2" do
       partially_sorted.any?{|ary| ary != [1, 2, 3, 4, 5]}.should be_true
     end
   end
-end  
+end

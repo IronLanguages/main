@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#-" do
   it "creates an array minus any items from other array" do
@@ -36,9 +36,9 @@ describe "Array#-" do
   end
 
   it "does not return subclass instance for Array subclasses" do
-    (ArraySpecs::MyArray[1, 2, 3] - []).class.should == Array
-    (ArraySpecs::MyArray[1, 2, 3] - ArraySpecs::MyArray[]).class.should == Array
-    ([1, 2, 3] - ArraySpecs::MyArray[]).class.should == Array
+    (ArraySpecs::MyArray[1, 2, 3] - []).should be_kind_of(Array)
+    (ArraySpecs::MyArray[1, 2, 3] - ArraySpecs::MyArray[]).should be_kind_of(Array)
+    ([1, 2, 3] - ArraySpecs::MyArray[]).should be_kind_of(Array)
   end
 
   it "does not call to_ary on array subclasses" do
@@ -50,19 +50,19 @@ describe "Array#-" do
     ([5.0, 4.0] - [5, 4]).should == [5.0, 4.0]
     str = "x"
     ([str] - [str.dup]).should == []
-    
+
     obj1 = mock('1')
     obj2 = mock('2')
     def obj1.hash; 0; end
     def obj2.hash; 0; end
     def obj1.eql? a; true; end
     def obj2.eql? a; true; end
-    
+
     ([obj1] - [obj2]).should == []
-    
+
     def obj1.eql? a; false; end
     def obj2.eql? a; false; end
-    
+
     ([obj1] - [obj2]).should == [obj1]
   end
 

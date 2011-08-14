@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#delete" do
   it "removes elements that are #== to object" do
@@ -28,6 +28,12 @@ describe "Array#delete" do
   it "may be given a block that is executed if no element matches object" do
     [1].delete(1) {:not_found}.should == 1
     [].delete('a') {:not_found}.should == :not_found
+  end
+
+  it "returns nil if the array is empty due to a shift" do
+    a = [1]
+    a.shift
+    a.delete(nil).should == nil
   end
 
   ruby_version_is '' ... '1.9' do

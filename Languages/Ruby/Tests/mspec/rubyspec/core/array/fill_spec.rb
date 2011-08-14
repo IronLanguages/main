@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#fill" do
   before(:all) do
@@ -47,11 +47,17 @@ describe "Array#fill" do
     it "raises a TypeError on a frozen array" do
       lambda { ArraySpecs.frozen_array.fill('x') }.should raise_error(TypeError)
     end
+    it "raises a TypeError on an empty frozen array" do
+      lambda { ArraySpecs.empty_frozen_array.fill('x') }.should raise_error(TypeError)
+    end
   end
 
   ruby_version_is '1.9' do
     it "raises a RuntimeError on a frozen array" do
       lambda { ArraySpecs.frozen_array.fill('x') }.should raise_error(RuntimeError)
+    end
+    it "raises a RuntimeError on an empty frozen array" do
+      lambda { ArraySpecs.empty_frozen_array.fill('x') }.should raise_error(RuntimeError)
     end
   end
 
@@ -102,6 +108,7 @@ describe "Array#fill with (filler, index, length)" do
     a = [1, 2, 3]
     a.fill('x', 1, nil).should == [1, 'x', 'x']
     a.fill(1, nil){|i| i*2}.should == [1, 2, 4]
+    a.fill('y', nil).should == ['y', 'y', 'y']
   end
 
   it "replaces the last (-n) elements if given an index n which is negative and no length" do
@@ -218,19 +225,27 @@ describe "Array#fill with (filler, index, length)" do
     lambda { [].fill('a', obj) }.should raise_error(TypeError)
   end
 
-  platform_is :wordsize => 32 do
-    it "raises an ArgumentError or RangeError for too-large sizes" do
-      arr = [1, 2, 3]
-      lambda { arr.fill(10, 1, 2**31 - 1) }.should raise_error(ArgumentError)
-      lambda { arr.fill(10, 1, 2**31) }.should raise_error(RangeError)
+  not_compliant_on :rubinius do
+    platform_is :wordsize => 32 do
+      it "raises an ArgumentError or RangeError for too-large sizes" do
+        arr = [1, 2, 3]
+        lambda { arr.fill(10, 1, 2**31 - 1) }.should raise_error(ArgumentError)
+        lambda { arr.fill(10, 1, 2**31) }.should raise_error(RangeError)
+      end
+    end
+
+    platform_is :wordsize => 64 do
+      it "raises an ArgumentError or RangeError for too-large sizes" do
+        arr = [1, 2, 3]
+        lambda { arr.fill(10, 1, 2**63 - 1) }.should raise_error(ArgumentError)
+        lambda { arr.fill(10, 1, 2**63) }.should raise_error(RangeError)
+      end
     end
   end
 
-  platform_is :wordsize => 64 do
-    it "raises an ArgumentError or RangeError for too-large sizes" do
-      arr = [1, 2, 3]
-      lambda { arr.fill(10, 1, 2**63 - 1) }.should raise_error(ArgumentError)
-      lambda { arr.fill(10, 1, 2**63) }.should raise_error(RangeError)
+  deviates_on :rubinius do
+    it "raises an ArgumentError if the length is not a Fixnum" do
+      lambda { [1, 2].fill(10, 1, bignum_value()) }.should raise_error(ArgumentError)
     end
   end
 end

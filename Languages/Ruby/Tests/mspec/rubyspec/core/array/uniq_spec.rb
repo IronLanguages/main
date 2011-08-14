@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#uniq" do
   it "returns an array with no duplicates" do
@@ -84,8 +84,23 @@ describe "Array#uniq" do
     [nil, 1, nil].uniq.should == [nil, 1]
   end
   
-  it "returns subclass instance on Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].uniq.class.should == ArraySpecs::MyArray
+  ruby_version_is "1.9" do
+    it "compares elements based on the value returned from the block" do
+      a = [1, 2, 3, 4]
+      a.uniq { |x| x >= 2 ? 1 : 0 }.should == [1, 2]
+    end
+  end
+
+  ruby_version_is "" ... "1.9.3" do
+    it "returns subclass instance on Array subclasses" do
+      ArraySpecs::MyArray[1, 2, 3].uniq.should be_kind_of(ArraySpecs::MyArray)
+    end
+  end
+
+  ruby_version_is "1.9.3" do
+    it "does not return subclass instance on Array subclasses" do
+      ArraySpecs::MyArray[1, 2, 3].uniq.should be_kind_of(Array)
+    end
   end
 end
 
@@ -125,27 +140,38 @@ describe "Array#uniq!" do
     a.should == [nil, 1]
   end
   
-  ruby_version_is "" ... "1.9" do
-    it "raises a TypeError on a frozen array if modification would take place" do
+  ruby_version_is ""..."1.9" do
+    it "raises a TypeError on a frozen array when the array is modified" do
       dup_ary = [1, 1, 2]
       dup_ary.freeze
       lambda { dup_ary.uniq! }.should raise_error(TypeError)
     end
 
-    it "does not raise an exception on a frozen array if no modification takes place" do
+    it "does not raise an exception on a frozen array when the array would not be modified" do
       ArraySpecs.frozen_array.uniq!.should be_nil
     end
   end
 
   ruby_version_is "1.9" do
-    ruby_bug "[ruby-core:23666]", "1.9.2" do
-      it "raises a RuntimeError on a frozen array" do
-        dup_ary = [1, 1, 2]
-        dup_ary.freeze
-        lambda { dup_ary.uniq! }.should raise_error(RuntimeError)
-        lambda { ArraySpecs.frozen_array.uniq!}.should raise_error(RuntimeError)
-      end
+    it "raises a RuntimeError on a frozen array when the array is modified" do
+      dup_ary = [1, 1, 2]
+      dup_ary.freeze
+      lambda { dup_ary.uniq! }.should raise_error(RuntimeError)
+    end
+
+    # see [ruby-core:23666]
+    it "raises a RuntimeError on a frozen array when the array would not be modified" do
+      lambda { ArraySpecs.frozen_array.uniq!}.should raise_error(RuntimeError)
+      lambda { ArraySpecs.empty_frozen_array.uniq!}.should raise_error(RuntimeError)
+    end
+
+    it "doesn't yield to the block on a frozen array" do
+      lambda { ArraySpecs.frozen_array.uniq!{ raise RangeError, "shouldn't yield"}}.should raise_error(RuntimeError)
+    end
+
+    it "compares elements based on the value returned from the block" do
+      a = [1, 2, 3, 4]
+      a.uniq! { |x| x >= 2 ? 1 : 0 }.should == [1, 2]
     end
   end
-
 end

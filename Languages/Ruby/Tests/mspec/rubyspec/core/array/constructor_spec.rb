@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array.[]" do
   it "returns a new array populated with the given elements" do
@@ -7,7 +7,7 @@ describe "Array.[]" do
     Array.[](5, true, nil, 'a', "Ruby", obj).should == [5, true, nil, "a", "Ruby", obj]
 
     a = ArraySpecs::MyArray.[](5, true, nil, 'a', "Ruby", obj)
-    a.class.should == ArraySpecs::MyArray
+    a.should be_kind_of(ArraySpecs::MyArray)
     a.inspect.should == [5, true, nil, "a", "Ruby", obj].inspect
   end
 end
@@ -18,7 +18,7 @@ describe "Array[]" do
     Array[5, true, nil, 'a', "Ruby", obj].should == Array.[](5, true, nil, "a", "Ruby", obj)
 
     a = ArraySpecs::MyArray[5, true, nil, 'a', "Ruby", obj]
-    a.class.should == ArraySpecs::MyArray
+    a.should be_kind_of(ArraySpecs::MyArray)
     a.inspect.should == [5, true, nil, "a", "Ruby", obj].inspect
   end
 end
