@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 require 'bigdecimal'
 
 describe "BigDecimal#fix" do
@@ -47,7 +47,7 @@ describe "BigDecimal#fix" do
     @zero_pos.fix.should == @zero_pos
     @zero_neg.fix.should == @zero_neg
   end
-  
+
   it "does not allow any arguments" do
     lambda {
       @mixed.fix(10)

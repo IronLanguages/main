@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 require 'bigdecimal'
 
 describe "BigDecimal#-" do
@@ -48,7 +48,7 @@ describe "BigDecimal#-" do
     (@infinity - @frac_2).should == @infinity
     (@infinity - @two).should == @infinity
     (@infinity - @one_minus).should == @infinity
- 
+
     (@zero - @infinity).should == @infinity_minus
     (@frac_2 - @infinity).should == @infinity_minus
     (@two - @infinity).should == @infinity_minus
