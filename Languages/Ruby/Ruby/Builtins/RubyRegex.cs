@@ -154,12 +154,18 @@ namespace IronRuby.Builtins {
                 pattern = _pattern.ConvertToString();
             }
 
+            List<string> warnings;
             Regex result;
             try {
-                result = new Regex(RegexpTransformer.Transform(pattern, _options, out _hasGAnchor), ToClrOptions(_options));
+                result = new Regex(RegexpTransformer.Transform(pattern, _options, out _hasGAnchor, out warnings), ToClrOptions(_options));
             } catch (Exception e) {
                 throw new RegexpError(e.Message);
             }
+
+            // TODO: report
+            //if (warnings != null) {
+            //    ...
+            //}
 
             _cachedKCode = kc;
             _cachedRegex = result;

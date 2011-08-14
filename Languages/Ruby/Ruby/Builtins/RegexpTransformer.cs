@@ -32,17 +32,20 @@ namespace IronRuby.Builtins {
         private int _index;
         private StringBuilder/*!*/ _sb;
         private bool _hasGAnchor;
+        private List<string> _warnings;
 
-        internal static string Transform(string/*!*/ rubyPattern, RubyRegexOptions options, out bool hasGAnchor) {
+        internal static string Transform(string/*!*/ rubyPattern, RubyRegexOptions options, out bool hasGAnchor, out List<string> warnings) {
             // TODO: surrogates (REXML uses this pattern)
             if (rubyPattern == "^[\t\n\r -\uD7FF\uE000-\uFFFD\uD800\uDC00-\uDBFF\uDFFF]*$") {
                 hasGAnchor = false;
+                warnings = null;
                 return "^(?:[\t\n\r -\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])*$";
             }
             
             RegexpTransformer transformer = new RegexpTransformer(rubyPattern);
             var result = transformer.Transform();
             hasGAnchor = transformer._hasGAnchor;
+            warnings = transformer._warnings;
             return result;
         }
 
@@ -154,6 +157,14 @@ namespace IronRuby.Builtins {
             return new RegexpError(message + ": " + _rubyPattern);
         }
 
+        private void ReportWarning(string warning) {
+            if (_warnings == null) {
+                _warnings = new List<string>();
+            }
+
+            _warnings.Add(warning);
+        }
+
         private string/*!*/ Transform() {
             _sb = new StringBuilder(_rubyPattern.Length);
             Parse(false);
@@ -181,13 +192,12 @@ namespace IronRuby.Builtins {
                     case '?':
                     case '*':
                     case '+':
-                        Append((char)c);
-                        ParsePostQuantifier(lastEntityIndex, true);
+                        ParsePostQuantifier(lastEntityIndex, c);
                         break;
 
                     case '{':
                         if (ParseConstrainedQuantifier()) {
-                            ParsePostQuantifier(lastEntityIndex, false);
+                            ParsePostBraceQuantifier(lastEntityIndex);
                         } else {
                             goto default;
                         }
@@ -254,17 +264,50 @@ namespace IronRuby.Builtins {
             return true;
         }
 
-        private void ParsePostQuantifier(int lastEntityIndex, bool possessive) {
+        private void ParsePostQuantifier(int lastEntityIndex, int quantifier) {
             int c = Peek();
 
             if (c == '+') {
                 // nested possessive quantifiers not directly supported by Regex:
                 Skip();
-                _sb.Insert(lastEntityIndex, possessive ? "(?>" : "(?:");
+                Append((char)quantifier);
+                _sb.Insert(lastEntityIndex, "(?>");
                 Append(')');
-                if (!possessive) {
-                    Append('+');
+            } else if (c == '*') {
+                Skip();
+                Append('*');
+                if (quantifier == '*') {
+                    // expr**
+                    ReportWarning("redundant nested repeat operator");
+                } else {
+                    // expr+*
+                    // expr?*
+                    ReportWarning("nested repeat operator " + (char)quantifier + " and * was replaced with '*'");
                 }
+            } else if (c == '?') {
+                Skip();
+                Append((char)quantifier);
+                Append('?');
+            } else {
+                Append((char)quantifier);
+            }
+        }
+
+        private void ParsePostBraceQuantifier(int lastEntityIndex) {
+            int c = Peek();
+
+            if (c == '+') {
+                // nested possessive quantifiers not directly supported by Regex:
+                Skip();
+                _sb.Insert(lastEntityIndex, "(?:");
+                Append(')');
+                Append('+');
+            } else if (c == '*') {
+                Skip();
+                // expr{n,m}*
+                _sb.Insert(lastEntityIndex, "(?:");
+                Append(')');
+                Append('*');
             } else if (c == '?') {
                 Skip();
                 Append('?');
