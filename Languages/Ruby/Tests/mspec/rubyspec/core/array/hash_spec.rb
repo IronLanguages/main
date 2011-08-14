@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#hash" do
   it "returns the same fixnum for arrays with the same content" do
@@ -7,7 +7,7 @@ describe "Array#hash" do
 
     [[], [1, 2, 3]].each do |ary|
       ary.hash.should == ary.dup.hash
-      ary.hash.class.should == Fixnum
+      ary.hash.should be_kind_of(Fixnum)
     end
   end
 

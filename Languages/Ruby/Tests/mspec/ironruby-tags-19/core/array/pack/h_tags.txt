@@ -1,0 +1,2 @@
+fails:Array#pack with format 'H' encodes the least significant nibble of a non alphanumeric character as the most significant nibble of the hex value
+fails:Array#pack with format 'h' encodes the least significant nibble of a non alphanumeric character as the least significant nibble of the hex value

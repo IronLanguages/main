@@ -1,0 +1,1 @@
+fails:Array#rindex given no argument and no block produces an Enumerator

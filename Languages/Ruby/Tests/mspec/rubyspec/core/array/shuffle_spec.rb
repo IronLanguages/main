@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Array#shuffle" do
   ruby_version_is "1.8.7" do
@@ -26,6 +26,18 @@ describe "Array#shuffle" do
       end
     end
   end
+
+  ruby_version_is "1.8.7" ... "1.9.3" do
+    it "returns subclass instances with Array subclass" do
+      ArraySpecs::MyArray[1, 2, 3].shuffle.should be_an_instance_of(ArraySpecs::MyArray)
+    end
+  end
+
+  ruby_version_is "1.9.3" do
+    it "does not return subclass instances with Array subclass" do
+      ArraySpecs::MyArray[1, 2, 3].shuffle.should be_an_instance_of(Array)
+    end
+  end
 end
 
 describe "Array#shuffle!" do
@@ -46,12 +58,15 @@ describe "Array#shuffle!" do
     ruby_version_is ""..."1.9" do
       it "raises a TypeError on a frozen array" do
         lambda { ArraySpecs.frozen_array.reverse! }.should raise_error(TypeError)
+        lambda { ArraySpecs.frozen_array.shuffle! }.should raise_error(TypeError)
+        lambda { ArraySpecs.empty_frozen_array.shuffle! }.should raise_error(TypeError)
       end
     end
 
     ruby_version_is "1.9" do
       it "raises a RuntimeError on a frozen array" do
         lambda { ArraySpecs.frozen_array.shuffle! }.should raise_error(RuntimeError)
+        lambda { ArraySpecs.empty_frozen_array.shuffle! }.should raise_error(RuntimeError)
       end
     end
   end

@@ -1,25 +1,10 @@
 # -*- coding: ISO-8859-1 -*-
-#             ~~~~~~~~~~  
+#             ~~~~~~~~~~
 # Script encoding of this file should be neither ASCII-8BIT, US-ASCII nor UTF-8.
 # This makes it easier to verify that Strings are converted into correct encodings.
 
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
-
-if ENV['MRI'] then
-  $: << 'kernel/core'
-  require 'pack'
-end
-
-ruby_version_is '' ... '1.9' do
-  def binary(str) str end
-  def utf8(str) str end
-end
-ruby_version_is '1.9' do
-  def binary(str) str.force_encoding(Encoding::ASCII_8BIT) end
-  def utf8(str) str.force_encoding(Encoding::UTF_8) end
-end
-
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 # general behavior
 
@@ -43,7 +28,7 @@ describe "Array#pack" do
 
   it "sequentially processes each pack format, which consumes element in the array, and finally concatenates their result" do
     ["abc", 1, 2, 3, '01000001', 0x20].pack('Av2NB8c').should ==
-      binary("a\x01\x00\x02\x00\x00\x00\x00\x03A ")
+      encode("a\x01\x00\x02\x00\x00\x00\x00\x03A ", "binary")
   end
 
   it "just ignores unknown format" do
@@ -55,7 +40,7 @@ describe "Array#pack" do
 
   it "ignores white spaces" do
     ["abc", 1, 2, 3, '01000001', 0x20, 0x61].pack("A  \f   v2\tN\rB8\nc\vC").should ==
-      binary("a\x01\x00\x02\x00\x00\x00\x00\x03A a")
+      encode("a\x01\x00\x02\x00\x00\x00\x00\x03A a", "binary")
   end
 
   it "treats a white space as a separator of formats" do
@@ -104,11 +89,11 @@ describe "Array#pack" do
     end
 
     it "returns a string in encoding of common to the concatenated results" do
-      ["\u{3042 3044 3046 3048}", 0x2000B].pack("A*U").encoding.should == 
+      ["\u{3042 3044 3046 3048}", 0x2000B].pack("A*U").encoding.should ==
         Encoding::ASCII_8BIT
-      ["abcde\xd1", "\xFF\xFe\x81\x82"].pack("A*u").encoding.should == 
+      ["abcde\xd1", "\xFF\xFe\x81\x82"].pack("A*u").encoding.should ==
         Encoding::ASCII_8BIT
-      ["abcde".encode(Encoding::US_ASCII), "\xFF\xFe\x81\x82"].pack("A*u").encoding.should == 
+      ["abcde".encode(Encoding::US_ASCII), "\xFF\xFe\x81\x82"].pack("A*u").encoding.should ==
         Encoding::ASCII_8BIT
       # under discussion [ruby-dev:37294]
       ["\u{3042 3044 3046 3048}", 1].pack("A*N").encoding.should == Encoding::ASCII_8BIT
@@ -200,9 +185,9 @@ describe "Array#pack with ASCII-string format", :shared => true do
     it "returns result in ASCII-8BIT" do
       ["abcd"].pack(format).encoding.should == Encoding::ASCII_8BIT
       ["\u3042"].pack(format).encoding.should == Encoding::ASCII_8BIT
-      ["\u3042".encode(Encoding::UTF_32BE)].pack(format).encoding.should == 
+      ["\u3042".encode(Encoding::UTF_32BE)].pack(format).encoding.should ==
         Encoding::ASCII_8BIT
-      ["\u3042".encode(Encoding::ISO_2022_JP)].pack(format).encoding.should == 
+      ["\u3042".encode(Encoding::ISO_2022_JP)].pack(format).encoding.should ==
         Encoding::ASCII_8BIT
     end
 
@@ -270,6 +255,7 @@ end
 
 describe "Array#pack with format 'Z'" do
   it_behaves_like "Array#pack with ASCII-string format", 'Z'
+  it_behaves_like "Array#pack with ASCII-string format", 'a'
 
   it "returns null padded string with ('a<count>')" do
     ['abcdef'].pack(format('7')).should == "abcdef\x0"
@@ -296,7 +282,7 @@ end
 
 describe "Array#pack with format 'B'" do
   it "returns packed bit-string descending order" do
-    ["011000010110001001100011"].pack('B24').should == binary('abc')
+    ["011000010110001001100011"].pack('B24').should == encode('abc', "binary")
   end
 
   # [ruby-dev:37279]
@@ -310,23 +296,23 @@ describe "Array#pack with format 'B'" do
   end
 
   it "conversion edge case: all zeros" do
-    ["00000000"].pack('B8').should == binary("\000")
+    ["00000000"].pack('B8').should == encode("\000", "binary")
   end
 
   it "conversion edge case: all ones" do
-    ["11111111"].pack('B8').should == binary("\xFF")
+    ["11111111"].pack('B8').should == encode("\xFF", "binary")
   end
 
   it "conversion edge case: left one" do
-    ["10000000"].pack('B8').should == binary("\x80")
+    ["10000000"].pack('B8').should == encode("\x80", "binary")
   end
 
   it "conversion edge case: right one" do
-    ["00000001"].pack('B8').should == binary("\x01")
+    ["00000001"].pack('B8').should == encode("\x01", "binary")
   end
 
   it "conversion edge case: edge sequences not in first char" do
-    ["0000000010000000000000011111111100000000"].pack('B40').should == binary("\x00\x80\x01\xFF\x00")
+    ["0000000010000000000000011111111100000000"].pack('B40').should == encode("\x00\x80\x01\xFF\x00", "binary")
   end
 
   it "uses zeros if count is not multiple of 8" do
@@ -334,15 +320,15 @@ describe "Array#pack with format 'B'" do
   end
 
   it "returns zero-char for each 2 of count that greater than string length" do
-    [""].pack('B6').should == binary("\x00\x00\x00")
+    [""].pack('B6').should == encode("\x00\x00\x00", "binary")
   end
 
   it "returns extra zero char if count is odd and greater than string length" do
-    [""].pack('B7').should == binary("\x00\x00\x00\x00")
+    [""].pack('B7').should == encode("\x00\x00\x00\x00", "binary")
   end
 
   it "starts new char if string is ended before char's 8 bits" do
-    ["0011"].pack('B8').should == binary("0\x00\x00")
+    ["0011"].pack('B8').should == encode("0\x00\x00", "binary")
   end
 
   it "considers count = 1 if no explicit count it given" do
@@ -351,7 +337,7 @@ describe "Array#pack with format 'B'" do
   end
 
   it "returns empty string if count = 0" do
-    ["10101010"].pack('B0').should == binary("")
+    ["10101010"].pack('B0').should == encode("", "binary")
   end
 
   it "uses argument string length as count if count = *" do
@@ -372,7 +358,7 @@ describe "Array#pack with format 'B'" do
   ruby_version_is '1.9' do
     it "returns an ASCII-8BIT string" do
       ["01000001"].pack("B").encoding.should == Encoding::ASCII_8BIT # ASCII "A"
-      ["11111111"].pack("B").encoding.should == Encoding::ASCII_8BIT # invalid as ASCII 
+      ["11111111"].pack("B").encoding.should == Encoding::ASCII_8BIT # invalid as ASCII
       ["1111111010000000000000011000000000000010"].pack("B").encoding.should == Encoding::ASCII_8BIT # valid as UTF-8
     end
   end
@@ -381,27 +367,27 @@ end
 
 describe "Array#pack with format 'b'" do
   it "returns packed bit-string descending order" do
-    ["100001100100011011000110"].pack('b24').should == binary('abc')
+    ["100001100100011011000110"].pack('b24').should == encode('abc', "binary")
   end
 
   it "conversion edge case: all zeros" do
-    ["00000000"].pack('b8').should == binary("\x00")
+    ["00000000"].pack('b8').should == encode("\x00", "binary")
   end
 
   it "conversion edge case: all ones" do
-    ["11111111"].pack('b8').should == binary("\xFF")
+    ["11111111"].pack('b8').should == encode("\xFF", "binary")
   end
 
   it "conversion edge case: left one" do
-    ["10000000"].pack('b8').should == binary("\x01")
+    ["10000000"].pack('b8').should == encode("\x01", "binary")
   end
 
   it "conversion edge case: right one" do
-    ["00000001"].pack('b8').should == binary("\x80")
+    ["00000001"].pack('b8').should == encode("\x80", "binary")
   end
 
   it "conversion edge case: edge sequences not in first char" do
-    ["0000000010000000000000011111111100000000"].pack('b40').should == binary("\x00\x01\x80\xFF\x00")
+    ["0000000010000000000000011111111100000000"].pack('b40').should == encode("\x00\x01\x80\xFF\x00", "binary")
   end
 
   # [ruby-dev:37279]
@@ -419,15 +405,15 @@ describe "Array#pack with format 'b'" do
   end
 
   it "returns zero-char for each 2 of count that greater than string length" do
-    [""].pack('b6').should == binary("\x00\x00\x00")
+    [""].pack('b6').should == encode("\x00\x00\x00", "binary")
   end
 
   it "returns extra zero char if count is odd and greater than string length" do
-    [""].pack('b7').should == binary("\x00\x00\x00\x00")
+    [""].pack('b7').should == encode("\x00\x00\x00\x00", "binary")
   end
 
   it "starts new char if argument string is ended before char's 8 bits" do
-    ["0011"].pack('b8').should == binary("\x0C\x00\x00")
+    ["0011"].pack('b8').should == encode("\x0C\x00\x00", "binary")
   end
 
   it "considers count = 1 if no explicit count it given" do
@@ -436,7 +422,7 @@ describe "Array#pack with format 'b'" do
   end
 
   it "returns empty string if count = 0" do
-    ["10101010"].pack('b0').should == binary("")
+    ["10101010"].pack('b0').should == encode("", "binary")
   end
 
   it "uses argument string length as count if count = *" do
@@ -457,7 +443,7 @@ describe "Array#pack with format 'b'" do
   ruby_version_is '1.9' do
     it "returns an ASCII-8BIT string" do
       ["10000010"].pack("b").encoding.should == Encoding::ASCII_8BIT # ASCII "A"
-      ["11111111"].pack("b").encoding.should == Encoding::ASCII_8BIT # invalid as ASCII 
+      ["11111111"].pack("b").encoding.should == Encoding::ASCII_8BIT # invalid as ASCII
       ["1111111010000000000000011000000000000010"].pack("b").encoding.should == Encoding::ASCII_8BIT # valid as UTF-8
     end
   end
@@ -465,37 +451,37 @@ end
 
 describe "Array#pack with format 'H'" do
   it "encodes hexadecimal digits to byte sequence in the order of high-nibble first" do
-    ["41"].pack("H2").should == binary("\x41")
-    ["61"].pack("H2").should == binary("\x61")
-    ["7e"].pack("H2").should == binary("\x7E")
-    ["7E"].pack("H2").should == binary("\x7E")
-    ["1"].pack("H").should == binary("\x10")
-    ["7E1"].pack("H3").should == binary("\x7E\x10")
+    ["41"].pack("H2").should == encode("\x41", "binary")
+    ["61"].pack("H2").should == encode("\x61", "binary")
+    ["7e"].pack("H2").should == encode("\x7E", "binary")
+    ["7E"].pack("H2").should == encode("\x7E", "binary")
+    ["1"].pack("H").should == encode("\x10", "binary")
+    ["7E1"].pack("H3").should == encode("\x7E\x10", "binary")
   end
 
   it "ignores rest of the pack argument when the argument is too long" do
-    ["41424344"].pack('H2').should == binary("\x41")
-    ["41424344"].pack('H4').should == binary("\x41\x42")
+    ["41424344"].pack('H2').should == encode("\x41", "binary")
+    ["41424344"].pack('H4').should == encode("\x41\x42", "binary")
   end
 
   it "fills low-nibble of the last byte with 0 when count is odd" do
-    ["41424344"].pack('H3').should == binary("\x41\x40")
-    ["41424344"].pack('H5').should == binary("\x41\x42\x40")
+    ["41424344"].pack('H3').should == encode("\x41\x40", "binary")
+    ["41424344"].pack('H5').should == encode("\x41\x42\x40", "binary")
   end
 
   it "fills the rest bytes with 0 if pack argument has insufficient length" do
-    ["4142"].pack("H4").should == binary("\x41\x42")
-    ["4142"].pack("H5").should == binary("\x41\x42\x00")
-    ["4142"].pack("H6").should == binary("\x41\x42\x00")
-    ["4142"].pack("H7").should == binary("\x41\x42\x00\x00")
+    ["4142"].pack("H4").should == encode("\x41\x42", "binary")
+    ["4142"].pack("H5").should == encode("\x41\x42\x00", "binary")
+    ["4142"].pack("H6").should == encode("\x41\x42\x00", "binary")
+    ["4142"].pack("H7").should == encode("\x41\x42\x00\x00", "binary")
   end
 
   ruby_bug("[ruby-dev:37283]", "1.8.7.73") do
-    it "fills low-nibble of the last byte with 0 when count is odd even if pack argument has insufficient length" do 
-      ["414"].pack("H3").should == binary("\x41\x40")
-      ["414"].pack("H4").should == binary("\x41\x40")
-      ["414"].pack("H5").should == binary("\x41\x40\x00")
-      ["414"].pack("H6").should == binary("\x41\x40\x00")
+    it "fills low-nibble of the last byte with 0 when count is odd even if pack argument has insufficient length" do
+      ["414"].pack("H3").should == encode("\x41\x40", "binary")
+      ["414"].pack("H4").should == encode("\x41\x40", "binary")
+      ["414"].pack("H5").should == encode("\x41\x40\x00", "binary")
+      ["414"].pack("H6").should == encode("\x41\x40\x00", "binary")
     end
   end
 
@@ -508,13 +494,13 @@ describe "Array#pack with format 'H'" do
   end
 
   it "returns the whole argument string with star parameter" do
-    ['414243444546'].pack('H*').should == binary("\x41\x42\x43\x44\x45\x46")
+    ['414243444546'].pack('H*').should == encode("\x41\x42\x43\x44\x45\x46", "binary")
   end
 
   it "consumes only one array item per a format" do
-    %w(41 31 2a).pack("H2").should == binary("\x41")
-    %w(41 31 2a).pack("H2H2H2").should == binary("\x41\x31\x2A")
-    %w(41 31 2a).pack("H6").should == binary("\x41\x00\x00")
+    %w(41 31 2a).pack("H2").should == encode("\x41", "binary")
+    %w(41 31 2a).pack("H2H2H2").should == encode("\x41\x31\x2A", "binary")
+    %w(41 31 2a).pack("H6").should == encode("\x41\x00\x00", "binary")
   end
 
   it "tries to convert the pack argument to a String using #to_str" do
@@ -532,37 +518,37 @@ end
 
 describe "Array#pack with format 'h'" do
   it "encodes hexadecimal digits to byte sequence in the order of low-nibble first" do
-    ["14"].pack("h2").should == binary("\x41")
-    ["16"].pack("h2").should == binary("\x61")
-    ["e7"].pack("h2").should == binary("\x7E")
-    ["E7"].pack("h2").should == binary("\x7E")
-    ["1"].pack("h").should == binary("\x01")
-    ["E71"].pack("h3").should == binary("\x7E\x01")
+    ["14"].pack("h2").should == encode("\x41", "binary")
+    ["16"].pack("h2").should == encode("\x61", "binary")
+    ["e7"].pack("h2").should == encode("\x7E", "binary")
+    ["E7"].pack("h2").should == encode("\x7E", "binary")
+    ["1"].pack("h").should == encode("\x01", "binary")
+    ["E71"].pack("h3").should == encode("\x7E\x01", "binary")
   end
 
   it "ignores rest of the pack argument when the argument is too long" do
-    ["14243444"].pack('h2').should == binary("\x41")
-    ["14243444"].pack('h4').should == binary("\x41\x42")
+    ["14243444"].pack('h2').should == encode("\x41", "binary")
+    ["14243444"].pack('h4').should == encode("\x41\x42", "binary")
   end
 
   it "fills low-nibble of the last byte with 0 when count is odd" do
-    ["14243444"].pack('h3').should == binary("\x41\x02")
-    ["14243444"].pack('h5').should == binary("\x41\x42\x03")
+    ["14243444"].pack('h3').should == encode("\x41\x02", "binary")
+    ["14243444"].pack('h5').should == encode("\x41\x42\x03", "binary")
   end
 
   it "fills the rest bytes with 0 if pack argument has insufficient length" do
-    ["1424"].pack("h4").should == binary("\x41\x42")
-    ["1424"].pack("h5").should == binary("\x41\x42\x00")
-    ["1424"].pack("h6").should == binary("\x41\x42\x00")
-    ["1424"].pack("h7").should == binary("\x41\x42\x00\x00")
+    ["1424"].pack("h4").should == encode("\x41\x42", "binary")
+    ["1424"].pack("h5").should == encode("\x41\x42\x00", "binary")
+    ["1424"].pack("h6").should == encode("\x41\x42\x00", "binary")
+    ["1424"].pack("h7").should == encode("\x41\x42\x00\x00", "binary")
   end
 
   ruby_bug("[ruby-dev:37283]", "1.8.7.73") do
-    it "fills high-nibble of the last byte with 0 when count is odd even if pack argument has insufficient length" do 
-      ["142"].pack("h3").should == binary("\x41\x02")
-      ["142"].pack("h4").should == binary("\x41\x02")
-      ["142"].pack("h5").should == binary("\x41\x02\x00")
-      ["142"].pack("h6").should == binary("\x41\x02\x00")
+    it "fills high-nibble of the last byte with 0 when count is odd even if pack argument has insufficient length" do
+      ["142"].pack("h3").should == encode("\x41\x02", "binary")
+      ["142"].pack("h4").should == encode("\x41\x02", "binary")
+      ["142"].pack("h5").should == encode("\x41\x02\x00", "binary")
+      ["142"].pack("h6").should == encode("\x41\x02\x00", "binary")
     end
   end
 
@@ -575,13 +561,13 @@ describe "Array#pack with format 'h'" do
   end
 
   it "returns the whole argument string with star parameter" do
-    ['142434445464'].pack('h*').should == binary("\x41\x42\x43\x44\x45\x46")
+    ['142434445464'].pack('h*').should == encode("\x41\x42\x43\x44\x45\x46", "binary")
   end
 
   it "consumes only one array item per a format" do
-    %w(14 13 a2).pack("h2").should == binary("\x41")
-    %w(14 13 a2).pack("h2h2h2").should == binary("\x41\x31\x2A")
-    %w(14 13 a2).pack("h6").should == binary("\x41\x00\x00")
+    %w(14 13 a2).pack("h2").should == encode("\x41", "binary")
+    %w(14 13 a2).pack("h2h2h2").should == encode("\x41\x31\x2A", "binary")
+    %w(14 13 a2).pack("h6").should == encode("\x41\x00\x00", "binary")
   end
 
   it "tries to convert the pack argument to a String using #to_str" do
@@ -630,30 +616,30 @@ describe "Array#pack with integer format (8bit)", :shared => true do
   end
 
   it "returns a string with byte of appropriate number" do
-    [49].pack(format).should == binary('1')
+    [49].pack(format).should == encode('1', "binary")
   end
 
   it "regards negative values as 2's complement in order to converts it to positive" do
-    [-1].pack(format).should == binary("\xFF")
-    [-(2**7)].pack(format).should == binary("\x80")
+    [-1].pack(format).should == encode("\xFF", "binary")
+    [-(2**7)].pack(format).should == encode("\x80", "binary")
   end
 
   it "reduces value to fit in byte" do
-    [2**8-1].pack(format).should == binary("\xFF")
-    [2**8  ].pack(format).should == binary("\x00")
-    [2**8+1].pack(format).should == binary("\x01")
+    [2**8-1].pack(format).should == encode("\xFF", "binary")
+    [2**8  ].pack(format).should == encode("\x00", "binary")
+    [2**8+1].pack(format).should == encode("\x01", "binary")
 
-    [-2**8+1].pack(format).should == binary("\x01")
-    [-2**8  ].pack(format).should == binary("\x00")
-    [-2**8-1].pack(format).should == binary("\xFF")
+    [-2**8+1].pack(format).should == encode("\x01", "binary")
+    [-2**8  ].pack(format).should == encode("\x00", "binary")
+    [-2**8-1].pack(format).should == encode("\xFF", "binary")
   end
 
   it "tries to convert the pack argument to an Integer using #to_int" do
-    [5.0].pack(format).should == binary("\x05")
+    [5.0].pack(format).should == encode("\x05", "binary")
 
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(5)
-    [obj].pack(format).should == binary("\x05")
+    [obj].pack(format).should == encode("\x05", "binary")
   end
 
   not_compliant_on :rubinius do
@@ -672,16 +658,16 @@ describe "Array#pack with integer format (8bit)", :shared => true do
   end
 
   it "processes count number of array elements if count given" do
-    [1, 2, 3].pack(format(3)).should == binary("\x01\x02\x03")
-    [1, 2, 3].pack(format(2) + format(1)).should == binary("\x01\x02\x03")
+    [1, 2, 3].pack(format(3)).should == encode("\x01\x02\x03", "binary")
+    [1, 2, 3].pack(format(2) + format(1)).should == encode("\x01\x02\x03", "binary")
   end
 
   it "returns empty string if count = 0" do
-    [1, 2, 3].pack(format(0)).should == binary('')
+    [1, 2, 3].pack(format(0)).should == encode('', "binary")
   end
 
   it "with star parameter processes all remaining array items" do
-    [1, 2, 3, 4, 5].pack(format('*')).should == binary("\x01\x02\x03\x04\x05")
+    [1, 2, 3, 4, 5].pack(format('*')).should == encode("\x01\x02\x03\x04\x05", "binary")
   end
 
   it "raises an ArgumentError if count is greater than array elements left" do
@@ -706,24 +692,24 @@ describe "Array#pack with integer format (16bit, little endian)", :shared => tru
   end
 
   it "returns a string containing 2 bytes for an integer" do
-    [0].pack(format).should == binary("\x00\x00")
-    [0xABCD].pack(format).should == binary("\xCD\xAB")
+    [0].pack(format).should == encode("\x00\x00", "binary")
+    [0xABCD].pack(format).should == encode("\xCD\xAB", "binary")
   end
 
   it "regards negative values as 2's complement in order to converts it to positive" do
-    [-1].pack(format).should == binary("\xFF\xFF")
-    [-2**15].pack(format).should == binary("\x00\x80")
+    [-1].pack(format).should == encode("\xFF\xFF", "binary")
+    [-2**15].pack(format).should == encode("\x00\x80", "binary")
   end
 
   it "drops higher bytes when a pack argument is >= 2**16" do
-    [2**16-1].pack(format).should == binary("\xFF\xFF")
-    [2**16  ].pack(format).should == binary("\x00\x00")
-    [2**16+1].pack(format).should == binary("\x01\x00")
+    [2**16-1].pack(format).should == encode("\xFF\xFF", "binary")
+    [2**16  ].pack(format).should == encode("\x00\x00", "binary")
+    [2**16+1].pack(format).should == encode("\x01\x00", "binary")
   end
   it "drops higher bytes when a pack argument is < -2**16" do
-    [-2**16+1].pack(format).should == binary("\x01\x00")   # 0x ..F 00 01
-    [-2**16 ].pack(format).should == binary("\x00\x00")    # 0x ..F 00 00
-    [-2**16-1].pack(format).should == binary("\xFF\xFF")   # 0x .FE FF FF
+    [-2**16+1].pack(format).should == encode("\x01\x00", "binary")   # 0x ..F 00 01
+    [-2**16 ].pack(format).should == encode("\x00\x00", "binary")    # 0x ..F 00 00
+    [-2**16-1].pack(format).should == encode("\xFF\xFF", "binary")   # 0x .FE FF FF
   end
 
   ruby_version_is '' ... '1.9' do
@@ -754,38 +740,38 @@ describe "Array#pack with integer format (16bit, little endian)", :shared => tru
   ruby_version_is '1.9' do
     platform_is :wordsize => 32 do
       it "does not raise a RangeError even when a pack argument is >= 2**32" do
-        [2**32-1].pack(format).should == binary("\xFF\xFF")
-        [2**32  ].pack(format).should == binary("\x00\x00")
-        [2**32+1].pack(format).should == binary("\x01\x00")
+        [2**32-1].pack(format).should == encode("\xFF\xFF", "binary")
+        [2**32  ].pack(format).should == encode("\x00\x00", "binary")
+        [2**32+1].pack(format).should == encode("\x01\x00", "binary")
       end
 
       it "does not raise a RangeError even when a pack argument is <= -2**32" do
-        [-2**32+1].pack(format).should == binary("\x01\x00")
-        [-2**32  ].pack(format).should == binary("\x00\x00")
-        [-2**32-1].pack(format).should == binary("\xFF\xFF")
+        [-2**32+1].pack(format).should == encode("\x01\x00", "binary")
+        [-2**32  ].pack(format).should == encode("\x00\x00", "binary")
+        [-2**32-1].pack(format).should == encode("\xFF\xFF", "binary")
       end
     end
     platform_is :wordsize => 64 do
       it "does not raise a RangeError even when a pack argument is >= 2**64" do
-        [2**64-1].pack(format).should == binary("\xFF\xFF")
-        [2**64  ].pack(format).should == binary("\x00\x00")
-        [2**64+1].pack(format).should == binary("\x01\x00")
+        [2**64-1].pack(format).should == encode("\xFF\xFF", "binary")
+        [2**64  ].pack(format).should == encode("\x00\x00", "binary")
+        [2**64+1].pack(format).should == encode("\x01\x00", "binary")
       end
 
       it "does not raise a RangeError even when a pack argument is <= -2**64" do
-        [-2**64+1].pack(format).should == binary("\x01\x00")
-        [-2**64  ].pack(format).should == binary("\x00\x00")
-        [-2**64-1].pack(format).should == binary("\xFF\xFF")
+        [-2**64+1].pack(format).should == encode("\x01\x00", "binary")
+        [-2**64  ].pack(format).should == encode("\x00\x00", "binary")
+        [-2**64-1].pack(format).should == encode("\xFF\xFF", "binary")
       end
     end
   end
 
   it "tries to convert the pack argument to an Integer using #to_int" do
-    [5.0].pack(format).should == binary("\x05\x00")
+    [5.0].pack(format).should == encode("\x05\x00", "binary")
 
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(5)
-    [obj].pack(format).should == binary("\x05\x00")
+    [obj].pack(format).should == encode("\x05\x00", "binary")
   end
 
   it "raises a TypeError if a pack argument can't be coerced to Integer" do
@@ -796,17 +782,17 @@ describe "Array#pack with integer format (16bit, little endian)", :shared => tru
   end
 
   it "processes count number of array elements if count given" do
-    [1, 2, 3].pack(format(3)).should == binary("\x01\x00\x02\x00\x03\x00")
-    [1, 2, 3].pack(format(2) + format(1)).should == binary("\x01\x00\x02\x00\x03\x00")
+    [1, 2, 3].pack(format(3)).should == encode("\x01\x00\x02\x00\x03\x00", "binary")
+    [1, 2, 3].pack(format(2) + format(1)).should == encode("\x01\x00\x02\x00\x03\x00", "binary")
   end
 
   it "returns empty string if count = 0" do
-    [1, 2, 3].pack(format(0)).should == binary('')
+    [1, 2, 3].pack(format(0)).should == encode('', "binary")
   end
 
   it "with star parameter processes all remaining array items" do
-    [1, 2, 3, 4, 5].pack(format('*')).should == 
-      binary("\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00")
+    [1, 2, 3, 4, 5].pack(format('*')).should ==
+      encode("\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00", "binary")
   end
 
   it "raises an ArgumentError if count is greater than array elements left" do
@@ -830,33 +816,33 @@ describe "Array#pack with integer format (16bit, big endian)", :shared => true d
   end
 
   it "returns a string containing 2 bytes for an integer" do
-    [0].pack(format).should == binary("\x00\x00")
-    [0xABCD].pack(format).should == binary("\xAB\xCD")
+    [0].pack(format).should == encode("\x00\x00", "binary")
+    [0xABCD].pack(format).should == encode("\xAB\xCD", "binary")
   end
 
   it "regards negative values as 2's complement in order to converts it to positive" do
-    [-1].pack(format).should == binary("\xFF\xFF")
-    [-2**15].pack(format).should == binary("\x80\x00")
+    [-1].pack(format).should == encode("\xFF\xFF", "binary")
+    [-2**15].pack(format).should == encode("\x80\x00", "binary")
   end
 
   it "drops higher bytes when a pack argument is >= 2**32" do
-    [2**16-1].pack(format).should == binary("\xFF\xFF")
-    [2**16  ].pack(format).should == binary("\x00\x00")
-    [2**16+1].pack(format).should == binary("\x00\x01")
+    [2**16-1].pack(format).should == encode("\xFF\xFF", "binary")
+    [2**16  ].pack(format).should == encode("\x00\x00", "binary")
+    [2**16+1].pack(format).should == encode("\x00\x01", "binary")
   end
 
   it "drops higher bytes when a pack argument is < -2**32" do
-    [-2**16+1].pack(format).should == binary("\x00\x01") # 0x ..F 00 01
-    [-2**16 ].pack(format).should == binary("\x00\x00")  # 0x ..F 00 00
-    [-2**16-1].pack(format).should == binary("\xFF\xFF") # 0x .FE FF FF
+    [-2**16+1].pack(format).should == encode("\x00\x01", "binary") # 0x ..F 00 01
+    [-2**16 ].pack(format).should == encode("\x00\x00", "binary")  # 0x ..F 00 00
+    [-2**16-1].pack(format).should == encode("\xFF\xFF", "binary") # 0x .FE FF FF
   end
 
   it "tries to convert the pack argument to an Integer using #to_int" do
-    [5.0].pack(format).should == binary("\x00\x05")
+    [5.0].pack(format).should == encode("\x00\x05", "binary")
 
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(5)
-    [obj].pack(format).should == binary("\x00\x05")
+    [obj].pack(format).should == encode("\x00\x05", "binary")
   end
 
   ruby_version_is '' ... '1.9' do
@@ -887,28 +873,28 @@ describe "Array#pack with integer format (16bit, big endian)", :shared => true d
   ruby_version_is '1.9' do
     platform_is :wordsize => 32 do
       it "does not raise a RangeError even when a pack argument is >= 2**32" do
-        [2**32-1].pack(format).should == binary("\xFF\xFF")
-        [2**32  ].pack(format).should == binary("\x00\x00")
-        [2**32+1].pack(format).should == binary("\x00\x01")
+        [2**32-1].pack(format).should == encode("\xFF\xFF", "binary")
+        [2**32  ].pack(format).should == encode("\x00\x00", "binary")
+        [2**32+1].pack(format).should == encode("\x00\x01", "binary")
       end
 
       it "does not raise a RangeError even when a pack argument is <= -2**32" do
-        [-2**32+1].pack(format).should == binary("\x00\x01")
-        [-2**32  ].pack(format).should == binary("\x00\x00")
-        [-2**32-1].pack(format).should == binary("\xFF\xFF")
+        [-2**32+1].pack(format).should == encode("\x00\x01", "binary")
+        [-2**32  ].pack(format).should == encode("\x00\x00", "binary")
+        [-2**32-1].pack(format).should == encode("\xFF\xFF", "binary")
       end
     end
     platform_is :wordsize => 64 do
       it "does not raise a RangeError even when a pack argument is >= 2**64" do
-        [2**64-1].pack(format).should == binary("\xFF\xFF")
-        [2**64  ].pack(format).should == binary("\x00\x00")
-        [2**64+1].pack(format).should == binary("\x00\x01")
+        [2**64-1].pack(format).should == encode("\xFF\xFF", "binary")
+        [2**64  ].pack(format).should == encode("\x00\x00", "binary")
+        [2**64+1].pack(format).should == encode("\x00\x01", "binary")
       end
 
       it "does not raise a RangeError even when a pack argument is <= -2**64" do
-        [-2**64+1].pack(format).should == binary("\x00\x01")
-        [-2**64  ].pack(format).should == binary("\x00\x00")
-        [-2**64-1].pack(format).should == binary("\xFF\xFF")
+        [-2**64+1].pack(format).should == encode("\x00\x01", "binary")
+        [-2**64  ].pack(format).should == encode("\x00\x00", "binary")
+        [-2**64-1].pack(format).should == encode("\xFF\xFF", "binary")
       end
     end
   end
@@ -921,17 +907,17 @@ describe "Array#pack with integer format (16bit, big endian)", :shared => true d
   end
 
   it "processes count number of array elements if count given" do
-    [1, 2, 3].pack(format(3)).should == binary("\x00\x01\x00\x02\x00\x03")
-    [1, 2, 3].pack(format(2) + format(1)).should == binary("\x00\x01\x00\x02\x00\x03")
+    [1, 2, 3].pack(format(3)).should == encode("\x00\x01\x00\x02\x00\x03", "binary")
+    [1, 2, 3].pack(format(2) + format(1)).should == encode("\x00\x01\x00\x02\x00\x03", "binary")
   end
 
   it "returns empty string if count = 0" do
-    [1, 2, 3].pack(format(0)).should == binary('')
+    [1, 2, 3].pack(format(0)).should == encode('', "binary")
   end
 
   it "with star parameter processes all remaining array items" do
-    [1, 2, 3, 4, 5].pack(format('*')).should == 
-      binary("\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05")
+    [1, 2, 3, 4, 5].pack(format('*')).should ==
+      encode("\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05", "binary")
   end
 
   it "raises an ArgumentError if count is greater than array elements left" do
@@ -955,8 +941,8 @@ describe "Array#pack with integer format (32bit, little endian)", :shared => tru
   end
 
   it "returns a string containing 4 bytes for an integer" do
-    [0].pack(format).should == binary("\x00\x00\x00\x00")
-    [0xABCDEF01].pack(format).should == binary("\x01\xEF\xCD\xAB")
+    [0].pack(format).should == encode("\x00\x00\x00\x00", "binary")
+    [0xABCDEF01].pack(format).should == encode("\x01\xEF\xCD\xAB", "binary")
   end
 
   ruby_version_is '' ... '1.9' do
@@ -973,44 +959,44 @@ describe "Array#pack with integer format (32bit, little endian)", :shared => tru
     end
     platform_is :wordsize => 64 do
       it "drops higher bytes when a pack argument is >= 2**32" do
-        [2**32-1].pack(format).should == binary("\xFF\xFF\xFF\xFF")
-        [2**32  ].pack(format).should == binary("\x00\x00\x00\x00")
-        [2**32+1].pack(format).should == binary("\x01\x00\x00\x00")
+        [2**32-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary")
+        [2**32  ].pack(format).should == encode("\x00\x00\x00\x00", "binary")
+        [2**32+1].pack(format).should == encode("\x01\x00\x00\x00", "binary")
       end
 
       it "drops higher bytes when a pack argument is < -2**32" do
-        [-2**32+1].pack(format).should == binary("\x01\x00\x00\x00") # 0x ..F 00 00 00 01
-        [-2**32 ].pack(format).should == binary("\x00\x00\x00\x00")  # 0x ..F 00 00 00 00
-        [-2**32-1].pack(format).should == binary("\xFF\xFF\xFF\xFF") # 0x .FE FF FF FF FF
+        [-2**32+1].pack(format).should == encode("\x01\x00\x00\x00", "binary") # 0x ..F 00 00 00 01
+        [-2**32 ].pack(format).should == encode("\x00\x00\x00\x00", "binary")  # 0x ..F 00 00 00 00
+        [-2**32-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary") # 0x .FE FF FF FF FF
       end
     end
   end
   # feature changed by MRI r5542 - [ruby-dev:22654].
   ruby_version_is '1.9' do
     it "drops higher bytes when a pack argument is >= 2**32" do
-      [2**32-1].pack(format).should == binary("\xFF\xFF\xFF\xFF")
-      [2**32  ].pack(format).should == binary("\x00\x00\x00\x00")
-      [2**32+1].pack(format).should == binary("\x01\x00\x00\x00")
+      [2**32-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary")
+      [2**32  ].pack(format).should == encode("\x00\x00\x00\x00", "binary")
+      [2**32+1].pack(format).should == encode("\x01\x00\x00\x00", "binary")
     end
 
     it "drops higher bytes when a pack argument is < -2**32" do
-      [-2**32+1].pack(format).should == binary("\x01\x00\x00\x00") # 0x ..F 00 00 00 01
-      [-2**32 ].pack(format).should == binary("\x00\x00\x00\x00")  # 0x ..F 00 00 00 00
-      [-2**32-1].pack(format).should == binary("\xFF\xFF\xFF\xFF") # 0x .FE FF FF FF FF
+      [-2**32+1].pack(format).should == encode("\x01\x00\x00\x00", "binary") # 0x ..F 00 00 00 01
+      [-2**32 ].pack(format).should == encode("\x00\x00\x00\x00", "binary")  # 0x ..F 00 00 00 00
+      [-2**32-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary") # 0x .FE FF FF FF FF
     end
   end
 
   it "regards negative values as 2's complement in order to converts it to positive" do
-    [-1].pack(format).should == binary("\xFF\xFF\xFF\xFF")
-    [-2**31].pack(format).should == binary("\x00\x00\x00\x80")
+    [-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary")
+    [-2**31].pack(format).should == encode("\x00\x00\x00\x80", "binary")
   end
 
   it "tries to convert the pack argument to an Integer using #to_int" do
-    [5.0].pack(format).should == binary("\x05\x00\x00\x00")
+    [5.0].pack(format).should == encode("\x05\x00\x00\x00", "binary")
 
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(5)
-    [obj].pack(format).should == binary("\x05\x00\x00\x00")
+    [obj].pack(format).should == encode("\x05\x00\x00\x00", "binary")
   end
 
   it "raises a TypeError if a pack argument can't be coerced to Integer" do
@@ -1021,17 +1007,17 @@ describe "Array#pack with integer format (32bit, little endian)", :shared => tru
   end
 
   it "processes count number of array elements if count given" do
-    [1, 2, 3].pack(format(3)).should == binary("\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00")
-    [1, 2, 3].pack(format(2) + format(1)).should == binary("\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00")
+    [1, 2, 3].pack(format(3)).should == encode("\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00", "binary")
+    [1, 2, 3].pack(format(2) + format(1)).should == encode("\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00", "binary")
   end
 
   it "returns empty string if count = 0" do
-    [1, 2, 3].pack(format(0)).should == binary('')
+    [1, 2, 3].pack(format(0)).should == encode('', "binary")
   end
 
   it "with star parameter processes all remaining array items" do
-    [1, 2, 3, 4, 5].pack(format('*')).should == 
-      binary("\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00\x05\x00\x00\x00")
+    [1, 2, 3, 4, 5].pack(format('*')).should ==
+      encode("\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00\x05\x00\x00\x00", "binary")
   end
 
   it "raises an ArgumentError if count is greater than array elements left" do
@@ -1055,13 +1041,13 @@ describe "Array#pack with integer format (32bit, big endian)", :shared => true d
   end
 
   it "returns a string containing 4 bytes for an integer" do
-    [0].pack(format).should == binary("\x00\x00\x00\x00")
-    [0xABCDEF01].pack(format).should == binary("\xAB\xCD\xEF\x01")
+    [0].pack(format).should == encode("\x00\x00\x00\x00", "binary")
+    [0xABCDEF01].pack(format).should == encode("\xAB\xCD\xEF\x01", "binary")
   end
 
   it "regards negative values as 2's complement in order to converts it to positive" do
-    [-1].pack(format).should == binary("\xFF\xFF\xFF\xFF")
-    [-2**31].pack(format).should == binary("\x80\x00\x00\x00")
+    [-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary")
+    [-2**31].pack(format).should == encode("\x80\x00\x00\x00", "binary")
   end
 
   ruby_version_is '' ... '1.9' do
@@ -1078,39 +1064,39 @@ describe "Array#pack with integer format (32bit, big endian)", :shared => true d
     end
     platform_is :wordsize => 64 do
       it "drops higher bytes when a pack argument is >= 2**32" do
-        [2**32-1].pack(format).should == binary("\xFF\xFF\xFF\xFF")
-        [2**32  ].pack(format).should == binary("\x00\x00\x00\x00")
-        [2**32+1].pack(format).should == binary("\x00\x00\x00\x01")
+        [2**32-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary")
+        [2**32  ].pack(format).should == encode("\x00\x00\x00\x00", "binary")
+        [2**32+1].pack(format).should == encode("\x00\x00\x00\x01", "binary")
       end
 
       it "drops higher bytes when a pack argument is < -2**32" do
-        [-2**32+1].pack(format).should == binary("\x00\x00\x00\x01") # 0x ..F 00 00 00 01
-        [-2**32 ].pack(format).should == binary("\x00\x00\x00\x00")  # 0x ..F 00 00 00 00
-        [-2**32-1].pack(format).should == binary("\xFF\xFF\xFF\xFF") # 0x .FE FF FF FF FF
+        [-2**32+1].pack(format).should == encode("\x00\x00\x00\x01", "binary") # 0x ..F 00 00 00 01
+        [-2**32 ].pack(format).should == encode("\x00\x00\x00\x00", "binary")  # 0x ..F 00 00 00 00
+        [-2**32-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary") # 0x .FE FF FF FF FF
       end
     end
   end
   # feature changed by MRI r5542 - [ruby-dev:22654].
   ruby_version_is '1.9' do
     it "drops higher bytes when a pack argument is >= 2**32" do
-      [2**32-1].pack(format).should == binary("\xFF\xFF\xFF\xFF")
-      [2**32  ].pack(format).should == binary("\x00\x00\x00\x00")
-      [2**32+1].pack(format).should == binary("\x00\x00\x00\x01")
+      [2**32-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary")
+      [2**32  ].pack(format).should == encode("\x00\x00\x00\x00", "binary")
+      [2**32+1].pack(format).should == encode("\x00\x00\x00\x01", "binary")
     end
 
     it "drops higher bytes when a pack argument is < -2**32" do
-      [-2**32+1].pack(format).should == binary("\x00\x00\x00\x01") # 0x ..F 00 00 00 01
-      [-2**32 ].pack(format).should == binary("\x00\x00\x00\x00")  # 0x ..F 00 00 00 00
-      [-2**32-1].pack(format).should == binary("\xFF\xFF\xFF\xFF") # 0x .FE FF FF FF FF
+      [-2**32+1].pack(format).should == encode("\x00\x00\x00\x01", "binary") # 0x ..F 00 00 00 01
+      [-2**32 ].pack(format).should == encode("\x00\x00\x00\x00", "binary")  # 0x ..F 00 00 00 00
+      [-2**32-1].pack(format).should == encode("\xFF\xFF\xFF\xFF", "binary") # 0x .FE FF FF FF FF
     end
   end
 
   it "tries to convert the pack argument to an Integer using #to_int" do
-    [5.0].pack(format).should == binary("\x00\x00\x00\x05")
+    [5.0].pack(format).should == encode("\x00\x00\x00\x05", "binary")
 
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(5)
-    [obj].pack(format).should == binary("\x00\x00\x00\x05")
+    [obj].pack(format).should == encode("\x00\x00\x00\x05", "binary")
   end
 
   it "raises a TypeError if a pack argument can't be coerced to Integer" do
@@ -1121,17 +1107,17 @@ describe "Array#pack with integer format (32bit, big endian)", :shared => true d
   end
 
   it "processes count number of array elements if count given" do
-    [1, 2, 3].pack(format(3)).should == binary("\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03")
-    [1, 2, 3].pack(format(2) + format(1)).should == binary("\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03")
+    [1, 2, 3].pack(format(3)).should == encode("\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03", "binary")
+    [1, 2, 3].pack(format(2) + format(1)).should == encode("\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03", "binary")
   end
 
   it "returns empty string if count = 0" do
-    [1, 2, 3].pack(format(0)).should == binary('')
+    [1, 2, 3].pack(format(0)).should == encode('', "binary")
   end
 
   it "with star parameter processes all remaining array items" do
-    [1, 2, 3, 4, 5].pack(format('*')).should == 
-      binary("\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00\x05")
+    [1, 2, 3, 4, 5].pack(format('*')).should ==
+      encode("\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00\x05", "binary")
   end
 
   it "raises an ArgumentError if count is greater than array elements left" do
@@ -1155,13 +1141,13 @@ describe "Array#pack with integer format (64bit, little endian)", :shared => tru
   end
 
   it "returns a string containing 8 bytes for an integer" do
-    [0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x00")
-    [0xABCDEF0123456789].pack(format).should == binary("\x89\x67\x45\x23\x01\xEF\xCD\xAB")
+    [0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x00", "binary")
+    [0xABCDEF0123456789].pack(format).should == encode("\x89\x67\x45\x23\x01\xEF\xCD\xAB", "binary")
   end
 
   it "regards negative values as 2's complement in order to converts it to positive" do
-    [-1].pack(format).should == binary("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF")
-    [-2**63].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x80")
+    [-1].pack(format).should == encode("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "binary")
+    [-2**63].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x80", "binary")
   end
 
   ruby_version_is '' ... '1.9' do
@@ -1178,24 +1164,24 @@ describe "Array#pack with integer format (64bit, little endian)", :shared => tru
   # feature changed by MRI r5542 - [ruby-dev:22654].
   ruby_version_is '1.9' do
     it "drops higher bytes when a pack argument is >= 2**64" do
-      [2**64-1].pack(format).should == binary("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF")
-      [2**64  ].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x00")
-      [2**64+1].pack(format).should == binary("\x01\x00\x00\x00\x00\x00\x00\x00")
+      [2**64-1].pack(format).should == encode("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "binary")
+      [2**64  ].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x00", "binary")
+      [2**64+1].pack(format).should == encode("\x01\x00\x00\x00\x00\x00\x00\x00", "binary")
     end
 
     it "drops higher bytes when a pack argument is < -2**64" do
-      [-2**64+1].pack(format).should == binary("\x01\x00\x00\x00\x00\x00\x00\x00") # 0x ..F 00 00 00 00 00 00 00 01
-      [-2**64 ].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x00")  # 0x ..F 00 00 00 00 00 00 00 00
-      [-2**64-1].pack(format).should == binary("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF") # 0x .FE FF FF FF FF FF FF FF FF
+      [-2**64+1].pack(format).should == encode("\x01\x00\x00\x00\x00\x00\x00\x00", "binary") # 0x ..F 00 00 00 00 00 00 00 01
+      [-2**64 ].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x00", "binary")  # 0x ..F 00 00 00 00 00 00 00 00
+      [-2**64-1].pack(format).should == encode("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "binary") # 0x .FE FF FF FF FF FF FF FF FF
     end
   end
 
   it "tries to convert the pack argument to an Integer using #to_int" do
-    [5.0].pack(format).should == binary("\x05\x00\x00\x00\x00\x00\x00\x00")
+    [5.0].pack(format).should == encode("\x05\x00\x00\x00\x00\x00\x00\x00", "binary")
 
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(5)
-    [obj].pack(format).should == binary("\x05\x00\x00\x00\x00\x00\x00\x00")
+    [obj].pack(format).should == encode("\x05\x00\x00\x00\x00\x00\x00\x00", "binary")
   end
 
   it "raises a TypeError if a pack argument can't be coerced to Integer" do
@@ -1206,27 +1192,27 @@ describe "Array#pack with integer format (64bit, little endian)", :shared => tru
   end
 
   it "processes count number of array elements if count given" do
-    [1, 2, 3].pack(format(3)).should == binary(
+    [1, 2, 3].pack(format(3)).should == encode(
       "\x01\x00\x00\x00\x00\x00\x00\x00" +
       "\x02\x00\x00\x00\x00\x00\x00\x00" +
-      "\x03\x00\x00\x00\x00\x00\x00\x00" )
-    [1, 2, 3].pack(format(2) + format(1)).should == binary(
+      "\x03\x00\x00\x00\x00\x00\x00\x00" , "binary")
+    [1, 2, 3].pack(format(2) + format(1)).should == encode(
       "\x01\x00\x00\x00\x00\x00\x00\x00" +
       "\x02\x00\x00\x00\x00\x00\x00\x00" +
-      "\x03\x00\x00\x00\x00\x00\x00\x00" )
+      "\x03\x00\x00\x00\x00\x00\x00\x00" , "binary")
   end
 
   it "returns empty string if count = 0" do
-    [1, 2, 3].pack(format(0)).should == binary('')
+    [1, 2, 3].pack(format(0)).should == encode('', "binary")
   end
 
   it "with star parameter processes all remaining array items" do
-    [1, 2, 3, 4, 5].pack(format('*')).should == binary(
-      "\x01\x00\x00\x00\x00\x00\x00\x00" + 
-      "\x02\x00\x00\x00\x00\x00\x00\x00" + 
-      "\x03\x00\x00\x00\x00\x00\x00\x00" + 
-      "\x04\x00\x00\x00\x00\x00\x00\x00" + 
-      "\x05\x00\x00\x00\x00\x00\x00\x00" )
+    [1, 2, 3, 4, 5].pack(format('*')).should == encode(
+      "\x01\x00\x00\x00\x00\x00\x00\x00" +
+      "\x02\x00\x00\x00\x00\x00\x00\x00" +
+      "\x03\x00\x00\x00\x00\x00\x00\x00" +
+      "\x04\x00\x00\x00\x00\x00\x00\x00" +
+      "\x05\x00\x00\x00\x00\x00\x00\x00" , "binary")
   end
 
   it "raises an ArgumentError if count is greater than array elements left" do
@@ -1250,13 +1236,13 @@ describe "Array#pack with integer format (64bit, big endian)", :shared => true d
   end
 
   it "returns a string containing 8 bytes for an integer" do
-    [0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x00")
-    [0xABCDEF0123456789].pack(format).should == binary("\xAB\xCD\xEF\x01\x23\x45\x67\x89")
+    [0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x00", "binary")
+    [0xABCDEF0123456789].pack(format).should == encode("\xAB\xCD\xEF\x01\x23\x45\x67\x89", "binary")
   end
 
   it "regards negative values as 2's complement in order to converts it to positive" do
-    [-1].pack(format).should == binary("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF")
-    [-2**63].pack(format).should == binary("\x80\x00\x00\x00\x00\x00\x00\x00")
+    [-1].pack(format).should == encode("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "binary")
+    [-2**63].pack(format).should == encode("\x80\x00\x00\x00\x00\x00\x00\x00", "binary")
   end
 
   ruby_version_is '' ... '1.9' do
@@ -1273,24 +1259,24 @@ describe "Array#pack with integer format (64bit, big endian)", :shared => true d
   # feature changed by MRI r5542 - [ruby-dev:22654].
   ruby_version_is '1.9' do
     it "drops higher bytes when a pack argument is >= 2**64" do
-      [2**64-1].pack(format).should == binary("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF")
-      [2**64  ].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x00")
-      [2**64+1].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x01")
+      [2**64-1].pack(format).should == encode("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "binary")
+      [2**64  ].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x00", "binary")
+      [2**64+1].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x01", "binary")
     end
 
     it "drops higher bytes when a pack argument is < -2**64" do
-      [-2**64+1].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x01") # 0x ..F 00 00 00 00 00 00 00 01
-      [-2**64 ].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x00")  # 0x ..F 00 00 00 00 00 00 00 00
-      [-2**64-1].pack(format).should == binary("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF") # 0x .FE FF FF FF FF FF FF FF FF
+      [-2**64+1].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x01", "binary") # 0x ..F 00 00 00 00 00 00 00 01
+      [-2**64 ].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x00", "binary")  # 0x ..F 00 00 00 00 00 00 00 00
+      [-2**64-1].pack(format).should == encode("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "binary") # 0x .FE FF FF FF FF FF FF FF FF
     end
   end
 
   it "tries to convert the pack argument to an Integer using #to_int" do
-    [5.0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x05")
+    [5.0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x05", "binary")
 
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(5)
-    [obj].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x05")
+    [obj].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x05", "binary")
   end
 
   it "raises a TypeError if a pack argument can't be coerced to Integer" do
@@ -1301,27 +1287,27 @@ describe "Array#pack with integer format (64bit, big endian)", :shared => true d
   end
 
   it "processes count number of array elements if count given" do
-    [1, 2, 3].pack(format(3)).should == binary(
+    [1, 2, 3].pack(format(3)).should == encode(
       "\x00\x00\x00\x00\x00\x00\x00\x01" +
       "\x00\x00\x00\x00\x00\x00\x00\x02" +
-      "\x00\x00\x00\x00\x00\x00\x00\x03" )
-    [1, 2, 3].pack(format(2) + format(1)).should == binary(
+      "\x00\x00\x00\x00\x00\x00\x00\x03" , "binary")
+    [1, 2, 3].pack(format(2) + format(1)).should == encode(
       "\x00\x00\x00\x00\x00\x00\x00\x01" +
       "\x00\x00\x00\x00\x00\x00\x00\x02" +
-      "\x00\x00\x00\x00\x00\x00\x00\x03" )
+      "\x00\x00\x00\x00\x00\x00\x00\x03" , "binary")
   end
 
   it "returns empty string if count = 0" do
-    [1, 2, 3].pack(format(0)).should == binary('')
+    [1, 2, 3].pack(format(0)).should == encode('', "binary")
   end
 
   it "with star parameter processes all remaining array items" do
-    [1, 2, 3, 4, 5].pack(format('*')).should == binary(
+    [1, 2, 3, 4, 5].pack(format('*')).should == encode(
       "\x00\x00\x00\x00\x00\x00\x00\x01" +
       "\x00\x00\x00\x00\x00\x00\x00\x02" +
       "\x00\x00\x00\x00\x00\x00\x00\x03" +
       "\x00\x00\x00\x00\x00\x00\x00\x04" +
-      "\x00\x00\x00\x00\x00\x00\x00\x05" )
+      "\x00\x00\x00\x00\x00\x00\x00\x05" , "binary")
   end
 
   it "raises an ArgumentError if count is greater than array elements left" do
@@ -1688,25 +1674,25 @@ describe "Array#pack with float format (IEEE754 single precision, big endian)", 
   end
 
   it "accepts the positive zero" do
-    [+0.0].pack(format).should == binary("\x00\x00\x00\x00")
+    [+0.0].pack(format).should == encode("\x00\x00\x00\x00", "binary")
   end
   it "accepts the negative zero" do
-    [-0.0].pack(format).should == binary("\x80\x00\x00\x00")
+    [-0.0].pack(format).should == encode("\x80\x00\x00\x00", "binary")
   end
   it "accepts a positive value" do
-    [+1.0].pack(format).should == binary("\x3F\x80\x00\x00")
+    [+1.0].pack(format).should == encode("\x3F\x80\x00\x00", "binary")
   end
   it "accepts a negative value" do
-    [-1.0].pack(format).should == binary("\xBF\x80\x00\x00")
+    [-1.0].pack(format).should == encode("\xBF\x80\x00\x00", "binary")
   end
   it "accepts the positive infinity" do
-    [1.0/0.0].pack(format).should == binary("\x7F\x80\x00\x00")
+    [1.0/0.0].pack(format).should == encode("\x7F\x80\x00\x00", "binary")
   end
   it "accepts the negative infinity" do
-    [-1.0/0.0].pack(format).should == binary("\xFF\x80\x00\x00")
+    [-1.0/0.0].pack(format).should == encode("\xFF\x80\x00\x00", "binary")
   end
   it "accepts a NaN" do
-    [0.0/0.0].pack(format).should =~ /\xFF(?:[\x81-\xFF]..|\x80[\x01-\xFF].|\x80.[\x01-\xFF])/n
+    [0.0/0.0].pack(format).should =~ /[\x7F\xFF](?:[\x81-\xFF]..|\x80[\x01-\xFF].|\x80.[\x01-\xFF])/n
   end
 
   it "keeps order of nonnegative real numbers" do
@@ -1735,25 +1721,25 @@ describe "Array#pack with float format (IEEE754 single precision, little endian)
   end
 
   it "accepts the positive zero" do
-    [+0.0].pack(format).should == binary("\x00\x00\x00\x00")
+    [+0.0].pack(format).should == encode("\x00\x00\x00\x00", "binary")
   end
   it "accepts the negative zero" do
-    [-0.0].pack(format).should == binary("\x00\x00\x00\x80")
+    [-0.0].pack(format).should == encode("\x00\x00\x00\x80", "binary")
   end
   it "accepts a positive value" do
-    [+1.0].pack(format).should == binary("\x00\x00\x80\x3F")
+    [+1.0].pack(format).should == encode("\x00\x00\x80\x3F", "binary")
   end
   it "accepts a negative value" do
-    [-1.0].pack(format).should == binary("\x00\x00\x80\xBF")
+    [-1.0].pack(format).should == encode("\x00\x00\x80\xBF", "binary")
   end
   it "accepts the positive infinity" do
-    [1.0/0.0].pack(format).should == binary("\x00\x00\x80\x7F")
+    [1.0/0.0].pack(format).should == encode("\x00\x00\x80\x7F", "binary")
   end
   it "accepts the negative infinity" do
-    [-1.0/0.0].pack(format).should == binary("\x00\x00\x80\xFF")
+    [-1.0/0.0].pack(format).should == encode("\x00\x00\x80\xFF", "binary")
   end
   it "accepts a NaN" do
-    [0.0/0.0].pack(format).should =~ /(?:..[\x81-\xFF]|.[\x01-\xFF]\x80|[\x01-\xFF].\x80)\xFF/n
+    [0.0/0.0].pack(format).should =~ /(?:..[\x81-\xFF]|.[\x01-\xFF]\x80|[\x01-\xFF].\x80)[\x7F\xFF]/n
   end
 end
 
@@ -1770,25 +1756,25 @@ describe "Array#pack with float format (IEEE754 double precision, big endian)", 
   end
 
   it "accepts the positive zero" do
-    [+0.0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x00")
+    [+0.0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x00", "binary")
   end
   it "accepts the negative zero" do
-    [-0.0].pack(format).should == binary("\x80\x00\x00\x00\x00\x00\x00\x00")
+    [-0.0].pack(format).should == encode("\x80\x00\x00\x00\x00\x00\x00\x00", "binary")
   end
   it "accepts a positive value" do
-    [+1.0].pack(format).should == binary("\x3F\xF0\x00\x00\x00\x00\x00\x00")
+    [+1.0].pack(format).should == encode("\x3F\xF0\x00\x00\x00\x00\x00\x00", "binary")
   end
   it "accepts a negative value" do
-    [-1.0].pack(format).should == binary("\xBF\xF0\x00\x00\x00\x00\x00\x00")
+    [-1.0].pack(format).should == encode("\xBF\xF0\x00\x00\x00\x00\x00\x00", "binary")
   end
   it "accepts the positive infinity" do
-    [1.0/0.0].pack(format).should == binary("\x7F\xF0\x00\x00\x00\x00\x00\x00")
+    [1.0/0.0].pack(format).should == encode("\x7F\xF0\x00\x00\x00\x00\x00\x00", "binary")
   end
   it "accepts the negative infinity" do
-    [-1.0/0.0].pack(format).should == binary("\xFF\xF0\x00\x00\x00\x00\x00\x00")
+    [-1.0/0.0].pack(format).should == encode("\xFF\xF0\x00\x00\x00\x00\x00\x00", "binary")
   end
   it "accepts a NaN" do
-    [0.0/0.0].pack(format).should =~ /\xFF(?:[\xF1-\xFF].{6}|\xF0\x00*[\x01-\xFF]\x00*)/n
+    [0.0/0.0].pack(format).should =~ /[\x7F\xFF](?:[\xF1-\xFF].{6}|\xF0\x00*[\x01-\xFF]\x00*)/n
   end
 
   it "keeps order of nonnegative real numbers" do
@@ -1817,25 +1803,25 @@ describe "Array#pack with float format (IEEE754 double precision, little endian)
   end
 
   it "accepts the positive zero" do
-    [+0.0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x00")
+    [+0.0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x00", "binary")
   end
   it "accepts the negative zero" do
-    [-0.0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\x00\x80")
+    [-0.0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\x00\x80", "binary")
   end
   it "accepts a positive value" do
-    [+1.0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\xF0\x3F")
+    [+1.0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\xF0\x3F", "binary")
   end
   it "accepts a negative value" do
-    [-1.0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\xF0\xBF")
+    [-1.0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\xF0\xBF", "binary")
   end
   it "accepts the positive infinity" do
-    [1.0/0.0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\xF0\x7F")
+    [1.0/0.0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\xF0\x7F", "binary")
   end
   it "accepts the negative infinity" do
-    [-1.0/0.0].pack(format).should == binary("\x00\x00\x00\x00\x00\x00\xF0\xFF")
+    [-1.0/0.0].pack(format).should == encode("\x00\x00\x00\x00\x00\x00\xF0\xFF", "binary")
   end
   it "accepts a NaN" do
-    [0.0/0.0].pack(format).should =~ /(?:.{6}[\xF1-\xFF]|\x00*[\x01-\xFF]\x00*)\xFF/n
+    [0.0/0.0].pack(format).should =~ /(?:.{6}[\xF1-\xFF]|\x00*[\x01-\xFF]\x00*)[\x7F\xFF]/n
   end
 end
 
@@ -1903,7 +1889,7 @@ describe "Array#pack with format 'M'" do
 
   it "appends soft line break after each 72 chars + 1 encoded char in encoded string by default" do
     s = ["A"*150].pack('M')
-    s.should == 
+    s.should ==
       "A"*73 + "=\n" +
       "A"*73 + "=\n" +
       "A"* 4 + "=\n"
@@ -1928,7 +1914,7 @@ describe "Array#pack with format 'M'" do
 
   it "appends soft line break after each 72 chars + 1 encoded char in encoded string for the specified count is 1" do
     s = ["A"*150].pack('M1')
-    s.should == 
+    s.should ==
       "A"*73 + "=\n" +
       "A"*73 + "=\n" +
       "A"* 4 + "=\n"
@@ -1938,7 +1924,7 @@ describe "Array#pack with format 'M'" do
   end
   it "appends soft line break after each 72 chars + 1 encoded char in encoded string for the specified count is 0" do
     s = ["A"*150].pack('M0')
-    s.should == 
+    s.should ==
       "A"*73 + "=\n" +
       "A"*73 + "=\n" +
       "A"* 4 + "=\n"
@@ -2006,10 +1992,28 @@ describe "Array#pack with format 'M'" do
     array = ArraySpecs.recursive_array
     array.pack('M').should == "1=\n"
   end
-  
+
   ruby_version_is '1.9' do
     it "returns an US-ASCII string" do
       ["abcd"].pack('M').encoding.should == Encoding::US_ASCII
+    end
+  end
+
+  ruby_version_is ""..."1.9" do
+
+    describe "with a multibyte $KCODE" do
+      before :each do
+        @kcode = $KCODE
+      end
+
+      after :each do
+        $KCODE = @kcode
+      end
+
+      it "encodes multibyte characters" do
+        $KCODE = "UTF8"
+        ["あ"].pack('M').should == "=E3=81=82=\n"
+      end
     end
   end
 end
@@ -2032,7 +2036,7 @@ describe "Array#pack with format 'm'" do
   end
 
   it "appends newline whenever after consumes 45 bytes by default" do
-    ["ABC"*31].pack('m').should == 
+    ["ABC"*31].pack('m').should ==
       "QUJD"*15 + "\n" +
       "QUJD"*15 + "\n" +
       "QUJD\n"
@@ -2049,7 +2053,7 @@ describe "Array#pack with format 'm'" do
   end
 
   it "ignores line length parameter if it is 1 or 2" do
-    wrapped_at_45 = 
+    wrapped_at_45 =
       "QUJD"*15 + "\n" +
       "QUJD"*15 + "\n" +
       "QUJD\n"
@@ -2060,7 +2064,7 @@ describe "Array#pack with format 'm'" do
 
   ruby_version_is '' ... '1.9' do
     it "ignores line length parameter if it is 0" do
-      ["ABC"*31].pack('m0').should == 
+      ["ABC"*31].pack('m0').should ==
         "QUJD"*15 + "\n" +
         "QUJD"*15 + "\n" +
         "QUJD\n"
@@ -2137,7 +2141,7 @@ describe "Array#pack with format 'U'" do
     ascii = (0x00 .. 0x7F)
     ascii.each do |cp|
       chr = [cp].pack('U')
-      binary(chr)[0,1].should == cp.chr
+      encode(chr, "binary")[0,1].should == cp.chr
     end
     ascii.to_a.pack('U*').should == (0x00 .. 0x7F).map{|c| eval('"\x%02x"' % c)}.join
 
@@ -2150,8 +2154,8 @@ describe "Array#pack with format 'U'" do
     end
 
     [0x7F, 0x7F].pack('U*').should == "\x7F\x7F"
-    [262193, 4736, 191, 12, 107].pack('U*').should == utf8("\xF1\x80\x80\xB1\xE1\x8A\x80\xC2\xBF\x0C\x6B")
-    [2**16+1, 2**30].pack('U2').should == utf8("\360\220\200\201\375\200\200\200\200\200")
+    [262193, 4736, 191, 12, 107].pack('U*').should == encode("\xF1\x80\x80\xB1\xE1\x8A\x80\xC2\xBF\x0C\x6B", "utf-8")
+    [2**16+1, 2**30].pack('U2').should == encode("\360\220\200\201\375\200\200\200\200\200", "utf-8")
   end
 
   it "raises an ArgumentError if count is greater than array elements left" do
@@ -2231,13 +2235,13 @@ describe "Array#pack with format 'u'" do
     s = ["ABC"*3].pack('u4').should == ( (3+0x20).chr + "04)#\n" ) * 3
     s = ["ABC"*3+"\x01"].pack('u4').should == ( (3+0x20).chr + "04)#\n" )*3 + (1+0x20).chr + "`0``\n"
     s = ["ABC"*3+"\x01"].pack('u5').should == ( (3+0x20).chr + "04)#\n" )*3 + (1+0x20).chr + "`0``\n"
-    s = ["ABC"*3+"\x01"].pack('u6').should == 
+    s = ["ABC"*3+"\x01"].pack('u6').should ==
       (6+0x20).chr + "04)#04)#\n" +
       (4+0x20).chr + "04)#`0``\n"
   end
 
   it "ignores line length parameter if it is < 3" do
-    wrapped_at_45 = 
+    wrapped_at_45 =
         (45+0x20).chr + "04)#"*(45/3) + "\n" +
         (45+0x20).chr + "04)#"*(45/3) + "\n" +
         ( 3+0x20).chr + "04)#" + "\n"
@@ -2294,12 +2298,12 @@ end
 
 describe "Array#pack with format 'w'" do
   it "converts to BER-compressed integer" do
-    [0].pack('w').should == binary("\000")
-    [1].pack('w').should == binary("\001")
-    [0, 1, 2].pack('w2').should == binary("\000\001")
-    [0, 1, 2].pack('w*').should == binary("\000\001\002")
-    [9999].pack('w').should == binary("\316\017")
-    [2**64].pack('w').should == binary("\202\200\200\200\200\200\200\200\200\000")
+    [0].pack('w').should == encode("\000", "binary")
+    [1].pack('w').should == encode("\001", "binary")
+    [0, 1, 2].pack('w2').should == encode("\000\001", "binary")
+    [0, 1, 2].pack('w*').should == encode("\000\001\002", "binary")
+    [9999].pack('w').should == encode("\316\017", "binary")
+    [2**64].pack('w').should == encode("\202\200\200\200\200\200\200\200\200\000", "binary")
   end
 
   it "raises ArgumentError when a pack argument is negative" do
@@ -2315,7 +2319,7 @@ describe "Array#pack with format 'w'" do
   it "calls to_int on non-integer values before packing" do
     obj = mock('1')
     obj.should_receive(:to_int).and_return(1)
-    [obj].pack('w').should == binary("\001")
+    [obj].pack('w').should == encode("\001", "binary")
   end
 
   it "raises TypeError on nil and non-numeric arguments" do
@@ -2380,20 +2384,20 @@ end
 
 describe "Array#pack with '@'" do
   it "moves the end of result string into the specified position by offset from head" do
-    [0xABCDEF01].pack("N @2").should == binary("\xAB\xCD")
+    [0xABCDEF01].pack("N @2").should == encode("\xAB\xCD", "binary")
   end
   it "fills blank with NUL bytes if the position exceeds the end of string" do
-    [0xABCDEF01].pack("N @6").should == binary("\xAB\xCD\xEF\x01\x00\x00")
+    [0xABCDEF01].pack("N @6").should == encode("\xAB\xCD\xEF\x01\x00\x00", "binary")
   end
   it "concatenates successing formats at the position '@' moves it into" do
-    [0xABCDEF01, 0x41].pack("N @2 C").should == binary("\xAB\xCD\x41")
-    [0xABCDEF01, 0x41].pack("N @6 C").should == binary("\xAB\xCD\xEF\x01\x00\x00\x41")
+    [0xABCDEF01, 0x41].pack("N @2 C").should == encode("\xAB\xCD\x41", "binary")
+    [0xABCDEF01, 0x41].pack("N @6 C").should == encode("\xAB\xCD\xEF\x01\x00\x00\x41", "binary")
   end
   it "does not recover lost bytes when shorten the string and then extends it again" do
-    [0xABCDEF01, 0x41].pack("N @2 @6 C").should == binary("\xAB\xCD\x00\x00\x00\x00\x41")
+    [0xABCDEF01, 0x41].pack("N @2 @6 C").should == encode("\xAB\xCD\x00\x00\x00\x00\x41", "binary")
   end
   it "is able to work with 'X'" do
-    [0xABCDEF01, 0x41].pack("N X @6 C").should == binary("\xAB\xCD\xEF\x00\x00\x00\x41")
+    [0xABCDEF01, 0x41].pack("N X @6 C").should == encode("\xAB\xCD\xEF\x00\x00\x00\x41", "binary")
   end
 
   ruby_version_is '1.9' do
@@ -2438,6 +2442,12 @@ describe "Array#pack with format 'x'" do
     it "returns an US-ASCII string" do
       ["abcd"].pack('u').encoding.should == Encoding::US_ASCII
     end
+  end
+end
+
+describe "Array#pack with format 'P'" do
+  it "returns a String who's size is equal to the number of bytes in a machine word" do
+    [nil].pack("P").size.should == 1.size
   end
 end
 
