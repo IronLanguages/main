@@ -1060,5 +1060,33 @@ namespace IronRuby.Builtins {
         // reverse_each
         // flat_map
         // join
+
+        [RubyMethod("group_by")]
+        public static Enumerator/*!*/ GetGroupByEnumerator(CallSiteStorage<EachSite>/*!*/ each, BlockParam/*!*/ predicate, object self) {
+            return new Enumerator((_, block) => GroupBy(each, block, self));
+        }
+
+        [RubyMethod("group_by")]
+        public static Hash GroupBy(CallSiteStorage<EachSite>/*!*/ each, [NotNull]BlockParam/*!*/ predicate, object self) {
+            var grouped = new Dictionary<object, object>();
+
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                object blockResult;
+                if (predicate.Yield(item, out blockResult)) {
+                    return selfBlock.PropagateFlow(predicate, blockResult);
+                }
+
+                RubyArray existingGroup = IDictionaryOps.GetElement(each.Context, grouped, blockResult) as RubyArray;
+                if (existingGroup != null) {
+                    existingGroup.Add(item);
+                } else {
+                    IDictionaryOps.SetElement(each.Context, grouped, blockResult, new RubyArray { item });
+                }
+
+                return null;
+            }));
+
+            return new Hash(grouped);
+        }
     }
 }
