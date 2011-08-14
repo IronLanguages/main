@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "Range#each" do
   it "passes each element to the given block by using #succ" do
@@ -41,13 +41,14 @@ describe "Range#each" do
   end
 
   it "returns self" do
-    (1..10).each {}.should == (1..10)
+    range = 1..10
+    range.each{}.should equal(range)
   end
 
   ruby_version_is "1.8.7" do
     it "returns an enumerator when no block given" do
       enum = (1..3).each
-      enum.should be_kind_of(enumerator_class)
+      enum.should be_an_instance_of(enumerator_class)
       enum.to_a.should == [1, 2, 3]
     end
   end
