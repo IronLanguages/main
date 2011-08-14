@@ -42,4 +42,13 @@ class Load_tests < Test::Unit::TestCase
 	assert($r == $t)
 	assert($r[:one] == "one val")   
   end
+
+  #codeplex workitem 4266
+  #YAML.load with % symbol inside string
+  def test_load_from_string_with_percent_symbol        
+    foo = YAML::load('field_done_ratio: % Done')
+    assert(foo.size == 1)
+    assert(foo['field_done_ratio'] == '% Done')    
+  end
+  
 end
