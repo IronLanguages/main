@@ -1,18 +1,32 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
 ruby_version_is "1.9" do
   
   require File.dirname(__FILE__) + '/fixtures/classes'
   
   describe "BasicObject#instance_exec" do
+    it "is a public instance method" do
+      BasicObject.should have_public_instance_method(:instance_exec)
+    end
+    
     it "raises a LocalJumpError unless given a block" do
       lambda { "hola".instance_exec }.should raise_error(LocalJumpError)
+    end
+
+    it "sets self to the receiver in the context of the passed block" do
+      a = BasicObject.new
+      a.instance_exec { self }.equal?(a).should be_true
     end
     
     it "has an arity of -1" do
       Object.new.method(:instance_exec).arity.should == -1
     end
 
+    it "passes arguments to the block" do
+      a = BasicObject.new
+      a.instance_exec(1) { |b| b }.should equal(1)
+    end
+    
     it "accepts arguments with a block" do
       lambda { "hola".instance_exec(4, 5) { |a,b| a + b } }.should_not raise_error
     end
