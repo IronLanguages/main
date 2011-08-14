@@ -17,7 +17,7 @@ module VariablesSpecs
 
   class OpAsgn
     attr_accessor :a, :b, :side_effect
-    
+
     def do_side_effect
       self.side_effect = true
       return @a
@@ -53,4 +53,6 @@ module VariablesSpecs
     end
   end
 
+  class ArraySubclass < Array
+  end
 end

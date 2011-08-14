@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/super'
+require File.expand_path('../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/super', __FILE__)
 
 describe "The super keyword" do
   it "calls the method on the calling class" do
@@ -8,7 +8,7 @@ describe "The super keyword" do
     Super::S1::B.new.foo([]).should == ["B#foo","A#foo","B#bar","A#bar"]
     Super::S1::B.new.bar([]).should == ["B#bar","A#bar"]
   end
-  
+
   it "searches the full inheritence chain" do
     Super::S2::B.new.foo([]).should == ["B#foo","A#baz"]
     Super::S2::B.new.baz([]).should == ["A#baz"]
@@ -31,7 +31,7 @@ describe "The super keyword" do
     Super::MS1::B.new.foo([]).should == ["B#foo","ModA#foo","ModB#bar","ModA#bar"]
     Super::MS1::B.new.bar([]).should == ["ModB#bar","ModA#bar"]
   end
-  
+
   it "searches the full inheritence chain including modules" do
     Super::MS2::B.new.foo([]).should == ["ModB#foo","A#baz"]
     Super::MS2::B.new.baz([]).should == ["A#baz"]
@@ -51,7 +51,7 @@ describe "The super keyword" do
   it "calls the correct method when the method visibility is modified" do
     Super::MS4::A.new.example.should == 5
   end
-  
+
   it "calls the correct method when the superclass argument list is different from the subclass" do
     Super::S4::A.new.foo([]).should == ["A#foo"]
     Super::S4::B.new.foo([],"test").should == ["B#foo(a,test)", "A#foo"]
@@ -103,17 +103,15 @@ describe "The super keyword" do
     sub.new.a.should == "a"
   end
 
-  not_supported_on :ironruby do
-    ruby_version_is ""..."1.9" do
-      it "can be used with implicit arguments from a method defined with define_method" do
-        sup = Class.new do
-          def a; "a"; end
-        end
+  ruby_version_is ""..."1.9" do
+    it "can be used with implicit arguments from a method defined with define_method" do
+      sup = Class.new do
+        def a; "a"; end
+      end
 
-        sub = Class.new(sup) do
-          define_method :a do
-            super
-          end
+      sub = Class.new(sup) do
+        define_method :a do
+          super
         end
       end
 
@@ -126,18 +124,28 @@ describe "The super keyword" do
       Class.new do
         define_method :a do
           super
-        end.should raise_error(RuntimeError) 
+        end.should raise_error(RuntimeError)
       end
     end
   end
-  
-  extended_on :ironruby do
-    it "can't be used with implicit arguments from a method defined with define_method" do
-      Class.new do
-        define_method :a do
-          super
-        end.should raise_error(RuntimeError) 
-      end
-    end
+
+  # Rubinius ticket github#157
+  it "calls method_missing when a superclass method is not found" do
+    lambda {
+      Super::MM_B.new.is_a?(Hash).should == false
+    }.should_not raise_error(NoMethodError)
+  end
+
+  # Rubinius ticket github#180
+  it "respects the original module a method is aliased from" do
+    lambda {
+      Super::Alias3.new.name3.should == [:alias2, :alias1]
+    }.should_not raise_error(RuntimeError)
+  end
+
+  it "sees the included version of a module a method is alias from" do
+    lambda {
+      Super::AliasWithSuper::Trigger.foo.should == [:b, :a]
+    }.should_not raise_error(NoMethodError)
   end
 end

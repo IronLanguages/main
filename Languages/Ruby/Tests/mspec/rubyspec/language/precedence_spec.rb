@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 # Specifying the behavior of operators in combination could
 # lead to combinatorial explosion. A better way seems to be
@@ -258,27 +258,27 @@ describe "Operators" do
       (1 <=> 5 <= 1).should == nil
       (1 <=> 5 >  1).should == nil
       (1 <=> 5 >= 1).should == nil
-  
+
       (1 == 5 <  1).should == false
       (1 == 5 <= 1).should == false
       (1 == 5 >  1).should == false
       (1 == 5 >= 1).should == false
-  
+
       (1 === 5 <  1).should == false
       (1 === 5 <= 1).should == false
       (1 === 5 >  1).should == false
       (1 === 5 >= 1).should == false
-  
+
       (1 != 5 <  1).should == true
       (1 != 5 <= 1).should == true
       (1 != 5 >  1).should == true
       (1 != 5 >= 1).should == true
-  
+
       (1 =~ 5 <  1).should == false
       (1 =~ 5 <= 1).should == false
       (1 =~ 5 >  1).should == false
       (1 =~ 5 >= 1).should == false
-  
+
       (1 !~ 5 <  1).should == true
       (1 !~ 5 <= 1).should == true
       (1 !~ 5 >  1).should == true

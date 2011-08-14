@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/private'
+require File.expand_path('../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/private', __FILE__)
 
 describe "The private keyword" do
   ruby_version_is ""..."1.9" do
@@ -80,28 +80,10 @@ describe "The private keyword" do
       end
     }.should raise_error(NoMethodError)
   end
-  
+
   it "changes the visibility of the existing method in the subclass" do
     ::Private::A.new.foo.should == 'foo'
-    lambda {::Private::H.new.foo}.should raise_error(NoMethodError) 
+    lambda {::Private::H.new.foo}.should raise_error(NoMethodError)
     ::Private::H.new.send(:foo).should == 'foo'
-  end
-
-  it "is overwritten by subclasses" do
-    module Private
-      module ModD
-        include D
-        def foo
-          "foo"
-        end
-      end
-
-      class ClassD
-        include ModD
-      end
-    end
-
-    Private::ClassD.should have_instance_method("foo")
-    Private::ClassD.should_not have_private_instance_method("foo")
   end
 end

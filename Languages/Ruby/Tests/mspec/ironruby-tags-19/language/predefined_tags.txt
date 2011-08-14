@@ -4,3 +4,35 @@ fails:Execution variable $KCODE defaults to NONE
 fails:SCRIPT_LINES__ does not record reloads
 fails:SCRIPT_LINES__ does not record the module load if the module load fails
 fails:SCRIPT_LINES__ cannot be set to a Hash subclass
+fails:Global variable $-a is read-only
+fails:Global variable $-l is read-only
+fails:Global variable $-p is read-only
+fails:Processing RUBYOPT adds the -I path to $LOAD_PATH
+fails:Processing RUBYOPT sets $DEBUG to true for '-d'
+fails:Processing RUBYOPT prints the version number for '-v'
+fails:Processing RUBYOPT sets $VERBOSE to true for '-w'
+fails:Processing RUBYOPT sets $VERBOSE to true for '-W'
+fails:Processing RUBYOPT sets $VERBOSE to nil for '-W0'
+fails:Processing RUBYOPT sets $VERBOSE to false for '-W1'
+fails:Processing RUBYOPT sets $VERBOSE to true for '-W2'
+fails:Processing RUBYOPT requires the file for '-r'
+fails:Processing RUBYOPT raises a RuntimeError for '-a'
+fails:Processing RUBYOPT raises a RuntimeError for '-p'
+fails:Processing RUBYOPT raises a RuntimeError for '-n'
+fails:Processing RUBYOPT raises a RuntimeError for '-y'
+fails:Processing RUBYOPT raises a RuntimeError for '-c'
+fails:Processing RUBYOPT raises a RuntimeError for '-s'
+fails:Processing RUBYOPT raises a RuntimeError for '-h'
+fails:Processing RUBYOPT raises a RuntimeError for '--help'
+fails:Processing RUBYOPT raises a RuntimeError for '-l'
+fails:Processing RUBYOPT raises a RuntimeError for '-S'
+fails:Processing RUBYOPT raises a RuntimeError for '-e'
+fails:Processing RUBYOPT raises a RuntimeError for '-i'
+fails:Processing RUBYOPT raises a RuntimeError for '-x'
+fails:Processing RUBYOPT raises a RuntimeError for '-C'
+fails:Processing RUBYOPT raises a RuntimeError for '-X'
+fails:Processing RUBYOPT raises a RuntimeError for '-F'
+fails:Processing RUBYOPT raises a RuntimeError for '-0'
+fails:Processing RUBYOPT raises a RuntimeError for '--copyright'
+fails:Processing RUBYOPT raises a RuntimeError for '--version'
+fails:Processing RUBYOPT raises a RuntimeError for '--yydebug'

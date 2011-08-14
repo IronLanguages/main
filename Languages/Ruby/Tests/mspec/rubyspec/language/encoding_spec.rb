@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 ruby_version_is "1.9" do
   describe "The __ENCODING__ pseudo-variable" do
@@ -23,7 +23,7 @@ ruby_version_is "1.9" do
       eval(code).should == Encoding::US_ASCII
     end
 
-    it "is not assignable" do
+    it "raises a SyntaxError if assigned to" do
       lambda { eval("__ENCODING__ = nil") }.should raise_error(SyntaxError)
     end
   end

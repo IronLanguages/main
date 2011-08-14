@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.expand_path(File.dirname(__FILE__) + '/../fixtures/classes')
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../../fixtures/classes', __FILE__)
 
 describe "Regexps with back-references" do
   it 'saves match data in the $~ pseudo-global variable' do
@@ -41,7 +41,7 @@ describe "Regexps with back-references" do
     /(foo.)\1/.match("foo1foo1").to_a.should == ["foo1foo1", "foo1"]
     /(foo.)\1/.match("foo1foo2").should be_nil
   end
-  
+
   not_compliant_on :ironruby do
     it 'resets nested \<n> backreference before match of outer subexpression' do
       /(a\1?){2}/.match("aaaa").to_a.should == ["aa", "a"]

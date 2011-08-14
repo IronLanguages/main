@@ -1,0 +1,8 @@
+fails:A singleton class is a subclass of the same level of Class's singleton class
+fails:A singleton class is a subclass of a superclass's singleton class
+fails:A singleton class is a subclass of the same level of superclass's singleton class
+fails:A singleton class for BasicObject has Class as it's superclass
+fails:A singleton class for BasicObject has the proper level of superclass for Class
+fails:A singleton class has class String as the superclass of a String instance
+fails:A singleton class has class Bignum as the superclass of a Bignum instance
+fails:Class methods of a singleton class for a singleton class include class methods of the singleton class of Class

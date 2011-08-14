@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../spec_helper'
-require File.dirname(__FILE__) + '/../fixtures/class_variables'
+require File.expand_path('../../spec_helper', __FILE__)
+require File.expand_path('../../fixtures/class_variables', __FILE__)
 
 describe "A class variable" do
   it "can be accessed from a subclass" do
@@ -23,16 +23,16 @@ describe "A class variable defined in a module" do
   it "is not defined in these classes" do
     ClassVariablesSpec::ClassC.cvar_defined?.should be_false
   end
-  
+
   it "is only updated in the module a method defined in the module is used" do
     ClassVariablesSpec::ClassC.cvar_m = "new value"
     ClassVariablesSpec::ClassC.cvar_m.should == "new value"
-    
+
     ClassVariablesSpec::ClassC.cvar_defined?.should be_false
   end
-  
+
   it "is updated in the class when a Method defined in the class is used" do
-    ClassVariablesSpec::ClassC.cvar_c = "new value"    
+    ClassVariablesSpec::ClassC.cvar_c = "new value"
     ClassVariablesSpec::ClassC.cvar_defined?.should be_true
   end
 

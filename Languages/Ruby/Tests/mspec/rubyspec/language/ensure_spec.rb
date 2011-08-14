@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/ensure'
+require File.expand_path('../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/ensure', __FILE__)
 
 describe "An ensure block inside a begin block" do
   before :each do
@@ -56,17 +56,16 @@ describe "An ensure block inside a begin block" do
   it "is executed when nothing is raised or thrown in it's corresponding begin block" do
     begin
       ScratchPad << :begin
-      raise "An exception occured!"
     rescue
       ScratchPad << :rescue
     ensure
       ScratchPad << :ensure
     end
 
-    ScratchPad.recorded.should == [:begin, :rescue, :ensure]
+    ScratchPad.recorded.should == [:begin, :ensure]
   end
 
-  it "has non return value" do
+  it "has no return value" do
     begin
       :begin
     ensure

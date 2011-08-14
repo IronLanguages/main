@@ -1,3 +1,5 @@
+require File.join(File.dirname(__FILE__), '../fixtures/literal_lambda')
+
 describe "->(){}" do
   it "can be specified as a literal" do
     lambda { ->(){} }.should_not raise_error
@@ -18,10 +20,8 @@ describe "->(){}" do
 
   it "understands a do/end block in place of {}" do
     lambda do
-      eval '
       ->() do
       end
-      '
     end.should_not raise_error(SyntaxError)
   end
 
@@ -48,22 +48,20 @@ describe "->(){}" do
   end
 
   it "accepts an parameter list between the parenthesis" do
-    lambda { eval '->(a) {}' }.should_not raise_error(SyntaxError)
-    lambda { eval '->(a,b) {}' }.should_not raise_error(SyntaxError)
+    lambda { ->(a) {} }.should_not raise_error(SyntaxError)
+    lambda { ->(a,b) {} }.should_not raise_error(SyntaxError)
   end
 
   it "accepts an empty parameter list" do
-    lambda { eval('->() {}') }.should_not raise_error(SyntaxError)
+    lambda { ->() {} }.should_not raise_error(SyntaxError)
   end
 
   it "allows the parenthesis to be omitted entirely" do
-    lambda { eval '-> {}' }.should_not raise_error(SyntaxError)
-    lambda { eval '->{}' }.should_not raise_error(SyntaxError)
-    lambda do 
-      eval '
+    lambda { -> {} }.should_not raise_error(SyntaxError)
+    lambda { ->{} }.should_not raise_error(SyntaxError)
+    lambda do
       -> do
       end
-      '
     end.should_not raise_error(SyntaxError)
     ->{}.should be_an_instance_of(Proc)
   end
@@ -74,8 +72,8 @@ describe "->(){}" do
   end
 
   it "accepts parameters with default parameters between the parenthesis" do
-    lambda { eval '->(a=1) {}' }.should_not raise_error(SyntaxError)
-    lambda { eval '->(x=1, b=[]) {}' }.should_not raise_error(SyntaxError)
+    lambda { ->(a=1) {} }.should_not raise_error(SyntaxError)
+    lambda { ->(x=1, b=[]) {} }.should_not raise_error(SyntaxError)
   end
 
   it "aliases each argument with a default value to the corresponding parameter" do
@@ -89,8 +87,8 @@ describe "->(){}" do
   end
 
   it "accepts a parameter prefixed with an asterisk between the parenthesis" do
-    lambda { eval '->(*a) {}' }.should_not raise_error(SyntaxError)
-    lambda { eval '->(x, *a) {}' }.should_not raise_error(SyntaxError)
+    lambda { ->(*a) {} }.should_not raise_error(SyntaxError)
+    lambda { ->(x, *a) {} }.should_not raise_error(SyntaxError)
   end
 
   it "assigns all remaining arguments to the variable in the parameter list prefixed with an asterisk, if one exists" do
@@ -99,8 +97,8 @@ describe "->(){}" do
   end
 
   it "accepts a parameter prefixed with an ampersand between the parenthesis" do
-    lambda { eval '->(&a) {}' }.should_not raise_error(SyntaxError)
-    lambda { eval '->(x, &a) {}' }.should_not raise_error(SyntaxError)
+    lambda { ->(&a) {} }.should_not raise_error(SyntaxError)
+    lambda { ->(x, &a) {} }.should_not raise_error(SyntaxError)
   end
 
   it "assigns the given block to the parameter prefixed with an ampersand if such a parameter exists" do
@@ -113,7 +111,7 @@ describe "->(){}" do
   end
 
   it "accepts a combination of argument types between the parenthesis" do
-    lambda { eval('->(x, y={}, z  = Object.new, *a, &b) {}') }.
+    lambda { ->(x, y={}, z  = Object.new, *a, &b) {} }.
       should_not raise_error(SyntaxError)
   end
 
@@ -136,5 +134,10 @@ describe "->(){}" do
     @called = false
     ->() { @called = true }
     @called.should be_false
+  end
+
+  it "evaluates constants as normal blocks do" do
+    l = LiteralLambdaMethods.literal_lambda_with_constant
+    l.().should == "some value"
   end
 end

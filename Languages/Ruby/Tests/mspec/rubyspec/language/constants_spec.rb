@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../spec_helper'
-require File.dirname(__FILE__) + '/../fixtures/constants'
+require File.expand_path('../../spec_helper', __FILE__)
+require File.expand_path('../../fixtures/constants', __FILE__)
 
 # Read the documentation in fixtures/constants.rb for the guidelines and
 # rationale for the structure and organization of these specs.
@@ -33,6 +33,12 @@ describe "Literal (A::X) constant resolution" do
     it "searches Object if no class or module qualifier is given" do
       CS_CONST1.should == :const1
       CS_CONST10.should == :const10_1
+    end
+
+    it "searches Object after searching other scopes" do
+      module ConstantSpecs::SpecAdded1
+        CS_CONST10.should == :const10_1
+      end
     end
 
     it "searches Object if a toplevel qualifier (::X) is given" do
@@ -123,6 +129,20 @@ describe "Literal (A::X) constant resolution" do
 
       ConstantSpecs::ClassB::CS_CONST109 = :const109_2
       ConstantSpecs::ClassB::CS_CONST109.should == :const109_2
+    end
+
+    it "evaluates the right hand side before evaluating a constant path" do
+      mod = Module.new
+
+      mod.module_eval <<-EOC
+        ConstantSpecsRHS::B = begin
+          module ConstantSpecsRHS; end
+
+          "hello"
+        end
+      EOC
+
+      mod::ConstantSpecsRHS::B.should == 'hello'
     end
   end
 

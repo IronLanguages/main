@@ -48,7 +48,9 @@ unless ENV['MSPEC_RUNNER']
   end
 end
 
-minimum_version = "1.5.13"
+CODE_LOADING_DIR = File.expand_path "../fixtures/code", __FILE__
+
+minimum_version = "1.5.17"
 unless MSpec::VERSION >= minimum_version
   puts "Please install MSpec version >= #{minimum_version} to run the specs"
   exit 1

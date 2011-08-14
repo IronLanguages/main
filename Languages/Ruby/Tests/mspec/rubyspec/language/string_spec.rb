@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 # Thanks http://www.zenspider.com/Languages/Ruby/QuickRef.html
 
@@ -143,19 +143,40 @@ HERE
     s.should == '    foo bar#{@ip}' + "\n"
   end
 
-  it "interpolates the return value of Object#to_s" do
+  it "call #to_s when the object is not a String" do
     obj = mock('to_s')
     obj.stub!(:to_s).and_return('42')
 
     "#{obj}".should == '42'
   end
 
-  it "interpolates the return value of Object#inspect, without ivars, if Object#to_s does not return a String instance" do
+  it "call #to_s as a private method" do
+    obj = mock('to_s')
+    obj.stub!(:to_s).and_return('42')
+
+    class << obj
+      private :to_s
+    end
+
+    "#{obj}".should == '42'
+  end
+
+  it "uses an internal representation when #to_s doesn't return a String" do
     obj = mock('to_s')
     obj.stub!(:to_s).and_return(42)
-    s = "#{obj}"[0..-2]
 
-    s.should == obj.inspect[0, s.size]
+    # See rubyspec commit 787c132d by yugui. There is value in
+    # ensuring that this behavior works. So rather than removing
+    # this spec completely, the only thing that can be asserted
+    # is that if you interpolate an object that fails to return
+    # a String, you will still get a String and not raise an
+    # exception.
+    "#{obj}".should be_an_instance_of(String)
+  end
+
+  it "allow a dynamic string to parse a nested do...end block as an argument to a call without parens, interpolated" do
+    s = eval 'eval "#{proc do; 1; end.call}"'
+    s.should == 1
   end
 
   ruby_version_is '1.9' do
