@@ -173,8 +173,14 @@ namespace IronPython.Modules {
                 }
             }
 
-            ~socket() {
-                close(true, true);
+            public void __del__()
+            {
+                _close();
+            }
+
+            ~socket()
+            {
+                _close();
             }
 
             public socket _sock {
@@ -245,37 +251,34 @@ namespace IronPython.Modules {
             }
 
             [Documentation("close() -> None\n\nClose the socket. It cannot be used after being closed.")]
-            public void close() {
-                close(false, false);
+            public void close()
+            {
+                // Don't actually close the socket if other file objects are
+                // still referring to this socket.
+                if (_referenceCount < 1)
+                {
+                    _close();
+                }
+                else
+                {
+                    var refs = System.Threading.Interlocked.Decrement(ref _referenceCount);
+                }
             }
 
-            internal void close(bool finalizing, bool removeAll) {
-                if (finalizing || removeAll || System.Threading.Interlocked.Decrement(ref _referenceCount) == 0) {
-                    if (_socket != null) {
-                        lock (_handleToSocket) {
-                            WeakReference weakref;
-                            if (_handleToSocket.TryGetValue(_socket.Handle, out weakref)) {
-                                Socket target = (weakref.Target as Socket);
-                                if (target == _socket || target == null) {
-                                    _handleToSocket.Remove(_socket.Handle);
-                                }
+            internal void _close() {
+                if (_socket != null) {
+                    lock (_handleToSocket) {
+                        WeakReference weakref;
+                        if (_handleToSocket.TryGetValue(_socket.Handle, out weakref)) {
+                            Socket target = (weakref.Target as Socket);
+                            if (target == _socket || target == null) {
+                                _handleToSocket.Remove(_socket.Handle);
                             }
                         }
-                    }
-                    _referenceCount = 0;
-                    if (!finalizing) {
-                        GC.SuppressFinalize(this);
                     }
 
-                    if (_socket != null) {
-                        try {
-                            _socket.Close();
-                        } catch (Exception e) {
-                            if (!finalizing) {
-                                throw MakeException(_context, e);
-                            }
-                        }
-                    }
+                    _socket.Close();
+                    _referenceCount = 0;
                 }
             }
 
@@ -892,7 +895,7 @@ namespace IronPython.Modules {
                     return "<socket object, fd=?, family=?, type=, protocol=>";
                 }
             }
-
+            
             /// <summary>
             /// Return the internal System.Net.Sockets.Socket socket object associated with the given
             /// handle (as returned by GetHandle()), or null if no corresponding socket exists. This is
@@ -1956,6 +1959,8 @@ namespace IronPython.Modules {
                 get { return true; }
             }
 
+            public override void Close() { Dispose(false); }
+
             public override void Flush() {
                 if (_data.Count > 0) {
                     StringBuilder res = new StringBuilder();
@@ -2005,35 +2010,36 @@ namespace IronPython.Modules {
             }
 
             protected override void Dispose(bool disposing) {
-                socket sock = _userSocket as socket;
-                if (sock != null) {
-                    sock.close(false, _close);
-                }
                 base.Dispose(disposing);
             }
         }
 
         [PythonType]
-        public class _fileobject : PythonFile {
+        public class _fileobject : PythonFile
+        {
             public new const string name = "<socket>";
-            private readonly socket _socket = null;
-            private readonly bool _close;
+            private readonly socket _socket;
             public const string __module__ = "socket";
+            private bool _close;
+
             public object bufsize = DefaultBufferSize; // Only present for compatibility with CPython public API
 
             public _fileobject(CodeContext/*!*/ context, object socket, [DefaultParameterValue("rb")]string mode, [DefaultParameterValue(-1)]int bufsize, [DefaultParameterValue(false)]bool close)
                 : base(PythonContext.GetContext(context)) {
-                _close = close;
 
                 Stream stream;
+                _close = close;
                 // subtypes of socket need to go through the user defined methods
                 if (socket != null && socket.GetType() == typeof(socket) && ((socket)socket)._socket.Connected) {
                     socket s = (socket as socket);
                     _socket = s;
-                    stream = new NetworkStream(s._socket);
-                } else {
+                    stream = new NetworkStream(s._socket, false);
+                }
+                else
+                {
                     stream = new PythonUserSocketStream(socket, GetBufferSize(context, bufsize), close);
                 }
+                _isOpen = true;
                 base.__init__(stream, System.Text.Encoding.Default, mode);
             }
 
@@ -2043,7 +2049,85 @@ namespace IronPython.Modules {
             public void __init__([ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
             }
 
+            public override string read()
+            {
+                ThrowIfClosed();
+                return base.read();
+            }
+
+            public override string read(int size)
+            {
+                ThrowIfClosed();
+                return base.read(size);
+            }
+
+            public override string readline()
+            {
+                ThrowIfClosed();
+                return base.readline();
+            }
+
+            public override string readline(int size)
+            {
+                ThrowIfClosed();
+                return base.readline(size);
+            }
+
+            public override List readlines()
+            {
+                ThrowIfClosed();
+                return base.readlines();
+            }
+
+            public override List readlines(int sizehint)
+            {
+                ThrowIfClosed();
+                return base.readlines(sizehint);
+            }
+
             public void __del__() {
+                if (_socket != null && _isOpen)
+                {
+                    if (_close) _socket.close();
+                    _isOpen = false;
+                }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (_socket != null && _isOpen)
+                {
+                    if (_close) _socket.close();
+                    _isOpen = false;
+                }
+                base.Dispose(disposing);
+            }
+
+            public new object close()
+            {
+                if (!_isOpen) return null;
+                if (_socket != null && _close) _socket.close();
+                _isOpen = false;
+                var obj = base.close();
+                return obj;
+            }
+
+            public override void write(IList<byte> bytes)
+            {
+                ThrowIfClosed();
+                base.write(bytes);
+            }
+
+            public override void write(string s)
+            {
+                ThrowIfClosed();
+                base.write(s);
+            }
+
+            public override void flush()
+            {
+                ThrowIfClosed();
+                base.flush();
             }
 
             private static int GetBufferSize(CodeContext/*!*/ context, int size) {
@@ -2061,12 +2145,6 @@ namespace IronPython.Modules {
                 PythonContext.GetContext(context).SetModuleState(_defaultBufsizeKey, value);
             }
 
-            protected override void Dispose(bool disposing) {
-                base.Dispose(disposing);
-                if (_socket != null) {
-                    _socket.close(false, _close);
-                }
-            }
         }
         #endregion
 
