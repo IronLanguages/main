@@ -1,4 +1,0 @@
-fails:Range#min returns the minimum value in the Float range when called with no arguments
-fails:Range#min returns nil when the start point is greater than the endpoint in a Float range
-fails:Range#min given a block passes each pair of elements to the block where the first argument is the current element, and the last is the first element
-fails:Range#min given a block returns the element the block determines to be the minimum

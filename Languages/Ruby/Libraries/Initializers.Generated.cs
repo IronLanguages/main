@@ -6297,6 +6297,11 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.Begin)
             );
             
+            DefineLibraryMethod(module, "cover?", 0x51, 
+                0x00000002U, 
+                new Func<IronRuby.Runtime.ComparisonStorage, IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.Cover)
+            );
+            
             DefineLibraryMethod(module, "each", 0x51, 
                 0x00000000U, 0x00000002U, 
                 new Func<IronRuby.Builtins.RangeOps.EachStorage, IronRuby.Builtins.Range, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.RangeOps.GetEachEnumerator), 
@@ -6349,15 +6354,27 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.End)
             );
             
+            DefineLibraryMethod(module, "max", 0x51, 
+                0x00000000U, 0x00000000U, 
+                new Func<IronRuby.Builtins.RangeOps.EachStorage, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.GetMaximum), 
+                new Func<IronRuby.Builtins.RangeOps.EachStorage, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.GetMaximumBy)
+            );
+            
             DefineLibraryMethod(module, "member?", 0x51, 
                 0x00000002U, 
                 new Func<IronRuby.Runtime.ComparisonStorage, IronRuby.Builtins.Range, System.Object, System.Boolean>(IronRuby.Builtins.RangeOps.CaseEquals)
             );
             
+            DefineLibraryMethod(module, "min", 0x51, 
+                0x00000000U, 0x00000000U, 
+                new Func<IronRuby.Builtins.RangeOps.EachStorage, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.GetMinimum), 
+                new Func<IronRuby.Builtins.RangeOps.EachStorage, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object>(IronRuby.Builtins.RangeOps.GetMinimumBy)
+            );
+            
             DefineLibraryMethod(module, "step", 0x51, 
                 0x00000000U, 0x00000002U, 
-                new Func<IronRuby.Builtins.RangeOps.StepStorage, IronRuby.Builtins.Range, System.Object, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.RangeOps.GetStepEnumerator), 
-                new Func<IronRuby.Builtins.RangeOps.StepStorage, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object, System.Object>(IronRuby.Builtins.RangeOps.Step)
+                new Func<IronRuby.Builtins.RangeOps.EachStorage, IronRuby.Builtins.Range, System.Object, IronRuby.Builtins.Enumerator>(IronRuby.Builtins.RangeOps.GetStepEnumerator), 
+                new Func<IronRuby.Builtins.RangeOps.EachStorage, IronRuby.Runtime.BlockParam, IronRuby.Builtins.Range, System.Object, System.Object>(IronRuby.Builtins.RangeOps.Step)
             );
             
             DefineLibraryMethod(module, "to_s", 0x51, 
