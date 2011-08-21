@@ -299,28 +299,28 @@ namespace IronRuby.Builtins {
         }
 
         public static IEnumerable<object> EachInRange(EachStorage/*!*/ storage, Range/*!*/ self, object step) {
-            Func<int> convertStepToInt = () => {
-                if (step is int) {
-                    return (int) step;
-                }
-
-                var site = storage.FixnumCastSite;
-                return (int) site.Target(site, step);
-            };
-
             if (self.Begin is int && self.End is int) {
                 // self.begin is Fixnum; directly call item = item + 1 instead of succ
-                return EachStepFixnum(self, convertStepToInt());
+                return EachStepFixnum(self, ConvertStepToInt(storage, step));
             } else if (self.Begin is MutableString) {
                 // self.begin is String; use item.succ and item <=> self.end but make sure you check the length of the strings
-                return EachStepString(storage, self, convertStepToInt());
+                return EachStepString(storage, self, ConvertStepToInt(storage, step));
             } else if (storage.Context.IsInstanceOf(self.Begin, storage.Context.GetClass(typeof(Numeric)))) {
                 // self.begin is Numeric; invoke item = item + 1 instead of succ and invoke < or <= for compare
                 return EachStepNumeric(storage, self, step);
             } else {
                 // self.begin is not Numeric or String; just invoke item.succ and item <=> self.end
-                return EachStepObject(storage, self, convertStepToInt());
+                return EachStepObject(storage, self, ConvertStepToInt(storage, step));
             }
+        }
+
+        private static int ConvertStepToInt(EachStorage storage, object step) {
+            if (step is int) {
+                return (int)step;
+            }
+
+            var site = storage.FixnumCastSite;
+            return site.Target(site, step);
         }
 
         [RubyMethod("step")]
@@ -364,8 +364,8 @@ namespace IronRuby.Builtins {
             Assert.NotNull(self);
             CheckStep(step);
 
-            int end = (int) self.End;
-            int item = (int) self.Begin;
+            int end = (int)self.End;
+            int item = (int)self.Begin;
 
             while (item < end) {
                 yield return item;
@@ -388,8 +388,8 @@ namespace IronRuby.Builtins {
             Assert.NotNull(storage, self);
             CheckStep(step);
 
-            var begin = (MutableString) self.Begin;
-            var end = (MutableString) self.End;
+            var begin = (MutableString)self.Begin;
+            var end = (MutableString)self.End;
 
             MutableString item = begin;
             int comp;
