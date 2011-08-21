@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "Range#step" do
   it "passes each nth element to the block" do
@@ -29,7 +29,7 @@ describe "Range#step" do
     b = mock('x')
     (a = mock('1')).should_receive(:<=>).with(b).and_return(1)
     a.should_not respond_to(:succ)
-        
+
     lambda { (a..b).step(1) { |i| i } }.should raise_error(TypeError)
   end
 
@@ -52,7 +52,7 @@ describe "Range#step" do
   ruby_version_is "1.8.7" do
     it "returns an enumerator when no block given" do
       enum = (1..10).step(4)
-      enum.should be_kind_of(enumerator_class)
+      enum.should be_an_instance_of(enumerator_class)
       enum.to_a.should == [1, 5, 9]
     end
   end
