@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Hash#default" do
   it "returns the default value" do
@@ -45,11 +45,11 @@ describe "Hash#default=" do
       lambda { HashSpecs.empty_frozen_hash.default = nil }.should raise_error(TypeError)
     end
   end
-  
+
   ruby_version_is "1.9" do
     it "raises a RuntimeError if called on a frozen instance" do
       lambda { HashSpecs.frozen_hash.default = nil }.should raise_error(RuntimeError)
       lambda { HashSpecs.empty_frozen_hash.default = nil }.should raise_error(RuntimeError)
     end
-  end  
+  end
 end

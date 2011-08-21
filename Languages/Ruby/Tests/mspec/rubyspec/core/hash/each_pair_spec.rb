@@ -1,7 +1,7 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
-require File.dirname(__FILE__) + '/shared/iteration'
-require File.dirname(__FILE__) + '/shared/each'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../shared/iteration', __FILE__)
+require File.expand_path('../shared/each', __FILE__)
 
 describe "Hash#each_pair" do
   ruby_version_is ""..."1.9" do
@@ -25,7 +25,7 @@ describe "Hash#each_pair" do
       all_args.sort.should == [[1, 2], [3, 4]]
     end
   end
-  
+
   ruby_version_is "1.9" do
     it_behaves_like(:hash_each, :each_pair)
   end

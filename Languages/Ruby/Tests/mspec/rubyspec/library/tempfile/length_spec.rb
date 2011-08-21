@@ -1,6 +1,7 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
+require File.expand_path('../shared/length', __FILE__)
 require 'tempfile'
-require File.dirname(__FILE__) + "/shared/length"
 
 describe "Tempfile#length" do
   it_behaves_like :tempfile_length, :length

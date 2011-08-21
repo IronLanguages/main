@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Hash#shift" do
   it "removes a pair from hash and return it" do
@@ -8,7 +8,7 @@ describe "Hash#shift" do
 
     h.size.times do |i|
       r = h.shift
-      r.class.should == Array
+      r.should be_kind_of(Array)
       h2[r.first].should == r.last
       h.size.should == h2.size - i - 1
     end

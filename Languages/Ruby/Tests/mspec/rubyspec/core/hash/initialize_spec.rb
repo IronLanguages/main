@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Hash#initialize" do
   it "is private" do
@@ -14,9 +14,14 @@ describe "Hash#initialize" do
     h["a"].should == "aa"
   end
 
-  it "should get passed whatever args were passed to Hash#new" do
+  it "receives the arguments passed to Hash#new" do
     NewHash.new(:one, :two)[0].should == :one
     NewHash.new(:one, :two)[1].should == :two
+  end
+
+  it "returns self" do
+    h = hash_class.new
+    h.send(:initialize).should equal(h)
   end
 
   ruby_version_is ""..."1.9" do
