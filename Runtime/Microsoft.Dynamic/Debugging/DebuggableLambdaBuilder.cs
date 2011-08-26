@@ -230,6 +230,10 @@ namespace Microsoft.Scripting.Debugging {
                 MSAst.ParameterExpression pendingLocal = _pendingLocals[i];
                 MSAst.ParameterExpression verifiedLocal = pendingLocal;
 
+                if (_pendingToVariableInfosMap.ContainsKey(pendingLocal)) {
+                    continue;
+                }
+
                 string alias;
 
                 // See if there's an alias for the local
