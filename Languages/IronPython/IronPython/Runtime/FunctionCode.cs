@@ -579,7 +579,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", co_freevars.__repr__(context));
             }
 
-            if (Target == null) {
+            if (Target == null || (Target.Method != null && Target.Method.DeclaringType == typeof(PythonCallTargets))) {
                 UpdateDelegate(context.LanguageContext, true);
             }
 
