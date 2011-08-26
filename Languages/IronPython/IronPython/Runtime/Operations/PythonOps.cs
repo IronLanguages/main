@@ -1024,6 +1024,10 @@ namespace IronPython.Runtime.Operations {
 
         public static bool HasAttr(CodeContext/*!*/ context, object o, string name) {
             object dummy;
+            if (context.LanguageContext.PythonOptions.Python30) {
+                return TryGetBoundAttr(context, o, name, out dummy);
+            }
+
             try {
                 return TryGetBoundAttr(context, o, name, out dummy);
             } catch (SystemExitException) {
