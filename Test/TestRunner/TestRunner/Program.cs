@@ -330,6 +330,7 @@ namespace TestRunner {
 
         private static ProcessStartInfo CreateProcessInfoFromTest(Test test) {
             ProcessStartInfo psi = new ProcessStartInfo();
+            var args = test.Arguments.Contains("-X:Debug") ? test.Arguments : "-X:Debug " + test.Arguments;
             psi.Arguments = Environment.ExpandEnvironmentVariables(test.Arguments);
             psi.WorkingDirectory = Environment.ExpandEnvironmentVariables(test.WorkingDirectory);
             psi.FileName = Environment.ExpandEnvironmentVariables(test.Filename);

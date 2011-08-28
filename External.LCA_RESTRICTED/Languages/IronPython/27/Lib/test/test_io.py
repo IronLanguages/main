@@ -620,6 +620,7 @@ class CommonBufferedTests:
         self.assertRaises(ValueError, bufio.seek, 0, -1)
         self.assertRaises(ValueError, bufio.seek, 0, 3)
 
+    @unittest.skipIf(sys.platform == 'cli', 'Bad behaviour on ipy')
     def test_override_destructor(self):
         tp = self.tp
         record = []
@@ -1853,6 +1854,7 @@ class TextIOWrapperTest(unittest.TestCase):
         support.gc_collect()
         self.assertEquals([b"abc"], l)
 
+    @unittest.skipIf(sys.platform == 'cli', 'Bad behaviour in ironpython')
     def test_override_destructor(self):
         record = []
         class MyTextIO(self.TextIOWrapper):

@@ -8,7 +8,7 @@ set _runner=%_test_root%\TestRunner\TestRunner\bin\Debug\TestRunner.exe
 
 if not exist "%_runner%" call :build_runner
 
-"%_runner%" "%_test_root%\IronPython.tests" /verbose /all /binpath:"%DLR_BIN%" /nunitoutput:"%_test_root%\TestResult.xml"
+"%_runner%" "%_test_root%\IronPython.tests" /verbose /all /threads:1 /binpath:"%DLR_BIN%" /nunitoutput:"%_test_root%\TestResult.xml"
 
 endlocal
 goto:eof
