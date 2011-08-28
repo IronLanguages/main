@@ -136,7 +136,7 @@ namespace TestRunner
                 {
                     var message = string.Join(Environment.NewLine, testResult.Output);
                     message = string.Join("", message.Where(c => IsLegalXmlChar((int)c)));
-                    testCase.Add(new XElement("failure"), new XElement("message", new XCData(message)));
+                    testCase.Add(new XElement("failure", new XElement("message", new XCData(message))));
                 }
 
                 results.Add(testCase);
