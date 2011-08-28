@@ -14,5 +14,5 @@ endlocal
 goto:eof
 
 :build_runner
-msbuild %_runner_sln%
+%windir%\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe %_runner_sln%
 goto:eof
