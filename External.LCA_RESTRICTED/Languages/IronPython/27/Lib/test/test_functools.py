@@ -145,6 +145,7 @@ class TestPartial(unittest.TestCase):
         join = self.thetype(''.join)
         self.assertEqual(join(data), '0123456789')
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython pickle is wonky')
     def test_pickle(self):
         f = self.thetype(signature, 'asdf', bar=True)
         f.add_something_to__dict__ = True

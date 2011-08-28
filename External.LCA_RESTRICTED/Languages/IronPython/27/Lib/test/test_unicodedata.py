@@ -22,6 +22,7 @@ class UnicodeMethodsTest(unittest.TestCase):
     # update this, if the database changes
     expectedchecksum = '4504dffd035baea02c5b9de82bebc3d65e0e0baf'
 
+    @unittest.skipIf(sys.platform == 'cli', 'Too slow')
     def test_method_checksum(self):
         h = hashlib.sha1()
         for i in range(0x10000):
@@ -219,6 +220,7 @@ class UnicodeFunctionsTest(UnicodeDatabaseTest):
 
 class UnicodeMiscTest(UnicodeDatabaseTest):
 
+    @unittest.skipIf(sys.platform == 'cli', 'CPython impl detail')
     def test_failed_import_during_compiling(self):
         # Issue 4367
         # Decoding \N escapes requires the unicodedata module. If it can't be
@@ -227,14 +229,14 @@ class UnicodeMiscTest(UnicodeDatabaseTest):
         # This program should raise a SyntaxError in the eval.
         code = "import sys;" \
             "sys.modules['unicodedata'] = None;" \
-            """eval("u'\N{SOFT HYPHEN}'")"""
+            """eval("u'\\N{SOFT HYPHEN}'")"""
         args = [sys.executable, "-c", code]
         # We use a subprocess because the unicodedata module may already have
         # been loaded in this process.
         popen = subprocess.Popen(args, stderr=subprocess.PIPE)
         popen.wait()
         self.assertEqual(popen.returncode, 1)
-        error = "SyntaxError: (unicode error) \N escapes not supported " \
+        error = "SyntaxError: (unicode error) \\N escapes not supported " \
             "(can't load unicodedata module)"
         self.assertIn(error, popen.stderr.read())
 

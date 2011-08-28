@@ -1,6 +1,5 @@
 from test.test_support import verbose, run_unittest, import_module
 import re
-from re import Scanner
 import sys
 import string
 import traceback
@@ -574,12 +573,14 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.match('(x)*y', 50000*'x'+'y').group(1), 'x')
         self.assertEqual(re.match('(x)*?y', 50000*'x'+'y').group(1), 'x')
 
+    @unittest.skipIf(sys.platform == 'cli', 'CPython impl detail')
     def test_scanner(self):
         def s_ident(scanner, token): return token
         def s_operator(scanner, token): return "op%s" % token
         def s_float(scanner, token): return float(token)
         def s_int(scanner, token): return int(token)
 
+        from re import Scanner
         scanner = Scanner([
             (r"[a-zA-Z_]\w*", s_ident),
             (r"\d+\.\d*", s_float),

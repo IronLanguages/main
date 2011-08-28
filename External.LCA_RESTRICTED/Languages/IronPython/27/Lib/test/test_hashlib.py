@@ -299,6 +299,7 @@ class HashLibTestCase(unittest.TestCase):
           "e718483d0ce769644e2e42c7bc15b4638e1f98b13b2044285632a803afa973eb"+
           "de0ff244877ea60a4cb0432ce577c31beb009c5c2c49aa2e4eadb217ad8cc09b")
 
+    @unittest.skipIf(sys.platform == 'cli', 'Deadlock on IronPython')
     @unittest.skipUnless(threading, 'Threading required for this test.')
     @test_support.reap_threads
     def test_threaded_hashing(self):

@@ -535,6 +535,7 @@ class DictTest(unittest.TestCase):
                  'f': None, 'g': None, 'h': None}
         d = {}
 
+    @test_support.cpython_only
     def test_container_iterator(self):
         # Bug #3680: tp_traverse was not implemented for dictiter objects
         class C(object):
