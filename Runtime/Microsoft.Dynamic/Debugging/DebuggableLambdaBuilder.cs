@@ -232,6 +232,10 @@ namespace Microsoft.Scripting.Debugging {
 
                 string alias;
 
+                if (_pendingToVariableInfosMap.ContainsKey(pendingLocal)) {
+                    continue;
+                }
+
                 // See if there's an alias for the local
                 if (_lambdaInfo.VariableAliases == null || !_lambdaInfo.VariableAliases.TryGetValue(pendingLocal, out alias)) {
                     alias = pendingLocal.Name;

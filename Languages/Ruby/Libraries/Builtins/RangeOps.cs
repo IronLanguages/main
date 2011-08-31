@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Reflection;
@@ -25,11 +26,11 @@ using IronRuby.Compiler.Generation;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
+using System.Linq;
 
 namespace IronRuby.Builtins {
     using UnaryOp = Func<CallSite, object, object>;
     using BinaryOp = Func<CallSite, object, object, object>;
-    using BinaryOpSite = CallSite<Func<CallSite, object, object, object>>;
 
     /// <summary>
     /// A Range represents an interval—a set of values with a start and an end.
@@ -240,17 +241,14 @@ namespace IronRuby.Builtins {
         #region each, step
 
         public class EachStorage : ComparisonStorage {
-            private CallSite<Func<CallSite, object, MutableString>> _stringCast;
             private CallSite<BinaryOp> _equalsSite;    // ==
             private CallSite<UnaryOp> _succSite;       // succ
             private CallSite<BinaryOp> _respondToSite; // respond_to?
+            private CallSite<Func<CallSite, object, int>> _fixnumCast;
+            private CallSite<BinaryOp> _addSite;            // +
 
             [Emitted]
             public EachStorage(RubyContext/*!*/ context) : base(context) { }
-
-            public CallSite<Func<CallSite, object, MutableString>>/*!*/ StringCastSite {
-                get { return RubyUtils.GetCallSite(ref _stringCast, ConvertToStrAction.Make(Context)); }
-            }
 
             public CallSite<BinaryOp>/*!*/ RespondToSite {
                 get { return RubyUtils.GetCallSite(ref _respondToSite, Context, "respond_to?", 1); }
@@ -263,22 +261,9 @@ namespace IronRuby.Builtins {
             public CallSite<UnaryOp>/*!*/ SuccSite {
                 get { return RubyUtils.GetCallSite(ref _succSite, Context, "succ", 0); }
             }
-        }
-
-        public class StepStorage : EachStorage {
-            private CallSite<Func<CallSite, object, int>> _fixnumCast;
-            private CallSite<BinaryOp> _lessThanEqualsSite; // <=
-            private CallSite<BinaryOp> _addSite;            // +
-
-            [Emitted]
-            public StepStorage(RubyContext/*!*/ context) : base(context) { }
 
             public CallSite<Func<CallSite, object, int>>/*!*/ FixnumCastSite {
                 get { return RubyUtils.GetCallSite(ref _fixnumCast, ConvertToFixnumAction.Make(Context)); }
-            }
-
-            public CallSite<BinaryOp>/*!*/ LessThanEqualsSite {
-                get { return RubyUtils.GetCallSite(ref _lessThanEqualsSite, Context, "<=", 1); }
             }
 
             public CallSite<BinaryOp>/*!*/ AddSite {
@@ -298,17 +283,48 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("each")]
         public static object Each(EachStorage/*!*/ storage, [NotNull]BlockParam/*!*/ block, Range/*!*/ self) {
+            Assert.NotNull(block);
+            CheckBegin(storage, self.Begin);
+
+            var each = EachInRange(storage, self, 1);
+
+            foreach (var item in each) {
+                object result;
+                if (block.Yield(item, out result)) {
+                    return result;
+                }
+            }
+
+            return self;
+        }
+
+        public static IEnumerable<object> EachInRange(EachStorage/*!*/ storage, Range/*!*/ self, object step) {
             if (self.Begin is int && self.End is int) {
-                return StepFixnum(block, self, (int)self.Begin, (int)self.End, 1);
+                // self.begin is Fixnum; directly call item = item + 1 instead of succ
+                return EachStepFixnum(self, ConvertStepToInt(storage, step));
             } else if (self.Begin is MutableString) {
-                return StepString(storage, block, self, (MutableString)self.Begin, (MutableString)self.End, 1);
+                // self.begin is String; use item.succ and item <=> self.end but make sure you check the length of the strings
+                return EachStepString(storage, self, ConvertStepToInt(storage, step));
+            } else if (storage.Context.IsInstanceOf(self.Begin, storage.Context.GetClass(typeof(Numeric)))) {
+                // self.begin is Numeric; invoke item = item + 1 instead of succ and invoke < or <= for compare
+                return EachStepNumeric(storage, self, step);
             } else {
-                return StepObject(storage, block, self, self.Begin, self.End, 1);
+                // self.begin is not Numeric or String; just invoke item.succ and item <=> self.end
+                return EachStepObject(storage, self, ConvertStepToInt(storage, step));
             }
         }
 
+        private static int ConvertStepToInt(EachStorage storage, object step) {
+            if (step is int) {
+                return (int)step;
+            }
+
+            var site = storage.FixnumCastSite;
+            return site.Target(site, step);
+        }
+
         [RubyMethod("step")]
-        public static Enumerator/*!*/ GetStepEnumerator(StepStorage/*!*/ storage, Range/*!*/ self, [Optional]object step) {
+        public static Enumerator/*!*/ GetStepEnumerator(EachStorage/*!*/ storage, Range/*!*/ self, [Optional]object step) {
             return new Enumerator((_, block) => Step(storage, block, self, step));
         }
 
@@ -318,32 +334,23 @@ namespace IronRuby.Builtins {
         /// Otherwise step invokes succ to iterate through range elements.
         /// </summary>
         [RubyMethod("step")]
-        public static object Step(StepStorage/*!*/ storage, [NotNull]BlockParam/*!*/ block, Range/*!*/ self, [Optional]object step) {
+        public static object Step(EachStorage/*!*/ storage, [NotNull]BlockParam/*!*/ block, Range/*!*/ self, [Optional]object step) {
             if (step == Missing.Value) {
                 step = ClrInteger.One;
             }
 
-            // We attempt to cast step to Fixnum here even though if we were iterating over Floats, for instance, we use step as is.
-            // This prevents cases such as (1.0..2.0).step(0x800000000000000) {|x| x } from working but that is what MRI does.
-            if (self.Begin is int && self.End is int) {
-                // self.begin is Fixnum; directly call item = item + 1 instead of succ
-                var site = storage.FixnumCastSite;
-                int intStep = site.Target(site, step);
-                return StepFixnum(block, self, (int)self.Begin, (int)self.End, intStep);
-            } else if (self.Begin is MutableString) {
-                // self.begin is String; use item.succ and item <=> self.end but make sure you check the length of the strings
-                var site = storage.FixnumCastSite;
-                int intStep = site.Target(site, step);
-                return StepString(storage, block, self, (MutableString)self.Begin, (MutableString)self.End, intStep);
-            } else if (storage.Context.IsInstanceOf(self.Begin, storage.Context.GetClass(typeof(Numeric)))) {
-                // self.begin is Numeric; invoke item = item + 1 instead of succ and invoke < or <= for compare
-                return StepNumeric(storage, block, self, self.Begin, self.End, step);
-            } else {
-	            // self.begin is not Numeric or String; just invoke item.succ and item <=> self.end
-                var site = storage.FixnumCastSite;
-                int intStep = site.Target(site, step);
-                return StepObject(storage, block, self, self.Begin, self.End, intStep);
+            Assert.NotNull(block);
+
+            var each = EachInRange(storage, self, step);
+
+            foreach (var item in each) {
+                object result;
+                if (block.Yield(item, out result)) {
+                    return result;
+                }
             }
+
+            return self;
         }
 
         /// <summary>
@@ -353,25 +360,21 @@ namespace IronRuby.Builtins {
         /// This method is optimized for direct integer operations using &lt; and + directly.
         /// It is not used if either begin or end are outside Fixnum bounds.
         /// </remarks>
-        private static object StepFixnum(BlockParam/*!*/ block, Range/*!*/ self, int begin, int end, int step) {
-            Assert.NotNull(block, self);
+        private static IEnumerable<object> EachStepFixnum(Range/*!*/ self, int step) {
+            Assert.NotNull(self);
             CheckStep(step);
 
-            object result;
-            int item = begin;
+            int end = (int)self.End;
+            int item = (int)self.Begin;
+
             while (item < end) {
-                if (block.Yield(item, out result)) {
-                    return result;
-                }
+                yield return item;
                 item += step;
             }
 
             if (item == end && !self.ExcludeEnd) {
-                if (block.Yield(item, out result)) {
-                    return result;
-                }
+                yield return item;
             }
-            return self;
         }
 
         /// <summary>
@@ -381,17 +384,18 @@ namespace IronRuby.Builtins {
         /// This method requires step to be a Fixnum.
         /// It uses a hybrid string comparison to prevent infinite loops and calls String#succ to get each item in the range.
         /// </remarks>
-        private static object StepString(EachStorage/*!*/ storage, BlockParam/*!*/ block, Range/*!*/ self, MutableString begin, MutableString end, int step) {
-            Assert.NotNull(storage, block, self);
+        private static IEnumerable<MutableString> EachStepString(ComparisonStorage/*!*/ storage, Range/*!*/ self, int step) {
+            Assert.NotNull(storage, self);
             CheckStep(step);
-            object result;
+
+            var begin = (MutableString)self.Begin;
+            var end = (MutableString)self.End;
+
             MutableString item = begin;
             int comp;
 
             while ((comp = Protocols.Compare(storage, item, end)) < 0) {
-                if (block.Yield(item.Clone(), out result)) {
-                    return result;
-                }
+                yield return item.Clone();
 
                 if (ReferenceEquals(item, begin)) {
                     item = item.Clone();
@@ -403,57 +407,56 @@ namespace IronRuby.Builtins {
                 }
 
                 if (item.Length > end.Length) {
-                    return self;
+                    yield break;
                 }
             }
 
             if (comp == 0 && !self.ExcludeEnd) {
-                if (block.Yield(item.Clone(), out result)) {
-                    return result;
-                }
+                yield return item.Clone();
             }
-            return self;
         }
 
         /// <summary>
         /// Step through a Range of Numerics.
         /// </summary>
-        private static object StepNumeric(StepStorage/*!*/ storage, BlockParam/*!*/ block, Range/*!*/ self, object begin, object end, object step) {
-            Assert.NotNull(storage, block, self);
+        private static IEnumerable<object> EachStepNumeric(EachStorage/*!*/ storage, Range/*!*/ self, object step) {
+            Assert.NotNull(storage, self);
             CheckStep(storage, step);
 
-            object item = begin;
-            object result;
+            object item = self.Begin;
+            object end = self.End;
 
-            var site = self.ExcludeEnd ? storage.LessThanSite : storage.LessThanEqualsSite;
-            while (RubyOps.IsTrue(site.Target(site, item, end))) {
-                if (block.Yield(item, out result)) {
-                    return result;
-                }
+            int comp;
+            while ((comp = Protocols.Compare(storage, item, end)) < 0) {
+                yield return item;
 
                 var add = storage.AddSite;
                 item = add.Target(add, item, step);
             }
 
-            return self;
+            if (comp == 0 && !self.ExcludeEnd) {
+                yield return item;
+            }
         }
 
         /// <summary>
         /// Step through a Range of objects that are not Numeric or String.
         /// </summary>
-        private static object StepObject(EachStorage/*!*/ storage, BlockParam/*!*/ block, Range/*!*/ self, object begin, object end, int step) {
-            Assert.NotNull(storage, block, self);
+        private static IEnumerable<object> EachStepObject(EachStorage/*!*/ storage, Range/*!*/ self, int step) {
+            Assert.NotNull(storage, self);
             CheckStep(storage, step);
-            CheckBegin(storage, self.Begin);
 
-            object item = begin, result;
             int comp;
+            object begin = self.Begin;
 
+            CheckBegin(storage, begin);
+
+            object end = self.End;
+            object item = begin;
             var succSite = storage.SuccSite;
+
             while ((comp = Protocols.Compare(storage, item, end)) < 0) {
-                if (block.Yield(item, out result)) {
-                    return result;
-                }
+                yield return item;
 
                 for (int i = 0; i < step; ++i) {
                     item = succSite.Target(succSite, item);
@@ -461,11 +464,8 @@ namespace IronRuby.Builtins {
             }
 
             if (comp == 0 && !self.ExcludeEnd) {
-                if (block.Yield(item, out result)) {
-                    return result;
-                }
+                yield return item;
             }
-            return self;
         }
 
         /// <summary>
@@ -502,6 +502,86 @@ namespace IronRuby.Builtins {
             if (!Protocols.RespondTo(storage.RespondToSite, storage.Context, begin, "succ")) {
                 throw RubyExceptions.CreateTypeError("can't iterate from {0}", storage.Context.GetClassDisplayName(begin));
             }
+        }
+
+        #endregion
+
+        #region cover?, min, max
+
+        [RubyMethod("cover?")]
+        public static bool Cover(ComparisonStorage/*!*/ comparisonStorage, [NotNull]Range/*!*/ self, object value) {
+            return CaseEquals(comparisonStorage, self, value);
+        }
+
+        private static bool IsBeginGreatherThanEnd(ComparisonStorage comparisonStorage, Range self) {
+            var compare = comparisonStorage.CompareSite;
+
+            object result = compare.Target(compare, self.Begin, self.End);
+
+            return result == null ||
+                   Protocols.ConvertCompareResult(comparisonStorage, result) > (self.ExcludeEnd ? -1 : 0);
+        }
+
+        [RubyMethod("max")]
+        public static object GetMaximum(EachStorage/*!*/ comparisonStorage, Range/*!*/ self) {
+            if (IsBeginGreatherThanEnd(comparisonStorage, self)) {
+                return null;
+            }
+
+            if (!self.ExcludeEnd) {
+                return self.End;
+            }
+
+            return EachInRange(comparisonStorage, self, 1).Last();
+        }
+
+        [RubyMethod("max")]
+        public static object GetMaximumBy(EachStorage/*!*/ comparisonStorage, BlockParam/*!*/ block, Range/*!*/ self) {
+            if (IsBeginGreatherThanEnd(comparisonStorage, self)) {
+                return null;
+            }
+
+            var each = EachInRange(comparisonStorage, self, 1);
+
+            return each.Aggregate((x, y) => {
+                object blockResult;
+                if (block.Yield(y, x, out blockResult)) {
+                    return blockResult;
+                }
+
+                int r = Protocols.ConvertCompareResult(comparisonStorage, blockResult);
+
+                return r < 0 ? x : y;
+            });
+        }
+
+        [RubyMethod("min")]
+        public static object GetMinimum(EachStorage/*!*/ comparisonStorage, Range/*!*/ self) {
+            if (IsBeginGreatherThanEnd(comparisonStorage, self)) {
+                return null;
+            }
+
+            return self.Begin;
+        }
+
+        [RubyMethod("min")]
+        public static object GetMinimumBy(EachStorage/*!*/ comparisonStorage, BlockParam/*!*/ block, Range/*!*/ self) {
+            if (IsBeginGreatherThanEnd(comparisonStorage, self)) {
+                return null;
+            }
+
+            var each = EachInRange(comparisonStorage, self, 1);
+
+            return each.Aggregate((x, y) => {
+                object blockResult;
+                if (block.Yield(y, x, out blockResult)) {
+                    return blockResult;
+                }
+
+                int r = Protocols.ConvertCompareResult(comparisonStorage, blockResult);
+
+                return r < 0 ? y : x;
+            });
         }
 
         #endregion

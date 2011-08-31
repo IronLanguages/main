@@ -1,7 +1,7 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
-require File.dirname(__FILE__) + '/shared/iteration'
-require File.dirname(__FILE__) + '/shared/update'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../shared/iteration', __FILE__)
+require File.expand_path('../shared/update', __FILE__)
 
 describe "Hash#merge" do
   it "returns a new hash by combining self with the contents of other" do
@@ -37,8 +37,8 @@ describe "Hash#merge" do
   end
 
   it "returns subclass instance for subclasses" do
-    MyHash[1 => 2, 3 => 4].merge(new_hash(1 => 2)).class.should == MyHash
-    MyHash[].merge(new_hash(1 => 2)).class.should == MyHash
+    MyHash[1 => 2, 3 => 4].merge(new_hash(1 => 2)).should be_kind_of(MyHash)
+    MyHash[].merge(new_hash(1 => 2)).should be_kind_of(MyHash)
 
     new_hash(1 => 2, 3 => 4).merge(MyHash[1 => 2]).class.should == hash_class
     new_hash.merge(MyHash[1 => 2]).class.should == hash_class
@@ -58,6 +58,13 @@ end
 describe "Hash#merge!" do
   it_behaves_like(:hash_update, :merge!)
 
+  it "does not raise an exception if changing the value of an existing key during iteration" do
+      hash = {1 => 2, 3 => 4, 5 => 6}
+      hash2 = {1 => :foo, 3 => :bar}
+      hash.each { hash.merge!(hash2) }
+      hash.should == {1 => :foo, 3 => :bar, 5 => 6}
+  end
+  
   # This bug is far too odd to explain in a comment; see
   # http://redmine.ruby-lang.org/issues/show/1535 for the closest I've got to
   # an explanation.
@@ -71,4 +78,5 @@ describe "Hash#merge!" do
       }.should_not raise_error(RuntimeError)
     end
   end
+  
 end

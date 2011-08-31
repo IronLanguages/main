@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Hash.[]" do
   it "creates a Hash; values can be provided as the argument list" do
@@ -113,17 +113,30 @@ describe "Hash#[]" do
     h[x].should == nil
   end
 
-  it "does not compare key with unknown hash codes via eql?" do
+  it "does not compare keys with different #hash values via #eql?" do
     x = mock('x')
-    y = mock('y')
-    def x.eql?(o) raise("Shouldn't receive eql?") end
+    x.should_not_receive(:eql?)
+    x.stub!(:hash).and_return(0)
 
-    x.should_receive(:hash).and_return(0)
-    y.should_receive(:hash).and_return(1)
+    y = mock('y')
+    y.should_not_receive(:eql?)
+    y.stub!(:hash).and_return(1)
 
     new_hash(y => 1)[x].should == nil
   end
 
+  it "compares keys with the same #hash value via #eql?" do
+    x = mock('x')
+    x.should_receive(:eql?).and_return(true)
+    x.stub!(:hash).and_return(42)
+
+    y = mock('y')
+    y.should_not_receive(:eql?)
+    y.stub!(:hash).and_return(42)
+
+    new_hash(y => 1)[x].should == 1
+  end
+    
   it "compares key with found hash code via eql?" do
     y = mock('0')
     y.should_receive(:hash).twice.and_return(0)
@@ -146,4 +159,8 @@ describe "Hash#[]" do
     new_hash(y => 1)[x].should == 1
     x.tainted?.should == true
   end
+end
+  
+describe "Hash.[]" do
+  it "needs to be reviewed for spec completeness"
 end
