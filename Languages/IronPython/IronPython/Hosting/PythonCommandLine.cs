@@ -321,6 +321,32 @@ namespace IronPython.Hosting {
 
             return (int)result;
         }
+
+        protected override string Prompt {
+            get {
+                object value;
+                if (Engine.GetSysModule().TryGetVariable("ps1", out value)) {
+                    var context = ((PythonScopeExtension)Scope.GetExtension(Language.ContextId)).ModuleContext.GlobalContext;
+
+                    return PythonOps.ToString(context, value);
+                }
+
+                return "";
+            }
+        }
+
+        public override string PromptContinuation {
+            get {
+                object value;
+                if (Engine.GetSysModule().TryGetVariable("ps2", out value)) {
+                    var context = ((PythonScopeExtension)Scope.GetExtension(Language.ContextId)).ModuleContext.GlobalContext;
+
+                    return PythonOps.ToString(context, value);
+                }
+
+                return "";
+            }
+        }
         
         private void RunStartup() {
             if (Options.IgnoreEnvironmentVariables)
