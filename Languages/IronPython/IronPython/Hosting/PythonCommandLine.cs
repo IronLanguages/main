@@ -347,7 +347,7 @@ namespace IronPython.Hosting {
                 return "";
             }
         }
-
+        
         private void RunStartup() {
             if (Options.IgnoreEnvironmentVariables)
                 return;
