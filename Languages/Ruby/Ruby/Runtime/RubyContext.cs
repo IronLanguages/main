@@ -136,7 +136,7 @@ namespace IronRuby.Runtime {
         private MutableString _itemSeparator;
 
         private readonly Dictionary<string/*!*/, GlobalVariable>/*!*/ _globalVariables;
-        public object/*!*/ GlobalVariablesLock { get { return _globalVariables; } }
+        public object/*!*/ GlobalVariablesLock { get { return _globalVariables; } } // does not need to use _typeSystemLock as operations on _symbols are all simple
 
         // not thread safe: use GlobalVariablesLock to synchronize access to the variables:
         public IEnumerable<KeyValuePair<string, GlobalVariable>>/*!*/ GlobalVariables {
@@ -211,25 +211,30 @@ namespace IronRuby.Runtime {
         /// Doesn't contain classes defined in Ruby.
         /// </summary>
         private readonly Dictionary<Type, RubyModule>/*!*/ _moduleCache;
+
+        /// <summary>Warning: 
+        /// ModuleCacheLock and ClassHierarchyLock sometimes interact.
+        /// If both are to be locked, the locking order must always be:
+        /// First acquire ClassHierarchyLock, Second acquire ModuleCacheLock</summary>
         private object ModuleCacheLock { get { return _moduleCache; } }
 
         /// <summary>
         /// Maps CLR namespace trackers to Ruby modules.
         /// </summary>
         private readonly Dictionary<NamespaceTracker, RubyModule>/*!*/ _namespaceCache;
-        private object NamespaceCacheLock { get { return _namespaceCache; } }
+        private object NamespaceCacheLock { get { return _namespaceCache; } } // safe to lock as operations on _namespaceCache are all simple
 
         // Maps objects to InstanceData. The keys store weak references to the objects.
         // Objects are compared by reference (identity). 
         // An entry can be removed as soon as the key object becomes unreachable.
         private readonly WeakTable<object, RubyInstanceData>/*!*/ _referenceTypeInstanceData;
-        private object/*!*/ ReferenceTypeInstanceDataLock { get { return _referenceTypeInstanceData; } }
+        private object/*!*/ ReferenceTypeInstanceDataLock { get { return _referenceTypeInstanceData; } } // safe to lock as operations on _referenceTypeInstanceData are all simple
 
         // Maps values to InstanceData. The keys store value representatives. 
         // All objects that has the same value (value-equality) map to the same InstanceData.
         // Entries cannot be ever freed since anytime in future one may create a new object whose value has already been mapped to InstanceData.
         private readonly Dictionary<object, RubyInstanceData>/*!*/ _valueTypeInstanceData;
-        private object/*!*/ ValueTypeInstanceDataLock { get { return _valueTypeInstanceData; } }
+        private object/*!*/ ValueTypeInstanceDataLock { get { return _valueTypeInstanceData; } } // safe to lock as operations on _valueTypeInstanceData are all simple
 
         // not thread-safe: 
         private readonly RubyInstanceData/*!*/ _nilInstanceData = new RubyInstanceData(RubyUtils.NilObjectId);
@@ -811,8 +816,10 @@ namespace IronRuby.Runtime {
         }
 
         internal RubyClass/*!*/ GetOrCreateClass(Type/*!*/ type) {
-            lock (ModuleCacheLock) {
-                return GetOrCreateClassNoLock(type);
+            using (ClassHierarchyLocker()) {
+                lock (ModuleCacheLock) {
+                    return GetOrCreateClassNoLock(type);
+                }
             }
         }
 
@@ -852,7 +859,9 @@ namespace IronRuby.Runtime {
             return result;
         }
 
+        // Requires hierarchy lock and module cache lock
         private RubyClass/*!*/ GetOrCreateClassNoLock(Type/*!*/ type) {
+            RequiresClassHierarchyLock();
             Debug.Assert(!RubyModule.IsModuleType(type));
 
             RubyClass result;
@@ -873,9 +882,8 @@ namespace IronRuby.Runtime {
             RubyModule[] expandedMixins;
 
             if (clrMixins != null) {
-                using (ClassHierarchyLocker()) {
-                    expandedMixins = RubyModule.ExpandMixinsNoLock(baseClass, clrMixins);
-                }
+                // this part requires the hierarchy lock. The rest just requires ModuleCacheLock
+                expandedMixins = RubyModule.ExpandMixinsNoLock(baseClass, clrMixins);
             } else {
                 expandedMixins = RubyModule.EmptyArray;
             }
@@ -1300,24 +1308,26 @@ namespace IronRuby.Runtime {
             bool exists = result != null;
 
             if (!exists) {
-                lock (ModuleCacheLock) {
-                    if (!(exists = TryGetClassNoLock(type, out result))) {
-                        if (name == null) {
-                            name = GetQualifiedNameNoLock(type);
+                using (ClassHierarchyLocker()){ // GetOrCreateClassNoLock requires the hierarchy lock
+                    lock (ModuleCacheLock) {
+                        if (!(exists = TryGetClassNoLock(type, out result))) {
+                            if (name == null) {
+                                name = GetQualifiedNameNoLock(type);
+                            }
+
+                            if (super == null) {
+                                super = GetOrCreateClassNoLock(type.BaseType);
+                            }
+
+                            // Use empty constant initializer rather than null so that we don't try to initialize nested types.
+                            result = CreateClass(
+                                name, type, null, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, factories,
+                                super, expandedMixins, GetLibraryModuleTypeTracker(type, restrictions), null, false, false,
+                                restrictions
+                            );
+
+                            AddModuleToCacheNoLock(type, result);
                         }
-
-                        if (super == null) {
-                            super = GetOrCreateClassNoLock(type.BaseType);
-                        }
-
-                        // Use empty constant initializer rather than null so that we don't try to initialize nested types.
-                        result = CreateClass(
-                            name, type, null, instanceTrait, classTrait, constantsInitializer ?? RubyModule.EmptyInitializer, factories,
-                            super, expandedMixins, GetLibraryModuleTypeTracker(type, restrictions), null, false, false,
-                            restrictions
-                        );
-
-                        AddModuleToCacheNoLock(type, result);
                     }
                 }
             }
@@ -2054,7 +2064,7 @@ namespace IronRuby.Runtime {
         #region Symbols
 
         private readonly Dictionary<MutableString, RubySymbol>/*!*/ _symbols;
-        private object SymbolsLock { get { return _symbols; } }
+        private object SymbolsLock { get { return _symbols; } } // safe to lock as operations on _symbols are all simple
 
         public RubySymbol/*!*/ CreateSymbol(MutableString/*!*/ str) {
             return CreateSymbol(str, true);
