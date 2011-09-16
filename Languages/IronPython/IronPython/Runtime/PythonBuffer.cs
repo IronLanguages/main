@@ -99,7 +99,7 @@ namespace IronPython.Runtime {
             } else {
                 _size = size;
             }
-            
+
             _object = o;
             _offset = offset;
 
@@ -169,7 +169,7 @@ namespace IronPython.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void __delslice__(object start, object stop) {
-           throw ReadOnlyError();
+            throw ReadOnlyError();
         }
 
         public object this[object s] {
@@ -207,7 +207,7 @@ namespace IronPython.Runtime {
 
             return context.Operation(
                 PythonOperationKind.Add,
-                PythonOps.GetIndex(a._context, a._object, a.GetSlice()), 
+                PythonOps.GetIndex(a._context, a._object, a.GetSlice()),
                 PythonOps.GetIndex(a._context, b._object, b.GetSlice())
             );
         }
@@ -233,7 +233,7 @@ namespace IronPython.Runtime {
                 PythonOperationKind.Multiply,
                 PythonOps.GetIndex(b._context, b._object, b.GetSlice()),
                 n
-            );                
+            );
         }
 
         public int __len__() {
@@ -289,111 +289,101 @@ namespace IronPython.Runtime {
 
         #endregion
 
-		#region IList[System.Byte] implementation
-		byte[] _objectByteCache = null;
-		byte[] byteCache {
-			get {
-				return _objectByteCache ?? (_objectByteCache = PythonOps.ConvertBufferToByteArray(this));
-			}
-		}
-		
-		[PythonHidden]
-		int IList<byte>.IndexOf (byte item)
-		{
-			for(int i = 0; i < byteCache.Length; ++i) {
-				if(byteCache[i] == item)
-					return i;
-			}
-			
-			return -1;
-		}
-		
-		[PythonHidden]
-		void IList<byte>.Insert (int index, byte item)
-		{
-			throw ReadOnlyError();
-		}
-		
-		[PythonHidden]
-		void IList<byte>.RemoveAt (int index)
-		{
-			throw ReadOnlyError();
-		}
-		
-		byte IList<byte>.this[int index] {
-			[PythonHidden]
-			get {
-				return byteCache[index];
-			}
-			
-			[PythonHidden]
-			set {
-				throw ReadOnlyError();
-			}
-		}
-		#endregion
+        #region IList[System.Byte] implementation
+        byte[] _objectByteCache = null;
+        byte[] byteCache {
+            get {
+                return _objectByteCache ?? (_objectByteCache = PythonOps.ConvertBufferToByteArray(this));
+            }
+        }
 
-		#region IEnumerable implementation
-		[PythonHidden]
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator ()
-		{
-			return byteCache.GetEnumerator();
-		}
-		#endregion
+        [PythonHidden]
+        int IList<byte>.IndexOf(byte item) {
+            for (int i = 0; i < byteCache.Length; ++i) {
+                if (byteCache[i] == item)
+                    return i;
+            }
 
-		#region IEnumerable[System.Byte] implementation
-		[PythonHidden]
-		IEnumerator<byte> IEnumerable<byte>.GetEnumerator ()
-		{
-			return ((IEnumerable<byte>)byteCache).GetEnumerator();
-		}
-		#endregion
+            return -1;
+        }
 
-		#region ICollection[System.Byte] implementation
-		[PythonHidden]
-		void ICollection<byte>.Add (byte item)
-		{
-			throw ReadOnlyError();
-		}
-		
-		[PythonHidden]
-		void ICollection<byte>.Clear ()
-		{
-			throw ReadOnlyError();
-		}
-		
-		[PythonHidden]
-		bool ICollection<byte>.Contains (byte item)
-		{
-			return ((IList<byte>)this).IndexOf(item) != -1;
-		}
-		
-		[PythonHidden]
-		void ICollection<byte>.CopyTo (byte[] array, int arrayIndex)
-		{
-			byteCache.CopyTo(array, arrayIndex);
-		}
-		
-		[PythonHidden]
-		bool ICollection<byte>.Remove (byte item)
-		{
-			throw ReadOnlyError();
-		}
-		
-		int ICollection<byte>.Count {
-			[PythonHidden]
-			get {
-				return byteCache.Length;
-			}
-		}
-		
-		bool ICollection<byte>.IsReadOnly {
-			[PythonHidden]
-			get {
-				return true;
-			}
-		}
-		#endregion
+        [PythonHidden]
+        void IList<byte>.Insert(int index, byte item) {
+            throw ReadOnlyError();
+        }
+
+        [PythonHidden]
+        void IList<byte>.RemoveAt(int index) {
+            throw ReadOnlyError();
+        }
+
+        byte IList<byte>.this[int index] {
+            [PythonHidden]
+            get {
+                return byteCache[index];
+            }
+
+            [PythonHidden]
+            set {
+                throw ReadOnlyError();
+            }
+        }
+        #endregion
+
+        #region IEnumerable implementation
+        [PythonHidden]
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            return byteCache.GetEnumerator();
+        }
+        #endregion
+
+        #region IEnumerable[System.Byte] implementation
+        [PythonHidden]
+        IEnumerator<byte> IEnumerable<byte>.GetEnumerator() {
+            return ((IEnumerable<byte>)byteCache).GetEnumerator();
+        }
+        #endregion
+
+        #region ICollection[System.Byte] implementation
+        [PythonHidden]
+        void ICollection<byte>.Add(byte item) {
+            throw ReadOnlyError();
+        }
+
+        [PythonHidden]
+        void ICollection<byte>.Clear() {
+            throw ReadOnlyError();
+        }
+
+        [PythonHidden]
+        bool ICollection<byte>.Contains(byte item) {
+            return ((IList<byte>)this).IndexOf(item) != -1;
+        }
+
+        [PythonHidden]
+        void ICollection<byte>.CopyTo(byte[] array, int arrayIndex) {
+            byteCache.CopyTo(array, arrayIndex);
+        }
+
+        [PythonHidden]
+        bool ICollection<byte>.Remove(byte item) {
+            throw ReadOnlyError();
+        }
+
+        int ICollection<byte>.Count {
+            [PythonHidden]
+            get {
+                return byteCache.Length;
+            }
+        }
+
+        bool ICollection<byte>.IsReadOnly {
+            [PythonHidden]
+            get {
+                return true;
+            }
+        }
+        #endregion
     }
 
     /// <summary>
