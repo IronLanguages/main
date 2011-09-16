@@ -291,7 +291,7 @@ namespace IronPython.Runtime {
 
         #region IList[System.Byte] implementation
         byte[] _objectByteCache = null;
-        byte[] byteCache {
+        internal byte[] byteCache {
             get {
                 return _objectByteCache ?? (_objectByteCache = PythonOps.ConvertBufferToByteArray(this));
             }
