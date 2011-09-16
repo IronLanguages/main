@@ -272,7 +272,9 @@ namespace IronPython.Modules {
             }
 
             public void fromstring([NotNull]PythonBuffer buf) {
-                fromstring(buf.ToString());
+                if ((buf.Size % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
+
+                FromStream(new MemoryStream(buf.byteCache, false));
             }
 
             public void fromunicode(CodeContext/*!*/ context, string s) {

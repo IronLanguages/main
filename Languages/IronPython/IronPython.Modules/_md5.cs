@@ -104,11 +104,6 @@ namespace IronPython.Modules {
                 update(initialBytes);
             }
 
-            internal MD5Type(PythonBuffer initialBuffer) {
-                _bytes = new byte[0];
-                update(initialBuffer);
-            }
-
             [Documentation("update(string) -> None (update digest with string data)")]
             public void update(object newData) {
                 update(Converter.ConvertToString(newData).MakeByteArray());
@@ -126,7 +121,7 @@ namespace IronPython.Modules {
 
             [Documentation("update(bytes) -> None (update digest with string data)")]
             public void update(PythonBuffer newData) {
-                update(newData.ToString().MakeByteArray());
+                update((IList<byte>)newData);
             }
 
             private void update(IList<byte> newBytes) {

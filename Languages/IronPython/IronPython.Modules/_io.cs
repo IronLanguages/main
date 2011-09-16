@@ -3214,9 +3214,7 @@ namespace IronPython.Modules {
 
             string str = buf as string;
             if (str == null) {
-                if (buf is PythonBuffer) {
-                    str = ((PythonBuffer)buf).ToString();
-                } else if (buf is Extensible<string>) {
+                if (buf is Extensible<string>) {
                     str = ((Extensible<string>)buf).Value;
                 }
             }

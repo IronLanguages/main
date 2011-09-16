@@ -477,11 +477,6 @@ namespace IronPython.Modules {
                     return write(bBytes);
                 }
 
-                PythonBuffer bBuffer = b as PythonBuffer;
-                if (bBuffer != null) {
-                    return write(bBuffer.ToString());
-                }
-
                 ArrayModule.array bPythonArray = b as ArrayModule.array;
                 if (bPythonArray != null) {
                     return write(bPythonArray.ToByteArray());
