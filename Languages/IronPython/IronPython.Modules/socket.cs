@@ -637,7 +637,7 @@ namespace IronPython.Modules {
                 + "had room to buffer your data for a network send"
                 )]
             public int send(PythonBuffer data, [DefaultParameterValue(0)] int flags) {
-                byte[] buffer = data.ToString().MakeByteArray();
+                byte[] buffer = data.byteCache;
                 try {
                     return _socket.Send(buffer, (SocketFlags)flags);
                 } catch (Exception e) {
@@ -699,7 +699,7 @@ namespace IronPython.Modules {
                 + "had room to buffer your data for a network send"
                 )]
             public void sendall(PythonBuffer data, [DefaultParameterValue(0)] int flags) {
-                byte[] buffer = data.ToString().MakeByteArray();
+                byte[] buffer = data.byteCache;
                 try {
                     int bytesTotal = buffer.Length;
                     int bytesRemaining = bytesTotal;

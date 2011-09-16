@@ -1614,35 +1614,7 @@ namespace IronPython.Runtime {
         }
 
         public void write([NotNull]PythonBuffer buf) {
-            WriteWorker(buf, true);
-        }
-
-        private void WriteWorker(PythonBuffer/*!*/ buf, bool locking) {
-            Debug.Assert(buf != null);
-
-            string str = buf._object as string;
-            IPythonArray pyArr;
-            if (str != null || buf._object is IList<byte>) {
-                if (locking) {
-                    write(buf.ToString());
-                } else {
-                    WriteNoLock(buf.ToString());
-                }
-            } else if (buf._object is Array) {
-                throw new NotImplementedException("writing buffer of .NET array to file");
-            } else if ((pyArr = buf._object as IPythonArray) != null) {
-                if (_fileMode != PythonFileMode.Binary) {
-                    throw PythonOps.TypeError("char buffer type not available");
-                }
-
-                if (locking) {
-                    write(pyArr.tostring());
-                } else {
-                    WriteNoLock(pyArr.tostring());
-                }
-            } else {
-                Debug.Assert(false, "unsupported buffer object");
-            }
+            write((IList<byte>)buf);
         }
 
         public void write([NotNull]object arr) {
@@ -1685,7 +1657,7 @@ namespace IronPython.Runtime {
 
                         PythonBuffer buf = e.Current as PythonBuffer;
                         if (buf != null) {
-                            WriteWorker(buf, false);
+                            WriteNoLock(buf);
                             continue;
                         }
 
