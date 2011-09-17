@@ -948,7 +948,7 @@ namespace IronPython.Runtime {
 
         private PythonStreamReader _reader;
         private PythonStreamWriter _writer;
-        private bool _isOpen;
+        protected bool _isOpen;
         private Nullable<long> _reseekPosition; // always null for console
         private WeakRefTracker _weakref;
         private string _enumValue;
@@ -1381,7 +1381,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        void ThrowIfClosed() {
+        protected void ThrowIfClosed() {
             if (!_isOpen) {
                 throw PythonOps.ValueError("I/O operation on closed file");
             }
@@ -1429,11 +1429,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public string read() {
+        public virtual string read() {
             return read(-1);
         }
 
-        public string read(int size) {
+        public virtual string read(int size) {
             PythonStreamReader reader = GetReader();
             if (size < 0) {
                 return reader.ReadToEnd();
@@ -1442,15 +1442,15 @@ namespace IronPython.Runtime {
             }
         }
 
-        public string readline() {
+        public virtual string readline() {
             return GetReader().ReadLine();
         }
 
-        public string readline(int size) {
+        public virtual string readline(int size) {
             return GetReader().ReadLine(size);
         }
 
-        public List readlines() {
+        public virtual List readlines() {
             List ret = new List();
             string line;
             for (; ; ) {
@@ -1461,7 +1461,7 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        public List readlines(int sizehint) {
+        public virtual List readlines(int sizehint) {
             List ret = new List();
             for (; ; ) {
                 string line = readline();
