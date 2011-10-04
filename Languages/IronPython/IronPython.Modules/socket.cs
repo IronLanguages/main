@@ -173,13 +173,11 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void __del__()
-            {
+            public void __del__() {
                 _close();
             }
 
-            ~socket()
-            {
+            ~socket() {
                 _close();
             }
 
@@ -251,16 +249,12 @@ namespace IronPython.Modules {
             }
 
             [Documentation("close() -> None\n\nClose the socket. It cannot be used after being closed.")]
-            public void close()
-            {
+            public void close() {
                 // Don't actually close the socket if other file objects are
                 // still referring to this socket.
-                if (_referenceCount < 1)
-                {
+                if (_referenceCount < 1) {
                     _close();
-                }
-                else
-                {
+                } else {
                     var refs = System.Threading.Interlocked.Decrement(ref _referenceCount);
                 }
             }
@@ -895,7 +889,7 @@ namespace IronPython.Modules {
                     return "<socket object, fd=?, family=?, type=, protocol=>";
                 }
             }
-            
+
             /// <summary>
             /// Return the internal System.Net.Sockets.Socket socket object associated with the given
             /// handle (as returned by GetHandle()), or null if no corresponding socket exists. This is
@@ -1007,14 +1001,14 @@ namespace IronPython.Modules {
             string msg = "getaddrinfo returns an empty list";
             string host = Converter.ConvertToString(address[0]);
             object port = address[1];
-            
+
             IEnumerator en = getaddrinfo(context, host, port, 0, SOCK_STREAM, (int)ProtocolType.IP, (int)SocketFlags.None).GetEnumerator();
             while (en.MoveNext()) {
                 PythonTuple current = (PythonTuple)en.Current;
                 int family = Converter.ConvertToInt32(current[0]);
                 int socktype = Converter.ConvertToInt32(current[1]);
                 int proto = Converter.ConvertToInt32(current[2]);
-                
+
                 // TODO: name is unused?
                 // string name = Converter.ConvertToString(current[3]);
 
@@ -2015,8 +2009,7 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
-        public class _fileobject : PythonFile
-        {
+        public class _fileobject : PythonFile {
             public new const string name = "<socket>";
             private readonly socket _socket;
             public const string __module__ = "socket";
@@ -2034,9 +2027,7 @@ namespace IronPython.Modules {
                     socket s = (socket as socket);
                     _socket = s;
                     stream = new NetworkStream(s._socket, false);
-                }
-                else
-                {
+                } else {
                     stream = new PythonUserSocketStream(socket, GetBufferSize(context, bufsize), close);
                 }
                 _isOpen = true;
@@ -2049,85 +2040,27 @@ namespace IronPython.Modules {
             public void __init__([ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
             }
 
-            public override string read()
-            {
-                ThrowIfClosed();
-                return base.read();
-            }
-
-            public override string read(int size)
-            {
-                ThrowIfClosed();
-                return base.read(size);
-            }
-
-            public override string readline()
-            {
-                ThrowIfClosed();
-                return base.readline();
-            }
-
-            public override string readline(int size)
-            {
-                ThrowIfClosed();
-                return base.readline(size);
-            }
-
-            public override List readlines()
-            {
-                ThrowIfClosed();
-                return base.readlines();
-            }
-
-            public override List readlines(int sizehint)
-            {
-                ThrowIfClosed();
-                return base.readlines(sizehint);
-            }
-
             public void __del__() {
-                if (_socket != null && _isOpen)
-                {
+                if (_socket != null && _isOpen) {
                     if (_close) _socket.close();
                     _isOpen = false;
                 }
             }
 
-            protected override void Dispose(bool disposing)
-            {
-                if (_socket != null && _isOpen)
-                {
+            protected override void Dispose(bool disposing) {
+                if (_socket != null && _isOpen) {
                     if (_close) _socket.close();
                     _isOpen = false;
                 }
                 base.Dispose(disposing);
             }
 
-            public new object close()
-            {
+            public override object close() {
                 if (!_isOpen) return null;
                 if (_socket != null && _close) _socket.close();
                 _isOpen = false;
                 var obj = base.close();
                 return obj;
-            }
-
-            public override void write(IList<byte> bytes)
-            {
-                ThrowIfClosed();
-                base.write(bytes);
-            }
-
-            public override void write(string s)
-            {
-                ThrowIfClosed();
-                base.write(s);
-            }
-
-            public override void flush()
-            {
-                ThrowIfClosed();
-                base.flush();
             }
 
             private static int GetBufferSize(CodeContext/*!*/ context, int size) {
@@ -2203,7 +2136,7 @@ namespace IronPython.Modules {
                     throw PythonExceptions.CreateThrowable(
                         PythonSsl.SSLError(context),
                         "When key or certificate is provided both must be provided"
-                    );                    
+                    );
                 }
 
                 _serverSide = server_side;
@@ -2450,7 +2383,7 @@ namespace IronPython.Modules {
             [Documentation("issuer() -> issuer_certificate\n\n"
                 + "Returns a string that describes the issuer of the server's certificate. Only useful for debugging purposes."
                 )]
-            public string issuer() {                
+            public string issuer() {
                 if (_sslStream != null && _sslStream.IsAuthenticated) {
                     X509Certificate remoteCertificate = _sslStream.RemoteCertificate;
                     if (remoteCertificate != null) {
