@@ -636,7 +636,7 @@ namespace IronPython.Runtime {
         // possibly translated character read.
         private int ReadChar() {
             int c = ReadOne();
-            if (c != -1) _position++;            
+            if (c != -1) _position++;
             if (c == '\r') {
                 Debug.Assert(_lastChar == -1);
                 // we can't Peek here because Peek() won't block for more input
@@ -948,7 +948,7 @@ namespace IronPython.Runtime {
 
         private PythonStreamReader _reader;
         private PythonStreamWriter _writer;
-        private bool _isOpen;
+        protected bool _isOpen;
         private Nullable<long> _reseekPosition; // always null for console
         private WeakRefTracker _weakref;
         private string _enumValue;
@@ -1381,7 +1381,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        void ThrowIfClosed() {
+        protected void ThrowIfClosed() {
             if (!_isOpen) {
                 throw PythonOps.ValueError("I/O operation on closed file");
             }
@@ -1573,7 +1573,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual void write(string s) {
+        public void write(string s) {
             if (s == null) {
                 throw PythonOps.TypeError("must be string or read-only character buffer, not None");
             }
@@ -1583,7 +1583,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual void write([NotNull]IList<byte> bytes) {
+        public void write([NotNull]IList<byte> bytes) {
             lock (this) {
                 WriteNoLock(bytes);
             }
@@ -1749,12 +1749,9 @@ namespace IronPython.Runtime {
                         TextWriter currentWriter = _io.GetWriter(_consoleStreamType);
 
                         if (!ReferenceEquals(currentWriter, _writer.TextWriter)) {
-                            try
-                            {
+                            try {
                                 _writer.Flush();
-                            }
-                            catch (ObjectDisposedException)
-                            {
+                            } catch (ObjectDisposedException) {
                                 //no way to tell if stream has been closed outside of execution
                                 //so don't blow up if it has
                             }
