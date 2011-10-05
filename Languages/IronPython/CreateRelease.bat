@@ -1,4 +1,4 @@
-set IPY_VERSION=2.7.1-Beta2
+set IPY_VERSION=2.7.1-Beta3
 
 if "%1" == "" (
     set BUILD_FLAVOR=Release

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <Include Id="VersionNumberInclude"> 
     <?define ProductShortName = "IronPython" ?>
-    <?define ProductVersion = "2.7.1002" ?>
-    <?define ProductVersionText = "2.7.1 Beta 2" ?>
+    <?define ProductVersion = "2.7.1003" ?>
+    <?define ProductVersionText = "2.7.1 Beta 3" ?>
     <?define Manufacturer = "IronPython Team" ?>
 </Include> 
