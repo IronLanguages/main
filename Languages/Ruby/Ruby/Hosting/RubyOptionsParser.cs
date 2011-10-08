@@ -33,9 +33,6 @@ namespace IronRuby.Hosting {
     }
 
     public sealed class RubyOptionsParser : OptionsParser<RubyConsoleOptions> {
-        private readonly List<string>/*!*/ _loadPaths = new List<string>();
-        private readonly List<string>/*!*/ _requiredPaths = new List<string>();
-        private RubyEncoding _defaultEncoding;
         private bool _disableRubyGems;
 
 #if DEBUG && !SILVERLIGHT
@@ -78,7 +75,7 @@ namespace IronRuby.Hosting {
         }
 #endif
 
-        private static string[] GetPaths(string input) {
+        public static string[] GetPaths(string input) {
             string[] paths = StringUtils.Split(input, new char[] { Path.PathSeparator }, Int32.MaxValue, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < paths.Length; i++) {
                 // Trim any occurrances of "
@@ -124,17 +121,21 @@ namespace IronRuby.Hosting {
                     includePaths = arg.Substring(2);
                 }
 
-                _loadPaths.AddRange(GetPaths(includePaths));
+                ((List<string>)LanguageSetup.Options["SearchPaths"]).AddRange(GetPaths(includePaths));
                 return;
             }
 
             if (arg.StartsWith("-K", StringComparison.Ordinal)) {
-                _defaultEncoding = arg.Length >= 3 ? RubyEncoding.GetEncodingByNameInitial(arg[2]) : null;
+                var encoding = arg.Length >= 3 ? RubyEncoding.GetEncodingByNameInitial(arg[2]) : null;
+                LanguageSetup.Options["DefaultEncoding"] = encoding;
+                if (encoding != null) {
+                    LanguageSetup.Options["LocaleEncoding"] = encoding;
+                }
                 return;
             }
 
             if (arg.StartsWith("-r", StringComparison.Ordinal)) {
-                _requiredPaths.Add((arg == "-r") ? PopNextArg() : arg.Substring(2));
+                ((List<string>) LanguageSetup.Options["RequiredPaths"]).Add((arg == "-r") ? PopNextArg() : arg.Substring(2));
                 return;
             }
 
@@ -311,40 +312,48 @@ namespace IronRuby.Hosting {
             return mainFileFromPath;
         }
 
+        protected override void BeforeParse() {
+            LanguageSetup.Options["LocaleEncoding"] =
+#if SILVERLIGHT
+                RubyEncoding.UTF8;
+#else
+                RubyEncoding.GetRubyEncoding(Console.InputEncoding);
+#endif
+
+            LanguageSetup.Options["RequiredPaths"] = new List<string>();
+            LanguageSetup.Options["SearchPaths"] = new List<string>();
+
+#if !SILVERLIGHT
+            string rubyopt = Environment.GetEnvironmentVariable("RUBYOPT") ?? string.Empty;
+
+            var rubyoptParser = new RubyOptEnvParser();
+            rubyoptParser.Parse(rubyopt, LanguageSetup, ConsoleOptions);
+#endif
+        }
+
         protected override void AfterParse() {
             var existingSearchPaths =
                 LanguageOptions.GetSearchPathsOption(LanguageSetup.Options) ??
                 LanguageOptions.GetSearchPathsOption(RuntimeSetup.Options);
 
             if (existingSearchPaths != null) {
-                _loadPaths.InsertRange(0, existingSearchPaths);
+                ((List<string>) LanguageSetup.Options["SearchPaths"]).InsertRange(0, existingSearchPaths);
             }
 
 #if !SILVERLIGHT
             try {
                 string rubylib = Environment.GetEnvironmentVariable("RUBYLIB");
                 if (rubylib != null) {
-                    _loadPaths.AddRange(GetPaths(rubylib));
+                    ((List<string>) LanguageSetup.Options["SearchPaths"]).AddRange(GetPaths(rubylib));
                 }
             } catch (SecurityException) {
                 // nop
             }
 #endif
-            LanguageSetup.Options["SearchPaths"] = _loadPaths;
 
             if (!_disableRubyGems) {
-                _requiredPaths.Insert(0, "gem_prelude.rb");
+                ((List<string>) LanguageSetup.Options["RequiredPaths"]).Insert(0, "gem_prelude.rb");
             }
-
-            LanguageSetup.Options["RequiredPaths"] = _requiredPaths;
-
-            LanguageSetup.Options["DefaultEncoding"] = _defaultEncoding;                        
-            LanguageSetup.Options["LocaleEncoding"] = _defaultEncoding ??
-#if SILVERLIGHT
-                RubyEncoding.UTF8;
-#else
-                RubyEncoding.GetRubyEncoding(Console.InputEncoding);
-#endif
 
 #if DEBUG && !SILVERLIGHT
             // Can be set to nl-BE, ja-JP, etc
@@ -424,6 +433,105 @@ namespace IronRuby.Hosting {
                 { "-X:PerfStats",                "print performance stats when the process exists [debug only]" },
 #endif
             };
+        }
+    }
+
+    public class RubyOptEnvParser {
+        public void Parse(string rubyopt, LanguageSetup languageSetup, RubyConsoleOptions consoleOptions) {
+            rubyopt = rubyopt.TrimStart('-');
+
+            if (string.IsNullOrEmpty(rubyopt)) {
+                return;
+            }
+
+            int i = -1;
+            Func<bool> hasNextChar = () => (i + 1) < rubyopt.Length;
+            Func<char> nextChar = () => rubyopt[++i];
+            Func<string> readToEnd = () => {
+                string s = hasNextChar() ? rubyopt.Substring(++i) : string.Empty;
+                i = rubyopt.Length;
+                return s;
+            };
+
+            //"EIdvwWrKU" only
+
+            while (hasNextChar()) {
+                char c = nextChar();
+
+                switch (c) {
+                    case '-':
+                        break;
+
+                    case 'd':
+                        languageSetup.Options["DebugVariable"] = true; // $DEBUG = true
+                        break;
+
+                    case 'v':
+                        consoleOptions.DisplayVersion = true;
+                        goto case 'w';
+
+                    case 'w':
+                        languageSetup.Options["Verbosity"] = 2; // $VERBOSE = true
+                        break;
+
+                    case 'W':
+                        if (!hasNextChar()) {
+                            throw new InvalidOptionException(String.Format("missing argument for {0}", c));
+                        }
+
+                        char wLevel = nextChar();
+
+                        if (wLevel == '0') {
+                            languageSetup.Options["Verbosity"] = 0; // $VERBOSE = nil
+                        } else if (wLevel == '1') {
+                            languageSetup.Options["Verbosity"] = 1; // $VERBOSE = false
+                        } else if (wLevel == '2') {
+                            languageSetup.Options["Verbosity"] = 2; // $VERBOSE = true
+                        } else {
+                            throw new InvalidOptionException(String.Format("invalid argument {1} for {0}", c, wLevel));
+                        }
+
+                        break;
+
+                    case 'r':
+                        string rArg = readToEnd().Trim();
+
+                        if (string.IsNullOrEmpty(rArg)) {
+                            throw new InvalidOptionException(String.Format("missing argument for {0}", c));
+                        }
+
+                        ((List<string>) languageSetup.Options["RequiredPaths"]).Add(rArg);
+                        break;
+
+                    case 'K':
+                        if (!hasNextChar()) {
+                            throw new InvalidOptionException(String.Format("missing argument for {0}", c));
+                        }
+
+                        var encoding = RubyEncoding.GetEncodingByNameInitial(nextChar());
+                        languageSetup.Options["DefaultEncoding"] = encoding;
+                        if (encoding != null) {
+                            languageSetup.Options["LocaleEncoding"] = encoding;
+                        }
+                        break;
+
+                    case 'I':
+                        string iArg = readToEnd().Trim();
+                        if (string.IsNullOrEmpty(iArg)) {
+                            throw new InvalidOptionException(String.Format("missing argument for {0}", c));
+                        }
+
+                        ((List<string>) languageSetup.Options["SearchPaths"]).AddRange(RubyOptionsParser.GetPaths(iArg));
+                        break;
+
+                    case 'U':
+                    case 'T':
+                        throw new InvalidOptionException(String.Format("Option `{0}' not supported", c));
+
+                    default:
+                        throw new InvalidOptionException(String.Format("Option `{0}' not supported", c));
+                }
+            }
         }
     }
 }

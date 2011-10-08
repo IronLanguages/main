@@ -38,4 +38,13 @@ describe "The -K command line option" do
   it "sets the $KCODE to NONE with n" do 
     ruby_exe(fixture(__FILE__, "kcode.rb"), :options => '-Kn').chomp.should == "NONE"
   end
+
+  it "can be set from RUBYOPT environment variable" do
+    begin
+      ENV['RUBYOPT'] = "-KU"
+      ruby_exe(fixture(__FILE__, "kcode.rb"), :options => "").chomp.should == "UTF8"
+    ensure
+      ENV['RUBYOPT'] = nil
+    end
+  end
 end
