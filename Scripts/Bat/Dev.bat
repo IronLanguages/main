@@ -64,6 +64,13 @@ if EXIST "%ProgramFiles%\Microsoft SDKs\Windows\v7.0A\bin\NETFX 4.0 Tools\sn.exe
   goto SnDone
 )
 
+
+if EXIST "%ProgramFiles%\Microsoft SDKs\Windows\v8.0A\bin\NETFX 4.0 Tools\sn.exe" (
+  set SN_UTIL="%ProgramFiles%\Microsoft SDKs\Windows\v8.0A\bin\NETFX 4.0 Tools\sn.exe"
+  goto SnDone
+)
+
+
 if EXIST "%PROGRAM_FILES_64%\Microsoft SDKs\Windows\v7.0A\bin\NETFX 4.0 Tools\sn.exe" (
   set SN_UTIL="%PROGRAM_FILES_64%\Microsoft SDKs\Windows\v7.0A\bin\NETFX 4.0 Tools\sn.exe"
   goto SnDone
@@ -73,6 +80,11 @@ REM SN_UTIL should be defined even if we can't find sn.exe.
 set SN_UTIL="sn.exe"
 
 :SnDone
+
+if exist "%PROGRAM_FILES_32%\Microsoft Visual Studio 11.0\Common7\Tools\vsvars32.bat" (
+    call "%PROGRAM_FILES_32%\Microsoft Visual Studio 11.0\Common7\Tools\vsvars32.bat"
+    goto EnvDone
+)
 
 if exist "%PROGRAM_FILES_32%\Microsoft Visual Studio 10.0\Common7\Tools\vsvars32.bat" (
     call "%PROGRAM_FILES_32%\Microsoft Visual Studio 10.0\Common7\Tools\vsvars32.bat"

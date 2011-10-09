@@ -1181,6 +1181,34 @@ namespace IronRuby.Runtime {
             return path[0] == '/';
         }
 
+        public static bool IsRelativeToCurrentDirectory(string path) {
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            if (path.Length == 1) {
+                return path[0] == '.';
+            }
+
+            if (path[0] != '.') {
+                return false;
+            }
+
+            if (path[1] == '/' || path[1] == '\\') {
+                return true;
+            }
+
+            if (path.Length == 2) {
+                return path[1] == '.';
+            }
+
+            if (path[2] == '/' || path[2] == '\\') {
+                return true;
+            }
+
+            return false;
+        }
+
         // Is path something like "c:/foo/bar" (on Windows)
         public static bool IsAbsoluteDriveLetterPath(string path) {
             if (String.IsNullOrEmpty(path)) {

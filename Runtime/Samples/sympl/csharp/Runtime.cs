@@ -707,16 +707,14 @@ namespace SymplSample {
             } else {
                 // Get MethodInfos with right arg counts.
                 var mi_mems = members.
-                    Select(m => m as MethodInfo).
-                    Where(m => m is MethodInfo &&
-                               ((MethodInfo)m).GetParameters().Length ==
-                                   args.Length);
+                    Where(m => m.MemberType == MemberTypes.Method && ((MethodInfo)m).GetParameters().Length == args.Length);
+
                 // Get MethodInfos with param types that work for args.  This works
                 // except for value args that need to pass to reftype params. 
                 // We could detect that to be smarter and then explicitly StrongBox
                 // the args.
                 List<MethodInfo> res = new List<MethodInfo>();
-                foreach (var mem in mi_mems) {
+                foreach (MethodInfo mem in mi_mems) {
                     if (RuntimeHelpers.ParametersMatchArguments(
                                            mem.GetParameters(), args)) {
                         res.Add(mem);

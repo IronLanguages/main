@@ -35,7 +35,6 @@ namespace IronRuby.Hosting {
     public sealed class RubyOptionsParser : OptionsParser<RubyConsoleOptions> {
         private readonly List<string>/*!*/ _loadPaths = new List<string>();
         private readonly List<string>/*!*/ _requiredPaths = new List<string>();
-        private RubyEncoding _defaultEncoding;
         private bool _disableRubyGems;
 
 #if DEBUG && !SILVERLIGHT
@@ -78,21 +77,31 @@ namespace IronRuby.Hosting {
         }
 #endif
 
-        private static string[] GetPaths(string input) {
+        private string[] GetPaths(string input) {
             string[] paths = StringUtils.Split(input, new char[] { Path.PathSeparator }, Int32.MaxValue, StringSplitOptions.RemoveEmptyEntries);
+            
             for (int i = 0; i < paths.Length; i++) {
-                // Trim any occurrances of "
-                string[] parts = StringUtils.Split(paths[i], new char[] { '"' }, Int32.MaxValue, StringSplitOptions.RemoveEmptyEntries);
-                paths[i] = String.Concat(parts);
+                string path = paths[i];
+
+                if (!RubyUtils.IsRelativeToCurrentDirectory(path)) {
+                    paths[i] = RubyUtils.ExpandPath(Platform, path, Platform.CurrentDirectory, true);
+                }
             }
+
             return paths;
         }
 
-        /// <exception cref="Exception">On error.</exception>
         protected override void ParseArgument(string arg) {
             ContractUtils.RequiresNotNull(arg, "arg");
 
-            string mainFileFromPath = null;
+            if (ParseRubyOptArgument(arg, PopNextArg)) {
+                return;
+            }
+
+            if (arg.StartsWith("-C", StringComparison.Ordinal)) {
+                ConsoleOptions.ChangeDirectory = arg.Substring(2);
+                return;
+            }
 
             if (arg.StartsWith("-e", StringComparison.Ordinal)) {
                 string command;
@@ -112,39 +121,7 @@ namespace IronRuby.Hosting {
                 return;
             }
 
-            if (arg.StartsWith("-S", StringComparison.Ordinal)) {
-                mainFileFromPath = arg == "-S" ? PopNextArg() : arg.Substring(2);
-            }
-
-            if (arg.StartsWith("-I", StringComparison.Ordinal)) {
-                string includePaths;
-                if (arg == "-I") {
-                    includePaths = PopNextArg();
-                } else {
-                    includePaths = arg.Substring(2);
-                }
-
-                _loadPaths.AddRange(GetPaths(includePaths));
-                return;
-            }
-
-            if (arg.StartsWith("-K", StringComparison.Ordinal)) {
-                _defaultEncoding = arg.Length >= 3 ? RubyEncoding.GetEncodingByNameInitial(arg[2]) : null;
-                return;
-            }
-
-            if (arg.StartsWith("-r", StringComparison.Ordinal)) {
-                _requiredPaths.Add((arg == "-r") ? PopNextArg() : arg.Substring(2));
-                return;
-            }
-
-            if (arg.StartsWith("-C", StringComparison.Ordinal)) {
-                ConsoleOptions.ChangeDirectory = arg.Substring(2);
-                return;
-            }
-
             if (arg.StartsWith("-0", StringComparison.Ordinal) ||
-                arg.StartsWith("-C", StringComparison.Ordinal) ||
                 arg.StartsWith("-F", StringComparison.Ordinal) ||
                 arg.StartsWith("-i", StringComparison.Ordinal) ||
                 arg.StartsWith("-T", StringComparison.Ordinal) ||
@@ -152,18 +129,13 @@ namespace IronRuby.Hosting {
                 throw new InvalidOptionException(String.Format("Option `{0}' not supported", arg));
             }
 
-            int colon = arg.IndexOf(':');
-            string optionName, optionValue;
-            if (colon >= 0) {
-                optionName = arg.Substring(0, colon);
-                optionValue = arg.Substring(colon + 1);
-            } else {
-                optionName = arg;
-                optionValue = null;
+            string mainFileFromPath = null;
+            if (arg.StartsWith("-S", StringComparison.Ordinal)) {
+                mainFileFromPath = arg == "-S" ? PopNextArg() : arg.Substring(2);
             }
 
-            switch (optionName) {
-                #region Ruby options
+            switch (arg) {
+                #region Ruby Options
 
                 case "-a":
                 case "-c":
@@ -172,16 +144,136 @@ namespace IronRuby.Hosting {
                 case "-n":
                 case "-p":
                 case "-s":
-                    throw new InvalidOptionException(String.Format("Option `{0}' not supported", optionName));
-
-                case "-d":
-                    LanguageSetup.Options["DebugVariable"] = true; // $DEBUG = true
-                    break;
+                    throw new InvalidOptionException(String.Format("Option `{0}' not supported", arg));
 
                 case "--version":
                     ConsoleOptions.PrintVersion = true;
                     ConsoleOptions.Exit = true;
-                    break;
+                    return;
+
+                #endregion
+
+                #region IronRuby Options
+
+#if DEBUG && !SILVERLIGHT
+                case "-DT*":
+                    SetTraceFilter(String.Empty, false);
+                    return;
+
+                case "-DT":
+                    SetTraceFilter(PopNextArg(), false);
+                    return;
+
+                case "-ET*":
+                    SetTraceFilter(String.Empty, true);
+                    return;
+
+                case "-ET":
+                    SetTraceFilter(PopNextArg(), true);
+                    return;
+
+                case "-ER":
+                    RubyOptions.ShowRules = true;
+                    return;
+
+                case "-save":
+                    LanguageSetup.Options["SavePath"] = PeekNextArg() ?? AppDomain.CurrentDomain.BaseDirectory;
+                    return;
+
+                case "-load":
+                    LanguageSetup.Options["LoadFromDisk"] = ScriptingRuntimeHelpers.True;
+                    return;
+
+                case "-useThreadAbortForSyncRaise":
+                    RubyOptions.UseThreadAbortForSyncRaise = true;
+                    return;
+
+                case "-compileRegexps":
+                    RubyOptions.CompileRegexps = true;
+                    return;
+#endif
+                case "-trace":
+                    LanguageSetup.Options["EnableTracing"] = ScriptingRuntimeHelpers.True;
+                    return;
+
+                case "-profile":
+                    LanguageSetup.Options["Profile"] = ScriptingRuntimeHelpers.True;
+                    return;
+
+                case "-1.8.6":
+                case "-1.8.7":
+                case "-1.9":
+                case "-2.0":
+                    throw new InvalidOptionException(String.Format("Option `{0}' is no longer supported. The compatible Ruby version is 1.9.", arg));
+
+                case "--disable-gems":
+                    _disableRubyGems = true;
+                    return;
+
+                case "-X:AutoIndent":
+                case "-X:TabCompletion":
+                case "-X:ColorfulConsole":
+                    throw new InvalidOptionException(String.Format("Option `{0}' not supported", arg));
+
+                #endregion
+            }
+
+            // DLR options, file name:
+            base.ParseArgument(arg);
+
+            if (ConsoleOptions.FileName != null) {
+                if (mainFileFromPath != null) {
+                    ConsoleOptions.FileName = FindMainFileFromPath(mainFileFromPath);
+                }
+
+                if (ConsoleOptions.Command == null) {
+                    SetupOptionsForMainFile();
+                } else {
+                    SetupOptionsForCommand();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Parses arguments available both on command line and in RUBYOPT environment variable.
+        /// </summary>
+        private bool ParseRubyOptArgument(string arg, Func<string> getNextArg) {
+            ContractUtils.RequiresNotNull(arg, "arg");
+
+            if (arg.StartsWith("-I", StringComparison.Ordinal)) {
+                string includePaths;
+                if (arg == "-I") {
+                    includePaths = getNextArg();
+                } else {
+                    includePaths = arg.Substring(2);
+                }
+
+                if (!String.IsNullOrEmpty(includePaths)) {
+                    _loadPaths.AddRange(GetPaths(includePaths));
+                }
+
+                return true;
+            }
+
+            if (arg.StartsWith("-K", StringComparison.Ordinal)) {
+                // ignore (1.8 encoding option)
+                return true;
+            }
+
+            if (arg.StartsWith("-r", StringComparison.Ordinal)) {
+                string path = (arg == "-r") ? getNextArg() : arg.Substring(2);
+                
+                if (!String.IsNullOrEmpty(path)) {
+                    _requiredPaths.Add(path);
+                }
+
+                return true;
+            }
+
+            switch (arg) {
+                case "-d":
+                    LanguageSetup.Options["DebugVariable"] = true; // $DEBUG = true
+                    return true;
 
                 case "-v":
                     ConsoleOptions.DisplayVersion = true;
@@ -189,99 +281,19 @@ namespace IronRuby.Hosting {
 
                 case "-W0":
                     LanguageSetup.Options["Verbosity"] = 0; // $VERBOSE = nil
-                    break;
+                    return true;
 
                 case "-W1":
                     LanguageSetup.Options["Verbosity"] = 1; // $VERBOSE = false
-                    break;
+                    return true;
 
                 case "-w":
                 case "-W2":
                     LanguageSetup.Options["Verbosity"] = 2; // $VERBOSE = true
-                    break;
-
-                #endregion
-
-#if DEBUG && !SILVERLIGHT
-                case "-DT*":
-                    SetTraceFilter(String.Empty, false);
-                    break;
-
-                case "-DT":
-                    SetTraceFilter(PopNextArg(), false);
-                    break;
-
-                case "-ET*":
-                    SetTraceFilter(String.Empty, true);
-                    break;
-
-                case "-ET":
-                    SetTraceFilter(PopNextArg(), true);
-                    break;
-
-                case "-ER":
-                    RubyOptions.ShowRules = true;
-                    break;
-
-                case "-save":
-                    LanguageSetup.Options["SavePath"] = optionValue ?? AppDomain.CurrentDomain.BaseDirectory;
-                    break;
-
-                case "-load":
-                    LanguageSetup.Options["LoadFromDisk"] = ScriptingRuntimeHelpers.True;
-                    break;
-
-                case "-useThreadAbortForSyncRaise":
-                    RubyOptions.UseThreadAbortForSyncRaise = true;
-                    break;
-
-                case "-compileRegexps":
-                    RubyOptions.CompileRegexps = true;
-                    break;
-#endif
-                case "-trace":
-                    LanguageSetup.Options["EnableTracing"] = ScriptingRuntimeHelpers.True;
-                    break;
-
-                case "-profile":
-                    LanguageSetup.Options["Profile"] = ScriptingRuntimeHelpers.True;
-                    break;
-
-                case "-1.8.6":
-                case "-1.8.7":
-                case "-1.9":
-                case "-2.0":
-                    throw new InvalidOptionException(String.Format("Option `{0}' is no longer supported. The compatible Ruby version is 1.9.", optionName));
-
-                case "--disable-gems":
-                    _disableRubyGems = true;
-                    break;
-
-                case "-X":
-                    switch (optionValue) {
-                        case "AutoIndent":
-                        case "TabCompletion":
-                        case "ColorfulConsole":
-                            throw new InvalidOptionException(String.Format("Option `{0}' not supported", optionName));
-                    }
-                    goto default;
-                    
-               default:
-                    base.ParseArgument(arg);
-
-                    if (ConsoleOptions.FileName != null) {
-                        if (mainFileFromPath != null) {
-                            ConsoleOptions.FileName = FindMainFileFromPath(mainFileFromPath);
-                        }
-
-                        if (ConsoleOptions.Command == null) {
-                            SetupOptionsForMainFile();
-                        } else {
-                            SetupOptionsForCommand();
-                        }
-                    } 
-                    break;
+                    return true;
             }
+
+            return false;
         }
 
         private void SetupOptionsForMainFile() {
@@ -312,6 +324,20 @@ namespace IronRuby.Hosting {
         }
 
         protected override void AfterParse() {
+            
+            // parse ENV["RUBYOPT"] options, they follow command line options:
+            // TODO: how do args get split, quoting?
+            string rubyopt = Platform.GetEnvironmentVariable("RUBYOPT");
+            if (!String.IsNullOrEmpty(rubyopt)) {
+                string[] additionalArgs = rubyopt.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                int i = 0;
+                while (i < additionalArgs.Length) {
+                    ParseRubyOptArgument(additionalArgs[i], () => (i + 1 < additionalArgs.Length) ? additionalArgs[++i] : null);
+                    i++;
+                }
+            }
+
             var existingSearchPaths =
                 LanguageOptions.GetSearchPathsOption(LanguageSetup.Options) ??
                 LanguageOptions.GetSearchPathsOption(RuntimeSetup.Options);
@@ -322,7 +348,7 @@ namespace IronRuby.Hosting {
 
 #if !SILVERLIGHT
             try {
-                string rubylib = Environment.GetEnvironmentVariable("RUBYLIB");
+                string rubylib = Platform.GetEnvironmentVariable("RUBYLIB");
                 if (rubylib != null) {
                     _loadPaths.AddRange(GetPaths(rubylib));
                 }
@@ -338,17 +364,9 @@ namespace IronRuby.Hosting {
 
             LanguageSetup.Options["RequiredPaths"] = _requiredPaths;
 
-            LanguageSetup.Options["DefaultEncoding"] = _defaultEncoding;                        
-            LanguageSetup.Options["LocaleEncoding"] = _defaultEncoding ??
-#if SILVERLIGHT
-                RubyEncoding.UTF8;
-#else
-                RubyEncoding.GetRubyEncoding(Console.InputEncoding);
-#endif
-
 #if DEBUG && !SILVERLIGHT
             // Can be set to nl-BE, ja-JP, etc
-            string culture = Environment.GetEnvironmentVariable("IR_CULTURE");
+            string culture = Platform.GetEnvironmentVariable("IR_CULTURE");
             if (culture != null) {
                 System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(culture, false);
             }
