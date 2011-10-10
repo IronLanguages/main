@@ -192,6 +192,24 @@ namespace IronRuby.Builtins {
         public static Proc GetDefaultProc(Hash/*!*/ self) {
             return self.DefaultProc;
         }
+
+        [RubyMethod("default_proc=")]
+        public static Proc SetDefaultProc(Hash/*!*/ self, [DefaultProtocol]Proc proc) {
+            if (proc == null) {
+                throw RubyExceptions.CreateTypeConversionError("NilClass", "Proc");
+            }
+
+            if (proc.Kind == ProcKind.Lambda) {
+                if (proc.Dispatcher.HasUnsplatParameter && proc.Dispatcher.ParameterCount > 2 ||
+                    !proc.Dispatcher.HasUnsplatParameter && proc.Dispatcher.ParameterCount != 2) {
+                    throw RubyExceptions.CreateTypeError("default_proc takes two arguments");
+                }
+            }
+
+            self.DefaultProc = proc;
+            self.DefaultValue = null;
+            return proc;
+        }
         
         [RubyMethod("replace")]
         public static Hash/*!*/ Replace(RubyContext/*!*/ context, Hash/*!*/ self, [DefaultProtocol, NotNull]IDictionary<object,object>/*!*/ other) {
@@ -205,6 +223,7 @@ namespace IronRuby.Builtins {
                 self.DefaultValue = otherHash.DefaultValue;
                 self.DefaultProc = otherHash.DefaultProc;
             }
+
             return IDictionaryOps.ReplaceData(self, other);
         }
 
@@ -223,6 +242,18 @@ namespace IronRuby.Builtins {
             self.Remove(pair.Key);
 
             return IDictionaryOps.MakeArray(pair);
+        }
+
+        [RubyMethod("compare_by_identity")]
+        public static Hash/*!*/ CompareByIdentity(Hash/*!*/ self) {
+            self.RequireNotFrozen();
+            self.SetComparer(ReferenceEqualityComparer<object>.Instance);
+            return self;
+        }
+
+        [RubyMethod("compare_by_identity?")]
+        public static bool IsCompareByIdentity(Hash/*!*/ self) {
+            return ReferenceEquals(self.Comparer, ReferenceEqualityComparer<object>.Instance);
         }
 
         #endregion

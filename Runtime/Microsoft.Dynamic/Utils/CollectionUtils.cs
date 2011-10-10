@@ -98,6 +98,42 @@ namespace Microsoft.Scripting.Utils {
             }
         }
 
+        public static IDictionaryEnumerator ToDictionaryEnumerator(IEnumerator<KeyValuePair<object, object>> enumerator) {
+            return new DictionaryEnumerator(enumerator);
+        }
+
+        private sealed class DictionaryEnumerator : IDictionaryEnumerator {
+            private readonly IEnumerator<KeyValuePair<object, object>> _enumerator;
+
+            public DictionaryEnumerator(IEnumerator<KeyValuePair<object, object>> enumerator) {
+                _enumerator = enumerator;
+            }
+
+            public DictionaryEntry Entry {
+                get { return new DictionaryEntry(_enumerator.Current.Key, _enumerator.Current.Value); }
+            }
+
+            public object Key {
+                get { return _enumerator.Current.Key; }
+            }
+
+            public object Value {
+                get { return _enumerator.Current.Value; }
+            }
+
+            public object Current {
+                get { return Entry; }
+            }
+
+            public bool MoveNext() {
+                return _enumerator.MoveNext();
+            }
+
+            public void Reset() {
+                _enumerator.Reset();
+            }
+        }
+
         public static List<T> MakeList<T>(T item) {
             List<T> result = new List<T>();
             result.Add(item);

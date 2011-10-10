@@ -17,6 +17,8 @@ using System.Collections.Generic;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using System.Collections;
+using System;
 
 namespace IronRuby.Builtins {
 
@@ -27,7 +29,8 @@ namespace IronRuby.Builtins {
     /// Dictionary inherits from Object, mixes in Enumerable.
     /// Ruby hash is a Dictionary{object, object}, but it adds default value/proc
     /// </summary>
-    public partial class Hash : Dictionary<object, object>, IRubyObjectState, IDuplicable {
+    public partial class Hash : IDictionary, IDictionary<object, object>, IRubyObjectState, IDuplicable {
+        private Dictionary<object, object> _dictionary;
 
         // The default value can be a Proc that we should *return*, and that is different
         // from the default value being a Proc that we should *call*, hence two variables
@@ -39,54 +42,42 @@ namespace IronRuby.Builtins {
         private const uint IsTaintedFlag = 2;
         private const uint IsUntrustedFlag = 4;
 
-        public Proc DefaultProc { 
-            get { return _defaultProc; } 
-            set {
-                Mutate();
-                _defaultProc = value;
-            }
-        }
-
-        public object DefaultValue { 
-            get { return _defaultValue; } 
-            set {
-                Mutate();
-                _defaultValue = value;
-            }
-        }
-
         #region Construction
 
         public Hash(RubyContext/*!*/ context)
-            : base(context.EqualityComparer) {
+            : this(new Dictionary<object, object>(context.EqualityComparer)) {
         }
 
         public Hash(IEqualityComparer<object>/*!*/ comparer)
-            : base(comparer) {
+            : this(new Dictionary<object, object>(comparer)) {
         }
 
         public Hash(EqualityComparer/*!*/ comparer, Proc defaultProc, object defaultValue)
-            : base(comparer) {
+            : this(new Dictionary<object, object>(comparer)) {
             _defaultValue = defaultValue;
             _defaultProc = defaultProc;
         }
 
         public Hash(EqualityComparer/*!*/ comparer, int capacity)
-            : base(capacity, comparer) {
+            : this(new Dictionary<object, object>(capacity, comparer)) {
         }
 
         public Hash(IDictionary<object, object>/*!*/ dictionary)
-            : base(dictionary) {
+            : this(new Dictionary<object, object>(dictionary)) {
         }
         
         public Hash(IDictionary<object, object>/*!*/ dictionary, EqualityComparer/*!*/ comparer) 
-            : base(dictionary, comparer) {
+            : this(new Dictionary<object, object>(dictionary, comparer)) {
         }
 
         public Hash(Hash/*!*/ hash)
-            : base(hash, hash.Comparer) {
+            : this(new Dictionary<object, object>(hash, hash._dictionary.Comparer)) {
             _defaultProc = hash._defaultProc;
             _defaultValue = hash.DefaultValue;
+        }
+
+        private Hash(Dictionary<object, object> dictionary) {
+            _dictionary = dictionary;
         }
 
         /// <summary>
@@ -102,7 +93,7 @@ namespace IronRuby.Builtins {
         /// Preserves the class of the Hash.
         /// </summary>
         protected virtual Hash/*!*/ CreateInstance() {
-            return new Hash(Comparer);
+            return new Hash(_dictionary.Comparer);
         }
 
         object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
@@ -158,6 +149,174 @@ namespace IronRuby.Builtins {
         public Hash/*!*/ Freeze() {
             _flags |= IsFrozenFlag;
             return this;
+        }
+
+        #endregion
+
+        #region Ruby-specific features
+
+        public Proc DefaultProc {
+            get { return _defaultProc; }
+            set {
+                Mutate();
+                _defaultProc = value;
+            }
+        }
+
+        public object DefaultValue {
+            get { return _defaultValue; }
+            set {
+                Mutate();
+                _defaultValue = value;
+            }
+        }
+
+        public IEqualityComparer<object> Comparer {
+            get { 
+                return _dictionary.Comparer; 
+            }
+        }
+
+        public void SetComparer(IEqualityComparer<object> comparer) {
+            var newDictionary = new Dictionary<object, object>(_dictionary.Count, comparer);
+            foreach (var entry in _dictionary) {
+                newDictionary[entry.Key] = entry.Value;
+            }
+            _dictionary = newDictionary;
+        }
+
+        #endregion
+
+        #region IDictionary<object, object>
+
+        public void Add(object key, object value) {
+            _dictionary.Add(key, value);
+        }
+
+        public bool ContainsKey(object key) {
+            return _dictionary.ContainsKey(key);
+        }
+
+        public ICollection<object> Keys {
+            get { return _dictionary.Keys; }
+        }
+
+        public bool Remove(object key) {
+            return _dictionary.Remove(key);
+        }
+
+        public bool TryGetValue(object key, out object value) {
+            return _dictionary.TryGetValue(key, out value);
+        }
+
+        public ICollection<object> Values {
+            get { return _dictionary.Values; }
+        }
+
+        public object this[object key] {
+            get {
+                return _dictionary[key];
+            }
+            set {
+                _dictionary[key] = value;
+            }
+        }
+
+        public void Add(KeyValuePair<object, object> item) {
+            ((ICollection<KeyValuePair<object, object>>)_dictionary).Add(item);
+        }
+
+        public void Clear() {
+            _dictionary.Clear();
+        }
+
+        public bool Contains(KeyValuePair<object, object> item) {
+            return ((ICollection<KeyValuePair<object, object>>)_dictionary).Contains(item);
+        }
+
+        public void CopyTo(KeyValuePair<object, object>[] array, int arrayIndex) {
+            ((ICollection<KeyValuePair<object, object>>)_dictionary).CopyTo(array, arrayIndex);
+        }
+
+        public int Count {
+            get { return _dictionary.Count; }
+        }
+
+        public bool IsReadOnly {
+            get { return ((ICollection<KeyValuePair<object, object>>)_dictionary).IsReadOnly; }
+        }
+
+        public bool Remove(KeyValuePair<object, object> item) {
+            return ((ICollection<KeyValuePair<object, object>>)_dictionary).Remove(item);
+        }
+
+        public IEnumerator<KeyValuePair<object, object>> GetEnumerator() {
+            return ((IEnumerable<KeyValuePair<object, object>>)_dictionary).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() {
+            return ((IEnumerable)_dictionary).GetEnumerator();
+        }
+
+        #endregion
+
+        #region IDictionary
+
+        bool IDictionary.Contains(object key) {
+            return _dictionary.ContainsKey(key);
+        }
+
+        IDictionaryEnumerator IDictionary.GetEnumerator() {
+            return CollectionUtils.ToDictionaryEnumerator(_dictionary.GetEnumerator());
+        }
+
+        void IDictionary.Add(object key, object value) {
+            _dictionary.Add(key, value);
+        }
+
+        bool IDictionary.IsFixedSize {
+            get { return false; }
+        }
+
+        bool IDictionary.IsReadOnly {
+            get { return false; }
+        }
+
+        ICollection IDictionary.Keys {
+            get { return _dictionary.Keys; }
+        }
+
+        void IDictionary.Remove(object key) {
+            _dictionary.Remove(key);
+        }
+
+        ICollection IDictionary.Values {
+            get { return _dictionary.Values; }
+        }
+
+        object IDictionary.this[object key] {
+            get {
+                object result;
+                _dictionary.TryGetValue(key, out result);
+                return result;
+            }
+            set {
+                _dictionary[key] = value;
+            }
+        }
+
+        void ICollection.CopyTo(Array array, int index) {
+            foreach (DictionaryEntry entry in ((IDictionary)this)) {
+                array.SetValue(entry, index++);
+            }
+        }
+
+        bool ICollection.IsSynchronized {
+            get { return false; }
+        }
+
+        object ICollection.SyncRoot {
+            get { return this; }
         }
 
         #endregion

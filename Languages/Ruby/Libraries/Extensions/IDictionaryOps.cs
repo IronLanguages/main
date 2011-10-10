@@ -17,14 +17,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
 
@@ -170,6 +168,7 @@ namespace IronRuby.Builtins {
 
         #region delete, delete_if
 
+
         [RubyMethod("delete")]
         public static object Delete(BlockParam block, Hash/*!*/ self, object key) {
             self.RequireNotFrozen();
@@ -179,31 +178,41 @@ namespace IronRuby.Builtins {
         [RubyMethod("delete")]
         public static object Delete(BlockParam block, IDictionary<object, object>/*!*/ self, object key) {
             object value;
-            if (!self.TryGetValue(CustomStringDictionary.NullToObj(key), out value)) {
+            object nonNullKey = CustomStringDictionary.NullToObj(key);
+
+            if (!self.TryGetValue(nonNullKey, out value)) {
                 // key not found, call the block if it was passed in
                 if (block != null) {
                     object result;
                     block.Yield(key, out result);
                     return result;
                 }
+
                 return null;
             }
-            self.Remove(CustomStringDictionary.NullToObj(key));
+
+            self.Remove(nonNullKey);
             return value;
         }
 
         [RubyMethod("delete_if")]
-        public static object DeleteIf(BlockParam block, Hash/*!*/ self) {
+        public static Enumerator/*!*/ DeleteIf(Hash/*!*/ self) {
+            return new Enumerator((_, block) => DeleteIf(block, self));
+        }
+
+        [RubyMethod("delete_if")]
+        public static Enumerator/*!*/ DeleteIf(IDictionary<object, object>/*!*/ self) {
+            return new Enumerator((_, block) => DeleteIf(block, self));
+        }
+
+        [RubyMethod("delete_if")]
+        public static object DeleteIf([NotNull]BlockParam/*!*/ block, Hash/*!*/ self) {
             self.RequireNotFrozen();
             return DeleteIf(block, (IDictionary<object, object>)self);
         }
 
         [RubyMethod("delete_if")]
-        public static object DeleteIf(BlockParam block, IDictionary<object, object>/*!*/ self) {
-            if (self.Count > 0 && block == null) {
-                throw RubyExceptions.NoBlockGiven();
-            }
-
+        public static object DeleteIf([NotNull]BlockParam/*!*/ block, IDictionary<object, object>/*!*/ self) {
             // Make a copy of the keys to delete, so we don't modify the collection
             // while iterating over it
             RubyArray keysToDelete = new RubyArray();
@@ -439,27 +448,46 @@ namespace IronRuby.Builtins {
             return ReplaceData(self, CopyKeyValuePairs(self));
         }
 
+        #region reject
+
+        [RubyMethod("reject")]
+        public static Enumerator/*!*/ Reject(
+            CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
+            RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
+            return new Enumerator((_, block) => Select(context, block, self));
+        }
+
         // This works like delete_if, not reject!
         // (because it needs to return the new collection)
         [RubyMethod("reject")]
         public static object Reject(
             CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ initializeCopyStorage,
             CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
-            BlockParam block, IDictionary<object, object>/*!*/ self) {
+            [NotNull]BlockParam/*!*/ block, IDictionary<object, object>/*!*/ self) {
 
             return DeleteIf(block, Duplicate(initializeCopyStorage, allocateStorage, self));
         }
 
+        [RubyMethod("reject!")]
+        public static Enumerator/*!*/ RejectMutate(Hash/*!*/ self) {
+            return new Enumerator((_, block) => RejectMutate(block, self));
+        }
+
         // This works like delete_if, but returns nil if no elements were removed
         [RubyMethod("reject!")]
-        public static object RejectMutate(BlockParam block, Hash/*!*/ self) {
+        public static object RejectMutate([NotNull]BlockParam/*!*/ block, Hash/*!*/ self) {
             self.RequireNotFrozen();
             return RejectMutate(block, (IDictionary<object, object>)self);
         }
 
         [RubyMethod("reject!")]
-        public static object RejectMutate(BlockParam block, IDictionary<object, object>/*!*/ self) {
+        public static Enumerator/*!*/ RejectMutate(IDictionary<object, object>/*!*/ self) {
+            return new Enumerator((_, block) => RejectMutate(block, self));
+        }
 
+        [RubyMethod("reject!")]
+        public static object RejectMutate([NotNull]BlockParam/*!*/ block, IDictionary<object, object>/*!*/ self) {
             // Make a copy of the keys to delete, so we don't modify the collection
             // while iterating over it
             RubyArray keysToDelete = new RubyArray();
@@ -482,6 +510,8 @@ namespace IronRuby.Builtins {
 
             return keysToDelete.Count == 0 ? null : self;
         }
+
+        #endregion
 
         [RubyMethod("replace")]
         public static Hash/*!*/ Replace(RubyContext/*!*/ context, Hash/*!*/ self, [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ other) {
@@ -621,6 +651,18 @@ namespace IronRuby.Builtins {
             }
             return values;
         }
-    }
 
+        [RubyMethod("assoc")]
+        public static RubyArray/*!*/ Assoc(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object key) {
+            var equalsSite = equals.GetCallSite("==");
+            
+            foreach (var entry in self) {
+                if (Protocols.IsEqual(equalsSite, key, entry.Key)) {
+                    return new RubyArray(2) { entry.Key, entry.Value };
+                }
+            }
+
+            return null;
+        }
+    }
 }

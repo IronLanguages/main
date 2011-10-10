@@ -129,6 +129,10 @@ namespace IronRuby.Runtime.Conversions {
                 return (factory) => factory.Conversion<ConvertToRegexAction>();
             }
 
+            if (parameterType == typeof(Proc)) {
+                return (factory) => factory.Conversion<ConvertToProcAction>();
+            }
+
             if (parameterType == typeof(IList)) {
                 return (factory) => factory.Conversion<ConvertToArrayAction>();
             }

@@ -4,3 +4,4 @@ fails:Hash#key returns nil if the value is not found
 fails:Hash#key doesn't return default value if the value is not found
 fails:Hash#key compares values using ==
 fails:Hash#key? returns true if argument is a key
+fails:Hash#key? compares keys with the same #hash value via #eql?

@@ -382,7 +382,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             return ConstructYamlOmap(ctor, node);
         }
 
-        public static ICollection ConstructYamlSet(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
+        public static ICollection<object> ConstructYamlSet(BaseConstructor/*!*/ ctor, Node/*!*/ node) {
             return ctor.ConstructMapping(node).Keys;
         }
 
