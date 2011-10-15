@@ -10270,7 +10270,7 @@ namespace IronRuby.StandardLibrary.Zlib {
         #if !SILVERLIGHT
         private static void LoadZlib__Deflate_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "deflate", 0x11, 
-                0x00010002U, 
+                0x00010000U, 
                 new Func<IronRuby.StandardLibrary.Zlib.Zlib.Deflate, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.Deflate.DeflateString)
             );
             
@@ -10281,7 +10281,7 @@ namespace IronRuby.StandardLibrary.Zlib {
         private static void LoadZlib__Deflate_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "deflate", 0x21, 
                 0x00010002U, 
-                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.Deflate.DeflateString)
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.Deflate.DeflateString)
             );
             
         }

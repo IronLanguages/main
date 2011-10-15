@@ -1080,9 +1080,13 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("deflate")]
-            public static MutableString/*!*/ DeflateString(Deflate/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str, int flush) {
+            public static MutableString/*!*/ DeflateString(Deflate/*!*/ self, [DefaultProtocol]MutableString str, [DefaultParameterValue(FINISH)]int flush) {
                 if (flush != FINISH) {
                     throw new NotImplementedError("flush can only be FINISH");
+                }
+
+                if (str == null) {
+                    return MutableString.CreateEmpty();
                 }
 
                 MutableStringStream inputStream = new MutableStringStream(str);
@@ -1096,13 +1100,14 @@ namespace IronRuby.StandardLibrary.Zlib {
                     compressedZipStream.Write(inputDataBlock, 0, count);
                     remainingInputSize -= count;
                 }
+
                 compressedZipStream.Close();
                 return outputStream.String;
             }
 
             [RubyMethod("deflate", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString/*!*/ DeflateString(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
-                return DeflateString(new Deflate(), str, FINISH);
+            public static MutableString/*!*/ DeflateString(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str, [DefaultParameterValue(FINISH)]int level) {
+                return DeflateString(new Deflate(level), str, FINISH);
             }
         }
 #endif
