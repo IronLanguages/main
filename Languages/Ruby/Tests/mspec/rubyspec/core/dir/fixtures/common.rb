@@ -63,6 +63,12 @@ module DirSpecs
         subdir_two/nondotfile
         subdir_two/nondotfile.ext
 
+        brace/a
+        brace/a.js
+        brace/a.erb
+        brace/a.js.rjs
+        brace/a.html.erb
+
         special/+
 
         special/^
@@ -144,6 +150,7 @@ module DirSpecs
       ..
       .dotfile
       .dotsubdir
+      brace
       deeply
       dir
       dir_filename_ordering

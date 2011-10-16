@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
-ruby_version_is "1.9" do
+with_feature :encoding do
   describe "Encoding.find" do
     before(:all) do
       @encodings = Encoding.aliases.to_a.flatten.uniq
@@ -18,9 +18,9 @@ ruby_version_is "1.9" do
       end
     end
 
-    it "accepts encoding names as Symbols" do
+    it "does NOT accept encoding names as Symbols" do
       @encodings.each do |enc|
-        Encoding.find(enc.to_sym).should == Encoding.find(enc)
+        lambda { Encoding.find(enc.to_sym) }.should raise_error(TypeError)
       end
     end
 
@@ -50,6 +50,33 @@ ruby_version_is "1.9" do
 
     it "raises an ArgumentError if the given encoding does not exist" do
       lambda { Encoding.find('dh2dh278d') }.should raise_error(ArgumentError)
+    end
+
+    # Not sure how to do a better test, since locale depends on weird platform-specific stuff
+    it "supports the 'locale' encoding alias" do
+      enc = Encoding.find('locale')
+      enc.should_not == nil
+    end
+
+    it "returns default external encoding for the 'external' encoding alias" do
+      enc = Encoding.find('external')
+      enc.should == Encoding.default_external
+    end
+
+    it "returns default internal encoding for the 'internal' encoding alias" do
+      enc = Encoding.find('internal')
+      enc.should == Encoding.default_internal
+    end
+
+    platform_is_not :windows do
+      it "uses default external encoding for the 'filesystem' encoding alias" do
+        enc = Encoding.find('filesystem')
+        enc.should == Encoding.default_external
+      end
+    end
+
+    platform_is :windows do
+      it "needs to be reviewed for spec completeness"
     end
   end
 end

@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "Exception.initialize" do
   it "sets a message and clears the backtrace" do

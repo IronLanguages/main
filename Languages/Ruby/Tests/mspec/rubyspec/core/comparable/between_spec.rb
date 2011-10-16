@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Comparable#between?" do
   it "returns true if self is greater than or equal to the first and less than or equal to the second argument" do
@@ -15,7 +15,7 @@ describe "Comparable#between?" do
     c.between?(c, d).should == true
     d.between?(d, d).should == true
     c.between?(a, d).should == true
-    
+
     a.between?(b, b).should == false
     a.between?(b, c).should == false
     a.between?(b, d).should == false

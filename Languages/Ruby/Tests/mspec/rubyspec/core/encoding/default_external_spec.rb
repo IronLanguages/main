@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
-ruby_version_is "1.9" do
+with_feature :encoding do
   describe "Encoding.default_external" do
     before(:all) do
       @original_encoding = Encoding.default_external
@@ -35,13 +35,13 @@ ruby_version_is "1.9" do
     end
 
     it "can accept a name of an encoding as a String" do
-      Encoding.default_external = 'sjis'
+      Encoding.default_external = 'Shift_JIS'
       Encoding.default_external.should == Encoding::SHIFT_JIS
     end
 
     it "calls #to_s on arguments that are neither Strings nor Encodings" do
       string = mock('string')
-      string.should_receive(:to_str).at_least(1).and_return('ascii')
+      string.should_receive(:to_str).twice.and_return('US-ASCII')
       Encoding.default_external = string
       Encoding.default_external.should == Encoding::ASCII
     end

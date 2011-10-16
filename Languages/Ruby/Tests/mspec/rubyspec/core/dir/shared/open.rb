@@ -1,7 +1,7 @@
 describe :dir_open, :shared => true do
   it "returns a Dir instance representing the specified directory" do
     dir = Dir.send(@method, DirSpecs.mock_dir)
-    dir.class.should == Dir
+    dir.should be_kind_of(Dir)
     dir.close
   end
 
@@ -11,19 +11,8 @@ describe :dir_open, :shared => true do
     end.should raise_error(SystemCallError)
   end
 
-  ruby_version_is "1.9" do
-    it "calls #to_path on non-String arguments" do
-      p = mock('path')
-      p.should_receive(:to_path).and_return(DirSpecs.mock_dir)
-      Dir.send(@method, p) { true }
-    end
-  end
-
-end
-
-describe :dir_open_with_block, :shared => true do
   it "may take a block which is yielded to with the Dir instance" do
-    Dir.send(@method, DirSpecs.mock_dir) {|dir| dir.class.should == Dir }
+    Dir.send(@method, DirSpecs.mock_dir) {|dir| dir.should be_kind_of(Dir)}
   end
 
   it "returns the value of the block if a block is given" do
@@ -46,5 +35,21 @@ describe :dir_open_with_block, :shared => true do
     end.should raise_error
 
     lambda { @closed_dir.close }.should raise_error(IOError)
+  end
+
+  ruby_version_is ""..."1.9" do
+    it "calls #to_str on non-String arguments" do
+      p = mock('path')
+      p.should_receive(:to_str).and_return(DirSpecs.mock_dir)
+      Dir.send(@method, p) { true }
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "calls #to_path on non-String arguments" do
+      p = mock('path')
+      p.should_receive(:to_path).and_return(DirSpecs.mock_dir)
+      Dir.send(@method, p) { true }
+    end
   end
 end

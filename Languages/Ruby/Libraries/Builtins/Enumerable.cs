@@ -945,7 +945,7 @@ namespace IronRuby.Builtins {
                 return null;
             }));
 
-            if (items == null) {
+            if (items == null || items.Count == 0) {
                 return result;
             }
 

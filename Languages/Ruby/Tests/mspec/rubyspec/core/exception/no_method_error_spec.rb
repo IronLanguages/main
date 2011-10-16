@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/common'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
 
 describe "NoMethodError.new" do
   it "can be called with no arguments" do
@@ -18,6 +18,10 @@ describe "NoMethodError.new" do
     m = mock("some object")
     NoMethodError.new(m, m, m).should_not be_nil
   end
+
+  it "allows passing method args" do
+    NoMethodError.new("msg","name","args").args.should == "args"
+  end
 end
 
 describe "NoMethodError#args" do
@@ -35,7 +39,7 @@ describe "NoMethodError#args" do
       NoMethodErrorSpecs::NoMethodErrorB.new.foo(1,a)
     rescue Exception => e
       e.args.should == [1,a]
-      e.args[1].should equal(a)
+      e.args[1].object_id.should == a.object_id
     end
   end
 end
@@ -45,7 +49,7 @@ describe "NoMethodError#message" do
     begin
       NoMethodErrorSpecs::NoMethodErrorD.new.foo
     rescue Exception => e
-      e.class.should == NoMethodError
+      e.should be_kind_of(NoMethodError)
     end
   end
 
@@ -53,7 +57,7 @@ describe "NoMethodError#message" do
     begin
       NoMethodErrorSpecs::NoMethodErrorC.new.a_protected_method
     rescue Exception => e
-      e.class.should == NoMethodError
+      e.should be_kind_of(NoMethodError)
     end
   end
 
@@ -62,7 +66,7 @@ describe "NoMethodError#message" do
       begin
         NoMethodErrorSpecs::NoMethodErrorC.new.a_private_method
       rescue Exception => e
-        e.class.should == NoMethodError
+        e.should be_kind_of(NoMethodError)
         e.message.match(/private method/).should_not == nil
       end
     end

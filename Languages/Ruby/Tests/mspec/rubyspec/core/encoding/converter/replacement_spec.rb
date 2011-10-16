@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 
-ruby_version_is "1.9" do
+with_feature :encoding do
   describe "Encoding::Converter#replacement" do
     it "returns '?' in US-ASCII when the destination encoding is not UTF-8" do
       ec = Encoding::Converter.new("utf-8", "us-ascii")
@@ -12,7 +12,7 @@ ruby_version_is "1.9" do
       ec.replacement.encoding.should == Encoding::US_ASCII
     end
 
-    it 'returns \u{fffd} when the destination encoding is UTF-8' do
+    it "returns \u{fffd} when the destination encoding is UTF-8" do
       ec = Encoding::Converter.new("us-ascii", "utf-8")
       ec.replacement.should == "\u{fffd}".force_encoding('utf-8')
       ec.replacement.encoding.should == Encoding::UTF_8
@@ -40,7 +40,7 @@ ruby_version_is "1.9" do
       ec = Encoding::Converter.new("us-ascii", "utf-8")
       ec.replacement.should == "\u{fffd}".force_encoding('utf-8')
       ec.replacement = '?'.encode('utf-8')
-      ec.replacement.should == '?'.force_encoding('utf-8') 
+      ec.replacement.should == '?'.force_encoding('utf-8')
     end
 
     it "raises an UndefinedConversionError is the argument cannot be converted into the destination encoding" do

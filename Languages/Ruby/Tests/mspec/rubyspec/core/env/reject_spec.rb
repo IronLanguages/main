@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "ENV.reject!" do
   it "rejects entries based on key" do
@@ -18,7 +18,6 @@ describe "ENV.reject!" do
     ENV["foo"] = "bar"
     ENV.reject! { |k, v| k == "foo" }.should == ENV
     ENV["foo"].should == nil
-    ENV.reject! {break 1}.should == 1
   end
 
   ruby_version_is "" ... "1.8.7" do
@@ -29,7 +28,7 @@ describe "ENV.reject!" do
 
   ruby_version_is "1.8.7" do
     it "returns an Enumerator if called without a block" do
-      ENV.reject!.should be_kind_of(enumerator_class)
+      ENV.reject!.should be_an_instance_of(enumerator_class)
     end
   end
 
@@ -62,7 +61,7 @@ describe "ENV.reject" do
   end
 
   it "returns a Hash" do
-    ENV.reject { false }.class.should == Hash
+    ENV.reject { false }.should be_kind_of(Hash)
   end
 
   ruby_version_is "" ... "1.8.7" do
@@ -73,7 +72,7 @@ describe "ENV.reject" do
 
   ruby_version_is "1.8.7" do
     it "returns an Enumerator if called without a block" do
-      ENV.reject.should be_kind_of(enumerator_class)
+      ENV.reject.should be_an_instance_of(enumerator_class)
     end
   end
 

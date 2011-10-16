@@ -15,7 +15,7 @@ end
 
 module ExceptionSpecs
   class Exceptional < Exception; end
-  
+
   class Backtrace
     def self.backtrace
       begin
@@ -40,6 +40,12 @@ module ExceptionSpecs
     def initialize
     end
 
+  end
+
+  class OverrideToS < RuntimeError
+    def to_s
+      "this is from #to_s"
+    end
   end
   
   class InitializedException < Exception

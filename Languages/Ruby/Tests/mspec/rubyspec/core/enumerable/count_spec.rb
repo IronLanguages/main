@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Enumerable#count" do
   ruby_version_is '1.8.7' do
@@ -7,7 +7,7 @@ describe "Enumerable#count" do
       @elements = [1, 2, 4, 2]
       @numerous = EnumerableSpecs::Numerous.new(*@elements)
     end
-  
+
     it "returns size when no argument or a block" do
       @numerous.count.should == 4
     end

@@ -1,0 +1,7 @@
+fails:Dir.glob calls #to_path to convert patterns
+fails:Dir.glob splits the string on \\0 if there is only one string given
+fails:Dir.glob respects the order of {} expressions, expanding left most first
+fails:Dir.glob respects the optional nested {} expressions
+fails:Dir.glob preserves the separator between directory components
+fails:Dir.glob can take an array of patterns
+fails:Dir.glob accepts a block and yields it with each elements

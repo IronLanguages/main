@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Enumerable#drop_while" do
   ruby_version_is '1.8.7' do
@@ -8,19 +8,19 @@ describe "Enumerable#drop_while" do
     end
 
     it 'returns an Enumerator if no block given' do
-      @enum.drop_while.should be_kind_of(enumerator_class)
+      @enum.drop_while.should be_an_instance_of(enumerator_class)
     end
 
     it "returns no/all elements for {true/false} block" do
       @enum.drop_while{true}.should == []
       @enum.drop_while{false}.should == @enum.to_a
     end
-    
+
     it "accepts returns other than true/false" do
       @enum.drop_while{1}.should == []
       @enum.drop_while{nil}.should == @enum.to_a
     end
-  
+
     it "passes elements to the block until the first false" do
       a = []
       @enum.drop_while{|obj| (a << obj).size < 3}.should == [1, :go]

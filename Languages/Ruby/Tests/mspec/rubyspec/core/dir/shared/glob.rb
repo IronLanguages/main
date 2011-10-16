@@ -8,15 +8,32 @@ describe :dir_glob, :shared => true do
     Dir.chdir @cwd
   end
 
-  it "converts patterns with to_str" do
-    obj = mock('file_one.ext')
-    obj.should_receive(:to_str).and_return('file_one.ext')
+  ruby_version_is ""..."1.9" do
+    it "calls #to_str to convert patterns" do
+      obj = mock('file_one.ext')
+      obj.should_receive(:to_str).and_return('file_one.ext')
 
-    Dir.send(@method, obj).should == %w[file_one.ext]
+      Dir.send(@method, obj).should == %w[file_one.ext]
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "calls #to_path to convert patterns" do
+      obj = mock('file_one.ext')
+      obj.should_receive(:to_path).and_return('file_one.ext')
+
+      Dir.send(@method, obj).should == %w[file_one.ext]
+    end
+  end
+
+  it "splits the string on \\0 if there is only one string given" do
+    Dir.send(@method, "file_o*\0file_t*").should ==
+             %w!file_one.ext file_two.ext!
   end
 
   it "matches non-dotfiles with '*'" do
     expected = %w[
+      brace
       deeply
       dir
       dir_filename_ordering
@@ -109,12 +126,17 @@ describe :dir_glob, :shared => true do
     Dir.send(@method, 'sub*_one').sort.should == %w|subdir_one|.sort
   end
 
+  it "handles directories with globs" do
+    Dir.send(@method, 'sub*/*').sort.should == %w!subdir_one/nondotfile subdir_two/nondotfile subdir_two/nondotfile.ext!
+  end
+
   it "matches files with multiple '*' special characters" do
     Dir.send(@method, '*fi*e*').sort.should == %w|dir_filename_ordering nondotfile file_one.ext file_two.ext|.sort
   end
 
   it "matches non-dotfiles in the current directory with '**'" do
     expected = %w[
+      brace
       deeply
       dir
       dir_filename_ordering
@@ -135,6 +157,7 @@ describe :dir_glob, :shared => true do
 
   it "recursively matches any nondot subdirectories with '**/'" do
     expected = %w[
+      brace/
       deeply/
       deeply/nested/
       deeply/nested/directory/
@@ -182,6 +205,10 @@ describe :dir_glob, :shared => true do
     Dir.send(@method, 'subdir_{one,two,three}').sort.should == %w|subdir_one subdir_two|.sort
   end
 
+  it "matches a set '{<string>,<other>,...}' which also uses a glob" do
+    Dir.send(@method, 'sub*_{one,two,three}').sort.should == %w|subdir_one subdir_two|.sort
+  end
+
   it "accepts string sets with empty strings with {<string>,,<other>}" do
     a = Dir.send(@method, 'deeply/nested/directory/structure/file_one{.ext,}').sort
     a.should == %w|deeply/nested/directory/structure/file_one.ext
@@ -190,6 +217,16 @@ describe :dir_glob, :shared => true do
 
   it "matches dot or non-dotfiles with '{,.}*'" do
     Dir.send(@method, '{,.}*').sort.should == DirSpecs.expected_paths
+  end
+
+  it "respects the order of {} expressions, expanding left most first" do
+    files = Dir.send(@method, "brace/a{.js,.html}{.erb,.rjs}")
+    files.should == %w!brace/a.js.rjs brace/a.html.erb!
+  end
+
+  it "respects the optional nested {} expressions" do
+    files = Dir.send(@method, "brace/a{.{js,html},}{.{erb,rjs},}")
+    files.should == %w!brace/a.js.rjs brace/a.js brace/a.html.erb brace/a.erb brace/a!
   end
 
   it "matches special characters by escaping with a backslash with '\\<character>'" do
@@ -221,6 +258,22 @@ describe :dir_glob, :shared => true do
          subdir_one/nondotfile
          subdir_two/nondotfile
          subdir_two/nondotfile.ext]
+  end
+
+  it "preserves the separator between directory components" do
+    Dir.send(@method, "deeply/nested//directory/structure/*.ext").should ==
+      %w!deeply/nested//directory/structure/file_one.ext!
+
+    Dir.send(@method, "deeply/nested/directory/structure//**/*.ext").should ==
+      %w!deeply/nested/directory/structure//file_one.ext!
+  end
+
+  it "ignores matching through directories that doen't exist" do
+    Dir.send(@method, "deeply/notthere/blah*/whatever").should == []
+  end
+
+  it "ignores matching only directories under an nonexistant path" do
+    Dir.send(@method, "deeply/notthere/blah/").should == []
   end
 end
 

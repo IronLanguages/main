@@ -1,7 +1,7 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
-describe "Enumerable#reject" do 
+describe "Enumerable#reject" do
   it "returns an array of the elements for which block is false" do
     EnumerableSpecs::Numerous.new.reject { |i| i > 3 }.should == [2, 3, 1]
     entries = (1..10).to_a
@@ -10,7 +10,7 @@ describe "Enumerable#reject" do
     numerous.reject {|i| true }.should == []
     numerous.reject {|i| false }.should == entries
   end
-  
+
   ruby_version_is "" ... "1.8.7" do
     it "raises a LocalJumpError if no block is given" do
       lambda { EnumerableSpecs::Numerous.new.reject }.should raise_error(LocalJumpError)
@@ -19,7 +19,7 @@ describe "Enumerable#reject" do
 
   ruby_version_is "1.8.7" do
     it "returns an Enumerator if called without a block" do
-      EnumerableSpecs::Numerous.new.reject.should be_kind_of(enumerator_class)
+      EnumerableSpecs::Numerous.new.reject.should be_an_instance_of(enumerator_class)
     end
   end
 end

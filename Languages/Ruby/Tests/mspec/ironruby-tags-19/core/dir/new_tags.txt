@@ -1,2 +1,6 @@
 fails:Dir.new returns a Dir instance representing the specified directory
+fails:Dir.new may take a block which is yielded to with the Dir instance
+fails:Dir.new returns the value of the block if a block is given
+fails:Dir.new closes the Dir instance when the block exits if given a block
+fails:Dir.new closes the Dir instance when the block exits the block even due to an exception
 fails:Dir.new calls #to_path on non-String arguments

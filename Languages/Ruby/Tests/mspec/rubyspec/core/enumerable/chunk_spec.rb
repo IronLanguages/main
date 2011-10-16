@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 ruby_version_is "1.9" do
   describe "Enumerable#chunk" do
@@ -10,7 +10,7 @@ ruby_version_is "1.9" do
     end
 
     it "returns an Enumerator if given a block" do
-      EnumerableSpecs::Numerous.new.chunk {}.should be_an_instance_of(Enumerator)
+      EnumerableSpecs::Numerous.new.chunk {}.should be_an_instance_of(enumerator_class)
     end
 
     it "yields each element of the Enumerable to the block" do
@@ -20,14 +20,14 @@ ruby_version_is "1.9" do
     end
 
     it "returns an Enumerator of 2-element Arrays" do
-      EnumerableSpecs::Numerous.new.chunk {|e| true}.each do |a| 
+      EnumerableSpecs::Numerous.new.chunk {|e| true}.each do |a|
         a.should be_an_instance_of(Array)
         a.size.should == 2
       end
     end
 
     it "sets the first element of each sub-Array to the return value of the block" do
-      EnumerableSpecs::Numerous.new.chunk {|e| -e }.each do |a| 
+      EnumerableSpecs::Numerous.new.chunk {|e| -e }.each do |a|
         a.first.should == -a.last.first
       end
     end

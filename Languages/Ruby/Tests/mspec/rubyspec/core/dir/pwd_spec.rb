@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/common'
-require File.dirname(__FILE__) + '/shared/pwd'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
+require File.expand_path('../shared/pwd', __FILE__)
 
 describe "Dir.pwd" do
   before :all do
@@ -12,7 +12,7 @@ describe "Dir.pwd" do
   end
 
   it_behaves_like :dir_pwd, :pwd
-  
+
   ruby_version_is ""..."1.9" do
     it "correctly displays dirs with unicode characters in them" do
       DirSpecs.clear_dirs

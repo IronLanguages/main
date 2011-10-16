@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../fixtures/classes'
+require File.expand_path('../../fixtures/classes', __FILE__)
 
-ruby_version_is "1.9" do
+with_feature :encoding do
   describe "Encoding::UndefinedConversionError#error_char" do
     before(:each) do
       @exception = EncodingSpecs::UndefinedConversionError.exception
@@ -19,7 +19,7 @@ ruby_version_is "1.9" do
       @exception2.error_char.size.should == 1
       @exception2.error_char.should == "\u{A0}"
     end
-    
+
     it "uses the source encoding" do
       @exception.error_char.encoding.should == @exception.source_encoding
 

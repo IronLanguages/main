@@ -1,1 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
+
+describe "LocalJumpError#exit_value" do
+  it "needs to be reviewed for spec completeness"
+end

@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/common'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
 
 describe "Dir.entries" do
   before :all do
@@ -18,7 +18,7 @@ describe "Dir.entries" do
     a = Dir.entries("#{DirSpecs.mock_dir}/deeply/nested").sort
     a.should == %w|. .. .dotfile.ext directory|
   end
-  
+
   ruby_version_is "1.9" do
     it "calls #to_path on non-String arguments" do
       p = mock('path')

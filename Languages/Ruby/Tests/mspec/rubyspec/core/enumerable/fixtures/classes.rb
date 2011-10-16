@@ -107,7 +107,7 @@ module EnumerableSpecs
   class ArrayConvertable
     attr_accessor :called
     def initialize(*values)
-      @values = values;
+      @values = values
     end
 
     def to_a
@@ -118,6 +118,20 @@ module EnumerableSpecs
     def to_ary
       self.called = :to_ary
       @values
+    end
+  end
+  
+  class EnumConvertable
+    attr_accessor :called
+    attr_accessor :sym
+    def initialize(delegate)
+      @delegate = delegate
+    end
+    
+    def to_enum(sym)
+      self.called = :to_enum
+      self.sym = sym
+      @delegate.to_enum(sym)
     end
   end
 
@@ -136,6 +150,19 @@ module EnumerableSpecs
       yield 1,2
       yield 3,4,5
       yield 6,7,8,9
+    end
+  end
+
+  class YieldsMixed
+    include Enumerable
+    def each
+      yield 1
+      yield [2]
+      yield 3,4
+      yield 5,6,7
+      yield [8,9]
+      yield nil
+      yield []
     end
   end
 
@@ -167,6 +194,25 @@ module EnumerableSpecs
   class Uncomparable
     def <=>(obj)
       nil
+    end
+  end
+
+  class Undupable
+    attr_reader :initialize_called, :initialize_dup_called
+    def dup
+      raise "Can't, sorry"
+    end
+
+    def clone
+      raise "Can't, either, sorry"
+    end
+
+    def initialize
+      @initialize_dup = true
+    end
+
+    def initialize_dup(arg)
+      @initialize_dup_called = true
     end
   end
 end # EnumerableSpecs utility classes

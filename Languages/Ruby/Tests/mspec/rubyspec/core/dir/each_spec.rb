@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/common'
-require File.dirname(__FILE__) + '/shared/closed'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
+require File.expand_path('../shared/closed', __FILE__)
 
 describe "Dir#each" do
   before :all do
@@ -14,7 +14,7 @@ describe "Dir#each" do
   before :each do
     @dir = Dir.open DirSpecs.mock_dir
   end
-  
+
   after :each do
     @dir.close
   end
@@ -34,7 +34,7 @@ describe "Dir#each" do
     @dir.rewind
     ls.should include(@dir.read)
   end
-  
+
   ruby_version_is '' ... '1.8.7' do
     it 'raises a LocalJumpError if no block given' do
       lambda{ @dir.each }.should raise_error(LocalJumpError)
@@ -43,7 +43,7 @@ describe "Dir#each" do
 
   ruby_version_is '1.8.7' do
     it 'returns an Enumerator if no block given' do
-      @dir.each.should be_kind_of(enumerator_class)
+      @dir.each.should be_an_instance_of(enumerator_class)
       @dir.each.to_a.sort.should == DirSpecs.expected_paths
     end
   end

@@ -1,8 +1,8 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 
-ruby_version_is "1.9" do
+with_feature :encoding do
   describe "Encoding::InvalidByteSequenceError#incomplete_input?" do
-    
+
     it "returns nil by default" do
       Encoding::InvalidByteSequenceError.new.incomplete_input?.should be_nil
     end
@@ -15,7 +15,7 @@ ruby_version_is "1.9" do
       rescue Encoding::InvalidByteSequenceError => e
         e.incomplete_input?.should be_true
       end
-    end     
+    end
 
     it "returns false if #primitive_convert returned :invalid_byte_sequence for the same data" do
       ec = Encoding::Converter.new("ascii", "utf-8")
@@ -25,6 +25,6 @@ ruby_version_is "1.9" do
       rescue Encoding::InvalidByteSequenceError => e
         e.incomplete_input?.should be_false
       end
-    end     
+    end
   end
 end

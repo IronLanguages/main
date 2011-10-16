@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../../spec_helper'
+require File.expand_path('../../../../spec_helper', __FILE__)
 
-ruby_version_is "1.9" do
+with_feature :encoding do
   describe "Encoding::Converter.search_convpath" do
     before(:all) do
       @perms = Encoding.name_list.permutation(2).map do |pair|
@@ -66,7 +66,7 @@ ruby_version_is "1.9" do
     it "raises an Encoding::ConverterNotFoundError if no conversion path exists" do
       lambda do
         Encoding::Converter.search_convpath(
-          Encoding::ASCII_8BIT, Encoding::Emacs_Mule) 
+          Encoding::ASCII_8BIT, Encoding::Emacs_Mule)
       end.should raise_error(Encoding::ConverterNotFoundError)
     end
   end

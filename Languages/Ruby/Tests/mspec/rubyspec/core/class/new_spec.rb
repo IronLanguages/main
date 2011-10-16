@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "Class.new with a block given" do
   it "uses the given block as the class' body" do
@@ -37,7 +37,6 @@ describe "Class.new with a block given" do
     klass.superclass.should == sc
     klass.new.message.should == "text"
     klass.new.message2.should == "hello"
-    klass.dup.body.should == klass
   end
 end
 
@@ -48,6 +47,12 @@ describe "Class.new" do
 
     klass_instance = klass.new
     klass_instance.is_a?(klass).should == true
+  end
+
+  it "raises a TypeError if passed a metaclass" do
+    obj = mock("Class.new metaclass")
+    meta = obj.singleton_class
+    lambda { Class.new meta }.should raise_error(TypeError)
   end
 
   ruby_version_is ""..."1.9" do
@@ -87,4 +92,8 @@ describe "Class.new" do
     lambda { Class.new(mock('o'))  }.should raise_error(TypeError)
     lambda { Class.new(Module.new) }.should raise_error(TypeError)
   end
+end
+
+describe "Class#new" do
+  it "needs to be reviewed for spec completeness"
 end

@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../fixtures/classes'
+require File.expand_path('../../fixtures/classes', __FILE__)
 
-ruby_version_is "1.9" do
+with_feature :encoding do
   describe "Encoding::InvalidByteSequenceError#readagain_bytes" do
     before(:each) do
       @exception, @errinfo = EncodingSpecs::InvalidByteSequenceError.exception
@@ -21,7 +21,7 @@ ruby_version_is "1.9" do
       @exception2.readagain_bytes.should == "\xFF".force_encoding('binary')
       @exception2.readagain_bytes.should == @errinfo2[-1]
     end
-    
+
     it "uses ASCII-8BIT as the encoding" do
       @exception.readagain_bytes.encoding.should == Encoding::ASCII_8BIT
 

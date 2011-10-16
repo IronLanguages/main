@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/common'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
 
 describe "Dir.mkdir" do
   before :all do
@@ -70,8 +70,26 @@ describe "Dir.mkdir" do
     Dir.rmdir 'noperms'
   end
 
+  ruby_version_is ""..."1.9" do
+    it "call #to_str on non-String arguments" do
+      DirSpecs.clear_dirs
+      p = mock('path')
+      p.should_receive(:to_str).and_return('nonexisting')
+      Dir.mkdir(p)
+      DirSpecs.clear_dirs
+    end
+  end
+
   it "raises a SystemCallError if any of the directories in the path before the last does not exist" do
     lambda { Dir.mkdir "#{DirSpecs.nonexistent}/subdir" }.should raise_error(SystemCallError)
+  end
+
+  it "raises Errno::EEXIST if the specified directory already exists" do
+    lambda { Dir.mkdir(File.dirname(__FILE__)) }.should raise_error(Errno::EEXIST)
+  end
+
+  it "raises Errno::EEXIST if the argument points to the existing file" do
+    lambda { Dir.mkdir(__FILE__) }.should raise_error(Errno::EEXIST)
   end
 end
 

@@ -1,0 +1,1 @@
+fails:ENV.has_value? looks up values case-insensitively

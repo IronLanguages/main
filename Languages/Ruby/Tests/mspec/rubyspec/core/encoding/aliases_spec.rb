@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
-ruby_version_is "1.9" do
+with_feature :encoding do
   describe "Encoding.aliases" do
     it "returns a Hash" do
       Encoding.aliases.should be_an_instance_of(Hash)
@@ -32,8 +32,8 @@ ruby_version_is "1.9" do
       Encoding.aliases['external'].should == Encoding.default_external.name
     end
 
-    it "has a 'locale' key with the locale charmap encoding as its value" do
-      Encoding.aliases['locale'].should == Encoding.locale_charmap
+    it "has a 'locale' key and its value equals to the name of the encoding finded by the locale charmap" do
+      Encoding.aliases['locale'].should == Encoding.find(Encoding.locale_charmap).name
     end
 
     it "only contains valid aliased encodings" do

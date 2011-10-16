@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/common'
-require File.dirname(__FILE__) + '/shared/open'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
+require File.expand_path('../shared/open', __FILE__)
 
 describe "Dir.open" do
   before :all do
@@ -12,5 +12,4 @@ describe "Dir.open" do
   end
 
   it_behaves_like :dir_open, :open
-  it_behaves_like :dir_open_with_block, :open
 end

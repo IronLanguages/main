@@ -1,16 +1,17 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
 
 describe "Exception#message" do
-  before :each do
-    @e = Exception.new("Ouch!")
+  it "returns the class name if there is no message" do
+    Exception.new.message.should == "Exception"
   end
-  
-  it "returns the exception message" do
-    [Exception.new.message, Exception.new("Ouch!").message].should == ["Exception", "Ouch!"]
-  end  
 
-  it "calls to_s" do
-    @e.should_receive(:to_s).and_return("to_s response")
-    @e.message.should == "to_s response"
+  it "returns the message passed to #initialize" do
+    Exception.new("Ouch!").message.should == "Ouch!"
+  end
+
+  it "calls #to_s on self" do
+    exc = ExceptionSpecs::OverrideToS.new("you won't see this")
+    exc.message.should == "this is from #to_s"
   end
 end

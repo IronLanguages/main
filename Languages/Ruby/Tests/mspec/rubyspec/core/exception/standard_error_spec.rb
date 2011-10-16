@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "StandardError" do
   it "is a superclass of ArgumentError" do
@@ -20,11 +20,11 @@ describe "StandardError" do
   it "is a superclass of NameError" do
     StandardError.should be_ancestor_of(NameError)
   end
-  
+
   it "is a superclass of RangeError" do
     StandardError.should be_ancestor_of(RangeError)
   end
-  
+
   it "is a superclass of RegexpError" do
     StandardError.should be_ancestor_of(RegexpError)
   end

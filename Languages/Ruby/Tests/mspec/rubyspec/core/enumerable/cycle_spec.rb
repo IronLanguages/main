@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Enumerable#cycle" do
   ruby_version_is '1.8.7' do
@@ -15,10 +15,24 @@ describe "Enumerable#cycle" do
       end
     end
 
+    it "returns if there are no elements" do
+      out = EnumerableSpecs::Empty.new.cycle { break :nope }
+      out.should be_nil
+    end
+
+    it "yields successive elements of the array repeatedly" do
+      b = []
+      EnumerableSpecs::Numerous.new(1,2,3).cycle do |elem|
+        b << elem
+        break if b.size == 7
+      end
+      b.should == [1,2,3,1,2,3,1]
+    end
+
     describe "passed a number n as an argument" do
       it "returns nil and does nothing for non positive n" do
-        EnumerableSpecs::ThrowingEach.new.cycle(0){}.should be_nil
-        EnumerableSpecs::NoEach.new.cycle(-22){}.should be_nil
+        EnumerableSpecs::ThrowingEach.new.cycle(0) {}.should be_nil
+        EnumerableSpecs::NoEach.new.cycle(-22) {}.should be_nil
       end
 
       it "calls each at most once" do
@@ -29,7 +43,7 @@ describe "Enumerable#cycle" do
 
       it "yields only when necessary" do
         enum = EnumerableSpecs::EachCounter.new(10, 20, 30)
-        enum.cycle(3){|x| break if x == 20}
+        enum.cycle(3) { |x| break if x == 20}
         enum.times_yielded.should == 2
       end
 
@@ -49,7 +63,7 @@ describe "Enumerable#cycle" do
 
       it "raises an ArgumentError if more arguments are passed" do
         enum = EnumerableSpecs::Numerous.new
-        lambda{ enum.cycle(1, 2){} }.should raise_error(ArgumentError)
+        lambda{ enum.cycle(1, 2) {} }.should raise_error(ArgumentError)
       end
     end
   end
