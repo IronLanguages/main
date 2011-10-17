@@ -1945,7 +1945,7 @@ namespace IronPython.Runtime {
             dict["executable"] = _initialExecutable;
             SystemState.__dict__["prefix"] =  _initialPrefix;
             dict["exec_prefix"] = _initialPrefix;
-            SetVersionVariables(dict, 2, 7, 1, "beta", _initialVersionString);
+            SetVersionVariables(dict, 2, 7, 1, "rc", _initialVersionString);
         }
 
         [PythonType("sys.version_info")]
