@@ -732,8 +732,9 @@ namespace IronPython.Runtime {
 
         internal static PythonModule TryImportSourceFile(PythonContext/*!*/ context, string/*!*/ name) {
             var sourceUnit = TryFindSourceFile(context, name);
+            PlatformAdaptationLayer pal = context.DomainManager.Platform;
             if (sourceUnit == null ||
-                GetFullPathAndValidateCase(context, Path.Combine(Path.GetDirectoryName(sourceUnit.Path), name + Path.GetExtension(sourceUnit.Path)), false) == null) {
+                GetFullPathAndValidateCase(context, pal.CombinePaths(pal.GetDirectoryName(sourceUnit.Path), name + pal.GetExtension(sourceUnit.Path)), false) == null) {
                 return null;
             }
 
@@ -770,7 +771,7 @@ namespace IronPython.Runtime {
                     string fullPath;
 
                     try {
-                        fullPath = Path.Combine(directory, name + extension);
+                        fullPath = context.DomainManager.Platform.CombinePaths(directory, name + extension);
                     } catch (ArgumentException) {
                         // skip invalid paths
                         continue;
@@ -856,7 +857,7 @@ namespace IronPython.Runtime {
         private static object LoadFromDisk(CodeContext context, string name, string fullName, string str) {
             // default behavior
             PythonModule module;
-            string pathname = Path.Combine(str, name);
+            string pathname = context.LanguageContext.DomainManager.Platform.CombinePaths(str, name);
 
             module = LoadPackageFromSource(context, fullName, pathname);
             if (module != null) {
@@ -949,7 +950,7 @@ namespace IronPython.Runtime {
                 return null;
             }
 
-            return LoadModuleFromSource(context, name, Path.Combine(path, "__init__.py"));
+            return LoadModuleFromSource(context, name, context.LanguageContext.DomainManager.Platform.CombinePaths(path, "__init__.py"));
         }
 
         private static PythonModule/*!*/ LoadFromSourceUnit(CodeContext/*!*/ context, SourceUnit/*!*/ sourceCode, string/*!*/ name, string/*!*/ path) {
