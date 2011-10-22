@@ -495,6 +495,7 @@
     <Content Include="$(StdLibPath)\xml\etree\ElementInclude.py" />
     <Content Include="$(StdLibPath)\xml\etree\ElementPath.py" />
     <Content Include="$(StdLibPath)\xml\etree\ElementTree.py" />
+    <Content Include="$(StdLibPath)\xml\etree\SimpleXMLTreeBuilder.py" />
     <Content Include="$(StdLibPath)\xml\etree\__init__.py" />
     <Content Include="$(StdLibPath)\xml\parsers\__init__.py" />
     <Content Include="$(StdLibPath)\xml\sax\handler.py" />
