@@ -359,6 +359,7 @@
         <File Id="F7fzivegnov9lokk58ab9ym7z5" Source="$(var.StdLibPath)\xml\etree\ElementInclude.py" />
         <File Id="F2ziic4yiwkpbwzau9ix44ejhb" Source="$(var.StdLibPath)\xml\etree\ElementPath.py" />
         <File Id="Fdupqhny9ryukwpknyeq5cq220" Source="$(var.StdLibPath)\xml\etree\ElementTree.py" />
+        <File Id="Fchk6r9g2ftgr3wflj86zl8dv4" Source="$(var.StdLibPath)\xml\etree\SimpleXMLTreeBuilder.py" />
         <File Id="F6yvjikn05vduyd7gu25ouujvl" Source="$(var.StdLibPath)\xml\etree\__init__.py" />
       </Component>
     </Directory>

@@ -51,6 +51,7 @@ excludedDirectories += [
                         "/Lib/test",
                         "/Lib/idlelib",
                         "/Lib/lib-tk",
+                        "/Lib/site-packages"
                         ]
 excludedDirectories += [x for x in BROKEN_LIST if not x.endswith(".py")]
 
