@@ -68,7 +68,7 @@ import ElementTree
 
 class TreeBuilder(xmllib.XMLParser):
 
-    def __init__(self, html=0):
+    def __init__(self, html=0, target=None, encoding=None):
         self.__builder = ElementTree.TreeBuilder()
         if html:
             import htmlentitydefs
