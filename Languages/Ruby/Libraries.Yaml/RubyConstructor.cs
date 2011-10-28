@@ -265,15 +265,20 @@ namespace IronRuby.StandardLibrary.Yaml {
                     throw new ConstructorException("Cannot construct module");
                 }
                 Hash values = ctor.ConstructMapping(mapping);
+                // TODO: call allocate here:
+                object result = RubyUtils.CreateObject((RubyClass)module);
+
                 RubyMethodInfo method = module.GetMethod("yaml_initialize") as RubyMethodInfo;
                 if (method != null) {
-                    // TODO: call allocate here:
-                    object result = RubyUtils.CreateObject((RubyClass)module);
                     ctor._yamlInitializeSite.Target(ctor._yamlInitializeSite, result, className, values);
-                    return result;
                 } else {
-                    return RubyUtils.CreateObject((RubyClass)module, EnumerateAttributes(globalScope.Context, values));
+                    var special = result as IRubySpecialMarshalling;
+                    foreach (var kvp in EnumerateAttributes(globalScope.Context, values)) {
+                        if (special == null || !special.TrySpecialUnmarshal(kvp.Key, kvp.Value))
+                            module.Context.SetInstanceVariable(result, kvp.Key, kvp.Value);
+                    }
                 }
+                return result;
             } else {
                 //TODO: YAML::Object
                 throw new NotImplementedError("YAML::Object is not implemented yet");

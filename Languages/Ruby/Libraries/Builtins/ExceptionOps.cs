@@ -171,6 +171,23 @@ namespace IronRuby.Builtins {
             return RubyExceptionData.GetInstance(self).Message;
         }
 
+        [RubyMethod("eql?")]
+        [RubyMethod("==")]
+        [RubyMethod("===")]
+        public static bool Equal(RubyContext context, Exception/*!*/ self, [NotNull]Exception/*!*/ other)
+        {
+            var selfData = RubyExceptionData.GetInstance(self);
+            var otherData = RubyExceptionData.GetInstance(other);
+
+            return context.GetImmediateClassOf(self) == context.GetImmediateClassOf(other) &&
+                Object.Equals(selfData.Message, otherData.Message) &&
+                Object.Equals(context.Inspect(selfData.Backtrace).ToString(), context.Inspect(otherData.Backtrace).ToString()); // TODO: Comparing backtraces using tostring is not nice, come up with a nicer way
+        }
+
+        [RubyMethod("==")]
+        public static bool Equal(Exception/*!*/ self, object other)
+        { return false; }
+
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, Exception/*!*/ self) {
             object message = RubyExceptionData.GetInstance(self).Message;

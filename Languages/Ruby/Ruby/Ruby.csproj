@@ -292,6 +292,7 @@
     <Compile Include="Runtime\Globals\SpecialGlobalVariableInfo.cs" />
     <Compile Include="Runtime\IDuplicable.cs" />
     <Compile Include="Runtime\IRubyObject.cs" />
+    <Compile Include="Runtime\IRubySpecialMarshalling.cs" />
     <Compile Include="Runtime\RubyInstanceData.cs" />
     <Compile Include="Runtime\InstanceDataWeakTable.cs" />
     <Compile Include="Builtins\Exceptions.cs" />

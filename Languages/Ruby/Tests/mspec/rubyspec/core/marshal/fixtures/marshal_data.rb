@@ -122,6 +122,9 @@ end
 class UserString < String
 end
 
+class UserRange < Range
+end
+
 module Meths
   def meths_method() end
 end
@@ -132,6 +135,12 @@ end
 
 Struct.new "Pyramid"
 Struct.new "Useful", :a, :b
+
+def make_error(klass, *args)
+  error = klass.new(*args)
+  error.set_backtrace ["caller1", "caller2"] # we need to use a fake caller otherwise the caller will contain whatever random path the developer has at the time
+  return error
+end
 
 module MarshalSpec
   DATA = {
@@ -336,6 +345,19 @@ module MarshalSpec
                      "\004\bC:\016UserArray[\000"],
     "Struct" => [Struct::Pyramid.new,
                  "\004\bS:\024Struct::Pyramid\000"],
+                 
+    "Exception" => [make_error(Exception, 'foo'), 
+                    "\x04\bo:\x0EException\a:\tmesgI\"\bfoo\x06:\x06EF:\abt[\aI\"\fcaller1\x06;\aFI\"\fcaller2\x06;\aF"],
+    "NotImplementedError" => [make_error(NotImplementedError, 'message'), 
+                              "\x04\bo:\x18NotImplementedError\a:\tmesgI\"\fmessage\x06:\x06EF:\abt[\aI\"\fcaller1\x06;\aFI\"\fcaller2\x06;\aF"],
+    "StandardError" => [make_error(StandardError, 'message'), 
+                        "\x04\bo:\x12StandardError\a:\tmesgI\"\fmessage\x06:\x06EF:\abt[\aI\"\fcaller1\x06;\aFI\"\fcaller2\x06;\aF"],
+    "RuntimeError" => [make_error(RuntimeError, 'message'), 
+                        "\x04\bo:\x11RuntimeError\a:\tmesgI\"\fmessage\x06:\x06EF:\abt[\aI\"\fcaller1\x06;\aFI\"\fcaller2\x06;\aF"],
+    "NameError" => [make_error(NameError, 'message'), 
+                        "\x04\bo:\x0ENameError\b:\tmesgI\"\fmessage\x06:\x06EF:\abt[\aI\"\fcaller1\x06;\aFI\"\fcaller2\x06;\aF:\tname0"],
+    "NoMethodError" => [make_error(NoMethodError, 'message'), 
+                        "\x04\bo:\x12NoMethodError\t:\tmesgI\"\fmessage\x06:\x06EF:\abt[\aI\"\fcaller1\x06;\aFI\"\fcaller2\x06;\aF:\tname0:\targs0"],
   }
 end
 

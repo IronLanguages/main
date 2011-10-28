@@ -28,6 +28,7 @@ using Microsoft.Scripting.Generation;
 using IronRuby.Runtime.Calls;
 using System.Globalization;
 using System.Text;
+using System.Reflection;
 
 namespace IronRuby.Builtins {
 
@@ -86,6 +87,7 @@ namespace IronRuby.Builtins {
             private readonly WriterSites/*!*/ _sites;
             private int _recursionLimit;
             private readonly Dictionary<string/*!*/, int>/*!*/ _symbols;
+            private readonly Dictionary<RubyEncoding/*!*/, MutableString/*!*/>/*!*/ _encodingNames;
             private readonly Dictionary<object, int>/*!*/ _objects;
 
             internal MarshalWriter(WriterSites/*!*/ sites, BinaryWriter/*!*/ writer, RubyContext/*!*/ context, int? limit) {
@@ -96,6 +98,7 @@ namespace IronRuby.Builtins {
                 _context = context;
                 _recursionLimit = (limit.HasValue ? limit.Value : -1);
                 _symbols = new Dictionary<string, int>();
+                _encodingNames = new Dictionary<RubyEncoding, MutableString>();
                 _objects = new Dictionary<object, int>(ReferenceEqualityComparer<object>.Instance);
             }
 
@@ -272,6 +275,49 @@ namespace IronRuby.Builtins {
                 }
             }
 
+            private void WriteEncoding(RubyEncoding/*!*/ value) {
+                if (RubyEncoding.Binary == value) // don't write encoding for binary
+                    return;
+
+                if (value == RubyEncoding.Ascii) {
+                    WriteSymbol("E", RubyEncoding.Binary);
+                    _writer.Write((byte)'F');
+                } else if (value == RubyEncoding.UTF8) {
+                    WriteSymbol("E", RubyEncoding.Binary);
+                    _writer.Write((byte)'T');
+                } else {
+                    WriteSymbol("encoding", RubyEncoding.Binary);
+                    MutableString encodingName;
+                    if(!_encodingNames.TryGetValue(value, out encodingName)) { // we can't pass the encoding's name directly to WriteAnObject as it's a CLR string
+                        encodingName = MutableString.Create(value.Name, RubyEncoding.Binary);
+                        _encodingNames.Add(value, encodingName);
+                    }
+                    WriteAnObject(encodingName);
+                }
+            }
+
+            private List<KeyValuePair<string, object>> GetExceptionData(Exception ex) {
+                if (ex == null)
+                    return null;
+
+                var result = new List<KeyValuePair<string, object>>();
+                result.Add(new KeyValuePair<string,object>("mesg",  MutableString.Create(ex.Message, RubyEncoding.Ascii)));
+
+                var bt = ExceptionOps.GetBacktrace(ex);
+                if (bt != null)
+                    result.Add(new KeyValuePair<string,object>("bt", bt));
+
+                if (ex is MemberAccessException) { // NameError and Descendents have a name and args attribute in MRI 1.9. IronRuby doesn't currently support them, but we marshal dump for compatibility
+                    result.Add(new KeyValuePair<string, object>("name", null));
+
+                    if (ex is MissingMethodException) {
+                        result.Add(new KeyValuePair<string, object>("args", null));
+                    }
+                }
+
+                return result;
+            }
+
             private void TestForAnonymous(RubyModule/*!*/ theModule) {
                 if (theModule.Name == null) {
                     throw RubyExceptions.CreateTypeError("can't dump anonymous {0} {1}", 
@@ -390,15 +436,27 @@ namespace IronRuby.Builtins {
                         bool implementsMarshalDump = _context.ResolveMethod(obj, "marshal_dump", VisibilityContext.AllVisible).Found;
 
                         bool writeInstanceData = false;
+                        RubyEncoding objEncoding = null;
                         string[] instanceNames = null;
+                        ICollection<KeyValuePair<string, object>> exceptionData = null;
 
                         if (!implementsDump && !implementsMarshalDump) {
                             // Neither "_dump" nor "marshal_dump" writes instance vars separately
                             instanceNames = _context.GetInstanceVariableNames(obj);
-                            if (instanceNames.Length > 0) {
+
+                            if(obj is MutableString) // TODO maybe add an IHasEncoding interface instead of checking for string/regex explicitly
+                                objEncoding = ((MutableString)obj).Encoding;
+                            else if(obj is RubyRegex)
+                                objEncoding = ((RubyRegex)obj).Encoding;
+
+                            if (objEncoding == RubyEncoding.Binary)
+                                objEncoding = null;
+
+                            exceptionData = GetExceptionData(obj as Exception);
+
+                            writeInstanceData = instanceNames.Length > 0 || objEncoding != null || exceptionData != null;  // ruby 1.9: A string/regex with encoding acts as if it contains an extra unnamed ivar for the encoding
+                            if (writeInstanceData)
                                 _writer.Write((byte)'I');
-                                writeInstanceData = true;
-                            }
                         }
 
                         if (!implementsDump || implementsMarshalDump) {
@@ -438,6 +496,16 @@ namespace IronRuby.Builtins {
                             WriteStruct((RubyStruct)obj);
                         } else if (obj is Range) {
                             WriteRange((Range)obj);
+                        } else if(obj is RubyMethod) {
+                            throw RubyExceptions.CreateTypeError("no marshal_dump is defined for class Method");
+                        } else if(obj is Proc) {
+                            throw RubyExceptions.CreateTypeError("no marshal_dump is defined for class Proc");
+                        } else if(obj is RubyFile) {
+                            throw RubyExceptions.CreateTypeError("can't dump File");
+                        } else if(obj is RubyIO) {
+                            throw RubyExceptions.CreateTypeError("can't dump IO");
+                        } else if(obj is MatchData) {
+                            throw RubyExceptions.CreateTypeError("can't dump MatchData");
                         } else {
                             if (writeInstanceData) {
                                 // Overwrite the "I"; we always have instance data
@@ -446,11 +514,28 @@ namespace IronRuby.Builtins {
                                 writeInstanceData = true;
                             }
                             WriteObject(obj);
-                        }
+                        }  
 
                         if (writeInstanceData) {
-                            WriteInt32(instanceNames.Length);
+                            var ivarCount = instanceNames.Length;
+                            if (exceptionData != null)
+                                ivarCount += exceptionData.Count;
+
+                            if (objEncoding != null) {
+                                WriteInt32(ivarCount + 1);
+                                WriteEncoding(objEncoding);
+                            } else {
+                                WriteInt32(ivarCount);
+                            }
+                            
                             var encoding = _context.GetIdentifierEncoding();
+                            if(exceptionData != null){
+                                foreach (var kv in exceptionData) {
+                                    WriteSymbol(kv.Key, encoding);
+                                    WriteAnObject(kv.Value);
+                                }
+                            }
+
                             foreach (string name in instanceNames) {
                                 object value;
                                 if (!_context.TryGetInstanceVariable(obj, name, out value)) {
@@ -626,18 +711,25 @@ namespace IronRuby.Builtins {
                 return new RubyRegex(pattern, (RubyRegexOptions)flags);
             }
 
-            private RubyArray/*!*/ ReadArray() {
+            private RubyArray/*!*/ ReadArray(int objectRef = -1) {
                 int count = ReadInt32();
                 RubyArray result = new RubyArray(count);
+                if (objectRef != -1) { // put the array in our _objects cache before loading children so we can deal with arrays that contain themselves
+                    _objects[objectRef] = result;
+                }
+
                 for (int i = 0; i < count; i++) {
                     result.Add(ReadAnObject(false));
                 }
                 return result;
             }
 
-            private Hash/*!*/ ReadHash(int typeFlag) {
+            private Hash/*!*/ ReadHash(int typeFlag, int objectRef = -1) {
                 int count = ReadInt32();
                 Hash result = new Hash(Context);
+                if (objectRef != -1) { // put the Hash in our _objects cache before loading children so we can deal with arrays that contain themselves
+                    _objects[objectRef] = result;
+                }
                 for (int i = 0; i < count; i++) {
                     object key = ReadAnObject(false);
                     result[key] = ReadAnObject(false);
@@ -685,17 +777,27 @@ namespace IronRuby.Builtins {
                 return RubyUtils.CreateObject(ReadType());
             }
 
-            private object/*!*/ ReadObject() {
+            private object/*!*/ ReadObject(int objectRef = -1) {
                 RubyClass theClass = ReadType();
-                int count = ReadInt32();
-                var attributes = new Dictionary<string, object>();
-                for (int i = 0; i < count; i++) {
-                    string name = ReadIdentifier();
-                    attributes[name] = ReadAnObject(false);
-                }
-                return RubyUtils.CreateObject(theClass, attributes);
-            }
 
+                var result = RubyUtils.CreateObject(theClass);
+                if (objectRef != -1) { // put the object in our _objects cache before loading children so we can deal with arrays that contain themselves
+                    _objects[objectRef] = result;
+                }
+
+                var special = GetCustomUnmarshaller(result);
+
+                int count = ReadInt32();
+                for (int i = 0; i < count; i++) {
+                    var attrName = ReadIdentifier();
+                    var attrValue = ReadAnObject(false);
+
+                    if(special == null || !special.TrySpecialUnmarshal(attrName, attrValue))
+                        theClass.Context.SetInstanceVariable(result, attrName, attrValue);
+                }
+                return result;
+            }
+            
             private object/*!*/ ReadUsingLoad() {
                 RubyClass theClass = ReadType();
                 return _sites.Load.Target(_sites.Load, theClass, ReadString());
@@ -850,18 +952,17 @@ namespace IronRuby.Builtins {
 
                     case ';':
                         obj = ReadSymbolOrIdentifier(typeFlag, true).GetSymbol(Context);
-                        runProc = false;
                         break;
 
                     case '@':
                         obj = _objects[ReadInt32()];
-                        runProc = false;
                         break;
 
                     default:
                         // Reserve a reference
-                        int objectRef = _objects.Count;
+                        int objectRef = -1;
                         if (!noCache) {
+                            objectRef = _objects.Count;
                             _objects[objectRef] = null;
                         }
 
@@ -879,14 +980,14 @@ namespace IronRuby.Builtins {
                                 obj = ReadRegex();
                                 break;
                             case '[':
-                                obj = ReadArray();
+                                obj = ReadArray(objectRef);
                                 break;
                             case '{':
                             case '}':
-                                obj = ReadHash(typeFlag);
+                                obj = ReadHash(typeFlag, objectRef);
                                 break;
                             case 'o':
-                                obj = ReadObject();
+                                obj = ReadObject(objectRef);
                                 break;
                             case 'u':
                                 obj = ReadUsingLoad();
@@ -919,7 +1020,7 @@ namespace IronRuby.Builtins {
                         break;
                 }
                 if (runProc) {
-                    _sites.ProcCall.Target(_sites.ProcCall, _proc, obj);
+                    obj = _sites.ProcCall.Target(_sites.ProcCall, _proc, obj); // ruby 1.9: return the value from the proc
                 }
                 return obj;
             }
@@ -929,7 +1030,39 @@ namespace IronRuby.Builtins {
                     CheckPreamble();
                     return ReadAnObject(false);
                 } catch (IOException e) {
-                    throw RubyExceptions.CreateArgumentError("marshal data too short", e);
+                    throw new IronRuby.Builtins.EOFError("marshal data too short", e);
+                }
+            }
+
+            private IRubySpecialMarshalling GetCustomUnmarshaller(object o) {
+                var self = o as IRubySpecialMarshalling;
+                if (self != null)
+                    return self;
+
+                var exception = o as Exception;
+                if (exception != null)
+                    return new ExceptionUnmarshaller(exception);
+
+                return null;
+            }
+
+            class ExceptionUnmarshaller : IRubySpecialMarshalling {
+                readonly Exception _exception;
+
+                public ExceptionUnmarshaller(Exception/*!*/ exception)
+                { _exception = exception; }
+
+                public bool TrySpecialUnmarshal(string attrName, object attrValue) {
+                    switch(attrName) {
+                    case "mesg":
+                        typeof(Exception).InvokeMember("_message", BindingFlags.SetField | BindingFlags.NonPublic | BindingFlags.Instance, null, _exception, new object[] { attrValue.ToString() });
+                        return true;
+                    case "bt":
+                        ExceptionOps.SetBacktrace(_exception, attrValue as RubyArray);
+                        return true;
+                    default:
+                        return false;
+                    }
                 }
             }
         }
