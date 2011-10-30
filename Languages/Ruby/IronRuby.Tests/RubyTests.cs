@@ -96,6 +96,7 @@ namespace IronRuby.Tests {
                 OverloadResolution_ParamArrays1,
                 OverloadResolution_Numeric1,
                 AmbiguousMatch1,
+                InterpreterNew,
                 Interpreter1A,
                 Interpreter1B,
                 Interpreter1C,

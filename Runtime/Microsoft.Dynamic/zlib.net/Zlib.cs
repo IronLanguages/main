@@ -172,7 +172,7 @@ namespace ComponentAce.Compression.Libs.ZLib
     /// <summary>
     /// Data block types, i.e. binary or ascii text
     /// </summary>
-    internal enum BlockType
+    public enum BlockType
     {
         Z_BINARY = 0,
         Z_ASCII = 1,
@@ -182,7 +182,7 @@ namespace ComponentAce.Compression.Libs.ZLib
     /// <summary>
     /// Helper class
     /// </summary>
-    internal class ZLibUtil
+    public class ZLibUtil
     {
         #region Copy large array to a small one in several steps
 
@@ -239,7 +239,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// <summary>
         /// Max Window size
         /// </summary>
-        internal const int MAX_WBITS = 15; // 32K LZ77 Window
+        public const int MAX_WBITS = 15; // 32K LZ77 Window
 
         internal static readonly byte[] mark = new byte[] { (byte)0, (byte)0, (byte)ZLibUtil.Identity(0xff), (byte)ZLibUtil.Identity(0xff) };
 
@@ -269,7 +269,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 		/// </summary>
 		/// <param name="literal">The literal to return</param>
 		/// <returns>The received value</returns>
-		public static long Identity(long literal)
+		internal static long Identity(long literal)
 		{
 			return literal;
 		}
@@ -279,7 +279,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 		/// </summary>
 		/// <param name="literal">The literal to return</param>
 		/// <returns>The received value</returns>
-		public static ulong Identity(ulong literal)
+        internal static ulong Identity(ulong literal)
 		{
 			return literal;
 		}

@@ -70,6 +70,7 @@ bsipr3   =msbuild %DLR_ROOT%\Solutions\IronPython.sln /p:Configuration="Silverli
 ;= [Iron]Python program aliases
 ;=
 
+cpy     ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\CPython\27\python.exe" $*
 ipy     ="%DLR_ROOT%\Bin\Debug\ipy.exe" $*
 ipyr    ="%DLR_ROOT%\Bin\Release\ipy.exe" -X:TabCompletion $*
 ipyd    ="%DLR_ROOT%\Bin\Debug\ipy.exe" -D -X:TabCompletion $*

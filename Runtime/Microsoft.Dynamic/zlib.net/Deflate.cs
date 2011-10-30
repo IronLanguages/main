@@ -51,7 +51,7 @@ namespace ComponentAce.Compression.Libs.ZLib
     /// <summary>
     /// Implementation of the Deflate compression algorithm.
     /// </summary>
-    internal sealed class Deflate
+    public sealed class Deflate
     {
 
         #region Nested class
@@ -105,12 +105,12 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// <summary>
         /// Defalult compression method
         /// </summary>
-        private const int Z_DEFAULT_COMPRESSION = -1;
+        public const int Z_DEFAULT_COMPRESSION = -1;
         
         /// <summary>
         /// Default memory level
         /// </summary>
-        private const int DEF_MEM_LEVEL = 8;
+        public const int DEF_MEM_LEVEL = 8;
 
         //Compression methods
         private const int STORED = 0;
@@ -130,7 +130,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// <summary>
         /// Block internalFlush performed
         /// </summary>
-         private const int BlockDone = 1;
+        private const int BlockDone = 1;
 
         /// <summary>
         /// Finish started, need only more output at next deflate
@@ -1762,7 +1762,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// <returns>A result code</returns>
         internal int deflateInit(ZStream strm, int level, int bits)
         {
-            return deflateInit2(strm, level, Z_DEFLATED, bits, DEF_MEM_LEVEL, CompressionStrategy.Z_DEFAULT_STRATEGY);
+            return deflateInit2(strm, level, bits, DEF_MEM_LEVEL, CompressionStrategy.Z_DEFAULT_STRATEGY);
         }
 
         /// <summary>
@@ -1781,12 +1781,11 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// </summary>
         /// <param name="strm">ZStream object</param>
         /// <param name="level">Compression level</param>
-        /// <param name="method">Compression method</param>
         /// <param name="windowBits">Window bits</param>
         /// <param name="memLevel">Memory level</param>
         /// <param name="strategy">Compression strategy</param>
         /// <returns>Operation result code</returns>
-        internal int deflateInit2(ZStream strm, int level, int method, int windowBits, int memLevel, CompressionStrategy strategy)
+        internal int deflateInit2(ZStream strm, int level, int windowBits, int memLevel, CompressionStrategy strategy)
         {
             int noheader = 0;
 
@@ -1802,7 +1801,7 @@ namespace ComponentAce.Compression.Libs.ZLib
                 windowBits = -windowBits;
             }
 
-            if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method != Z_DEFLATED || windowBits < 9 || windowBits > 15 || level < 0 || level > 9 || strategy < 0 || strategy > CompressionStrategy.Z_HUFFMAN_ONLY)
+            if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || windowBits < 9 || windowBits > 15 || level < 0 || level > 9 || strategy < 0 || strategy > CompressionStrategy.Z_HUFFMAN_ONLY)
             {
                 return (int)ZLibResultCode.Z_STREAM_ERROR;
             }
@@ -1836,7 +1835,7 @@ namespace ComponentAce.Compression.Libs.ZLib
             this.level = level;
 
             this.strategy = strategy;
-            this.method = (byte)method;
+            this.method = (byte)Z_DEFLATED;
 
             return deflateReset(strm);
         }
@@ -1993,7 +1992,7 @@ namespace ComponentAce.Compression.Libs.ZLib
             if (status == DeflateState.INIT_STATE)
             {
                 int header = (Z_DEFLATED + ((w_bits - 8) << 4)) << 8;
-                int level_flags = ((level - 1) & 0xff) >> 1;
+                int level_flags = (level > 0) ? ((level - 1) & 0xff) >> 1 : 0;
 
                 if (level_flags > 3)
                     level_flags = 3;

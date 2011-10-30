@@ -32,6 +32,7 @@ using System.Reflection;
 namespace IronRuby.Tests {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
+    using System.Reflection.Emit;
 
     public partial class Tests {
         #region Tracing Helpers
@@ -280,6 +281,23 @@ namespace IronRuby.Tests {
 
         public static int Interpreter1_g(int a, int b, int c) {
             return 20;
+        }
+
+        [Run]
+        [Options(NoRuntime = true)]
+        public void InterpreterNew() {
+            var p0 = Ast.Parameter(typeof(Type));
+            var p1 = Ast.Parameter(typeof(Type[]));
+
+            var l0 = Ast.Lambda<Func<Type, Type[], DynamicMethod>>(
+                Ast.New(typeof(DynamicMethod).GetConstructor(new[] { typeof(string), typeof(Type), typeof(Type[]) }),
+                    Ast.Constant("Foo"), p0, p1
+                ),
+                new[] { p0, p1 }
+            );
+
+            var f = l0.LightCompile();
+            var dm = f(typeof(int), new[] { typeof(int) });
         }
 
         [Options(NoRuntime = true)]
