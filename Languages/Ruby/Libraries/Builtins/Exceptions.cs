@@ -245,7 +245,11 @@ namespace IronRuby.Builtins {
         
         [RubyConstructor]
         public static ExternalException/*!*/ Factory(RubyClass/*!*/ self, [DefaultProtocol]MutableString message) {
+#if SILVERLIGHT
+            ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "unknown error"));
+#else
             ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "unknown error"), int.MinValue);
+#endif
             RubyExceptionData.InitializeException(result, message);
             return result;
         }
