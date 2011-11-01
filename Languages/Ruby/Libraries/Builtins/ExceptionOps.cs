@@ -166,27 +166,32 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        [RubyMethod("to_str")]
         public static object StringRepresentation(Exception/*!*/ self) {
             return RubyExceptionData.GetInstance(self).Message;
         }
 
-        [RubyMethod("eql?")]
+        /// <summary>Notes: An exception can be compared with any other object that has a 'message' and 'backtrace' method</summary>
         [RubyMethod("==")]
-        [RubyMethod("===")]
-        public static bool Equal(RubyContext context, Exception/*!*/ self, [NotNull]Exception/*!*/ other)
-        {
-            var selfData = RubyExceptionData.GetInstance(self);
-            var otherData = RubyExceptionData.GetInstance(other);
+        public static bool Equal(
+            UnaryOpStorage/*!*/ messageStorage, UnaryOpStorage/*!*/ backtraceStorage, BinaryOpStorage/*!*/stringEqlStorage, 
+            BinaryOpStorage/*!*/ arrayEqlStorage, RespondToStorage/*!*/ respondTo, Exception/*!*/ self, object/*!*/ other) {
 
-            return context.GetImmediateClassOf(self) == context.GetImmediateClassOf(other) &&
-                Object.Equals(selfData.Message, otherData.Message) &&
-                Object.Equals(context.Inspect(selfData.Backtrace).ToString(), context.Inspect(otherData.Backtrace).ToString()); // TODO: Comparing backtraces using tostring is not nice, come up with a nicer way
+            if (!Protocols.RespondTo(respondTo, other, "message") || !Protocols.RespondTo(respondTo, other, "backtrace"))
+                return false;
+
+            var messageSite = messageStorage.GetCallSite("message");
+            var selfMessage = messageSite.Target(messageSite, self);
+            var otherMessage = messageSite.Target(messageSite, other);
+
+            var backtraceSite = backtraceStorage.GetCallSite("backtrace");
+            var selfBacktrace = backtraceSite.Target(backtraceSite, self) as System.Collections.IList;
+            var otherBacktrace = backtraceSite.Target(backtraceSite, other);
+            
+            var stringEqlSite = stringEqlStorage.GetCallSite("==");
+
+            return true.Equals(stringEqlSite.Target(stringEqlSite, selfMessage, otherMessage))
+                && RubyArray.Equals(arrayEqlStorage, selfBacktrace, otherBacktrace);
         }
-
-        [RubyMethod("==")]
-        public static bool Equal(Exception/*!*/ self, object other)
-        { return false; }
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, Exception/*!*/ self) {

@@ -774,27 +774,36 @@ namespace IronRuby.Builtins {
             }
 
             private object/*!*/ UnmarshalNewObject() {
-                return RubyUtils.CreateObject(ReadType());
+                return Utils.CreateObjectAndSetIvars(ReadType());
             }
 
             private object/*!*/ ReadObject(int objectRef = -1) {
                 RubyClass theClass = ReadType();
-
-                var result = RubyUtils.CreateObject(theClass);
-                if (objectRef != -1) { // put the object in our _objects cache before loading children so we can deal with arrays that contain themselves
-                    _objects[objectRef] = result;
+                
+                if (objectRef != -1) { // put a proxy object object in our _objects cache before loading children for self-referential objects
+                    _objects[objectRef] = new Utils.SelfRefId { Id = objectRef };
                 }
 
-                var special = GetCustomUnmarshaller(result);
+                var selfReferencingIvars = new List<string>(0); // selfref objects are pretty rare
 
                 int count = ReadInt32();
+                var attrs = new Dictionary<string, object>(count);
+
                 for (int i = 0; i < count; i++) {
                     var attrName = ReadIdentifier();
                     var attrValue = ReadAnObject(false);
 
-                    if(special == null || !special.TrySpecialUnmarshal(attrName, attrValue))
-                        theClass.Context.SetInstanceVariable(result, attrName, attrValue);
+                    if (attrValue is Utils.SelfRefId && ((Utils.SelfRefId)attrValue).Id == objectRef)
+                        selfReferencingIvars.Add(attrName);
+
+                    attrs[attrName] = attrValue;
                 }
+
+                var result = Utils.CreateObjectAndSetIvars(theClass, attrs);
+                foreach (var attrName in selfReferencingIvars) { // patch up any self-references
+                    theClass.Context.SetInstanceVariable(result, attrName, result);
+                }
+
                 return result;
             }
             
@@ -1033,38 +1042,6 @@ namespace IronRuby.Builtins {
                     throw new IronRuby.Builtins.EOFError("marshal data too short", e);
                 }
             }
-
-            private IRubySpecialMarshalling GetCustomUnmarshaller(object o) {
-                var self = o as IRubySpecialMarshalling;
-                if (self != null)
-                    return self;
-
-                var exception = o as Exception;
-                if (exception != null)
-                    return new ExceptionUnmarshaller(exception);
-
-                return null;
-            }
-
-            class ExceptionUnmarshaller : IRubySpecialMarshalling {
-                readonly Exception _exception;
-
-                public ExceptionUnmarshaller(Exception/*!*/ exception)
-                { _exception = exception; }
-
-                public bool TrySpecialUnmarshal(string attrName, object attrValue) {
-                    switch(attrName) {
-                    case "mesg":
-                        typeof(Exception).InvokeMember("_message", BindingFlags.SetField | BindingFlags.NonPublic | BindingFlags.Instance, null, _exception, new object[] { attrValue.ToString() });
-                        return true;
-                    case "bt":
-                        ExceptionOps.SetBacktrace(_exception, attrValue as RubyArray);
-                        return true;
-                    default:
-                        return false;
-                    }
-                }
-            }
         }
 
         #endregion
@@ -1156,6 +1133,152 @@ namespace IronRuby.Builtins {
 
         [RubyConstant]
         public const int MINOR_VERSION = 8;
+
+        #endregion
+
+        #region Object Creation
+
+        public static class Utils {
+            private static readonly Type[] _ccRangeTypes1 = new Type[] { typeof(int), typeof(int), typeof(bool) };
+            private static readonly Type[] _ccRangeSubclassTypes1 = new Type[] { typeof(RubyClass), typeof(int), typeof(int), typeof(bool) };
+            private static readonly Type[] _ccRangeTypes2 = new Type[] { typeof(MutableString), typeof(MutableString), typeof(bool) };
+            private static readonly Type[] _ccRangeSubclassTypes2 = new Type[] { typeof(RubyClass), typeof(MutableString), typeof(MutableString), typeof(bool) };
+
+            private static readonly Type[] _ccExceptionTypes1 = new Type[] { typeof(string) };
+
+            private static readonly Type[] _ccTypes1 = new Type[] { typeof(RubyClass) };
+            private static readonly Type[] _ccTypes2 = new Type[] { typeof(RubyContext) };
+
+            public static object/*!*/ CreateStruct(RubyClass theClass, Type baseType, IDictionary<string, object> attributes = null) {
+                var theStruct = RubyStruct.Create(theClass);
+                if (attributes == null) {
+
+                    if (attributes != null) {
+                        object tmp;
+                        var values = new object[theStruct.GetNames().Count];
+                        for (int i = 0; i < values.Length; i++) {
+                            if (attributes.TryGetValue(theStruct.GetNames()[i], out tmp)) {
+                                values[i] = tmp;
+                            }
+                        }
+                        theStruct.SetValues(values);
+                    }
+                }
+                return theStruct;
+            }
+
+            public static object/*!*/ CreateRange(RubyClass theClass, Type baseType, IDictionary<string, object> attributes = null) {
+                object begin = null, end = null, excludeEnd = null;
+                
+                BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+                ConstructorInfo ci = null;
+
+                if (attributes != null) {
+                    if (attributes.TryGetValue("begin", out begin))
+                        attributes.Remove("begin");
+
+                    if(attributes.TryGetValue("end", out end))
+                        attributes.Remove("end");
+
+                    if(attributes.TryGetValue("excl", out excludeEnd))
+                        attributes.Remove("excl");
+
+                    if (begin is int && end is int && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccRangeTypes1, null))) {
+                        return ci.Invoke(new object[] { begin, end, true.Equals(excludeEnd) });
+                    }  else if (begin is int && end is int && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccRangeSubclassTypes1, null))) {
+                        return ci.Invoke(new object[] { theClass, begin, end, true.Equals(excludeEnd) });
+                    } else if (begin is MutableString && end is MutableString && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccRangeTypes2, null))) {
+                        return ci.Invoke(new object[] { begin, end, true.Equals(excludeEnd) });
+                    } else if (begin is int && end is int && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccRangeSubclassTypes2, null))) {
+                        return ci.Invoke(new object[] { theClass, begin, end, true.Equals(excludeEnd) });
+                    }
+                }
+
+                if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null))) {
+                    return ci.Invoke(new object[0]);
+                }
+
+                string message = String.Format("Class {0} does not have a valid constructor", theClass.Name);
+                throw new NotSupportedException(message);
+            }
+
+            public static object/*!*/ CreateException(RubyClass theClass, Type baseType, IDictionary<string, object> attributes = null) {
+                object mesg = null, bt = null;
+
+                BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+                ConstructorInfo ci = null;
+
+                Exception result = null;
+                
+                if (attributes != null) {
+                    if (attributes.TryGetValue("mesg", out mesg))
+                        attributes.Remove("mesg");
+
+                    if (attributes.TryGetValue("bt", out bt)) {
+                        attributes.Remove("bt");
+                    }
+
+                    if(mesg is MutableString)
+                        mesg = ((MutableString)mesg).ToString();
+               }
+
+                if (mesg is string && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccExceptionTypes1, null))) {
+                    result = (Exception)ci.Invoke(new object[] { mesg });
+                } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null))) {
+                    result = (Exception)ci.Invoke(new object[0]);
+                } else {
+                    string message = String.Format("Class {0} does not have a valid constructor", theClass.Name);
+                    throw new NotSupportedException(message);
+                }
+
+                if (bt is RubyArray)
+                    RubyExceptionData.GetInstance(result).Backtrace = (RubyArray)bt;
+                return result;
+            }
+
+            public static object/*!*/ CreateObjectAndSetIvars(RubyClass theClass, IDictionary<string, object> attributes = null) {
+                Assert.NotNull(theClass);
+
+                object result = null;
+
+                BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+                ConstructorInfo ci;
+
+                Type baseType = theClass.GetUnderlyingSystemType();
+                if (baseType == typeof(RubyStruct)) {
+                    return CreateStruct(theClass, baseType, attributes); // we never set ivars on structs
+                } else if (typeof(Range).IsAssignableFrom(baseType)) {
+                    result = CreateRange(theClass, baseType, attributes);
+                } else if (typeof(Exception).IsAssignableFrom(baseType)) {
+                    result = CreateException(theClass, baseType, attributes);
+                } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null))) {
+                    result = ci.Invoke(new object[0] { });
+                } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccTypes1, null))) {
+                    result = ci.Invoke(new object[1] { theClass });
+                } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccTypes2, null))) {
+                    result = ci.Invoke(new object[1] { theClass.Context });
+                } else {
+                    string message = String.Format("Class {0} does not have a valid constructor", theClass.Name);
+                    throw new NotSupportedException(message);
+                }
+
+                if (attributes != null) {
+                    foreach (var kv in attributes) {
+                        theClass.Context.SetInstanceVariable(result, kv.Key, kv.Value);
+                    }
+                }
+
+                return result;
+            }
+
+            private static bool IsAvailable(MethodBase method) {
+                return method != null && !method.IsPrivate && !method.IsAssembly && !method.IsFamilyAndAssembly;
+            }
+
+            public struct SelfRefId {
+                public int Id { get; set; }
+            }
+        }
 
         #endregion
     }

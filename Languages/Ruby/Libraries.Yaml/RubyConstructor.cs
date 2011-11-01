@@ -266,17 +266,18 @@ namespace IronRuby.StandardLibrary.Yaml {
                 }
                 Hash values = ctor.ConstructMapping(mapping);
                 // TODO: call allocate here:
-                object result = RubyUtils.CreateObject((RubyClass)module);
 
+                object result = null;
                 RubyMethodInfo method = module.GetMethod("yaml_initialize") as RubyMethodInfo;
                 if (method != null) {
+                    result = RubyMarshal.Utils.CreateObjectAndSetIvars((RubyClass)module);
                     ctor._yamlInitializeSite.Target(ctor._yamlInitializeSite, result, className, values);
                 } else {
-                    var special = result as IRubySpecialMarshalling;
+                    var dict = new Dictionary<string, object>(values.Count);
                     foreach (var kvp in EnumerateAttributes(globalScope.Context, values)) {
-                        if (special == null || !special.TrySpecialUnmarshal(kvp.Key, kvp.Value))
-                            module.Context.SetInstanceVariable(result, kvp.Key, kvp.Value);
+                        dict.Add(kvp.Key, kvp.Value);
                     }
+                    result = RubyMarshal.Utils.CreateObjectAndSetIvars((RubyClass)module, dict);
                 }
                 return result;
             } else {

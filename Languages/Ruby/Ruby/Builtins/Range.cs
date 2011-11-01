@@ -26,7 +26,7 @@ using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
         
-    public partial class Range : IDuplicable, IRubySpecialMarshalling {
+    public partial class Range : IDuplicable {
         private object _begin;
         private object _end;
         private bool _excludeEnd;
@@ -91,22 +91,6 @@ namespace IronRuby.Builtins {
             _end = end;
             _excludeEnd = excludeEnd;
             _initialized = true;
-        }
-
-        public bool TrySpecialUnmarshal(string attrName, object attrValue) {
-            switch(attrName) {
-            case "begin":
-                _begin = attrValue;
-                return true;
-            case "end":
-                _end = attrValue;
-                return true;
-            case "excl":
-                _excludeEnd = true.Equals(attrValue);
-                return true;
-            default:
-                return false;
-            }
         }
 
         protected virtual Range/*!*/ Copy() {

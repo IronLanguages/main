@@ -964,41 +964,10 @@ namespace IronRuby.Runtime {
         #endregion
 
         #region Object Construction
-
-        private static readonly Type[] _ccTypes1 = new Type[] { typeof(RubyClass) };
-        private static readonly Type[] _ccTypes2 = new Type[] { typeof(RubyContext) };
-
+        
+        // TODO remove
         public static readonly string SerializationInfoClassKey = "#immediateClass";
         
-        private static bool IsAvailable(MethodBase method) {
-            return method != null && !method.IsPrivate && !method.IsAssembly && !method.IsFamilyAndAssembly;
-        }
-
-        // TODO: remove
-        public static object/*!*/ CreateObject(RubyClass/*!*/ theClass) {
-            Assert.NotNull(theClass);
-
-            Type baseType = theClass.GetUnderlyingSystemType();
-            if (baseType == typeof(RubyStruct)) {
-                return RubyStruct.Create(theClass);
-            }
-
-            object result;
-            BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
-            ConstructorInfo ci;
-            if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null))) {
-                result = ci.Invoke(new object[0] { });
-            } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccTypes1, null))) {
-                result = ci.Invoke(new object[1] { theClass });
-            } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccTypes2, null))) {
-                result = ci.Invoke(new object[1] { theClass.Context });
-            } else {
-                string message = String.Format("Class {0} does not have a valid constructor", theClass.Name);
-                throw new NotSupportedException(message);
-            }
-            return result;
-        }
-
         #endregion
 
         #region Call Site Storage Extensions

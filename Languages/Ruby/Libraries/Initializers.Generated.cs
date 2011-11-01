@@ -264,7 +264,8 @@ namespace IronRuby.Builtins {
             );
             IronRuby.Builtins.RubyClass def49 = DefineGlobalClass("SystemCallError", typeof(System.Runtime.InteropServices.ExternalException), 0x00000007, def51, LoadSystemCallError_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Runtime.InteropServices.ExternalException>(IronRuby.Builtins.SystemCallErrorOps.Factory), 
-                new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Runtime.InteropServices.ExternalException>(IronRuby.Builtins.SystemCallErrorOps.Factory)
+                new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Runtime.InteropServices.ExternalException>(IronRuby.Builtins.SystemCallErrorOps.Factory), 
+                new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.Int32, System.Runtime.InteropServices.ExternalException>(IronRuby.Builtins.SystemCallErrorOps.Factory)
             );
             DefineGlobalClass("SystemStackError", typeof(IronRuby.Builtins.SystemStackError), 0x00000007, def51, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
             new Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__SystemStackError));
@@ -296,7 +297,7 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.UnauthorizedAccessException>(IronRuby.Builtins.Errno.UnauthorizedAccessExceptionOps.Create)
             );
             IronRuby.Builtins.RubyClass def13 = DefineClass("Errno::EADDRINUSE", typeof(IronRuby.Builtins.Errno.AddressInUseError), 0x0000000F, def49, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyClass def25 = DefineClass("Errno::EAGAIN", typeof(IronRuby.Builtins.Errno.ResourceTemporarilyUnavailableError), 0x0000000F, def49, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyClass def25 = DefineClass("Errno::EAGAIN", typeof(IronRuby.Builtins.Errno.ResourceTemporarilyUnavailableError), 0x0000000F, def49, null, null, LoadErrno__EAGAIN_Constants, IronRuby.Builtins.RubyModule.EmptyArray);
             IronRuby.Builtins.RubyClass def3 = DefineClass("Errno::EBADF", typeof(IronRuby.Builtins.BadFileDescriptorError), 0x00000007, def49, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.BadFileDescriptorError>(IronRuby.Builtins.Errno.BadFileDescriptorErrorOps.Create)
             );
@@ -325,7 +326,7 @@ namespace IronRuby.Builtins {
             );
             IronRuby.Builtins.RubyClass def24 = DefineClass("Errno::EPIPE", typeof(IronRuby.Builtins.Errno.PipeError), 0x0000000F, def49, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             IronRuby.Builtins.RubyClass def22 = DefineClass("Errno::ESPIPE", typeof(IronRuby.Builtins.Errno.InvalidSeekError), 0x0000000F, def49, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
-            IronRuby.Builtins.RubyClass def26 = DefineClass("Errno::EWOULDBLOCK", typeof(IronRuby.Builtins.Errno.WouldBlockError), 0x0000000F, def49, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
+            IronRuby.Builtins.RubyClass def26 = DefineClass("Errno::EWOULDBLOCK", typeof(IronRuby.Builtins.Errno.WouldBlockError), 0x0000000F, def49, null, null, LoadErrno__EWOULDBLOCK_Constants, IronRuby.Builtins.RubyModule.EmptyArray);
             IronRuby.Builtins.RubyClass def20 = DefineClass("Errno::EXDEV", typeof(IronRuby.Builtins.Errno.ImproperLinkError), 0x0000000F, def49, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray);
             DefineGlobalClass("FloatDomainError", typeof(IronRuby.Builtins.FloatDomainError), 0x0000000F, def53, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
             new Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__FloatDomainError));
@@ -1524,26 +1525,25 @@ namespace IronRuby.Builtins {
             
         }
         
+        private static void LoadErrno__EAGAIN_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
+            SetBuiltinConstant(module, "Errno", IronRuby.Builtins.Errno.ResourceTemporarilyUnavailableError.Errno);
+            
+        }
+        
+        private static void LoadErrno__EWOULDBLOCK_Constants(IronRuby.Builtins.RubyModule/*!*/ module) {
+            SetBuiltinConstant(module, "Errno", IronRuby.Builtins.Errno.WouldBlockError.Errno);
+            
+        }
+        
         private static void LoadException_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "==", 0x51, 
-                0x00000004U, 0x00000000U, 
-                new Func<IronRuby.Runtime.RubyContext, System.Exception, System.Exception, System.Boolean>(IronRuby.Builtins.ExceptionOps.Equal), 
-                new Func<System.Exception, System.Object, System.Boolean>(IronRuby.Builtins.ExceptionOps.Equal)
-            );
-            
-            DefineLibraryMethod(module, "===", 0x51, 
-                0x00000004U, 
-                new Func<IronRuby.Runtime.RubyContext, System.Exception, System.Exception, System.Boolean>(IronRuby.Builtins.ExceptionOps.Equal)
+                0x00000000U, 
+                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RespondToStorage, System.Exception, System.Object, System.Boolean>(IronRuby.Builtins.ExceptionOps.Equal)
             );
             
             DefineLibraryMethod(module, "backtrace", 0x51, 
                 0x00000000U, 
                 new Func<System.Exception, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ExceptionOps.GetBacktrace)
-            );
-            
-            DefineLibraryMethod(module, "eql?", 0x51, 
-                0x00000004U, 
-                new Func<IronRuby.Runtime.RubyContext, System.Exception, System.Exception, System.Boolean>(IronRuby.Builtins.ExceptionOps.Equal)
             );
             
             DefineRuleGenerator(module, "exception", 0x51, IronRuby.Builtins.ExceptionOps.GetException());
@@ -1570,11 +1570,6 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "to_s", 0x51, 
-                0x00000000U, 
-                new Func<System.Exception, System.Object>(IronRuby.Builtins.ExceptionOps.StringRepresentation)
-            );
-            
-            DefineLibraryMethod(module, "to_str", 0x51, 
                 0x00000000U, 
                 new Func<System.Exception, System.Object>(IronRuby.Builtins.ExceptionOps.StringRepresentation)
             );
@@ -8454,7 +8449,7 @@ namespace IronRuby.Builtins {
         private static void LoadSystemCallError_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "errno", 0x51, 
                 0x00000000U, 
-                new Func<System.Runtime.InteropServices.ExternalException, System.Int32>(IronRuby.Builtins.SystemCallErrorOps.Errno)
+                new Func<System.Runtime.InteropServices.ExternalException, System.Object>(IronRuby.Builtins.SystemCallErrorOps.Errno)
             );
             
         }
