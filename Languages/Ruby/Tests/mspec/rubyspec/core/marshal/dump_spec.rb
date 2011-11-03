@@ -87,6 +87,52 @@ describe "Marshal.dump" do
       Marshal.dump(obj).should == 
         "#{mv+nv}o:\vObject\x06:\t@str[\t:\aso;\aI\"\ahi\x06:\x06EF@\a"
     end
+    
+    it "dumps an array of 2 strings both with ascii-bit encoding" do # This tests the behaviour where we write an index for the encoding and use EF for ascii
+      s, s2 = "hi", "bye"
+      s.force_encoding 'ascii-8bit'
+      s2.force_encoding 'ascii-8bit'
+      Marshal.dump([s, s2]).should ==
+        "#{mv+nv}[\a\"\ahi\"\bbye"
+    end
+    
+    it "dumps an array of 2 strings both with ascii encoding" do # This tests the behaviour where we write an index for the encoding and use EF for ascii
+      s, s2 = "hi", "bye"
+      s.force_encoding 'ascii'
+      s2.force_encoding 'ascii'
+      Marshal.dump([s, s2]).should ==
+        "#{mv+nv}[\aI\"\ahi\x06:\x06EFI\"\bbye\x06;\x00F"
+    end
+    
+    it "dumps an array of strings with non-ascii encoding" do # This tests the behaviour where we write an index for the encoding and also write an index for the custom encoding object
+      s, s2 = "hi", "bye"
+      s.force_encoding 'cp850'
+      s2.force_encoding 'cp850'
+
+      enc_str = s.encoding.to_s # CRuby will have CP850 and IronRuby will have IBM850. Neither is "wrong" as they're aliases for the same thing
+      enc_l = (enc_str.length + 5).chr
+      enc_l_str = "#{enc_l}#{enc_str}"
+      
+      Marshal.dump([s, s2]).should ==
+        "#{mv+nv}[\aI\"\ahi\x06:\rencoding\"#{enc_l_str}I\"\bbye\x06;\x00@\a"
+    end
+    
+    it "dumps an array of mixed strings with duplicates" do
+      a1, a2, c1, c2, b1, b2 = *%w(asc1 asc2 cp1 cp2 bin1 bin2)
+      a1.force_encoding 'ascii'
+      a2.force_encoding 'ascii'
+      c1.force_encoding 'cp850'
+      c2.force_encoding 'cp850'
+      b1.force_encoding 'ascii-8bit'
+      b2.force_encoding 'ascii-8bit'
+      
+      enc_str = c1.encoding.to_s # CRuby will have CP850 and IronRuby will have IBM850. Neither is "wrong" as they're aliases for the same thing
+      enc_l = (enc_str.length + 5).chr
+      enc_l_str = "#{enc_l}#{enc_str}"
+      
+      Marshal.dump([a1, c1,  b1, a2, c2, b2]).should ==
+        "\x04\b[\vI\"\tasc1\x06:\x06EFI\"\bcp1\x06:\rencoding\"#{enc_l_str}\"\tbin1I\"\tasc2\x06;\x00FI\"\bcp2\x06;\x06@\b\"\tbin2"
+    end
   end
 
   ruby_version_is ""..."1.9" do

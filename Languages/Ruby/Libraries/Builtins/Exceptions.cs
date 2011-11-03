@@ -239,19 +239,28 @@ namespace IronRuby.Builtins {
     [RubyException("SystemCallError", Extends = typeof(ExternalException), Inherits = typeof(SystemException))]
     public static class SystemCallErrorOps {
         [RubyMethod("errno")]
-        public static int Errno(ExternalException/*!*/ self) {
-            return self.ErrorCode;
+        public static object Errno(ExternalException/*!*/ self) {
+            return self.ErrorCode == int.MinValue ? (object)null : (object)self.ErrorCode;
         }
         
         [RubyConstructor]
         public static ExternalException/*!*/ Factory(RubyClass/*!*/ self, [DefaultProtocol]MutableString message) {
+#if SILVERLIGHT
             ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "unknown error"));
+#else
+            ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "unknown error"), int.MinValue);
+#endif
             RubyExceptionData.InitializeException(result, message);
             return result;
         }
 
         [RubyConstructor]
         public static ExternalException/*!*/ Factory(RubyClass/*!*/ self, int errorCode) {
+            return Factory(self, MutableString.CreateAscii("Unknown Error"), errorCode);
+        }
+
+        [RubyConstructor]
+        public static ExternalException/*!*/ Factory(RubyClass/*!*/ self, [DefaultProtocol]MutableString message, int errorCode) {
             switch (errorCode) {
                 // TODO:
                 //case 0: return RubyExceptions.CreateNOERROR();
@@ -276,7 +285,7 @@ namespace IronRuby.Builtins {
                 //case 19: return RubyExceptions.CreateENODEV();
                 //case 20: return RubyExceptions.CreateENOTDIR();
                 //case 21: return RubyExceptions.CreateEISDIR();
-                //case 22: return RubyExceptions.CreateEINVAL();     TODO: types don't match
+                //case 22: return RubyExceptions.CreateEINVAL();    TODO: Types don't match
                 //case 23: return RubyExceptions.CreateENFILE();
                 //case 24: return RubyExceptions.CreateEMFILE();
                 //case 25: return RubyExceptions.CreateENOTTY();
@@ -334,7 +343,6 @@ namespace IronRuby.Builtins {
                 // case 10071: return RubyExceptions.CreateEREMOTE();
             }
 
-            var message = MutableString.CreateAscii("Unknown Error");
 #if SILVERLIGHT
             ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "Unknown Error"));
 #else

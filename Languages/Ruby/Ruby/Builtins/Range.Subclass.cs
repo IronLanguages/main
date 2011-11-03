@@ -22,7 +22,19 @@ namespace IronRuby.Builtins {
     public partial class Range {
         public sealed partial class Subclass : Range, IRubyObject {
             // called by Class#new rule when creating a Ruby subclass of String:
-            public Subclass(RubyClass/*!*/ rubyClass) {
+            public Subclass(RubyClass/*!*/ rubyClass) : base() {
+                Assert.NotNull(rubyClass);
+                Debug.Assert(!rubyClass.IsSingletonClass);
+                ImmediateClass = rubyClass;
+            }
+
+            public Subclass(RubyClass/*!*/ rubyClass, int begin, int end, bool excludeEnd) : base(begin, end, excludeEnd) {
+                Assert.NotNull(rubyClass);
+                Debug.Assert(!rubyClass.IsSingletonClass);
+                ImmediateClass = rubyClass;
+            }
+
+            public Subclass(RubyClass/*!*/ rubyClass, MutableString begin, MutableString end, bool excludeEnd)  : base(begin, end, excludeEnd) {
                 Assert.NotNull(rubyClass);
                 Debug.Assert(!rubyClass.IsSingletonClass);
                 ImmediateClass = rubyClass;

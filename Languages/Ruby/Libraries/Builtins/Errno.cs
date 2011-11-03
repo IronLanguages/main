@@ -40,6 +40,11 @@ namespace IronRuby.Builtins {
         public class ResourceTemporarilyUnavailableError : ExternalException {
             private const string/*!*/ M = "Resource temporarily unavailable";
 
+            [RubyConstant]
+            public const int Errno = 11;
+
+            public override int ErrorCode { get { return Errno; } }
+
             public ResourceTemporarilyUnavailableError() : this(null, null) { }
             public ResourceTemporarilyUnavailableError(string message) : this(message, null) { }
             public ResourceTemporarilyUnavailableError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
@@ -219,7 +224,11 @@ namespace IronRuby.Builtins {
         [RubyClass("EWOULDBLOCK"), Serializable]
         public class WouldBlockError : ExternalException {
             private const string/*!*/ M = "A non-blocking socket operation could not be completed immediately.";
-            public override int ErrorCode { get { return 10035; } }
+
+            [RubyConstant]
+            public const int Errno = 10035;
+            
+            public override int ErrorCode { get { return Errno; } }
 
             public WouldBlockError() : this(null, null) { }
             public WouldBlockError(string message) : this(message, null) { }

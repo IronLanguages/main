@@ -111,6 +111,30 @@ describe "Marshal::load" do
     Marshal.load("\004\bf\0361.1867344999999999e+22\000\344@").should ==
       obj
   end
+  
+  it "loads a recursive array" do
+    a = Marshal.load("\x04\b[\ai\x06@\x00")
+    a[0].should == 1
+    a[1].should == a
+  end
+  
+  it "loads a recursive hash" do
+    a = Marshal.load("\x04\b{\x06i\x06@\x00")
+    a.keys.should == [1]
+    a.values.should == [a]
+  end
+  
+  it "loads a recursive object" do
+    obj = Marshal.load "\x04\bo:\vObject\x06:\t@obj@\x00"
+    r = obj.instance_variable_get :@obj
+    r.should == obj
+  end
+  
+  it "loads a user range" do
+    obj = Marshal.load "\x04\bo:\x0EUserRange\b:\texclF:\nbegini\x06:\bendi\b"
+    obj.class.should == UserRange
+    obj.should == UserRange.new(1,3)
+  end
 
   ruby_version_is "1.9" do
     it "returns the value of the proc when called with a proc" do
@@ -310,10 +334,20 @@ describe "Marshal::load" do
       File.unlink(temp_file)
     end
   end
-
-  MarshalSpec::DATA.each do |description, (object, marshal, attributes)|
-    it "loads a #{description}" do
-      Marshal.load(marshal).should == object
+  
+  ruby_version_is ""..."1.9" do
+    MarshalSpec::DATA.each do |description, (object, marshal, attributes)|
+      it "loads a #{description}" do
+        Marshal.load(marshal).should == object
+      end
+    end
+  end
+  
+  ruby_version_is "1.9" do
+    MarshalSpec::DATA_19.each do |description, (object, marshal, attributes)|
+      it "loads a #{description}" do
+        Marshal.load(marshal).should == object
+      end
     end
   end
 end
