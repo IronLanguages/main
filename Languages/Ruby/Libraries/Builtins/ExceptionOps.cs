@@ -166,9 +166,31 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        [RubyMethod("to_str")]
         public static object StringRepresentation(Exception/*!*/ self) {
             return RubyExceptionData.GetInstance(self).Message;
+        }
+
+        /// <summary>Notes: An exception can be compared with any other object that has a 'message' and 'backtrace' method</summary>
+        [RubyMethod("==")]
+        public static bool Equal(
+            UnaryOpStorage/*!*/ messageStorage, UnaryOpStorage/*!*/ backtraceStorage, BinaryOpStorage/*!*/stringEqlStorage, 
+            BinaryOpStorage/*!*/ arrayEqlStorage, RespondToStorage/*!*/ respondTo, Exception/*!*/ self, object/*!*/ other) {
+
+            if (!Protocols.RespondTo(respondTo, other, "message") || !Protocols.RespondTo(respondTo, other, "backtrace"))
+                return false;
+
+            var messageSite = messageStorage.GetCallSite("message");
+            var selfMessage = messageSite.Target(messageSite, self);
+            var otherMessage = messageSite.Target(messageSite, other);
+
+            var backtraceSite = backtraceStorage.GetCallSite("backtrace");
+            var selfBacktrace = backtraceSite.Target(backtraceSite, self) as System.Collections.IList;
+            var otherBacktrace = backtraceSite.Target(backtraceSite, other);
+            
+            var stringEqlSite = stringEqlStorage.GetCallSite("==");
+
+            return true.Equals(stringEqlSite.Target(stringEqlSite, selfMessage, otherMessage))
+                && RubyArray.Equals(arrayEqlStorage, selfBacktrace, otherBacktrace);
         }
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]

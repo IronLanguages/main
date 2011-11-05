@@ -304,7 +304,11 @@ namespace IronRuby.Builtins {
                 return EachStepFixnum(self, ConvertStepToInt(storage, step));
             } else if (self.Begin is MutableString) {
                 // self.begin is String; use item.succ and item <=> self.end but make sure you check the length of the strings
+#if SILVERLIGHT
+                return EachStepString(storage, self, ConvertStepToInt(storage, step)).Cast<object>();
+#else
                 return EachStepString(storage, self, ConvertStepToInt(storage, step));
+#endif
             } else if (storage.Context.IsInstanceOf(self.Begin, storage.Context.GetClass(typeof(Numeric)))) {
                 // self.begin is Numeric; invoke item = item + 1 instead of succ and invoke < or <= for compare
                 return EachStepNumeric(storage, self, step);
