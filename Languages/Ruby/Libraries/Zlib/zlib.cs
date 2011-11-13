@@ -19,15 +19,14 @@ using System.IO.Compression;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Generation;
-using System.Diagnostics;
-using System.Text;
-using System.Runtime.InteropServices;
 using zlib = ComponentAce.Compression.Libs.ZLib;
 
 namespace IronRuby.StandardLibrary.Zlib {
@@ -213,7 +212,10 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         [RubyClass("ZStream")]
         public abstract class ZStream : RubyObject {
-            protected readonly zlib.ZStream _stream;
+            private zlib.ZStream _stream;
+
+            internal const bool compress = true;
+            internal const bool decompress = false;
 
             protected ZStream(RubyClass/*!*/ cls, zlib.ZStream/*!*/ stream) 
                 : base(cls) {
@@ -221,32 +223,176 @@ namespace IronRuby.StandardLibrary.Zlib {
                 _stream = stream;
             }
 
-            internal abstract MutableString/*!*/ Close();
+            protected zlib.ZStream GetStream() {
+                if (_stream == null) {
+                    throw new Error("stream is not ready");
+                }
+
+                return _stream;
+            }
+
+            internal static int Process(zlib.ZStream/*!*/ zst, MutableString str, zlib.FlushStrategy flush, bool compress, 
+                out MutableString/*!*/ result, ref MutableString trailingUncompressedData) {
+
+                result = MutableString.CreateBinary();
+
+                // add previously compressed data to the output:
+                if (zst.next_out != null) {
+                    result.Append(zst.next_out, 0, zst.next_out_index);
+                }
+
+                int err;
+                int bufferStart = zst.next_out_index;
+                err = Process(zst, str, flush, compress, ref trailingUncompressedData);
+                result.Append(zst.next_out, bufferStart, zst.next_out_index - bufferStart);
+
+                if (err == Z_STREAM_END && (flush == zlib.FlushStrategy.Z_FINISH || str == null)) {
+                    err = compress ? zst.deflateEnd() : zst.inflateEnd();
+                }
+
+                zst.next_out = null;
+                zst.next_out_index = 0;
+                zst.avail_out = 0;
+
+                return err;
+            }
+
+            internal static int Process(zlib.ZStream/*!*/ zst, MutableString str, zlib.FlushStrategy flush, bool compress,
+                ref MutableString trailingUncompressedData) {
+
+                if (str == null) {
+                    str = MutableString.FrozenEmpty;
+                    flush = zlib.FlushStrategy.Z_FINISH;
+                } else if (str.Length == 0 && flush == NO_FLUSH) {
+                    return Z_OK;
+                }
+
+                // data still available from previous input:
+                if (zst.avail_in > 0) {
+                    int err = Process(zst, flush, compress, ref trailingUncompressedData);
+
+                    // double flush:
+                    if (compress && flush != zlib.FlushStrategy.Z_FINISH && err == (int)zlib.ZLibResultCode.Z_DATA_ERROR) {
+                        return Z_OK;
+                    }
+
+                    // append new input to the current input:
+                    if (err != Z_OK && err != Z_STREAM_END) {
+                        byte[] currentInput = zst.next_in;
+                        byte[] newInput = str.ToByteArray();
+
+                        int minLength = zst.next_in_index + zst.avail_in + newInput.Length;
+                        if (currentInput.Length < minLength) {
+                            Array.Resize(ref currentInput, Math.Max(currentInput.Length * 2, minLength));
+                        }
+
+                        Buffer.BlockCopy(newInput, 0, currentInput, zst.next_in_index + zst.avail_in, newInput.Length);
+                        zst.next_in = currentInput;
+                        zst.avail_in += newInput.Length;
+
+                        return err;
+                    }
+                }
+
+                if (str != null) {
+                    byte[] input = str.ToByteArray();
+                    zst.next_in = input;
+                    zst.next_in_index = 0;
+                    zst.avail_in = input.Length;
+                } else {
+                    zst.avail_in = 0;
+                }
+
+                return Process(zst, flush, compress, ref trailingUncompressedData);
+            }
+
+            private static int Process(zlib.ZStream/*!*/ zst, zlib.FlushStrategy flush, bool compress,
+                ref MutableString trailingUncompressedData) {
+
+                if (zst.next_out == null) {
+                    zst.next_out = new byte[DEFAULTALLOC];
+                    zst.next_out_index = 0;
+                    zst.avail_out = zst.next_out.Length;
+                }
+
+                int result = compress ? zst.deflate(flush) : zst.inflate(flush);
+
+                while (result == Z_OK && zst.avail_out == 0) {
+                    byte[] output = zst.next_out;
+                    int oldLength = output.Length;
+
+                    Array.Resize(ref output, oldLength * 2);
+
+                    zst.next_out = output;
+                    zst.avail_out = oldLength;
+                    result = compress ? zst.deflate(flush) : zst.inflate(flush);
+                }
+
+                if (!compress && (result == Z_STREAM_END || result == Z_STREAM_ERROR && !zst.IsInitialized)) {
+                    // MRI hack: any data left in the stream are saved into a separate buffer and returned when "finish" is called
+                    // This is weird behavior, one would expect the rest of the stream is either ignored or copied to the output buffer.
+#if COPY_UNCOMPRESSED_DATA_TO_OUTPUT_BUFFER
+                    Debug.Assert(zst.next_in_index + zst.avail_in <= zst.next_in.Length);
+                    Debug.Assert(zst.next_out_index + zst.avail_out <= zst.next_out.Length);
+
+                    if (zst.avail_in > zst.avail_out) {
+                        byte[] output = zst.next_out;
+                        int oldLength = output.Length;
+
+                        Array.Resize(ref output, Math.Max(zst.next_out_index + zst.avail_in, oldLength * 2));
+                        zst.next_out = output;
+                    }
+
+                    Buffer.BlockCopy(zst.next_in, zst.next_in_index, zst.next_out, zst.next_out_index, zst.avail_in);
+
+                    // MRI subtracts till 0 is reached:
+                    zst.avail_out = Math.Max(zst.avail_out - zst.avail_in, 0);
+                    zst.next_out_index += zst.avail_in;
+                    zst.avail_in = 0;
+#else
+                    if (trailingUncompressedData == null) {
+                        trailingUncompressedData = MutableString.CreateBinary();
+                    }
+
+                    trailingUncompressedData.Append(zst.next_in, zst.next_in_index, zst.avail_in);
+
+                    // MRI subtracts till 0 is reached:
+                    zst.avail_out = Math.Max(zst.avail_out - zst.avail_in, 0);
+                    zst.avail_in = 0;
+#endif
+                    result = Z_STREAM_END;
+                } 
+
+                return result;
+            }
+
+            internal abstract MutableString/*!*/ Finish();
+            internal abstract void Close();
 
             [RubyMethod("adler")]
             public static object Adler(ZStream/*!*/ self) {
-                return Protocols.Normalize(self._stream.adler);
+                return Protocols.Normalize(self.GetStream().adler);
             }
 
             [RubyMethod("avail_in")]
             public static int AvailIn(ZStream/*!*/ self) {
-                return self._stream.avail_in;
+                return self.GetStream().avail_in;
             }
 
             [RubyMethod("avail_out")]
             public static int GetAvailOut(ZStream/*!*/ self) {
-                return self._stream.avail_out;
+                return self.GetStream().avail_out;
             }
 
             [RubyMethod("avail_out=")]
             public static int SetAvailOut(ZStream/*!*/ self, int size) {
                 long newBufferSize;
-                var zst = self._stream;
+                var zst = self.GetStream();
                 if (size < 0 || (newBufferSize = zst.next_out_index + size) > Int32.MaxValue) {
                     throw RubyExceptions.CreateArgumentError("negative string size (or size too big)");
                 }
 
-                int old = self._stream.avail_out;
+                int old = zst.avail_out;
 
                 // Make sure we have enough space in the buffer.
                 // We could keep the buffer larger but since users are calling 
@@ -254,26 +400,34 @@ namespace IronRuby.StandardLibrary.Zlib {
                 var output = zst.next_out;
                 Array.Resize(ref output, (int)newBufferSize);
                 zst.next_out = output;
-                self._stream.avail_out = size;
+                zst.avail_out = size;
                 return old;
             }
 
             [RubyMethod("finish")]
+            public static MutableString/*!*/ Finish(ZStream/*!*/ self) {
+                return self.Finish();
+            }
+
             [RubyMethod("close")]
-            public static MutableString/*!*/ Close(ZStream/*!*/ self) {
-                return self._stream.IsInitialized ? self.Close() : MutableString.CreateEmpty();
+            public static void Close(ZStream/*!*/ self) {
+                if (self._stream != null) {
+                    self.Close();
+                    self._stream = null;
+                }
             }
 
             [RubyMethod("stream_end?")]
             [RubyMethod("finished?")]
             [RubyMethod("closed?")]
             public static bool IsClosed(ZStream/*!*/ self) {
-                return !self._stream.IsInitialized;
+                var zst = self._stream;
+                return zst == null || !zst.IsInitialized;
             }
 
             [RubyMethod("data_type")]
             public static int DataType(ZStream/*!*/ self) {
-                return (int)self._stream.Data_type;
+                return (int)self.GetStream().Data_type;
             }
 
             [RubyMethod("flush_next_in")]
@@ -288,20 +442,21 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("reset")]
             public static void Reset(ZStream/*!*/ self) {
-                if (self._stream.IsInitialized) {
-                    int err = self._stream.reset();
+                var zst = self.GetStream();
+                if (zst.IsInitialized) {
+                    int err = zst.reset();
                     Debug.Assert(err == Z_OK);
                 }
             }
 
             [RubyMethod("total_in")]
             public static object TotalIn(ZStream/*!*/ self) {
-                return Protocols.Normalize(self._stream.total_in);
+                return Protocols.Normalize(self.GetStream().total_in);
             }
 
             [RubyMethod("total_out")]
             public static object TotalOut(ZStream/*!*/ self) {
-                return Protocols.Normalize(self._stream.total_out);
+                return Protocols.Normalize(self.GetStream().total_out);
             }
         }
 
@@ -320,27 +475,29 @@ namespace IronRuby.StandardLibrary.Zlib {
                 : base(cls, CreateDeflateStream(level, windowBits, memlevel, strategy)) {
             }
 
-            private Deflate(RubyClass/*!*/ cls, int level)
-                : this(cls, level, MAX_WBITS, DEF_MEM_LEVEL, DEFAULT_STRATEGY) {
+            private static zlib.ZStream CreateDeflateStream(int level) {
+                return CreateDeflateStream(level, MAX_WBITS, DEF_MEM_LEVEL, DEFAULT_STRATEGY);
             }
 
             private static zlib.ZStream CreateDeflateStream(int level, int windowBits, int memLevel, int strategy) {
                 var stream = new zlib.ZStream();
                 int result = stream.deflateInit(level, windowBits, memLevel, (zlib.CompressionStrategy)strategy);
                 if (result != Z_OK) {
-                    throw MakeError(result);
+                    throw MakeError(result, null);
                 }
 
                 return stream;
             }
 
             [RubyMethod("<<")]
-            public static Deflate/*!*/ AppendCompressed(Deflate/*!*/ self, [DefaultProtocol]MutableString str) {
-                var zst = self._stream;
-                int err = CompressInternal(self, str, NO_FLUSH);
+            public static Deflate/*!*/ AppendData(Deflate/*!*/ self, [DefaultProtocol]MutableString str) {
+                var zst = self.GetStream();
 
-                if (err != Z_OK) {
-                    throw MakeError(err);
+                MutableString trailingUncompressedData = null;
+                int result = Process(zst, str, zlib.FlushStrategy.Z_NO_FLUSH, compress, ref trailingUncompressedData);
+
+                if (result != Z_OK) {
+                    throw MakeError(result, zst.msg);
                 }
 
                 return self;
@@ -348,87 +505,25 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("deflate")]
             public static MutableString/*!*/ Compress(Deflate/*!*/ self, [DefaultProtocol]MutableString str, [DefaultParameterValue(NO_FLUSH)]int flush) {
-                var zst = self._stream;
+                MutableString compressed;
+                MutableString trailingUncompressedData = null;
 
-                var result = MutableString.CreateBinary();
+                var zst = self.GetStream();
+                int result = Process(zst, str, (zlib.FlushStrategy)flush, compress, out compressed, ref trailingUncompressedData);
 
-                // add previously compressed data to the output:
-                if (zst.next_out != null) {
-                    result.Append(zst.next_out, 0, zst.next_out_index);
+                if (result != Z_OK) {
+                    throw MakeError(result, zst.msg);
                 }
 
-                int err;
-                try {
-                    int bufferStart = zst.next_out_index;
-                    err = CompressInternal(self, str, flush);
-                    result.Append(zst.next_out, bufferStart, zst.next_out_index - bufferStart);
-
-                    if (err == Z_STREAM_END && flush == FINISH) {
-                        err = zst.deflateEnd();
-                    }
-                    
-                    if (err != Z_OK) {
-                        throw MakeError(err);
-                    }
-
-                } finally {
-                    zst.next_out = null;
-                    zst.next_out_index = 0;
-                    zst.avail_out = 0;
-                }
-
-                return result;
+                return compressed;
             }
 
-            private static int CompressInternal(Deflate/*!*/ self, MutableString str, int flush) {
-                var zst = self._stream;
-
-                if (str == null) {
-                    str = MutableString.FrozenEmpty;
-                    flush = FINISH;
-                } else if (str.Length == 0 && flush == NO_FLUSH) {
-                    return Z_OK;
-                } 
-                
-                if (!MutableString.IsNullOrEmpty(str)) {
-                    byte[] input = str.ToByteArray();
-                    zst.next_in = input;
-                    zst.next_in_index = 0;
-                    zst.avail_in = input.Length;
-                } else {
-                    zst.avail_in = 0;
-                }
-
-                if (zst.next_out == null) {
-                    zst.next_out = new byte[DEFAULTALLOC];
-                    zst.next_out_index = 0;
-                    zst.avail_out = zst.next_out.Length;
-                }
-
-                int err = zst.deflate((zlib.FlushStrategy)flush);
-
-                // double flush:
-                if (flush != FINISH && err == (int)zlib.ZLibResultCode.Z_DATA_ERROR) {
-                    return Z_OK;
-                }
-
-                while (err == Z_OK && zst.avail_out == 0) {
-                    byte[] output = zst.next_out;
-                    int oldLength = output.Length;
-
-                    Array.Resize(ref output, oldLength * 2);
-
-                    zst.next_out = output;
-                    zst.avail_out = oldLength;
-
-                    err = zst.deflate((zlib.FlushStrategy)flush);
-                }
-
-                return err;
+            internal override MutableString/*!*/ Finish() {
+                return GetStream().IsInitialized ? Compress(this, null, FINISH) : MutableString.CreateEmpty();
             }
 
-            internal override MutableString Close() {
-                return Compress(this, null, FINISH);
+            internal override void Close() {
+                GetStream().deflateEnd();
             }
 
             [RubyMethod("flush")]
@@ -445,19 +540,21 @@ namespace IronRuby.StandardLibrary.Zlib {
                 Deflate/*!*/ self, 
                 [DefaultParameterValue(DEFAULT_COMPRESSION)]int level, 
                 [DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
-                
-                int err = self._stream.deflateParams(level, (zlib.CompressionStrategy)strategy);
+
+                var zst = self.GetStream();
+                int err = zst.deflateParams(level, (zlib.CompressionStrategy)strategy);
                 if (err != Z_OK) {
-                    throw MakeError(err);
+                    throw MakeError(err, zst.msg);
                 }
             }
 
             [RubyMethod("set_dictionary")]
             public static void SetParams(Deflate/*!*/ self, [NotNull]MutableString/*!*/ dictionary) {
                 byte[] buffer = dictionary.ToByteArray();
-                int err = self._stream.deflateSetDictionary(buffer, buffer.Length);
+                var zst = self.GetStream();
+                int err = zst.deflateSetDictionary(buffer, buffer.Length);
                 if (err != Z_OK) {
-                    throw MakeError(err);
+                    throw MakeError(err, zst.msg);
                 }
             }
 
@@ -466,7 +563,16 @@ namespace IronRuby.StandardLibrary.Zlib {
                 [DefaultProtocol, NotNull]MutableString/*!*/ str, 
                 [DefaultParameterValue(DEFAULT_COMPRESSION)]int level) {
 
-                return Compress(new Deflate(self, level), str, FINISH);
+                zlib.ZStream zst = CreateDeflateStream(level);
+                MutableString compressed;
+                MutableString trailingUncompressedData = null;
+
+                int result = Process(zst, str, zlib.FlushStrategy.Z_FINISH, compress, out compressed, ref trailingUncompressedData);
+                if (result != Z_OK) {
+                    throw MakeError(result, zst.msg);
+                }
+
+                return compressed;
             }
         }
 
@@ -476,71 +582,70 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         [RubyClass("Inflate")]
         public class Inflate : ZStream {
+            private MutableString trailingUncompressedData;
+
             public Inflate(RubyClass/*!*/ cls, [DefaultParameterValue(MAX_WBITS)]int windowBits)
                 : base(cls, CreateInflateStream(windowBits)) {
+            }
+
+            private static zlib.ZStream CreateInflateStream() {
+                return CreateInflateStream(MAX_WBITS);
             }
 
             private static zlib.ZStream CreateInflateStream(int windowBits) {
                 var zst = new zlib.ZStream();
                 int result = zst.inflateInit(windowBits);
                 if (result != Z_OK) {
-                    throw MakeError(result);
+                    throw MakeError(result, zst.msg);
                 }
 
                 return zst;
             }
 
-            [RubyMethod("inflate")]
-            public static MutableString/*!*/ InflateString(Inflate/*!*/ self, [DefaultProtocol]MutableString str) {
-                var zst = self._stream;
-                byte[] output = new byte[DEFAULTALLOC];
-
-                zlib.FlushStrategy flush;
-                if (str != null) {
-                    byte[] input = str.ToByteArray();
-
-                    zst.next_in = input;
-                    zst.next_in_index = 0;
-                    zst.avail_in = input.Length;
-                    zst.next_out = output;
-                    zst.next_out_index = 0;
-                    zst.avail_out = output.Length;
-                    flush = zlib.FlushStrategy.Z_SYNC_FLUSH;
-                } else {
-                    zst.next_out = output;
-                    zst.next_out_index = 0;
-                    zst.avail_out = output.Length;
-                    flush = zlib.FlushStrategy.Z_FINISH;
+            [RubyMethod("<<")]
+            public static Inflate/*!*/ AppendData(Inflate/*!*/ self, [DefaultProtocol]MutableString str) {
+                var zst = self.GetStream();
+                int result = Process(zst, str, zlib.FlushStrategy.Z_NO_FLUSH, decompress, ref self.trailingUncompressedData);
+                
+                if (result != Z_OK && result != Z_STREAM_END) {
+                    throw MakeError(result, zst.msg);
                 }
 
-                long start_total_out = zst.total_out;
-                int err = zst.inflate(flush);
-
-                while (err == Z_OK && zst.avail_out == 0) {
-                    int old_length = output.Length;
-                    Array.Resize(ref output, output.Length * 2);
-                    zst.next_out = output;
-                    zst.avail_out = old_length;
-
-                    err = zst.inflate(flush);
-                }
-
-                if (str == null) {
-                    if (err != Z_STREAM_END && err != Z_OK && err != Z_BUF_ERROR) {
-                        throw MakeError(err);
-                    }
-                } else if (err == Z_STREAM_END) {
-                    err = zst.inflateEnd();
-                    if (err != Z_OK) {
-                        throw MakeError(err);
-                    }
-                }
-
-                return MutableString.CreateBinary().Append(output, 0, (int)(zst.total_out - start_total_out));
+                return self;
             }
 
-            internal override MutableString Close() {
-                return InflateString(this, null);
+            [RubyMethod("inflate")]
+            public static MutableString/*!*/ InflateString(Inflate/*!*/ self, [DefaultProtocol]MutableString str) {
+                MutableString uncompressed;
+
+                var zst = self.GetStream();
+                int result = Process(zst, str, zlib.FlushStrategy.Z_SYNC_FLUSH, decompress, out uncompressed, ref self.trailingUncompressedData);
+                if (result != Z_OK && result != Z_STREAM_END) {
+                    throw MakeError(result, zst.msg);
+                }
+
+                return uncompressed;
+            }
+
+            internal override MutableString/*!*/ Finish() {
+                MutableString result;
+                if (GetStream().IsInitialized) {
+                    result = InflateString(this, null);
+                } else {
+                    result = MutableString.CreateBinary();
+                }
+
+                if (trailingUncompressedData != null) {
+                    result.Append(trailingUncompressedData);
+                    trailingUncompressedData = null;
+                }
+
+                return result;
+            }
+
+            internal override void Close() {
+                trailingUncompressedData = null;
+                GetStream().inflateEnd();
             }
 
             [RubyMethod("flush")]
@@ -548,11 +653,36 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return InflateString(self, null);
             }
 
-            [RubyMethod("inflate", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString/*!*/ InflateString(RubyClass/*!*/ self, 
-                [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+            [RubyMethod("set_dictionary")]
+            public static MutableString/*!*/ SetDictionary(Inflate/*!*/ self, [NotNull]MutableString/*!*/ dictionary) {
+                byte[] buffer = dictionary.ToByteArray();
+                var zst = self.GetStream();
+                int err = zst.inflateSetDictionary(buffer, buffer.Length);
+                if (err != Z_OK) {
+                    throw MakeError(err, zst.msg);
+                }
 
-                return InflateString(new Inflate(self, MAX_WBITS), str);
+                return dictionary;
+            }
+
+            [RubyMethod("inflate", RubyMethodAttributes.PublicSingleton)]
+            public static MutableString/*!*/ InflateString(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
+                return InflateString(str);
+            }
+
+            internal static MutableString/*!*/ InflateString(MutableString/*!*/ str) {
+                zlib.ZStream zst = CreateInflateStream();
+
+                // uncompressed data are ignored:
+                MutableString trailingUncompressedData = null;
+                MutableString uncompressed;
+
+                int result = Process(zst, str, zlib.FlushStrategy.Z_SYNC_FLUSH, decompress, out uncompressed, ref trailingUncompressedData);
+                if (result != Z_OK && result != Z_STREAM_END) {
+                    throw MakeError(result, zst.msg);
+                }
+
+                return uncompressed;
             }
         }
 
@@ -810,9 +940,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("read")]
             public static MutableString/*!*/ Read(GZipReader/*!*/ self) {
-                // TODO:
-                Inflate z = new Inflate(self.ImmediateClass, MAX_WBITS);
-                return Inflate.InflateString(z, self._contents);
+                return Inflate.InflateString(self._contents);
             }
 
             [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
@@ -1018,23 +1146,23 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         #region Exceptions
 
-        private static Exception/*!*/ MakeError(int result) {
+        private static Exception/*!*/ MakeError(int result, string message) {
             switch ((zlib.ZLibResultCode)result) {
                 case zlib.ZLibResultCode.Z_NEED_DICT:
                     return new NeedDict();
 
                 case zlib.ZLibResultCode.Z_MEM_ERROR:
-                    return new MemError();
+                    return new MemError(message);
 
                 case zlib.ZLibResultCode.Z_DATA_ERROR:
-                    return new DataError();
+                    return new DataError(message);
 
                 case zlib.ZLibResultCode.Z_BUF_ERROR:
                     return new BufError();
 
                 case zlib.ZLibResultCode.Z_STREAM_ERROR:
                 default:
-                    return new StreamError();
+                    return new StreamError(message);
             }
         }
 

@@ -10184,7 +10184,7 @@ namespace IronRuby.StandardLibrary.Zlib {
     public sealed class ZlibLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
         protected override void LoadModules() {
             IronRuby.Builtins.RubyClass classRef0 = GetClass(typeof(System.SystemException));
-            IronRuby.Builtins.RubyClass classRef1 = GetClass(typeof(System.Object));
+            IronRuby.Builtins.RubyClass classRef1 = GetClass(typeof(IronRuby.Builtins.RubyObject));
             IronRuby.Builtins.RubyClass classRef2 = GetClass(typeof(IronRuby.Builtins.RuntimeError));
             
             
@@ -10274,8 +10274,8 @@ namespace IronRuby.StandardLibrary.Zlib {
         
         private static void LoadZlib__Deflate_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "<<", 0x11, 
-                0x00010000U,
-                new Func<IronRuby.StandardLibrary.Zlib.Zlib.Deflate, IronRuby.Builtins.MutableString, IronRuby.StandardLibrary.Zlib.Zlib.Deflate>(IronRuby.StandardLibrary.Zlib.Zlib.Deflate.AppendCompressed)
+                0x00010000U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.Deflate, IronRuby.Builtins.MutableString, IronRuby.StandardLibrary.Zlib.Zlib.Deflate>(IronRuby.StandardLibrary.Zlib.Zlib.Deflate.AppendData)
             );
             
             DefineLibraryMethod(module, "deflate", 0x11, 
@@ -10434,6 +10434,11 @@ namespace IronRuby.StandardLibrary.Zlib {
         #endif
         
         private static void LoadZlib__Inflate_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
+            DefineLibraryMethod(module, "<<", 0x11, 
+                0x00010000U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.Inflate, IronRuby.Builtins.MutableString, IronRuby.StandardLibrary.Zlib.Zlib.Inflate>(IronRuby.StandardLibrary.Zlib.Zlib.Inflate.AppendData)
+            );
+            
             DefineLibraryMethod(module, "flush", 0x11, 
                 0x00000000U, 
                 new Func<IronRuby.StandardLibrary.Zlib.Zlib.Inflate, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.Inflate.Flush)
@@ -10442,6 +10447,11 @@ namespace IronRuby.StandardLibrary.Zlib {
             DefineLibraryMethod(module, "inflate", 0x11, 
                 0x00010000U, 
                 new Func<IronRuby.StandardLibrary.Zlib.Zlib.Inflate, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.Inflate.InflateString)
+            );
+            
+            DefineLibraryMethod(module, "set_dictionary", 0x11, 
+                0x00000002U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.Inflate, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.Inflate.SetDictionary)
             );
             
         }
@@ -10477,7 +10487,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             
             DefineLibraryMethod(module, "close", 0x11, 
                 0x00000000U, 
-                new Func<IronRuby.StandardLibrary.Zlib.Zlib.ZStream, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.ZStream.Close)
+                new Action<IronRuby.StandardLibrary.Zlib.Zlib.ZStream>(IronRuby.StandardLibrary.Zlib.Zlib.ZStream.Close)
             );
             
             DefineLibraryMethod(module, "closed?", 0x11, 
@@ -10492,7 +10502,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             
             DefineLibraryMethod(module, "finish", 0x11, 
                 0x00000000U, 
-                new Func<IronRuby.StandardLibrary.Zlib.Zlib.ZStream, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.ZStream.Close)
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.ZStream, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.ZStream.Finish)
             );
             
             DefineLibraryMethod(module, "finished?", 0x11, 
