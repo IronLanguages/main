@@ -2481,6 +2481,7 @@ namespace IronRuby.Runtime {
         }
 
 #if !SILVERLIGHT // serialization
+        // TODO: Remove this, it isn't used by Marshal anymore
         [Emitted(UseReflection = true)] //RubyTypeBuilder
         public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
             immediateClass = (RubyClass)info.GetValue(RubyUtils.SerializationInfoClassKey, typeof(RubyClass));
@@ -2496,6 +2497,7 @@ namespace IronRuby.Runtime {
             instanceData = newInstanceData;
         }
 
+        // TODO: Remove this, it isn't used by Marshal anymore
         [Emitted(UseReflection = true)] //RubyTypeBuilder
         public static void SerializeObject(RubyInstanceData instanceData, RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
             info.AddValue(RubyUtils.SerializationInfoClassKey, immediateClass, typeof(RubyClass));

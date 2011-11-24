@@ -22,10 +22,11 @@ using Microsoft.Scripting.Generation;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
 using System.Text;
+using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
-
-    public partial class Range : IDuplicable, ISerializable {
+        
+    public partial class Range : IDuplicable {
         private object _begin;
         private object _end;
         private bool _excludeEnd;
@@ -34,21 +35,6 @@ namespace IronRuby.Builtins {
         public object Begin { get { return _begin; } }
         public object End { get { return _end; } }
         public bool ExcludeEnd { get { return _excludeEnd; } }
-
-#if !SILVERLIGHT // SerializationInfo
-        protected Range(SerializationInfo info, StreamingContext context) {
-            _begin = info.GetValue("begin", typeof(object));
-            _end = info.GetValue("end", typeof(object));
-            _excludeEnd = info.GetBoolean("excl");
-            _initialized = true;
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context) {
-            info.AddValue("begin", _begin);
-            info.AddValue("end", _end);
-            info.AddValue("excl", _excludeEnd);
-        }
-#endif
 
         protected Range(Range/*!*/ range) {
             _begin = range._begin;
