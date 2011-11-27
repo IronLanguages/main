@@ -1,0 +1,1 @@
+fails:Hash#== compares the values in self to values in other hash

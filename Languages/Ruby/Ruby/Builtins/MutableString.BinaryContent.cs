@@ -518,9 +518,28 @@ namespace IronRuby.Builtins {
                 _count = Utils.Append(ref _data, _count, bytes, start, count);
             }
 
-            public override void Append(Stream/*!*/ stream, int count) {
+            public override int Append(Stream/*!*/ stream) {
+                int totalBytesRead = 0;
+                int bytesRead;
+                int bufferSize;
+
+                do {
+                    Utils.Resize(ref _data, _data.Length + Math.Max(_data.Length, MutableString.InitialStreamBufferSize));
+                    bufferSize = _data.Length - _count;
+                    bytesRead = stream.Read(_data, _count, bufferSize);
+                    totalBytesRead += bytesRead;
+                    _count += bytesRead;
+                } while (bytesRead == bufferSize);
+
+                this.TrimExcess();
+                return totalBytesRead;
+            }
+
+            public override int Append(Stream/*!*/ stream, int count) {
                 Utils.Resize(ref _data, _count + count);
-                _count += stream.Read(_data, _count, count);
+                int bytesRead = stream.Read(_data, _count, count);
+                _count += bytesRead;
+                return bytesRead;
             }
 
             public override void AppendFormat(IFormatProvider provider, string/*!*/ format, object[]/*!*/ args) {

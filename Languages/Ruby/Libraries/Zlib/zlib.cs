@@ -18,15 +18,12 @@ using System.IO.Compression;
 #endif
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
-
 using IronRuby.Builtins;
 using IronRuby.Runtime;
-
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using zlib = ComponentAce.Compression.Libs.ZLib;
 
 namespace IronRuby.StandardLibrary.Zlib {
@@ -688,94 +685,119 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         #endregion
 
+#if !SILVERLIGHT
         #region GzipFile class
 
-        [RubyClass("GzipFile")]
-        public class GZipFile : RubyObject {
-            protected IOWrapper/*!*/ _ioWrapper;
-            protected List<byte>/*!*/ _inputBuffer;
-            protected List<byte>/*!*/ _outputBuffer;
-            protected int _outPos;
-            protected int _inPos;
-            protected bool _isClosed;
-            protected MutableString _originalName;
-            protected MutableString _comment;
+        // TODO: implement spec:
+        // http://www.gzip.org/zlib/rfc-gzip.html#specification
 
-            public GZipFile(RubyClass/*!*/ cls, IOWrapper/*!*/ ioWrapper) 
+        [RubyClass("GzipFile", BuildConfig="!SILVERLIGHT")]
+        public abstract class GZipFile : RubyObject, IDisposable {
+            private GZipStream _stream;
+            private const int BufferSize = 2048;
+
+            internal GZipFile(RubyClass/*!*/ cls, object io, CompressionMode mode) 
                 : base(cls) {
-                Debug.Assert(ioWrapper != null);
-                _ioWrapper = ioWrapper;
-                _inputBuffer = new List<byte>();
-                _outputBuffer = new List<byte>();
-                _outPos = -1;
-                _inPos = -1;
+
+                var underlyingStream = new IOWrapper(
+                    cls.Context, 
+                    io, 
+                    canRead: mode == CompressionMode.Decompress, 
+                    canWrite: mode == CompressionMode.Compress,
+                    canSeek: false,
+                    canFlush: true,
+                    canClose: true,
+                    bufferSize: BufferSize);
+
+                _stream = new GZipStream(underlyingStream, mode, leaveOpen: true);
             }
 
-            [RubyClass("Error")]
-            public class Error : RuntimeError {
-                public Error(string message)
-                    : base(message) {
+            internal IOWrapper/*!*/ GetWrapper() {
+                RequireOpen();
+                return (IOWrapper)_stream.BaseStream; 
+            }
+
+            private void RequireOpen() {
+                if (_stream == null) {
+                    throw new Error("closed gzip stream");
                 }
             }
 
-            // TODO: missing NoFooter, LengthError, CRCError constants
+            internal GZipStream/*!*/ GetStream() {
+                RequireOpen();
+                return _stream;
+            }
+
+            void IDisposable.Dispose() {
+                Close(closeUnderlyingObject: true);
+            }
+
+            internal void Close(bool closeUnderlyingObject) {
+                if (_stream != null) {
+                    var wrapper = GetWrapper();
+
+                    // doesn't close base stream due to leaveOpen == true:
+                    _stream.Close();
+                    
+                    if (closeUnderlyingObject) {
+                        wrapper.Close();
+                    } else {
+                        wrapper.Flush();
+                    }
+
+                    _stream = null;
+                }
+            }
+
+            internal bool IsClosed() {
+                return _stream == null;
+            }
 
             [RubyMethod("wrap", RubyMethodAttributes.PublicSingleton)]
-            public static object Wrap(BinaryOpStorage/*!*/ newStorage, UnaryOpStorage/*!*/ closedStorage, UnaryOpStorage/*!*/ closeStorage, 
+            public static object Wrap(BinaryOpStorage/*!*/ newStorage, UnaryOpStorage/*!*/ closeStorage, 
                 BlockParam block, RubyClass/*!*/ self, object io) {
 
                 var newSite = newStorage.GetCallSite("new");
                 GZipFile gzipFile = (GZipFile)newSite.Target(newSite, self, io);
+                return gzipFile.Do(block);
+            }
 
+            protected object Do(BlockParam block) {
                 if (block == null) {
-                    return gzipFile;
+                    return this;
                 }
 
                 try {
                     object blockResult;
-                    block.Yield(gzipFile, out blockResult);
+                    block.Yield(this, out blockResult);
                     return blockResult;
                 } finally {
-                    CloseFile(closedStorage, closeStorage, self, gzipFile);
+                    this.Close(closeUnderlyingObject: true);
                 }
             }
-
-            private static void CloseFile(UnaryOpStorage/*!*/ closedStorage, UnaryOpStorage/*!*/ closeStorage, RubyClass self, GZipFile gzipFile) {
-                var closedSite = closedStorage.GetCallSite("closed?");
-                bool isClosed = Protocols.IsTrue(closedSite.Target(closedSite, gzipFile));
-
-                if (!isClosed) {
-                    var closeSite = closeStorage.GetCallSite("close");
-                    closeSite.Target(closeSite, gzipFile);
-                }
-            }
-
-            internal static void Close(UnaryOpStorage/*!*/ closeStorage, GZipFile/*!*/ self, bool closeIO) {
-                if (self._isClosed) {
-                    throw new Error("closed gzip stream");
-                }
-
-                if (closeIO && self._ioWrapper.CanBeClosed) {
-                    var site = closeStorage.GetCallSite("close");
-                    site.Target(site, self._ioWrapper.UnderlyingObject);
-                }
-
-                self._isClosed = true;
-            }
-
 
             [RubyMethod("closed?")]
             public static bool IsClosed(GZipFile/*!*/ self) {
-                return self._isClosed;
+                return self.IsClosed();
+            }
+
+            [RubyMethod("close")]
+            public static object Close(GZipFile/*!*/ self) {
+                object io = self.GetWrapper().UnderlyingObject;
+                self.Close(closeUnderlyingObject: true);
+                return io;
+            }
+
+            [RubyMethod("finish")]
+            public static object/*!*/ Finish(GZipFile/*!*/ self) {
+                object io = self.GetWrapper().UnderlyingObject;
+                self.Close(closeUnderlyingObject: false);
+                return io;
             }
 
             [RubyMethod("comment")]
             public static MutableString Comment(GZipFile/*!*/ self) {
-                if (self._isClosed) {
-                    throw new Error("closed gzip stream");
-                }
-
-                return self._comment;
+                throw new NotImplementedError();
             }
 
             // crc() 
@@ -785,196 +807,69 @@ namespace IronRuby.StandardLibrary.Zlib {
             [RubyMethod("orig_name")]
             [RubyMethod("original_name")]
             public static MutableString OriginalName(GZipFile/*!*/ self) {
-                if (self._isClosed) {
-                    throw new Error("closed gzip stream");
-                }
-
-                return self._originalName;
+                throw new NotImplementedError();
             }
 
             // os_code() 
             // sync() 
             // sync = flag
             // to_io
+
+            [RubyException("Error"), Serializable]
+            public class Error : SystemException {
+                public Error() : this(null, null) { }
+                public Error(string message) : this(message, null) { }
+                public Error(string message, Exception inner) : base(message ?? "Error", inner) { }
+
+#if !SILVERLIGHT
+                protected Error(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+                    : base(info, context) { }
+#endif
+            }
         }
 
         #endregion
 
         #region GzipReader class
 
-        /* [RubyClass("GzipReader"), Includes(typeof(Enumerable))] */
-        [RubyClass("GzipReader")]
+        // TODO: Includes(typeof(Enumerable)
+        [RubyClass("GzipReader", BuildConfig="!SILVERLIGHT")]
         public class GZipReader : GZipFile {
-
-            protected MutableString _xtraField;
-            protected MutableString/*!*/ _contents;
-            protected ushort _headerCrc;
-
-            private GZipReader(RubyClass/*!*/ cls, IOWrapper/*!*/ ioWrapper, BinaryReader/*!*/ reader)
-                : base(cls, ioWrapper) {
-
-                // TODO: should all of this code be moved to open()?
-                if (ReadUInt16LE(reader) != 0x8b1f) {
-                    throw new Error("not in gzip format");
-                }
-                if (reader.ReadByte() != 0x08) {
-                    throw new Error("unknown compression method");
-                }
-
-#pragma warning disable 168,219 // TODO: mcs: unused locals
-                byte flg = reader.ReadByte();
-                bool ftext = IsBitSet(flg, 0);
-                bool fhcrc = IsBitSet(flg, 1);
-                bool fextra = IsBitSet(flg, 2);
-                bool fname = IsBitSet(flg, 3);
-                bool fcomment = IsBitSet(flg, 4);
-
-                uint secondsSince1970 = ReadUInt32LE(reader);
-                DateTime mtime = RubyTime.Epoch.AddSeconds((double)secondsSince1970);
-                byte xfl = reader.ReadByte();
-                string os = GZipReader.OSES[reader.ReadByte()];
-                if (fextra) {
-                    int xlen = ReadUInt16LE(reader);
-                    _xtraField = MutableString.CreateBinary(reader.ReadBytes(xlen));
-                }
-#pragma warning restore 168,219
-
-                if (fname) {
-                    _originalName = ReadStringZ(reader);
-                } else {
-                    _originalName = MutableString.CreateBinary();
-                }
-
-                if (fcomment) {
-                    _comment = ReadStringZ(reader);
-                } else {
-                    _comment = MutableString.CreateBinary();
-                }
-
-                if (fhcrc) {
-                    _headerCrc = ReadUInt16LE(reader);
-                }
-
-                _contents = ReadToEnd(reader);
+            private GZipReader(RubyClass/*!*/ cls, object io)
+                : base(cls, io, CompressionMode.Decompress) {
             }
 
             [RubyConstructor]
-            public static GZipReader/*!*/ Create(RespondToStorage/*!*/ respondToStorage, RubyClass/*!*/ self, object io) {
-                IOWrapper stream = null;
-                if (io != null) {
-                    stream = RubyIOOps.CreateIOWrapper(respondToStorage, io, FileAccess.Read);
-                }
-                if (stream == null || !stream.CanRead) {
-                    throw RubyExceptions.CreateMethodMissing(self.Context, io, "read");
-                }
-
-                using (BinaryReader reader = new BinaryReader(stream)) {
-                    return new GZipReader(self, stream, reader);
-                }
+            public static GZipReader/*!*/ Create(RubyClass/*!*/ self, object io) {
+                return new GZipReader(self, io);
             }
 
-            private bool IsBitSet(byte b, byte bit) {
-                return ((b & (1 << bit)) == (1 << bit));
-            }
-
-            [RubyMethod("xtra_field")]
-            public static MutableString ExtraField(GZipReader/*!*/ self) {
-                return self._xtraField;
-            }
-
-            // TODO: mutable!
-            [RubyConstant("OSES")]
-            public static string[] OSES = {
-                "FAT filesystem", 
-			    "Amiga", 
-			    "VMS (or OpenVMS)", 
-			    "Unix", 
-			    "VM/CMS", 
-			    "Atari TOS", 
-			    "HPFS fileystem (OS/2, NT)", 
-			    "Macintosh", 
-			    "Z-System",
-			    "CP/M",
-			    "TOPS-20",
-			    "NTFS filesystem (NT)",
-			    "QDOS",
-			    "Acorn RISCOS",
-			    "unknown"
-            };
-
-            private static ushort ReadUInt16LE(BinaryReader/*!*/ reader) {
-                return (ushort)(
-                    (ushort)(reader.ReadByte()) |
-                    (((ushort)(reader.ReadByte())) << 8)
-                    );
-            }
-
-            private static uint ReadUInt32LE(BinaryReader/*!*/ reader) {
-                return (uint)(
-                    (uint)(reader.ReadByte()) |
-                    (((uint)(reader.ReadByte())) << 8) |
-                    (((uint)(reader.ReadByte())) << 16) |
-                    (((uint)(reader.ReadByte())) << 24)
-                    );
-            }
-
-            private static MutableString/*!*/ ReadStringZ(BinaryReader/*!*/ reader) {
-                List<byte> result = new List<byte>();
-                byte c;
-                while ((c = reader.ReadByte()) != 0) {
-                    result.Add(c);
-                }
-                return MutableString.CreateBinary(result, RubyEncoding.Binary);
-            }
-
-            private static MutableString/*!*/ ReadToEnd(BinaryReader/*!*/ reader) {
-                List<byte> result = new List<byte>();
-                try {
-                    while (true) {
-                        result.Add(reader.ReadByte());
-                    }
-                } catch (EndOfStreamException) {
-                }
-                return MutableString.CreateBinary(result, RubyEncoding.Binary);
+            [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+            public static object Open(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+                var strPath = self.Context.DecodePath(path);
+                var file = new RubyFile(self.Context, strPath, IOMode.ReadOnly);
+                var gzipReader = Create(self, file);
+                return gzipReader.Do(block);
             }
 
             [RubyMethod("read")]
-            public static MutableString/*!*/ Read(GZipReader/*!*/ self) {
-                return Inflate.InflateString(self._contents);
-            }
+            public static MutableString Read(GZipReader/*!*/ self, [DefaultProtocol, Optional]int? bytes) {
+                if (bytes.HasValue && bytes.Value < 0) {
+                    throw RubyExceptions.CreateArgumentError("negative length -1 given");
+                }
 
-            [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-            public static GZipReader/*!*/ Open(GZipReader/*!*/ self) {
-                // TODO: Open as an private instance method probably doesn't create a new GzipReader, right?
-                // it probably returns nothing and is used internally to do all initialization
-                return self;
-            }
+                var stream = self.GetStream();
+                MutableString result = MutableString.CreateBinary();
+                if (bytes.HasValue) {
+                    int bytesRead = result.Append(stream, bytes.Value);
+                    if (bytesRead == 0 && bytes.Value != 0) {
+                        return null;
+                    }
+                } else {
+                    result.Append(stream);
+                }
 
-            [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-            public static GZipReader/*!*/ Open(RespondToStorage/*!*/ respondToStorage, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-                return Create(respondToStorage, self, new RubyFile(self.Context, path.ConvertToString(), IOMode.ReadOnly));
-            }
-
-            [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-            public static object Open(RespondToStorage/*!*/ respondToStorage, [NotNull]BlockParam/*!*/ block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-                GZipReader reader = Open(respondToStorage, self, path);
-                object blockResult;
-                block.Yield(reader, out blockResult);
-                return blockResult;
-            }
-
-            // pos() 
-
-            [RubyMethod("close")]
-            public static object/*!*/ Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipReader/*!*/ self) {
-                GZipFile.Close(closeStorage, self, true);
-                return self._ioWrapper.UnderlyingObject;
-            }
-
-            [RubyMethod("finish")]
-            public static object/*!*/ Finish(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GZipReader/*!*/ self) {
-                GZipFile.Close(closeStorage, self, false);
-                return self._ioWrapper.UnderlyingObject;
+                return result;
             }
         }
 
@@ -982,168 +877,67 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         #region GzipWriter class
 
-#if !SILVERLIGHT
         [RubyClass("GzipWriter", BuildConfig="!SILVERLIGHT")]
+        // TODO: [Includes(typeof(PrintOps), Copy = true)]
         public class GzipWriter : GZipFile {
-            private readonly GZipStream/*!*/ _gzipStream;
-
-            // TODO:
-#pragma warning disable 414 // mcs: unused field
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
-            private int _level, _strategy;
-#pragma warning restore 414
-
-            private GzipWriter(RubyClass/*!*/ cls, RespondToStorage/*!*/ respondToStorage, RubyContext/*!*/ context, IOWrapper/*!*/ ioWrapper, int level, int strategy) 
-                : base(cls, ioWrapper) {
-                _level = level;
-                _strategy = strategy;
-                _gzipStream = new GZipStream(ioWrapper, CompressionMode.Compress, true);
+            private GzipWriter(RubyClass/*!*/ cls, object io) 
+                : base(cls, io, CompressionMode.Compress) {
             }
 
             [RubyConstructor]
             public static GzipWriter/*!*/ Create(
-                RespondToStorage/*!*/ respondToStorage,
                 RubyClass/*!*/ self,
                 object io,
+                [Optional, DefaultParameterValue(0)]int level,
+                [Optional, DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
+
+                // TODO: level is settable in .NET 4.5:
+                return new GzipWriter(self, io);
+            }
+
+            [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+            public static object Open(BlockParam block, RubyClass/*!*/ self,
+                [DefaultProtocol, NotNull]MutableString/*!*/ path,
                 [DefaultParameterValue(0)]int level,
                 [DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
 
-                IOWrapper ioWrapper = RubyIOOps.CreateIOWrapper(respondToStorage, io, FileAccess.Write);
-                if (ioWrapper == null || !ioWrapper.CanWrite) {
-                    throw RubyExceptions.CreateMethodMissing(self.Context, io, "write");
-                }
-                
-                return new GzipWriter(self, respondToStorage, self.Context, ioWrapper, level, strategy);
+                var strPath = self.Context.DecodePath(path);
+                var file = new RubyFile(self.Context, strPath, IOMode.WriteOnly | IOMode.Truncate);
+                var gzipWriter = Create(self, file, level, strategy);
+                return gzipWriter.Do(block);
             }
 
-            // Zlib::GzipWriter.open(filename, level=nil, strategy=nil) { |gz| ... }
+            [RubyMethod("flush")]
+            public static GzipWriter/*!*/ Flush(GzipWriter/*!*/ self, [DefaultParameterValue(SYNC_FLUSH)]int flush) {
+                return self;
+            }
+
+            [RubyMethod("write")]
+            public static int Write(ConversionStorage<MutableString>/*!*/ tosConversion, GzipWriter/*!*/ self, object obj) {
+                return Write(self, Protocols.ConvertToString(tosConversion, obj));
+            }
+
+            [RubyMethod("write")]
+            public static int Write(GzipWriter/*!*/ self, [NotNull]MutableString/*!*/ val) {
+                var stream = self.GetStream();
+
+                // TODO: this can be optimized (add MutableString.WriteTo(Stream))
+                var buffer = val.ToByteArray();
+                stream.Write(buffer, 0, buffer.Length);
+                return buffer.Length;
+            } 
+
+            // printops:
 
             [RubyMethod("<<")]
-            public static GzipWriter Output(ConversionStorage<MutableString>/*!*/ tosConversion, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
-                Write(tosConversion, context, self, str);
+            public static GzipWriter/*!*/ Output(ConversionStorage<MutableString>/*!*/ tosConversion, GzipWriter/*!*/ self, object value) {
+                Write(tosConversion, self, value);
                 return self;
-            }
-
-            [RubyMethod("close")]
-            public static object/*!*/ Close(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
-                if (self._isClosed) {
-                    throw new Error("closed gzip stream");
-                }
-                self._gzipStream.Close();
-                self._ioWrapper.Flush();
-                GZipFile.Close(closeStorage, self, true);
- 				return self._ioWrapper.UnderlyingObject;
-            }
-
-            [RubyMethod("finish")]
-            public static object/*!*/ Finish(UnaryOpStorage/*!*/ closeStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self) {
-                self._gzipStream.Close();
-                self._ioWrapper.Flush(closeStorage, context);
-                GZipFile.Close(closeStorage, self, false);
-                return self._ioWrapper.UnderlyingObject;
-            }
-
-            [RubyMethod("comment=")]
-            public static MutableString/*!*/ Comment(GzipWriter/*!*/ self, [NotNull]MutableString/*!*/ comment) {
-                if (self._isClosed) {
-                    throw new Error("closed gzip stream");
-                }
-                self._comment = comment;
-
-                return comment;
-            }
-
-            [RubyMethod("flush")]
-            public static GzipWriter Flush(UnaryOpStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, object flush) {
-                if (flush != null) {
-                    throw RubyExceptions.CreateUnexpectedTypeError(context, flush, "Fixnum");
-                }
-
-                return Flush(flushStorage, context, self, SYNC_FLUSH);
-            }
-
-            [RubyMethod("flush")]
-            public static GzipWriter Flush(UnaryOpStorage/*!*/ flushStorage, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultParameterValue(SYNC_FLUSH)]int flush) {
-                self._gzipStream.Flush();
-                self._ioWrapper.Flush(flushStorage, context);
-                return self;
-            }
-
-            // mtime=(p1) 
-
-            [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-            public static object Open(
-                RespondToStorage/*!*/ respondToStorage, 
-                UnaryOpStorage/*!*/ closeStorage, 
-                BlockParam block, 
-                RubyClass/*!*/ self, 
-                [NotNull]MutableString filename, 
-                [DefaultParameterValue(0)]int level, 
-                [DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
-
-                RubyFile file = new RubyFile(self.Context, filename.ConvertToString(), IOMode.CreateIfNotExists | IOMode.Truncate | IOMode.WriteOnly | IOMode.PreserveEndOfLines);
-                GzipWriter gzipFile = Create(respondToStorage, self, file, level, strategy);
-
-                if (block == null) {
-                    return gzipFile;
-                }
-
-                try {
-                    object blockResult;
-                    block.Yield(gzipFile, out blockResult);
-                    return blockResult;
-                } finally {
-                    Close(closeStorage, self.Context, gzipFile);
-                }
-            }
-
-            [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-            public static object Open(
-                RespondToStorage/*!*/ respondToStorage,
-                UnaryOpStorage/*!*/ closeStorage,
-                BlockParam block,
-                RubyClass/*!*/ self,
-                [NotNull]MutableString filename,
-                object level,
-                object strategy) {
-
-                if (level != null) {
-                    throw RubyExceptions.CreateUnexpectedTypeError(self.Context, level, "Fixnum");
-                }
-                if (strategy != null) {
-                    throw RubyExceptions.CreateUnexpectedTypeError(self.Context, strategy, "Fixnum");
-                }
-
-                return Open(respondToStorage, closeStorage, block, self, filename, 0, 0);
-            }
-
-            [RubyMethod("orig_name=")]
-            public static MutableString/*!*/ OriginalName(GzipWriter/*!*/ self, [NotNull]MutableString/*!*/ originalName) {
-                if (self._isClosed) {
-                    throw new Error("closed gzip stream");
-                }
-
-                self._originalName = originalName;
-
-                return originalName;
-            }
-
-            // pos() 
-            // print(...) 
-            // printf(...) 
-            // putc(p1) 
-            // puts(...) 
-            // tell() 
-            [RubyMethod("write")]
-            public static int Write(ConversionStorage<MutableString>/*!*/ tosConversion, RubyContext/*!*/ context, GzipWriter/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str) {
-                byte[] bytes = str.ToByteArray();
-                self._gzipStream.Write(bytes, 0, bytes.Length);
-                return bytes.Length;
             }
         }
-#endif
+  
         #endregion
-
+#endif
         #region Exceptions
 
         private static Exception/*!*/ MakeError(int result, string message) {

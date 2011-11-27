@@ -220,9 +220,10 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        internal static object TryInvokeOpenBlock(RubyContext/*!*/ context, BlockParam/*!*/ block, RubyIO/*!*/ io) {
-            if (block == null)
+        internal static object TryInvokeOpenBlock(RubyContext/*!*/ context, BlockParam/*!*/ block, IDisposable/*!*/ io) {
+            if (block == null) {
                 return io;
+            }
 
             using (io) {
                 object result;
@@ -864,6 +865,12 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        [RubyMethod("readpartial")]
+        public static MutableString/*!*/ ReadPartial(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
+            // TODO: what is exactly a difference between read, readpartial and read_nonblock?
+            return Read(self, bytes, buffer);
+        }
+
         [RubyMethod("read", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ Read(
             ConversionStorage<IDictionary<object, object>>/*!*/ toHash,
@@ -903,8 +910,6 @@ namespace IronRuby.Builtins {
                 }
             }
         }
-
-        //readpartial
 
         #endregion
 
@@ -1283,7 +1288,7 @@ namespace IronRuby.Builtins {
         }
 
         public static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, object io, FileAccess access, int bufferSize) {
-            bool canRead, canWrite, canSeek, canFlush, canBeClosed;
+            bool canRead, canWrite, canSeek, canFlush, canClose;
 
             if (access == FileAccess.Read || access == FileAccess.ReadWrite) {
                 canRead = Protocols.RespondTo(respondToStorage, io, "read");
@@ -1299,9 +1304,9 @@ namespace IronRuby.Builtins {
 
             canSeek = Protocols.RespondTo(respondToStorage, io, "seek") && Protocols.RespondTo(respondToStorage, io, "tell");
             canFlush = Protocols.RespondTo(respondToStorage, io, "flush");
-            canBeClosed = Protocols.RespondTo(respondToStorage, io, "close");
+            canClose = Protocols.RespondTo(respondToStorage, io, "close");
 
-            return new IOWrapper(respondToStorage.Context, io, canRead, canWrite, canSeek, canFlush, canBeClosed, bufferSize);
+            return new IOWrapper(respondToStorage.Context, io, canRead, canWrite, canSeek, canFlush, canClose, bufferSize);
         }
     }
 }
