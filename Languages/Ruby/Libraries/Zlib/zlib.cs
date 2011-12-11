@@ -902,7 +902,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 [DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
 
                 var strPath = self.Context.DecodePath(path);
-                var file = new RubyFile(self.Context, strPath, IOMode.WriteOnly | IOMode.Truncate);
+                var file = new RubyFile(self.Context, strPath, IOMode.WriteOnly | IOMode.Truncate | IOMode.CreateIfNotExists);
                 var gzipWriter = Create(self, file, level, strategy);
                 return gzipWriter.Do(block);
             }
