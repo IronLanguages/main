@@ -6,6 +6,8 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     
     <StageDir>$(MSBuildProjectDirectory)\Stage\IronPython</StageDir>
+    <PackageDir>$(MSBuildProjectDirectory)\Packages\IronPython</PackageDir>
+  </PropertyGroup>
 
     <BaseBuildDir>$(MSBuildProjectDirectory)\Bin</BaseBuildDir>
     <BuildDir>$(BaseBuildDir)\$(Configuration)</BuildDir>
@@ -110,5 +112,11 @@
     <Copy SourceFiles="@(DlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" UseHardLinksIfPossible="true" />
     <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" UseHardLinksIfPossible="true" />
     <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" UseHardLinksIfPossible="true" />
+  </Target>
+
+  <Target Name="NuGetPackage" DependsOnTargets="Stage">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <Exec Command="Util\Misc\NuGet.exe pack &quot;$(MSBuildProjectDirectory)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+    <Exec Command="Util\Misc\NuGet.exe pack &quot;$(MSBuildProjectDirectory)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
   </Target>
 </Project>
