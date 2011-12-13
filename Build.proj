@@ -7,6 +7,7 @@
     
     <StageDir>$(MSBuildProjectDirectory)\Stage\IronPython</StageDir>
     <PackageDir>$(MSBuildProjectDirectory)\Packages\IronPython</PackageDir>
+    <UtilDir>$(MSBuildProjectDirectory)\Util</UtilDir>
   </PropertyGroup>
 
     <BaseBuildDir>$(MSBuildProjectDirectory)\Bin</BaseBuildDir>
@@ -116,7 +117,12 @@
 
   <Target Name="NuGetPackage" DependsOnTargets="Stage">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
-    <Exec Command="Util\Misc\NuGet.exe pack &quot;$(MSBuildProjectDirectory)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
-    <Exec Command="Util\Misc\NuGet.exe pack &quot;$(MSBuildProjectDirectory)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(MSBuildProjectDirectory)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(MSBuildProjectDirectory)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+  </Target>
+
+  <Target Name="ZipPackage" DependsOnTargets="Stage">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <Exec Command="$(UtilDir)\Misc\zip.exe -9 -r &quot;$(PackageDir)\IronPython.zip&quot; &quot;IronPython&quot;" WorkingDirectory="$(StageDir)\.." />
   </Target>
 </Project>
