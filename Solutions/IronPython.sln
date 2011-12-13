@@ -36,7 +36,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Metadat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.AspNet", "..\Hosts\MerlinWeb\Microsoft.Scripting.AspNet\Microsoft.Scripting.AspNet.csproj", "{3272E46C-F4D9-418D-9EE9-081A1B658EE4}"
 EndProject
-Global	
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3A14D070-628F-44EF-92DD-47C8BE5C33CD}"
+	ProjectSection(SolutionItems) = preProject
+		..\Build.proj = ..\Build.proj
+	EndProjectSection
+EndProject
+Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
