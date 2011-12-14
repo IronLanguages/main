@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildThisFileDirectory)..\CurrentVersion.props" />
+
+  <PropertyGroup>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'alpha'">a</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'beta'">b</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'candidate'">rc</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'final'">f</ShortReleaseLevel>
+
+    <DisplayVersion Condition="'$(ReleaseLevel)' == 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</DisplayVersion>
+    <DisplayVersion Condition="'$(ReleaseLevel)' != 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(ShortReleaseLevel)$(ReleaseSerial)</DisplayVersion>
+
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'alpha'">$(ReleaseSerial)</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'beta'">$(ReleaseSerial)0</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'candidate'">$(ReleaseSerial)00</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'final'">1000</AssemblyFileRevision>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CurrentVersionTemplate>
+      <![CDATA[
+namespace IronPython {{
+    public static class CurrentVersion {{
+        public const int Major = {0};
+        public const int Minor = {1};
+        public const int Micro = {2};
+        public const string ReleaseLevel = "{3}";
+        public const int ReleaseSerial = {4};
+
+        public const string ShortReleaseLevel = "{5}";
+
+        public const string Series = "{0}.{1}";
+        public const string DisplayVersion = "{6}";
+        public const string DisplayName = "IronPython {6}";
+
+#if !SILVERLIGHT
+        public const string AssemblyVersion = "{0}.{1}.0.{7}";
+#else
+        public const string AssemblyVersion = "{0}.{1}.1300.{7}";
+#endif
+        
+        public const string AssemblyFileVersion = "{0}.{1}.{2}.{8}";
+        public const string AssemblyInformationalVersion = "IronPython {0}.{1}.{2} {3} {4}";
+    }}
+}}
+      ]]>
+    </CurrentVersionTemplate>
+
+    <BuildInfoTemplate>
+      <![CDATA[
+internal static class BuildInfo {{
+    internal const string Configuration = "{0}";
+
+    internal const bool IsDebug =
+#if DEBUG
+        true;
+#else
+        false;
+#endif
+
+    internal const bool IsCLR2 =
+#if CLR2
+        true;
+#else
+        false;
+#endif
+
+    internal const bool IsCLR4 =
+#if CLR4
+        true;
+#else
+        false;
+#endif
+
+    internal const bool IsSilverlight =
+#if SILVERLIGHT
+        true;
+#else
+        false;
+#endif
+}}
+      ]]>
+    </BuildInfoTemplate>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)Bootstrap.targets" />
+
+  <Target Name="GenerateCurrentVersion"
+          DependsOnTargets="Bootstrap"
+          Inputs="$(MSBuildThisFileDirectory)..\CurrentVersion.props;$(MSBuildThisFile)"
+          Outputs="Properties\CurrentVersion.Generated.cs">
+    <FormatTemplate Template="$(CurrentVersionTemplate)" Parameters="$(MajorVersion);$(MinorVersion);$(MicroVersion);$(ReleaseLevel);$(ReleaseSerial);$(ShortReleaseLevel);$(DisplayVersion);$(AssemblyRevision);$(AssemblyFileRevision)">
+      <Output TaskParameter="Result" PropertyName="CurrentVersionText" />
+    </FormatTemplate>
+    <WriteLinesToFile File="Properties\CurrentVersion.Generated.cs" Lines="$(CurrentVersionText)" Overwrite="true" />
+  </Target>
+
+  <Target Name="GenerateBuildInfo"
+          DependsOnTargets="Bootstrap"
+          Inputs="$(MSBuildThisFileDirectory)..\CurrentVersion.props;$(MSBuildThisFile)"
+          Outputs="Properties\BuildInfo.Generated.cs">
+    <FormatTemplate Template="$(BuildInfoTemplate)" Parameters="'$(Configuration)'">
+      <Output TaskParameter="Result" PropertyName="BuildInfoText" />
+    </FormatTemplate>
+    <WriteLinesToFile File="Properties\BuildInfo.Generated.cs" Lines="$(BuildInfoText)" Overwrite="true" />
+  </Target>
+</Project>

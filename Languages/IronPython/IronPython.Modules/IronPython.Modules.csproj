@@ -113,9 +113,19 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
     <Compile Include="signal.cs" />
-    <Compile Include="zipimport.cs" />
     <Compile Include="zlib\Compress.cs" />
     <Compile Include="zlib\Decompress.cs" />
+    <Compile Include="zlib\zlib.net\Adler32.cs" />
+    <Compile Include="zlib\zlib.net\Deflate.cs" />
+    <Compile Include="zlib\zlib.net\InfBlocks.cs" />
+    <Compile Include="zlib\zlib.net\InfCodes.cs" />
+    <Compile Include="zlib\zlib.net\Inflate.cs" />
+    <Compile Include="zlib\zlib.net\InfTree.cs" />
+    <Compile Include="zlib\zlib.net\StaticTree.cs" />
+    <Compile Include="zlib\zlib.net\Tree.cs" />
+    <Compile Include="zlib\zlib.net\Zlib.cs" />
+    <Compile Include="zlib\zlib.net\ZStream.cs" />
+    <Compile Include="zlib\zlib.net\ZStreamException.cs" />
     <Compile Include="zlib\ZlibModule.cs" />
     <Compile Include="_codecs.cs" />
     <Compile Include="ModuleOps.cs" />
@@ -236,10 +246,7 @@
     <None Include="IronPython.Modules.ruleset" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>-->
+
+  <Import Project="$(SolutionDir)Versioning.targets" />
+  <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo" />
 </Project>

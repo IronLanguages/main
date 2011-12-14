@@ -129,6 +129,8 @@
     <Compile Include="Compiler\RunnableScriptCode.cs" />
     <Compile Include="Modules\unicodedata.cs" />
     <Compile Include="Modules\_ast.cs" />
+    <Compile Include="Properties\BuildInfo.Generated.cs" />
+    <Compile Include="Properties\CurrentVersion.Generated.cs" />
     <Compile Include="Runtime\Binding\IPythonExpandable.cs" />
     <Compile Include="Runtime\Binding\PythonExtensionBinder.cs" />
     <Compile Include="Runtime\BuiltinPythonModule.cs" />
@@ -614,4 +616,7 @@
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData.txt.gz" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
+  
+  <Import Project="$(SolutionDir)Versioning.targets" />
+  <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo;GenerateCurrentVersion" />
 </Project>

@@ -5,23 +5,22 @@
  * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
  * you cannot locate the  Apache License, Version 2.0, please send an email to 
- * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
  * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
  *
  *
  * ***************************************************************************/
-using System;
 using System.Reflection;
-using System.Resources;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("IronPython")]
+[assembly: AssemblyTitle("IronPython.Wpf")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration(BuildInfo.Configuration)]
 [assembly: AssemblyProduct("IronPython")]
@@ -34,7 +33,7 @@ using System.Security;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("68e40495-c34a-4539-b43e-9e4e6f11a9fb")]
+[assembly: Guid("505BA001-53E8-4148-AE1D-1425D0FF7948")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -46,10 +45,12 @@ using System.Security;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: NeutralResourcesLanguage("en-US")]
-
 [assembly: SecurityTransparent]
-[assembly: CLSCompliant(false)]
-#if !CLR2 && !SILVERLIGHT
+
+#if !SILVERLIGHT
+[assembly: AllowPartiallyTrustedCallers]
+#if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif
+#endif
+

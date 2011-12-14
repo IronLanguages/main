@@ -38,7 +38,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.AspNet"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3A14D070-628F-44EF-92DD-47C8BE5C33CD}"
 	ProjectSection(SolutionItems) = preProject
+		Bootstrap.targets = Bootstrap.targets
 		..\Build.proj = ..\Build.proj
+		..\CurrentVersion.props = ..\CurrentVersion.props
+		Versioning.targets = Versioning.targets
 	EndProjectSection
 EndProject
 Global
