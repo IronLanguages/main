@@ -23,10 +23,10 @@ using System.Security;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 //
-[assembly: AssemblyTitle("IronPython Console")]
+[assembly: AssemblyTitle("IronPython Windows Console")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyProduct("IronPython Console")]
+[assembly: AssemblyConfiguration(BuildInfo.Configuration)]
+[assembly: AssemblyProduct("IronPython")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
