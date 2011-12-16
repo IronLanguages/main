@@ -1979,8 +1979,8 @@ namespace IronPython.Runtime {
                 CurrentVersion.Minor,
                 CurrentVersion.Micro,
                 _initialVersionString, 
-                CurrentVersion.ReleaseLevel.ToString() != "final" ? CurrentVersion.ShortReleaseLevel : "",
-                CurrentVersion.ReleaseLevel.ToString() != "final" ? CurrentVersion.ReleaseSerial.ToString() : "");
+                CurrentVersion.ReleaseLevel != "final" ? CurrentVersion.ShortReleaseLevel : "",
+                CurrentVersion.ReleaseLevel != "final" ? CurrentVersion.ReleaseSerial.ToString() : "");
         }
 
         internal static string GetVersionString() {
