@@ -39,9 +39,21 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3A14D070-628F-44EF-92DD-47C8BE5C33CD}"
 	ProjectSection(SolutionItems) = preProject
 		Bootstrap.targets = Bootstrap.targets
+		Build.IronPython.proj = Build.IronPython.proj
 		..\Build.proj = ..\Build.proj
 		..\CurrentVersion.props = ..\CurrentVersion.props
 		Versioning.targets = Versioning.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CustomTasks", "CustomTasks", "{2BA7ADB8-E6B4-4C3E-95A0-A65C98919FE2}"
+	ProjectSection(SolutionItems) = preProject
+		CustomTasks\CustomTasks.cs = CustomTasks\CustomTasks.cs
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{CE9DF8A7-CEE3-44CB-8C17-E0E3004A8755}"
+	ProjectSection(SolutionItems) = preProject
+		Templates\BuildInfo.Template.cs = Templates\BuildInfo.Template.cs
+		Templates\CurrentVersion.Template.cs = Templates\CurrentVersion.Template.cs
 	EndProjectSection
 EndProject
 Global
@@ -145,5 +157,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2BA7ADB8-E6B4-4C3E-95A0-A65C98919FE2} = {3A14D070-628F-44EF-92DD-47C8BE5C33CD}
+		{CE9DF8A7-CEE3-44CB-8C17-E0E3004A8755} = {3A14D070-628F-44EF-92DD-47C8BE5C33CD}
 	EndGlobalSection
 EndGlobal
