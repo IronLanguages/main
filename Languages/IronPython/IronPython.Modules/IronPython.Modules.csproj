@@ -112,6 +112,7 @@
     <Compile Include="NativeSignal.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
+    <Compile Include="Properties\BuildInfo.Generated.cs" />
     <Compile Include="signal.cs" />
     <Compile Include="zlib\Compress.cs" />
     <Compile Include="zlib\Decompress.cs" />
@@ -239,14 +240,13 @@
     </ProjectReference>
     <ProjectReference Include="..\IronPython\IronPython.csproj">
       <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
-      <Name>IronPython %28Languages\IronPython\IronPython%29</Name>
+      <Name>IronPython</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="IronPython.Modules.ruleset" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
-
   <Import Project="$(SolutionDir)Versioning.targets" />
   <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo" />
 </Project>
