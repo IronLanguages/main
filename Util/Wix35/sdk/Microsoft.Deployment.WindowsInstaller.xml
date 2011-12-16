@@ -841,9 +841,9 @@
         </member>
         <member name="P:Microsoft.Deployment.WindowsInstaller.ColumnInfo.DBType">
             <summary>
-            Gets the type of the column as a System.Data.DbType.  This is one of the following: Int16, Int32, String, or Binary
+            Gets the type of the column as an integer that can be cast to a System.Data.DbType.  This is one of the following: Int16, Int32, String, or Binary
             </summary>
-            <value>equivalent DbType of the column</value>
+            <value>equivalent DbType of the column as an integer</value>
         </member>
         <member name="P:Microsoft.Deployment.WindowsInstaller.ColumnInfo.Size">
             <summary>
@@ -2672,7 +2672,7 @@
         <member name="T:Microsoft.Deployment.WindowsInstaller.MessageResult">
             <summary>
             Specifies a return status value for message handlers.  These values are returned by
-            <see cref="M:Microsoft.Deployment.WindowsInstaller.Session.Message(Microsoft.Deployment.WindowsInstaller.InstallMessage,Microsoft.Deployment.WindowsInstaller.Record)"/>, <see cref="T:Microsoft.Deployment.WindowsInstaller.ExternalUIHandler"/>, and <see cref="M:Microsoft.Deployment.WindowsInstaller.IEmbeddedUI.ProcessMessage(Microsoft.Deployment.WindowsInstaller.InstallMessage,Microsoft.Deployment.WindowsInstaller.Record,System.Windows.Forms.MessageBoxButtons,System.Windows.Forms.MessageBoxIcon,System.Windows.Forms.MessageBoxDefaultButton)"/>.
+            <see cref="M:Microsoft.Deployment.WindowsInstaller.Session.Message(Microsoft.Deployment.WindowsInstaller.InstallMessage,Microsoft.Deployment.WindowsInstaller.Record)"/>, <see cref="T:Microsoft.Deployment.WindowsInstaller.ExternalUIHandler"/>, and <see cref="M:Microsoft.Deployment.WindowsInstaller.IEmbeddedUI.ProcessMessage(Microsoft.Deployment.WindowsInstaller.InstallMessage,Microsoft.Deployment.WindowsInstaller.Record,Microsoft.Deployment.WindowsInstaller.MessageButtons,Microsoft.Deployment.WindowsInstaller.MessageIcon,Microsoft.Deployment.WindowsInstaller.MessageDefaultButton)"/>.
             </summary>
         </member>
         <member name="F:Microsoft.Deployment.WindowsInstaller.MessageResult.Error">
@@ -2701,6 +2701,114 @@
         </member>
         <member name="F:Microsoft.Deployment.WindowsInstaller.MessageResult.No">
             <summary>IDNO</summary>
+        </member>
+        <member name="T:Microsoft.Deployment.WindowsInstaller.MessageButtons">
+            <summary>
+            Specifies constants defining which buttons to display for a message. This can be cast to
+            the MessageBoxButtons enum in System.Windows.Forms and System.Windows.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageButtons.OK">
+            <summary>
+            The message contains an OK button.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageButtons.OKCancel">
+            <summary>
+            The message contains OK and Cancel buttons.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageButtons.AbortRetryIgnore">
+            <summary>
+            The message contains Abort, Retry, and Ignore buttons.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageButtons.YesNoCancel">
+            <summary>
+            The message contains Yes, No, and Cancel buttons.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageButtons.YesNo">
+            <summary>
+            The message contains Yes and No buttons.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageButtons.RetryCancel">
+            <summary>
+            The message contains Retry and Cancel buttons.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Deployment.WindowsInstaller.MessageIcon">
+            <summary>
+            Specifies constants defining which information to display. This can be cast to
+            the MessageBoxIcon enum in System.Windows.Forms and System.Windows.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.None">
+            <summary>
+            The message contain no symbols.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.Error">
+            <summary>
+            The message contains a symbol consisting of white X in a circle with a red background.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.Hand">
+            <summary>
+            The message contains a symbol consisting of a white X in a circle with a red background.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.Stop">
+            <summary>
+            The message contains a symbol consisting of white X in a circle with a red background.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.Question">
+            <summary>
+            The message contains a symbol consisting of a question mark in a circle.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.Exclamation">
+            <summary>
+            The message contains a symbol consisting of an exclamation point in a triangle with a yellow background.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.Warning">
+            <summary>
+            The message contains a symbol consisting of an exclamation point in a triangle with a yellow background.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.Information">
+            <summary>
+            The message contains a symbol consisting of a lowercase letter i in a circle.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageIcon.Asterisk">
+            <summary>
+            The message contains a symbol consisting of a lowercase letter i in a circle.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Deployment.WindowsInstaller.MessageDefaultButton">
+            <summary>
+            Specifies constants defining the default button on a message. This can be cast to
+            the MessageBoxDefaultButton enum in System.Windows.Forms and System.Windows.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageDefaultButton.Button1">
+            <summary>
+            The first button on the message is the default button.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageDefaultButton.Button2">
+            <summary>
+            The second button on the message is the default button.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Deployment.WindowsInstaller.MessageDefaultButton.Button3">
+            <summary>
+            The third button on the message is the default button.
+            </summary>
         </member>
         <member name="T:Microsoft.Deployment.WindowsInstaller.PatchStates">
             <summary>
@@ -4339,13 +4447,13 @@
             <a href="http://msdn.microsoft.com/library/en-us/msi/setup/initializeembeddedui.asp">InitializeEmbeddedUI</a>
             </p></remarks>
         </member>
-        <member name="M:Microsoft.Deployment.WindowsInstaller.IEmbeddedUI.ProcessMessage(Microsoft.Deployment.WindowsInstaller.InstallMessage,Microsoft.Deployment.WindowsInstaller.Record,System.Windows.Forms.MessageBoxButtons,System.Windows.Forms.MessageBoxIcon,System.Windows.Forms.MessageBoxDefaultButton)">
+        <member name="M:Microsoft.Deployment.WindowsInstaller.IEmbeddedUI.ProcessMessage(Microsoft.Deployment.WindowsInstaller.InstallMessage,Microsoft.Deployment.WindowsInstaller.Record,Microsoft.Deployment.WindowsInstaller.MessageButtons,Microsoft.Deployment.WindowsInstaller.MessageIcon,Microsoft.Deployment.WindowsInstaller.MessageDefaultButton)">
             <summary>
             Processes information and progress messages sent to the user interface.
             </summary>
             <param name="messageType">Message type.</param>
             <param name="messageRecord">Record that contains message data.</param>
-            <param name="buttons">Message box buttons.</param>
+            <param name="buttons">Message buttons.</param>
             <param name="icon">Message box icon.</param>
             <param name="defaultButton">Message box default button.</param>
             <returns>Result of processing the message.</returns>
@@ -5683,7 +5791,7 @@
             <returns>The result of the condition evaluation</returns>
             <exception cref="T:Microsoft.Deployment.WindowsInstaller.InvalidHandleException">the Session handle is invalid</exception>
             <exception cref="T:System.ArgumentNullException">the condition is null or empty</exception>
-            <exception cref="T:System.Data.SyntaxErrorException">the conditional expression is invalid</exception>
+            <exception cref="T:System.InvalidOperationException">the conditional expression is invalid</exception>
             <remarks><p>
             Win32 MSI API:
             <a href="http://msdn.microsoft.com/library/en-us/msi/setup/msievaluatecondition.asp">MsiEvaluateCondition</a>
@@ -5698,7 +5806,7 @@
             <param name="defaultValue">value to return if the condition is empty</param>
             <returns>The result of the condition evaluation</returns>
             <exception cref="T:Microsoft.Deployment.WindowsInstaller.InvalidHandleException">the Session handle is invalid</exception>
-            <exception cref="T:System.Data.SyntaxErrorException">the conditional expression is invalid</exception>
+            <exception cref="T:System.InvalidOperationException">the conditional expression is invalid</exception>
             <remarks><p>
             Win32 MSI API:
             <a href="http://msdn.microsoft.com/library/en-us/msi/setup/msievaluatecondition.asp">MsiEvaluateCondition</a>

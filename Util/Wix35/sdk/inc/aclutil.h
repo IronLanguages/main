@@ -4,7 +4,7 @@
 //    Copyright (c) Microsoft Corporation.  All rights reserved.
 //    
 //    The use and distribution terms for this software are covered by the
-//    Common Public License 1.0 (http://opensource.org/licenses/cpl.php)
+//    Common Public License 1.0 (http://opensource.org/licenses/cpl1.0.php)
 //    which can be found in the file CPL.TXT at the root of this distribution.
 //    By using this software in any fashion, you are agreeing to be bound by
 //    the terms of this license.
@@ -52,7 +52,7 @@ struct ACL_ACE
 // functions
 HRESULT DAPI AclCheckAccess(
     __in HANDLE hToken, 
-    ACL_ACCESS* paa
+    __in ACL_ACCESS* paa
     );
 HRESULT DAPI AclCheckAdministratorAccess(
     __in HANDLE hToken
@@ -63,17 +63,17 @@ HRESULT DAPI AclCheckLocalSystemAccess(
 
 HRESULT DAPI AclGetWellKnownSid(
     __in WELL_KNOWN_SID_TYPE wkst,
-    __out PSID* ppsid
+    __deref_out PSID* ppsid
     );
 HRESULT DAPI AclGetAccountSid(
     __in_opt LPCWSTR wzSystem,
     __in_z LPCWSTR wzAccount,
-    __out PSID* ppsid
+    __deref_out PSID* ppsid
     );
 HRESULT DAPI AclGetAccountSidString(
     __in_z LPCWSTR wzSystem,
     __in_z LPCWSTR wzAccount,
-    __out LPWSTR* ppwzSid
+    __deref_out_z LPWSTR* ppwzSid
     );
 
 HRESULT DAPI AclCreateDacl(
@@ -81,7 +81,7 @@ HRESULT DAPI AclCreateDacl(
     __in DWORD cDeny,
     __in_ecount(cAllow) ACL_ACE rgaaAllow[],
     __in DWORD cAllow,
-    __out ACL** ppAcl
+    __deref_out ACL** ppAcl
     );
 HRESULT DAPI AclAddToDacl(
     __in ACL* pAcl,
@@ -89,40 +89,40 @@ HRESULT DAPI AclAddToDacl(
     __in DWORD cDeny,
     __in_ecount_opt(cAllow) const ACL_ACE rgaaAllow[],
     __in DWORD cAllow,
-    __out ACL** ppAclNew
+    __deref_out ACL** ppAclNew
     );
 HRESULT DAPI AclMergeDacls(
     __in const ACL* pAcl1,
     __in const ACL* pAcl2,
-    __out ACL** ppAclNew
+    __deref_out ACL** ppAclNew
     );
 HRESULT DAPI AclCreateDaclOld(
     __in_ecount(cAclAccesses) ACL_ACCESS* paa,
     __in DWORD cAclAccesses,
-    __out ACL** ppAcl
+    __deref_out ACL** ppAcl
     );
 HRESULT DAPI AclCreateSecurityDescriptor(
     __in_ecount(cAclAccesses) ACL_ACCESS* paa,
     __in DWORD cAclAccesses,
-    __out SECURITY_DESCRIPTOR** ppsd
+    __deref_out SECURITY_DESCRIPTOR** ppsd
     );
 HRESULT DAPI AclCreateSecurityDescriptorFromDacl(
     __in ACL* pACL,
-    __out SECURITY_DESCRIPTOR** ppsd
+    __deref_out SECURITY_DESCRIPTOR** ppsd
     );
 HRESULT __cdecl AclCreateSecurityDescriptorFromString(
-    __out SECURITY_DESCRIPTOR** ppsd,
-    __in_z LPCWSTR wzSddlFormat,
+    __deref_out SECURITY_DESCRIPTOR** ppsd,
+    __in_z __format_string LPCWSTR wzSddlFormat,
     ...
     );
 HRESULT DAPI AclDuplicateSecurityDescriptor(
     __in SECURITY_DESCRIPTOR* psd,
-    __out SECURITY_DESCRIPTOR** ppsd
+    __deref_out SECURITY_DESCRIPTOR** ppsd
     );
 HRESULT DAPI AclGetSecurityDescriptor(
     __in_z LPCWSTR wzObject,
     __in SE_OBJECT_TYPE sot,
-    __out SECURITY_DESCRIPTOR** ppsd
+    __deref_out SECURITY_DESCRIPTOR** ppsd
     );
 
 HRESULT DAPI AclFreeSid(
@@ -137,7 +137,7 @@ HRESULT DAPI AclFreeSecurityDescriptor(
 
 HRESULT DAPI AclAddAdminToSecurityDescriptor(
     __in SECURITY_DESCRIPTOR* pSecurity,
-    __out SECURITY_DESCRIPTOR** ppSecurityNew
+    __deref_out SECURITY_DESCRIPTOR** ppSecurityNew
     );
 #ifdef __cplusplus
 }
