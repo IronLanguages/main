@@ -1,8 +1,20 @@
 *_name_S*
+
+# Output directories
 obj/
+bin/
 /bin/
+/Stage
+/Packages
+
+# Temporary VS files
 Solutions/*.suo
 *.csproj.user
+
+# Generated files
+Properties/BuildInfo.Generated.cs
+Properties/CurrentVersion.Generated.cs
+
 TestResult.xml
 Solutions/TestResults/
 
