@@ -17,92 +17,28 @@
     <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'final'">1000</AssemblyFileRevision>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <CurrentVersionTemplate>
-      <![CDATA[
-namespace IronPython {{
-    public static class CurrentVersion {{
-        public const int Major = {0};
-        public const int Minor = {1};
-        public const int Micro = {2};
-        public const string ReleaseLevel = "{3}";
-        public const int ReleaseSerial = {4};
-
-        public const string ShortReleaseLevel = "{5}";
-
-        public const string Series = "{0}.{1}";
-        public const string DisplayVersion = "{6}";
-        public const string DisplayName = "IronPython {6}";
-
-#if !SILVERLIGHT
-        public const string AssemblyVersion = "{0}.{1}.0.{7}";
-#else
-        public const string AssemblyVersion = "{0}.{1}.1300.{7}";
-#endif
-        
-        public const string AssemblyFileVersion = "{0}.{1}.{2}.{8}";
-        public const string AssemblyInformationalVersion = "IronPython {0}.{1}.{2} {3} {4}";
-    }}
-}}
-      ]]>
-    </CurrentVersionTemplate>
-
-    <BuildInfoTemplate>
-      <![CDATA[
-internal static class BuildInfo {{
-    internal const string Configuration = "{0}";
-
-    internal const bool IsDebug =
-#if DEBUG
-        true;
-#else
-        false;
-#endif
-
-    internal const bool IsCLR2 =
-#if CLR2
-        true;
-#else
-        false;
-#endif
-
-    internal const bool IsCLR4 =
-#if CLR4
-        true;
-#else
-        false;
-#endif
-
-    internal const bool IsSilverlight =
-#if SILVERLIGHT
-        true;
-#else
-        false;
-#endif
-}}
-      ]]>
-    </BuildInfoTemplate>
-  </PropertyGroup>
-
   <Import Project="$(MSBuildThisFileDirectory)Bootstrap.targets" />
+
+  <ItemGroup>
+    <BuildInfoTemplate Include="$(MSBuildThisFileDirectory)Templates\BuildInfo.Template.cs" />
+    <CurrentVersionTemplate Include="$(MSBuildThisFileDirectory)Templates\CurrentVersion.Template.cs" />
+  </ItemGroup>
 
   <Target Name="GenerateCurrentVersion"
           DependsOnTargets="Bootstrap"
-          Inputs="$(MSBuildThisFileDirectory)..\CurrentVersion.props;$(MSBuildThisFile)"
+          Inputs="$(MSBuildThisFileDirectory)..\CurrentVersion.props;$(MSBuildThisFile);@(CurrentVersionTemplate)"
           Outputs="Properties\CurrentVersion.Generated.cs">
-    <FormatTemplate Template="$(CurrentVersionTemplate)" Parameters="$(MajorVersion);$(MinorVersion);$(MicroVersion);$(ReleaseLevel);$(ReleaseSerial);$(ShortReleaseLevel);$(DisplayVersion);$(AssemblyRevision);$(AssemblyFileRevision)">
-      <Output TaskParameter="Result" PropertyName="CurrentVersionText" />
-    </FormatTemplate>
-    <WriteLinesToFile File="Properties\CurrentVersion.Generated.cs" Lines="$(CurrentVersionText)" Overwrite="true" />
+    <FormatTemplate TemplateFile="@(CurrentVersionTemplate)"
+                    OutputFile="Properties\CurrentVersion.Generated.cs"
+                    Parameters="$(MajorVersion);$(MinorVersion);$(MicroVersion);$(ReleaseLevel);$(ReleaseSerial);$(ShortReleaseLevel);$(DisplayVersion);$(AssemblyRevision);$(AssemblyFileRevision)" />
   </Target>
 
   <Target Name="GenerateBuildInfo"
           DependsOnTargets="Bootstrap"
-          Inputs="$(MSBuildThisFileDirectory)..\CurrentVersion.props;$(MSBuildThisFile)"
+          Inputs="$(MSBuildThisFileDirectory)..\CurrentVersion.props;$(MSBuildThisFile);@(BuildInfoTemplate)"
           Outputs="Properties\BuildInfo.Generated.cs">
-    <FormatTemplate Template="$(BuildInfoTemplate)" Parameters="'$(Configuration)'">
-      <Output TaskParameter="Result" PropertyName="BuildInfoText" />
-    </FormatTemplate>
-    <WriteLinesToFile File="Properties\BuildInfo.Generated.cs" Lines="$(BuildInfoText)" Overwrite="true" />
+    <FormatTemplate TemplateFile="@(BuildInfoTemplate)"
+                    OutputFile="Properties\BuildInfo.Generated.cs"
+                    Parameters="'$(Configuration)'" />
   </Target>
 </Project>

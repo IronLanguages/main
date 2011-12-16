@@ -1,4 +1,20 @@
+/* ****************************************************************************
+ *
+ * Copyright (c) Jeff Hardy.
+ *
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
+ * copy of the license can be found in the License.html file at the root of this distribution. If 
+ * you cannot locate the  Apache License, Version 2.0, please send an email to 
+ * jdhardy@gmail.com. By using this source code in any fashion, you are agreeing to be bound 
+ * by the terms of the Apache License, Version 2.0.
+ *
+ * You must not remove this notice, or any other, from this software.
+ *
+ *
+ * ***************************************************************************/
+
 using System;
+using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -44,18 +60,22 @@ namespace CustomTasks
  */";
 
         [Required]
-        public string Template { get; set; }
+        public ITaskItem TemplateFile { get; set; }
+
+        [Required]
+        public ITaskItem OutputFile { get; set; }
 
         public string[] Parameters { get; set; }
 
-        [Output]
-        public string Result { get; private set; }
-
         public override bool Execute() {
-            Result = string.Format(Header, DateTime.Now)
+            var template = File.ReadAllText(TemplateFile.ItemSpec);
+
+            var result = string.Format(Header, DateTime.Now)
                 + Environment.NewLine
                 + Environment.NewLine
-                + string.Format(Template, Parameters);
+                + string.Format(template, Parameters);
+
+            File.WriteAllText(OutputFile.ItemSpec, result);
 
             return true;
         }
