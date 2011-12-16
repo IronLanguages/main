@@ -12,8 +12,8 @@ Solutions/*.suo
 *.csproj.user
 
 # Generated files
-Properties/BuildInfo.Generated.cs
-Properties/CurrentVersion.Generated.cs
+BuildInfo.Generated.cs
+CurrentVersion.Generated.cs
 
 TestResult.xml
 Solutions/TestResults/

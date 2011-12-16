@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <BuildProject Include="Solutions\Build.IronPython.proj" />
+    <BuildProject Include="Solutions\Build.IronPython.proj" Condition="'$(Mono)' != 'true'" />
+    <BuildProject Include="Solutions\Build.IronPython.Mono.proj" Condition="'$(Mono)' == 'true'" />
   </ItemGroup>
 
   <Target Name="Build">
