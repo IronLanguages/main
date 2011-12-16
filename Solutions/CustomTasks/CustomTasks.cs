@@ -75,6 +75,7 @@ namespace CustomTasks
                 + Environment.NewLine
                 + string.Format(template, Parameters);
 
+            Directory.CreateDirectory(Path.GetDirectoryName(OutputFile.ItemSpec));
             File.WriteAllText(OutputFile.ItemSpec, result);
 
             return true;
