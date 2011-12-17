@@ -46,7 +46,10 @@
     <IronPythonLibs Include="IronPython.xml" />
     <IronPythonLibs Include="IronPython.Modules.dll" />
     <IronPythonLibs Include="IronPython.Modules.xml" />
-
+    
+    <IronPythonModules Include="DLLs\IronPython.Wpf.dll" />
+    <IronPythonModules Include="DLLs\IronPython.Wpf.xml" />
+    
     <IronPythonBins Include="ipy.exe" />
     <IronPythonBins Include="ipy64.exe" />
     <IronPythonBins Include="ipyw.exe" />
@@ -58,7 +61,7 @@
 
   <ItemGroup>
     <SilverlightScriptFiles Include="$(BaseDir)\Hosts\Silverlight\Public\script\*.*" />
-    <SilverlightScriptFiles Include="$(BaseDir)\Hosts\Silverlight\Public\script\templates\python\**\*.*" />
+    <SilverlightScriptTemplates Include="$(BaseDir)\Hosts\Silverlight\Public\script\templates\python\**\*.*" />
 
     <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.html" />
     <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.rtf" />
@@ -92,6 +95,7 @@
     <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="@(IronPythonLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="@(IronPythonBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="@(IronPythonModules->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\DLLs" />
     <Copy SourceFiles="@(MiscFiles)" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="$(BaseDir)\External.LCA_RESTRICTED\Languages\IronPython\27\LICENSE.txt" DestinationFiles="$(StageDir)\License.StdLib.txt" />
 
@@ -107,7 +111,8 @@
     <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
     <Copy SourceFiles="@(SilverlightBins->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
 
-    <Copy SourceFiles="@(SilverlightScriptFiles)" DestinationFiles="@(SilverlightScriptFiles->'$(StageDir)\Silverlight\scripts\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SilverlightScriptFiles)" DestinationFiles="@(SilverlightScriptFiles->'$(StageDir)\Silverlight\script\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SilverlightScriptTemplates)" DestinationFiles="@(SilverlightScriptTemplates->'$(StageDir)\Silverlight\script\templates\python\%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
     <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
