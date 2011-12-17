@@ -14,6 +14,7 @@
     <PackageDir>$(BaseDir)\Packages\IronPython-$(DisplayVersion)</PackageDir>
     <UtilDir>$(BaseDir)\Util</UtilDir>
     <BinDir>$(BaseDir)\Bin</BinDir>
+    <ChmDocDir>$(BaseDir)\External.LCA_RESTRICTED\Languages\IronPython\27\Doc</ChmDocDir>
     
     <BuildDir>$(BinDir)\$(BaseConfiguration)</BuildDir>
     <v2BuildDir>$(BinDir)\v2$(BaseConfiguration)</v2BuildDir>
@@ -68,13 +69,15 @@
     <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.txt" />
     <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\Readme.html" />
 
+    <ChmInputFiles Include="$(ChmDocDir)\**\*.*" Condition="'$(OS)' == 'Windows_NT'" />
     <DocFiles Include="$(BaseDir)\Languages\IronPython\Public\Doc\**\*.*" />
+    <DocFiles Include="$(BuildDir)\IronPython.chm" Condition="'$(OS)' == 'Windows_NT'" />
+    
     <ToolFiles Include="$(BaseDir)\Languages\IronPython\Public\Tools\**\*.*" />
     <TutorialFiles Include="$(BaseDir)\Languages\IronPython\Public\Tutorial\**\*.*" />
   </ItemGroup>
 
   <Target Name="Build">
-    <Message Importance="high"  Text="Build" />
     <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Build" />
   </Target>
 
@@ -89,8 +92,29 @@
   <Target Name="StageClean">
     <RemoveDir Directories="$(StageDir)" />
   </Target>
+  
+  <Target Name="BuildChm"
+          Condition="'$(OS)' == 'Windows_NT'"
+          Inputs="@(ChmInputFiles)" 
+          Outputs="$(BuildDir)\IronPython.chm">
+    <PropertyGroup>
+      <HtmlHelp>$(MSBuildProgramFiles32)\HTML Help Workshop\hhc.exe</HtmlHelp>
+      <CPython>$(BaseDir)\External.LCA_RESTRICTED\Languages\CPython\27\python.exe</CPython>
+      <CPythonPath>$(BaseDir)\External.LCA_RESTRICTED\Languages\CPython\27\Lib;$(ChmDocDir)</CPythonPath>
+      <OutputHtml>Output\CHtml</OutputHtml>
+    </PropertyGroup>
+    
+    <MakeDir Directories="$(OutputHtml)" Condition="!Exists('$(OutputHtml)')" />
+    
+    <Exec Command='(set PYTHONPATH=$(CPythonPath)) &amp; (set PYDOC_VERSION=$(DisplayVersion)) &amp; "$(CPython)" IronPythonDocs\tools\sphinx-build.py -bhtmlhelp IronPythonDocs\ "$(OutputHtml)"' WorkingDirectory="$(ChmDocDir)" />
+    <Exec Command='"$(HtmlHelp)" "$(OutputHtml)\IronPython.hhp"' WorkingDirectory="$(ChmDocDir)" IgnoreExitCode="true" />
+    
+    <Move SourceFiles="$(ChmDocDir)\$(OutputHtml)\IronPython.chm" DestinationFolder="$(BuildDir)" />
+  </Target>
 
-  <Target Name="Stage" DependsOnTargets="StageClean;Build">
+  <Target Name="Stage" DependsOnTargets="StageClean;Build;BuildChm">
+    <Warning Text="The CHM help file can only be built on Windows machines." Condition="'$(OS)' == 'Windows_NT'" />
+  
     <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="@(IronPythonLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
