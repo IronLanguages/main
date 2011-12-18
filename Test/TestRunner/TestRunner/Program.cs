@@ -289,6 +289,7 @@ namespace TestRunner {
                     }
                 }
             });
+            outThread.IsBackground = true;
 
             Thread errThread = new Thread(() => {
                 while (!process.HasExited) {
@@ -300,6 +301,7 @@ namespace TestRunner {
                     }
                 }
             });
+            errThread.IsBackground = true;
 
             outThread.Start();
             errThread.Start();
@@ -322,8 +324,8 @@ namespace TestRunner {
                 status = TestResultStatus.Failed;
             }
 
-            outThread.Join();
-            errThread.Join();
+            outThread.Join(1000);
+            errThread.Join(1000);
 
             return new TestResult(test, status, (DateTime.Now - startTime).TotalSeconds, output);
         }
