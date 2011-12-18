@@ -37,6 +37,10 @@
   <Target Name="ZipPackage">
     <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="ZipPackage" Properties="BaseConfiguration=$(BaseConfiguration)" />
   </Target>
+  
+  <Target Name="Installer">
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Installer" Properties="BaseConfiguration=$(BaseConfiguration)" />
+  </Target>
 
-  <Target Name="Package" DependsOnTargets="NuGetPackage;ZipPackage" />
+  <Target Name="Package" DependsOnTargets="NuGetPackage;ZipPackage;Installer" />
 </Project>

@@ -38,9 +38,13 @@
 
   <ItemGroup>
     <DlrLibs Include="Microsoft.Dynamic.dll" />
+    <DlrLibs Include="Microsoft.Dynamic.xml" />
     <DlrLibs Include="Microsoft.Scripting.dll" />
+    <DlrLibs Include="Microsoft.Scripting.xml" />
     <ClrDlrLibs Include="Microsoft.Scripting.Metadata.dll" />
+    <ClrDlrLibs Include="Microsoft.Scripting.Metadata.xml" />
     <v2DlrLibs Include="Microsoft.Scripting.Core.dll" />
+    <v2DlrLibs Include="Microsoft.Scripting.Core.xml" />
     <SilverlightDlrLibs Include="Microsoft.Scripting.Silverlight.dll" />
 
     <IronPythonLibs Include="IronPython.dll" />
@@ -161,5 +165,9 @@
   <Target Name="ZipPackage" DependsOnTargets="Stage">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
     <Exec Command="$(UtilDir)\Misc\zip.exe -9 -r &quot;$(PackageDir)\IronPython-$(DisplayVersion).zip&quot; &quot;IronPython-$(DisplayVersion)&quot;" WorkingDirectory="$(StageDir)\.." />
+  </Target>
+  
+  <Target Name="Installer">
+    <MSBuild Projects="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj" Targets="Build" Properties="Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)" />
   </Target>
 </Project>
