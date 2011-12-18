@@ -11,12 +11,15 @@
     <OutputType>Package</OutputType>
     <DefineSolutionProperties>false</DefineSolutionProperties>
     <SuppressPdbOutput>true</SuppressPdbOutput>
+    <SuppressSpecificWarnings>5151</SuppressSpecificWarnings>
     
-    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
-    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
-    <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(AssemblyFileRevision).0</MsiVersion>
+    <WixToolPath Condition=" '$(WixToolPath)' == '' ">$(MSBuildProjectDirectory)\..\..\Util\Wix35\</WixToolPath>
+    <WixTargetsPath>$(WixToolPath)Wix.targets</WixTargetsPath>
+    <WixTasksPath>$(WixToolPath)wixtasks.dll</WixTasksPath>
     
     <BaseInputPaths Condition=" '$(BaseInputPaths)' == '' ">$(MSBuildProjectDirectory)\..\..\Stage\IronPython-$(DisplayVersion)</BaseInputPaths>
+    
+    <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(AssemblyFileRevision).0</MsiVersion>
   </PropertyGroup>
 
   <ItemGroup>
