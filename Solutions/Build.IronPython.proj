@@ -77,7 +77,7 @@
     <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.txt" />
     <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\Readme.html" />
 
-    <ChmInputFiles Include="$(ChmDocDir)\**\*.*" Condition="'$(OS)' == 'Windows_NT'" />
+    <ChmInputFiles Include="$(ChmDocDir)\IronPythonDocs\**\*.*" Condition="'$(OS)' == 'Windows_NT'" />
     <DocFiles Include="$(BaseDir)\Languages\IronPython\Public\Doc\**\*.*" />
     <DocFiles Include="$(BuildDir)\IronPython.chm" Condition="'$(OS)' == 'Windows_NT'" />
     
@@ -96,6 +96,7 @@
   <Target Name="Clean">
     <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Clean" />
     <MSBuild Projects="@(InstallerProject)" Targets="Clean" />
+    <RemoveDir Directories="$(ChmDocDir)\Output" />
   </Target>
 
   <Target Name="StageClean">
@@ -160,7 +161,7 @@
     <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
     <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
   </Target>
-
+  
   <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
     <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
