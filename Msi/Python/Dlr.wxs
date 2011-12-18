@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+  <Fragment>
+    <DirectoryRef Id="INSTALLDIR" FileSource="$(var.StageDir)">
+      <Component Guid="{3C386FF0-9BC5-4B45-9628-4EE4AC1916A2}">
+        <File Id="Microsoft.Scripting.dll" KeyPath="yes" />
+        <File Id="Microsoft.Scripting.xml" />
+      </Component>
+
+      <Component Guid="{4694972E-AFB5-4B3F-83E6-CAC4557FA8E4}">
+        <File Id="Microsoft.Scripting.Metadata.dll" KeyPath="yes" />
+        <File Id="Microsoft.Scripting.Metadata.xml" />
+      </Component>
+
+      <Component Guid="{9D15CFB0-C88B-4223-A9E6-C8FA6B336E2B}">
+        <File Id="Microsoft.Dynamic.dll" KeyPath="yes" />
+        <File Id="Microsoft.Dynamic.xml" />
+      </Component>
+    </DirectoryRef>
+
+    <ComponentGroup Id="Dlr">
+      <ComponentRef Id="Microsoft.Scripting.dll" />
+      <ComponentRef Id="Microsoft.Scripting.Metadata.dll" />
+      <ComponentRef Id="Microsoft.Dynamic.dll" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>
