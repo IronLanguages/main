@@ -166,4 +166,8 @@
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
     <Exec Command="$(UtilDir)\Misc\zip.exe -9 -r &quot;$(PackageDir)\IronPython-$(DisplayVersion).zip&quot; &quot;IronPython-$(DisplayVersion)&quot;" WorkingDirectory="$(StageDir)\.." />
   </Target>
+  
+  <Target Name="Installer">
+    <MSBuild Projects="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj" Targets="Build" Properties="Configuration=$(BaseConfiguration);StageDir=$(StageDir);WixTargetsPath=$(UtilDir)\Wix35\Wix.targets;OutputPath=$(PackageDir)" />
+  </Target>
 </Project>

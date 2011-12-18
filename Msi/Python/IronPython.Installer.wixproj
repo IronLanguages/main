@@ -10,9 +10,12 @@
     <OutputName>IronPython-$(DisplayVersion)</OutputName>
     <OutputType>Package</OutputType>
     <DefineSolutionProperties>false</DefineSolutionProperties>
+    <SuppressPdbOutput>true</SuppressPdbOutput>
+    
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(AssemblyFileRevision).0</MsiVersion>
+    
     <StageDir Condition=" '$(StageDir)' == '' ">$(MSBuildProjectDirectory)\..\..\Stage\IronPython-$(DisplayVersion)</StageDir>
   </PropertyGroup>
 
@@ -62,13 +65,13 @@
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>Debug;$(CommonWixConstants)</DefineConstants>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>$(CommonWixConstants)</DefineConstants>
   </PropertyGroup>
