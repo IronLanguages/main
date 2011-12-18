@@ -168,6 +168,6 @@
   </Target>
   
   <Target Name="Installer">
-    <MSBuild Projects="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj" Targets="Build" Properties="Configuration=$(BaseConfiguration);StageDir=$(StageDir);WixTargetsPath=$(UtilDir)\Wix35\Wix.targets;OutputPath=$(PackageDir)" />
+    <MSBuild Projects="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj" Targets="Build" Properties="Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixTargetsPath=$(UtilDir)\Wix35\Wix.targets;OutputPath=$(PackageDir)" />
   </Target>
 </Project>

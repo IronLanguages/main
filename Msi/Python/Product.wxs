@@ -137,7 +137,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 
     <!-- User interface -->
     <UIRef Id="WixUI_FeatureTree" />
-    <WixVariable Id="WixUILicenseRtf" Value="$(var.StageDir)\License.rtf" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
 
     <!-- InstallLocation key -->
     <CustomAction Id="SetInstallLocation" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
   <Fragment>
-    <DirectoryRef Id="INSTALLDIR" FileSource="$(var.StageDir)">
+    <DirectoryRef Id="INSTALLDIR">
       <Component Guid="{3C386FF0-9BC5-4B45-9628-4EE4AC1916A2}">
         <File Id="Microsoft.Scripting.dll" KeyPath="yes" />
         <File Id="Microsoft.Scripting.xml" />
@@ -18,7 +18,7 @@
       </Component>
     </DirectoryRef>
 
-    <DirectoryRef Id="GAC" FileSource="$(var.StageDir)">
+    <DirectoryRef Id="GAC">
       <Component Guid="{24AAD7FE-15E3-440C-84E7-26DBDF7F9EBE}">
         <File Id="gac_Microsoft.Scripting.dll" Name="Microsoft.Scripting.dll" Assembly=".net" KeyPath="yes">
           <netfx:NativeImage Id="ngen_Microsoft.Scripting.dll" Platform="all" AppBaseDirectory="INSTALLDIR"/>
