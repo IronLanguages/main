@@ -10,8 +10,8 @@
     <Solution Condition="'$(Mono)' == 'true'">IronPython.Mono.sln</Solution>
 
     <BaseDir>$(MSBuildProjectDirectory)\..</BaseDir>
-    <StageDir>$(BaseDir)\Stage\IronPython-$(DisplayVersion)</StageDir>
-    <PackageDir>$(BaseDir)\Packages\IronPython-$(DisplayVersion)</PackageDir>
+    <StageDir>$(BaseDir)\Stage\$(BaseConfiguration)\IronPython-$(DisplayVersion)</StageDir>
+    <PackageDir>$(BaseDir)\Packages\$(BaseConfiguration)\IronPython-$(DisplayVersion)</PackageDir>
     <UtilDir>$(BaseDir)\Util</UtilDir>
     <BinDir>$(BaseDir)\Bin</BinDir>
     <ChmDocDir>$(BaseDir)\External.LCA_RESTRICTED\Languages\IronPython\27\Doc</ChmDocDir>
@@ -20,7 +20,7 @@
     <v2BuildDir>$(BinDir)\v2$(BaseConfiguration)</v2BuildDir>
     <Silverlight4BuildDir>$(BinDir)\Silverlight4$(BaseConfiguration)</Silverlight4BuildDir>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <BuildProject Include="$(Solution)">
       <Properties>Configuration=$(BaseConfiguration)</Properties>
@@ -34,6 +34,10 @@
     <BuildProject Include="$(Solution)">
       <Properties>Configuration=Silverlight4$(BaseConfiguration)</Properties>
     </BuildProject>
+    
+    <InstallerProject Include="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj">
+      <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)</Properties>
+    </InstallerProject>
   </ItemGroup>
 
   <ItemGroup>
@@ -91,6 +95,7 @@
 
   <Target Name="Clean">
     <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Clean" />
+    <MSBuild Projects="@(InstallerProject)" Targets="Clean" />
   </Target>
 
   <Target Name="StageClean">
@@ -117,7 +122,7 @@
   </Target>
 
   <Target Name="Stage" DependsOnTargets="StageClean;Build;BuildChm">
-    <Warning Text="The CHM help file can only be built on Windows machines." Condition="'$(OS)' == 'Windows_NT'" />
+    <Warning Text="The CHM help file can only be built on Windows machines." Condition="'$(OS)' != 'Windows_NT'" />
   
     <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
@@ -156,18 +161,18 @@
     <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
   </Target>
 
-  <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(ReleaseLevel)' == 'final'">
+  <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
     <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
     <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
   </Target>
 
-  <Target Name="ZipPackage" DependsOnTargets="Stage">
+  <Target Name="ZipPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
     <Exec Command="$(UtilDir)\Misc\zip.exe -9 -r &quot;$(PackageDir)\IronPython-$(DisplayVersion).zip&quot; &quot;IronPython-$(DisplayVersion)&quot;" WorkingDirectory="$(StageDir)\.." />
   </Target>
   
-  <Target Name="Installer">
-    <MSBuild Projects="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj" Targets="Build" Properties="Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)" />
+  <Target Name="Installer" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+    <MSBuild Projects="@(InstallerProject)" Targets="Build" />
   </Target>
 </Project>
