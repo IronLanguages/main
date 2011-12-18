@@ -8,8 +8,9 @@ bin/
 /Packages
 
 # Temporary VS files
-Solutions/*.suo
+*.suo
 *.csproj.user
+*.wixproj.user
 
 # Generated files
 BuildInfo.Generated.cs
