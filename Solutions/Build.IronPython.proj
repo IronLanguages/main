@@ -38,9 +38,13 @@
 
   <ItemGroup>
     <DlrLibs Include="Microsoft.Dynamic.dll" />
+    <DlrLibs Include="Microsoft.Dynamic.xml" />
     <DlrLibs Include="Microsoft.Scripting.dll" />
+    <DlrLibs Include="Microsoft.Scripting.xml" />
     <ClrDlrLibs Include="Microsoft.Scripting.Metadata.dll" />
+    <ClrDlrLibs Include="Microsoft.Scripting.Metadata.xml" />
     <v2DlrLibs Include="Microsoft.Scripting.Core.dll" />
+    <v2DlrLibs Include="Microsoft.Scripting.Core.xml" />
     <SilverlightDlrLibs Include="Microsoft.Scripting.Silverlight.dll" />
 
     <IronPythonLibs Include="IronPython.dll" />
