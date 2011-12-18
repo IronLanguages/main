@@ -2,7 +2,7 @@
 <?include Version.wxi ?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
   <Fragment>
-    <DirectoryRef Id="INSTALLDIR" FileSource="$(var.StageDir)">
+    <DirectoryRef Id="INSTALLDIR">
       <Directory Id="IronPythonPlatformsDir" Name="Platforms" />
       
       <Component Guid="{8CF1D19D-EF1C-4340-9C13-3DF5E08BAA45}">
@@ -62,7 +62,7 @@
       </Component>
     </DirectoryRef>
 
-    <DirectoryRef Id='GAC' FileSource='$(var.StageDir)'>
+    <DirectoryRef Id='GAC'>
       <Component Guid="{38CF0071-81C1-41A2-9F64-F3667160A5F5}">
         <File Id="gac_IronPython.dll" Name="IronPython.dll" Assembly=".net" KeyPath="yes">
           <netfx:NativeImage Id="ngen_IronPython.dll" Platform="all" AppBaseDirectory="INSTALLDIR"/>
