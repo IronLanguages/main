@@ -23,7 +23,7 @@
   </Target>
 
   <Target Name="DistClean" DependsOnTargets="Clean">
-    <RemoveDir Directories="Bin;Stage;Packages" />
+    <RemoveDir Directories="bin;Stage;Packages" />
   </Target>
 
   <Target Name="Stage">
