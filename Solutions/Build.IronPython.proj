@@ -31,7 +31,7 @@
     <!--<BuildProject Include="$(Solution)">
       <Properties>Configuration=Silverlight3$(BaseConfiguration)</Properties>
     </BuildProject>-->
-    <BuildProject Include="$(Solution)">
+    <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Silverlight4$(BaseConfiguration)</Properties>
     </BuildProject>
 
@@ -56,8 +56,8 @@
     <IronPythonLibs Include="IronPython.Modules.dll" />
     <IronPythonLibs Include="IronPython.Modules.xml" />
     
-    <IronPythonModules Include="DLLs\IronPython.Wpf.dll" />
-    <IronPythonModules Include="DLLs\IronPython.Wpf.xml" />
+    <IronPythonModules Include="DLLs\IronPython.Wpf.dll" Condition="'$(Mono)' != 'true'" />
+    <IronPythonModules Include="DLLs\IronPython.Wpf.xml" Condition="'$(Mono)' != 'true'" />
     
     <IronPythonBins Include="ipy.exe" />
     <IronPythonBins Include="ipy64.exe" />
@@ -86,17 +86,17 @@
   </ItemGroup>
 
   <Target Name="Build">
-    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Build" Properties="%(BuildProject.Properties)" />
+    <MSBuild Projects="@(BuildProject)" Targets="Build" Properties="%(BuildProject.Properties)" />
   </Target>
 
   <Target Name="Rebuild">
-    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Rebuild" Properties="@(BuildProject->'%(Properties)')" />
+    <MSBuild Projects="@(BuildProject)" Targets="Rebuild" Properties="%(BuildProject.Properties)" />
   </Target>
 
   <Target Name="Clean">
-    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Clean" Properties="@(BuildProject->'%(Properties)')" />
-    <MSBuild Projects="@(InstallerProject)" Targets="Clean" />
-    <RemoveDir Directories="$(ChmDocDir)\Output" />
+    <MSBuild Projects="@(BuildProject)" Targets="Clean" Properties="%(BuildProject.Properties)" />
+    <MSBuild Projects="@(InstallerProject)" Targets="Clean" Condition=" '$(OS)' == 'Windows_NT'" />
+    <RemoveDir Directories="$(ChmDocDir)\Output" Condition="Exists('$(ChmDocDir)\Output')" />
   </Target>
 
   <Target Name="StageClean">
