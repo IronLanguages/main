@@ -17,4 +17,5 @@
   <UsingTask AssemblyFile="$(CustomTasksDll)" TaskName="CustomTasks.FormatString" />
   <UsingTask AssemblyFile="$(CustomTasksDll)" TaskName="CustomTasks.CurrentTime" />
   <UsingTask AssemblyFile="$(CustomTasksDll)" TaskName="CustomTasks.FormatTemplate" />
+  <UsingTask AssemblyFile="$(CustomTasksDll)" TaskName="CustomTasks.CopyStdLib" />
 </Project>

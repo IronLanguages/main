@@ -13,7 +13,7 @@
     <StageDir>$(BaseDir)\Stage\$(BaseConfiguration)\IronPython-$(DisplayVersion)</StageDir>
     <PackageDir>$(BaseDir)\Packages\$(BaseConfiguration)\IronPython-$(DisplayVersion)</PackageDir>
     <UtilDir>$(BaseDir)\Util</UtilDir>
-    <BinDir>$(BaseDir)\Bin</BinDir>
+    <BinDir>$(BaseDir)\bin</BinDir>
     <ChmDocDir>$(BaseDir)\External.LCA_RESTRICTED\Languages\IronPython\27\Doc</ChmDocDir>
     
     <BuildDir>$(BinDir)\$(BaseConfiguration)</BuildDir>

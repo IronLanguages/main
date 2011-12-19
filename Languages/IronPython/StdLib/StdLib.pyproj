@@ -504,41 +504,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets"/>
 
-  <UsingTask
-    TaskName="CopyStdLib"
-    TaskFactory="CodeTaskFactory"
-    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll" >
-    <ParameterGroup>
-      <SourceFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-      <Destination ParameterType="System.String" Required="true" />
-      <BasePath ParameterType="System.String" Required="true" />
-    </ParameterGroup>
+  <Import Project="$(SolutionDir)Bootstrap.targets" />
 
-    <Task>
-      <Using Namespace="System"/>
-      <Using Namespace="System.IO"/>
-      <Code Type="Fragment" Language="cs">
-<![CDATA[
-  if (!Directory.Exists(Destination)) {
-    Directory.CreateDirectory(Destination);
-  }
-  
-  foreach(var item in SourceFiles) {
-    var dest = item.ItemSpec.Replace(BasePath, Destination);
-    if (!Directory.Exists(Path.GetDirectoryName(dest))) {
-      Directory.CreateDirectory(Path.GetDirectoryName(dest));
-    }
-    
-    File.Copy(item.ItemSpec, dest, true);
-    var info = new FileInfo(dest);
-    info.Attributes = info.Attributes & ~(FileAttributes.ReadOnly);
-  }
-]]>
-      </Code>
-    </Task>
-  </UsingTask>
-
-  <Target Name="CopyFilesForZip">
-  <CopyStdLib SourceFiles="@(Content)" Destination="$(OutputPath)" BasePath="$(StdLibPath)" />
+  <Target Name="CopyFilesForZip" DependsOnTargets="Bootstrap">
+    <CopyStdLib SourceFiles="@(Content)" Destination="$(OutputPath)" BasePath="$(StdLibPath)" />
   </Target>
 </Project>
