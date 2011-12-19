@@ -34,7 +34,7 @@
     <BuildProject Include="$(Solution)">
       <Properties>Configuration=Silverlight4$(BaseConfiguration)</Properties>
     </BuildProject>
-    
+
     <InstallerProject Include="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj">
       <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)</Properties>
     </InstallerProject>
@@ -86,15 +86,15 @@
   </ItemGroup>
 
   <Target Name="Build">
-    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Build" />
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Build" Properties="%(BuildProject.Properties)" />
   </Target>
 
   <Target Name="Rebuild">
-    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Rebuild" />
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Rebuild" Properties="@(BuildProject->'%(Properties)')" />
   </Target>
 
   <Target Name="Clean">
-    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Clean" />
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Clean" Properties="@(BuildProject->'%(Properties)')" />
     <MSBuild Projects="@(InstallerProject)" Targets="Clean" />
     <RemoveDir Directories="$(ChmDocDir)\Output" />
   </Target>

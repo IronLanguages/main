@@ -97,14 +97,18 @@ namespace CustomTasks
 
         public override bool Execute() {
             if (!Directory.Exists(Destination)) {
+		Log.LogMessage(MessageImportance.Low, "Creating directory '{0}' ...", Destination);
                 Directory.CreateDirectory(Destination);
             }
 
             foreach (var item in SourceFiles) {
                 var dest = item.ItemSpec.Replace(BasePath, Destination);
                 if (!Directory.Exists(Path.GetDirectoryName(dest))) {
+                    Log.LogMessage(MessageImportance.Low, "Creating directory '{0}' ...", Path.GetDirectoryName(dest));
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
                 }
+
+                Log.LogMessage(MessageImportance.Low, "Copying '{0}' -> '{1}' ...", item.ItemSpec, dest);
 
                 File.Copy(item.ItemSpec, dest, true);
             }
