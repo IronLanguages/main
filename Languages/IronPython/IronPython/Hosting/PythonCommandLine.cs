@@ -62,7 +62,7 @@ namespace IronPython.Hosting {
 
         private static string/*!*/ VersionString {
             get {
-                return GetVersionString();                    
+                return GetVersionString();
             }
         }
 
