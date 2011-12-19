@@ -15,7 +15,6 @@
 
 using System;
 using System.IO;
-using System.Dynamic;
 using Microsoft.Scripting.Utils;
 using System.Threading;
 
@@ -108,12 +107,39 @@ namespace Microsoft.Scripting.Hosting.Shell {
 #if SILVERLIGHT
             return best;
 #else
+            best = IsDark(Console.BackgroundColor) ? MakeLight(best) : MakeDark(best);
+            other = IsDark(Console.BackgroundColor) ? MakeLight(other) : MakeDark(other);
+
             if (Console.BackgroundColor != best) {
                 return best;
             }
 
             return other;
 #endif
+        }
+
+        private static bool IsDark(ConsoleColor color) {
+            // The dark colours are < 8 and the light are > 8,
+            // but the two grays are a bit special
+            return color < ConsoleColor.Gray || color == ConsoleColor.DarkGray;
+        }
+
+        private static ConsoleColor MakeLight(ConsoleColor color) {
+            // DarkGray would stay dark gray, which would be hard to read on a dark background
+            if (color == ConsoleColor.DarkGray)
+                return ConsoleColor.White;
+
+            // The light colours all have their 8 bit set
+            return (ConsoleColor)(((int)color) | 0xF);
+        }
+
+        private static ConsoleColor MakeDark(ConsoleColor color) {
+            // Gray would stay gray, which would be hard to read on a light background
+            if (color == ConsoleColor.Gray)
+                return ConsoleColor.Black;
+
+            // The dark colours all have their 8 bit unset
+            return (ConsoleColor)(((int)color) & ~0xF);
         }
 
         protected void WriteColor(TextWriter output, string str, ConsoleColor c) {
