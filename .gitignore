@@ -1,8 +1,21 @@
 *_name_S*
+
+# Output directories
 obj/
+bin/
 /bin/
-Solutions/*.suo
+/Stage
+/Packages
+
+# Temporary VS files
+*.suo
 *.csproj.user
+*.wixproj.user
+
+# Generated files
+BuildInfo.Generated.cs
+CurrentVersion.Generated.cs
+
 TestResult.xml
 Solutions/TestResults/
 

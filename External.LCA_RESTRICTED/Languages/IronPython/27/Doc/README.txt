@@ -6,19 +6,12 @@ Directory structure:
     IronPythonDocs - IronPython documentation rst (same as Python docs + IronPython specific modifications)
     HtmlHelp.exe   - HTML Help Workshop installer
     
-    ipymake.bat - batch file for generating HTML help and compiled html help
-                  generates output in:
-                    Output\         - the directory where all output is generated to
-                    Output\Html     - the pure HTML version of help
-                    Output\CHtml    - the compiled HTML version of help
-                    
-    
 
 Generating documentation:
     Pre-reqs: You'll need to install Html Help Workshop before you can generate the CHM help.  This can be installed
     with the HtmlHelp.exe which is available in this directory.
     
-    Then just run ipymake.bat and the output will be written to the Output directory.
+    Then, from the root of the checkout, run `msbuild Solutions\Build.IronPython.proj /t:BuildChm`.
 
 Updating Python Documentation:
     When updating the standard CPython documentation a new copy of the Doc folder should be pulled from CPython's

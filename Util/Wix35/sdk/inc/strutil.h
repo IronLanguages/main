@@ -4,7 +4,7 @@
 //    Copyright (c) Microsoft Corporation.  All rights reserved.
 //    
 //    The use and distribution terms for this software are covered by the
-//    Common Public License 1.0 (http://opensource.org/licenses/cpl.php)
+//    Common Public License 1.0 (http://opensource.org/licenses/cpl1.0.php)
 //    which can be found in the file CPL.TXT at the root of this distribution.
 //    By using this software in any fashion, you are agreeing to be bound by
 //    the terms of this license.
@@ -25,6 +25,7 @@ extern "C" {
 #define ReleaseNullStr(pwz) if (pwz) { StrFree(pwz); pwz = NULL; }
 #define ReleaseBSTR(bstr) if (bstr) { ::SysFreeString(bstr); }
 #define ReleaseNullBSTR(bstr) if (bstr) { ::SysFreeString(bstr); bstr = NULL; }
+#define ReleaseNullStrArray(rg, c) { if (rg) { StrArrayFree(rg, c); c = 0; rg = NULL; } }
 
 #define DeclareConstBSTR(bstr_const, wz) const WCHAR bstr_const[] = { 0x00, 0x00, sizeof(wz)-sizeof(WCHAR), 0x00, wz }
 #define UseConstBSTR(bstr_const) const_cast<BSTR>(bstr_const + 4)
@@ -236,6 +237,18 @@ void DAPI StrStringToUpper(
     );
 void DAPI StrStringToLower(
     __inout_z LPWSTR wzIn
+    );
+
+HRESULT DAPI StrArrayAllocString(
+    __deref_inout_ecount(*pcStrArray) LPWSTR **prgsczStrArray,
+    __inout LPUINT pcStrArray,
+    __in_z LPCWSTR wzSource,
+    __in DWORD_PTR cchSource
+    );
+
+HRESULT DAPI StrArrayFree(
+    __in_ecount(cStrArray) LPWSTR *rgsczStrArray,
+    __in UINT cStrArray
     );
 
 #ifdef __cplusplus
