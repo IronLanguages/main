@@ -55,13 +55,13 @@ to Zip archives.";
             private PythonDictionary __files;
 
             [Flags]
-            private enum ModuleType {
+            private enum ModuleCodeType {
                 Source = 0,
                 ByteCode,
                 Package,
             }
 
-            private enum ModuleInfo {
+            private enum ModuleStatus {
                 Error,
                 NotFound,
                 Module,
@@ -76,17 +76,17 @@ to Zip archives.";
             /// are swapped by initzipimport() if we run in optimized mode. Also,
             /// '/' is replaced by SEP there.
             /// </summary>
-            private static readonly Dictionary<string, ModuleType> _search_order;
+            private static readonly Dictionary<string, ModuleCodeType> _search_order;
 
             static zipimporter() {
                 // we currently don't support bytecode, so just include the source versions.
-                _search_order = new Dictionary<string, ModuleType>() {
+                _search_order = new Dictionary<string, ModuleCodeType>() {
                         //{ Path.DirectorySeparatorChar + "__init__.pyc" , ModuleType.Package | ModuleType.ByteCode },
                         //{ Path.DirectorySeparatorChar + "__init__.pyo", ModuleType.Package | ModuleType.ByteCode },
-                        { Path.DirectorySeparatorChar + "__init__.py", ModuleType.Package | ModuleType.Source },
+                        { Path.DirectorySeparatorChar + "__init__.py", ModuleCodeType.Package | ModuleCodeType.Source },
                         //{ ".pyc", ModuleType.ByteCode },
                         //{ ".pyo", ModuleType.ByteCode },
-                        { ".py", ModuleType.Source },
+                        { ".py", ModuleCodeType.Source },
                 };
             }
 
@@ -179,9 +179,9 @@ with the importer protocol.")]
                 params object[] args)
             {
                 // there could be a path item in the args, but it is not used
-                ModuleInfo info = GetModuleInfo(context, fullname);
+                ModuleStatus info = GetModuleInfo(context, fullname);
 
-                if (info == ModuleInfo.Error || info == ModuleInfo.NotFound)
+                if (info == ModuleStatus.Error || info == ModuleStatus.NotFound)
                     return null;
                                                                            
                 return this;                
@@ -253,11 +253,11 @@ Return the filename for the specified module.")]
 Return True if the module specified by fullname is a package.
 Raise ZipImportError if the module couldn't be found.")]
             public bool is_package(CodeContext/*!*/ context, string fullname) {
-                ModuleInfo info = GetModuleInfo(context, fullname);
-                if (info == ModuleInfo.NotFound) {
+                ModuleStatus info = GetModuleInfo(context, fullname);
+                if (info == ModuleStatus.NotFound) {
                     throw MakeError("can't find module '{0}'", fullname);
                 }
-                return info == ModuleInfo.Package;
+                return info == ModuleStatus.Package;
             }
 
             [Documentation(@"get_data(pathname) -> string with file data.
@@ -290,14 +290,14 @@ Return the source code for the specified module. Raise ZipImportError
 if the module couldn't be found, return None if the archive does
 contain the module, but has no source for it.")]
             public string get_source(CodeContext/*!*/ context, string fullname) {
-                ModuleInfo mi = GetModuleInfo(context, fullname);
+                ModuleStatus mi = GetModuleInfo(context, fullname);
                 string res = null;
                 PythonContext pythonContext = PythonContext.GetContext(context);
-                if (mi == ModuleInfo.Error) {
+                if (mi == ModuleStatus.Error) {
                     return null;
                 }
 
-                if (mi == ModuleInfo.NotFound) {
+                if (mi == ModuleStatus.NotFound) {
                     throw MakeError("can't find module '{0}'", fullname);
                 }
 
@@ -307,7 +307,7 @@ contain the module, but has no source for it.")]
                     return null;
                 }
 
-                if (mi == ModuleInfo.Package) {
+                if (mi == ModuleStatus.Package) {
                     path += Path.DirectorySeparatorChar + "__init__.py";
                 } else {
                     path += ".py";
@@ -334,12 +334,12 @@ contain the module, but has no source for it.")]
                     return null;
                 }
 
-                foreach (KeyValuePair<string, ModuleType> entry in _search_order) {
+                foreach (KeyValuePair<string, ModuleCodeType> entry in _search_order) {
                     string temp = path + entry.Key;
                     if (__files.ContainsKey(temp)) {
                         toc_entry = (PythonTuple)__files[temp];
-                        ispackage = (entry.Value & ModuleType.Package) == ModuleType.Package;
-                        bool isbc = (entry.Value & ModuleType.ByteCode) == ModuleType.ByteCode;
+                        ispackage = (entry.Value & ModuleCodeType.Package) == ModuleCodeType.Package;
+                        bool isbc = (entry.Value & ModuleCodeType.ByteCode) == ModuleCodeType.ByteCode;
 
                         // we currently don't support bytecode modules, so we don't check
                         // the time of the bytecode file vs. the time of the source file.
@@ -575,24 +575,24 @@ contain the module, but has no source for it.")]
             /// <param name="context"></param>
             /// <param name="fullname"></param>
             /// <returns></returns>
-            private ModuleInfo GetModuleInfo(CodeContext/*!*/ context, string fullname) {
+            private ModuleStatus GetModuleInfo(CodeContext/*!*/ context, string fullname) {
                 string subname = GetSubName(fullname);
                 string path = MakeFilename(_prefix, subname);
 
                 if (string.IsNullOrEmpty(path))
-                    return ModuleInfo.Error;
+                    return ModuleStatus.Error;
 
-                foreach (KeyValuePair<string, ModuleType> entry in _search_order) {
+                foreach (KeyValuePair<string, ModuleCodeType> entry in _search_order) {
                     string temp = path + entry.Key;
                     if (_files.ContainsKey(temp)) {
-                        if ((entry.Value & ModuleType.Package) == ModuleType.Package) {
-                            return ModuleInfo.Package;
+                        if ((entry.Value & ModuleCodeType.Package) == ModuleCodeType.Package) {
+                            return ModuleStatus.Package;
                         } else {
-                            return ModuleInfo.Module;
+                            return ModuleStatus.Module;
                         }
                     }
                 }
-                return ModuleInfo.NotFound;
+                return ModuleStatus.NotFound;
             }
         }        
 
