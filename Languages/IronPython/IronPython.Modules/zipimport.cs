@@ -14,10 +14,8 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("zipimport", typeof(IronPython.Runtime.ZipImportModule))]
-namespace IronPython.Runtime
-{
-    public static class ZipImportModule
-    {
+namespace IronPython.Runtime {
+    public static class ZipImportModule {
         public const string __doc__ = @"zipimport provides support for importing Python modules from Zip archives.
 
 This module exports three objects:
@@ -31,25 +29,21 @@ It is usually not needed to use the zipimport module explicitly; it is
 used by the builtin import mechanism for sys.path items that are paths
 to Zip archives.";
 
-        private static readonly object _zip_directory_cache_key = new object();     
-   
-        //
+        private static readonly object _zip_directory_cache_key = new object();
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext context, PythonDictionary dict)
-        {
-            if(!context.HasModuleState(_zip_directory_cache_key))
+        public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
+            if (!context.HasModuleState(_zip_directory_cache_key))
                 context.SetModuleState(_zip_directory_cache_key, new PythonDictionary());
 
             dict["_zip_directory_cache"] = context.GetModuleState(_zip_directory_cache_key);
             InitModuleExceptions(context, dict);
-        }        
+        }
 
         [PythonType]
-        public class zipimporter
-        {
+        public class zipimporter {
             private const int MAXPATHLEN = 256;
-            
+
             private string _archive;
             private string _prefix;
             private PythonDictionary __files;
@@ -91,9 +85,24 @@ to Zip archives.";
             }
 
             #region Public API
-            public zipimporter(CodeContext/*!*/ context, string path) {
+            public zipimporter(CodeContext/*!*/ context, object pathObj, [ParamDictionary] IDictionary<object, object> kwArgs) {
                 PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
-                string prefix, input = path;
+                string prefix, input, path;
+
+                if (pathObj == null) {
+                    throw PythonOps.TypeError("must be string, not None");
+                }
+
+                if (!(pathObj is string)) {
+                    throw PythonOps.TypeError("must be string, not {0}", pathObj.GetType());
+                }
+
+                if (kwArgs.Count > 0) {
+                    throw PythonOps.TypeError("zipimporter() does not take keyword arguments");
+                }
+
+                path = pathObj as string;
+                input = path;
 
                 if (path.Length == 0)
                     throw MakeError("archive path is empty");
@@ -111,15 +120,15 @@ to Zip archives.";
                     if (pal.FileExists(buf)) {
                         path = buf;
                         break;
-                    }                    
+                    }
                     buf = Path.GetDirectoryName(buf);
                 }
 
                 if (!string.IsNullOrEmpty(path)) {
-                    PythonDictionary zip_directory_cache = 
+                    PythonDictionary zip_directory_cache =
                         context.LanguageContext.GetModuleState(
                         _zip_directory_cache_key) as PythonDictionary;
-                    
+
                     if (zip_directory_cache != null && zip_directory_cache.ContainsKey(path)) {
                         _files = zip_directory_cache[path] as PythonDictionary;
                     } else {
@@ -127,7 +136,7 @@ to Zip archives.";
                         zip_directory_cache.Add(path, _files);
                     }
                 } else {
-                    throw MakeError("not a Zip file");                    
+                    throw MakeError("not a Zip file");
                 }
 
                 _prefix = input.Replace(path, string.Empty);
@@ -161,7 +170,7 @@ to Zip archives.";
                 string res = string.Empty;
 
                 if (!string.IsNullOrEmpty(prefix)) {
-                    res = string.Format("<zipimporter object \"{0}{1}{2}\">", archive, Path.DirectorySeparatorChar, prefix);                    
+                    res = string.Format("<zipimporter object \"{0}{1}{2}\">", archive, Path.DirectorySeparatorChar, prefix);
                 } else {
                     res = string.Format("<zipimporter object \"{0}\">", archive);
                 }
@@ -176,15 +185,14 @@ instance itself if the module was found, or None if it wasn't.
 The optional 'path' argument is ignored -- it's there for compatibility
 with the importer protocol.")]
             public object find_module(CodeContext/*!*/ context, string fullname,
-                params object[] args)
-            {
+                params object[] args) {
                 // there could be a path item in the args, but it is not used
                 ModuleStatus info = GetModuleInfo(context, fullname);
 
                 if (info == ModuleStatus.Error || info == ModuleStatus.NotFound)
                     return null;
-                                                                           
-                return this;                
+
+                return this;
             }
 
             [Documentation(@"load_module(fullname) -> module.
@@ -204,8 +212,8 @@ module, or raises ZipImportError if it wasn't found.")]
                     return null;
                 }
 
-                mod = pythonContext.CompileModule(modpath, fullname, 
-                    new SourceUnit(pythonContext, new SourceStringContentProvider(code), modpath, SourceCodeKind.File), 
+                mod = pythonContext.CompileModule(modpath, fullname,
+                    new SourceUnit(pythonContext, new SourceStringContentProvider(code), modpath, SourceCodeKind.File),
                     ModuleOptions.None, out script);
 
                 dict = mod.__dict__;
@@ -269,10 +277,10 @@ the file wasn't found.")]
                     throw MakeError("path too long");
                 }
 
+                path = path.Replace(_archive, string.Empty).TrimStart(Path.DirectorySeparatorChar);                
                 if (!__files.ContainsKey(path)) {
                     throw PythonOps.IOError(path);
                 }
-
                 return PythonAsciiEncoding.Instance.GetString(GetData(_archive, __files[path] as PythonTuple));
             }
 
@@ -347,11 +355,11 @@ contain the module, but has no source for it.")]
                         if (code == null) {
                             continue;
                         }
-                        modpath = (string)toc_entry[0];                        
+                        modpath = (string)toc_entry[0];
                         return code;
-                    }                    
+                    }
                 }
-                throw MakeError("can't find module '{0}'", fullname);    
+                throw MakeError("can't find module '{0}'", fullname);
             }
 
             /// <summary>
@@ -402,7 +410,7 @@ contain the module, but has no source for it.")]
                         // decompress with zlib
                         data = ZlibModule.Decompress(raw_data, -15);
                     }
-                                    
+
                 } catch {
                     throw;
                 } finally {
@@ -479,14 +487,17 @@ contain the module, but has no source for it.")]
                         throw MakeError("can't open Zip file: '{0}'", archive);
                     }
 
-                    fp.BaseStream.Seek(-22, SeekOrigin.End);
-                    header_position = (int)fp.BaseStream.Position;
-                    if (fp.Read(endof_central_dir, 0, 22) != 22) {
-                        fp.Close();
+                    if (fp.BaseStream.Length < 2) {
                         throw MakeError("can't read Zip file: '{0}'", archive);
                     }
 
-                    if(BitConverter.ToUInt32(endof_central_dir, 0) != 0x06054B50) {
+                    fp.BaseStream.Seek(-22, SeekOrigin.End);
+                    header_position = (int)fp.BaseStream.Position;
+                    if (fp.Read(endof_central_dir, 0, 22) != 22) {
+                        throw MakeError("can't read Zip file: '{0}'", archive);
+                    }
+
+                    if (BitConverter.ToUInt32(endof_central_dir, 0) != 0x06054B50) {
                         // Bad: End of Central Dir signature
                         fp.Close();
                         throw MakeError("not a Zip file: '{0}'", archive);
@@ -537,7 +548,7 @@ contain the module, but has no source for it.")]
                         PythonTuple t = PythonOps.MakeTuple(path + name, compress, data_size, file_size, file_offset, time, date, crc);
                         files.Add(name, t);
                         count++;
-                    }                    
+                    }
                 } catch {
                     throw;
                 } finally {
@@ -594,7 +605,7 @@ contain the module, but has no source for it.")]
                 }
                 return ModuleStatus.NotFound;
             }
-        }        
+        }
 
         public static PythonType ZipImportError;
         internal static Exception MakeError(params object[] args) {
@@ -604,10 +615,10 @@ contain the module, but has no source for it.")]
         private static void InitModuleExceptions(PythonContext context,
             PythonDictionary dict) {
             ZipImportError = context.EnsureModuleException(
-                "zipimport.ZipImportError", 
-                PythonExceptions.ImportError, 
-                typeof(PythonExceptions.BaseException), 
-                dict, "ZipImportError", "zipimport", 
+                "zipimport.ZipImportError",
+                PythonExceptions.ImportError,
+                typeof(PythonExceptions.BaseException),
+                dict, "ZipImportError", "zipimport",
                 msg => new ImportException(msg));
         }
 
