@@ -1,4 +1,7 @@
 import sys
+
+sys.path.append(r'C:\Users\acearl\Code\IronLanguagesMain\External.LCA_RESTRICTED\Languages\IronPython\27\Lib')
+
 import os
 import marshal
 import imp
@@ -7,8 +10,6 @@ import time
 import unittest
 
 from test import test_support
-if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=307405"):
-    sys.exit(0)   
 from test.test_importhooks import ImportHooksBaseTestCase, test_src, test_co
 
 # some tests can be ran even without zlib
@@ -31,24 +32,23 @@ raise_src = 'def do_raise(): raise TypeError\n'
 # which happens when we look for ref leaks
 test_imported = False
 
-
-def make_pyc(co, mtime):
-    data = marshal.dumps(co)
-    if type(mtime) is type(0.0):
-        # Mac mtimes need a bit of special casing
-        if mtime < 0x7fffffff:
-            mtime = int(mtime)
-        else:
-            mtime = int(-0x100000000L + long(mtime))
-    pyc = imp.get_magic() + struct.pack("<i", int(mtime)) + data
-    return pyc
+if sys.platform != 'cli':
+    def make_pyc(co, mtime):
+        data = marshal.dumps(co)
+        if type(mtime) is type(0.0):
+            # Mac mtimes need a bit of special casing
+            if mtime < 0x7fffffff:
+                mtime = int(mtime)
+            else:
+                mtime = int(-0x100000000L + long(mtime))
+        pyc = imp.get_magic() + struct.pack("<i", int(mtime)) + data
+        return pyc
+    test_pyc = make_pyc(test_co, NOW)
 
 def module_path_to_dotted_name(path):
     return path.replace(os.sep, '.')
 
 NOW = time.time()
-test_pyc = make_pyc(test_co, NOW)
-
 
 if __debug__:
     pyc_ext = ".pyc"
@@ -147,10 +147,12 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
         files = {TESTMOD + ".py": (NOW, test_src)}
         self.doTest(".py", files, TESTMOD)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testPyc(self):
         files = {TESTMOD + pyc_ext: (NOW, test_pyc)}
         self.doTest(pyc_ext, files, TESTMOD)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testBoth(self):
         files = {TESTMOD + ".py": (NOW, test_src),
                  TESTMOD + pyc_ext: (NOW, test_pyc)}
@@ -160,6 +162,7 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
         files = {TESTMOD + ".py": (NOW, "")}
         self.doTest(None, files, TESTMOD)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testBadMagic(self):
         # make pyc magic word invalid, forcing loading from .py
         m0 = ord(test_pyc[0])
@@ -169,6 +172,7 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
                  TESTMOD + pyc_ext: (NOW, badmagic_pyc)}
         self.doTest(".py", files, TESTMOD)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testBadMagic2(self):
         # make pyc magic word invalid, causing an ImportError
         m0 = ord(test_pyc[0])
@@ -182,6 +186,7 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
         else:
             self.fail("expected ImportError; import from bad pyc")
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testBadMTime(self):
         t3 = ord(test_pyc[7])
         t3 ^= 0x02  # flip the second bit -- not the first as that one
@@ -191,12 +196,14 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
                  TESTMOD + pyc_ext: (NOW, badtime_pyc)}
         self.doTest(".py", files, TESTMOD)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testPackage(self):
         packdir = TESTPACK + os.sep
         files = {packdir + "__init__" + pyc_ext: (NOW, test_pyc),
                  packdir + TESTMOD + pyc_ext: (NOW, test_pyc)}
         self.doTest(pyc_ext, files, TESTPACK, TESTMOD)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testDeepPackage(self):
         packdir = TESTPACK + os.sep
         packdir2 = packdir + TESTPACK2 + os.sep
@@ -205,6 +212,7 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
                  packdir2 + TESTMOD + pyc_ext: (NOW, test_pyc)}
         self.doTest(pyc_ext, files, TESTPACK, TESTPACK2, TESTMOD)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testZipImporterMethods(self):
         packdir = TESTPACK + os.sep
         packdir2 = packdir + TESTPACK2 + os.sep
@@ -249,7 +257,8 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
         finally:
             z.close()
             os.remove(TEMP_ZIP)
-
+    
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testZipImporterMethodsInSubDirectory(self):
         packdir = TESTPACK + os.sep
         packdir2 = packdir + TESTPACK2 + os.sep
@@ -304,6 +313,7 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
             z.close()
             os.remove(TEMP_ZIP)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc')
     def testImporterAttr(self):
         src = """if 1:  # indent hack
         def get_file():
@@ -329,6 +339,7 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
         files = {TESTMOD + ".py": (NOW, test_src)}
         self.doTest(".py", files, TESTMOD, call=self.assertModuleSource)
 
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython does not support pyc') 
     def testGetCompiledSource(self):
         pyc = make_pyc(compile(test_src, "<???>", "exec"), NOW)
         files = {TESTMOD + ".py": (NOW, test_src),
@@ -392,6 +403,11 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
 @unittest.skipUnless(zlib, "requires zlib")
 class CompressedZipImportTestCase(UncompressedZipImportTestCase):
     compression = ZIP_DEFLATED
+
+    @unittest.skipIf(sys.platform == 'cli', 'Issue: http://ironpython.codeplex.com/workitem/31976')
+    def testEmptyPy(self):
+	# we are overriding this method because the compressed version does not work
+        pass
 
 
 class BadFileZipImportTestCase(unittest.TestCase):
