@@ -139,7 +139,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// <summary>
         /// Adler-32 value for uncompressed data processed so far.
         /// </summary>
-        internal long adler
+        public long adler
         {
             get { return _adler; }
             set { _adler = value; }
@@ -148,7 +148,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// <summary>
         /// Best guess about the data type: ascii or binary
         /// </summary>
-        internal BlockType Data_type
+        public BlockType Data_type
         {
             get { return data_type; }
             set { data_type = value; }
@@ -251,6 +251,10 @@ namespace ComponentAce.Compression.Libs.ZLib
         {
             get { return _istate; }
             set { _istate = value; }
+        }
+
+        public bool IsInitialized {
+            get { return _dstate != null || _istate != null; }
         }
 
         #endregion
@@ -443,6 +447,21 @@ namespace ComponentAce.Compression.Libs.ZLib
 			_dstate = new Deflate();
 			return _dstate.deflateInit(this, level, bits);
 		}
+
+        public int deflateInit(int level, int windowBits, int memLevel, CompressionStrategy strategy) {
+            _dstate = new Deflate();
+            return _dstate.deflateInit2(this, level, windowBits, memLevel, strategy);
+        }
+
+        public int reset() {
+            if (_dstate != null) {
+               return _dstate.deflateReset(this);
+            } else if (_istate != null) {
+                return _istate.inflateReset(this);
+            } else {
+                return (int)ZLibResultCode.Z_STREAM_ERROR;
+            }
+        }
 
         /// <summary>
         /// <para>Deflate compresses as much data as possible, and stops when the <see cref="next_in">input buffer</see> becomes empty or the 

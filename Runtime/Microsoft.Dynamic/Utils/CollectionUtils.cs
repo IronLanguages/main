@@ -76,7 +76,11 @@ namespace Microsoft.Scripting.Utils {
 
         public static IEnumerable<TSuper> ToCovariant<T, TSuper>(IEnumerable<T> enumerable)
             where T : TSuper {
+#if CLR2
             return new CovariantConvertor<T, TSuper>(enumerable);
+#else
+            return (IEnumerable<TSuper>)enumerable;
+#endif
         }
 
         private class CovariantConvertor<T, TSuper> : IEnumerable<TSuper> where T : TSuper {

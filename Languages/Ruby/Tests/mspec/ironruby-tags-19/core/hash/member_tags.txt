@@ -1,2 +1,3 @@
 fails:Hash#member? returns false for objects with the same hash
 fails:Hash#member? returns true if argument is a key
+fails:Hash#member? compares keys with the same #hash value via #eql?

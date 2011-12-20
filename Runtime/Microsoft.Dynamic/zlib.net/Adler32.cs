@@ -52,7 +52,7 @@ namespace ComponentAce.Compression.Libs.ZLib
     /// <summary>
     /// This class represents adler32 checksum algorithm
     /// </summary>
-	internal class Adler32
+	public class Adler32
 	{
 		
 		// largest prime smaller than 65536
@@ -63,7 +63,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// <summary>
         /// This static method returns adler32 checksum of the buffer data
         /// </summary>
-		internal static long GetAdler32Checksum(long adler, byte[] buf, int index, int len)
+		public static long GetAdler32Checksum(long adler, byte[] buf, int index, int len)
 		{
 			if (buf == null)
 			{

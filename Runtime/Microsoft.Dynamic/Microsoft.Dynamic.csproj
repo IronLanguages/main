@@ -485,6 +485,17 @@
     <Compile Include="IValueEquality.cs" />
     <Compile Include="KeyboardInterruptException.cs" />
     <Compile Include="SourceFileContentProvider.cs" />
+    <Compile Include="zlib.net\Adler32.cs" />
+    <Compile Include="zlib.net\Deflate.cs" />
+    <Compile Include="zlib.net\InfBlocks.cs" />
+    <Compile Include="zlib.net\InfCodes.cs" />
+    <Compile Include="zlib.net\Inflate.cs" />
+    <Compile Include="zlib.net\InfTree.cs" />
+    <Compile Include="zlib.net\StaticTree.cs" />
+    <Compile Include="zlib.net\Tree.cs" />
+    <Compile Include="zlib.net\Zlib.cs" />
+    <Compile Include="zlib.net\ZStream.cs" />
+    <Compile Include="zlib.net\ZStreamException.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
     <Reference Include="System" />
@@ -531,6 +542,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.Scripting.txt" />
+    <Content Include="zlib.net\history.txt" />
+    <Content Include="zlib.net\license.txt" />
+    <Content Include="zlib.net\readme.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Microsoft.Dynamic.ruleset" />

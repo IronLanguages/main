@@ -1728,17 +1728,44 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        internal const int InitialStreamBufferSize = 2048;
+
+        /// <summary>
+        /// Reads all data from "source" stream and appends them to this string.
+        /// The string is trimmed after all data are read.
+        /// </summary>
+        /// <returns>The number of bytes read from the stream.</returns>
+        public int Append(Stream/*!*/ stream) {
+            ContractUtils.RequiresNotNull(stream, "stream");
+            Mutate();
+
+            if (stream.CanSeek) {
+                long remaining;
+                try {
+                    remaining = stream.Length - stream.Position;
+                } catch (NotSupportedException) {
+                    return _content.Append(stream);
+                }
+
+                if (remaining < Int32.MaxValue) {
+                    return _content.Append(stream, (int)remaining);
+                }
+            }
+
+            return _content.Append(stream);
+        }
+
         /// <summary>
         /// Reads at most "count" bytes from "source" stream and appends them to this string.
         /// Allocates space for "count" bytes, so the string might need to be trimmed after the operation.
         /// </summary>
-        public MutableString/*!*/ Append(Stream/*!*/ stream, int count) {
+        /// <returns>The number of bytes read from the stream.</returns>
+        public int Append(Stream/*!*/ stream, int count) {
             ContractUtils.RequiresNotNull(stream, "stream");
             ContractUtils.Requires(count >= 0, "count");
 
             Mutate();
-            _content.Append(stream, count);
-            return this;
+            return _content.Append(stream, count);
         }
 
         public MutableString/*!*/ Append(MutableString value) {

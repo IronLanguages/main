@@ -1,1 +1,2 @@
 fails:Hash#merge! shouldn't raise spurious RuntimeErrors
+fails:Hash#merge! checks frozen status before coercing an object with #to_hash

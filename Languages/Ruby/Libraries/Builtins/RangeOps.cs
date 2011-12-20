@@ -307,7 +307,7 @@ namespace IronRuby.Builtins {
 #if SILVERLIGHT
                 return EachStepString(storage, self, ConvertStepToInt(storage, step)).Cast<object>();
 #else
-                return EachStepString(storage, self, ConvertStepToInt(storage, step));
+                return CollectionUtils.ToCovariant<MutableString, object>(EachStepString(storage, self, ConvertStepToInt(storage, step)));
 #endif
             } else if (storage.Context.IsInstanceOf(self.Begin, storage.Context.GetClass(typeof(Numeric)))) {
                 // self.begin is Numeric; invoke item = item + 1 instead of succ and invoke < or <= for compare

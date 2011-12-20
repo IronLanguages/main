@@ -185,7 +185,8 @@ namespace IronRuby.Builtins {
             public abstract void Append(string/*!*/ str, int start, int count);
             public abstract void Append(char[]/*!*/ chars, int start, int count);
             public abstract void Append(byte[]/*!*/ bytes, int start, int count);
-            public abstract void Append(Stream/*!*/ stream, int count);
+            public abstract int Append(Stream/*!*/ stream);
+            public abstract int Append(Stream/*!*/ stream, int count);
 
             public abstract void Append(Content/*!*/ content, int start, int count);
             public abstract void AppendTo(BinaryContent/*!*/ content, int start, int count);

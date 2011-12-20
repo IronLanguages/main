@@ -466,8 +466,6 @@ namespace IronPython.Runtime.Operations {
         public static object __int__(double d) {
             if (Int32.MinValue <= d && d <= Int32.MaxValue) {
                 return (int)d;
-            } else if (Int64.MinValue <= d && d < Int64.MaxValue) {
-                return (long)d;
             } else if (double.IsInfinity(d)) {
                 throw PythonOps.OverflowError("cannot convert float infinity to integer");
             } else if (double.IsNaN(d)) {

@@ -28,6 +28,7 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Runtime;
 using System.Runtime.CompilerServices;
+using System.Reflection.Emit;
 
 namespace Microsoft.Scripting.Interpreter {
     public sealed class ExceptionHandler {
@@ -1235,7 +1236,7 @@ namespace Microsoft.Scripting.Interpreter {
 
             if (node.Constructor != null) {
                 var parameters = node.Constructor.GetParameters();
-                if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef)) {
+                if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef) || node.Constructor.DeclaringType == typeof(DynamicMethod)) {
                     _forceCompile = true;
                 }
             }
