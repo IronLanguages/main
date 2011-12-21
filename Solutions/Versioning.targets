@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildThisFileDirectory)..\CurrentVersion.props" />
+
+  <PropertyGroup>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'alpha'">a</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'beta'">b</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'candidate'">rc</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'final'">f</ShortReleaseLevel>
+
+    <DisplayVersion Condition="'$(ReleaseLevel)' == 'final' and '$(MicroVersion)' == '0'">$(MajorVersion).$(MinorVersion)</DisplayVersion>
+    <DisplayVersion Condition="'$(ReleaseLevel)' == 'final' and '$(MicroVersion)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</DisplayVersion>
+    <DisplayVersion Condition="'$(ReleaseLevel)' != 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(ShortReleaseLevel)$(ReleaseSerial)</DisplayVersion>
+
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'alpha'">000$(ReleaseSerial)</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'beta'">00$(ReleaseSerial)0</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'candidate'">0$(ReleaseSerial)00</AssemblyFileRevision>
+    <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'final'">1000</AssemblyFileRevision>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)Bootstrap.targets" />
+
+  <ItemGroup>
+    <BuildInfoTemplate Include="$(MSBuildThisFileDirectory)Templates\BuildInfo.Template.cs" />
+    <CurrentVersionTemplate Include="$(MSBuildThisFileDirectory)Templates\CurrentVersion.Template.cs" />
+  </ItemGroup>
+
+  <Target Name="GenerateCurrentVersion"
+          DependsOnTargets="Bootstrap"
+          Inputs="$(MSBuildThisFileDirectory)..\CurrentVersion.props;@(CurrentVersionTemplate)"
+          Outputs="Properties\CurrentVersion.Generated.cs">
+    <FormatTemplate TemplateFile="@(CurrentVersionTemplate)"
+                    OutputFile="Properties\CurrentVersion.Generated.cs"
+                    Parameters="$(MajorVersion);$(MinorVersion);$(MicroVersion);$(ReleaseLevel);$(ReleaseSerial);$(ShortReleaseLevel);$(DisplayVersion);$(AssemblyRevision);$(AssemblyFileRevision)" />
+  </Target>
+
+  <Target Name="GenerateBuildInfo"
+          DependsOnTargets="Bootstrap"
+          Inputs="$(MSBuildThisFileDirectory)..\CurrentVersion.props;@(BuildInfoTemplate)"
+          Outputs="Properties\BuildInfo.Generated.cs">
+    <FormatTemplate TemplateFile="@(BuildInfoTemplate)"
+                    OutputFile="Properties\BuildInfo.Generated.cs"
+                    Parameters="'$(Configuration)'" />
+  </Target>
+</Project>

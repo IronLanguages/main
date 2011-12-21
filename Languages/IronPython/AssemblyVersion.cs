@@ -15,14 +15,9 @@
 
 using System.Reflection;
 
-#if !SILVERLIGHT
-[assembly: AssemblyVersion("3.0.0.0")]
-#else
-[assembly: AssemblyVersion("3.0.1300.0")]
-#endif
-
-[assembly: AssemblyInformationalVersion("3.0")]
-[assembly: AssemblyFileVersion("3.0.0.0")]
+[assembly: AssemblyVersion(IronPython.CurrentVersion.AssemblyVersion)]
+[assembly: AssemblyFileVersion(IronPython.CurrentVersion.AssemblyFileVersion)]
+[assembly: AssemblyInformationalVersion(IronPython.CurrentVersion.AssemblyInformationalVersion)]
 
 [assembly: AssemblyCompany("IronPython Team")]
 [assembly: AssemblyCopyright("© IronPython Contributors.")]

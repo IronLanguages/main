@@ -419,7 +419,7 @@ def get_config_vars(*args):
 
         if os.name in ('nt', 'os2') or sys.platform == 'cli':
             _init_non_posix(_CONFIG_VARS)
-        if os.name == 'posix':
+        elif os.name == 'posix':
             _init_posix(_CONFIG_VARS)
 
         # Setting 'userbase' is done below the call to the

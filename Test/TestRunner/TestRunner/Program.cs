@@ -202,18 +202,21 @@ namespace TestRunner {
         }
 
         private void RunTestForConsole(Test test) {
+            lock (this) {
+                if (!_quiet) {
+                    Console.Write("{0,-100}", test.Category.Name + " " + test.Name);
+                }
+            }
             var result = RunTest(test);
 
             lock (this) {
                 if (!_quiet) {
-                    Console.Write("{0,-100}", test.Category.Name + " " + test.Name);
-
                     const string resultFormat = "{0,-10}";
+                    var originalColor = Console.ForegroundColor;
                     switch (result.Status) {
                         case TestResultStatus.Skipped:
                             Console.ForegroundColor = ConsoleColor.Yellow;
                             Console.Write(resultFormat, "SKIPPED");
-                            Console.ForegroundColor = ConsoleColor.Gray;
                             break;
                         case TestResultStatus.TimedOut:
                             Console.ForegroundColor = ConsoleColor.Red;
@@ -232,7 +235,7 @@ namespace TestRunner {
                             Console.Write(resultFormat, "DISABLED");
                             break;
                     }
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Console.ForegroundColor = originalColor;
                     Console.WriteLine(result.EllapsedSeconds);
                 }
 
@@ -277,32 +280,28 @@ namespace TestRunner {
             DateTime startTime = DateTime.Now;
             var process = Process.Start(CreateProcessInfoFromTest(test));
 
-            // create the reader threads
+            // get the output asynchronously
             List<string> output = new List<string>();
-            Thread outThread = new Thread(() => {
-                while (!process.HasExited) {
-                    var line = process.StandardOutput.ReadLine();
-                    if (line != null) {
-                        lock (output) {
-                            output.Add(line);
-                        }
+            process.OutputDataReceived += (sender, e) => {
+                var line = e.Data;
+                if (line != null) {
+                    lock (output) {
+                        output.Add(line);
                     }
                 }
-            });
+            };
+            process.BeginOutputReadLine();
 
-            Thread errThread = new Thread(() => {
-                while (!process.HasExited) {
-                    var line = process.StandardError.ReadLine();
-                    if (line != null) {
-                        lock (output) {
-                            output.Add(line);
-                        }
+
+            process.ErrorDataReceived += (sender, e) => {
+                var line = e.Data;
+                if (line != null) {
+                    lock (output) {
+                        output.Add(line);
                     }
                 }
-            });
-
-            outThread.Start();
-            errThread.Start();
+            };
+            process.BeginErrorReadLine();
 
             // wait for it to exit
             if (test.MaxDuration > 0) {
@@ -310,6 +309,9 @@ namespace TestRunner {
             } else {
                 process.WaitForExit();
             }
+
+            process.CancelOutputRead();
+            process.CancelErrorRead();
 
             // kill if it needed, save status
             TestResultStatus status;
@@ -322,14 +324,12 @@ namespace TestRunner {
                 status = TestResultStatus.Failed;
             }
 
-            outThread.Join();
-            errThread.Join();
-
             return new TestResult(test, status, (DateTime.Now - startTime).TotalSeconds, output);
         }
 
         private static ProcessStartInfo CreateProcessInfoFromTest(Test test) {
             ProcessStartInfo psi = new ProcessStartInfo();
+            var args = test.Arguments.Contains("-X:Debug") ? test.Arguments : "-X:Debug " + test.Arguments;
             psi.Arguments = Environment.ExpandEnvironmentVariables(test.Arguments);
             psi.WorkingDirectory = Environment.ExpandEnvironmentVariables(test.WorkingDirectory);
             psi.FileName = Environment.ExpandEnvironmentVariables(test.Filename);

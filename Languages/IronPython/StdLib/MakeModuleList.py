@@ -34,7 +34,7 @@ excludedFiles       = []
 
 #Automatically determine what's currently not working under IronPython
 sys.path.append(nt.environ["DLR_ROOT"] + r"\Languages\IronPython\Tests\Tools")
-base_dir = nt._getfullpathname(nt.environ["DLR_ROOT"] + r"\External.LCA_RESTRICTED\Languages\CPython\27")
+base_dir = nt._getfullpathname(nt.environ["DLR_ROOT"] + r"\External.LCA_RESTRICTED\Languages\IronPython\27")
 
 import stdmodules
 BROKEN_LIST = stdmodules.main(base_dir)
@@ -51,6 +51,7 @@ excludedDirectories += [
                         "/Lib/test",
                         "/Lib/idlelib",
                         "/Lib/lib-tk",
+                        "/Lib/site-packages"
                         ]
 excludedDirectories += [x for x in BROKEN_LIST if not x.endswith(".py")]
 

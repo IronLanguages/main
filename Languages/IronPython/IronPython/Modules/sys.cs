@@ -46,7 +46,7 @@ namespace IronPython.Modules {
         // argv is set by PythonContext and only on the initial load
         public static readonly string byteorder = BitConverter.IsLittleEndian ? "little" : "big";
         // builtin_module_names is set by PythonContext and updated on reload
-        public const string copyright = "Copyright (c) Microsoft Corporation. All rights reserved.";
+        public const string copyright = "Copyright (c) IronPython Team";
 
         private static string GetPrefix() {
             string prefix;
@@ -303,7 +303,7 @@ namespace IronPython.Modules {
         // version and version_info are set by PythonContext
         public static PythonTuple subversion = PythonTuple.MakeTuple("IronPython", "", "");
 
-        public const string winver = "3.0";
+        public const string winver = CurrentVersion.Series;
 
         #region Special types
 
@@ -1047,25 +1047,6 @@ namespace IronPython.Modules {
 
             dict["meta_path"] = new List(0);
             dict["path_hooks"] = new List(0);
-
-            // add zipimport to the path hooks for importing from zip files.
-            try {
-                PythonModule zipimport = Importer.ImportModule(
-                    context.SharedClsContext, context.SharedClsContext.GlobalDict,
-                    "zipimport", false, -1) as PythonModule;
-                if (zipimport != null) {
-                    object zipimporter = PythonOps.GetBoundAttr(
-                        context.SharedClsContext, zipimport, "zipimporter");
-                    List path_hooks = dict["path_hooks"] as List;
-                    if (path_hooks != null && zipimporter != null) {
-                        path_hooks.Add(zipimporter);
-                    }
-                }
-            }
-            catch {
-                // this is not a fatal error, so we don't do anything.
-            }
-
             dict["path_importer_cache"] = new PythonDictionary();
         }
 

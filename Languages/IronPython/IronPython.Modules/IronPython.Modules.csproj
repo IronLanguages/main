@@ -11,7 +11,7 @@
     <RootNamespace>IronPython.Modules</RootNamespace>
     <AssemblyName>IronPython.Modules</AssemblyName>
     <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\IronPython.Modules.xml</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <NoWarn>1591</NoWarn>
     <WarningsNotAsErrors>1685,618</WarningsNotAsErrors>
     <BaseAddress>885063680</BaseAddress>
@@ -112,6 +112,7 @@
     <Compile Include="NativeSignal.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
+    <Compile Include="Properties\BuildInfo.Generated.cs" />
     <Compile Include="signal.cs" />
     <Compile Include="zipimport.cs" />
     <Compile Include="zlib\Compress.cs" />
@@ -229,18 +230,13 @@
     </ProjectReference>
     <ProjectReference Include="..\IronPython\IronPython.csproj">
       <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
-      <Name>IronPython %28Languages\IronPython\IronPython%29</Name>
+      <Name>IronPython</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="IronPython.Modules.ruleset" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+  <Import Project="$(SolutionDir)Versioning.targets" />
+  <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo" />
 </Project>

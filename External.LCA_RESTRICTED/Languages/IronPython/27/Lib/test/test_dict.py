@@ -535,6 +535,7 @@ class DictTest(unittest.TestCase):
                  'f': None, 'g': None, 'h': None}
         d = {}
 
+    @test_support.cpython_only
     def test_container_iterator(self):
         if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25419"):
             return

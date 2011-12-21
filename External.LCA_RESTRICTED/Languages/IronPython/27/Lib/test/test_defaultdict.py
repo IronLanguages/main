@@ -1,5 +1,6 @@
 """Unit tests for collections.defaultdict."""
 
+import sys
 import os
 import copy
 import tempfile
@@ -47,7 +48,7 @@ class TestDefaultDict(unittest.TestCase):
             self.assertEqual(err.args, (15,))
         else:
             self.fail("d2[15] didn't raise KeyError")
-        if not test_support.is_cli:
+        if sys.platform != 'cli':
             self.assertRaises(TypeError, defaultdict, 1)
 
     def test_missing(self):
@@ -149,17 +150,17 @@ class TestDefaultDict(unittest.TestCase):
         else:
             self.fail("expected KeyError")
 
-    if not test_support.is_cli:
-        def test_recursive_repr(self):
-            # Issue2045: stack overflow when default_factory is a bound method
-            class sub(defaultdict):
-                def __init__(self):
-                    self.default_factory = self._factory
-                def _factory(self):
-                    return []
-            d = sub()
-            self.assertTrue(repr(d).startswith(
-                "defaultdict(<bound method sub._factory of defaultdict(..."))
+    @unittest.skipIf(sys.platform == 'cli', 'Broken on ipy')
+    def test_recursive_repr(self):
+        # Issue2045: stack overflow when default_factory is a bound method
+        class sub(defaultdict):
+            def __init__(self):
+                self.default_factory = self._factory
+            def _factory(self):
+                return []
+        d = sub()
+        self.assertTrue(repr(d).startswith(
+            "defaultdict(<bound method sub._factory of defaultdict(..."))
 
             # NOTE: printing a subclass of a builtin type does not call its
             # tp_print slot. So this part is essentially the same test as above.

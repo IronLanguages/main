@@ -499,8 +499,6 @@ namespace IronPython.Modules {
                     return DoWrite(((ArrayModule.array)bytes).ToByteArray()); // as byte[]
                 } else if (bytes is ICollection<byte>) {
                     return DoWrite((ICollection<byte>)bytes);
-                } else if (bytes is PythonBuffer) {
-                    return DoWrite(((PythonBuffer)bytes).ToString()); // as string
                 } else if (bytes is string) {
                     // TODO Remove this when we move to 3.x
                     return DoWrite((string)bytes); // as string

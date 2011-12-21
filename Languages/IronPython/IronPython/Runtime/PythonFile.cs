@@ -636,7 +636,7 @@ namespace IronPython.Runtime {
         // possibly translated character read.
         private int ReadChar() {
             int c = ReadOne();
-            if (c != -1) _position++;            
+            if (c != -1) _position++;
             if (c == '\r') {
                 Debug.Assert(_lastChar == -1);
                 // we can't Peek here because Peek() won't block for more input
@@ -948,7 +948,7 @@ namespace IronPython.Runtime {
 
         private PythonStreamReader _reader;
         private PythonStreamWriter _writer;
-        private bool _isOpen;
+        protected bool _isOpen;
         private Nullable<long> _reseekPosition; // always null for console
         private WeakRefTracker _weakref;
         private string _enumValue;
@@ -1381,7 +1381,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        void ThrowIfClosed() {
+        protected void ThrowIfClosed() {
             if (!_isOpen) {
                 throw PythonOps.ValueError("I/O operation on closed file");
             }
@@ -1573,7 +1573,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual void write(string s) {
+        public void write(string s) {
             if (s == null) {
                 throw PythonOps.TypeError("must be string or read-only character buffer, not None");
             }
@@ -1583,7 +1583,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual void write([NotNull]IList<byte> bytes) {
+        public void write([NotNull]IList<byte> bytes) {
             lock (this) {
                 WriteNoLock(bytes);
             }
@@ -1614,35 +1614,7 @@ namespace IronPython.Runtime {
         }
 
         public void write([NotNull]PythonBuffer buf) {
-            WriteWorker(buf, true);
-        }
-
-        private void WriteWorker(PythonBuffer/*!*/ buf, bool locking) {
-            Debug.Assert(buf != null);
-
-            string str = buf._object as string;
-            IPythonArray pyArr;
-            if (str != null || buf._object is IList<byte>) {
-                if (locking) {
-                    write(buf.ToString());
-                } else {
-                    WriteNoLock(buf.ToString());
-                }
-            } else if (buf._object is Array) {
-                throw new NotImplementedException("writing buffer of .NET array to file");
-            } else if ((pyArr = buf._object as IPythonArray) != null) {
-                if (_fileMode != PythonFileMode.Binary) {
-                    throw PythonOps.TypeError("char buffer type not available");
-                }
-
-                if (locking) {
-                    write(pyArr.tostring());
-                } else {
-                    WriteNoLock(pyArr.tostring());
-                }
-            } else {
-                Debug.Assert(false, "unsupported buffer object");
-            }
+            write((IList<byte>)buf);
         }
 
         public void write([NotNull]object arr) {
@@ -1685,7 +1657,7 @@ namespace IronPython.Runtime {
 
                         PythonBuffer buf = e.Current as PythonBuffer;
                         if (buf != null) {
-                            WriteWorker(buf, false);
+                            WriteNoLock(buf);
                             continue;
                         }
 
@@ -1777,12 +1749,9 @@ namespace IronPython.Runtime {
                         TextWriter currentWriter = _io.GetWriter(_consoleStreamType);
 
                         if (!ReferenceEquals(currentWriter, _writer.TextWriter)) {
-                            try
-                            {
+                            try {
                                 _writer.Flush();
-                            }
-                            catch (ObjectDisposedException)
-                            {
+                            } catch (ObjectDisposedException) {
                                 //no way to tell if stream has been closed outside of execution
                                 //so don't blow up if it has
                             }
