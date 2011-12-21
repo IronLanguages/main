@@ -7,7 +7,7 @@
 # The contents of this file are pickled, so don't put values in the namespace
 # that aren't pickleable (module imports are okay, they're removed automatically).
 
-import sys, os, time
+import sys, os, time, re
 sys.path.append(os.path.abspath('tools/sphinxext'))
 
 # General configuration
@@ -28,7 +28,8 @@ copyright = '1990-%s, Python Software Foundation' % time.strftime('%Y')
 # The full version, including alpha/beta/rc tags.
 # release = '2.6a0'
 
-version, release = '2.7', '2.7a1'
+release = os.environ.get('PYDOC_VERSION', '2.7')
+version = re.split('([^0-9.])', release)[0]
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
