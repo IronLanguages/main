@@ -171,7 +171,8 @@ the initial output buffer size.")]
             [DefaultParameterValue(MAX_WBITS)]int wbits,
             [DefaultParameterValue(DEFAULTALLOC)]int bufsize)
         {
-            return PythonAsciiEncoding.Instance.GetString(Decompress(data.ToArray(), wbits, bufsize));
+            var bytes = Decompress(data.ToArray(), wbits, bufsize);
+            return PythonAsciiEncoding.Instance.GetString(bytes, 0, bytes.Length);
         }
 
         [Documentation(@"decompressobj([wbits]) -- Return a decompressor object.
