@@ -165,7 +165,7 @@
   <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
     <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
-    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+    <!--<Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />-->
   </Target>
 
   <Target Name="ZipPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
