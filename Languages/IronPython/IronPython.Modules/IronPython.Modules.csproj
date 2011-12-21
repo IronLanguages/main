@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
   <PropertyGroup>
@@ -11,7 +11,7 @@
     <RootNamespace>IronPython.Modules</RootNamespace>
     <AssemblyName>IronPython.Modules</AssemblyName>
     <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\IronPython.Modules.xml</DocumentationFile>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>1591</NoWarn>
     <WarningsNotAsErrors>1685,618</WarningsNotAsErrors>
     <BaseAddress>885063680</BaseAddress>
@@ -113,6 +113,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
     <Compile Include="signal.cs" />
+    <Compile Include="zipimport.cs" />
     <Compile Include="zlib\Compress.cs" />
     <Compile Include="zlib\Decompress.cs" />
     <Compile Include="zlib\zlib.net\Adler32.cs" />
