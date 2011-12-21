@@ -56,7 +56,7 @@ namespace IronPython.Runtime {
     public delegate int HashDelegate(object o, ref HashDelegate dlg);
 
     public sealed partial class PythonContext : LanguageContext {
-        internal const string/*!*/ IronPythonDisplayName = "IronPython 3.0";
+        internal const string/*!*/ IronPythonDisplayName = CurrentVersion.DisplayName;
         internal const string/*!*/ IronPythonNames = "IronPython;Python;py";
         internal const string/*!*/ IronPythonFileExtensions = ".py";
 
@@ -1924,7 +1924,7 @@ namespace IronPython.Runtime {
         }
 
         internal void SetHostVariables(string prefix, string executable, string versionString) {
-            _initialVersionString = versionString;
+            _initialVersionString = !string.IsNullOrEmpty(versionString) ? versionString : GetVersionString();
             _initialExecutable = executable ?? "";
             _initialPrefix = prefix;
 
@@ -1945,7 +1945,7 @@ namespace IronPython.Runtime {
             dict["executable"] = _initialExecutable;
             SystemState.__dict__["prefix"] =  _initialPrefix;
             dict["exec_prefix"] = _initialPrefix;
-            SetVersionVariables(dict, 3, 0, 0, "alpha", _initialVersionString);
+            SetVersionVariables(dict);
         }
 
         [PythonType("sys.version_info")]
@@ -1971,10 +1971,31 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static void SetVersionVariables(PythonDictionary dict, byte major, byte minor, byte build, string level, string versionString) {
-            dict["hexversion"] = ((int)major << 24) + ((int)minor << 16) + ((int)build << 8);
-            dict["version_info"] = new VersionInfo((int)major, (int)minor, (int)build, level, 0);
-            dict["version"] = String.Format("{0}.{1}.{2} ({3})", major, minor, build, versionString);
+        private void SetVersionVariables(PythonDictionary dict) {
+            dict["hexversion"] = (CurrentVersion.Major << 24) + (CurrentVersion.Minor << 16) + (CurrentVersion.Micro << 8);
+            dict["version_info"] = new VersionInfo(CurrentVersion.Major, CurrentVersion.Minor, CurrentVersion.Micro, CurrentVersion.ReleaseLevel, CurrentVersion.ReleaseSerial);
+            dict["version"] = String.Format("{0}.{1}.{2}{4}{5} ({3})",
+                CurrentVersion.Major,
+                CurrentVersion.Minor,
+                CurrentVersion.Micro,
+                _initialVersionString, 
+                CurrentVersion.ReleaseLevel != "final" ? CurrentVersion.ShortReleaseLevel : "",
+                CurrentVersion.ReleaseLevel != "final" ? CurrentVersion.ReleaseSerial.ToString() : "");
+        }
+
+        internal static string GetVersionString() {
+            string configuration = BuildInfo.IsDebug ? " DEBUG" : "";
+            string platform = Type.GetType("Mono.Runtime") == null ? ".NET" : "Mono";
+            string bitness = (IntPtr.Size * 8).ToString();
+
+            return String.Format("{0}{3} ({1}) on {4} {2} ({5}-bit)",
+                                PythonContext.IronPythonDisplayName,
+                                PythonContext.GetPythonVersion().ToString(),
+                                Environment.Version,
+                                configuration,
+                                platform,
+                                bitness
+                                );
         }
 
         private static string GetInitialPrefix() {

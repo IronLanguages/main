@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <!--<Import Project="CustomBuild.proj" Condition="Exist('CustomBuild.proj')" />-->
+
+  <PropertyGroup>
+    <BaseConfiguration Condition=" '$(BaseConfiguration)' == '' ">Debug</BaseConfiguration>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <BuildProject Include="Solutions\Build.IronPython.proj"/>
+  </ItemGroup>
+
+  <Target Name="Build">
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Build" Properties="BaseConfiguration=$(BaseConfiguration)" />
+  </Target>
+
+  <Target Name="Rebuild">
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Rebuild" Properties="BaseConfiguration=$(BaseConfiguration)" />
+  </Target>
+
+  <Target Name="Clean">
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Clean" Properties="BaseConfiguration=$(BaseConfiguration)" />
+  </Target>
+
+  <Target Name="DistClean" DependsOnTargets="Clean">
+    <RemoveDir Directories="bin;Stage;Packages" />
+  </Target>
+
+  <Target Name="Stage">
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Stage" Properties="BaseConfiguration=$(BaseConfiguration)" />
+  </Target>
+
+  <Target Name="NuGetPackage">
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="NuGetPackage" Properties="BaseConfiguration=$(BaseConfiguration)" />
+  </Target>
+
+  <Target Name="ZipPackage">
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="ZipPackage" Properties="BaseConfiguration=$(BaseConfiguration)" />
+  </Target>
+  
+  <Target Name="Installer">
+    <MSBuild Projects="@(BuildProject)" BuildInParallel="true" Targets="Installer" Properties="BaseConfiguration=$(BaseConfiguration)" />
+  </Target>
+
+  <Target Name="Package" DependsOnTargets="NuGetPackage;ZipPackage;Installer" />
+</Project>
