@@ -134,6 +134,8 @@
     <Copy SourceFiles="$(BaseDir)\External.LCA_RESTRICTED\Languages\IronPython\27\LICENSE.txt" DestinationFiles="$(StageDir)\License.StdLib.txt" />
 
     <!--<MSBuild Projects="$(BaseDir)\Languages\IronPython\StdLib\StdLib.pyproj" Properties="OutputPath=$(StageDir)\Lib" Targets="CopyFilesForZip" />-->
+    <MakeDir Directories="$(StageDir)\Lib" Condition="!Exists('$(StageDir)\Lib')" />
+    <Touch Files="$(StageDir)\Lib\no_std_lib" AlwaysCreate="true" />
 
     <Copy SourceFiles="@(DocFiles)" DestinationFiles="@(DocFiles->'$(StageDir)\Doc\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(ToolFiles)" DestinationFiles="@(ToolFiles->'$(StageDir)\Tools\%(RecursiveDir)%(Filename)%(Extension)')" />
