@@ -13,7 +13,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 
 <?include Version.wxi ?>
 
-<?define UpgradeCode = "a162604e-d515-4155-9b8b-2854502d1588" ?>
+<?define UpgradeCode = "c73549b5-f99c-4468-b654-3549d73b10ef" ?>
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Id="*" UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)">
