@@ -308,7 +308,7 @@ namespace IronPython.Hosting {
                     return PythonOps.ToString(context, value);
                 }
 
-                return "";
+                return ">>> ";
             }
         }
 
@@ -321,7 +321,7 @@ namespace IronPython.Hosting {
                     return PythonOps.ToString(context, value);
                 }
 
-                return "";
+                return "... ";
             }
         }
         
