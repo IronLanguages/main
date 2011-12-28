@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT && !CLR2
+#if FEATURE_WPF
 using System;
 using System.Xaml;
 using System.Xaml.Schema;

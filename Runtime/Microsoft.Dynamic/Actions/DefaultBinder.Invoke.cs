@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -84,7 +84,7 @@ namespace Microsoft.Scripting.Actions {
             if (targetInfo != null) {
                 // we're calling a well-known MethodBase
                 DynamicMetaObject res = MakeMetaMethodCall(signature, resolverFactory, targetInfo);
-                if (res.Expression.Type.IsValueType) {
+                if (res.Expression.Type.IsValueType()) {
                     res = new DynamicMetaObject(
                         AstUtils.Convert(res.Expression, typeof(object)),
                         res.Restrictions
@@ -195,7 +195,7 @@ namespace Microsoft.Scripting.Actions {
                     AstUtils.Convert(
                         Ast.Property(
                             Ast.Convert(self.Expression, typeof(BoundMemberTracker)),
-                            typeof(BoundMemberTracker).GetProperty("ObjectInstance")
+                            typeof(BoundMemberTracker).GetDeclaredProperty("ObjectInstance")
                         ),
                         bmt.BoundTo.DeclaringType
                     ),
@@ -207,7 +207,7 @@ namespace Microsoft.Scripting.Actions {
                     Ast.Equal(
                         Ast.Property(
                             Ast.Convert(self.Expression, typeof(BoundMemberTracker)),
-                            typeof(BoundMemberTracker).GetProperty("BoundTo")
+                            typeof(BoundMemberTracker).GetDeclaredProperty("BoundTo")
                         ),
                         AstUtils.Constant(bmt.BoundTo)
                     )

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
 #else
@@ -290,11 +290,14 @@ namespace IronPythonTest {
             AreEqual((int)(object)scriptEngine.Execute("42"), 42);
 
             if(options != null) {
+// TODO:
+#pragma warning disable 618 // obsolete API
                 PythonOptions po = (PythonOptions)Microsoft.Scripting.Hosting.Providers.HostingHelpers.CallEngine<object, LanguageOptions>(
                     scriptEngine, 
                     (lc, obj) => lc.Options,
                     null
                 );
+#pragma warning restore 618
 
                 AreEqual(po.StripDocStrings, true);
                 AreEqual(po.Optimize, true);
@@ -2292,8 +2295,10 @@ instOC = TestOC()
             info.ApplicationName = "Test";
             
             Evidence evidence = new Evidence();
+// TODO:
+#pragma warning disable 612, 618 // obsolete API
             evidence.AddHost(new Zone(SecurityZone.Internet));
-
+#pragma warning restore 612, 618
 #if !CLR2
             System.Security.PermissionSet permSet = SecurityManager.GetStandardSandbox(evidence);
             AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info, permSet, null);

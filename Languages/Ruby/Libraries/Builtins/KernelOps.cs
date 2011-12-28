@@ -12,6 +12,9 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_CRYPTOGRAPHY
+using System.Security.Cryptography;
+#endif
 
 using System;
 using System.Collections;
@@ -22,7 +25,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Threading;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
@@ -289,7 +291,7 @@ namespace IronRuby.Builtins {
                 exception = new RuntimeError();
             }
 
-#if DEBUG && !SILVERLIGHT
+#if DEBUG && FEATURE_THREAD && FEATURE_EXCEPTION_STATE
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
@@ -306,7 +308,7 @@ namespace IronRuby.Builtins {
         public static void RaiseException(object self, [NotNull]MutableString/*!*/ message) {
             Exception exception = RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
 
-#if DEBUG && !SILVERLIGHT
+#if DEBUG && FEATURE_THREAD && FEATURE_EXCEPTION_STATE
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
@@ -324,7 +326,7 @@ namespace IronRuby.Builtins {
             object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
             Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, obj, arg, backtrace);
-#if DEBUG && !SILVERLIGHT
+#if DEBUG && FEATURE_THREAD && FEATURE_EXCEPTION_STATE
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
@@ -1089,9 +1091,9 @@ namespace IronRuby.Builtins {
 
         #region `, exec, system, fork, 1.9: spawn
 
-#if !SILVERLIGHT
-        [RubyMethod("`", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+#if FEATURE_PROCESS
+        [RubyMethod("`", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_PROCESS")]
+        [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = RubyProcess.CreateProcess(context, command, true);
 
@@ -1106,24 +1108,24 @@ namespace IronRuby.Builtins {
         // Overloads of exec and system will always execute using the Windows shell if there is only the command parameter
         // If args parameter is passed, it will execute the command directly without going to the shell.
 
-        [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_PROCESS")]
+        [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = RubyProcess.CreateProcess(context, command, false);
             p.WaitForExit();
             Exit(self, p.ExitCode);
         }
 
-        [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_PROCESS")]
+        [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             Process p = RubyProcess.CreateProcess(context, command, args);
             Exit(self, p.ExitCode);
         }
 
-        [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_PROCESS")]
+        [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             try {
                 Process p = RubyProcess.CreateProcess(context, command, false);
@@ -1134,8 +1136,8 @@ namespace IronRuby.Builtins {
             }
         }
 
-        [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_PROCESS")]
+        [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             try {
@@ -1170,14 +1172,15 @@ namespace IronRuby.Builtins {
             return RubyIOOps.Select(context, null, read, write, error, timeoutInSeconds);
         }
 
-        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
+#if FEATURE_THREAD
+        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_THREAD")]
+        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_THREAD")]
         public static void Sleep(object self) {
             ThreadOps.DoSleep();
         }
 
-        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_THREAD")]
+        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_THREAD")]
         public static int Sleep(object self, int seconds) {
             if (seconds < 0) {
                 throw RubyExceptions.CreateArgumentError("time interval must be positive");
@@ -1188,8 +1191,8 @@ namespace IronRuby.Builtins {
             return seconds;
         }
 
-        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_THREAD")]
+        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_THREAD")]
         public static int Sleep(object self, double seconds) {
             if (seconds < 0) {
                 throw RubyExceptions.CreateArgumentError("time interval must be positive");
@@ -1199,13 +1202,14 @@ namespace IronRuby.Builtins {
             Thread.Sleep(ms > Int32.MaxValue ? Timeout.Infinite : (int)ms);
             return (int)seconds;
         }
+#endif
 
         #endregion
 
-        #region test, syscall, trap
-
-        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        #region test
+#if FEATURE_FILESYSTEM
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_FILESYSTEM")]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_FILESYSTEM")]
         public static object Test(ConversionStorage<MutableString>/*!*/ toPath, object self, [NotNull]MutableString/*!*/ cmd, object path) {
             if (cmd.IsEmpty) {
                 throw RubyExceptions.CreateTypeConversionError("String", "Integer");
@@ -1213,8 +1217,8 @@ namespace IronRuby.Builtins {
             return Test(toPath, self, cmd.GetChar(0), path);
         }
 
-        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_FILESYSTEM")]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_FILESYSTEM")]
         public static object Test(ConversionStorage<MutableString>/*!*/ toPath, object self, [DefaultProtocol]int cmd, object path) {
             RubyContext context = toPath.Context;
             MutableString pathStr = Protocols.CastToPath(toPath, path);
@@ -1233,11 +1237,11 @@ namespace IronRuby.Builtins {
                     return RubyFileOps.RubyStatOps.IsCharDevice(RubyFileOps.RubyStatOps.Create(context, pathStr));
 
                 case 'd':
-                    return FileTest.DirectoryExists(context, pathStr);
+                    return RubyFileOps.DirectoryExists(context, pathStr);
 
                 case 'e':
                 case 'f':
-                    return FileTest.FileExists(context, pathStr);
+                    return RubyFileOps.FileExists(context, pathStr);
 
                 case 'g':
                     return RubyFileOps.RubyStatOps.IsSetGid(RubyFileOps.RubyStatOps.Create(context, pathStr));
@@ -1288,18 +1292,22 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.CreateArgumentError("unknown command ?{0}", (char)cmd);
             }
         }
+#endif
+        #endregion
 
+        #region syscall, trap
+        
         //syscall
 
-#if !SILVERLIGHT // Signals dont make much sense in Silverlight as cross-process communication is not allowed
-        [RubyMethod("trap", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("trap", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+#if FEATURE_PROCESS
+        [RubyMethod("trap", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_PROCESS")]
+        [RubyMethod("trap", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static object Trap(RubyContext/*!*/ context, object self, object signalId, Proc proc) {
             return Signal.Trap(context, self, signalId, proc);
         }
 
-        [RubyMethod("trap", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("trap", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("trap", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_PROCESS")]
+        [RubyMethod("trap", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static object Trap(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, object signalId) {
             return Signal.Trap(context, block, self, signalId);
         }
@@ -1450,13 +1458,13 @@ namespace IronRuby.Builtins {
         private static RubyIO CheckOpenPipe(RubyContext/*!*/ context, MutableString path, IOMode mode) {
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
-#if SILVERLIGHT
-                throw new NotSupportedException("open cannot create a subprocess");
-#else
+#if FEATURE_PROCESS
                 if (fileName.Length > 1 && fileName[1] == '-') {
                     throw new NotImplementedError("forking a process is not supported");
                 }
                 return RubyIOOps.OpenPipe(context, path.GetSlice(1), (IOMode)mode);
+#else
+                throw new NotSupportedException("open cannot create a subprocess");
 #endif
             }
             return null;
@@ -1726,11 +1734,11 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region rand, srand
-
+#if FEATURE_CRYPTOGRAPHY
         private static RNGCryptoServiceProvider _RNGCryptoServiceProvider;
 
-        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_CRYPTOGRAPHY")]
+        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_CRYPTOGRAPHY")]
         public static object SeedRandomNumberGenerator(RubyContext/*!*/ context, object self) {
             // This should use a combination of the time, the process id, and a sequence number.
 
@@ -1747,14 +1755,14 @@ namespace IronRuby.Builtins {
             return SeedRandomNumberGenerator(context, self, secureRandomNumber);
         }
 
-        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance, BuildConfig = "FEATURE_CRYPTOGRAPHY")]
+        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_CRYPTOGRAPHY")]
         public static object SeedRandomNumberGenerator(RubyContext/*!*/ context, object self, [DefaultProtocol]IntegerValue seed) {
             object result = context.RandomNumberGeneratorSeed;
             context.SeedRandomNumberGenerator(seed);
             return result;
         }
-
+#endif
         [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
         public static double Random(RubyContext/*!*/ context, object self) {

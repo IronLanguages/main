@@ -16,6 +16,7 @@
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Debugging {
     internal static class DelegateHelpers {
@@ -47,7 +48,9 @@ namespace Microsoft.Scripting.Debugging {
         private static ModuleBuilder GetModule() {
             lock (_DelegateCtorSignature) {
                 if (_moduleBuilder == null) {
-                    AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("Snippets.Microsoft.Scripting.Debugging"), AssemblyBuilderAccess.Run);
+                    AssemblyBuilder assemblyBuilder = ReflectionUtils.DefineDynamicAssembly(
+                        new AssemblyName("Snippets.Microsoft.Scripting.Debugging"), AssemblyBuilderAccess.Run);
+                    
                     _moduleBuilder = assemblyBuilder.DefineDynamicModule("Snippets.Microsoft.Scripting.Debugging", true);
                 }
             }

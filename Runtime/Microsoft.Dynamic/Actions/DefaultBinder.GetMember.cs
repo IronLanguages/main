@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -23,6 +23,7 @@ using System;
 using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Linq;
 
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
@@ -178,7 +179,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private DynamicMetaObject MakeGetMemberTarget(GetMemberInfo getMemInfo, DynamicMetaObject target) {
-            Type type = target.GetLimitType();
+            Type targetType = target.GetLimitType();
             BindingRestrictions restrictions = target.Restrictions;
             DynamicMetaObject self = target;
             target = target.Restrict(target.GetLimitType());
@@ -186,7 +187,7 @@ namespace Microsoft.Scripting.Actions {
             // Specially recognized types: TypeTracker, NamespaceTracker, and StrongBox.  
             // TODO: TypeTracker and NamespaceTracker should technically be IDO's.
             MemberGroup members = MemberGroup.EmptyGroup;
-            if (typeof(TypeTracker).IsAssignableFrom(type)) {
+            if (typeof(TypeTracker).IsAssignableFrom(targetType)) {
                 restrictions = restrictions.Merge(
                     BindingRestrictions.GetInstanceRestriction(target.Expression, target.Value)
                 );
@@ -197,7 +198,7 @@ namespace Microsoft.Scripting.Actions {
                     members = GetMember(MemberRequestKind.Get, ((TypeTracker)target.Value).Type, getMemInfo.Name);
                     if (members.Count > 0) {
                         // we have a member that's on the type associated w/ the tracker, return that...
-                        type = ((TypeTracker)target.Value).Type;
+                        targetType = ((TypeTracker)target.Value).Type;
                         self = null;
                     }
                 }
@@ -205,41 +206,41 @@ namespace Microsoft.Scripting.Actions {
 
             if (members.Count == 0) {
                 // Get the members
-                members = GetMember(MemberRequestKind.Get, type, getMemInfo.Name);
+                members = GetMember(MemberRequestKind.Get, targetType, getMemInfo.Name);
             }
 
             if (members.Count == 0) {
-                if (typeof(TypeTracker).IsAssignableFrom(type)) {
+                if (typeof(TypeTracker).IsAssignableFrom(targetType)) {
                     // Throws an exception if we don't have a non-generic type, and if we do report an error now.  This matches
                     // the rule version of the default binder but should probably be removed long term.
                     EnsureTrackerRepresentsNonGenericType((TypeTracker)target.Value);
-                } else if (type.IsInterface) {
+                } else if (targetType.IsInterface()) {
                     // all interfaces have object members
-                    type = typeof(object);
-                    members = GetMember(MemberRequestKind.Get, type, getMemInfo.Name);
+                    targetType = typeof(object);
+                    members = GetMember(MemberRequestKind.Get, targetType, getMemInfo.Name);
                 }
             }
 
-            DynamicMetaObject propSelf = self == null ? null : self;
+            DynamicMetaObject propSelf = self;
             // if lookup failed try the strong-box type if available.
-            if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type) && propSelf != null) {
+            if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(targetType) && propSelf != null) {
                 // properties/fields need the direct value, methods hold onto the strong box.
                 propSelf = new DynamicMetaObject(
-                    Ast.Field(AstUtils.Convert(propSelf.Expression, type), type.GetField("Value")),
+                    Ast.Field(AstUtils.Convert(propSelf.Expression, targetType), targetType.GetInheritedFields("Value").First()),
                     propSelf.Restrictions,
                     ((IStrongBox)propSelf.Value).Value
                 );
 
-                type = type.GetGenericArguments()[0];
+                targetType = targetType.GetGenericArguments()[0];
 
                 members = GetMember(
                     MemberRequestKind.Get,
-                    type,
+                    targetType,
                     getMemInfo.Name
                 );
             }
 
-            MakeBodyHelper(getMemInfo, self, propSelf, type, members);
+            MakeBodyHelper(getMemInfo, self, propSelf, targetType, members);
 
             getMemInfo.Body.Restrictions = restrictions;
             return getMemInfo.Body.GetMetaObject(target);
@@ -250,52 +251,52 @@ namespace Microsoft.Scripting.Actions {
             return tracker.Type;
         }
 
-        private void MakeBodyHelper(GetMemberInfo getMemInfo, DynamicMetaObject self, DynamicMetaObject propSelf, Type type, MemberGroup members) {
+        private void MakeBodyHelper(GetMemberInfo getMemInfo, DynamicMetaObject self, DynamicMetaObject propSelf, Type targetType, MemberGroup members) {
             if (self != null) {
-                MakeOperatorGetMemberBody(getMemInfo, propSelf, type, "GetCustomMember");
+                MakeOperatorGetMemberBody(getMemInfo, propSelf, targetType, "GetCustomMember");
             }
 
             Expression error;
             TrackerTypes memberType = GetMemberType(members, out error);
 
             if (error == null) {
-                MakeSuccessfulMemberAccess(getMemInfo, self, propSelf, type, members, memberType);
+                MakeSuccessfulMemberAccess(getMemInfo, self, propSelf, targetType, members, memberType);
             } else {
                 getMemInfo.Body.FinishError(getMemInfo.ErrorSuggestion != null ? getMemInfo.ErrorSuggestion.Expression : error);
             }
         }
 
-        private void MakeSuccessfulMemberAccess(GetMemberInfo getMemInfo, DynamicMetaObject self, DynamicMetaObject propSelf, Type type, MemberGroup members, TrackerTypes memberType) {
+        private void MakeSuccessfulMemberAccess(GetMemberInfo getMemInfo, DynamicMetaObject self, DynamicMetaObject propSelf, Type selfType, MemberGroup members, TrackerTypes memberType) {
             switch (memberType) {
                 case TrackerTypes.TypeGroup:
                 case TrackerTypes.Type:
-                    MakeTypeBody(getMemInfo, type, members);
+                    MakeTypeBody(getMemInfo, selfType, members);
                     break;
                 case TrackerTypes.Method:
                     // turn into a MethodGroup                    
-                    MakeGenericBodyWorker(getMemInfo, type, ReflectionCache.GetMethodGroup(getMemInfo.Name, members), self);
+                    MakeGenericBodyWorker(getMemInfo, selfType, ReflectionCache.GetMethodGroup(getMemInfo.Name, members), self);
                     break;
                 case TrackerTypes.Event:
                 case TrackerTypes.Field:
                 case TrackerTypes.Property:
                 case TrackerTypes.Constructor:
                 case TrackerTypes.Custom:
-                    MakeGenericBody(getMemInfo, type, members, propSelf);
+                    MakeGenericBody(getMemInfo, selfType, members, propSelf);
                     break;
                 case TrackerTypes.All:
                     // no members were found
                     if (self != null) {
-                        MakeOperatorGetMemberBody(getMemInfo, propSelf, type, "GetBoundMember");
+                        MakeOperatorGetMemberBody(getMemInfo, propSelf, selfType, "GetBoundMember");
                     }
 
-                    MakeMissingMemberRuleForGet(getMemInfo, self, type);
+                    MakeMissingMemberRuleForGet(getMemInfo, self, selfType);
                     break;
                 default:
                     throw new InvalidOperationException(memberType.ToString());
             }
         }
 
-        private void MakeGenericBody(GetMemberInfo getMemInfo, Type type, MemberGroup members, DynamicMetaObject instance) {
+        private void MakeGenericBody(GetMemberInfo getMemInfo, Type instanceType, MemberGroup members, DynamicMetaObject instance) {
             MemberTracker bestMember = members[0];
             if (members.Count > 1) {
                 // if we were given multiple members pick the member closest to the type...                
@@ -303,56 +304,56 @@ namespace Microsoft.Scripting.Actions {
 
                 for (int i = 1; i < members.Count; i++) {
                     MemberTracker mt = members[i];
-                    if (!IsTrackerApplicableForType(type, mt)) {
+                    if (!IsTrackerApplicableForType(instanceType, mt)) {
                         continue;
                     }
 
                     if (members[i].DeclaringType.IsSubclassOf(bestMemberDeclaringType) ||
-                        !IsTrackerApplicableForType(type, bestMember)) {
+                        !IsTrackerApplicableForType(instanceType, bestMember)) {
                         bestMember = members[i];
                         bestMemberDeclaringType = members[i].DeclaringType;
                     }
                 }
             }
 
-            MakeGenericBodyWorker(getMemInfo, type, bestMember, instance);
+            MakeGenericBodyWorker(getMemInfo, instanceType, bestMember, instance);
         }
 
         private static bool IsTrackerApplicableForType(Type type, MemberTracker mt) {
             return mt.DeclaringType == type || type.IsSubclassOf(mt.DeclaringType);
         }
 
-        private void MakeTypeBody(GetMemberInfo getMemInfo, Type type, MemberGroup members) {
+        private void MakeTypeBody(GetMemberInfo getMemInfo, Type instanceType, MemberGroup members) {
             TypeTracker typeTracker = (TypeTracker)members[0];
             for (int i = 1; i < members.Count; i++) {
                 typeTracker = TypeGroup.UpdateTypeEntity(typeTracker, (TypeTracker)members[i]);
             }
 
-            getMemInfo.Body.FinishCondition(typeTracker.GetValue(getMemInfo.ResolutionFactory, this, type));
+            getMemInfo.Body.FinishCondition(typeTracker.GetValue(getMemInfo.ResolutionFactory, this, instanceType));
         }
 
-        private void MakeGenericBodyWorker(GetMemberInfo getMemInfo, Type type, MemberTracker tracker, DynamicMetaObject instance) {
+        private void MakeGenericBodyWorker(GetMemberInfo getMemInfo, Type instanceType, MemberTracker tracker, DynamicMetaObject instance) {
             if (instance != null) {
                 tracker = tracker.BindToInstance(instance);
             }
 
-            DynamicMetaObject val = tracker.GetValue(getMemInfo.ResolutionFactory, this, type);
+            DynamicMetaObject val = tracker.GetValue(getMemInfo.ResolutionFactory, this, instanceType);
 
             if (val != null) {
                 getMemInfo.Body.FinishCondition(val);
             } else {
-                ErrorInfo ei = tracker.GetError(this);
+                ErrorInfo ei = tracker.GetError(this, instanceType);
                 if (ei.Kind != ErrorInfoKind.Success && getMemInfo.IsNoThrow) {
                     getMemInfo.Body.FinishError(MakeOperationFailed());
                 } else {
-                    getMemInfo.Body.FinishError(MakeError(tracker.GetError(this), typeof(object)));
+                    getMemInfo.Body.FinishError(MakeError(ei, typeof(object)));
                 }
             }
         }
 
         /// <summary> if a member-injector is defined-on or registered-for this type call it </summary>
-        private void MakeOperatorGetMemberBody(GetMemberInfo getMemInfo, DynamicMetaObject instance, Type type, string name) {
-            MethodInfo getMem = GetMethod(type, name);
+        private void MakeOperatorGetMemberBody(GetMemberInfo getMemInfo, DynamicMetaObject instance, Type instanceType, string name) {
+            MethodInfo getMem = GetMethod(instanceType, name);
             if (getMem != null) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "getVal");
                 getMemInfo.Body.AddVariable(tmp);
@@ -365,7 +366,7 @@ namespace Microsoft.Scripting.Actions {
                                 getMemInfo.ResolutionFactory,
                                 getMem,
                                 new DynamicMetaObject(
-                                    Expression.Convert(instance.Expression, type),
+                                    Expression.Convert(instance.Expression, instanceType),
                                     instance.Restrictions,
                                     instance.Value
                                 ),
@@ -376,7 +377,7 @@ namespace Microsoft.Scripting.Actions {
                                 )
                             ).Expression
                         ),
-                        Ast.Field(null, typeof(OperationFailed).GetField("Value"))
+                        Ast.Field(null, typeof(OperationFailed).GetDeclaredField("Value"))
                     ),
                     tmp
                 );
@@ -396,7 +397,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private static MemberExpression MakeOperationFailed() {
-            return Ast.Field(null, typeof(OperationFailed).GetField("Value"));
+            return Ast.Field(null, typeof(OperationFailed).GetDeclaredField("Value"));
         }
 
 

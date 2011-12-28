@@ -13,6 +13,10 @@
  *
  * ***************************************************************************/
 
+#if !WIN8
+using TypeInfo = System.Type;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -106,24 +110,35 @@ namespace Microsoft.Scripting.Actions {
             lock (_trackers) {
                 MemberTracker res;
                 MemberKey key = new MemberKey(member, extending);
-                if (_trackers.TryGetValue(key, out res)) return res;
+                if (_trackers.TryGetValue(key, out res)) {
+                    return res;
+                }
 
-                switch (member.MemberType) {
-                    case MemberTypes.Constructor: res = new ConstructorTracker((ConstructorInfo)member); break;
-                    case MemberTypes.Event: res = new EventTracker((EventInfo)member); break;
-                    case MemberTypes.Field: res = new FieldTracker((FieldInfo)member); break;
-                    case MemberTypes.Method:
-                        MethodInfo mi = (MethodInfo)member;
-                        if (extending != null) {
-                            res = new ExtensionMethodTracker(mi, member.IsDefined(typeof(StaticExtensionMethodAttribute), false), extending);
-                        } else {
-                            res = new MethodTracker(mi);
-                        }
-                        break;
-                    case MemberTypes.TypeInfo:
-                    case MemberTypes.NestedType: res = new NestedTypeTracker((Type)member); break;
-                    case MemberTypes.Property: res = new ReflectedPropertyTracker((PropertyInfo)member); break;
-                    default: throw Error.UnknownMemberType(member.MemberType);
+                ConstructorInfo ctor;
+                EventInfo evnt;
+                FieldInfo field;
+                MethodInfo method;
+                TypeInfo type;
+                PropertyInfo property;
+
+                if ((method = member as MethodInfo) != null) {
+                    if (extending != null) {
+                        res = new ExtensionMethodTracker(method, member.IsDefined(typeof(StaticExtensionMethodAttribute), false), extending);
+                    } else {
+                        res = new MethodTracker(method);
+                    }
+                } else if ((ctor = member as ConstructorInfo) != null) {
+                    res = new ConstructorTracker(ctor);
+                } else if ((field = member as FieldInfo) != null) {
+                    res = new FieldTracker(field);
+                } else if ((property = member as PropertyInfo) != null) {
+                    res = new ReflectedPropertyTracker(property);
+                } else if ((evnt = member as EventInfo) != null) {
+                    res = new EventTracker(evnt);
+                } else if ((type = member as TypeInfo) != null) {
+                    res = new NestedTypeTracker(type.AsType());
+                } else {
+                    throw Error.UnknownMemberType(member);
                 }
 
                 _trackers[key] = res;
@@ -139,8 +154,8 @@ namespace Microsoft.Scripting.Actions {
         /// Returns null if it's an error to get the value.  The caller can then call GetErrorForGet to get 
         /// the correct error Expression (or null if they should provide a default).
         /// </summary>
-        public virtual DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type) {
-            return binder.ReturnMemberTracker(type, this);
+        public virtual DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType) {
+            return binder.ReturnMemberTracker(instanceType, this);
         }
 
         /// <summary>
@@ -149,7 +164,7 @@ namespace Microsoft.Scripting.Actions {
         /// Returns null if it's an error to assign to.  The caller can then call GetErrorForSet to
         /// get the correct error Expression (or null if a default error should be provided).
         /// </summary>
-        public virtual DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value) {
+        public virtual DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType, DynamicMetaObject value) {
             return null;
         }
 
@@ -159,8 +174,8 @@ namespace Microsoft.Scripting.Actions {
         /// Returns null if it's an error to assign to.  The caller can then call GetErrorForSet to
         /// get the correct error Expression (or null if a default error should be provided).
         /// </summary>
-        public virtual DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
-            return SetValue(resolverFactory, binder, type, value);
+        public virtual DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
+            return SetValue(resolverFactory, binder, instanceType, value);
         }
 
         /// <summary>
@@ -183,7 +198,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// A null return value indicates that the default error message should be provided by the caller.
         /// </summary>
-        public virtual ErrorInfo GetError(ActionBinder binder) {
+        public virtual ErrorInfo GetError(ActionBinder binder, Type instanceType) {
             return null;
         }
 
@@ -192,7 +207,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// A null return value indicates that the default error message should be provided by the caller.
         /// </summary>
-        public virtual ErrorInfo GetBoundError(ActionBinder binder, DynamicMetaObject instance) {
+        public virtual ErrorInfo GetBoundError(ActionBinder binder, DynamicMetaObject instance, Type instanceType) {
             return null;
         }
 
@@ -200,24 +215,24 @@ namespace Microsoft.Scripting.Actions {
         /// Helper for getting values that have been bound.  Called from BoundMemberTracker.  Custom member
         /// trackers can override this to provide their own behaviors when bound to an instance.
         /// </summary>
-        protected internal virtual DynamicMetaObject GetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject instance) {
-            return GetValue(resolverFactory, binder, type);
+        protected internal virtual DynamicMetaObject GetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType, DynamicMetaObject instance) {
+            return GetValue(resolverFactory, binder, instanceType);
         }
 
         /// <summary>
         /// Helper for setting values that have been bound.  Called from BoundMemberTracker.  Custom member
         /// trackers can override this to provide their own behaviors when bound to an instance.
         /// </summary>
-        protected internal virtual DynamicMetaObject SetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject instance) {
-            return SetValue(resolverFactory, binder, type, instance);
+        protected internal virtual DynamicMetaObject SetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType, DynamicMetaObject value, DynamicMetaObject instance) {
+            return SetValue(resolverFactory, binder, instanceType, instance);
         }
 
         /// <summary>
         /// Helper for setting values that have been bound.  Called from BoundMemberTracker.  Custom member
         /// trackers can override this to provide their own behaviors when bound to an instance.
         /// </summary>
-        protected internal virtual DynamicMetaObject SetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject instance, DynamicMetaObject errorSuggestion) {
-            return SetValue(resolverFactory, binder, type, instance, errorSuggestion);
+        protected internal virtual DynamicMetaObject SetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType, DynamicMetaObject value, DynamicMetaObject instance, DynamicMetaObject errorSuggestion) {
+            return SetValue(resolverFactory, binder, instanceType, instance, errorSuggestion);
         }
 
 

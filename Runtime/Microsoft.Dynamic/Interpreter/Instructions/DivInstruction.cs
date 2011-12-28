@@ -109,8 +109,8 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static Instruction Create(Type type) {
-            Debug.Assert(!type.IsEnum);
-            switch (Type.GetTypeCode(type)) {
+            Debug.Assert(!type.IsEnum());
+            switch (type.GetTypeCode()) {
                 case TypeCode.Int16: return _Int16 ?? (_Int16 = new DivInt16());
                 case TypeCode.Int32: return _Int32 ?? (_Int32 = new DivInt32());
                 case TypeCode.Int64: return _Int64 ?? (_Int64 = new DivInt64());

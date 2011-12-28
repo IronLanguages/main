@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
@@ -299,7 +299,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        private sealed class InnerMethodProfiler : MSAst.ExpressionVisitor {
+        private sealed class InnerMethodProfiler : MSAst.DynamicExpressionVisitor {
             private readonly Profiler/*!*/ _profiler;
             private readonly MSAst.ParameterExpression/*!*/ _tick;
             private readonly int _profileIndex;

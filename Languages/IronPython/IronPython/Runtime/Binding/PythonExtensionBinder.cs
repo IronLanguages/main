@@ -19,6 +19,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
+using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 
 namespace IronPython.Runtime.Binding {
@@ -57,7 +58,7 @@ namespace IronPython.Runtime.Binding {
 
         internal static bool IsApplicableExtensionMethod(Type instanceType, Type extensionMethodThisType) {
             
-            if (extensionMethodThisType.ContainsGenericParameters) {
+            if (extensionMethodThisType.ContainsGenericParameters()) {
                 Dictionary<Type, Type> binding = new Dictionary<Type, Type>();
                 
                 if (extensionMethodThisType.IsArray) {

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // ComObject
+#if FEATURE_COM
 
 using System;
 using System.Diagnostics;
@@ -512,7 +512,7 @@ namespace Microsoft.Scripting.ComInterop {
                 lock (_lock) {
                     if (_dynamicModule == null) {
                         var attributes = new[] { 
-                            new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(Type.EmptyTypes), new object[0]),
+                            new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0]),
                             //PermissionSet(SecurityAction.Demand, Unrestricted = true)
                             new CustomAttributeBuilder(typeof(PermissionSetAttribute).GetConstructor(new Type[]{typeof(SecurityAction)}), 
                                 new object[]{SecurityAction.Demand},

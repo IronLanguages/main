@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_NATIVE
 
 using System;
 using System.Diagnostics;
@@ -32,7 +33,6 @@ using Microsoft.Scripting.Math;
 using System.Numerics;
 #endif
 
-#if !SILVERLIGHT
 namespace IronPython.Modules {
     /// <summary>
     /// Provides helper functions which need to be called from generated code to implement various 

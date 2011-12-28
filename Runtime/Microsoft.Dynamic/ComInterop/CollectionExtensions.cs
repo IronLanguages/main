@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if FEATURE_COM
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -48,3 +48,4 @@ namespace Microsoft.Scripting.ComInterop {
         }
     }
 }
+#endif

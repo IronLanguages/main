@@ -12,8 +12,9 @@
  *
  *
  * ***************************************************************************/
+#if !WIN8
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -28,7 +29,7 @@ namespace Microsoft.Scripting.Utils {
     /// Not all .NET enumerators throw exceptions if accessed in an invalid state. This type
     /// can be used to throw exceptions from enumerators implemented in IronPython.
     /// </summary>
-    abstract class CheckedDictionaryEnumerator : IDictionaryEnumerator, IEnumerator<KeyValuePair<object, object>> {
+    internal abstract class CheckedDictionaryEnumerator : IDictionaryEnumerator, IEnumerator<KeyValuePair<object, object>> {
         private EnumeratorState _enumeratorState = EnumeratorState.NotStarted;
 
         private void CheckEnumeratorState() {
@@ -38,7 +39,7 @@ namespace Microsoft.Scripting.Utils {
                 throw Error.EnumerationFinished();
         }
 
-        #region IDictionaryEnumerator Members
+#region IDictionaryEnumerator Members
         public DictionaryEntry Entry {
             get {
                 CheckEnumeratorState();
@@ -61,7 +62,7 @@ namespace Microsoft.Scripting.Utils {
         }
         #endregion
 
-        #region IEnumerator Members
+#region IEnumerator Members
         public bool MoveNext() {
             if (_enumeratorState == EnumeratorState.Ended)
                 throw Error.EnumerationFinished();
@@ -82,7 +83,7 @@ namespace Microsoft.Scripting.Utils {
         }
         #endregion
 
-        #region IEnumerator<KeyValuePair<object,object>> Members
+#region IEnumerator<KeyValuePair<object,object>> Members
 
         KeyValuePair<object, object> IEnumerator<KeyValuePair<object, object>>.Current {
             get { return new KeyValuePair<object, object>(Key, Value); }
@@ -90,7 +91,7 @@ namespace Microsoft.Scripting.Utils {
 
         #endregion
 
-        #region IDisposable Members
+#region IDisposable Members
 
         public void Dispose() {
             GC.SuppressFinalize(this);
@@ -98,7 +99,7 @@ namespace Microsoft.Scripting.Utils {
 
         #endregion
 
-        #region Methods that a sub-type needs to implement
+#region Methods that a sub-type needs to implement
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")] // TODO: fix
         protected abstract object GetKey();
@@ -118,3 +119,5 @@ namespace Microsoft.Scripting.Utils {
         }
     }
 }
+
+#endif

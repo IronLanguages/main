@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
 #else
@@ -188,8 +188,8 @@ namespace IronPython.Runtime.Binding {
         #region Conversions
 
         private DynamicMetaObject TryPythonConversion(DynamicMetaObjectBinder conversion, Type type) {
-            if (!type.IsEnum) {
-                switch (Type.GetTypeCode(type)) {
+            if (!type.IsEnum()) {
+                switch (type.GetTypeCode()) {
                     case TypeCode.Object:
                         if (type == typeof(Complex)) {
                             return MakeConvertRuleForCall(conversion, type, this, "__complex__", "ConvertToComplex",

@@ -13,7 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !WIN8
+using TypeInfo = System.Type;
+#endif
+
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -63,10 +68,9 @@ namespace Microsoft.Scripting.Runtime {
         }
     }
 
-    // TODO: Only used by ComObjectWityTypeInfo. Remove when gone!
     internal static class AssemblyTypeNames {
         public static IEnumerable<TypeName> GetTypeNames(Assembly assem, bool includePrivateTypes) {
-#if !SILVERLIGHT
+#if CLR2
             switch (assem.FullName) {
                 case "mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089": return Get_mscorlib_TypeNames();
                 case "System, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089": return Get_System_TypeNames();
@@ -75,55 +79,9 @@ namespace Microsoft.Scripting.Runtime {
                 case "System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089": return Get_SystemWindowsForms_TypeNames();
             }
 #endif
-
-            Type[] types = LoadTypesFromAssembly(assem, includePrivateTypes);
-
-            return GetTypeNames(types);
-        }
-
-        static IEnumerable<TypeName> GetTypeNames(Type[] types) {
-            foreach (Type t in types) {
-                if (t.IsNested()) continue;
-                TypeName typeName = new TypeName(t);
-                yield return typeName;
-            }
-        }
-
-        // Note that the result can contain null references.
-        private static Type[] GetAllTypesFromAssembly(Assembly asm) {
-#if SILVERLIGHT // ReflectionTypeLoadException
-            try {
-                return asm.GetTypes();
-            } catch (Exception) {
-                return Type.EmptyTypes;
-            }
-#else
-            try {
-                return asm.GetTypes();
-            } catch (ReflectionTypeLoadException rtlException) {
-                return rtlException.Types;
-            }
-#endif
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static Type[] LoadTypesFromAssembly(Assembly assembly, bool includePrivateTypes) {
-            ContractUtils.RequiresNotNull(assembly, "assembly");
-
-            if (includePrivateTypes) {
-                return ArrayUtils.FindAll(GetAllTypesFromAssembly(assembly), (type) => type != null);
-            }
-
-            try {
-                return assembly.GetExportedTypes();
-            } catch (NotSupportedException) {
-                // GetExportedTypes does not work with dynamic assemblies
-            } catch (Exception) {
-                // Some type loads may cause exceptions. Unfortunately, there is no way to ask GetExportedTypes
-                // for just the list of types that we successfully loaded.
-            }
-
-            return ArrayUtils.FindAll(GetAllTypesFromAssembly(assembly), (type) => type != null && type.IsPublic);
+            return from t in ReflectionUtils.GetAllTypesFromAssembly(assem, includePrivateTypes)
+                   where !t.IsNested
+                   select new TypeName(t.AsType());
         }
 
 #if !SILVERLIGHT

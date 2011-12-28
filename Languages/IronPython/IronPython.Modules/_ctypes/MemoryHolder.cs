@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
@@ -21,8 +23,6 @@ using System.Text;
 using System.Threading;
 
 using IronPython.Runtime;
-
-#if !SILVERLIGHT
 
 namespace IronPython.Modules {
     /// <summary>

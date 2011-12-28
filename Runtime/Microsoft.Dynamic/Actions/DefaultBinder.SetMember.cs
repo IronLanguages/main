@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -22,6 +22,7 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -174,7 +175,7 @@ namespace Microsoft.Scripting.Actions {
 
             // if lookup failed try the strong-box type if available.
             if (self != null && members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type)) {
-                self = new DynamicMetaObject(Ast.Field(AstUtils.Convert(self.Expression, type), type.GetField("Value")), BindingRestrictions.Empty, ((IStrongBox)self.Value).Value);
+                self = new DynamicMetaObject(Ast.Field(AstUtils.Convert(self.Expression, type), type.GetInheritedFields("Value").First()), BindingRestrictions.Empty, ((IStrongBox)self.Value).Value);
                 type = type.GetGenericArguments()[0];
 
                 members = GetMember(MemberRequestKind.Set, type, memInfo.Name);
@@ -224,18 +225,18 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type type, MemberTracker tracker, DynamicMetaObject errorSuggestion) {
+        private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type instanceType, MemberTracker tracker, DynamicMetaObject errorSuggestion) {
             if (instance != null) {
                 tracker = tracker.BindToInstance(instance);
             }
 
-            DynamicMetaObject val = tracker.SetValue(memInfo.ResolutionFactory, this, type, target, errorSuggestion);
+            DynamicMetaObject val = tracker.SetValue(memInfo.ResolutionFactory, this, instanceType, target, errorSuggestion);
 
             if (val != null) {
                 memInfo.Body.FinishCondition(val);
             } else {
                 memInfo.Body.FinishError(
-                    MakeError(tracker.GetError(this), typeof(object))
+                    MakeError(tracker.GetError(this, instanceType), typeof(object))
                 );
             }
         }
@@ -253,8 +254,15 @@ namespace Microsoft.Scripting.Actions {
             }
 
             if (setter != null) {
-                setter = CompilerHelpers.GetCallableMethod(setter, PrivateBinding);
+                // TODO (tomat): this used to use setter.ReflectedType, is it still correct?
+                setter = CompilerHelpers.TryGetCallableMethod(targetType, setter);
 
+                if (!PrivateBinding && !CompilerHelpers.IsVisible(setter)) {
+                    setter = null;
+                }
+            }
+
+            if (setter != null) {
                 if (info.IsStatic != (instance == null)) {
                     memInfo.Body.FinishError(
                         errorSuggestion ?? MakeError(
@@ -278,7 +286,7 @@ namespace Microsoft.Scripting.Actions {
                     memInfo.Body.FinishCondition(
                         MakeGenericPropertyExpression(memInfo)
                     );
-                } else if (setter.IsPublic && !setter.DeclaringType.IsValueType) {
+                } else if (setter.IsPublic && !setter.DeclaringType.IsValueType()) {
                     if (instance == null) {
                         memInfo.Body.FinishCondition(
                             Ast.Block(
@@ -338,7 +346,7 @@ namespace Microsoft.Scripting.Actions {
             FieldTracker field = (FieldTracker)fields[0];
 
             // TODO: Tmp variable for target
-            if (instance != null && field.DeclaringType.IsGenericType && field.DeclaringType.GetGenericTypeDefinition() == typeof(StrongBox<>)) {
+            if (instance != null && field.DeclaringType.IsGenericType() && field.DeclaringType.GetGenericTypeDefinition() == typeof(StrongBox<>)) {
                 // work around a CLR bug where we can't access generic fields from dynamic methods.
                 Type[] generic = field.DeclaringType.GetGenericArguments();
                 memInfo.Body.FinishCondition(
@@ -346,7 +354,7 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Assign(
                             Ast.Field(
                                 AstUtils.Convert(instance.Expression, field.DeclaringType),
-                                field.DeclaringType.GetField("Value")
+                                field.DeclaringType.GetDeclaredField("Value")
                             ),
                             AstUtils.Convert(target.Expression, generic[0])
                         ),
@@ -367,19 +375,19 @@ namespace Microsoft.Scripting.Actions {
                         typeof(object)
                     )
                 );
-            } else if (field.DeclaringType.IsValueType && !field.IsStatic) {
+            } else if (field.DeclaringType.IsValueType() && !field.IsStatic) {
                 memInfo.Body.FinishError(
                     errorSuggestion ?? MakeError(
                         MakeSetValueTypeFieldError(field, instance, target),
                         typeof(object)
                     )
                 );
-            } else if (field.IsPublic && field.DeclaringType.IsVisible) {
+            } else if (field.IsPublic && field.DeclaringType.IsVisible()) {
                 if (!field.IsStatic && instance == null) {
                     memInfo.Body.FinishError(
                         Ast.Throw(
                             Ast.New(
-                                typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }),
+                                typeof(ArgumentException).GetConstructor(new[] { typeof(string) }),
                                 AstUtils.Constant("assignment to instance field w/o instance")
                             ),
                             typeof(object)
@@ -474,7 +482,7 @@ namespace Microsoft.Scripting.Actions {
 
         private static Expression MakeGenericPropertyExpression(SetOrDeleteMemberInfo memInfo) {
             return Ast.New(
-                typeof(MemberAccessException).GetConstructor(new Type[] { typeof(string) }),
+                typeof(MemberAccessException).GetConstructor(new[] { typeof(string) }),
                 AstUtils.Constant(memInfo.Name)
             );
         }

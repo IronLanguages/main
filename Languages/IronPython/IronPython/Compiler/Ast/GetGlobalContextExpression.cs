@@ -21,7 +21,7 @@ using IronPython.Runtime;
 using Microsoft.Scripting.Interpreter;
 using IronPython.Runtime.Operations;
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;

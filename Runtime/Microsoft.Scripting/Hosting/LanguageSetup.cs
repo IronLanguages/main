@@ -16,8 +16,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Threading;
-
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Hosting {
@@ -76,7 +76,7 @@ namespace Microsoft.Scripting.Hosting {
                 if (value is T) {
                     return (T)value;
                 }
-                return (T)Convert.ChangeType(value, typeof(T), Thread.CurrentThread.CurrentCulture);
+                return (T)Convert.ChangeType(value, typeof(T), CultureInfo.CurrentCulture);
             }
             return defaultValue;
         }

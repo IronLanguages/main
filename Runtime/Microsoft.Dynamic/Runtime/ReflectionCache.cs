@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Scripting.Utils;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions;
 
 namespace Microsoft.Scripting.Runtime {
@@ -28,39 +27,6 @@ namespace Microsoft.Scripting.Runtime {
     public static class ReflectionCache {
         private static readonly Dictionary<MethodBaseCache, MethodGroup> _functions = new Dictionary<MethodBaseCache, MethodGroup>();
         private static readonly Dictionary<Type, TypeTracker> _typeCache = new Dictionary<Type, TypeTracker>();
-
-        public static MethodGroup GetMethodGroup(Type type, string name) {
-            return GetMethodGroup(type, name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.InvokeMethod, null);
-        }
-
-        /// <summary>
-        /// Gets a singleton method group from the provided type.
-        /// 
-        /// The provided method group will be unique based upon the methods defined, not based upon the type/name
-        /// combination.  In other words calling GetMethodGroup on a base type and a derived type that introduces
-        /// no new methods under a given name will result in the same method group for both types.
-        /// </summary>
-        public static MethodGroup GetMethodGroup(Type type, string name, BindingFlags bindingFlags, MemberFilter filter) {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.RequiresNotNull(name, "name");
-
-            MemberInfo[] mems = type.FindMembers(MemberTypes.Method,
-                bindingFlags,
-                filter ?? delegate(MemberInfo mem, object filterCritera) {
-                    return mem.Name == name;
-                },
-                null);
-
-            MethodGroup res = null;
-            if (mems.Length != 0) {
-                MethodInfo[] methods = ArrayUtils.ConvertAll<MemberInfo, MethodInfo>(
-                    mems,
-                    delegate(MemberInfo x) { return (MethodInfo)x; }
-                );
-                res = GetMethodGroup(name, methods);
-            }
-            return res;
-        }
 
         public static MethodGroup GetMethodGroup(string name, MethodBase[] methods) {
             MethodGroup res = null;
@@ -131,17 +97,20 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             private static int CompareMethods(MethodBase x, MethodBase y) {
-                if (x.Module == y.Module) {
-                    return x.MetadataToken - y.MetadataToken;
-                }
+                Module xModule = x.GetModule();
+                Module yModule = y.GetModule();
 
-#if SILVERLIGHT
-                int xHash = x.Module.GetHashCode();
-                int yHash = y.Module.GetHashCode();
+                if (xModule == yModule) {
+                    return x.GetMetadataToken() - y.GetMetadataToken();
+                }
+                
+#if SILVERLIGHT || WIN8
+                int xHash = xModule.GetHashCode();
+                int yHash = yModule.GetHashCode();
                 if (xHash != yHash) {
                     return xHash - yHash;
                 } else {
-                    long diff = IdDispenser.GetId(x.Module) - IdDispenser.GetId(y.Module);
+                    long diff = IdDispenser.GetId(xModule) - IdDispenser.GetId(yModule);
                     if (diff > 0) {
                         return 1;
                     } else if (diff < 0) {
@@ -151,11 +120,10 @@ namespace Microsoft.Scripting.Runtime {
                     }
                 }
 #else
-                return x.Module.ModuleVersionId.CompareTo(y.Module.ModuleVersionId);
+                return xModule.ModuleVersionId.CompareTo(yModule.ModuleVersionId);
 #endif
             }
 
-            [Confined]
             public override bool Equals(object obj) {
                 MethodBaseCache other = obj as MethodBaseCache;
                 if (other == null || _members.Length != other._members.Length || other._name != _name) {
@@ -164,7 +132,7 @@ namespace Microsoft.Scripting.Runtime {
 
                 for (int i = 0; i < _members.Length; i++) {
                     if (_members[i].DeclaringType != other._members[i].DeclaringType ||
-                        _members[i].MetadataToken != other._members[i].MetadataToken ||
+                        _members[i].GetMetadataToken() != other._members[i].GetMetadataToken() ||
                         _members[i].IsGenericMethod != other._members[i].IsGenericMethod) {
                         return false;
                     }
@@ -188,11 +156,10 @@ namespace Microsoft.Scripting.Runtime {
                 return true;
             }
 
-            [Confined]
             public override int GetHashCode() {
                 int res = 6551;
                 foreach (MemberInfo mi in _members) {
-                    res ^= res << 5 ^ mi.DeclaringType.GetHashCode() ^ mi.MetadataToken;
+                    res ^= res << 5 ^ mi.DeclaringType.GetHashCode() ^ mi.GetMetadataToken();
                 }
                 res ^= _name.GetHashCode();
 

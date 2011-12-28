@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -22,8 +22,9 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
@@ -100,12 +101,8 @@ namespace Microsoft.Scripting.Actions {
         public DynamicMetaObject GetDocumentation(DynamicMetaObject target) {
             BindingRestrictions restrictions = BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType);
 
-            object[] attrs = target.LimitType.GetCustomAttributes(typeof(DocumentationAttribute), true);
-            string documentation = String.Empty;
-
-            if (attrs.Length > 0) {
-                documentation = ((DocumentationAttribute)attrs[0]).Documentation;
-            }
+            DocumentationAttribute attr = target.LimitType.GetTypeInfo().GetCustomAttribute<DocumentationAttribute>();
+            string documentation = (attr != null) ? attr.Documentation : String.Empty;
 
             return new DynamicMetaObject(
                 AstUtils.Constant(documentation),
@@ -116,17 +113,11 @@ namespace Microsoft.Scripting.Actions {
         public DynamicMetaObject GetMemberNames(DynamicMetaObject target) {
             BindingRestrictions restrictions = BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType);
 
-            MemberInfo[] members = target.LimitType.GetMembers();
-            Dictionary<string, string> mems = new Dictionary<string, string>();
-            foreach (MemberInfo mi in members) {
-                mems[mi.Name] = mi.Name;
-            }
-
-            string[] res = new string[mems.Count];
-            mems.Keys.CopyTo(res, 0);
+            HashSet<string> names = new HashSet<string>();
+            TypeTracker.GetMemberNames(target.LimitType, names);
 
             return new DynamicMetaObject(
-                AstUtils.Constant(res),
+                AstUtils.Constant(names.ToArray()),
                 restrictions
             );
         }
@@ -279,26 +270,26 @@ namespace Microsoft.Scripting.Actions {
             BindingRestrictions restrictions = BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[0].Expression, args[0].GetLimitType()).Merge(BindingRestrictions.Combine(args));
 
             if (args[0].GetLimitType() == typeof(DynamicNull)) {
-                if (!otherType.IsValueType) {
+                if (!otherType.IsValueType()) {
                     return new DynamicMetaObject(
                         Ast.Equal(args[0].Expression, AstUtils.Constant(null)),
                         restrictions
                     );
                 } else if (otherType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     return new DynamicMetaObject(
-                            Ast.Property(args[0].Expression, otherType.GetProperty("HasValue")),
+                            Ast.Property(args[0].Expression, otherType.GetDeclaredProperty("HasValue")),
                         restrictions
                     );
                 }
             } else if (otherType == typeof(DynamicNull)) {
-                if (!args[0].GetLimitType().IsValueType) {
+                if (!args[0].GetLimitType().IsValueType()) {
                     return new DynamicMetaObject(
                         Ast.Equal(args[0].Expression, AstUtils.Constant(null)),
                         restrictions
                     );
                 } else if (args[0].GetLimitType().GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     return new DynamicMetaObject(
-                        Ast.Property(args[0].Expression, otherType.GetProperty("HasValue")),
+                        Ast.Property(args[0].Expression, otherType.GetDeclaredProperty("HasValue")),
                         restrictions
                     );
                 }
@@ -543,7 +534,7 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private MethodInfo[] GetMethodsFromDefaults(MemberInfo[] defaults, IndexType op) {
+        private MethodInfo[] GetMethodsFromDefaults(IEnumerable<MemberInfo> defaults, IndexType op) {
             List<MethodInfo> methods = new List<MethodInfo>();
             foreach (MemberInfo mi in defaults) {
                 PropertyInfo pi = mi as PropertyInfo;

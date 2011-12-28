@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
 #else
@@ -29,7 +29,6 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -49,7 +48,7 @@ namespace IronPython.Runtime.Types {
 #if CLR2
         IValueEquality,
 #endif
-#if !SILVERLIGHT // ICustomTypeDescriptor
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
         ICustomTypeDescriptor,
 #endif
         ISerializable,
@@ -86,7 +85,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         private OldInstance(SerializationInfo info, StreamingContext context) {
             _class = (OldClass)info.GetValue("__class__", typeof(OldClass));
             _dict = MakeDictionary(_class);
@@ -663,7 +662,7 @@ namespace IronPython.Runtime.Types {
         }
 
         #region ICustomTypeDescriptor Members
-#if !SILVERLIGHT // ICustomTypeDescriptor
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
 
         AttributeCollection ICustomTypeDescriptor.GetAttributes() {
             return CustomTypeDescHelpers.GetAttributes(this);
@@ -865,8 +864,7 @@ namespace IronPython.Runtime.Types {
         #endregion
 
         #region ISerializable Members
-#if !SILVERLIGHT // SerializationInfo
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
+#if FEATURE_SERIALIZATION
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             info.AddValue("__class__", _class);
             info.AddValue("__dict__", _dict);

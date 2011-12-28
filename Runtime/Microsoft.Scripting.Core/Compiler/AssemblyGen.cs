@@ -23,7 +23,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast.Compiler {
 #else
 namespace System.Linq.Expressions.Compiler {
@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Compiler {
 
         // Testing options. Only ever set in CLR2 build
         // configurations, see SetSaveAssemblies
-#if CLR2
+#if !FEATURE_CORE_DLR
         private static string _saveAssembliesPath;
         private static bool _saveAssemblies;
 #endif
@@ -41,7 +41,7 @@ namespace System.Linq.Expressions.Compiler {
         private readonly AssemblyBuilder _myAssembly;
         private readonly ModuleBuilder _myModule;
 
-#if CLR2 && !SILVERLIGHT
+#if !FEATURE_CORE_DLR && !SILVERLIGHT
         private readonly string _outFileName;       // can be null iff !SaveAndReloadAssemblies
         private readonly string _outDir;            // null means the current directory
 #endif
@@ -66,10 +66,10 @@ namespace System.Linq.Expressions.Compiler {
 
             // mark the assembly transparent so that it works in partial trust:
             var attributes = new[] { 
-                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0])
+                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0])
             };
 
-#if CLR2
+#if !FEATURE_CORE_DLR
             if (_saveAssemblies) {
                 string outDir = _saveAssembliesPath ?? Directory.GetCurrentDirectory();
                 try {
@@ -128,7 +128,7 @@ namespace System.Linq.Expressions.Compiler {
             );
         }
 
-#if CLR2
+#if !FEATURE_CORE_DLR
         //Return the location of the saved assembly file.
         //The file location is used by PE verification in Microsoft.Scripting.
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]

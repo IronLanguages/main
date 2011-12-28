@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -126,7 +126,7 @@ namespace IronPython.Runtime.Binding {
                 );
             } else {
                 string msg;
-                if (Value.UnderlyingSystemType.IsAbstract) {
+                if (Value.UnderlyingSystemType.IsAbstract()) {
                     msg = String.Format("Cannot create instances of {0} because it is abstract", Value.Name);
                 }else{
                     msg = String.Format("Cannot create instances of {0} because it has no public constructors", Value.Name);
@@ -163,7 +163,7 @@ namespace IronPython.Runtime.Binding {
 
             if (TooManyArgsForDefaultNew(call, args)) {
                 return MakeIncorrectArgumentsForCallError(call, ai, valInfo);
-            } else if (Value.UnderlyingSystemType.IsGenericTypeDefinition) {
+            } else if (Value.UnderlyingSystemType.IsGenericTypeDefinition()) {
                 return MakeGenericTypeDefinitionError(call, ai, valInfo);
             } else if (Value.HasAbstractMethods(PythonContext.GetPythonContext(call).SharedContext)) {
                 return MakeAbstractInstantiationError(call, ai, valInfo);
@@ -194,7 +194,7 @@ namespace IronPython.Runtime.Binding {
                 // we need to dynamically check the return value to see if it's a subtype of
                 // the type that we are calling.  If it is then we need to call __init__/__del__
                 // for the actual returned type.
-                res = Expression.Dynamic(
+                res = DynamicExpression.Dynamic(
                     Value.GetLateBoundInitBinder(sig),
                     typeof(object),
                     ArrayUtils.Insert(
@@ -390,7 +390,7 @@ namespace IronPython.Runtime.Binding {
                 AppendNewArgs(args);
 
                 return new DynamicMetaObject(
-                    Ast.Dynamic(
+                    DynamicExpression.Dynamic(
                         PythonContext.Invoke(
                             GetDynamicNewSignature()
                         ),
@@ -535,7 +535,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 return new DynamicMetaObject(
-                    Expression.Dynamic(
+                    DynamicExpression.Dynamic(
                         ((PythonType)Arguments.Self.Value).GetLateBoundInitBinder(Arguments.Signature),
                         typeof(object),
                         args.ToArray()

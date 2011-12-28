@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_FULL_CONSOLE
 
 using System.IO;
 
@@ -42,3 +43,5 @@ namespace Microsoft.Scripting.Hosting.Shell {
         TextWriter ErrorOutput { get; set; }
     }
 }
+
+#endif

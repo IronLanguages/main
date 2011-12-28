@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
 using System;
 using System.Diagnostics;
 
@@ -27,8 +29,6 @@ using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
 #endif
-
-#if !SILVERLIGHT
 
 namespace IronPython.Modules {
     /// <summary>
@@ -76,7 +76,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            #region Internal APIs
+#region Internal APIs
 
             internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
                 if (instance != null) {
@@ -147,9 +147,9 @@ namespace IronPython.Modules {
                 }
             }
 
-            #endregion
+#endregion
 
-            #region ICodeFormattable Members
+#region ICodeFormattable Members
 
             public string __repr__(CodeContext context) {
                 if (_bits == -1) {
@@ -158,9 +158,9 @@ namespace IronPython.Modules {
                 return String.Format("<Field type={0}, ofs={1}:{2}, bits={3}>", ((PythonType)_fieldType).Name, offset, _bitsOffset, _bits);
             }
 
-            #endregion
+#endregion
 
-            #region Private implementation
+#region Private implementation
 
             /// <summary>
             /// Called for fields which have been limited to a range of bits.  Given the
@@ -268,7 +268,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            #endregion
+#endregion
         }
     }
 }

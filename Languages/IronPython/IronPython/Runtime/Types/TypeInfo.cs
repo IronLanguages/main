@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -365,7 +366,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         class OperatorResolver : MemberResolver {
             public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
-                if (type.IsSealed && type.IsAbstract) {
+                if (type.IsSealed() && type.IsAbstract()) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
@@ -564,7 +565,8 @@ namespace IronPython.Runtime.Types {
         class ProtectedMemberResolver : MemberResolver {
             public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
                 foreach (Type t in binder.GetContributingTypes(type)) {
-                    MemberGroup res = new MemberGroup(ArrayUtils.FindAll(t.GetMember(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy), ProtectedOnly));
+                    MemberGroup res = new MemberGroup(ArrayUtils.FindAll(
+                        t.GetMember(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy), ProtectedOnly));
 
                     for (int i = 0; i < res.Count; i++) {
                         MethodTracker meth = res[i] as MethodTracker;                        
@@ -785,7 +787,7 @@ namespace IronPython.Runtime.Types {
                 && type != typeof(Complex)
 #endif
             ) {
-                MethodInfo tostr = type.GetMethod("ToString", Type.EmptyTypes);
+                MethodInfo tostr = type.GetMethod("ToString", ReflectionUtils.EmptyTypes);
                 if (tostr != null && tostr.DeclaringType != typeof(object)) {
                     return GetInstanceOpsMethod(type, "ToStringMethod");
                 }
@@ -801,7 +803,7 @@ namespace IronPython.Runtime.Types {
             // __repr__ for normal .NET types is special, if we're a Python type then
             // we'll use one of the built-in reprs (from object or from the type)
             if (!PythonBinder.IsPythonType(type) &&
-                (!type.IsSealed || !type.IsAbstract)) {     // static types don't get __repr__
+                (!type.IsSealed() || !type.IsAbstract())) {     // static types don't get __repr__
                 // check and see if __repr__ has been overridden by the base type.
                 foreach (Type t in binder.GetContributingTypes(type)) {
                     if (t == typeof(ObjectOps) && type != typeof(object)) {
@@ -923,10 +925,13 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
+            // TODO: CompilerHelpers.GetConstructors(type, binder.DomainManager.Configuration.PrivateBinding, true);
+            var ctors = CompilerHelpers.FilterConstructorsToPublicAndProtected(
+                type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            ).ToArray();
+
             // type has no Python __new__, just return the .NET constructors if they have
             // a custom new
-            ConstructorInfo[] ctors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);// CompilerHelpers.GetConstructors(type, binder.DomainManager.Configuration.PrivateBinding, true);
-            ctors = CompilerHelpers.FilterConstructorsToPublicAndProtected(ctors);
             if (!PythonTypeOps.IsDefaultNew(ctors)) {
                 return new MemberGroup(ctors);
             }
@@ -1185,7 +1190,7 @@ namespace IronPython.Runtime.Types {
 
             // search for IDictionary<K, V> first because it's ICollection<KVP<K, V>> and we want to call ContainsKey
             foreach (Type t in intf) {
-                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>)) {
+                if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(IDictionary<,>)) {
                     if (t.GetGenericArguments()[0] == typeof(object)) {
                         hasObjectContains = true;
                     }
@@ -1201,7 +1206,7 @@ namespace IronPython.Runtime.Types {
             if (containsMembers == null) {
                 // then look for ICollection<T> for generic __contains__ first if we're not an IDictionary<K, V>
                 foreach (Type t in intf) {
-                    if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
+                    if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
                         if (t.GetGenericArguments()[0] == typeof(object)) {
                             hasObjectContains = true;
                         }
@@ -1251,7 +1256,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static void GetEnumeratorContains(Type type, IList<Type> intf, ref List<MemberTracker> containsMembers, ref bool hasObjectContains, Type ienumOfT, Type ienum, string name) {
             foreach (Type t in intf) {
-                if (t.IsGenericType && t.GetGenericTypeDefinition() == ienumOfT) {
+                if (t.IsGenericType() && t.GetGenericTypeDefinition() == ienumOfT) {
                     if (t.GetGenericArguments()[0] == typeof(object)) {
                         hasObjectContains = true;
                     }
@@ -1292,7 +1297,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public MemberGroup/*!*/ Resolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-                if (type.IsSealed && type.IsAbstract) {
+                if (type.IsSealed() && type.IsAbstract()) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
@@ -1319,7 +1324,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public MemberGroup/*!*/ Resolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-                if (type.IsSealed && type.IsAbstract) {
+                if (type.IsSealed() && type.IsAbstract()) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
@@ -1398,30 +1403,33 @@ namespace IronPython.Runtime.Types {
             protected MemberGroup/*!*/ GetMember(Type/*!*/ type, string/*!*/ name, BindingFlags flags) {
                 Assert.NotNull(type, name);
 
-                MemberInfo[] foundMembers = type.GetMember(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | flags);
+                IEnumerable<MemberInfo> foundMembers = type.GetMember(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | flags);
 
                 if (!Binder.DomainManager.Configuration.PrivateBinding) {
                     foundMembers = CompilerHelpers.FilterNonVisibleMembers(type, foundMembers);
                 }
+
+                MemberInfo[] foundMembersArray = foundMembers.ToArray();
+
                 List<MemberInfo> filteredMembers = null;
-                for (int i = 0; i < foundMembers.Length; i++) {
-                    var member = foundMembers[i];
+                for (int i = 0; i < foundMembersArray.Length; i++) {
+                    var member = foundMembersArray[i];
                     if (member.DeclaringType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                         if (filteredMembers == null) {
                             filteredMembers = new List<MemberInfo>();
                             for (int j = 0; j < i; j++) {
-                                filteredMembers.Add(foundMembers[j]);
+                                filteredMembers.Add(foundMembersArray[j]);
                             }
                         }
                     } else if (filteredMembers != null) {
-                        filteredMembers.Add(foundMembers[i]);
+                        filteredMembers.Add(foundMembersArray[i]);
                     }
                 }
                 if (filteredMembers != null) {
                     foundMembers = filteredMembers.ToArray();
                 }
 
-                MemberGroup members = new MemberGroup(foundMembers);
+                MemberGroup members = new MemberGroup(foundMembersArray);
 
                 // check for generic types w/ arity...
                 Type[] types = type.GetNestedTypes(BindingFlags.Public | flags);

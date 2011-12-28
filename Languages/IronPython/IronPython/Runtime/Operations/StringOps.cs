@@ -1519,7 +1519,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool TryGetEncoding(string name, out Encoding encoding) {
-#if SILVERLIGHT // EncodingInfo
+#if FEATURE_ENCODING
+            name = NormalizeEncodingName(name);
+
+            EncodingInfoWrapper encInfo;
+            if (CodecsInfo.Codecs.TryGetValue(name, out encInfo)) {
+                encoding = (Encoding)encInfo.GetEncoding().Clone();
+                return true;
+            }
+#else
             switch (NormalizeEncodingName(name)) {
                 case "us_ascii":
                 case "ascii": encoding = PythonAsciiEncoding.Instance; return true;
@@ -1527,14 +1535,6 @@ namespace IronPython.Runtime.Operations {
                 case "utf_16_le": encoding = (Encoding)new EncodingWrapper(Encoding.Unicode, new byte[0]).Clone(); return true;
                 case "utf_16_be": encoding = (Encoding)new EncodingWrapper(Encoding.BigEndianUnicode, new byte[0]).Clone(); return true;
                 case "utf_8_sig": encoding = Encoding.UTF8; return true;
-            }
-#else
-            name = NormalizeEncodingName(name);
-
-            EncodingInfoWrapper encInfo;
-            if (CodecsInfo.Codecs.TryGetValue(name, out encInfo)) {
-                encoding = (Encoding)encInfo.GetEncoding().Clone();
-                return true;
             }
 #endif
             encoding = null;
@@ -1665,7 +1665,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string GetEncodingName(Encoding encoding) {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
             string name = null;
 
             // if we have a valid code page try and get a reasonable name.  The
@@ -1745,7 +1745,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) {
-#if !SILVERLIGHT // DecoderFallback
+#if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode.
             e = (Encoding)e.Clone();
@@ -1834,7 +1834,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e) {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
             e = (Encoding)e.Clone();
@@ -1874,7 +1874,7 @@ namespace IronPython.Runtime.Operations {
             return Converter.ConvertToString(t[0]);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         static class CodecsInfo {
             public static readonly Dictionary<string, EncodingInfoWrapper> Codecs = MakeCodecsDict();
 
@@ -1986,13 +1986,13 @@ namespace IronPython.Runtime.Operations {
             }
 
             private void SetEncoderFallback() {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 _encoding.EncoderFallback = EncoderFallback;
 #endif
             }
 
             private void SetDecoderFallback() {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 _encoding.DecoderFallback = DecoderFallback;
 #endif
             }
@@ -2041,12 +2041,14 @@ namespace IronPython.Runtime.Operations {
                 return _encoding.GetDecoder();
             }
 
+#if FEATURE_ENCODING
             public override object Clone() {
                 // need to call base.Clone to be marked as read/write
                 EncodingWrapper res = (EncodingWrapper)base.Clone();
                 res._encoding = (Encoding)_encoding.Clone();
                 return res;
-            }            
+            }          
+#endif
         }
 
         private static List SplitEmptyString(bool separators) {
@@ -2310,7 +2312,7 @@ namespace IronPython.Runtime.Operations {
 
         #region  Unicode Encode/Decode Fallback Support
 
-#if !SILVERLIGHT // EncoderFallbackBuffer
+#if FEATURE_ENCODING
         /// When encoding or decoding strings if an error occurs CPython supports several different
         /// behaviors, in addition it supports user-extensible behaviors as well.  For the default
         /// behavior we're ok - both of us support throwing and replacing.  For custom behaviors

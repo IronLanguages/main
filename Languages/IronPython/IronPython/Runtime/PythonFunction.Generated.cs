@@ -64,7 +64,7 @@ namespace IronPython.Runtime {
                             fc = new FunctionCaller(funcCompat);
                             mi = typeof(FunctionCaller).GetMethod(baseName + "Call0");
                             Debug.Assert(mi != null);
-                            return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(typeof(Func<CallSite, CodeContext, object, object>), fc, mi), true);
+                            return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(typeof(Func<CallSite, CodeContext, object, object>), fc), true);
                         }
 
                         return new Binding.FastBindResult<T>((T)(object)new Func<CallSite, CodeContext, object, object>(new FunctionCaller(funcCompat).Call0), true);
@@ -81,7 +81,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 2:                        
                         callerType = typeof(FunctionCaller<,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call2");
@@ -89,7 +89,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 3:                        
                         callerType = typeof(FunctionCaller<,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call3");
@@ -97,7 +97,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 4:                        
                         callerType = typeof(FunctionCaller<,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call4");
@@ -105,7 +105,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 5:                        
                         callerType = typeof(FunctionCaller<,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call5");
@@ -113,7 +113,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 6:                        
                         callerType = typeof(FunctionCaller<,,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call6");
@@ -121,7 +121,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 7:                        
                         callerType = typeof(FunctionCaller<,,,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call7");
@@ -129,7 +129,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 8:                        
                         callerType = typeof(FunctionCaller<,,,,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call8");
@@ -137,7 +137,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 9:                        
                         callerType = typeof(FunctionCaller<,,,,,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call9");
@@ -145,7 +145,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 10:                        
                         callerType = typeof(FunctionCaller<,,,,,,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call10");
@@ -153,7 +153,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 11:                        
                         callerType = typeof(FunctionCaller<,,,,,,,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call11");
@@ -161,7 +161,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 12:                        
                         callerType = typeof(FunctionCaller<,,,,,,,,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call12");
@@ -169,7 +169,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
                     case 13:                        
                         callerType = typeof(FunctionCaller<,,,,,,,,,,,,>).MakeGenericType(typeParams);
                         mi = callerType.GetMethod(baseName + "Call13");
@@ -177,7 +177,7 @@ namespace IronPython.Runtime {
                         fc = GetFunctionCaller(callerType, funcCompat);
                         funcType = typeof(Func<,,,,,,,,,,,,,,,,>).MakeGenericType(allParams);
 
-                        return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);
+                        return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);
 
                     // *** END GENERATED CODE ***
 

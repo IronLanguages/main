@@ -15,7 +15,7 @@ if errorlevel 1 goto BUILDFAIL
 echo Build dlr.xap
 
 mkdir "%~dp0release\dlr"
-%~dp0"..\..\..\Bin\Silverlight %config%\Chiron.exe" /d:"%~dp0release-dlrxap" /x:"%~dp0release\dlr\dlr.xap" /s
+%~dp0"..\..\..\Bin\%config%\Chiron.exe" /d:"%~dp0release-dlrxap" /x:"%~dp0release\dlr\dlr.xap" /s
 
 echo Copy slvx files to release
 

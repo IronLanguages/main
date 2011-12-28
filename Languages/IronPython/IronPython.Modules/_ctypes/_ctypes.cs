@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,9 +37,9 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
+using Microsoft.Scripting.Utils;
 #endif
 
-#if !SILVERLIGHT
 [assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
 namespace IronPython.Modules {
     /// <summary>
@@ -496,7 +498,7 @@ namespace IronPython.Modules {
                     lock (_lock) {
                         if (_dynamicModule == null) {
                             var attributes = new[] { 
-                                new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(Type.EmptyTypes), new object[0]),
+                                new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0]),
                                 //PermissionSet(SecurityAction.Demand, Unrestricted = true)
                                 new CustomAttributeBuilder(typeof(PermissionSetAttribute).GetConstructor(new Type[] { typeof(SecurityAction) }), 
                                     new object[]{ SecurityAction.Demand },

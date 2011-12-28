@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -29,8 +31,6 @@ using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
 #endif
-
-#if !SILVERLIGHT
 
 namespace IronPython.Modules {
     /// <summary>

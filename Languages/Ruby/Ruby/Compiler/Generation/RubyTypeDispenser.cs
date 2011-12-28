@@ -33,7 +33,7 @@ namespace IronRuby.Compiler.Generation {
         private static readonly Dictionary<Type/*!*/, IList<ITypeFeature/*!*/>/*!*/>/*!*/ _typeFeatures;
         private static readonly ITypeFeature/*!*/[]/*!*/ _defaultFeatures = new ITypeFeature[] {
             RubyTypeFeature.Instance,
-            InterfaceImplFeature.Create(Type.EmptyTypes)
+            InterfaceImplFeature.Create(ReflectionUtils.EmptyTypes)
         };
 
         static RubyTypeDispenser() {
@@ -100,7 +100,7 @@ namespace IronRuby.Compiler.Generation {
 
         private static Type CreateType(TypeDescription/*!*/ typeInfo) {
             Type baseType = typeInfo.BaseType;
-            if (baseType.IsSealed) {
+            if (baseType.IsSealed()) {
                 throw new NotSupportedException(
                     String.Format(CultureInfo.InvariantCulture, "Can't inherit from a sealed type {0}.",
                     RubyContext.GetQualifiedNameNoLock(baseType, null, false))

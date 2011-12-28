@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if FEATURE_FULL_CONSOLE
 using System;
 using Microsoft.Scripting.Hosting.Shell; 
 
@@ -54,4 +54,4 @@ namespace IronPython.Hosting {
 
     }
 }
-
+#endif

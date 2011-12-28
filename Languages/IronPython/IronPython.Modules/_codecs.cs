@@ -21,6 +21,7 @@ using System.Text;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_codecs", typeof(IronPython.Modules.PythonCodecs))]
 namespace IronPython.Modules {

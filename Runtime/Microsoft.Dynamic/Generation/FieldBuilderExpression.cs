@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Generation {
     /// <summary>
@@ -33,7 +34,7 @@ namespace Microsoft.Scripting.Generation {
     public class FieldBuilderExpression : Expression {
         private readonly FieldBuilder _builder;
 
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8
         private readonly StrongBox<Type> _finishedType;
 
         // Silverlight doesn't have ModuleInfo.ResolveField so we need to
@@ -73,8 +74,8 @@ namespace Microsoft.Scripting.Generation {
 
         private FieldInfo GetFieldInfo() {
             // turn the field builder back into a FieldInfo
-#if SILVERLIGHT
-            return _finishedType.Value.GetField(_builder.Name);
+#if SILVERLIGHT || WIN8
+            return _finishedType.Value.GetDeclaredField(_builder.Name);
 #else
             return _builder.DeclaringType.Module.ResolveField(
                 _builder.GetToken().Token

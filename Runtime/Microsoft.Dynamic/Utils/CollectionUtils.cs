@@ -16,7 +16,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Microsoft.Contracts;
 
 namespace Microsoft.Scripting.Utils {
     /// <summary>
@@ -37,6 +36,17 @@ namespace Microsoft.Scripting.Utils {
     }
 
     public static class CollectionUtils {
+#if !FEATURE_VARIANCE
+        public static IEnumerable<T> Cast<S, T>(this IEnumerable<S> sequence) where S : T {
+            foreach (var item in sequence) {
+                yield return (T)item;
+            }
+        }
+#else
+        public static IEnumerable<T> Cast<S, T>(this IEnumerable<S> sequence) where S : T {
+            return (IEnumerable<T>)sequence;
+        }
+#endif
 
         public static void AddRange<T>(ICollection<T> collection, IEnumerable<T> items) {
             ContractUtils.RequiresNotNull(collection, "collection");
@@ -87,12 +97,10 @@ namespace Microsoft.Scripting.Utils {
                 _enumerable = enumerable;
             }
 
-            [Pure]
             public IEnumerator<TSuper> GetEnumerator() {
                 return CollectionUtils.ToCovariant<T, TSuper>(_enumerable.GetEnumerator());
             }
 
-            [Pure]
             IEnumerator IEnumerable.GetEnumerator() {
                 return GetEnumerator();
             }
@@ -234,7 +242,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
 
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8
         // HashSet.CreateSetComparer not available on Silverlight
         public static IEqualityComparer<HashSet<T>> CreateSetComparer<T>() {
             return new HashSetEqualityComparer<T>();

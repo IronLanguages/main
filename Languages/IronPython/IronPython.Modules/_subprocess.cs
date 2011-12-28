@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_PROCESS
+
 #if CLR2
 using Microsoft.Scripting.Math;
 #else
@@ -31,14 +33,13 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
-#if !SILVERLIGHT
 [assembly: PythonModule("_subprocess", typeof(IronPython.Modules.PythonSubprocess))]
 namespace IronPython.Modules {
     [PythonType("_subprocess")]
     public static class PythonSubprocess {
         public const string __doc__ = "_subprocess Module";
 
-        #region Public API
+#region Public API
 
         public static PythonTuple CreatePipe(
             CodeContext context,
@@ -267,7 +268,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        #region struct's and enum's
+#region struct's and enum's
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct STARTUPINFO {
@@ -314,7 +315,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        #region Privates / PInvokes
+#region Privates / PInvokes
 
         [return: MarshalAs(UnmanagedType.Bool)]
         [DllImport("kernel32.dll", EntryPoint = "CreateProcess", SetLastError = true)]
@@ -364,7 +365,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        #region Constants
+#region Constants
 
         public const int CREATE_NEW_CONSOLE = 16;
         public const int CREATE_NEW_PROCESS_GROUP = 512;

@@ -14,7 +14,7 @@
  * ***************************************************************************/
 
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #else
@@ -51,7 +51,7 @@ namespace Microsoft.Scripting.Runtime {
     /// via 2-pass exception handling.
     /// </summary>
     public static class LightExceptions {
-        internal static MethodInfo _checkAndThrow = new Func<object, object>(LightExceptions.CheckAndThrow).Method;
+        internal static MethodInfo _checkAndThrow = new Func<object, object>(LightExceptions.CheckAndThrow).GetMethod();
 
         /// <summary>
         /// Rewrites the provided expression to support light exceptions.  

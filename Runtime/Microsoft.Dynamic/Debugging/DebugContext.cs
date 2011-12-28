@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
@@ -118,7 +118,7 @@ namespace Microsoft.Scripting.Debugging.CompilerServices {
         internal IEnumerable<DebugThread> Threads {
             // $TODO: only return the threads that are in break mode
             get {
-                foreach (var thread in _thread.AllValues)
+                foreach (var thread in _thread.Values)
                     if (thread != null && thread.FrameCount > 0)
                         yield return thread;
             }
@@ -225,7 +225,7 @@ namespace Microsoft.Scripting.Debugging.CompilerServices {
 
         internal DebugThread GetCurrentThread() {
             DebugThread thread = _cachedThread;
-            if (thread == null || thread.ManagedThread != Thread.CurrentThread) {
+            if (thread == null || !thread.IsCurrentThread) {
                 thread = _thread.Value;
                 if (thread == null) {
                     thread = _threadFactory.CreateDebugThread(this);

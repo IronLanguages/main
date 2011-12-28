@@ -14,29 +14,31 @@
  * ***************************************************************************/
 
 #if !CLR2
-using System.Linq.Expressions;
 using BigInt = System.Numerics.BigInteger;
-using Microsoft.Scripting.Ast;
-#else
-using Microsoft.Scripting.Ast;
+#endif
+
+#if FEATURE_CORE_DLR
+using System.Linq.Expressions;
 #endif
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Dynamic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Reflection.RuntimeExtensions;
 using System.Runtime.CompilerServices;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Interpreter;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Collections;
-using System.Diagnostics;
-using System.ComponentModel;
 
 namespace Microsoft.Scripting.Generation {
     // TODO: keep this?
@@ -54,18 +56,18 @@ namespace Microsoft.Scripting.Generation {
             ContractUtils.RequiresNotNull(type, "type");
 
             if (type.IsByRef) type = type.GetElementType();
-            if (type.IsEnum) return Activator.CreateInstance(type);
+            if (type.IsEnum()) return Activator.CreateInstance(type);
 
-            switch (Type.GetTypeCode(type)) {
+            switch (type.GetTypeCode()) {
                 default:
                 case TypeCode.Object:
                     // struct
-                    if (type.IsSealed && type.IsValueType) {
+                    if (type.IsSealed() && type.IsValueType()) {
                         return Activator.CreateInstance(type);
                     } else if (type == typeof(object)) {
                         // parameter of type object receives the actual Missing value
                         return Missing.Value;
-                    } else if (!type.IsValueType) {
+                    } else if (!type.IsValueType()) {
                         return null;
                     } else {
                         throw Error.CantCreateDefaultTypeFor(type);
@@ -175,14 +177,10 @@ namespace Microsoft.Scripting.Generation {
             if (method.ContainsGenericParameters ||
                 method.IsProtected() ||
                 method.IsPrivate ||
-                !method.DeclaringType.IsVisible) {
+                !method.DeclaringType.IsVisible()) {
                 return false;
             }
             return true;
-        }
-
-        public static MethodInfo TryGetCallableMethod(MethodInfo method) {
-            return TryGetCallableMethod(method.ReflectedType, method);
         }
 
         /// <summary>
@@ -193,14 +191,14 @@ namespace Microsoft.Scripting.Generation {
         /// Returns the original method if the method if a public version cannot be found.
         /// </summary>
         public static MethodInfo TryGetCallableMethod(Type targetType, MethodInfo method) {
-            if (method.DeclaringType == null || method.DeclaringType.IsVisible) {
+            if (method.DeclaringType == null || method.DeclaringType.IsVisible()) {
                 return method;
             }
 
             // first try and get it from the base type we're overriding...
-            MethodInfo baseMethod = method.GetBaseDefinition();
+            MethodInfo baseMethod = method.GetRuntimeBaseDefinition();
 
-            if (baseMethod.DeclaringType.IsVisible || baseMethod.DeclaringType.IsInterface) {
+            if (baseMethod.DeclaringType.IsVisible() || baseMethod.DeclaringType.IsInterface()) {
                 // We need to instantiate the method as GetBaseDefinition might return a generic definition of the base method:
                 if (baseMethod.IsGenericMethodDefinition) {
                     baseMethod = baseMethod.MakeGenericMethod(method.GetGenericArguments());
@@ -208,10 +206,21 @@ namespace Microsoft.Scripting.Generation {
                 return baseMethod;
             }
 
+#if WIN8 // TODO: interface map, method handle
+            foreach (Type iface in targetType.GetImplementedInterfaces()) {
+                dynamic mapping = ((dynamic)targetType).GetInterfaceMap(iface);
+                for (int i = 0; i < mapping.TargetMethods.Length; i++) {
+                    MethodInfo targetMethod = mapping.TargetMethods[i];
+                    if (targetMethod != null && ((dynamic)targetMethod).MethodHandle == ((dynamic)method).MethodHandle) {
+                        return mapping.InterfaceMethods[i];
+                    }
+                }
+            }
+            return method;
+#else
             // maybe we can get it from an interface on the type this
             // method came from...
-            Type[] interfaces = targetType.GetInterfaces();
-            foreach (Type iface in interfaces) {
+            foreach (Type iface in targetType.GetImplementedInterfaces()) {
                 InterfaceMapping mapping = targetType.GetInterfaceMap(iface);
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
                     MethodInfo targetMethod = mapping.TargetMethods[i];
@@ -220,8 +229,8 @@ namespace Microsoft.Scripting.Generation {
                     }
                 }
             }
-
             return method;
+#endif
         }
 
         /// <summary>
@@ -230,63 +239,53 @@ namespace Microsoft.Scripting.Generation {
         /// 
         /// If no correct visible type can be found then the member is not visible and we won't call it.
         /// </summary>
-        public static MemberInfo[] FilterNonVisibleMembers(Type type, MemberInfo[] foundMembers) {
-            if (!type.IsVisible && foundMembers.Length > 0) {
-                // need to remove any members that we can't get through other means
-                List<MemberInfo> foundVisible = null;
-                for (int i = 0; i < foundMembers.Length; i++) {
-                    MemberInfo curMember = foundMembers[i];
-
-                    MemberInfo visible = TryGetVisibleMember(curMember);
-                    if (visible != null) {
-                        if (foundVisible == null) {
-                            foundVisible = new List<MemberInfo>();
-                        }
-                        foundVisible.Add(visible);
-                    }
-                }
-
-                if (foundVisible != null) {
-                    foundMembers = foundVisible.ToArray();
-                } else {
-                    foundMembers = new MemberInfo[0];
-                }
+        public static IEnumerable<MemberInfo> FilterNonVisibleMembers(Type targetType, IEnumerable<MemberInfo> members) {
+            if (targetType.IsVisible()) {
+                return members;
+            } else {
+                return FilterNonVisibleMembersIterator(targetType, members);
             }
-            return foundMembers;
         }
 
-        public static MemberInfo TryGetVisibleMember(MemberInfo curMember) {
+        public static IEnumerable<MemberInfo> FilterNonVisibleMembersIterator(Type targetType, IEnumerable<MemberInfo> members) {
+            foreach (var member in members) {
+                MemberInfo visible = TryGetVisibleMember(targetType, member);
+                if (visible != null) {
+                    yield return visible;
+                }
+            }
+        }
+
+        public static MemberInfo TryGetVisibleMember(Type targetType, MemberInfo member) {
+            MethodInfo method;
+            PropertyInfo property;
+            EventInfo evnt;
+
             MethodInfo mi;
             MemberInfo visible = null;
-            switch (curMember.MemberType) {
-                case MemberTypes.Method:
-                    mi = TryGetCallableMethod((MethodInfo)curMember);
-                    if (CompilerHelpers.IsVisible(mi)) {
-                        visible = mi;
-                    }
-                    break;
 
-                case MemberTypes.Property:
-                    PropertyInfo pi = (PropertyInfo)curMember;
-                    mi = TryGetCallableMethod(pi.GetGetMethod() ?? pi.GetSetMethod());
-                    if (CompilerHelpers.IsVisible(mi)) {
-                        visible = mi.DeclaringType.GetProperty(pi.Name);
-                    }
-                    break;
-
-                case MemberTypes.Event:
-                    EventInfo ei = (EventInfo)curMember;
-                    mi = TryGetCallableMethod(ei.GetAddMethod() ?? ei.GetRemoveMethod() ?? ei.GetRaiseMethod());
-                    if (CompilerHelpers.IsVisible(mi)) {
-                        visible = mi.DeclaringType.GetEvent(ei.Name);
-                    }
-                    break;
-
-                // all others can't be exposed out this way
+            if ((method = member as MethodInfo) != null) {
+                mi = TryGetCallableMethod(targetType, method);
+                if (CompilerHelpers.IsVisible(mi)) {
+                    visible = mi;
+                }
+            } else if ((property = member as PropertyInfo) != null) {
+                mi = TryGetCallableMethod(targetType, property.GetGetMethod() ?? property.GetSetMethod());
+                if (CompilerHelpers.IsVisible(mi)) {
+                    visible = mi.DeclaringType.GetDeclaredProperty(property.Name);
+                }
+            } else if ((evnt = member as EventInfo) != null) {
+                mi = TryGetCallableMethod(targetType, evnt.GetAddMethod() ?? evnt.GetRemoveMethod() ?? evnt.GetRaiseMethod());
+                if (CompilerHelpers.IsVisible(mi)) {
+                    visible = mi.DeclaringType.GetDeclaredEvent(evnt.Name);
+                }
             }
+        
+            // all others can't be exposed out this way
             return visible;
         }
 
+#if !WIN8
         /// <summary>
         /// Sees if two MemberInfos point to the same underlying construct in IL.  This
         /// ignores the ReflectedType property which exists on MemberInfos which
@@ -323,28 +322,14 @@ namespace Microsoft.Scripting.Generation {
                         ((MemberInfo)self).MetadataToken == ((MemberInfo)other).MetadataToken;
             }
         }
-
-        /// <summary>
-        /// Given a MethodInfo which may be declared on a non-public type this attempts to
-        /// return a MethodInfo which will dispatch to the original MethodInfo but is declared
-        /// on a public type.
-        /// 
-        /// Throws InvalidOperationException if the method cannot be obtained.
-        /// </summary>
-        public static MethodInfo GetCallableMethod(MethodInfo method, bool privateBinding) {
-            MethodInfo callable = TryGetCallableMethod(method);
-            if (privateBinding || IsVisible(callable)) {
-                return callable;
-            }
-            throw Error.NoCallableMethods(method.DeclaringType, method.Name);
-        }
+#endif
 
         public static bool IsVisible(MethodBase info) {
-            return info.IsPublic && (info.DeclaringType == null || info.DeclaringType.IsVisible);
+            return info.IsPublic && (info.DeclaringType == null || info.DeclaringType.IsVisible());
         }
 
         public static bool IsVisible(FieldInfo info) {
-            return info.IsPublic && (info.DeclaringType == null || info.DeclaringType.IsVisible);
+            return info.IsPublic && (info.DeclaringType == null || info.DeclaringType.IsVisible());
         }
 
         public static bool IsProtected(this MethodBase info) {
@@ -356,7 +341,7 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static bool IsProtected(this Type type) {
-            return type.IsNestedFamily || type.IsNestedFamORAssem;
+            return type.GetTypeInfo().IsNestedFamily || type.GetTypeInfo().IsNestedFamORAssem;
         }
 
         public static Type GetVisibleType(object value) {
@@ -364,8 +349,8 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static Type GetVisibleType(Type t) {
-            while (!t.IsVisible) {
-                t = t.BaseType;
+            while (!t.IsVisible()) {
+                t = t.GetBaseType();
             }
             return t;
         }
@@ -385,53 +370,43 @@ namespace Microsoft.Scripting.Generation {
             if (privateBinding || includeProtected) {
                 bf |= BindingFlags.NonPublic;
             }
-            ConstructorInfo[] ci = t.GetConstructors(bf);
+
+            IEnumerable<ConstructorInfo> ctors = t.GetDeclaredConstructors().WithBindingFlags(bf);
 
             // leave in protected ctors, even if we're not in private binding mode.
             if (!privateBinding && includeProtected) {
-                ci = FilterConstructorsToPublicAndProtected(ci);
+                ctors = FilterConstructorsToPublicAndProtected(ctors);
             }
 
-            if (t.IsValueType 
-#if !SILVERLIGHT
+            if (t.IsValueType()
+#if !SILVERLIGHT && !WIN8
                 && t != typeof(ArgIterator)
 #endif
-            ) {
+) {
                 // structs don't define a parameterless ctor, add a generic method for that.
-                return ArrayUtils.Insert<MethodBase>(GetStructDefaultCtor(t), ci);
+                List<MethodBase> result = new List<MethodBase>();
+                result.Add(GetStructDefaultCtor(t));
+                result.AddRange(ctors.Cast<ConstructorInfo, MethodBase>());
+                return result.ToArray();
+            } else {
+                return ctors.ToArray();
             }
-
-            return ci;
         }
 
-        public static ConstructorInfo[] FilterConstructorsToPublicAndProtected(ConstructorInfo[] ci) {
-            List<ConstructorInfo> finalInfos = null;
-            for (int i = 0; i < ci.Length; i++) {
-                ConstructorInfo info = ci[i];
-                if (!info.IsPublic && !info.IsProtected()) {
-                    if (finalInfos == null) {
-                        finalInfos = new List<ConstructorInfo>();
-                        for (int j = 0; j < i; j++) {
-                            finalInfos.Add(ci[j]);
-                        }
-                    }
-                } else if (finalInfos != null) {
-                    finalInfos.Add(ci[i]);
+        public static IEnumerable<ConstructorInfo> FilterConstructorsToPublicAndProtected(IEnumerable<ConstructorInfo> ctors) {
+            foreach (var ctor in ctors) {
+                if (ctor.IsPublic || ctor.IsProtected()) {
+                    yield return ctor;
                 }
             }
-
-            if (finalInfos != null) {
-                ci = finalInfos.ToArray();
-            }
-            return ci;
         }
 
         private static MethodBase GetStructDefaultCtor(Type t) {
-            return typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance").MakeGenericMethod(t);
+            return typeof(ScriptingRuntimeHelpers).GetDeclaredMethods("CreateInstance").Single().MakeGenericMethod(t);
         }
 
         private static MethodBase GetArrayCtor(Type t) {
-            return typeof(ScriptingRuntimeHelpers).GetMethod("CreateArray").MakeGenericMethod(t.GetElementType());
+            return typeof(ScriptingRuntimeHelpers).GetDeclaredMethods("CreateArray").Single().MakeGenericMethod(t.GetElementType());
         }
 
         #region Type Conversions
@@ -445,8 +420,8 @@ namespace Microsoft.Scripting.Generation {
         }
 
         private static MethodInfo GetConverter(Type type, Type fromType, Type toType, string opMethodName) {
-            foreach (MethodInfo mi in type.GetMember(opMethodName, BindingFlags.Public | BindingFlags.Static)) {
-                if ((mi.DeclaringType == null || mi.DeclaringType.IsVisible) && mi.IsPublic &&
+            foreach (MethodInfo mi in type.GetInheritedMembers(opMethodName).WithBindingFlags(BindingFlags.Public | BindingFlags.Static)) {
+                if ((mi.DeclaringType == null || mi.DeclaringType.IsVisible()) && mi.IsPublic &&
                     mi.ReturnType == toType && mi.GetParameters()[0].ParameterType.IsAssignableFrom(fromType)) {
                     return mi;
                 }
@@ -455,24 +430,24 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static bool TryImplicitConversion(Object value, Type to, out object result) {
-            if (CompilerHelpers.TryImplicitConvert(value, to, to.GetMember("op_Implicit"), out result)) {
+            if (CompilerHelpers.TryImplicitConvert(value, to, to.GetInheritedMethods("op_Implicit").WithBindingFlags(BindingFlags.Public | BindingFlags.Static), out result)) {
                 return true;
             }
 
             Type curType = CompilerHelpers.GetType(value);
             do {
-                if (CompilerHelpers.TryImplicitConvert(value, to, curType.GetMember("op_Implicit"), out result)) {
+                if (CompilerHelpers.TryImplicitConvert(value, to, curType.GetInheritedMethods("op_Implicit").WithBindingFlags(BindingFlags.Public | BindingFlags.Static), out result)) {
                     return true;
                 }
-                curType = curType.BaseType;
+                curType = curType.GetBaseType();
             } while (curType != null);
 
             return false;
         }
 
-        private static bool TryImplicitConvert(Object value, Type to, MemberInfo[] implicitConv, out object result) {
+        private static bool TryImplicitConvert(Object value, Type to, IEnumerable<MethodInfo> implicitConv, out object result) {
             foreach (MethodInfo mi in implicitConv) {
-                if (to.IsValueType == mi.ReturnType.IsValueType && to.IsAssignableFrom(mi.ReturnType)) {
+                if (to.IsValueType() == mi.ReturnType.IsValueType() && to.IsAssignableFrom(mi.ReturnType)) {
                     if (mi.IsStatic) {
                         result = mi.Invoke(null, new object[] { value });
                     } else {
@@ -493,7 +468,7 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static bool IsStrongBox(Type t) {
-            return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
+            return t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
         }
 
         /// <summary>
@@ -502,7 +477,8 @@ namespace Microsoft.Scripting.Generation {
         /// </summary>
         public static Expression GetTryConvertReturnValue(Type type) {
             Expression res;
-            if (type.IsInterface || type.IsClass || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))) {
+            var info = type.GetTypeInfo();
+            if (info.IsInterface || info.IsClass || (info.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))) {
                 res = AstUtils.Constant(null, type);
             } else {
                 res = AstUtils.Constant(Activator.CreateInstance(type));
@@ -512,19 +488,16 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static bool HasTypeConverter(Type fromType, Type toType) {
-#if SILVERLIGHT
-            return false;
-#else
-            TypeConverter _;
+#if FEATURE_TYPECONVERTER
+             TypeConverter _;
             return TryGetTypeConverter(fromType, toType, out _);
+#else
+            return false;
 #endif
         }
 
         public static bool TryApplyTypeConverter(object value, Type toType, out object result) {
-#if SILVERLIGHT
-            result = value;
-            return false;
-#else
+#if FEATURE_TYPECONVERTER
             TypeConverter converter;
             if (value != null && CompilerHelpers.TryGetTypeConverter(value.GetType(), toType, out converter)) {
                 result = converter.ConvertFrom(value);
@@ -533,10 +506,13 @@ namespace Microsoft.Scripting.Generation {
                 result = value;
                 return false;
             }
+#else
+            result = value;
+            return false;
 #endif
         }
 
-#if !SILVERLIGHT
+#if FEATURE_TYPECONVERTER
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static bool TryGetTypeConverter(Type fromType, Type toType, out TypeConverter converter) {
@@ -584,13 +560,9 @@ namespace Microsoft.Scripting.Generation {
 
         private static MethodBase[] MakeCallSignatureForCallableObject(Type t) {
             List<MethodBase> res = new List<MethodBase>();
-            MemberInfo[] members = t.GetMember("Call");
-            foreach (MemberInfo mi in members) {
-                if (mi.MemberType == MemberTypes.Method) {
-                    MethodInfo method = mi as MethodInfo;
-                    if (method.IsSpecialName) {
-                        res.Add(method);
-                    }
+            foreach (MethodInfo method in t.GetInheritedMethods("Call")) {
+                if (method.IsSpecialName) {
+                    res.Add(method);
                 }
             }
             return res.ToArray();
@@ -606,8 +578,6 @@ namespace Microsoft.Scripting.Generation {
             }
 
             ret[count] = returnType;
-
-            NonNullType.AssertInitialized(ret);
             return ret;
         }
 
@@ -679,13 +649,20 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="method">A <see cref="MethodBuilder"/> which will be used to hold the lambda's IL.</param>
         /// <param name="emitDebugSymbols">A parameter that indicates if debugging information should be emitted to a PDB symbol store.</param>
         public static void CompileToMethod(this LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
+#if FEATURE_PDBEMIT
             if (emitDebugSymbols) {
                 var module = method.Module as ModuleBuilder;
                 ContractUtils.Requires(module != null, "method", "MethodBuilder does not have a valid ModuleBuilder");
                 lambda.CompileToMethod(method, DebugInfoGenerator.CreatePdbGenerator());
-            } else {
-                lambda.CompileToMethod(method);
+                return;
             }
+#endif
+
+#if WIN8 // TODO
+            ((dynamic)lambda).CompileToMethod(method);
+#else
+            lambda.CompileToMethod(method);
+#endif
         }
 
         /// <summary>
@@ -702,7 +679,12 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="emitDebugSymbols">true to generate a debuggable method, false otherwise</param>
         /// <returns>the compiled delegate</returns>
         public static T Compile<T>(this Expression<T> lambda, bool emitDebugSymbols) {
-            return emitDebugSymbols ? CompileToMethod(lambda, DebugInfoGenerator.CreatePdbGenerator(), true) : lambda.Compile();
+#if FEATURE_PDBEMIT
+            if (emitDebugSymbols) {
+                return CompileToMethod(lambda, DebugInfoGenerator.CreatePdbGenerator(), true);
+            }
+#endif
+            return lambda.Compile();
         }
 
         /// <summary>
@@ -730,13 +712,17 @@ namespace Microsoft.Scripting.Generation {
 
             //Create a unique method name when the lambda doesn't have a name or the name is empty.
             var method = type.DefineMethod(methodName, CompilerHelpers.PublicStatic);
-            lambda.CompileToMethod(method, debugInfoGenerator);
 
+#if WIN8 // TODO: this should be added to Win8P
+            ((dynamic)lambda).CompileToMethod(method, debugInfoGenerator);
+#else
+            lambda.CompileToMethod(method, debugInfoGenerator);
+#endif
             var finished = type.CreateType();
 
             rewriter.InitializeFields(finished);
-
-            return Delegate.CreateDelegate(lambda.Type, finished.GetMethod(method.Name));
+            
+            return finished.GetMethod(method.Name).CreateDelegate(lambda.Type);
         }
 
         public static string GetUniqueMethodName() {
@@ -764,7 +750,7 @@ namespace Microsoft.Scripting.Generation {
 
         // Matches ILGen.TryEmitILConstant
         internal static bool CanEmitILConstant(Type type) {
-            switch (Type.GetTypeCode(type)) {
+            switch (type.GetTypeCode()) {
                 case TypeCode.Boolean:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
@@ -798,7 +784,7 @@ namespace Microsoft.Scripting.Generation {
                 Expression.Call(
                     Expression.Field(
                         Expression.Assign(site, siteConstant),
-                        siteConstant.Type.GetField("Target")
+                        siteConstant.Type.GetDeclaredField("Target")
                     ),
                     node.DelegateType.GetMethod("Invoke"),
                     ArrayUtils.Insert(site, node.Arguments)
@@ -809,7 +795,7 @@ namespace Microsoft.Scripting.Generation {
         /// <summary>
         /// Removes all live objects and places them in static fields of a type.
         /// </summary>
-        private sealed class DebuggableCodeRewriter : ExpressionVisitor {
+        private sealed class DebuggableCodeRewriter : DynamicExpressionVisitor {
             private readonly Dictionary<object, FieldBuilder> _fields = new Dictionary<object, FieldBuilder>(ReferenceEqualityComparer<object>.Instance);
             private readonly TypeBuilder _type;
             private readonly HashSet<string> _methodNames = new HashSet<string>();
@@ -820,7 +806,7 @@ namespace Microsoft.Scripting.Generation {
 
             internal void InitializeFields(Type type) {
                 foreach (var pair in _fields) {
-                    type.GetField(pair.Value.Name).SetValue(null, pair.Key);
+                    type.GetInheritedFields(pair.Value.Name).First().SetValue(null, pair.Key);
                 }
             }
 
@@ -885,7 +871,7 @@ namespace Microsoft.Scripting.Generation {
         }
 
         #region Factories
-#if CLR2
+#if !FEATURE_NUMERICS
         [CLSCompliant(false)]
         public static BigInteger CreateBigInteger(int sign, uint[] data) {
             return new BigInteger(sign, data);

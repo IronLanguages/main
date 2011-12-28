@@ -13,7 +13,11 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_TASKS
+using System.Threading.Tasks;
+#endif
+
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -21,17 +25,28 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Interpreter;
+using Microsoft.Scripting.Runtime;
+
+#if !WIN8
+#if FEATURE_CORE_DLR
+namespace System.Linq.Expressions {
+#else
+namespace Microsoft.Scripting.Ast {
+#endif
+    public abstract class DynamicExpressionVisitor : ExpressionVisitor {
+    }
+}
+#endif
 
 namespace Microsoft.Scripting.Utils {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using Microsoft.Scripting.Runtime;
-    using System.Diagnostics;
-    using System.Threading;
 
     public static class DynamicUtils {
         /// <summary>
@@ -115,7 +130,7 @@ namespace Microsoft.Scripting.Utils {
                     Expression.Invoke(
                         Expression.Property(
                             invokePrms[0],
-                            typeof(CallSite<T>).GetProperty("Update")
+                            typeof(CallSite<T>).GetDeclaredProperty("Update")
                         ),
                         invokePrms.ToReadOnlyCollection()
                     )
@@ -263,11 +278,11 @@ namespace Microsoft.Scripting.Utils {
                 // start compiling the target if no one else has
                 var lambda = Interlocked.Exchange(ref Target, null);
                 if (lambda != null) {
-                    ThreadPool.QueueUserWorkItem(
-                        (x) => {
-                            CompiledTarget = lambda.Compile();
-                        }
-                    );
+#if FEATURE_TASKS
+                    new Task(() => { CompiledTarget = lambda.Compile(); }).Start();
+#else
+                    ThreadPool.QueueUserWorkItem(x => { CompiledTarget = lambda.Compile(); });
+#endif
                 }
             }
 

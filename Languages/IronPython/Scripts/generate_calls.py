@@ -211,7 +211,7 @@ function_caller_switch_template = """case %(argCount)d:
     fc = GetFunctionCaller(callerType, funcCompat);
     funcType = typeof(Func<,,,,%(arity)s>).MakeGenericType(allParams);
 
-    return new Binding.FastBindResult<T>((T)(object)Delegate.CreateDelegate(funcType, fc, mi), true);"""
+    return new Binding.FastBindResult<T>((T)(object)mi.CreateDelegate(funcType, fc), true);"""
     
 
 def function_caller_switch(cw):

@@ -13,25 +13,18 @@
  *
  * ***************************************************************************/
 
+#if SILVERLIGHT
 using System;
 
-namespace Microsoft.Scripting.Runtime {
-    /// <summary>
-    /// Provides a mechanism for providing documentation stored in an assembly as metadata.  
-    /// 
-    /// Applying this attribute will enable documentation to be provided to the user at run-time
-    /// even if XML Docuementation files are unavailable.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.All)]
-    public sealed class DocumentationAttribute : Attribute {
-        private readonly string _doc;
-
-        public DocumentationAttribute(string documentation) {
-            _doc = documentation;
-        }
-
-        public string Documentation {
-            get { return _doc; }
+namespace IronPython.Runtime.Exceptions {
+    [Serializable]
+    public class ApplicationException : Exception {
+        public ApplicationException() : base() { }
+        public ApplicationException(string msg) : base(msg) { }
+        public ApplicationException(string message, Exception innerException)
+            : base(message, innerException) {
         }
     }
 }
+
+#endif

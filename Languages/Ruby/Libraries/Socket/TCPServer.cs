@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if FEATURE_SYNC_SOCKETS
 
 using System;
 using System.Net;
@@ -27,7 +27,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 
 namespace IronRuby.StandardLibrary.Sockets {
-    [RubyClass("TCPServer", BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("TCPServer", BuildConfig = "FEATURE_SYNC_SOCKETS")]
     public class TCPServer : TCPSocket {
         private object _mutex = new object();
         private IAsyncResult _acceptResult;

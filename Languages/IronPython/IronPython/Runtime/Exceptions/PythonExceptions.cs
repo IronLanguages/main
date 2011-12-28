@@ -13,10 +13,14 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
+#endif
+
+#if !FEATURE_REMOTING
+using MarshalByRefObject = System.Object;
 #endif
 
 using System;
@@ -552,6 +556,7 @@ namespace IronPython.Runtime.Exceptions {
                     return;
                 }
 
+#if !SILVERLIGHT
                 var ioExcep = exception as System.IO.IOException;
                 if (ioExcep != null) {
                     try {
@@ -566,14 +571,16 @@ namespace IronPython.Runtime.Exceptions {
                         // not enough permissions to do this...
                     }
                 }
-                
+#endif                
                 base.InitAndGetClrException(exception);
             }
 
+#if !SILVERLIGHT
             [MethodImpl(MethodImplOptions.NoInlining)] // don't inline so the link demand is always evaluated here.
             private static int GetHRForException(System.Exception exception) {
                 return System.Runtime.InteropServices.Marshal.GetHRForException(exception);
             }
+#endif
         }
 
         public partial class _UnicodeTranslateError : BaseException {
@@ -997,9 +1004,9 @@ for k, v in toError.iteritems():
                 // explicit extra conversions that need a special transformation
                 if ((syntax = clrException as SyntaxErrorException) != null) {
                     return SyntaxErrorToPython(syntax);
-                } 
+                }
 
-#if !SILVERLIGHT // ThreadAbortException.ExceptionState
+#if FEATURE_EXCEPTION_STATE
                 ThreadAbortException ta;
                 if ((ta = clrException as ThreadAbortException) != null) {
                     // transform TA w/ our reason into a KeyboardInterrupt exception.
@@ -1056,11 +1063,7 @@ for k, v in toError.iteritems():
         }
 
         [Serializable]
-        private class ExceptionDataWrapper 
-#if !SILVERLIGHT
-            : MarshalByRefObject 
-#endif
-        {
+        private class ExceptionDataWrapper : MarshalByRefObject {
             private readonly object _value;
 
             public ExceptionDataWrapper(object value) {

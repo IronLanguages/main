@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Ast.Compiler;
 #else
@@ -30,7 +30,7 @@ using System.Diagnostics.SymbolStore;
 using System.Reflection;
 
 namespace System.Runtime.CompilerServices {
-#if CLR2 || SILVERLIGHT
+#if !FEATURE_CORE_DLR || SILVERLIGHT
     using ILGenerator = OffsetTrackingILGenerator;
 #endif
 

@@ -60,6 +60,9 @@ namespace IronRuby.Tests {
                 RubyArray_Misc,
                 RubyArray_Indexer,
      
+                TypeMemberCache,
+                ReflectionUtils_GetMembers,
+
                 Scenario_ParserLogging,
                 Parser1,
                 ParserErrors1,
@@ -468,6 +471,7 @@ namespace IronRuby.Tests {
                 LibraryLoader2,
 
                 ClrFields1,
+                ClrFields2,
                 ClrTypes1,
                 ClrNamespaces1,
                 ClrNamespaces2,

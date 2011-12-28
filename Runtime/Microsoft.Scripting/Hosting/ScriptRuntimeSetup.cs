@@ -96,7 +96,7 @@ namespace Microsoft.Scripting.Hosting {
             get { return _hostType; }
             set {
                 ContractUtils.RequiresNotNull(value, "value");
-                ContractUtils.Requires(typeof(ScriptHost).IsAssignableFrom(value), "value", "Must be ScriptHost or a derived type of ScriptHost");
+                ContractUtils.Requires(typeof(ScriptHost).GetTypeInfo().IsAssignableFrom(value.GetTypeInfo()), "value", "Must be ScriptHost or a derived type of ScriptHost");
                 CheckFrozen();
                 _hostType = value;
             }
@@ -173,16 +173,16 @@ namespace Microsoft.Scripting.Hosting {
         /// If there is no configuration available returns an empty setup.
         /// </summary>
         public static ScriptRuntimeSetup ReadConfiguration() {
-#if SILVERLIGHT
-            return new ScriptRuntimeSetup();
-#else
+#if FEATURE_CONFIGURATION
             var setup = new ScriptRuntimeSetup();
             Configuration.Section.LoadRuntimeSetup(setup, null);
             return setup;
+#else
+            return new ScriptRuntimeSetup();
 #endif
         }
 
-#if !SILVERLIGHT
+#if FEATURE_CONFIGURATION
         /// <summary>
         /// Reads setup from a specified XML stream.
         /// </summary>

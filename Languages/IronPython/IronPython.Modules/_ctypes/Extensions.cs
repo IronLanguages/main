@@ -12,10 +12,10 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_NATIVE
 
 using System;
 
-#if !SILVERLIGHT
 namespace IronPython.Modules {
     internal static class CTypesExtensionMethods {
         public static IntPtr Add(this IntPtr self, int offset) {

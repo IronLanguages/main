@@ -23,7 +23,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static Encoding DefaultEncoding {
             get {
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WIN8
                 return Encoding.Default;
 #else
                 return Encoding.UTF8;

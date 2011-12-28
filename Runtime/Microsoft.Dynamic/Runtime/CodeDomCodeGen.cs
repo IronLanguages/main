@@ -13,11 +13,11 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_CODEDOM
+
 using System.CodeDom;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
-
-#if !SILVERLIGHT // CodeDom objects are not available in Silverlight
 
 namespace Microsoft.Scripting.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")] // TODO: fix

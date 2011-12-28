@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -103,7 +103,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public override Expression Reduce() {
-            return Expression.Dynamic(Binder, Type, _arg0);
+            return DynamicExpression.Dynamic(Binder, Type, _arg0);
         }
 
         protected sealed override int ArgumentCount {
@@ -195,7 +195,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public override Expression Reduce() {
-            return Expression.Dynamic(Binder, Type, _arg0, _arg1);
+            return DynamicExpression.Dynamic(Binder, Type, _arg0, _arg1);
         }
 
         protected override int ArgumentCount {
@@ -296,7 +296,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public override Expression Reduce() {
-            return Expression.Dynamic(Binder, Type, _arg0, _arg1, _arg2);
+            return DynamicExpression.Dynamic(Binder, Type, _arg0, _arg1, _arg2);
         }
 
         protected sealed override int ArgumentCount {
@@ -407,7 +407,7 @@ namespace Microsoft.Scripting.Ast {
         }
 
         public override Expression Reduce() {
-            return Expression.Dynamic(Binder, Type, _arg0, _arg1, _arg2, _arg3);
+            return DynamicExpression.Dynamic(Binder, Type, _arg0, _arg1, _arg2, _arg3);
         }
 
         protected sealed override int ArgumentCount {
@@ -526,7 +526,7 @@ namespace Microsoft.Scripting.Ast {
 
         public override Expression Reduce() {
             Debug.Assert(_args.Count > 0);
-            return Expression.Dynamic(Binder, Type, _args.ToReadOnly());
+            return DynamicExpression.Dynamic(Binder, Type, _args.ToReadOnly());
         }
 
         protected sealed override int ArgumentCount {

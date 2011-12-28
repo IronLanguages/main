@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -80,7 +80,7 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-#if DEBUG && !SILVERLIGHT
+#if DEBUG && !SILVERLIGHT && !WIN8 && !ANDROID
         // ExpressionWriter might call ToString on a live object that might dynamically invoke a method.
         // We need to prevent recursion in such case.
         [ThreadStatic]
@@ -95,7 +95,7 @@ namespace IronRuby.Runtime.Calls {
 
         [Conditional("DEBUG")]
         internal static void DumpPrecompiledRule(CallSiteBinder/*!*/ binder, MemberDispatcher/*!*/ dispatcher) {
-#if DEBUG && !SILVERLIGHT
+#if DEBUG && FEATURE_FULL_CONSOLE
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
                 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -109,7 +109,7 @@ namespace IronRuby.Runtime.Calls {
 
         [Conditional("DEBUG")]
         internal static void DumpRule(CallSiteBinder/*!*/ binder, BindingRestrictions/*!*/ restrictions, Expression/*!*/ expr) {
-#if DEBUG && !SILVERLIGHT
+#if DEBUG && FEATURE_FULL_CONSOLE
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
                 try {

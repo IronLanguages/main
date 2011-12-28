@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Reflection;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
@@ -59,34 +60,32 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             for (int i = 0; i < _indexesUsed.Length; i++) {
                 Expression value = args.GetObject(args.Length - _kwArgCount + _indexesUsed[i]).Expression;
-                switch(_membersSet[i].MemberType) {
-                    case MemberTypes.Field:
-                        FieldInfo fi = (FieldInfo)_membersSet[i];
-                        if (!fi.IsLiteral && !fi.IsInitOnly) {
-                            sets.Add(
-                                Ast.Assign(
-                                    Ast.Field(tmp, fi),
-                                    ConvertToHelper(resolver, value, fi.FieldType)
-                                )
-                            );
-                        } else {
-                            // call a helper which throws the error but "returns object"
-                            sets.Add(
-                                Ast.Convert(
-                                    Ast.Call(
-                                        typeof(ScriptingRuntimeHelpers).GetMethod("ReadOnlyAssignError"),
-                                        AstUtils.Constant(true),
-                                        AstUtils.Constant(fi.Name)
-                                    ),
-                                    fi.FieldType
-                                )
-                            );
-                        }                        
-                        break;
-
-                    case MemberTypes.Property:
-                        PropertyInfo pi = (PropertyInfo)_membersSet[i];
-                        if (pi.GetSetMethod(_privateBinding) != null) {
+                
+                PropertyInfo pi;
+                FieldInfo fi;
+                if ((fi = _membersSet[i] as FieldInfo) != null) {
+                    if (!fi.IsLiteral && !fi.IsInitOnly) {
+                        sets.Add(
+                            Ast.Assign(
+                                Ast.Field(tmp, fi),
+                                ConvertToHelper(resolver, value, fi.FieldType)
+                            )
+                        );
+                    } else {
+                        // call a helper which throws the error but "returns object"
+                        sets.Add(
+                            Ast.Convert(
+                                Ast.Call(
+                                    typeof(ScriptingRuntimeHelpers).GetMethod("ReadOnlyAssignError"),
+                                    AstUtils.Constant(true),
+                                    AstUtils.Constant(fi.Name)
+                                ),
+                                fi.FieldType
+                            )
+                        );
+                    }                        
+                } else if ((pi = _membersSet[i] as PropertyInfo) != null) {
+                    if (pi.GetSetMethod(_privateBinding) != null) {
                             sets.Add(
                                 Ast.Assign(
                                     Ast.Property(tmp, pi),
@@ -106,7 +105,6 @@ namespace Microsoft.Scripting.Actions.Calls {
                                 )
                             );
                         }
-                        break;
                 }
             }
 

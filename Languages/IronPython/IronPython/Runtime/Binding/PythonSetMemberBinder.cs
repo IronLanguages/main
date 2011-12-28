@@ -13,7 +13,7 @@
 *
 * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Binding {
             if (self.NeedsDeferral()) {
                 return Defer(self, value);
             }
-#if !SILVERLIGHT
+#if FEATURE_COM
             DynamicMetaObject com;
             if (Microsoft.Scripting.ComInterop.ComBinder.TryBindSetMember(this, self, BindingHelpers.GetComArgument(value), out com)) {
                 return com;

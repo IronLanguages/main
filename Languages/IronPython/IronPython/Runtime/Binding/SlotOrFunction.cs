@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -186,7 +186,7 @@ namespace IronPython.Runtime.Binding {
                                     types[0].Expression
                                 )
                             ),
-                            Ast.Dynamic(
+                            DynamicExpression.Dynamic(
                                 state.Invoke(
                                     new CallSignature(args.Length)
                                 ),

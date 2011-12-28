@@ -14,9 +14,10 @@
  * ***************************************************************************/
 #if !SILVERLIGHT
 
+using System.Runtime.InteropServices;
+using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
-using System.Runtime.InteropServices;
 
 namespace IronRuby.Builtins {
 

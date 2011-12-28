@@ -23,12 +23,12 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast.Compiler {
 #else
 namespace System.Linq.Expressions.Compiler {
 #endif
-#if CLR2 || SILVERLIGHT
+#if !FEATURE_CORE_DLR || SILVERLIGHT
     using ILGenerator = OffsetTrackingILGenerator;
 #endif
 
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Compiler {
             _lambda = lambda;
             _method = method;
 
-#if CLR2 || SILVERLIGHT
+#if !FEATURE_CORE_DLR || SILVERLIGHT
             _ilg = new OffsetTrackingILGenerator(method.GetILGenerator());
 #else
             _ilg = method.GetILGenerator();
@@ -136,7 +136,7 @@ namespace System.Linq.Expressions.Compiler {
             _typeBuilder = (TypeBuilder)method.DeclaringType;
             _method = method;
 
-#if CLR2 || SILVERLIGHT
+#if !FEATURE_CORE_DLR || SILVERLIGHT
             _ilg = new OffsetTrackingILGenerator(method.GetILGenerator());
 #else
             _ilg = method.GetILGenerator();

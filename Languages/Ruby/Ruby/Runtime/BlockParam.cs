@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
@@ -128,7 +128,7 @@ namespace IronRuby.Runtime {
             get { return _proc.Method != null; }
         }
 
-        internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(BlockParam).GetProperty("Self"); } }
+        internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(BlockParam).GetDeclaredProperty("Self"); } }
 
         // friend: RubyOps
         internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter) {

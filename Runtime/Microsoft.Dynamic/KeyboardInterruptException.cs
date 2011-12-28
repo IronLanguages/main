@@ -24,7 +24,7 @@ namespace Microsoft.Scripting {
         public KeyboardInterruptException(string message, Exception innerException)
             : base(message, innerException) {
         }
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected KeyboardInterruptException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
     }

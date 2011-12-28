@@ -21,7 +21,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
@@ -67,7 +66,7 @@ namespace Microsoft.Scripting.Actions {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public MethodInfo GetCallableAddMethod() {
             if (_addMethod == null) {
-                _addMethod = CompilerHelpers.TryGetCallableMethod(_eventInfo.GetAddMethod(true));
+                _addMethod = _eventInfo.GetAddMethod(true);
             }
             return _addMethod;
         }
@@ -75,7 +74,7 @@ namespace Microsoft.Scripting.Actions {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public MethodInfo GetCallableRemoveMethod() {
             if (_removeMethod == null) {
-                _removeMethod = CompilerHelpers.TryGetCallableMethod(_eventInfo.GetRemoveMethod(true));
+                _removeMethod = _eventInfo.GetRemoveMethod(true);
             }
             return _removeMethod;
         }
@@ -118,7 +117,6 @@ namespace Microsoft.Scripting.Actions {
             return new BoundMemberTracker(this, instance);
         }
 
-        [Confined]
         public override string ToString() {
             return _eventInfo.ToString();
         }
@@ -140,7 +138,14 @@ namespace Microsoft.Scripting.Actions {
                 stubs = GetHandlerList(target);
             }
 
-            GetCallableAddMethod().Invoke(target, new object[] { delegateHandler });
+            var add = GetCallableAddMethod();
+
+            // TODO (tomat): this used to use event.ReflectedType, is it still correct?
+            if (target != null) {
+                add = CompilerHelpers.TryGetCallableMethod(target.GetType(), add);
+            }
+
+            add.Invoke(target, new object[] { delegateHandler });
 
             if (stubs != null) {
                 // remember the stub so that we could search for it on removal:
@@ -167,7 +172,7 @@ namespace Microsoft.Scripting.Actions {
         #region Private Implementation Details
 
         private HandlerList GetHandlerList(object instance) {
-#if !SILVERLIGHT
+#if FEATURE_COM
             if (TypeUtils.IsComObject(instance)) {
                 return GetComHandlerList(instance);
             }
@@ -195,7 +200,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-#if !SILVERLIGHT
+#if FEATURE_COM
         /// <summary>
         /// Gets the stub list for a COM Object.  For COM objects we store the stub list
         /// directly on the object using the Marshal APIs.  This allows us to not have

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -76,19 +76,20 @@ namespace Microsoft.Scripting.Generation {
         }
 
         private AssemblyGen CreateNewAssembly(string nameSuffix, bool emitSymbols) {
-            string dir;
+            string dir = null;
 
+#if FEATURE_FILESYSTEM
             if (_saveSnippets) {
                 dir = _snippetsDirectory ?? Directory.GetCurrentDirectory();
-            } else {
-                dir = null;
             }
+#endif
 
             string name = "Snippets" + nameSuffix;
 
             return new AssemblyGen(new AssemblyName(name), dir, ".dll", emitSymbols);
         }
 
+#if OBSOLETE
         internal string GetMethodILDumpFile(MethodBase method) {
             string fullName = ((method.DeclaringType != null) ? method.DeclaringType.Name + "." : "") + method.Name;
 
@@ -102,19 +103,9 @@ namespace Microsoft.Scripting.Generation {
             Directory.CreateDirectory(dir);
             return Path.Combine(dir, filename);
         }
+#endif
 
         public static void SetSaveAssemblies(bool enable, string directory) {
-            //Set SaveAssemblies on for inner ring by calling SetSaveAssemblies via Reflection.
-            Assembly core = typeof(Expression).Assembly;
-            Type assemblyGen = core.GetType(typeof(Expression).Namespace + ".Compiler.AssemblyGen");
-            //The type may not exist.
-            if (assemblyGen != null) {
-                MethodInfo configSaveAssemblies = assemblyGen.GetMethod("SetSaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
-                //The method may not exist.
-                if (configSaveAssemblies != null) {
-                    configSaveAssemblies.Invoke(null, new object[] { enable, directory });
-                }
-            }
             Shared.ConfigureSaveAssemblies(enable, directory);
         }
 
@@ -137,7 +128,7 @@ namespace Microsoft.Scripting.Generation {
             //    inner ring assemblies have dependency on outer ring assemlies via generated IL.
             // 3) Verify inner ring assemblies.
             // 4) Verify outer ring assemblies.
-            Assembly core = typeof(Expression).Assembly;
+            Assembly core = typeof(Expression).GetTypeInfo().Assembly;
             Type assemblyGen = core.GetType(typeof(Expression).Namespace + ".Compiler.AssemblyGen");
             //The type may not exist.
             string[] coreAssemblyLocations = null;

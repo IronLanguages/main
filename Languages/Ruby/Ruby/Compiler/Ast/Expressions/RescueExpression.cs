@@ -17,7 +17,7 @@ using Microsoft.Scripting;
 
 namespace IronRuby.Compiler.Ast {
     using Microsoft.Scripting.Utils;
-    #if !CLR2
+    #if FEATURE_CORE_DLR
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;

@@ -15,6 +15,7 @@
 
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection;
@@ -36,7 +37,7 @@ namespace Microsoft.Scripting.Interpreter {
             _target = CallInstruction.Create(methodInfo, parameters);
             _site = site;
             _argumentCount = parameters.Length - 1;
-            _targetDelegate = site.GetType().GetField("Target").GetValue(site);
+            _targetDelegate = site.GetType().GetInheritedFields("Target").First().GetValue(site);
         }
 
         public DynamicInstructionN(Type delegateType, CallSite site, bool isVoid)

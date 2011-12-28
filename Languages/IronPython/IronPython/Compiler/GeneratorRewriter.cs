@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #endif
 
@@ -40,7 +40,7 @@ namespace IronPython.Compiler {
     /// scopes encountered have their variables promoted to the generator's
     /// closure, so they survive yields.
     /// </summary>
-    internal sealed class GeneratorRewriter : ExpressionVisitor {
+    internal sealed class GeneratorRewriter : DynamicExpressionVisitor {
         private readonly Expression _body;
         private readonly string _name;
         private readonly StrongBox<Type> _tupleType = new StrongBox<Type>(null);
@@ -753,11 +753,11 @@ namespace IronPython.Compiler {
                 return node;
             }
             if (yields == _yields.Count) {
-                return Expression.MakeDynamic(node.DelegateType, node.Binder, a);
+                return DynamicExpression.MakeDynamic(node.DelegateType, node.Binder, a);
             }
             return Expression.Block(
                 ToTemp(ref a),
-                Expression.MakeDynamic(node.DelegateType, node.Binder, a)
+                DynamicExpression.MakeDynamic(node.DelegateType, node.Binder, a)
             );
         }
 

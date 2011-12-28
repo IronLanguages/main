@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -75,11 +75,11 @@ namespace IronRuby.Runtime.Conversions {
                     return Convertibility.NotConvertible;
                 }
 
-                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                if (toType.IsGenericType() && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     return Convertibility.AlwaysConvertible;
                 }
 
-                if (!toType.IsValueType) {
+                if (!toType.IsValueType()) {
                     // null convertible to any reference type:
                     return Convertibility.AlwaysConvertible;
                 } else if (toType == typeof(bool)) {
@@ -176,7 +176,7 @@ namespace IronRuby.Runtime.Conversions {
             }
 
             // A COM object can potentially be converted to the given interface, but might also be not so use this only as the last resort:
-            if (TypeUtils.IsComObjectType(fromType) && toType.IsInterface) {
+            if (TypeUtils.IsComObjectType(fromType) && toType.IsInterface()) {
                 return Convertibility.AlwaysConvertible;
             }
 
@@ -240,7 +240,7 @@ namespace IronRuby.Runtime.Conversions {
 
             if (toType == typeof(bool)) {
                 Debug.Assert(fromType != typeof(bool));
-                return fromType.IsValueType ? AstUtils.Constant(true) : Ast.NotEqual(expr, AstUtils.Constant(null));
+                return fromType.IsValueType() ? AstUtils.Constant(true) : Ast.NotEqual(expr, AstUtils.Constant(null));
             }
 
             // TODO:
@@ -252,9 +252,9 @@ namespace IronRuby.Runtime.Conversions {
         }
 
         internal static Candidate PreferConvert(Type t1, Type t2) {
-            switch (Type.GetTypeCode(t1)) {
+            switch (t1.GetTypeCode()) {
                 case TypeCode.SByte:
-                    switch (Type.GetTypeCode(t2)) {
+                    switch (t2.GetTypeCode()) {
                         case TypeCode.Byte:
                         case TypeCode.UInt16:
                         case TypeCode.UInt32:
@@ -265,7 +265,7 @@ namespace IronRuby.Runtime.Conversions {
                     }
 
                 case TypeCode.Int16:
-                    switch (Type.GetTypeCode(t2)) {
+                    switch (t2.GetTypeCode()) {
                         case TypeCode.UInt16:
                         case TypeCode.UInt32:
                         case TypeCode.UInt64:
@@ -275,7 +275,7 @@ namespace IronRuby.Runtime.Conversions {
                     }
 
                 case TypeCode.Int32:
-                    switch (Type.GetTypeCode(t2)) {
+                    switch (t2.GetTypeCode()) {
                         case TypeCode.UInt32:
                         case TypeCode.UInt64:
                             return Candidate.Two;
@@ -284,7 +284,7 @@ namespace IronRuby.Runtime.Conversions {
                     }
 
                 case TypeCode.Int64:
-                    switch (Type.GetTypeCode(t2)) {
+                    switch (t2.GetTypeCode()) {
                         case TypeCode.UInt64:
                             return Candidate.Two;
                         default:

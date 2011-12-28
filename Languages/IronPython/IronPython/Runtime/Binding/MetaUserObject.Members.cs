@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -1375,7 +1375,7 @@ namespace IronPython.Runtime.Binding {
                     AstUtils.Convert(AstUtils.WeakConstant(self.PythonType), typeof(PythonType)),
                     tmp
                 ),
-                Ast.Dynamic(
+                DynamicExpression.Dynamic(
                     PythonContext.GetPythonContext(info.Action).InvokeOne,
                     typeof(object),
                     PythonContext.GetCodeContext(info.Action),

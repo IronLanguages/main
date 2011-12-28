@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
 using Microsoft.Scripting.Ast;
@@ -26,6 +26,7 @@ using Complex = Microsoft.Scripting.Math.Complex64;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
@@ -50,10 +51,6 @@ using IronPython.Modules;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
-
-#if !SILVERLIGHT
-using System.ComponentModel;
-#endif
 
 namespace IronPython.Runtime.Operations {
 
@@ -1104,7 +1101,7 @@ namespace IronPython.Runtime.Operations {
 
             List res = DynamicHelpers.GetPythonType(o).GetMemberNames(context, o);
 
-#if !SILVERLIGHT
+#if FEATURE_COM
 
             if (o != null && Microsoft.Scripting.ComInterop.ComBinder.IsComObject(o)) {
                 foreach (string name in Microsoft.Scripting.ComInterop.ComBinder.GetDynamicMemberNames(o)) {
@@ -1731,7 +1728,7 @@ namespace IronPython.Runtime.Operations {
             pc.CallWithContext(context, dispHook, value);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_FULL_CONSOLE
         public static void PrintException(CodeContext/*!*/ context, Exception/*!*/ exception, IConsole console) {
             PythonContext pc = PythonContext.GetContext(context);
             PythonTuple exInfo = GetExceptionInfoLocal(context, exception);
@@ -1830,8 +1827,8 @@ namespace IronPython.Runtime.Operations {
             PythonType pt = newmod as PythonType;
 
             if (pt != null &&
-                !pt.UnderlyingSystemType.IsEnum &&
-                (!pt.UnderlyingSystemType.IsAbstract || !pt.UnderlyingSystemType.IsSealed)) {
+                !pt.UnderlyingSystemType.IsEnum() &&
+                (!pt.UnderlyingSystemType.IsAbstract() || !pt.UnderlyingSystemType.IsSealed())) {
                 // from type import * only allowed on static classes (and enums)
                 throw PythonOps.ImportError("no module named {0}", pt.Name);
             }
@@ -2123,7 +2120,7 @@ namespace IronPython.Runtime.Operations {
             // we reset the abort.
             object res = PythonExceptions.ToPython(clrException);
 
-#if !SILVERLIGHT
+#if FEATURE_EXCEPTION_STATE
             // Check for thread abort exceptions.
             // This is necessary to be able to catch python's KeyboardInterrupt exceptions.
             // CLR restrictions require that this must be called from within a catch block.  This gets

@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !WIN8
 
 using System;
 using System.Collections.Generic;
@@ -32,7 +33,7 @@ namespace Microsoft.Scripting.Debugging {
             }
         }
 
-        internal T[] AllValues {
+        internal T[] Values {
             get {
                 List<T> allValues = new List<T>(_stores.Length);
                 foreach (StorageInfo si in _stores) {
@@ -140,3 +141,4 @@ namespace Microsoft.Scripting.Debugging {
         #endregion
     }
 }
+#endif

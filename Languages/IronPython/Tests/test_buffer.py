@@ -167,6 +167,7 @@ def test_write_file():
 
     for inp in text_inputs:
         f = file('foo', 'w')
+        
         AssertError(TypeError, f.write, inp)
         f.close()
         

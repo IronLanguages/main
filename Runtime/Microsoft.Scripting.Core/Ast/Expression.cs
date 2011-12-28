@@ -27,7 +27,7 @@ using System.Threading;
 using System.Core;
 #endif
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
     using Microsoft.Scripting.Utils;
 #else
@@ -224,7 +224,7 @@ namespace System.Linq.Expressions {
             return ExpressionStringBuilder.ExpressionToString(this);
         }
 
-#if CLR2
+#if !FEATURE_CORE_DLR
         /// <summary>
         /// Writes a <see cref="String"/> representation of the <see cref="Expression"/> to a <see cref="TextWriter"/>.
         /// </summary>

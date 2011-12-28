@@ -23,7 +23,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static Encoding DefaultEncoding {
             get {
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WIN8
                 return Encoding.Default;
 #else
                 return Encoding.UTF8;
@@ -270,6 +270,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
         }
 
+#if !WIN8
 #if SILVERLIGHT
         private static Dictionary<string, CultureInfo> _cultureInfoCache = new Dictionary<string, CultureInfo>();
 #endif
@@ -289,7 +290,7 @@ namespace Microsoft.Scripting.Utils {
             return CultureInfo.GetCultureInfo(name);
 #endif
         }
-
+#endif
         // Like string.Split, but enumerates
         public static IEnumerable<string> Split(string str, string sep) {
             int start = 0, end;

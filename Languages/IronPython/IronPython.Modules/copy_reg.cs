@@ -27,6 +27,7 @@ using IronPython.Runtime.Types;
 using Complex = Microsoft.Scripting.Math.Complex64;
 #else
 using System.Numerics;
+using Microsoft.Scripting.Utils;
 #endif
 
 [assembly: PythonModule("copy_reg", typeof(IronPython.Modules.PythonCopyReg))]

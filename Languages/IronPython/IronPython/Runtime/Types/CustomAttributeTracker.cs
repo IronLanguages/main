@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -55,7 +55,7 @@ namespace IronPython.Runtime.Types {
             return base.SetValue(resolverFactory, binder, type, value, errorSuggestion);
         }
 
-        protected override DynamicMetaObject GetBoundValue(OverloadResolverFactory factory, ActionBinder binder, Type type, DynamicMetaObject instance) {
+        protected override DynamicMetaObject GetBoundValue(OverloadResolverFactory factory, ActionBinder binder, Type instanceType, DynamicMetaObject instance) {
             return new DynamicMetaObject(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("SlotGetValue"),
@@ -65,7 +65,7 @@ namespace IronPython.Runtime.Types {
                         instance.Expression,
                         typeof(object)
                     ),
-                    AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(type))
+                    AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(instanceType))
                 ),
                 BindingRestrictions.Empty
             );
@@ -125,8 +125,8 @@ namespace IronPython.Runtime.Types {
             _slot = slot;
         }
 
-        public override DynamicMetaObject GetValue(OverloadResolverFactory factory, ActionBinder binder, Type type) {
-            return GetBoundValue(factory, binder, type, new DynamicMetaObject(AstUtils.Constant(null), BindingRestrictions.Empty));
+        public override DynamicMetaObject GetValue(OverloadResolverFactory factory, ActionBinder binder, Type instanceType) {
+            return GetBoundValue(factory, binder, instanceType, new DynamicMetaObject(AstUtils.Constant(null), BindingRestrictions.Empty));
         }
 
         public override string Name {
@@ -171,8 +171,8 @@ namespace IronPython.Runtime.Types {
             );
         }
 
-        public override DynamicMetaObject GetValue(OverloadResolverFactory factory, ActionBinder binder, Type type) {
-            return GetBoundValue(factory, binder, type, new DynamicMetaObject(AstUtils.Constant(null), BindingRestrictions.Empty));
+        public override DynamicMetaObject GetValue(OverloadResolverFactory factory, ActionBinder binder, Type instanceType) {
+            return GetBoundValue(factory, binder, instanceType, new DynamicMetaObject(AstUtils.Constant(null), BindingRestrictions.Empty));
         }
 
         public override Type DeclaringType {

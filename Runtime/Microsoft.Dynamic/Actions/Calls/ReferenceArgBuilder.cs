@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -70,12 +70,12 @@ namespace Microsoft.Scripting.Actions.Calls {
                     _tmp,
                     Expression.Field(
                         AstUtils.Convert(arg, Type),
-                        Type.GetField("Value")
+                        Type.GetDeclaredField("Value")
                     )
                 ),
                 Expression.Throw(
                     Expression.Call(
-                        new Func<Type, object, Exception>(RuntimeHelpers.MakeIncorrectBoxTypeError).Method,
+                        new Func<Type, object, Exception>(RuntimeHelpers.MakeIncorrectBoxTypeError).GetMethod(),
                         AstUtils.Constant(_elementType),
                         AstUtils.Convert(arg, typeof(object))
                     ),
@@ -88,7 +88,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return Expression.Assign(
                 Expression.Field(
                     Expression.Convert(args.GetObject(Index).Expression, Type),
-                    Type.GetField("Value")
+                    Type.GetDeclaredField("Value")
                 ),
                 _tmp
             );

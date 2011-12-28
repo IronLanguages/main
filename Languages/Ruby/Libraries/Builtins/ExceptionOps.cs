@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -140,13 +140,13 @@ namespace IronRuby.Builtins {
 
                         // RubyOps.MarkException(new <exception-type>(GetClrMessage(<class>, #message = <message>)))
                         if (cls.BuildAllocatorCall(metaBuilder, args, () =>
-                            Ast.Call(null, new Func<RubyClass, object, string>(GetClrMessage).Method,
+                            Ast.Call(null, new Func<RubyClass, object, string>(GetClrMessage).GetMethod(),
                                 classExpression,
                                 Ast.Assign(messageVariable = metaBuilder.GetTemporary(typeof(object), "#message"), AstUtils.Box(argsBuilder[0]))
                             )
                         )) {
                             // ReinitializeException(<result>, #message)
-                            metaBuilder.Result = Ast.Call(null, new Func<RubyContext, Exception, object, Exception>(ReinitializeException).Method,
+                            metaBuilder.Result = Ast.Call(null, new Func<RubyContext, Exception, object, Exception>(ReinitializeException).GetMethod(),
                                 AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
                                 metaBuilder.Result,
                                 messageVariable ?? AstUtils.Box(argsBuilder[0])

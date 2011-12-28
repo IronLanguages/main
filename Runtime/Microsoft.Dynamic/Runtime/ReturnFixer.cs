@@ -17,6 +17,7 @@ using System;
 using System.Diagnostics;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Generation {
     sealed class ReturnFixer {
@@ -25,7 +26,7 @@ namespace Microsoft.Scripting.Generation {
         private readonly Type _argType;
 
         private ReturnFixer(LocalBuilder refSlot, int argIndex, Type argType) {
-            Debug.Assert(refSlot.LocalType.IsGenericType && refSlot.LocalType.GetGenericTypeDefinition() == typeof(StrongBox<>));
+            Debug.Assert(refSlot.LocalType.IsGenericType() && refSlot.LocalType.GetGenericTypeDefinition() == typeof(StrongBox<>));
             _refSlot = refSlot;
             _argIndex = argIndex;
             _argType = argType;
@@ -53,7 +54,7 @@ namespace Microsoft.Scripting.Generation {
         internal void FixReturn(ILGen cg) {
             cg.EmitLoadArg(_argIndex);
             cg.Emit(OpCodes.Ldloc, _refSlot);
-            cg.Emit(OpCodes.Ldfld, _refSlot.LocalType.GetField("Value"));
+            cg.Emit(OpCodes.Ldfld, _refSlot.LocalType.GetDeclaredField("Value"));
             cg.EmitStoreValueIndirect(_argType.GetElementType());
         }
     }

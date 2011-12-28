@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -23,7 +23,6 @@ using System;
 using System.Dynamic;
 using System.Reflection;
 
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Utils;
 
@@ -78,7 +77,6 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        [Confined]
         public override string ToString() {
             return _method.ToString();
         }
@@ -96,7 +94,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         internal override DynamicMetaObject Call(OverloadResolverFactory resolverFactory, ActionBinder binder, params DynamicMetaObject[] arguments) {
-            if (Method.IsPublic && Method.DeclaringType.IsVisible) {
+            if (Method.IsPublic && Method.DeclaringType.IsVisible()) {
                 return binder.MakeCallExpression(resolverFactory, Method, arguments);
             }
 

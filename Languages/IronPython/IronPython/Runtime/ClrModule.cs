@@ -12,6 +12,18 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_SERIALIZATION
+using System.Runtime.Serialization.Formatters.Binary;
+#endif
+
+#if !FEATURE_REMOTING
+using MarshalByRefObject = System.Object;
+#endif
+
+#if FEATURE_COM
+using ComTypeLibInfo = Microsoft.Scripting.ComInterop.ComTypeLibInfo;
+using ComTypeLibDesc = Microsoft.Scripting.ComInterop.ComTypeLibDesc;
+#endif
 
 using System;
 using System.Collections;
@@ -21,7 +33,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Xml;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -33,12 +44,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-#if !SILVERLIGHT
-using ComTypeLibInfo = Microsoft.Scripting.ComInterop.ComTypeLibInfo;
-using ComTypeLibDesc = Microsoft.Scripting.ComInterop.ComTypeLibDesc;
-using System.Runtime.Serialization.Formatters.Binary;
-#endif
 
 [assembly: PythonModule("clr", typeof(IronPython.Runtime.ClrModule))]
 namespace IronPython.Runtime {
@@ -108,54 +113,7 @@ import Namespace.")]
             }
         }
 
-#if !SILVERLIGHT // files, paths
-
-        /// <summary>
-        /// LoadTypeLibrary(rcw) -> type lib desc
-        /// 
-        /// Gets an ITypeLib object from OLE Automation compatible RCW ,
-        /// reads definitions of CoClass'es and Enum's from this library
-        /// and creates an object that allows to instantiate coclasses
-        /// and get actual values for the enums.
-        /// </summary>
-        public static ComTypeLibInfo LoadTypeLibrary(CodeContext/*!*/ context, object rcw) {
-            return ComTypeLibDesc.CreateFromObject(rcw);
-        }
-
-        /// <summary>
-        /// LoadTypeLibrary(guid) -> type lib desc
-        /// 
-        /// Reads the latest registered type library for the corresponding GUID,
-        /// reads definitions of CoClass'es and Enum's from this library
-        /// and creates a IDynamicMetaObjectProvider that allows to instantiate coclasses
-        /// and get actual values for the enums.
-        /// </summary>
-        public static ComTypeLibInfo LoadTypeLibrary(CodeContext/*!*/ context, Guid typeLibGuid) {
-            return ComTypeLibDesc.CreateFromGuid(typeLibGuid);
-        }
-
-        /// <summary>
-        /// AddReferenceToTypeLibrary(rcw) -> None
-        /// 
-        /// Makes the type lib desc available for importing. See also LoadTypeLibrary.
-        /// </summary>
-        public static void AddReferenceToTypeLibrary(CodeContext/*!*/ context, object rcw) {
-            ComTypeLibInfo typeLibInfo;
-            typeLibInfo = ComTypeLibDesc.CreateFromObject(rcw);
-            PublishTypeLibDesc(context, typeLibInfo.TypeLibDesc);
-        }
-
-        /// <summary>
-        /// AddReferenceToTypeLibrary(guid) -> None
-        /// 
-        /// Makes the type lib desc available for importing.  See also LoadTypeLibrary.
-        /// </summary>
-        public static void AddReferenceToTypeLibrary(CodeContext/*!*/ context, Guid typeLibGuid) {
-            ComTypeLibInfo typeLibInfo;
-            typeLibInfo = ComTypeLibDesc.CreateFromGuid(typeLibGuid);
-            PublishTypeLibDesc(context, typeLibInfo.TypeLibDesc);
-        }
-
+#if !SILVERLIGHT
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a partial assembly name. 
 After the load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
@@ -168,18 +126,12 @@ import Namespace.")]
                 AddReferenceByPartialName(context, name);
             }
         }
+#endif
 
+#if FEATURE_FILESYSTEM
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a full path to an. 
 assembly on disk. After the load the assemblies namespaces and top-level types 
 will be available via import Namespace.")]
-#if CLR2
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
-        public static Assembly/*!*/ LoadAssemblyFromFileWithPath(string/*!*/ file) {
-            if (file == null) throw new TypeErrorException("LoadAssemblyFromFileWithPath: arg 1 must be a string.");
-            // We use Assembly.LoadFile instead of Assembly.LoadFrom as the latter first tries to use Assembly.Load
-            return Assembly.LoadFile(file);
-        }
-#else
         public static Assembly/*!*/ LoadAssemblyFromFileWithPath(CodeContext/*!*/ context, string/*!*/ file) {
             if (file == null) throw new TypeErrorException("LoadAssemblyFromFileWithPath: arg 1 must be a string.");
             
@@ -195,7 +147,6 @@ will be available via import Namespace.")]
             }
             return res;
         }
-#endif
 
         [Documentation(@"Loads an assembly from the specified filename and returns the assembly
 object.  Namespaces or types in the assembly can be accessed directly from 
@@ -211,7 +162,9 @@ the assembly object.")]
 
             return context.LanguageContext.LoadAssemblyFromFile(file);
         }
+#endif
 
+#if !SILVERLIGHT
         [Documentation(@"Loads an assembly from the specified partial assembly name and returns the 
 assembly object.  Namespaces or types in the assembly can be accessed directly 
 from the assembly object.")]
@@ -221,14 +174,11 @@ from the assembly object.")]
                 throw new TypeErrorException("LoadAssemblyByPartialName: arg 1 must be a string");
             }
 
-#pragma warning disable 618 // csc
-#pragma warning disable 612 // gmcs
+#pragma warning disable 618, 612 // csc
             return Assembly.LoadWithPartialName(name);
-#pragma warning restore 618
-#pragma warning restore 612
+#pragma warning restore 618, 612
         }
 #endif
-
         [Documentation(@"Loads an assembly from the specified assembly name and returns the assembly
 object.  Namespaces or types in the assembly can be accessed directly from 
 the assembly object.")]
@@ -302,7 +252,6 @@ the assembly object.")]
             return ((PythonContext)context.LanguageContext).GetSetCommandDispatcher(dispatcher);
         }
 
-
         public static void ImportExtensions(CodeContext/*!*/ context, PythonType type) {
             if (type == null) {
                 throw PythonOps.TypeError("type must not be None");
@@ -320,6 +269,58 @@ the assembly object.")]
                 context.ModuleContext.ExtensionMethods = ExtensionMethodSet.AddNamespace(context.LanguageContext, context.ModuleContext.ExtensionMethods, @namespace);
             }
         }
+
+#if FEATURE_COM
+        /// <summary>
+        /// LoadTypeLibrary(rcw) -> type lib desc
+        /// 
+        /// Gets an ITypeLib object from OLE Automation compatible RCW ,
+        /// reads definitions of CoClass'es and Enum's from this library
+        /// and creates an object that allows to instantiate coclasses
+        /// and get actual values for the enums.
+        /// </summary>
+        public static ComTypeLibInfo LoadTypeLibrary(CodeContext/*!*/ context, object rcw) {
+            return ComTypeLibDesc.CreateFromObject(rcw);
+        }
+
+        /// <summary>
+        /// LoadTypeLibrary(guid) -> type lib desc
+        /// 
+        /// Reads the latest registered type library for the corresponding GUID,
+        /// reads definitions of CoClass'es and Enum's from this library
+        /// and creates a IDynamicMetaObjectProvider that allows to instantiate coclasses
+        /// and get actual values for the enums.
+        /// </summary>
+        public static ComTypeLibInfo LoadTypeLibrary(CodeContext/*!*/ context, Guid typeLibGuid) {
+            return ComTypeLibDesc.CreateFromGuid(typeLibGuid);
+        }
+
+        /// <summary>
+        /// AddReferenceToTypeLibrary(rcw) -> None
+        /// 
+        /// Makes the type lib desc available for importing. See also LoadTypeLibrary.
+        /// </summary>
+        public static void AddReferenceToTypeLibrary(CodeContext/*!*/ context, object rcw) {
+            ComTypeLibInfo typeLibInfo;
+            typeLibInfo = ComTypeLibDesc.CreateFromObject(rcw);
+            PublishTypeLibDesc(context, typeLibInfo.TypeLibDesc);
+        }
+
+        /// <summary>
+        /// AddReferenceToTypeLibrary(guid) -> None
+        /// 
+        /// Makes the type lib desc available for importing.  See also LoadTypeLibrary.
+        /// </summary>
+        public static void AddReferenceToTypeLibrary(CodeContext/*!*/ context, Guid typeLibGuid) {
+            ComTypeLibInfo typeLibInfo;
+            typeLibInfo = ComTypeLibDesc.CreateFromGuid(typeLibGuid);
+            PublishTypeLibDesc(context, typeLibInfo.TypeLibDesc);
+        }
+
+        private static void PublishTypeLibDesc(CodeContext context, ComTypeLibDesc typeLibDesc) {
+            PythonOps.ScopeSetMember(context, context.LanguageContext.DomainManager.Globals, typeLibDesc.Name, typeLibDesc);
+        }
+#endif
 
         #endregion
 
@@ -358,7 +359,7 @@ the assembly object.")]
             // note we don't explicit call to get the file version
             // here because the assembly resolve event will do it for us.
 
-#if !SILVERLIGHT // files, paths
+#if !SILVERLIGHT
             if (asm == null) {
                 asm = LoadAssemblyByPartialName(name);
             }
@@ -373,7 +374,7 @@ the assembly object.")]
         private static void AddReferenceToFile(CodeContext/*!*/ context, string file) {
             if (file == null) throw new TypeErrorException("Expected string, got NoneType");
 
-#if SILVERLIGHT
+#if !FEATURE_FILESYSTEM
             Assembly asm = context.LanguageContext.DomainManager.Platform.LoadAssemblyFromPath(file);
 #else
             Assembly asm = LoadAssemblyFromFile(context, file);
@@ -385,7 +386,7 @@ the assembly object.")]
             AddReference(context, asm);
         }
 
-#if !SILVERLIGHT // files, paths
+#if !SILVERLIGHT
         private static void AddReferenceByPartialName(CodeContext/*!*/ context, string name) {
             if (name == null) throw new TypeErrorException("Expected string, got NoneType");
             ContractUtils.RequiresNotNull(context, "context");
@@ -396,10 +397,6 @@ the assembly object.")]
             }
 
             AddReference(context, asm);
-        }
-
-        private static void PublishTypeLibDesc(CodeContext context, ComTypeLibDesc typeLibDesc) {
-            PythonOps.ScopeSetMember(context, context.LanguageContext.DomainManager.Globals, typeLibDesc.Name, typeLibDesc);
         }
 #endif
         private static void AddReferenceByName(CodeContext/*!*/ context, string name) {
@@ -454,8 +451,8 @@ the assembly object.")]
         private static PythonType _strongBoxType;
 
         #region Runtime Type Checking support
-#if !SILVERLIGHT // files, paths
 
+#if FEATURE_FILESYSTEM
         [Documentation(@"Adds a reference to a .NET assembly.  One or more assembly names can
 be provided which are fully qualified names to the file on disk.  The 
 directory is added to sys.path and AddReferenceToFile is then called. After the 
@@ -793,6 +790,7 @@ import Namespace.")]
             return Converter.Convert(o, toType);
         }
 
+#if FEATURE_FILESYSTEM
         /// <summary>
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
@@ -872,7 +870,7 @@ import Namespace.")]
 
             SavableScriptCode.SaveToAssembly(assemblyName, code.ToArray());
         }
-
+#endif
         /// <summary>
         /// clr.CompileSubclassTypes(assemblyName, *typeDescription)
         /// 
@@ -979,11 +977,7 @@ import Namespace.")]
             }
 
             [Serializable]
-            private class PALHolder
-#if !SILVERLIGHT
- : MarshalByRefObject
-#endif
- {
+            private class PALHolder : MarshalByRefObject {
                 [NonSerialized]
                 private readonly PlatformAdaptationLayer _pal;
 
@@ -1085,7 +1079,7 @@ import Namespace.")]
             po.EnableProfiler = enable;
         }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         /// <summary>
         /// Serializes data using the .NET serialization formatter for complex
         /// types.  Returns a tuple identifying the serialization format and the serialized 
@@ -1101,7 +1095,7 @@ import Namespace.")]
             }
 
             string data, format;
-            switch (Type.GetTypeCode(CompilerHelpers.GetType(self))) {
+            switch (CompilerHelpers.GetType(self).GetTypeCode()) {
                 // for the primitive non-python types just do a simple
                 // serialization
                 case TypeCode.Byte:
@@ -1118,6 +1112,7 @@ import Namespace.")]
                     data = self.ToString();
                     format = CompilerHelpers.GetType(self).FullName;
                     break;
+
                 default:
                     // something more complex, let the binary formatter handle it                    
                     BinaryFormatter bf = new BinaryFormatter();

@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_NATIVE
 
 using System;
 using System.Text;
@@ -20,7 +21,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if !SILVERLIGHT
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.

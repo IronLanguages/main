@@ -120,8 +120,8 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static Instruction Create(Type type) {
-            Debug.Assert(!type.IsEnum);
-            switch (Type.GetTypeCode(type)) {
+            Debug.Assert(!type.IsEnum());
+            switch (type.GetTypeCode()) {
                 case TypeCode.SByte: return _SByte ?? (_SByte = new GreaterThanSByte());
                 case TypeCode.Byte: return _Byte ?? (_Byte = new GreaterThanByte());
                 case TypeCode.Char: return _Char ?? (_Char = new GreaterThanChar());

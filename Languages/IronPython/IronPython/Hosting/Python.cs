@@ -54,7 +54,7 @@ namespace IronPython.Hosting {
             return new ScriptRuntime(CreateRuntimeSetup(options));
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         /// <summary>
         /// Creates a new ScriptRuntime with the IronPython scripting engine pre-configured
         /// in the specified AppDomain.  The remote ScriptRuntime may  be manipulated from 
@@ -97,7 +97,7 @@ namespace IronPython.Hosting {
             return GetEngine(CreateRuntime(options));
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
 
         /// <summary>
         /// Creates a new ScriptRuntime and returns the ScriptEngine for IronPython. If

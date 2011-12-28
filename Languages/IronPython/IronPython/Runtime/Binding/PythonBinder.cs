@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
 #else
@@ -84,7 +84,7 @@ namespace IronPython.Runtime.Binding {
             Type exprType = expr.Type;
 
             if (toType == typeof(object)) {
-                if (exprType.IsValueType) {
+                if (exprType.IsValueType()) {
                     return AstUtils.Convert(expr, toType);
                 } else {
                     return expr;
@@ -111,8 +111,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static MethodInfo GetGenericConvertMethod(Type toType) {
-            if (toType.IsValueType) {
-                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+            if (toType.IsValueType()) {
+                if (toType.IsGenericType() && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     return typeof(Converter).GetMethod("ConvertToNullableType");
                 } else {
                     return typeof(Converter).GetMethod("ConvertToValueType");
@@ -742,7 +742,9 @@ namespace IronPython.Runtime.Binding {
         private static Dictionary<Type/*!*/, IList<Type/*!*/>/*!*/>/*!*/ MakeExtensionTypes() {
             Dictionary<Type, IList<Type>> res = new Dictionary<Type, IList<Type>>();
 
+#if FEATURE_DBNULL
             res[typeof(DBNull)] = new Type[] { typeof(DBNullOps) };
+#endif
             res[typeof(List<>)] = new Type[] { typeof(ListOfTOps<>) };
             res[typeof(Dictionary<,>)] = new Type[] { typeof(DictionaryOfTOps<,>) };
             res[typeof(Array)] = new Type[] { typeof(ArrayOps) };

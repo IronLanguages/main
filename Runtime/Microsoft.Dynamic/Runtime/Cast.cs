@@ -15,6 +15,7 @@
 
 using System;
 using System.Diagnostics;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -28,8 +29,8 @@ namespace Microsoft.Scripting.Runtime {
         public static object Explicit(object o, Type to) {
             if (o == null) {
                 // Null objects can be only cast to Nullable<T> or any reference type
-                if (to.IsValueType) {
-                    if (to.IsGenericType && to.GetGenericTypeDefinition() == NullableType) {
+                if (to.IsValueType()) {
+                    if (to.IsGenericType() && to.GetGenericTypeDefinition() == NullableType) {
                         return NewNullableInstance(to.GetGenericArguments()[0]);
                     } else if (to == typeof(void)) {
                         return null;
@@ -42,16 +43,16 @@ namespace Microsoft.Scripting.Runtime {
                 }
             }
 
-            if (to.IsValueType) {
+            if (to.IsValueType()) {
                 return ExplicitCastToValueType(o, to);
-            } else {
-                Type type = o.GetType();
-                if (to.IsInstanceOfType(o) || to.IsAssignableFrom(type)) {
-                    return o;
-                } else {
-                    throw new InvalidCastException(String.Format("Cannot cast {0} to {1}", type.Name, to.Name));
-                }
+            } 
+            
+            Type type = o.GetType();
+            if (to.IsAssignableFrom(type)) {
+                return o;
             }
+ 
+            throw new InvalidCastException(String.Format("Cannot cast {0} to {1}", type.Name, to.Name));
         }
 
         public static T Explicit<T>(object o) {
@@ -60,7 +61,7 @@ namespace Microsoft.Scripting.Runtime {
 
         private static object ExplicitCastToValueType(object o, Type to) {
             Debug.Assert(o != null);
-            Debug.Assert(to.IsValueType);
+            Debug.Assert(to.IsValueType());
 
             if (to == Int32Type) return ScriptingRuntimeHelpers.Int32ToObject(ExplicitCastToInt32(o));
             if (to == DoubleType) return ExplicitCastToDouble(o);

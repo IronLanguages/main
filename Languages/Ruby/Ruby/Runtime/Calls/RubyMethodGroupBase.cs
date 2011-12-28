@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -226,7 +226,7 @@ namespace IronRuby.Runtime.Calls {
                                 genericArguments,
                                 underlyingType,
                                 ClsTypeEmitter.BaseMethodPrefix + overload.Name,
-                                BindingFlags.Public | bindingFlags | BindingFlags.InvokeMethod
+                                BindingFlags.Public | bindingFlags
                             );
 
                             Debug.Assert(visibleMethod != null);
@@ -245,9 +245,8 @@ namespace IronRuby.Runtime.Calls {
         private static OverloadInfo/*!*/ GetMethodOverload(Type/*!*/[]/*!*/ parameterTypes, IList<Type/*!*/> genericParameterTypes,
             Type/*!*/ type, string/*!*/ name, BindingFlags bindingFlags) {
 
-            var overloads = type.GetMember(name, MemberTypes.Method, bindingFlags);
-            for (int i = 0; i < overloads.Length; i++) {
-                MethodInfo overload = (MethodInfo)overloads[i];
+            foreach (MethodInfo o in type.GetInheritedMethods(name).WithBindingFlags(bindingFlags)) {
+                MethodInfo overload = o;
                 MethodInfo originalOverload = overload;
                 if ((genericParameterTypes != null) != overload.IsGenericMethod) {
                     continue;
@@ -300,7 +299,7 @@ namespace IronRuby.Runtime.Calls {
             if (bindingTarget.Success) {
                 // TODO: create a custom overload info:
                 if (ReferenceEquals(bindingTarget.Overload.ReflectionInfo, Methods.CreateDefaultInstance)) {
-                    Debug.Assert(args.TargetClass.TypeTracker.Type.IsValueType);
+                    Debug.Assert(args.TargetClass.TypeTracker.Type.IsValueType());
                     metaBuilder.Result = Ast.New(args.TargetClass.TypeTracker.Type);
                 } else if (args.Signature.IsVirtualCall && bindingTarget.Overload.IsVirtual) {
                     // Virtual methods that have been detached from the CLR type and 

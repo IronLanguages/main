@@ -12,8 +12,8 @@
  *
  *
  * ***************************************************************************/
-
-#if !CLR2
+#if FEATURE_COM
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -24,7 +24,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;
 
-#if !SILVERLIGHT
 namespace Microsoft.Scripting.ComInterop {
 
     internal sealed class SplatCallSite {

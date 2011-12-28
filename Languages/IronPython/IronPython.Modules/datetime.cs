@@ -31,6 +31,7 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
+using Microsoft.Scripting.Utils;
 #endif
 
 [assembly: PythonModule("datetime", typeof(IronPython.Modules.PythonDateTime))]

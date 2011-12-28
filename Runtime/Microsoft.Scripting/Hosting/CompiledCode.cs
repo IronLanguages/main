@@ -13,27 +13,27 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Runtime.Remoting;
-using System.Dynamic;
-using Microsoft.Scripting.Utils;
-using System.Security.Permissions;
-using System.Threading;
-
-#if CLR2
+#if !FEATURE_CORE_DLR
 using dynamic = System.Object;
 #endif
+
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
+using System;
+using System.Dynamic;
+using System.Threading;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Hosting {
 
     /// <summary>
     /// Hosting API counterpart for <see cref="ScriptCode"/>.
     /// </summary>
-    public sealed class CompiledCode
-#if !SILVERLIGHT
-        : MarshalByRefObject 
-#endif
-    {
+    public sealed class CompiledCode : MarshalByRefObject {
         private readonly ScriptEngine _engine;
         private readonly ScriptCode _code;
 
@@ -98,7 +98,7 @@ namespace Microsoft.Scripting.Hosting {
         }
 
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         /// <summary>
         /// Executes the code in an empty scope.
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  

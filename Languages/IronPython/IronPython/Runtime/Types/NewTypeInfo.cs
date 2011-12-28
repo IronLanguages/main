@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -56,7 +57,7 @@ namespace IronPython.Runtime.Types {
 
             foreach (PythonType curBasePythonType in GetPythonTypes(typeName, bases)) {
                 // discover the initial base/interfaces
-                IList<Type> baseInterfaces = Type.EmptyTypes;
+                IList<Type> baseInterfaces = ReflectionUtils.EmptyTypes;
                 Type curTypeToExtend = curBasePythonType.ExtensionType;
 
                 if (curBasePythonType.ExtensionType.IsInterface) {
@@ -99,7 +100,7 @@ namespace IronPython.Runtime.Types {
                 }
 
             }
-            return new NewTypeInfo(baseCLIType, interfaceTypes.Count == 0 ? Type.EmptyTypes : interfaceTypes.ToArray());
+            return new NewTypeInfo(baseCLIType, interfaceTypes.Count == 0 ? ReflectionUtils.EmptyTypes : interfaceTypes.ToArray());
         }
 
         /// <summary>

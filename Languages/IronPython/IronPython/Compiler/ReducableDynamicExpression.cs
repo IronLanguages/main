@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #else
@@ -83,7 +83,7 @@ namespace IronPython.Compiler {
             if (binder != null) {
                 var lightBinder = binder.GetLightExceptionBinder() as DynamicMetaObjectBinder;
                 if (lightBinder != binder) {
-                    return Expression.Dynamic(
+                    return DynamicExpression.Dynamic(
                         lightBinder,
                         Type,
                         _args);

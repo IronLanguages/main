@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
 #else
@@ -302,7 +302,7 @@ namespace IronPython.Runtime.Binding {
                                         ),
                             // if(getItemRes == param1) return true
                                         Utils.If(
-                                            Ast.Dynamic(
+                                            DynamicExpression.Dynamic(
                                                 state.BinaryOperationRetType(
                                                     state.BinaryOperation(ExpressionType.Equal),
                                                     state.Convert(typeof(bool), ConversionResultKind.ExplicitCast)
@@ -345,7 +345,7 @@ namespace IronPython.Runtime.Binding {
 
             if (res.GetLimitType() != typeof(bool) && res.GetLimitType() != typeof(void)) {
                 res = new DynamicMetaObject(
-                    Ast.Dynamic(
+                    DynamicExpression.Dynamic(
                         state.Convert(
                             typeof(bool),
                             ConversionResultKind.ExplicitCast
@@ -425,7 +425,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static DynamicExpression/*!*/ HashBigInt(PythonOperationBinder/*!*/ operation, Expression/*!*/ expression) {
-            return Ast.Dynamic(
+            return DynamicExpression.Dynamic(
                 operation,
                 typeof(int),
                 expression
@@ -433,7 +433,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static DynamicExpression/*!*/ HashConvertToInt(PythonContext/*!*/ state, Expression/*!*/ expression) {
-            return Ast.Dynamic(
+            return DynamicExpression.Dynamic(
                 state.Convert(
                     typeof(int),
                     ConversionResultKind.ExplicitCast
@@ -514,7 +514,7 @@ namespace IronPython.Runtime.Binding {
                     self.Restrict(self.GetLimitType()).Restrictions
                 );
 
-#if !SILVERLIGHT
+#if FEATURE_COM
                 if (Microsoft.Scripting.ComInterop.ComBinder.IsComObject(self.Value)) {
                     ieres = new DynamicMetaObject(
                          MakeEnumeratorResult(
@@ -612,7 +612,7 @@ namespace IronPython.Runtime.Binding {
                     } else {
                         notExpr =
                             Ast.Equal(
-                                Ast.Dynamic(
+                                DynamicExpression.Dynamic(
                                     PythonContext.GetPythonContext(operation).Operation(
                                         PythonOperationKind.Compare
                                     ),
@@ -1028,7 +1028,7 @@ namespace IronPython.Runtime.Binding {
                     Ast.NotEqual(
                         Ast.Assign(
                             tmp,
-                            Ast.Dynamic(
+                            DynamicExpression.Dynamic(
                                 state.Invoke(
                                     new CallSignature(args.Length)
                                 ),
@@ -1089,7 +1089,7 @@ namespace IronPython.Runtime.Binding {
                     BindingHelpers.AddRecursionCheck(
                         pyContext,
                         returnTransform(
-                            Ast.Dynamic(
+                            DynamicExpression.Dynamic(
                                 pyContext.Operation(op | PythonOperationKind.DisableCoerce),
                                 op == PythonOperationKind.Compare ? typeof(int) : typeof(object),
                                 reverse ? CoerceTwo(coerceTuple) : CoerceOne(coerceTuple),
@@ -1263,7 +1263,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Constant(0),
                         BindingRestrictions.Combine(types)
                     );
-                } else if (yType.UnderlyingSystemType.IsPrimitive || yType.UnderlyingSystemType == typeof(BigInteger)) {
+                } else if (yType.UnderlyingSystemType.IsPrimitive() || yType.UnderlyingSystemType == typeof(BigInteger)) {
                     return new DynamicMetaObject(
                         AstUtils.Constant(-1),
                         BindingRestrictions.Combine(types)
@@ -1392,7 +1392,7 @@ namespace IronPython.Runtime.Binding {
 
         private static void MakeValueCheck(int val, Expression retValue, ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition) {
             if (retValue.Type != typeof(bool)) {
-                retValue = Ast.Dynamic(
+                retValue = DynamicExpression.Dynamic(
                     PythonContext.GetPythonContext(bodyBuilder.Action).Convert(
                         typeof(bool),
                         ConversionResultKind.ExplicitCast
@@ -1817,7 +1817,7 @@ namespace IronPython.Runtime.Binding {
                     exprArgs[i - 1] = args[i].Expression;
                 }
 
-                Expression retVal = Ast.Dynamic(
+                Expression retVal = DynamicExpression.Dynamic(
                     PythonContext.Invoke(
                         new CallSignature(exprArgs.Length)
                     ),
@@ -1912,13 +1912,13 @@ namespace IronPython.Runtime.Binding {
                         // this type defines __index__, otherwise we'd have an ItemBuilder constructing a slice
                         args[i] = MakeIntTest(args[0],
                             new DynamicMetaObject(
-                                Ast.Dynamic(
+                                DynamicExpression.Dynamic(
                                     binder.Convert(
                                         typeof(int),
                                         ConversionResultKind.ExplicitCast
                                     ),
                                     typeof(int),
-                                    Ast.Dynamic(
+                                    DynamicExpression.Dynamic(
                                         binder.InvokeNone,
                                         typeof(object),
                                         AstUtils.Constant(binder.SharedContext),
@@ -2014,13 +2014,13 @@ namespace IronPython.Runtime.Binding {
                     PythonTypeSlot indexSlot;
                     if (args[1].GetLimitType() != typeof(Slice) && GetTypeAt(1).TryResolveSlot(binder.SharedContext, "__index__", out indexSlot)) {
                         args[1] = new DynamicMetaObject(
-                            Ast.Dynamic(
+                            DynamicExpression.Dynamic(
                                 binder.Convert(
                                     typeof(int),
                                     ConversionResultKind.ExplicitCast
                                 ),
                                 typeof(int),
-                                Ast.Dynamic(
+                                DynamicExpression.Dynamic(
                                     binder.InvokeNone,
                                     typeof(object),
                                     AstUtils.Constant(binder.SharedContext),

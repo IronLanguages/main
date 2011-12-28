@@ -13,11 +13,12 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 using Microsoft.Scripting.Ast;
 #else
 using System.Linq.Expressions;
 #endif
+
 #if SILVERLIGHT
 using System.Core;
 #endif
@@ -147,12 +148,11 @@ namespace System.Dynamic.Utils {
             return false;
         }
 
-        internal static bool AreEquivalent(Type t1, Type t2)
-        {
-#if CLR2 || SILVERLIGHT
-            return t1 == t2;
-#else
+        internal static bool AreEquivalent(Type t1, Type t2) {
+#if FEATURE_TYPE_EQUIVALENCE
             return t1 == t2 || t1.IsEquivalentTo(t2);
+#else
+            return t1 == t2;
 #endif
         }
 

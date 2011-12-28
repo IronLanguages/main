@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -25,7 +25,6 @@ using System.Text;
 using System.Diagnostics;
 using System.Threading;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
@@ -62,12 +61,12 @@ namespace IronRuby.Builtins {
         public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, -4);
         public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(CreateEncoding(CodePageUTF8, false), CreateEncoding(CodePageUTF8, true), -3);
 
-#if SILVERLIGHT
-        public static readonly RubyEncoding/*!*/ Ascii = UTF8;
-#else
+#if FEATURE_ENCODING
         public static readonly RubyEncoding/*!*/ Ascii = new RubyEncoding(CreateEncoding(CodePageAscii, false), CreateEncoding(CodePageAscii, true), -2);
         public static readonly RubyEncoding/*!*/ EUCJP = new RubyEncoding(CreateEncoding(CodePageEUCJP, false), CreateEncoding(CodePageEUCJP, true), -1);
         public static readonly RubyEncoding/*!*/ SJIS = new RubyEncoding(CreateEncoding(CodePageSJIS, false), CreateEncoding(CodePageSJIS, true), 0);
+#else
+        public static readonly RubyEncoding/*!*/ Ascii = UTF8;
 #endif
 
         #endregion
@@ -80,7 +79,7 @@ namespace IronRuby.Builtins {
         // TODO: combine into a single integer (tables could be merged)
         private readonly int _maxBytesPerChar;
         private readonly bool _isAsciiIdentity;
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         private bool? _isSingleByteCharacterSet;
         private bool? _isDoubleByteCharacterSet;
 #endif
@@ -107,19 +106,19 @@ namespace IronRuby.Builtins {
         }
 
         private static Encoding/*!*/ CreateEncoding(int codepage, bool throwOnError) {
-#if SILVERLIGHT
-            return new UTF8Encoding(false, throwOnError);
-#else
+#if FEATURE_ENCODING
             if (throwOnError) {
                 return Encoding.GetEncoding(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
             } else {
                 return Encoding.GetEncoding(codepage, EncoderFallback.ReplacementFallback, BinaryDecoderFallback.Instance);
             }
+#else
+            return new UTF8Encoding(false, throwOnError);
 #endif
         }
 
         #region Serialization
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         private RubyEncoding(SerializationInfo/*!*/ info, StreamingContext context) {
             throw Assert.Unreachable;
         }
@@ -172,7 +171,7 @@ namespace IronRuby.Builtins {
         public static string GetRubySpecificName(int codepage) {
             switch (codepage) {
                 case RubyEncoding.CodePageUTF8: return "UTF-8";
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 case RubyEncoding.CodePageUTF7: return "UTF-7";
                 case RubyEncoding.CodePageUTF16BE: return "UTF-16BE";
                 case RubyEncoding.CodePageUTF16LE: return "UTF-16LE";
@@ -214,7 +213,7 @@ namespace IronRuby.Builtins {
             }
 
             switch (encoding.CodePage) {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 case RubyEncoding.CodePageSJIS: return RubyRegexOptions.SJIS;
                 case RubyEncoding.CodePageEUCJP: return RubyRegexOptions.EUC;
 #endif
@@ -226,7 +225,7 @@ namespace IronRuby.Builtins {
 
         public static RubyEncoding GetRegexEncoding(RubyRegexOptions options) {
             switch (options & RubyRegexOptions.EncodingMask) {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 case RubyRegexOptions.EUC: return RubyEncoding.EUCJP;
                 case RubyRegexOptions.SJIS: return RubyEncoding.SJIS;
 #endif
@@ -238,7 +237,7 @@ namespace IronRuby.Builtins {
 
         internal static int GetCodePage(int nameInitial) {
             switch (nameInitial) {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 case 'E':
                 case 'e': return CodePageEUCJP;
                 case 'S':
@@ -262,7 +261,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         private static Dictionary<int, RubyEncoding> _Encodings;
         
         public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding) {

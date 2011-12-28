@@ -19,6 +19,7 @@ using System.Collections.ObjectModel;
 using Microsoft.Scripting.Utils;
 using System.IO;
 using System.Threading;
+using System.Globalization;
 
 namespace Microsoft.Scripting {
 
@@ -101,7 +102,7 @@ namespace Microsoft.Scripting {
                 if (value is T) {
                     return (T)value;
                 }
-                return (T)Convert.ChangeType(value, typeof(T), Thread.CurrentThread.CurrentCulture);
+                return (T)Convert.ChangeType(value, typeof(T), CultureInfo.CurrentCulture);
             }
             return defaultValue;
         }
@@ -138,7 +139,11 @@ namespace Microsoft.Scripting {
         }
 
         public static ReadOnlyCollection<string> GetSearchPathsOption(IDictionary<string, object> options) {
+#if WIN8
+            return GetStringCollectionOption(options, "SearchPaths", ';');
+#else
             return GetStringCollectionOption(options, "SearchPaths", Path.PathSeparator);
+#endif
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]

@@ -833,7 +833,7 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-#if !SILVERLIGHT // environment variables not available
+#if FEATURE_PROCESS
     [Serializable]
     internal sealed class EnvironmentDictionaryStorage : DictionaryStorage {
         private readonly CommonDictionaryStorage/*!*/ _storage = new CommonDictionaryStorage();

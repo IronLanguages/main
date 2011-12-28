@@ -13,13 +13,14 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -35,7 +36,7 @@ namespace Microsoft.Scripting.Ast {
     /// scopes encountered have their variables promoted to the generator's
     /// closure, so they survive yields.
     /// </summary>
-    internal sealed class GeneratorRewriter : ExpressionVisitor {
+    internal sealed class GeneratorRewriter : DynamicExpressionVisitor {
         // These two constants are used internally. They should not conflict
         // with valid yield states.
         private const int GotoRouterYielding = 0;

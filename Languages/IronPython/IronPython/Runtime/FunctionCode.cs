@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #else
@@ -579,7 +579,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", co_freevars.__repr__(context));
             }
 
-            if (Target == null || (Target.Method != null && Target.Method.DeclaringType == typeof(PythonCallTargets))) {
+            if (Target == null || (Target.GetMethod() != null && Target.GetMethod().DeclaringType == typeof(PythonCallTargets))) {
                 UpdateDelegate(context.LanguageContext, true);
             }
 
@@ -807,9 +807,12 @@ namespace IronPython.Runtime {
         }
 
         private Delegate CompileLambda(LightLambdaExpression code, EventHandler<LightLambdaCompileEventArgs> handler) {
+#if EMIT_PDB
             if (_lambda.EmitDebugSymbols) {
                 return CompilerHelpers.CompileToMethod((LambdaExpression)code.Reduce(), DebugInfoGenerator.CreatePdbGenerator(), true);
-            } else if (_lambda.ShouldInterpret) {
+            }
+#endif    
+            if (_lambda.ShouldInterpret) {
                 Delegate result = code.Compile(_lambda.GlobalParent.PyContext.Options.CompilationThreshold);
 
                 // If the adaptive compiler decides to compile this function, we
@@ -827,9 +830,12 @@ namespace IronPython.Runtime {
         }
 
         private Delegate CompileLambda(LambdaExpression code, EventHandler<LightLambdaCompileEventArgs> handler) {
+#if EMIT_PDB
             if (_lambda.EmitDebugSymbols) {
                 return CompilerHelpers.CompileToMethod(code, DebugInfoGenerator.CreatePdbGenerator(), true);
-            } else if (_lambda.ShouldInterpret) {
+            } 
+#endif
+            if (_lambda.ShouldInterpret) {
                 Delegate result = CompilerHelpers.LightCompile(code, _lambda.GlobalParent.PyContext.Options.CompilationThreshold);
 
                 // If the adaptive compiler decides to compile this function, we

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -122,14 +122,19 @@ namespace Microsoft.Scripting.Runtime {
             if (_inputStream == null) {
                 lock (_mutex) {
                     if (_inputStream == null) {
-#if SILVERLIGHT
-                        _inputEncoding = StringUtils.DefaultEncoding;
-                        _inputStream = new TextStream(Console.In, _inputEncoding);
-#else
+#if FEATURE_FULL_CONSOLE
                         _inputStream = ConsoleInputStream.Instance;
                         _inputEncoding = Console.InputEncoding;
-#endif
                         _inputReader = Console.In;
+#elif FEATURE_BASIC_CONSOLE
+                        _inputEncoding = StringUtils.DefaultEncoding;
+                        _inputStream = new TextStream(Console.In, _inputEncoding);
+                        _inputReader = Console.In;
+#else
+                        _inputEncoding = Encoding.UTF8;
+                        _inputStream = Stream.Null;
+                        _inputReader = TextReader.Null;
+#endif
                     }
                 }
             }
@@ -139,12 +144,16 @@ namespace Microsoft.Scripting.Runtime {
             if (_outputStream == null) {
                 lock (_mutex) {
                     if (_outputStream == null) {
-#if SILVERLIGHT
-                        _outputStream = new TextStream(Console.Out);
-#else
+#if FEATURE_FULL_CONSOLE
                         _outputStream = Console.OpenStandardOutput();
-#endif
                         _outputWriter = Console.Out;
+#elif FEATURE_BASIC_CONSOLE
+                        _outputStream = new TextStream(Console.Out);
+                        _outputWriter = Console.Out;
+#else
+                        _outputStream = Stream.Null;
+                        _outputWriter = TextWriter.Null;
+#endif
                     }
                 }
             }
@@ -152,13 +161,21 @@ namespace Microsoft.Scripting.Runtime {
 
         private void InitializeErrorOutput() {
             if (_errorStream == null) {
-#if SILVERLIGHT
-                Stream errorStream = new TextStream(Console.Error);
+                lock (_mutex) {
+                    if (_errorStream == null) {
+#if FEATURE_FULL_CONSOLE
+                        _errorStream = Console.OpenStandardError();
+                        _errorWriter = Console.Error;
+#elif FEATURE_BASIC_CONSOLE
+                        _errorStream =  new TextStream(Console.Error);
+                        _errorWriter = Console.Error;
 #else
-                Stream errorStream = Console.OpenStandardError();
+                        _errorStream = Stream.Null;
+                        _errorWriter = TextWriter.Null;
 #endif
-                Interlocked.CompareExchange(ref _errorStream, errorStream, null);
-                Interlocked.CompareExchange(ref _errorWriter, Console.Error, null);
+                    }
+
+                }
             }
         }
 

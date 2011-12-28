@@ -13,10 +13,14 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
+#endif
+
+#if !WIN8
+using TypeInfo = System.Type;
 #endif
 
 using System;
@@ -24,8 +28,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic;
+using System.Linq;
+using System.Reflection;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
@@ -78,11 +83,11 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         public virtual object Convert(object obj, Type toType) {
             if (obj == null) {
-                if (!toType.IsValueType) {
+                if (!toType.IsValueType()) {
                     return null;
                 }
             } else {
-                if (toType.IsValueType) {
+                if (toType.IsValueType()) {
                     if (toType == obj.GetType()) {
                         return obj;
                     }
@@ -117,7 +122,7 @@ namespace Microsoft.Scripting.Actions {
             Type exprType = expr.Type;
 
             if (toType == typeof(object)) {
-                if (exprType.IsValueType) {
+                if (exprType.IsValueType()) {
                     return AstUtils.Convert(expr, toType);
                 } else {
                     return expr;
@@ -138,34 +143,39 @@ namespace Microsoft.Scripting.Actions {
         /// registered extension methods.
         /// </summary>
         public virtual MemberGroup GetMember(MemberRequestKind action, Type type, string name) {
-            MemberInfo[] foundMembers = type.GetMember(name);
+            IEnumerable<MemberInfo> foundMembers = type.GetInheritedMembers(name);
             if (!PrivateBinding) {
                 foundMembers = CompilerHelpers.FilterNonVisibleMembers(type, foundMembers);
             }
 
-            MemberGroup members = new MemberGroup(foundMembers);
+            MemberGroup members = new MemberGroup(foundMembers.ToArray());
 
             // check for generic types w/ arity...
-            Type[] types = type.GetNestedTypes(BindingFlags.Public);
             string genName = name + ReflectionUtils.GenericArityDelimiter;
-            List<Type> genTypes = null;
-            foreach (Type t in types) {
-                if (t.Name.StartsWith(genName)) {
-                    if (genTypes == null) genTypes = new List<Type>();
+            List<TypeInfo> genTypes = null;
+            foreach (TypeInfo t in type.GetDeclaredNestedTypes()) {
+                if (t.IsPublic && t.Name.StartsWith(genName)) {
+                    if (genTypes == null) {
+                        genTypes = new List<TypeInfo>();
+                    }
+
                     genTypes.Add(t);
                 }
             }
 
             if (genTypes != null) {
                 List<MemberTracker> mt = new List<MemberTracker>(members);
-                foreach (Type t in genTypes) {
+                foreach (TypeInfo t in genTypes) {
                     mt.Add(MemberTracker.FromMemberInfo(t));
                 }
                 return MemberGroup.CreateInternal(mt.ToArray());
             }
 
             if (members.Count == 0) {
-                members = new MemberGroup(type.GetMember(name, BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance));
+                members = new MemberGroup(
+                    type.GetInheritedMembers(name, flattenHierarchy: true).WithBindingFlags(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance).ToArray()
+                );
+
                 if (members.Count == 0) {
                     members = GetAllExtensionMembers(type, name);
                 }
@@ -179,7 +189,7 @@ namespace Microsoft.Scripting.Actions {
         public virtual ErrorInfo MakeContainsGenericParametersError(MemberTracker tracker) {
             return ErrorInfo.FromException(
                 Expression.New(
-                    typeof(InvalidOperationException).GetConstructor(new Type[] { typeof(string) }),
+                    typeof(InvalidOperationException).GetConstructor(new[] { typeof(string) }),
                     AstUtils.Constant(Strings.InvalidOperation_ContainsGenericParameters(tracker.DeclaringType.Name, tracker.Name))
                 )
             );
@@ -188,7 +198,7 @@ namespace Microsoft.Scripting.Actions {
         public virtual ErrorInfo MakeMissingMemberErrorInfo(Type type, string name) {
             return ErrorInfo.FromException(
                 Expression.New(
-                    typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
+                    typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
                     AstUtils.Constant(name)
                 )
             );
@@ -197,7 +207,7 @@ namespace Microsoft.Scripting.Actions {
         public virtual ErrorInfo MakeGenericAccessError(MemberTracker info) {
             return ErrorInfo.FromException(
                 Expression.New(
-                    typeof(MemberAccessException).GetConstructor(new Type[] { typeof(string) }),
+                    typeof(MemberAccessException).GetConstructor(new[] { typeof(string) }),
                     AstUtils.Constant(info.Name)
                 )
             );
@@ -262,7 +272,7 @@ namespace Microsoft.Scripting.Actions {
 
             return ErrorInfo.FromException(
                 Expression.New(
-                    typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
+                    typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
                     AstUtils.Constant(message)
                 )
             );
@@ -272,7 +282,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.Throw(
                     Expression.New(
-                        typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }),
+                        typeof(ArgumentException).GetConstructor(new[] { typeof(string) }),
                         AstUtils.Constant("cannot assign to value types")
                     ),
                     typeof(object)
@@ -283,7 +293,7 @@ namespace Microsoft.Scripting.Actions {
         public virtual ErrorInfo MakeConversionError(Type toType, Expression value) {
             return ErrorInfo.FromException(
                 Expression.Call(
-                    typeof(ScriptingRuntimeHelpers).GetMethod("CannotConvertError"),
+                    new Func<Type, object, Exception>(ScriptingRuntimeHelpers.CannotConvertError).GetMethod(),
                     AstUtils.Constant(toType),
                     AstUtils.Convert(value, typeof(object))
                )
@@ -299,7 +309,7 @@ namespace Microsoft.Scripting.Actions {
         public virtual ErrorInfo MakeMissingMemberError(Type type, DynamicMetaObject self, string name) {
             return ErrorInfo.FromException(
                 Expression.New(
-                    typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
+                    typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
                     AstUtils.Constant(name)
                 )
             );
@@ -333,15 +343,12 @@ namespace Microsoft.Scripting.Actions {
         /// provide an extension member the search is stopped.
         /// </summary>
         public MemberGroup GetAllExtensionMembers(Type type, string name) {
-            Type curType = type;
-            do {
-                MemberGroup res = GetExtensionMembers(curType, name);
+            foreach (Type ancestor in type.Ancestors()) {
+                MemberGroup res = GetExtensionMembers(ancestor, name);
                 if (res.Count != 0) {
                     return res;
                 }
-
-                curType = curType.BaseType;
-            } while (curType != null);
+            }
 
             return MemberGroup.EmptyGroup;
         }
@@ -355,9 +362,9 @@ namespace Microsoft.Scripting.Actions {
             List<MemberTracker> members = new List<MemberTracker>();
 
             foreach (Type ext in extTypes) {
-                foreach (MemberInfo mi in ext.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
+                foreach (MemberInfo mi in ext.GetDeclaredMembers(name).WithBindingFlags(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
                     MemberInfo newMember = mi;
-                    if (PrivateBinding || (newMember = CompilerHelpers.TryGetVisibleMember(mi)) != null) {
+                    if (PrivateBinding || (newMember = CompilerHelpers.TryGetVisibleMember(ext, mi)) != null) {
                         if (IncludeExtensionMember(newMember)) {
                             if (ext != declaringType) {
                                 members.Add(MemberTracker.FromMemberInfo(newMember, declaringType));
@@ -369,25 +376,9 @@ namespace Microsoft.Scripting.Actions {
                 }
 
                 // TODO: Support indexed getters/setters w/ multiple methods
-                MethodInfo getter = null, setter = null, deleter = null;
-                foreach (MemberInfo mi in ext.GetMember("Get" + name, MemberTypes.Method, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance)) {
-                    if (!mi.IsDefined(typeof(PropertyMethodAttribute), false)) continue;
-
-                    Debug.Assert(getter == null);
-                    getter = (MethodInfo)mi;
-                }
-
-                foreach (MemberInfo mi in ext.GetMember("Set" + name, MemberTypes.Method, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance)) {
-                    if (!mi.IsDefined(typeof(PropertyMethodAttribute), false)) continue;
-                    Debug.Assert(setter == null);
-                    setter = (MethodInfo)mi;
-                }
-
-                foreach (MemberInfo mi in ext.GetMember("Delete" + name, MemberTypes.Method, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance)) {
-                    if (!mi.IsDefined(typeof(PropertyMethodAttribute), false)) continue;
-                    Debug.Assert(deleter == null);
-                    deleter = (MethodInfo)mi;
-                }
+                MethodInfo getter = GetExtensionOperator(ext, "Get" + name);
+                MethodInfo setter = GetExtensionOperator(ext, "Set" + name);
+                MethodInfo deleter = GetExtensionOperator(ext, "Delete" + name);
 
                 if (getter != null || setter != null || deleter != null) {
                     members.Add(new ExtensionPropertyTracker(name, getter, setter, deleter, declaringType));
@@ -398,6 +389,13 @@ namespace Microsoft.Scripting.Actions {
                 return MemberGroup.CreateInternal(members.ToArray());
             }
             return MemberGroup.EmptyGroup;
+        }
+
+        private MethodInfo GetExtensionOperator(Type ext, string name) {
+            return ext.GetInheritedMethods(name)
+                   .WithBindingFlags(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance)
+                   .Where(mi => mi.IsDefined(typeof(PropertyMethodAttribute), false))
+                   .SingleOrDefault();
         }
 
         public virtual bool IncludeExtensionMember(MemberInfo member) {
@@ -423,7 +421,7 @@ namespace Microsoft.Scripting.Actions {
                 BoundMemberTracker bmt = (BoundMemberTracker)memberTracker;
                 return new DynamicMetaObject(
                     Expression.New(
-                        typeof(BoundMemberTracker).GetConstructor(new Type[] { typeof(MemberTracker), typeof(object) }),
+                        typeof(BoundMemberTracker).GetConstructor(new[] { typeof(MemberTracker), typeof(object) }),
                         AstUtils.Constant(bmt.BoundTo),
                         bmt.Instance.Expression
                     ),

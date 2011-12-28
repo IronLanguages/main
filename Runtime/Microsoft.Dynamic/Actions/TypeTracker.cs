@@ -15,8 +15,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions {
     public abstract class TypeTracker : MemberTracker, IMembersList {
@@ -39,24 +41,17 @@ namespace Microsoft.Scripting.Actions {
         #region IMembersList Members
 
         public virtual IList<string> GetMemberNames() {
-            Dictionary<string, string> members = new Dictionary<string, string>();
-            CollectMembers(members, Type);
-
-            return MembersToList(members);
+            var members = new HashSet<string>();
+            GetMemberNames(Type, members);
+            return members.ToArray();
         }
 
-        internal static IList<string> MembersToList(Dictionary<string, string> members) {
-            List<string> res = new List<string>();
-            foreach (string key in members.Keys) {
-                res.Add(key);
-            }
-            return res;
-        }
-
-        internal static void CollectMembers(Dictionary<string, string> members, Type t) {
-            foreach (MemberInfo mi in t.GetMembers()) {
-                if (mi.MemberType != MemberTypes.Constructor) {
-                    members[mi.Name] = mi.Name;
+        internal static void GetMemberNames(Type type, HashSet<string> result) {
+            foreach (Type ancestor in type.Ancestors()) {
+                foreach (MemberInfo mi in ancestor.GetDeclaredMembers()) {
+                    if (!(mi is ConstructorInfo)) {
+                        result.Add(mi.Name);
+                    }
                 }
             }
         }

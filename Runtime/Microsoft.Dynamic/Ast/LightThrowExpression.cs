@@ -14,7 +14,7 @@
  * ***************************************************************************/
 
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -36,7 +36,7 @@ namespace Microsoft.Scripting.Ast {
     /// </summary>
     class LightThrowExpression : Expression {
         private readonly Expression _exception;
-        private static MethodInfo _throw = new Func<Exception, object>(LightExceptions.Throw).Method;
+        private static MethodInfo _throw = new Func<Exception, object>(LightExceptions.Throw).GetMethod();
 
         public LightThrowExpression(Expression exception) {
             _exception = exception;

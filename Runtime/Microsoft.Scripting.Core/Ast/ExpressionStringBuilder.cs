@@ -23,7 +23,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
 namespace System.Linq.Expressions {
@@ -777,7 +777,7 @@ namespace System.Linq.Expressions {
         protected internal override Expression VisitExtension(Expression node) {
             // Prefer an overriden ToString, if available.
             var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.ExactBinding;
-            var toString = node.GetType().GetMethod("ToString", flags, null, Type.EmptyTypes, null);
+            var toString = node.GetType().GetMethod("ToString", flags, null, ReflectionUtils.EmptyTypes, null);
             if (toString.DeclaringType != typeof(Expression)) {
                 Out(node.ToString());
                 return node;

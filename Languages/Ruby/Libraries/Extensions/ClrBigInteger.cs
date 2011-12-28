@@ -50,7 +50,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Returns the absolute value of self
         /// </summary>
-        /// <returns>self if self >= 0; -self if self < 0</returns>
+        /// <returns>self if self >= 0; -self if self &lt; 0</returns>
         /// <remarks>Normalizes to a Fixnum if necessary</remarks>
         [RubyMethod("abs")]
         public static object Abs(BigInteger/*!*/ self) {
@@ -694,7 +694,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Shifts self to the left by other bits (or to the right if other is negative).
         /// </summary>
-        /// <returns>self << other, as Bignum or Fixnum</returns>
+        /// <returns>self &lt;&lt; other, as Bignum or Fixnum</returns>
         /// <remarks>
         /// If self is negative we have to check for running out of bits, in which case we return -1.
         /// This is because Bignum is supposed to look like it is stored in 2s complement format.
@@ -715,7 +715,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Shifts self to the left by other bits (or to the right if other is negative).
         /// </summary>
-        /// <returns>self << other, as Bignum or Fixnum</returns>
+        /// <returns>self &lt;&lt; other, as Bignum or Fixnum</returns>
         /// <remarks>other is converted to an Integer by dynamically invoking self.to_int</remarks>
         [RubyMethod("<<")]
         public static object/*!*/ LeftShift(RubyContext/*!*/ context, BigInteger/*!*/ self, [DefaultProtocol]IntegerValue other) {
@@ -799,7 +799,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Performs bitwise and between self and other, where other is not Fixnum or Bignum. 
         /// </summary>
-        /// <remarks>other is dynamically converted to an Integer by other.to_int then & is invoked dynamically. E.g. self & (index.to_int)</remarks>
+        /// <remarks>other is dynamically converted to an Integer by other.to_int then "&amp;" is invoked dynamically. E.g. self &amp; (index.to_int)</remarks>
         [RubyMethod("&")]
         public static object/*!*/ And(RubyContext/*!*/ context, BigInteger/*!*/ self, [DefaultProtocol]IntegerValue other) {
             return other.IsFixnum ? And(self, other.Fixnum) : And(self, other.Bignum);

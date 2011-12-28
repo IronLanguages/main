@@ -12,8 +12,8 @@
  *
  *
  * ***************************************************************************/
-
-#if !CLR2
+#if FEATURE_COM
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -27,3 +27,5 @@ namespace Microsoft.Scripting.ComInterop {
         DynamicMetaObject GetMetaObject(Expression expression);
     }
 }
+
+#endif

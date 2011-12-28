@@ -18,6 +18,7 @@ CurrentVersion.Generated.cs
 
 TestResult.xml
 Solutions/TestResults/
+Runtime/Samples/Hosting/Scenarios/bin/
 
 # TODO - testing scripts should not created this file here
 debug.log

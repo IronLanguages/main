@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if FEATURE_CONFIGURATION
 
 using System;
 using System.Collections.Generic;

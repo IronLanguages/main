@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System.Dynamic;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 using System;
 
@@ -53,13 +52,11 @@ namespace Microsoft.Scripting.Actions {
             return FallbackOperation(target, args);
         }
 
-        [Confined]
         public override bool Equals(object obj) {
             OperationBinder oa = obj as OperationBinder;
             return oa != null && oa._operation == _operation;
         }
 
-        [Confined]
         public override int GetHashCode() {
             return 0x10000000 ^ _operation.GetHashCode();
         }

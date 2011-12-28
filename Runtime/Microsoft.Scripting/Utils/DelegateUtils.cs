@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REFEMIT
 
 using System;
 using System.Collections.Generic;
@@ -36,7 +37,13 @@ namespace Microsoft.Scripting.Utils {
 
         private static TypeBuilder DefineDelegateType(string name) {
             if (_assembly == null) {
-                Interlocked.CompareExchange(ref _assembly, AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicDelegates"), AssemblyBuilderAccess.Run), null);
+                AssemblyBuilder newAssembly;
+#if WIN8
+                newAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("DynamicDelegates"), AssemblyBuilderAccess.Run);
+#else
+                newAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicDelegates"), AssemblyBuilderAccess.Run);
+#endif
+                Interlocked.CompareExchange(ref _assembly, newAssembly, null);
 
                 lock (_assembly) {
                     if (_modBuilder == null) {
@@ -89,7 +96,6 @@ namespace Microsoft.Scripting.Utils {
                     return tb.CreateType();
             }
         }
-
-
     }
 }
+#endif

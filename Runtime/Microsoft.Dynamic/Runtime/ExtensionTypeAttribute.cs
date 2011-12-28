@@ -13,13 +13,14 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Reflection;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -39,7 +40,7 @@ namespace Microsoft.Scripting.Runtime {
             if (extends == null) {
                 throw new ArgumentNullException("extends");
             }
-            if (extensionType != null && !extensionType.IsPublic && !extensionType.IsNestedPublic) {
+            if (extensionType != null && !extensionType.GetTypeInfo().IsPublic && !extensionType.GetTypeInfo().IsNestedPublic) {
                 throw Error.ExtensionMustBePublic(extensionType.FullName);
             }
 

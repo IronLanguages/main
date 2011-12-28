@@ -80,12 +80,6 @@ namespace Microsoft.Scripting.Utils {
             return true;
         }
 
-        internal static IEnumerable<U> Select<T, U>(this IEnumerable<T> enumerable, Func<T, U> select) {
-            foreach (T t in enumerable) {
-                yield return select(t);
-            }
-        }
-
         // Name needs to be different so it doesn't conflict with Enumerable.Select
         internal static U[] Map<T, U>(this ICollection<T> collection, Func<T, U> select) {
             int count = collection.Count;
@@ -94,67 +88,6 @@ namespace Microsoft.Scripting.Utils {
             foreach (T t in collection) {
                 result[count++] = select(t);
             }
-            return result;
-        }
-
-        internal static IEnumerable<T> Where<T>(this IEnumerable<T> enumerable, Func<T, bool> where) {
-            foreach (T t in enumerable) {
-                if (where(t)) {
-                    yield return t;
-                }
-            }
-        }
-
-        internal static List<T> ToList<T>(this IEnumerable<T> enumerable) {
-            return new List<T>(enumerable);
-        }
-
-        internal static T[] ToArray<T>(this IEnumerable<T> enumerable) {
-            var c = enumerable as ICollection<T>;
-            if (c != null) {
-                var result = new T[c.Count];
-                c.CopyTo(result, 0);
-                return result;
-            }
-            return new List<T>(enumerable).ToArray();
-        }
-
-        internal static bool Any<T>(this IEnumerable<T> source) {
-            using (IEnumerator<T> e = source.GetEnumerator()) {
-                return e.MoveNext();
-            }
-        }
-
-        internal static bool Any<T>(this IEnumerable<T> source, Func<T, bool> predicate) {
-            foreach (T element in source) {
-                if (predicate(element)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        internal static bool All<T>(this IEnumerable<T> source, Func<T, bool> predicate) {
-            foreach (T element in source) {
-                if (!predicate(element)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        internal static TSource Aggregate<TSource>(this IEnumerable<TSource> source, Func<TSource, TSource, TSource> func) {
-            using (IEnumerator<TSource> e = source.GetEnumerator()) {
-                if (!e.MoveNext()) throw new ArgumentException("Collection is empty", "source");
-                TSource result = e.Current;
-                while (e.MoveNext()) result = func(result, e.Current);
-                return result;
-            }
-        }
-
-        internal static TAccumulate Aggregate<TSource, TAccumulate>(this IEnumerable<TSource> source, TAccumulate seed, Func<TAccumulate, TSource, TAccumulate> func) {
-            TAccumulate result = seed;
-            foreach (TSource element in source) result = func(result, element);
             return result;
         }
 
@@ -175,17 +108,6 @@ namespace Microsoft.Scripting.Utils {
             res[0] = item;
             list.CopyTo(res, 1);
             return res;
-        }
-
-        internal static T First<T>(this IEnumerable<T> source) {
-            var list = source as IList<T>;
-            if (list != null) {
-                return list[0];
-            }
-            using (var e = source.GetEnumerator()) {
-                if (e.MoveNext()) return e.Current;
-            }
-            throw new InvalidOperationException();
         }
 
         internal static T[] AddLast<T>(this IList<T> list, T item) {

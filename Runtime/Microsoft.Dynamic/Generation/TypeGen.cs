@@ -16,7 +16,6 @@
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Generation {
@@ -53,17 +52,13 @@ namespace Microsoft.Scripting.Generation {
             _myType = myType;
         }
 
-        [Confined]
         public override string ToString() {
             return _myType.ToString();
         }
 
         public Type FinishType() {
             if (_initGen != null) _initGen.Emit(OpCodes.Ret);
-
             Type ret = _myType.CreateType();
-
-            //Console.WriteLine("finished: " + ret.FullName);
             return ret;
         }
 
@@ -92,9 +87,13 @@ namespace Microsoft.Scripting.Generation {
             return new ILGen(mb.GetILGenerator());
         }
 
-        private const MethodAttributes MethodAttributesToEraseInOveride =
-            MethodAttributes.Abstract | MethodAttributes.ReservedMask;
+#if WIN8 // TODO: what is ReservedMask? 
+        private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | (MethodAttributes)0xD000;
+#else
+        private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
+#endif
 
+        // TODO: Use ReflectionUtils.DefineMethodOverride?
         public ILGen DefineMethodOverride(MethodInfo baseMethod) {
             MethodAttributes finalAttrs = baseMethod.Attributes & ~MethodAttributesToEraseInOveride;
             Type[] baseSignature = baseMethod.GetParameters().Map(p => p.ParameterType);

@@ -31,7 +31,7 @@ namespace Microsoft.Scripting {
             : base(message, e) {
         }
 
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected InvalidImplementationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
     }

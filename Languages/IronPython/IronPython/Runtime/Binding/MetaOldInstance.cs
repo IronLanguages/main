@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #endif
 
@@ -125,8 +125,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type type, Type retType, ConversionResultKind kind) {
-            if (!type.IsEnum) {
-                switch (Type.GetTypeCode(type)) {
+            if (!type.IsEnum()) {
+                switch (type.GetTypeCode()) {
                     case TypeCode.Boolean:
                         return MakeConvertToBool(binder);
                     case TypeCode.Int32:
@@ -144,7 +144,7 @@ namespace IronPython.Runtime.Binding {
                             return MakeConvertToIEnumerable(binder);
                         } else if (type == typeof(IEnumerator)) {
                             return MakeConvertToIEnumerator(binder);
-                        } else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) {
+                        } else if (type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) {
                             return MakeConvertToIEnumerable(binder, type, type.GetGenericArguments()[0]);
                         } else if (type.IsSubclassOf(typeof(Delegate))) {
                             return MakeDelegateTarget(binder, type, Restrict(typeof(OldInstance)));
@@ -212,7 +212,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrameCodeContext"), codeContext),
                                 Ast.Assign(
                                     tmp,
-                                    Ast.Dynamic(
+                                    DynamicExpression.Dynamic(
                                         PythonContext.GetPythonContext(invoke).Invoke(
                                             BindingHelpers.GetCallSignature(invoke)
                                         ),

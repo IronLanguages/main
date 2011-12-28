@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !WIN8
 
 using System;
 using System.Collections.Generic;
@@ -101,7 +102,7 @@ namespace Microsoft.Scripting.Utils {
 
         #region Storage implementation
 
-#if SILVERLIGHT
+#if WP7
         private static int _cfThreadIdDispenser = 1;
 
         [ThreadStatic]
@@ -236,3 +237,4 @@ namespace Microsoft.Scripting.Utils {
         #endregion
     }
 }
+#endif

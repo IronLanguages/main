@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !SILVERLIGHT && !CLR2 && !ANDROID //Registry not available in silverlight and we require .NET 4.0 APIs for implementing this.
 
 using System;
 using System.Collections.Generic;
@@ -36,8 +37,6 @@ using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
 #endif
-
-#if !SILVERLIGHT && !CLR2 //Registry not available in silverlight and we require .NET 4.0 APIs for implementing this.
 
 [assembly: PythonModule("_winreg", typeof(IronPython.Modules.PythonWinReg))]
 namespace IronPython.Modules {

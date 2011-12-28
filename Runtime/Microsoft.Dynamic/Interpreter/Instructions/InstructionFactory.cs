@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
     public abstract class InstructionFactory {
@@ -54,7 +55,7 @@ namespace Microsoft.Scripting.Interpreter {
             lock (_factories) {
                 InstructionFactory factory;
                 if (!_factories.TryGetValue(type, out factory)) {
-                    factory = (InstructionFactory)typeof(InstructionFactory<>).MakeGenericType(type).GetField("Factory").GetValue(null);
+                    factory = (InstructionFactory)typeof(InstructionFactory<>).MakeGenericType(type).GetDeclaredField("Factory").GetValue(null);
                     _factories[type] = factory;
                 }
                 return factory;

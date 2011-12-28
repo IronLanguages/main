@@ -23,7 +23,7 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
@@ -237,7 +237,7 @@ namespace IronPython.Compiler.Ast {
                         exc,
                         GlobalParent.AddDebugInfoAndVoid(
                             Ast.Block(
-                                Ast.Dynamic(
+                                MSAst.DynamicExpression.Dynamic(
                                     GlobalParent.PyContext.Invoke(
                                         new CallSignature(3)        // signature doesn't include function
                                     ),

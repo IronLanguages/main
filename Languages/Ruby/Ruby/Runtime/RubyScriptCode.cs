@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -111,8 +111,6 @@ namespace IronRuby.Runtime {
             return Target(localScope, localScope.SelfObject);
         }
 
-        private static bool _HasPdbPermissions = true;
-
         internal static Delegate/*!*/ CompileLambda(LambdaExpression/*!*/ lambda, LanguageContext/*!*/ context) {
             return CompileLambda(lambda, context.DomainManager.Configuration.DebugMode, context.Options.NoAdaptiveCompilation, context.Options.CompilationThreshold);
         }
@@ -132,9 +130,14 @@ namespace IronRuby.Runtime {
             }
         }
 
+#if FEATURE_PDBEMIT
+        private static bool _HasPdbPermissions = true;
+#endif
+
         // Avoid loading Ref.Emit types (Compact Framework):
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Delegate/*!*/ CompileDebug(LambdaExpression/*!*/ lambda) {
+#if FEATURE_PDBEMIT
             // try to use PDBs and fallback to CustomGenerator if not allowed to:
             if (_HasPdbPermissions) {
                 try {
@@ -144,6 +147,7 @@ namespace IronRuby.Runtime {
                     _HasPdbPermissions = false;
                 }
             }
+#endif
             return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
         }
     }

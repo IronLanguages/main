@@ -276,11 +276,11 @@ namespace IronRuby.Builtins {
 
         public static string/*!*/ GetTypeName(string/*!*/ libraryNamespace) {
             ContractUtils.RequiresNotNull(libraryNamespace, "libraryNamespace");
-            return libraryNamespace.Substring(libraryNamespace.LastIndexOf(Type.Delimiter) + 1) + "LibraryInitializer";
+            return libraryNamespace.Substring(libraryNamespace.LastIndexOf('.') + 1) + "LibraryInitializer";
         }
 
         public static string/*!*/ GetFullTypeName(string/*!*/ libraryNamespace) {
-            return libraryNamespace + Type.Delimiter + GetTypeName(libraryNamespace);
+            return libraryNamespace + "." + GetTypeName(libraryNamespace);
         }
 
         public static string/*!*/ GetBuiltinsFullTypeName() {

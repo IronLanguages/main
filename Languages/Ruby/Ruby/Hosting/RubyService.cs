@@ -13,8 +13,11 @@
  *
  * ***************************************************************************/
 
+#if !FEATURE_REMOTING
+using MarshalByRefObject = System.Object;
+#endif
+
 using System;
-using System.Security.Permissions;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
@@ -22,11 +25,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Hosting {
-    public sealed class RubyService
-#if !SILVERLIGHT
- : MarshalByRefObject
-#endif
- {
+    public sealed class RubyService : MarshalByRefObject {
         private readonly ScriptEngine/*!*/ _engine;
         private readonly RubyContext/*!*/ _context;
 
@@ -39,7 +38,6 @@ namespace IronRuby.Hosting {
         /// <summary>
         /// Loads a given script file using the semantics of Kernel#require method.
         /// </summary>
-        /// <param name="engine">The Ruby engine.</param>
         /// <param name="path">The path to the file to load.</param>
         /// <returns>Whether the file has already been required.</returns>
         /// <remarks>
@@ -56,7 +54,6 @@ namespace IronRuby.Hosting {
         /// Loads a given script file using the semantics of Kernel#require method.
         /// The script is executed within the context of a given <see cref="ScriptScope"/>.
         /// </summary>
-        /// <param name="engine">The Ruby engine.</param>
         /// <param name="path">The path to the file to load.</param>
         /// <param name="scope">The scope to use for the script execution.</param>
         /// <returns>Whether the file has already been required.</returns>
@@ -75,7 +72,7 @@ namespace IronRuby.Hosting {
             return _context.Loader.LoadFile(scope, null, _context.EncodePath(path), LoadFlags.Require);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         public override object InitializeLifetimeService() {
             // track the engines lifetime
             return _engine.InitializeLifetimeService();

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -26,7 +26,6 @@ using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
@@ -241,14 +240,14 @@ namespace Microsoft.Scripting.Runtime {
         /// depending on what the langauge prefers.
         /// </summary>
         public object ConvertTo(object obj, Type type) {
-            if (type.IsInterface || type.IsClass) {
+            if (type.GetTypeInfo().IsInterface || type.GetTypeInfo().IsClass) {
                 CallSite<Func<CallSite, object, object>> site;
                 site = GetOrCreateSite<object, object>(_lc.CreateConvertBinder(type, null));
                 return site.Target(site, obj);
             }
 
             // TODO: We should probably cache these instead of using reflection all the time.
-            foreach (MethodInfo mi in typeof(DynamicOperations).GetMember("ConvertTo")) {
+            foreach (MethodInfo mi in typeof(DynamicOperations).GetTypeInfo().GetDeclaredMethods("ConvertTo")) {
                 if (mi.IsGenericMethod) {
                     try {
                         return mi.MakeGenericMethod(type).Invoke(this, new object[] { obj });
@@ -609,19 +608,16 @@ namespace Microsoft.Scripting.Runtime {
                 _siteType = siteType;
             }
 
-            [Confined]
             public override bool Equals(object obj) {
                 return Equals(obj as SiteKey);
             }
 
-            [Confined]
             public override int GetHashCode() {
                 return SiteBinder.GetHashCode() ^ _siteType.GetHashCode();
             }
 
             #region IEquatable<SiteKey> Members
 
-            [StateIndependent]
             public bool Equals(SiteKey other) {
                 if (other == null) return false;
 
@@ -631,7 +627,6 @@ namespace Microsoft.Scripting.Runtime {
 
             #endregion
 #if DEBUG
-            [Confined]
             public override string ToString() {
                 return String.Format("{0} {1}", SiteBinder.ToString(), HitCount);
             }

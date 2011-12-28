@@ -17,7 +17,7 @@ using System;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;

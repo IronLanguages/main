@@ -13,13 +13,14 @@
  *
  * ***************************************************************************/
 
-using System;    
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
 #endif
 
+using System;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -45,7 +46,7 @@ namespace IronPython.Compiler.Ast {
                     // we'll get an exception.
                     return Ast.Throw(
                         Ast.New(
-                            typeof(InvalidOperationException).GetConstructor(Type.EmptyTypes)
+                            typeof(InvalidOperationException).GetConstructor(ReflectionUtils.EmptyTypes)
                         )
                     );
                 }

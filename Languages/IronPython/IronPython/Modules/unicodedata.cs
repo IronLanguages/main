@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WIN8
 
 using System;
 using System.Collections;

@@ -13,7 +13,11 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_TASKS
+using System.Threading.Tasks;
+#endif
+
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -113,7 +117,7 @@ namespace Microsoft.Scripting.Interpreter {
                     name = "Make" + name + paramInfos.Length;
                     
                     MethodInfo ctorMethod = typeof(LightLambda).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static).MakeGenericMethod(paramTypes);
-                    return _runCache[delegateType] = (Func<LightLambda, Delegate>)Delegate.CreateDelegate(typeof(Func<LightLambda, Delegate>), ctorMethod);
+                    return _runCache[delegateType] = (Func<LightLambda, Delegate>)ctorMethod.CreateDelegate(typeof(Func<LightLambda, Delegate>));
                 }
 
                 runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length, BindingFlags.NonPublic | BindingFlags.Instance);
@@ -134,7 +138,7 @@ namespace Microsoft.Scripting.Interpreter {
 
             // we don't have permission for restricted skip visibility dynamic methods, use the slower Delegate.CreateDelegate.
             var targetMethod = runMethod.IsGenericMethodDefinition ? runMethod.MakeGenericMethod(paramTypes) : runMethod;
-            return _runCache[delegateType] = lambda => Delegate.CreateDelegate(delegateType, lambda, targetMethod);
+            return _runCache[delegateType] = lambda => targetMethod.CreateDelegate(delegateType, lambda);
         }
     
         //TODO enable sharing of these custom delegates
@@ -205,7 +209,11 @@ namespace Microsoft.Scripting.Interpreter {
                     return TryGetCompiled();
                 } else {
                     // Kick off the compile on another thread so this one can keep going
+#if FEATURE_TASKS
+                    new Task(_delegateCreator.Compile, null).Start();
+#else
                     ThreadPool.QueueUserWorkItem(_delegateCreator.Compile, null);
+#endif
                 }
             }
 

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #else
@@ -287,8 +287,8 @@ namespace IronPython.Runtime.Binding {
                     return (T)(object)new Func<CallSite, object, object, object>(TupleAdd);
                 }
 
-            } else if (!t.IsEnum) {                
-                switch (Type.GetTypeCode(t)) {
+            } else if (!t.IsEnum()) {                
+                switch (t.GetTypeCode()) {
                     case TypeCode.Double:
                         if(typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object, object>(DoubleAdd);
@@ -310,8 +310,8 @@ namespace IronPython.Runtime.Binding {
 
         private T BindSubtract<T>(CallSite<T> site, object[] args) where T : class {
             Type t = args[0].GetType();
-            if (!t.IsEnum) {
-                switch (Type.GetTypeCode(t)) {
+            if (!t.IsEnum()) {
+                switch (t.GetTypeCode()) {
                     case TypeCode.Double:
                         if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object, object>(DoubleSubtract);
@@ -341,8 +341,8 @@ namespace IronPython.Runtime.Binding {
                 } else if (typeof(T) == typeof(Func<CallSite, object, string, object>)) {
                     return (T)(object)new Func<CallSite, object, string, object>(StringEqual);
                 }
-            } else if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
-                switch (Type.GetTypeCode(t)) {
+            } else if (!t.IsEnum() && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                switch (t.GetTypeCode()) {
                     case TypeCode.Double:
                         return (T)(object)new Func<CallSite, object, object, object>(DoubleEqual);
                     case TypeCode.Int32:
@@ -362,8 +362,8 @@ namespace IronPython.Runtime.Binding {
                 } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
                     return (T)(object)new Func<CallSite, string, object, object>(StringNotEqual);
                 }
-            } else if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
-                switch (Type.GetTypeCode(t)) {
+            } else if (!t.IsEnum() && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                switch (t.GetTypeCode()) {
                     case TypeCode.Double:
                         return (T)(object)new Func<CallSite, object, object, object>(DoubleNotEqual);
                     case TypeCode.Int32:

@@ -23,15 +23,8 @@ namespace Microsoft.Scripting {
     /// </summary>
     [Serializable]
     public class CompilerOptions
-#if !SILVERLIGHT
- : ICloneable
-#endif
- {
+    {
         public CompilerOptions() {
-        }
-
-        public virtual object Clone() {
-            return base.MemberwiseClone();
         }
     }
 }

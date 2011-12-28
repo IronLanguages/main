@@ -1027,7 +1027,7 @@ namespace IronRuby.Builtins {
                 return self.Context.GetModule(arrayType);
             }
 
-            if (!type.IsGenericTypeDefinition) {
+            if (!type.IsGenericTypeDefinition()) {
                 if (provided > 0) {
                     throw RubyExceptions.CreateArgumentError("`{0}' is not a generic type definition", self.Name);
                 }
@@ -1052,7 +1052,7 @@ namespace IronRuby.Builtins {
 
             Type type = self.TypeTracker.Type;
 
-            if (!type.IsGenericTypeDefinition) {
+            if (!type.IsGenericTypeDefinition()) {
                 if (genericArity > 0) {
                     throw RubyExceptions.CreateArgumentError("`{0}' is not a generic type definition", self.Name);
                 }

@@ -13,12 +13,12 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_CODEDOM
+
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.IO;
-
-#if !SILVERLIGHT // requires CodeDom support
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
