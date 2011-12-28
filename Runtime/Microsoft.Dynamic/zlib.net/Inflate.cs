@@ -414,7 +414,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 						z.avail_in--; z.total_in++;
 						z.istate.need += (z.next_in[z.next_in_index++] & 0xffL);
 						
-						if (((int) (z.istate.was[0])) != ((int) (z.istate.need)))
+						if (unchecked(((int) (z.istate.was[0])) != ((int) (z.istate.need))))
 						{
 							z.istate.mode =  InflateMode.BAD;
 							z.msg = "incorrect data check";

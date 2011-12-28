@@ -14,18 +14,18 @@
  * ***************************************************************************/
 
 using System;
-using System.Runtime.Remoting;
-using System.Security.Permissions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 
-namespace Microsoft.Scripting.Hosting {
-    public sealed class ExceptionOperations
-#if !SILVERLIGHT
- : MarshalByRefObject
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
 #endif
- {
+
+namespace Microsoft.Scripting.Hosting {
+    public sealed class ExceptionOperations : MarshalByRefObject {
         private readonly LanguageContext _context;
 
         internal ExceptionOperations(LanguageContext context) {
@@ -50,7 +50,7 @@ namespace Microsoft.Scripting.Hosting {
             return _context.GetStackFrames(exception);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         public string FormatException(ObjectHandle exception) {
             ContractUtils.RequiresNotNull(exception, "exception");
             var exceptionObj = exception.Unwrap() as Exception;

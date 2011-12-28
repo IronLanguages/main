@@ -867,7 +867,6 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Prepares the string for mutating character based operations that can potentially write arbitrary characters to the string.
         /// </summary>
-        /// <param name="asciiOnlyWrite">True if the operation writes ASCII characters only.</param>
         /// <exception cref="ArgumentException">
         /// String content is binary and contains byte sequence that doesn't represent a valid character.
         /// </exception>
@@ -1277,7 +1276,7 @@ namespace IronRuby.Builtins {
             private readonly char[]/*!*/ _data;
             private readonly int _count;
             private readonly List<byte[]> _invalid;
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
             private int _invalidIndex;
 #endif
 
@@ -1293,7 +1292,7 @@ namespace IronRuby.Builtins {
             }
 
             internal override void AppendDataTo(MutableString/*!*/ str) {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 int i;
                 while (_index < _count && _invalidIndex < InvalidCount) {
                     i = Array.IndexOf(_data, LosslessDecoderFallback.InvalidCharacterPlaceholder, _index);
@@ -1321,10 +1320,10 @@ namespace IronRuby.Builtins {
                 }
 
                 char c = _data[index];
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 if (c != LosslessDecoderFallback.InvalidCharacterPlaceholder) {
 #endif
-                    char d;
+                char d;
                     if (Tokenizer.IsHighSurrogate(c) && index + 1 < _data.Length && Tokenizer.IsLowSurrogate(d = _data[index + 1])) {
                         _current = new Character(c, d);
                         _index = index + 2;
@@ -1332,7 +1331,7 @@ namespace IronRuby.Builtins {
                         _current = new Character(c);
                         _index = index + 1;
                     }
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 } else if (_invalidIndex < InvalidCount) {
                     _current = new Character(_invalid[_invalidIndex++]);
                     _index = index + 1;
@@ -1346,18 +1345,14 @@ namespace IronRuby.Builtins {
 
             public override void Reset() {
                 base.Reset();
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 _invalidIndex = -1;
 #endif
             }
         }
 
         internal static CharacterEnumerator/*!*/ EnumerateAsCharacters(byte[]/*!*/ data, int count, RubyEncoding/*!*/ encoding, out char[] allValid) {
-#if SILVERLIGHT
-            char[] chars = encoding.Encoding.GetChars(data, 0, count);
-            allValid = null;
-            return new CompositeCharacterEnumerator(encoding, chars, chars.Length, null);
-#else
+#if FEATURE_ENCODING
             Decoder decoder = encoding.Encoding.GetDecoder();
             var fallback = new LosslessDecoderFallback();
             decoder.Fallback = fallback;
@@ -1372,6 +1367,10 @@ namespace IronRuby.Builtins {
 
             allValid = (fallback.InvalidCharacters == null) ? chars : null;
             return new CompositeCharacterEnumerator(encoding, chars, chars.Length, fallback.InvalidCharacters);
+#else
+            char[] chars = encoding.Encoding.GetChars(data, 0, count);
+            allValid = null;
+            return new CompositeCharacterEnumerator(encoding, chars, chars.Length, null);
 #endif
         }
         
@@ -2117,7 +2116,7 @@ namespace IronRuby.Builtins {
 
         #region Quoted Representation (read-only)
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         private sealed class DumpDecoderFallback : DecoderFallback {
             // \xXX
             // \000
@@ -2215,7 +2214,7 @@ namespace IronRuby.Builtins {
         }
 #else
         private static string/*!*/ ToStringWithEscapedInvalidCharacters(byte[]/*!*/ bytes, Encoding/*!*/ encoding, bool octalEscapes, out int escapePlaceholder) {
-            // Silverlight doens't support fallbacks, just replace invalid characters with the default replacement:
+            // fallback not supported, just replace invalid characters with the default replacement:
             escapePlaceholder = -1;
             return new String(encoding.GetChars(bytes));
         }

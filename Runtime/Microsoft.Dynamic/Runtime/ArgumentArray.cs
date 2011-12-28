@@ -71,6 +71,6 @@ namespace Microsoft.Scripting.Runtime {
             return array._arguments[array._first + index];
         }
 
-        private static readonly MethodInfo _GetArgMethod = new Func<ArgumentArray, int, object>(GetArg).Method;
+        private static readonly MethodInfo _GetArgMethod = new Func<ArgumentArray, int, object>(GetArg).GetMethod();
     }
 }

@@ -197,17 +197,21 @@ namespace IronRuby.Runtime {
             _readLen = 0;
         }
 
-        public override void Close() {
-            Flush();
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                Flush();
 
-            base.Close();
+                base.Dispose(disposing);
 
-            if (_canClose) {
-                try {
-                    CloseSite.Target(CloseSite, _io);
-                } catch (MissingMethodException) {
-                    // nop
+                if (_canClose) {
+                    try {
+                        CloseSite.Target(CloseSite, _io);
+                    } catch (MissingMethodException) {
+                        // nop
+                    }
                 }
+            } else {
+                base.Dispose(disposing);
             }
         }
 

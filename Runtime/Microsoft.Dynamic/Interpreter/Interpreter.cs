@@ -153,13 +153,14 @@ namespace Microsoft.Scripting.Interpreter {
                 return ExceptionHandlingResult.Return;
             }
 
+#if FEATURE_THREAD
             // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
             var abort = exception as ThreadAbortException;
             if (abort != null) {
                 _anyAbortException = abort;
                 frame.CurrentAbortHandler = handler;
             }
-
+#endif
             while (true) {
                 try {
                     var instructions = _instructions.Instructions;
@@ -199,6 +200,7 @@ namespace Microsoft.Scripting.Interpreter {
             Return
         }
 
+#if FEATURE_THREAD
         // To get to the current AbortReason object on Thread.CurrentThread 
         // we need to use ExceptionState property of any ThreadAbortException instance.
         [ThreadStatic]
@@ -222,6 +224,11 @@ namespace Microsoft.Scripting.Interpreter {
                 }
             }
         }
+#else
+        internal static void AbortThreadIfRequested(InterpretedFrame frame, int targetLabelIndex) {
+            // nop
+        }
+#endif
 
         internal ExceptionHandler GetBestHandler(int instructionIndex, Type exceptionType) {
             ExceptionHandler best = null;

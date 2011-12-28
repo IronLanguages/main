@@ -128,7 +128,7 @@ namespace IronRuby.Runtime {
             get { return _proc.Method != null; }
         }
 
-        internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(BlockParam).GetProperty("Self"); } }
+        internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(BlockParam).GetDeclaredProperty("Self"); } }
 
         // friend: RubyOps
         internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter) {

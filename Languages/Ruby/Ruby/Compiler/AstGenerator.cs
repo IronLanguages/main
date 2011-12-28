@@ -814,7 +814,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal static bool CanAssign(Type/*!*/ to, Type/*!*/ from) {
-            return to.IsAssignableFrom(from) && (to.IsValueType == from.IsValueType);
+            return to.IsAssignableFrom(from) && (to.IsValueType() == from.IsValueType());
         }
 
         internal MSA.Expression/*!*/ AddReturnTarget(MSA.Expression/*!*/ expression) {

@@ -61,7 +61,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             Type dictType = ParameterInfo.ParameterType;
 
             return Ast.Call(
-                GetCreationDelegate(dictType).Method,
+                GetCreationDelegate(dictType).GetMethod(),
                 Ast.NewArrayInit(typeof(string), ConstantNames()),
                 AstUtils.NewArrayHelper(typeof(object), GetParameters(args, hasBeenUsed))
             );
@@ -114,7 +114,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             if (dictType == typeof(IDictionary)) {
                 func = BinderOps.MakeDictionary<object, object>;
-            } else if (dictType.IsGenericType) {
+            } else if (dictType.IsGenericType()) {
                 Type[] genArgs = dictType.GetGenericArguments();
                 if (dictType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
                     dictType.GetGenericTypeDefinition() == typeof(Dictionary<,>)) {
@@ -122,7 +122,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     if (genArgs[0] == typeof(string) || genArgs[0] == typeof(object)) {
                         MethodInfo target = typeof(BinderOps).GetMethod("MakeDictionary").MakeGenericMethod(genArgs);
 
-                        func = (Func<string[], object[], object>)Delegate.CreateDelegate(typeof(Func<string[], object[], object>), target);
+                        func = (Func<string[], object[], object>)target.CreateDelegate(typeof(Func<string[], object[], object>));
                     }
                 }
             }

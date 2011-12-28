@@ -17,13 +17,17 @@
 using dynamic = System.Object;
 #endif
 
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Runtime.Remoting;
-using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using Microsoft.Scripting.Runtime;
@@ -36,11 +40,7 @@ namespace Microsoft.Scripting.Hosting {
     /// Hosting API counterpart for <see cref="LanguageContext"/>.
     /// </summary>
     [DebuggerDisplay("{Setup.DisplayName}")]
-    public sealed class ScriptEngine
-#if !SILVERLIGHT
- : MarshalByRefObject
-#endif
- {
+    public sealed class ScriptEngine : MarshalByRefObject {
         private readonly LanguageContext _language;
         private readonly ScriptRuntime _runtime;
         private LanguageSetup _config;
@@ -166,7 +166,7 @@ namespace Microsoft.Scripting.Hosting {
             return scope;
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         /// <summary>
         /// Executes the expression in the specified scope and return a result.
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  
@@ -370,7 +370,7 @@ namespace Microsoft.Scripting.Hosting {
             return new ScriptSource(this, _language.CreateFileUnit(path, encoding, kind));
         }
 
-#if !SILVERLIGHT
+#if FEATURE_CODEDOM
         /// <summary>
         /// This method returns a ScriptSource object from a System.CodeDom.CodeObject.  
         /// This is a factory method for creating a ScriptSources with this language binding.
@@ -626,13 +626,12 @@ namespace Microsoft.Scripting.Hosting {
         #endregion
 
         #region Remote API
-#if !SILVERLIGHT
 
+#if FEATURE_REMOTING
         // TODO: Figure out what is the right lifetime
         public override object InitializeLifetimeService() {
             return null;
         }
-
 #endif
 
         #endregion

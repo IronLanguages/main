@@ -23,17 +23,16 @@ using System.Resources;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Linq;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Generation {
     public sealed class AssemblyGen {
         private readonly AssemblyBuilder _myAssembly;
         private readonly ModuleBuilder _myModule;
-        private readonly PortableExecutableKinds _peKind;
-        private readonly ImageFileMachine _machine;
         private readonly bool _isDebuggable;
 
-#if !SILVERLIGHT
+#if FEATURE_FILESYSTEM
         private readonly string _outFileName;       // can be null iff !SaveAndReloadAssemblies
         private readonly string _outDir;            // null means the current directory
         private const string peverify_exe = "peverify.exe";
@@ -43,28 +42,17 @@ namespace Microsoft.Scripting.Generation {
 
         internal bool IsDebuggable {
             get {
-#if !SILVERLIGHT
+#if FEATURE_PDBEMIT && !SILVERLIGHT
                 Debug.Assert(_isDebuggable == (_myModule.GetSymWriter() != null));
 #endif
                 return _isDebuggable;
             }
         }
 
-        public AssemblyGen(AssemblyName name, string outDir, string outFileExtension, bool isDebuggable)
-            : this(name, outDir, outFileExtension, isDebuggable, PortableExecutableKinds.ILOnly, ImageFileMachine.I386) {
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework")]
-        internal AssemblyGen(AssemblyName name, string outDir, string outFileExtension, bool isDebuggable,
-            PortableExecutableKinds peKind, ImageFileMachine machine) {
-
+        public AssemblyGen(AssemblyName name, string outDir, string outFileExtension, bool isDebuggable) {
             ContractUtils.RequiresNotNull(name, "name");
 
-#if SILVERLIGHT  // AssemblyBuilderAccess.RunAndSave, Environment.CurrentDirectory
-            _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
-            _myModule = _myAssembly.DefineDynamicModule(name.Name, isDebuggable);
-#else
+#if FEATURE_FILESYSTEM
             if (outFileExtension == null) {
                 outFileExtension = ".dll";
             }
@@ -87,7 +75,7 @@ namespace Microsoft.Scripting.Generation {
 
             // mark the assembly transparent so that it works in partial trust:
             CustomAttributeBuilder[] attributes = new CustomAttributeBuilder[] { 
-                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0]),
+                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0]),
 #if !CLR2
                 new CustomAttributeBuilder(typeof(SecurityRulesAttribute).GetConstructor(new[] { typeof(SecurityRuleSet) }), new object[] { SecurityRuleSet.Level1 }),
 #endif
@@ -108,9 +96,10 @@ namespace Microsoft.Scripting.Generation {
             }
 
             _myAssembly.DefineVersionInfoResource();
+#else
+            _myAssembly = ReflectionUtils.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
+            _myModule = _myAssembly.DefineDynamicModule(name.Name, isDebuggable);
 #endif
-            _machine = machine;
-            _peKind = peKind;
             _isDebuggable = isDebuggable;
 
             if (isDebuggable) {
@@ -127,41 +116,17 @@ namespace Microsoft.Scripting.Generation {
             Type[] argTypes = new Type[] { typeof(DebuggableAttribute.DebuggingModes) };
             Object[] argValues = new Object[] { attrs };
 
-            _myAssembly.SetCustomAttribute(new CustomAttributeBuilder(
-               typeof(DebuggableAttribute).GetConstructor(argTypes), argValues)
-            );
+            var debuggableCtor = typeof(DebuggableAttribute).GetConstructor(argTypes);
 
-            _myModule.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(DebuggableAttribute).GetConstructor(argTypes), argValues)
-            );
+            _myAssembly.SetCustomAttribute(new CustomAttributeBuilder(debuggableCtor, argValues));
+            _myModule.SetCustomAttribute(new CustomAttributeBuilder(debuggableCtor, argValues));
         }
-
-#if !SILVERLIGHT // IResourceWriter
-        internal void AddResourceFile(string name, string file, ResourceAttributes attribute) {
-            IResourceWriter rw = _myModule.DefineResource(Path.GetFileName(file), name, attribute);
-
-            string ext = Path.GetExtension(file);
-            if (String.Equals(ext, ".resources", StringComparison.OrdinalIgnoreCase)) {
-                ResourceReader rr = new ResourceReader(file);
-                using (rr) {
-                    System.Collections.IDictionaryEnumerator de = rr.GetEnumerator();
-
-                    while (de.MoveNext()) {
-                        string key = de.Key as string;
-                        rw.AddResource(key, de.Value);
-                    }
-                }
-            } else {
-                rw.AddResource(name, File.ReadAllBytes(file));
-            }
-        }
-#endif
 
         #region Dump and Verify
 
         public string SaveAssembly() {
-#if !SILVERLIGHT // AssemblyBuilder.Save
-            _myAssembly.Save(_outFileName, _peKind, _machine);
+#if FEATURE_FILESYSTEM
+            _myAssembly.Save(_outFileName, PortableExecutableKinds.ILOnly, ImageFileMachine.I386);
             return Path.Combine(_outDir, _outFileName);
 #else
             return null;
@@ -169,14 +134,14 @@ namespace Microsoft.Scripting.Generation {
         }
 
         internal void Verify() {
-#if !SILVERLIGHT
+#if FEATURE_FILESYSTEM
             PeVerifyThis();
 #endif
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal static void PeVerifyAssemblyFile(string fileLocation) {
-#if !SILVERLIGHT
+#if FEATURE_FILESYSTEM
             Debug.WriteLine("Verifying generated IL: " + fileLocation);
             string outDir = Path.GetDirectoryName(fileLocation);
             string outFileName = Path.GetFileName(fileLocation);
@@ -257,7 +222,7 @@ namespace Microsoft.Scripting.Generation {
 #endif
         }
 
-#if !SILVERLIGHT
+#if FEATURE_FILESYSTEM
         internal static string FindPeverify() {
             string path = System.Environment.GetEnvironmentVariable("PATH");
             string[] dirs = path.Split(';');
@@ -339,7 +304,7 @@ namespace Microsoft.Scripting.Generation {
             return _myModule.DefineType(name, attr, parent);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_FILESYSTEM
         internal void SetEntryPoint(MethodInfo mi, PEFileKinds kind) {
             _myAssembly.SetEntryPoint(mi, kind);
         }

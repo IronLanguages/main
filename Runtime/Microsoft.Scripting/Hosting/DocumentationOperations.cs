@@ -13,22 +13,22 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Security.Permissions;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Runtime;
-using System.Collections.Generic;
+#if FEATURE_REMOTING
 using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
+using System;
+using System.Collections.Generic;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Hosting {
     /// <summary>
     /// Provides documentation against live objects for use in a REPL window.
     /// </summary>
-    public sealed class DocumentationOperations
-#if !SILVERLIGHT
- : MarshalByRefObject
-#endif
- {
+    public sealed class DocumentationOperations : MarshalByRefObject {
         private readonly DocumentationProvider _provider;
 
         internal DocumentationOperations(DocumentationProvider provider) {
@@ -49,7 +49,7 @@ namespace Microsoft.Scripting.Hosting {
             return _provider.GetOverloads(value);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         /// <summary>
         /// Gets the available members on the provided remote object.
         /// </summary>
@@ -69,5 +69,5 @@ namespace Microsoft.Scripting.Hosting {
             return null;
         }
 #endif
-    }
+ }
 }

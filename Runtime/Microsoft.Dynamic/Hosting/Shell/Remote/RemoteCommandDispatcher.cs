@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // Remoting
+#if FEATURE_REMOTING && FEATURE_FULL_CONSOLE
 
 using System;
 using System.Diagnostics;

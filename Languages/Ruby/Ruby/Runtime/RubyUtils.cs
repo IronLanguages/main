@@ -35,11 +35,11 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Actions.Calls;
 using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     using EvalEntryPointDelegate = Func<RubyScope, object, RubyModule, Proc, object>;
-    using Microsoft.Scripting.Actions.Calls;
 
     public static class RubyUtils {
         #region Objects
@@ -1005,6 +1005,7 @@ namespace IronRuby.Runtime {
 
         #region Exceptions
 
+#if FEATURE_THREAD
 #if SILVERLIGHT // Thread.ExceptionState, Thread.Abort(stateInfo)
         public static Exception GetVisibleException(Exception e) { return e; }
 
@@ -1074,7 +1075,9 @@ namespace IronRuby.Runtime {
         }
 
 #endif
-
+#else
+        public static Exception GetVisibleException(Exception e) { return e; }
+#endif
         #endregion
 
         #region Paths
@@ -1097,8 +1100,16 @@ namespace IronRuby.Runtime {
                 basePath + "/" + path;
         }
 
+#if WIN8
+        public static char DirectorySeparatorChar = '\\';
+#else
+        public static char DirectorySeparatorChar = Path.DirectorySeparatorChar;
+#endif
+
         // TODO: virtualize via PAL
-        public static bool FileSystemUsesDriveLetters { get { return Path.DirectorySeparatorChar == '\\'; } }
+        public static bool FileSystemUsesDriveLetters { 
+            get { return DirectorySeparatorChar == '\\'; } 
+        }
 
         // Is path something like "/foo/bar" (or "c:/foo/bar" on Windows)
         // We need this instead of Path.IsPathRooted since we need to be able to deal with Unix-style path names even on Windows
@@ -1223,14 +1234,18 @@ namespace IronRuby.Runtime {
                         // This will always succeed with a non-null string, but it can fail
                         // if the Personal folder was renamed or deleted. In this case it returns
                         // an empty string.
+#if FEATURE_FILESYSTEM // TODO: virtualize via PAL?
                         result = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+#else
+                        result = null;
+#endif
                     } else {
                         result = userEnvironment;
                     }
                 } else if (homeDrive == null) {
                     result = homePath;
                 } else if (homePath == null) {
-                    result = homeDrive + Path.DirectorySeparatorChar;
+                    result = homeDrive + RubyUtils.DirectorySeparatorChar;
                 } else {
                     result = homeDrive + homePath;
                 }
@@ -1404,7 +1419,7 @@ namespace IronRuby.Runtime {
                     }
                     return String.Empty;
                 }
-                if (c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar || c == Path.VolumeSeparatorChar) {
+                if (c == '\\' || c == '/' || c == ':') {
                     break;
                 }
             }

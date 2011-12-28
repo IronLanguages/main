@@ -109,11 +109,11 @@ namespace Microsoft.Scripting.Actions {
                 return binder.ReturnMemberTracker(type, this);
             }
 
-            if (Field.DeclaringType.ContainsGenericParameters) {
+            if (Field.DeclaringType.ContainsGenericParameters()) {
                 return null;
             }
 
-            if (IsPublic && DeclaringType.IsPublic) {
+            if (IsPublic && DeclaringType.IsPublic()) {
                 return new DynamicMetaObject(
                     Ast.Convert(Ast.Field(null, Field), typeof(object)),
                     BindingRestrictions.Empty
@@ -130,10 +130,10 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        public override ErrorInfo GetError(ActionBinder binder) {
+        public override ErrorInfo GetError(ActionBinder binder, Type instanceType) {
             // FieldTracker only has one error - accessing a static field from 
             // a generic type.
-            Debug.Assert(Field.DeclaringType.ContainsGenericParameters);
+            Debug.Assert(Field.DeclaringType.ContainsGenericParameters());
 
             return binder.MakeContainsGenericParametersError(this);
         }
@@ -143,7 +143,7 @@ namespace Microsoft.Scripting.Actions {
         #region Internal expression builders
 
         protected internal override DynamicMetaObject GetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject instance) {
-            if (IsPublic && DeclaringType.IsVisible) {
+            if (IsPublic && DeclaringType.IsVisible()) {
                 return new DynamicMetaObject(
                     AstUtils.Convert(
                         Ast.Field(

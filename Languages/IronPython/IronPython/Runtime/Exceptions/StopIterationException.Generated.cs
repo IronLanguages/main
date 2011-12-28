@@ -40,7 +40,7 @@ namespace IronPython.Runtime.Exceptions {
         public StopIterationException(string message, Exception innerException)
             : base(message, innerException) {
         }
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected StopIterationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase")]

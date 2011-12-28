@@ -22,7 +22,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
-using System.Security.Permissions;
 using System.Runtime.Serialization;
 
 namespace IronRuby.Builtins {

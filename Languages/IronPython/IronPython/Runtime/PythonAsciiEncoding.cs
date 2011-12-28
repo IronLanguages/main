@@ -166,7 +166,7 @@ namespace IronPython.Runtime {
             }
         }
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         public override string EncodingName {
             get {
                 return "ascii";
@@ -175,7 +175,7 @@ namespace IronPython.Runtime {
 #endif
     }
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
     class NonStrictEncoderFallback : EncoderFallback {
         public override EncoderFallbackBuffer CreateFallbackBuffer() {
             return new NonStrictEncoderFallbackBuffer();
@@ -305,7 +305,7 @@ namespace IronPython.Runtime {
         public BadSourceException(string message, Exception innerException)
             : base(message, innerException) {
         }
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected BadSourceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
 

@@ -21,7 +21,7 @@ using System.Text.RegularExpressions;
 namespace IronRuby.StandardLibrary.Yaml {
     internal static class YamlUtils {
         public static Regex CompiledRegex(string pattern)  {
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8
             return new Regex(pattern);
 #else
             return new Regex(pattern, RegexOptions.Compiled);

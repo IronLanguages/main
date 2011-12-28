@@ -134,7 +134,7 @@ namespace IronRuby.Compiler.Generation {
         protected override void EmitImplicitContext(ILGen il) {
             il.EmitLoadArg(0);
             EmitClassObjectFromInstance(il);
-            il.EmitPropertyGet(typeof(RubyModule), "Context");
+            il.EmitPropertyGet(typeof(RubyModule).GetDeclaredProperty("Context"));
         }
 
         protected override void EmitClassObjectFromInstance(ILGen il) {

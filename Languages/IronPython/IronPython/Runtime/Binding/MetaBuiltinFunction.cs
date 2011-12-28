@@ -292,12 +292,11 @@ namespace IronPython.Runtime.Binding {
                     // the boxed value directly
                     instance = Ast.Unbox(instance, selfType);
                 } else {
-#if SILVERLIGHT
-                    instance = AstUtils.Convert(instance, selfType);
-#else
+#if FEATURE_REMOTING
                     Type convType = selfType == typeof(MarshalByRefObject) ? CompilerHelpers.GetVisibleType(Value.DeclaringType) : selfType;
-
                     instance = AstUtils.Convert(instance, convType);
+#else
+                    instance = AstUtils.Convert(instance, selfType);
 #endif
                 }
             } else {

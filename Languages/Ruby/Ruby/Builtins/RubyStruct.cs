@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Ast;
 using IronRuby.Compiler.Generation;
@@ -91,7 +90,7 @@ namespace IronRuby.Builtins {
 
         #region Construction
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         public RubyStruct(SerializationInfo/*!*/ info, StreamingContext context) 
             : base(info, context) {
             // TODO: deserialize _data

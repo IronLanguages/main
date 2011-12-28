@@ -2480,7 +2480,7 @@ namespace IronRuby.Runtime {
             return cls.Name;
         }
 
-#if !SILVERLIGHT // serialization
+#if FEATURE_SERIALIZATION
         // TODO: Remove this, it isn't used by Marshal anymore
         [Emitted(UseReflection = true)] //RubyTypeBuilder
         public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {

@@ -13,19 +13,20 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Security.Permissions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Hosting {
-    public sealed class TokenCategorizer
-#if !SILVERLIGHT
-        : MarshalByRefObject
-#endif
-    {
+    public sealed class TokenCategorizer : MarshalByRefObject {
         private readonly TokenizerService _tokenizer;
 
         internal TokenCategorizer(TokenizerService tokenizer) {
@@ -104,7 +105,7 @@ namespace Microsoft.Scripting.Hosting {
             return _tokenizer.SkipTokens(characterCount);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         // TODO: Figure out what is the right lifetime
         public override object InitializeLifetimeService() {
             return null;

@@ -16,17 +16,19 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization;
+using System.Linq;
+
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using System.Diagnostics;
 
 namespace IronRuby.Compiler.Generation {
     internal class RubyTypeBuilder : IFeatureBuilder {
@@ -58,7 +60,7 @@ namespace IronRuby.Compiler.Generation {
                 DefineSerializer();
                 DefineDynamicObjectImplementation();
 
-#if !SILVERLIGHT // ICustomTypeDescriptor
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
                 DefineCustomTypeDescriptor();
 #endif
                 DefineRubyTypeImplementation();
@@ -67,7 +69,7 @@ namespace IronRuby.Compiler.Generation {
 
         #region Constructors
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         private static readonly Type/*!*/[]/*!*/ _deserializerSignature = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 #endif
         private static readonly Type/*!*/[]/*!*/ _exceptionMessageSignature = new Type[] { typeof(string) };
@@ -93,18 +95,16 @@ namespace IronRuby.Compiler.Generation {
         }
 
         private void DefineConstructors() {
-            BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
-            
             var ctors = new List<ConstructorBuilderInfo>();
 
-            foreach (var baseCtor in _tb.BaseType.GetConstructors(bindingFlags)) {
-                if (!baseCtor.IsPublic && !baseCtor.IsProtected()) {
+            foreach (var baseCtor in _tb.BaseType.GetDeclaredConstructors()) {
+                if (baseCtor.IsStatic || !baseCtor.IsPublic && !baseCtor.IsProtected()) {
                     continue;
                 }
 
                 ParameterInfo[] baseParams = baseCtor.GetParameters();
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
                 if (baseParams.Length == 2 &&
                     baseParams[0].ParameterType == typeof(SerializationInfo) && baseParams[1].ParameterType == typeof(StreamingContext)) {
                     OverrideDeserializer(baseCtor);
@@ -233,7 +233,7 @@ namespace IronRuby.Compiler.Generation {
             }
         }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         private void OverrideDeserializer(ConstructorInfo/*!*/ baseCtor) {
             // ctor(SerializationInfo! info, StreamingContext! context) : base(info, context) {
             //   RubyOps.DeserializeObject(out this._instanceData, out this._immediateClass, info);
@@ -271,14 +271,14 @@ namespace IronRuby.Compiler.Generation {
             _tb.SetCustomAttribute(new CustomAttributeBuilder(
                 typeof(DebuggerDisplayAttribute).GetConstructor(new[] { typeof(string) }),
                 new[] { RubyObject.DebuggerDisplayValueStr},
-                new[] { typeof(DebuggerDisplayAttribute).GetProperty("Type") },
+                new[] { typeof(DebuggerDisplayAttribute).GetDeclaredProperty("Type") },
                 new[] { RubyObject.DebuggerDisplayTypeStr }
             ));
 
             ILGen il;
 
             // private string GetDebuggerDisplayValue() { return RubyOps.GetDebuggerDisplayValue(_immediateClass, this); }
-            var ilg = _tb.DefineMethod("GetDebuggerDisplayValue", MethodAttributes.Private, typeof(string), Type.EmptyTypes).GetILGenerator();
+            var ilg = _tb.DefineMethod("GetDebuggerDisplayValue", MethodAttributes.Private, typeof(string), ReflectionUtils.EmptyTypes).GetILGenerator();
             ilg.Emit(OpCodes.Ldarg_0);
             ilg.Emit(OpCodes.Ldfld, ImmediateClassField);
             ilg.Emit(OpCodes.Ldarg_0);
@@ -286,7 +286,7 @@ namespace IronRuby.Compiler.Generation {
             ilg.Emit(OpCodes.Ret);
             
             // private string GetDebuggerDisplayType() { return RubyOps.GetDebuggerDisplayType(_immediateClass); }
-            ilg = _tb.DefineMethod("GetDebuggerDisplayType", MethodAttributes.Private, typeof(string), Type.EmptyTypes).GetILGenerator();
+            ilg = _tb.DefineMethod("GetDebuggerDisplayType", MethodAttributes.Private, typeof(string), ReflectionUtils.EmptyTypes).GetILGenerator();
             ilg.Emit(OpCodes.Ldarg_0);
             ilg.Emit(OpCodes.Ldfld, ImmediateClassField);
             ilg.Emit(OpCodes.Call, Methods.GetDebuggerDisplayType);
@@ -371,7 +371,7 @@ namespace IronRuby.Compiler.Generation {
             // int IRubyObject.BaseGetHashCode() { return base.GetHashCode(); }
             il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObject_BaseGetHashCode);
             il.EmitLoadArg(0);
-            il.EmitCall(_tb.BaseType.GetMethod("GetHashCode", Type.EmptyTypes));
+            il.EmitCall(_tb.BaseType.GetMethod("GetHashCode", ReflectionUtils.EmptyTypes));
             il.Emit(OpCodes.Ret);
 
             // int IRubyObject.BaseEquals(object other) { return base.Equals(other); }
@@ -384,7 +384,7 @@ namespace IronRuby.Compiler.Generation {
             // string IRubyObject.BaseToString() { return base.ToString(); }
             il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObject_BaseToString);
             il.EmitLoadArg(0);
-            MethodInfo toString = _tb.BaseType.GetMethod("ToString", Type.EmptyTypes);
+            MethodInfo toString = _tb.BaseType.GetMethod("ToString", ReflectionUtils.EmptyTypes);
             if (toString.DeclaringType == typeof(object)) {
                 il.EmitCall(Methods.ObjectToString);
             } else {
@@ -409,7 +409,7 @@ namespace IronRuby.Compiler.Generation {
         }
         
         private void DefineSerializer() {
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             ILGen il;
             _tb.AddInterfaceImplementation(typeof(ISerializable));
 
@@ -444,7 +444,7 @@ namespace IronRuby.Compiler.Generation {
 #endif
         }
 
-#if !SILVERLIGHT // ICustomTypeDescriptor
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
         private void DefineCustomTypeDescriptor() {
             _tb.AddInterfaceImplementation(typeof(ICustomTypeDescriptor));
 
@@ -481,10 +481,16 @@ namespace IronRuby.Compiler.Generation {
             return DefineMethodOverride(tb, decl, out impl);
         }
 
+#if WIN8 // TODO: what is ReservedMask?
+        protected const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | (MethodAttributes)0xD000;
+#else
+        protected const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
+#endif
+
         private static ILGen/*!*/ DefineMethodOverride(TypeBuilder/*!*/ tb, MethodInfo/*!*/ decl, out MethodBuilder/*!*/ impl) {
             impl = tb.DefineMethod(
                 decl.Name,
-                decl.Attributes & ~(MethodAttributes.Abstract | MethodAttributes.ReservedMask),
+                decl.Attributes & ~MethodAttributesToEraseInOveride,
                 decl.ReturnType,
                 ReflectionUtils.GetParameterTypes(decl.GetParameters())
             );

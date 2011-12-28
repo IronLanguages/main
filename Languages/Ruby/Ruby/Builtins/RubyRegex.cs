@@ -262,7 +262,7 @@ namespace IronRuby.Builtins {
 
 #if DEBUG
             if (RubyOptions.CompileRegexps) {
-#if SILVERLIGHT // RegexOptions.Compiled
+#if SILVERLIGHT || WIN8 // RegexOptions.Compiled
                 throw new NotSupportedException("RegexOptions.Compiled is not supported on Silverlight");
 #else
                 result |= RegexOptions.Compiled;

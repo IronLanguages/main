@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // ICustomTypeDescriptor
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
 #if !CLR2
 using System.Linq.Expressions;
 #else

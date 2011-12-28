@@ -108,17 +108,17 @@ def gen_fast_creation(cw):
         cw.exit_block()
         
         cw.write('')
-        cw.write('if (t.IsEnum) return SlowCreate(target, pi);')
+        cw.write('if (t.IsEnum()) return SlowCreate(target, pi);')
         
-        cw.enter_block('switch (Type.GetTypeCode(t))')
+        cw.enter_block('switch (t.GetTypeCode())')
         cw.enter_block('case TypeCode.Object:')
         if i == MAX_ARGS-1:
             cw.write('Debug.Assert(pi.Length == %d);' % (MAX_ARGS-1))
-            cw.write('if (t.IsValueType) goto default;')
+            cw.write('if (t.IsValueType()) goto default;')
             cw.write('')
             cw.write('return new FuncCallInstruction<%s>(target);' % (', '.join(get_type_names(i) + ['Object']), ) )
         else:
-            cw.enter_block('if (t != typeof(object) && (IndexIsNotReturnType(%d, target, pi) || t.IsValueType))' % (i, ))
+            cw.enter_block('if (t != typeof(object) && (IndexIsNotReturnType(%d, target, pi) || t.IsValueType()))' % (i, ))
             cw.write("// if we're on the return type relaxed delegates makes it ok to use object")
             cw.write("goto default;")
             cw.exit_block() # if 
@@ -169,7 +169,7 @@ def get_explicit_caching(cw):
         for i in xrange(MAX_HELPERS):
             type_params = type_params_maker(s + i)
             cw.enter_block('public static MethodInfo Cache%s%s(%s%s method)' % (delegate, type_params, delegate, type_params))
-            cw.write('var info = method.Method;')
+            cw.write('var info = method.GetMethod();')
             cw.enter_block('lock (_cache)')
             cw.write('_cache[info] = new %sCallInstruction%s(method);' % (delegate, type_params))            
             cw.exit_block()
@@ -202,7 +202,7 @@ def gen_action_call_instruction(cw, i):
     cw.write('private readonly Action%s _target;' % type_params)
     
     # properties
-    cw.write('public override MethodInfo Info { get { return _target.Method; } }')
+    cw.write('public override MethodInfo Info { get { return _target.GetMethod(); } }')
     cw.write('public override int ArgumentCount { get { return %d; } }' % (i))
     cw.write('')
     
@@ -214,7 +214,7 @@ def gen_action_call_instruction(cw, i):
     
     # ctor(info)
     cw.enter_block('public ActionCallInstruction(MethodInfo target)')
-    cw.write('_target = (Action%s)Delegate.CreateDelegate(typeof(Action%s), target);' % (type_params, type_params))
+    cw.write('_target = (Action%s)target.CreateDelegate(typeof(Action%s));' % (type_params, type_params))
     cw.exit_block()
     cw.write('')
     
@@ -238,7 +238,7 @@ def gen_func_call_instruction(cw, i):
     cw.write('private readonly Func%s _target;' % type_params)
     
     # properties
-    cw.write('public override MethodInfo Info { get { return _target.Method; } }')
+    cw.write('public override MethodInfo Info { get { return _target.GetMethod(); } }')
     cw.write('public override int ArgumentCount { get { return %d; } }' % (i - 1))
     cw.write('')
     
@@ -250,7 +250,7 @@ def gen_func_call_instruction(cw, i):
     
     # ctor(info)
     cw.enter_block('public FuncCallInstruction(MethodInfo target)')
-    cw.write('_target = (Func%s)Delegate.CreateDelegate(typeof(Func%s), target);' % (type_params, type_params))
+    cw.write('_target = (Func%s)target.CreateDelegate(typeof(Func%s));' % (type_params, type_params))
     cw.exit_block()
     cw.write('')
     

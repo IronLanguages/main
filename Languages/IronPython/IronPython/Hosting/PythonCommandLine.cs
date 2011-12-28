@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_FULL_CONSOLE
 
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,6 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Hosting {
-#if !SILVERLIGHT
     /// <summary>
     /// A simple Python command-line should mimic the standard python.exe
     /// </summary>
@@ -570,5 +570,5 @@ namespace IronPython.Hosting {
         }
 
     }
-#endif
 }
+#endif

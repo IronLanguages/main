@@ -21,17 +21,25 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Interpreter;
+using Microsoft.Scripting.Runtime;
+
+#if !WIN8
+namespace System.Linq.Expressions {
+    public abstract class DynamicExpressionVisitor : ExpressionVisitor {
+    }
+}
+#endif
 
 namespace Microsoft.Scripting.Utils {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using Microsoft.Scripting.Runtime;
-    using System.Diagnostics;
-    using System.Threading;
+    using System.Threading.Tasks;
 
     public static class DynamicUtils {
         /// <summary>
@@ -115,7 +123,7 @@ namespace Microsoft.Scripting.Utils {
                     Expression.Invoke(
                         Expression.Property(
                             invokePrms[0],
-                            typeof(CallSite<T>).GetProperty("Update")
+                            typeof(CallSite<T>).GetDeclaredProperty("Update")
                         ),
                         invokePrms.ToReadOnlyCollection()
                     )
@@ -263,11 +271,11 @@ namespace Microsoft.Scripting.Utils {
                 // start compiling the target if no one else has
                 var lambda = Interlocked.Exchange(ref Target, null);
                 if (lambda != null) {
-                    ThreadPool.QueueUserWorkItem(
-                        (x) => {
-                            CompiledTarget = lambda.Compile();
-                        }
-                    );
+#if CLR2
+                    ThreadPool.QueueUserWorkItem(x => { CompiledTarget = lambda.Compile(); });
+#else
+                    new Task(() => { CompiledTarget = lambda.Compile(); }).Start();
+#endif
                 }
             }
 

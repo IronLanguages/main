@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if FEATURE_THREAD
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -36,7 +36,7 @@ namespace IronRuby.Builtins {
     /// For such methods, we use Thread.Abort which is unsafe. Howevever, Ruby 1.9 may not support green threads,
     /// and this will not be an issue then.
     /// </summary>
-    [RubyClass("Thread", Extends = typeof(Thread), Inherits = typeof(object))]
+    [RubyClass("Thread", Extends = typeof(Thread), Inherits = typeof(object), BuildConfig = "FEATURE_THREAD")]
     public static class ThreadOps {
         static bool _globalAbortOnException;
 
@@ -779,3 +779,4 @@ namespace IronRuby.Builtins {
         }
     }
 }
+#endif

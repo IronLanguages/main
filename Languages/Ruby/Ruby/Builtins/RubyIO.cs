@@ -343,7 +343,7 @@ namespace IronRuby.Builtins {
             }
             
             if (duplex != null) {
-                duplex.Writer.Close();
+                duplex.Writer.Dispose();
             }
 
             _mode = _mode.CloseWrite();
@@ -359,7 +359,7 @@ namespace IronRuby.Builtins {
             } 
             
             if (duplex != null) {
-                duplex.Reader.Close();
+                duplex.Reader.Dispose();
             }
 
             _mode = _mode.CloseRead();

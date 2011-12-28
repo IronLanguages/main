@@ -217,7 +217,7 @@ namespace Microsoft.Scripting.Actions {
                     Ast.Equal(
                         Ast.Property(
                             Ast.Convert(splattee.Expression, typeof(IList<object>)),
-                            typeof(ICollection<object>).GetProperty("Count")
+                            typeof(ICollection<object>).GetDeclaredProperty("Count")
                         ),
                         AstUtils.Constant(list.Count)
                     )

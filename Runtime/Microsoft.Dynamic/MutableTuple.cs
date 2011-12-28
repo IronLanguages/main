@@ -24,12 +24,14 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Linq;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
     public abstract class MutableTuple {
-#if SILVERLIGHT
+#if WP7
         // CF doesn't support more than 64 generic type parameters:
         public static readonly int MaxSize = PlatformAdaptationLayer.IsCompactFramework ? 64 : 128;
 #else
@@ -198,7 +200,7 @@ namespace Microsoft.Scripting {
             if (index < 0 || index >= size) throw new ArgumentException("index");
 
             foreach (int curIndex in GetAccessPath(size, index)) {
-                PropertyInfo pi = tupleType.GetProperty("Item" + String.Format("{0:D3}", curIndex));
+                PropertyInfo pi = tupleType.GetInheritedProperties("Item" + String.Format("{0:D3}", curIndex)).First();
                 Debug.Assert(pi != null);
                 yield return pi;
                 tupleType = pi.PropertyType;
@@ -261,7 +263,7 @@ namespace Microsoft.Scripting {
                     int newStart = start + (i * multiplier);
                     int newEnd = System.Math.Min(end, start + ((i + 1) * multiplier));
 
-                    PropertyInfo pi = tupleType.GetProperty("Item" + String.Format("{0:D3}", i));
+                    PropertyInfo pi = tupleType.GetInheritedProperties("Item" + String.Format("{0:D3}", i)).First();
                     res.SetValue(i, CreateTupleInstance(pi.PropertyType, newStart, newEnd, args));
                 }
             } else {
@@ -358,7 +360,7 @@ namespace Microsoft.Scripting {
                     int newStart = start + (i * multiplier);
                     int newEnd = System.Math.Min(end, start + ((i + 1) * multiplier));
 
-                    PropertyInfo pi = tupleType.GetProperty("Item" + String.Format("{0:D3}", i));
+                    PropertyInfo pi = tupleType.GetInheritedProperties("Item" + String.Format("{0:D3}", i)).First();
 
                     newValues[i] = CreateNew(pi.PropertyType, newStart, newEnd, values);
                 }
@@ -377,7 +379,9 @@ namespace Microsoft.Scripting {
                 }
             }
             
-            return Expression.New(tupleType.GetConstructor(ArrayUtils.ConvertAll(newValues, x => x.Type)), newValues);
+            return Expression.New(
+                tupleType.GetConstructor(ArrayUtils.ConvertAll(newValues, x => x.Type)), 
+                newValues);
         }
     }
 

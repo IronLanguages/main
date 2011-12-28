@@ -77,7 +77,7 @@ namespace IronRuby.Runtime {
         public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {
             Debug.Assert(rubyClass.IsRubyClass);
 
-            Type baseType = rubyClass.GetUnderlyingSystemType().BaseType;
+            Type baseType = rubyClass.GetUnderlyingSystemType().GetBaseType();
             Debug.Assert(baseType != null);
 
             return CreateTypeError("can't allocate class `{1}' that derives from type `{0}' with no default constructor;" +

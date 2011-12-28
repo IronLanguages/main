@@ -15,11 +15,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using SRC = System.Runtime.CompilerServices;
-using System.Reflection;
 using System.Diagnostics;
+using System.Reflection;
+using System.Text;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
+using SRC = System.Runtime.CompilerServices;
 
 namespace IronRuby.Runtime {
 
@@ -66,7 +67,7 @@ namespace IronRuby.Runtime {
                     }
                 }
 
-                return SRC.RuntimeHelpers.GetHashCode(obj);
+                return ReferenceEqualityComparer<object>.Instance.GetHashCode(obj);
             }
         }
         #endregion
@@ -75,7 +76,7 @@ namespace IronRuby.Runtime {
 
         int _version, _cleanupVersion;
 
-#if SILVERLIGHT // GC
+#if SILVERLIGHT || WIN8 // GC
         WeakReference _cleanupGC = new WeakReference(new object());
 #else
         int _cleanupGC = 0;
@@ -86,9 +87,11 @@ namespace IronRuby.Runtime {
 
             // WeakReferences can become zero only during the GC.
             bool garbage_collected;
-#if SILVERLIGHT // GC.CollectionCount
+#if SILVERLIGHT || WIN8 // GC.CollectionCount
             garbage_collected = !_cleanupGC.IsAlive;
-            if (garbage_collected) _cleanupGC = new WeakReference(new object());
+            if (garbage_collected) {
+                _cleanupGC = new WeakReference(new object());
+            }
 #else
             int currentGC = GC.CollectionCount(0);
             garbage_collected = currentGC != _cleanupGC;

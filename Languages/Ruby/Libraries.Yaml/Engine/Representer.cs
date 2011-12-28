@@ -1,20 +1,17 @@
-/***** BEGIN LICENSE BLOCK *****
- * Version: CPL 1.0
- *
- * The contents of this file are subject to the Common Public
- * License Version 1.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of
- * the License at http://www.eclipse.org/legal/cpl-v10.html
- *
- * Software distributed under the License is distributed on an "AS
- * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * rights and limitations under the License.
- *
- * Copyright (C) 2007 Ola Bini <ola@ologix.com>
- * Copyright (c) Microsoft Corporation.
- * 
- ***** END LICENSE BLOCK *****/
+//  Version: CPL 1.0
+// 
+//  The contents of this file are subject to the Common Public
+//  License Version 1.0 (the "License"); you may not use this file
+//  except in compliance with the License. You may obtain a copy of
+//  the License at http://www.eclipse.org/legal/cpl-v10.html
+// 
+//  Software distributed under the License is distributed on an "AS
+//  IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+//  implied. See the License for the specific language governing
+//  rights and limitations under the License.
+// 
+//  Copyright (C) 2007 Ola Bini <ola@ologix.com>
+//  Copyright (c) Microsoft Corporation.
 
 using System;
 using System.Collections;
@@ -167,7 +164,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
 
             string tag, value;
-            switch (Type.GetTypeCode(data.GetType())) {
+            switch (data.GetType().GetTypeCode()) {
                 case TypeCode.Boolean:
                     tag = "tag:yaml.org,2002:bool";
                     value = data.ToString();
@@ -227,7 +224,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         private Node CreateNodeForObject(object data) {
             Dictionary<object, object> values = new Dictionary<object, object>();
 
-            foreach (PropertyInfo prop in data.GetType().GetProperties()) {
+            foreach (PropertyInfo prop in data.GetType().GetInheritedProperties()) {
                 MethodInfo getter = prop.GetGetMethod();
                 if (getter != null && getter.GetParameters().Length == 0) {
                     try {

@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_COM
 
 #if !CLR2
 using System.Linq.Expressions;
@@ -254,3 +255,4 @@ namespace Microsoft.Scripting.ComInterop {
         }
     }
 }
+#endif

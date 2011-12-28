@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if OBSOLETE // TODO: FEATURE_FILESYSTEM
 #if !CLR2
 using System.Linq.Expressions;
 #else
@@ -87,3 +87,4 @@ namespace Microsoft.Scripting.Runtime {
         }
     }
 }
+#endif

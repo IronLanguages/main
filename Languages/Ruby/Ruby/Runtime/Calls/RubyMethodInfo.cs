@@ -67,7 +67,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return new MemberInfo[] { GetDelegate().Method };
+            return new MemberInfo[] { GetDelegate().GetMethod() };
         }
 
         public override int GetArity() {

@@ -31,7 +31,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         public InvalidOptionException(string message) : base(message) { }
         public InvalidOptionException(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected InvalidOptionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
     }
@@ -60,10 +60,11 @@ namespace Microsoft.Scripting.Hosting.Shell {
             get { return _platform; }
         }
 
+#if FEATURE_FULL_CONSOLE
         public abstract ConsoleOptions CommonConsoleOptions { 
             get; 
         }
-
+#endif
         public IList<string> IgnoredArgs {
             get { return _ignoredArgs; }
         } 
@@ -141,6 +142,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         public abstract void GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments);
     }
 
+#if FEATURE_FULL_CONSOLE
     public class OptionsParser<TConsoleOptions> : OptionsParser
         where TConsoleOptions : ConsoleOptions, new() {
        
@@ -235,7 +237,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     LanguageSetup.Options[arg.Substring(3)] = ScriptingRuntimeHelpers.True; 
                     break;
 
-#if !SILVERLIGHT // Remote console
+#if FEATURE_REMOTING
                 case Remote.RemoteRuntimeServer.RemoteRuntimeArg:
                     ConsoleOptions.RemoteRuntimeChannel = PopNextArg();
                     break;
@@ -257,9 +259,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         // Note: this works because it runs before the compiler picks up the
         // environment variable
         internal static void SetDlrOption(string option, string value) {
-#if !SILVERLIGHT
             Environment.SetEnvironmentVariable("DLR_" + option, value);
-#endif
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional")] // TODO: fix
@@ -270,9 +270,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             options = new string[,] {
                 { "-c cmd",                      "Program passed in as string (terminates option list)" },
                 { "-h",                          "Display usage" },
-#if !IRONPYTHON_WINDOW                      
                 { "-i",                          "Inspect interactively after running script" },
-#endif                                      
                 { "-V",                          "Print the version number and exit" },
                 { "-D",                          "Enable application debugging" },
 
@@ -283,17 +281,14 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-X:PassExceptions",           "Do not catch exceptions that are unhandled by script code" },
                 { "-X:PrivateBinding",           "Enable binding to private members" },
                 { "-X:ShowClrExceptions",        "Display CLS Exception information" },
-
-#if !SILVERLIGHT
                 { "-X:TabCompletion",            "Enable TabCompletion mode" },
                 { "-X:ColorfulConsole",          "Enable ColorfulConsole" },
-#endif
 #if DEBUG
                 { "-X:AssembliesDir <dir>",      "Set the directory for saving generated assemblies [debug only]" },
                 { "-X:SaveAssemblies",           "Save generated assemblies [debug only]" },
                 { "-X:TrackPerformance",         "Track performance sensitive areas [debug only]" },
                 { "-X:PerfStats",                "Print performance stats when the process exists [debug only]" },
-#if !SILVERLIGHT // Remote console
+#if FEATURE_REMOTING
                 { Remote.RemoteRuntimeServer.RemoteRuntimeArg + " <channel_name>", 
                                                  "Start a remoting server for a remote console session." },
 #endif
@@ -305,4 +300,5 @@ namespace Microsoft.Scripting.Hosting.Shell {
             comments = null;
         }
     }
+#endif
 }

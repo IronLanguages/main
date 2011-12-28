@@ -87,11 +87,11 @@ namespace IronRuby.Runtime.Conversions {
             // nullable int (see Array#fill, Sockets:ConvertToSocketFlag, Kernel#open(perm=nil), File.chown, IO#read)
 
             // TODO: do we want to use a default protocol for enums?
-            if (parameterType.IsEnum) {
+            if (parameterType.IsEnum()) {
                 return null;
             }
 
-            switch (Type.GetTypeCode(parameterType)) {
+            switch (parameterType.GetTypeCode()) {
                 case TypeCode.SByte: return (factory) => factory.Conversion<ConvertToSByteAction>();
                 case TypeCode.Byte: return (factory) => factory.Conversion<ConvertToByteAction>();
                 case TypeCode.Int16: return (factory) => factory.Conversion<ConvertToInt16Action>();
@@ -314,7 +314,7 @@ namespace IronRuby.Runtime.Conversions {
         }
 
         private static Expression/*!*/ ConvertResult(Expression/*!*/ expression, Type/*!*/ resultType) {
-            if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Union<,>)) {
+            if (resultType.IsGenericType() && resultType.GetGenericTypeDefinition() == typeof(Union<,>)) {
                 var args = resultType.GetGenericArguments();
                 var ctor = resultType.GetConstructor(args);
                 if (args[0].IsAssignableFrom(expression.Type)) {
@@ -601,7 +601,7 @@ namespace IronRuby.Runtime.Conversions {
     /// Returns result of "to_a" if the object responds to "to_a" or the target object itself otherwise.
     /// Throws an exception if "to_a" doesn't return IList.
     /// </summary>
-    /// <seealso cref="http://redmine.ruby-lang.org/issues/show/3680"/>
+    /// <remarks>See also http://redmine.ruby-lang.org/issues/show/3680 </remarks>
     public sealed class ExplicitTrySplatAction : TrySplatAction<ExplicitTrySplatAction> {
         protected sealed override string/*!*/ ToMethodName { get { return Symbols.ToA; } }
         protected sealed override MethodInfo ConversionResultValidator { get { return Methods.ToAValidator; } }
@@ -611,7 +611,7 @@ namespace IronRuby.Runtime.Conversions {
     /// Returns result of "to_ary" if the object responds to "to_ary" or the target object itself otherwise.
     /// Throws an exception if "to_ary" doesn't return IList.
     /// </summary>
-    /// <seealso cref="http://redmine.ruby-lang.org/issues/show/3680"/>
+    /// <remarks>See also http://redmine.ruby-lang.org/issues/show/3680 </remarks>
     public sealed class ImplicitTrySplatAction : TrySplatAction<ImplicitTrySplatAction> {
         protected sealed override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
         protected sealed override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }
@@ -621,7 +621,7 @@ namespace IronRuby.Runtime.Conversions {
     /// Returns result of "to_a" if the object responds to "to_a" or the target object itself otherwise.
     /// Throws an exception if "to_a" doesn't return IList.
     /// </summary>
-    /// <seealso cref="http://redmine.ruby-lang.org/issues/show/3680"/>
+    /// <remarks>See also http://redmine.ruby-lang.org/issues/show/3680 </remarks>
     public sealed class ExplicitSplatAction : SplatAction<ExplicitSplatAction> {
         protected sealed override string/*!*/ ToMethodName { get { return Symbols.ToA; } }
         protected sealed override MethodInfo ConversionResultValidator { get { return Methods.ToAValidator; } }
@@ -631,7 +631,7 @@ namespace IronRuby.Runtime.Conversions {
     /// Returns result of "to_ary" if the object responds to "to_ary" or the target object itself otherwise.
     /// Throws an exception if "to_ary" doesn't return IList.
     /// </summary>
-    /// <seealso cref="http://redmine.ruby-lang.org/issues/show/3680"/>
+    /// <remarks>See also http://redmine.ruby-lang.org/issues/show/3680 </remarks>
     public sealed class ImplicitSplatAction : SplatAction<ImplicitSplatAction> {
         protected sealed override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
         protected sealed override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }

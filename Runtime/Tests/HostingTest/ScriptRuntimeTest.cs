@@ -100,7 +100,10 @@ namespace HostingTest{
             info.ApplicationBase = TestHelpers.BinDirectory;
             info.ApplicationName = "Test";
             Evidence evidence = new Evidence();
+// TODO:
+#pragma warning disable 618 // obsolete API
             evidence.AddHost(new Zone(SecurityZone.Internet));
+#pragma warning restore 618
             System.Security.PermissionSet permSet = SecurityManager.GetStandardSandbox(evidence);
             AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info, permSet, null);
 

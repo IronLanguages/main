@@ -283,7 +283,6 @@ namespace IronRuby.Tests {
             return 20;
         }
 
-        [Run]
         [Options(NoRuntime = true)]
         public void InterpreterNew() {
             var p0 = Ast.Parameter(typeof(Type));

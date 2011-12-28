@@ -15,6 +15,7 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -113,7 +114,7 @@ namespace Microsoft.Scripting.Interpreter {
                     name = "Make" + name + paramInfos.Length;
                     
                     MethodInfo ctorMethod = typeof(LightLambda).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static).MakeGenericMethod(paramTypes);
-                    return _runCache[delegateType] = (Func<LightLambda, Delegate>)Delegate.CreateDelegate(typeof(Func<LightLambda, Delegate>), ctorMethod);
+                    return _runCache[delegateType] = (Func<LightLambda, Delegate>)ctorMethod.CreateDelegate(typeof(Func<LightLambda, Delegate>));
                 }
 
                 runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length, BindingFlags.NonPublic | BindingFlags.Instance);
@@ -134,7 +135,7 @@ namespace Microsoft.Scripting.Interpreter {
 
             // we don't have permission for restricted skip visibility dynamic methods, use the slower Delegate.CreateDelegate.
             var targetMethod = runMethod.IsGenericMethodDefinition ? runMethod.MakeGenericMethod(paramTypes) : runMethod;
-            return _runCache[delegateType] = lambda => Delegate.CreateDelegate(delegateType, lambda, targetMethod);
+            return _runCache[delegateType] = lambda => targetMethod.CreateDelegate(delegateType, lambda);
         }
     
         //TODO enable sharing of these custom delegates
@@ -205,7 +206,11 @@ namespace Microsoft.Scripting.Interpreter {
                     return TryGetCompiled();
                 } else {
                     // Kick off the compile on another thread so this one can keep going
+#if CLR2
                     ThreadPool.QueueUserWorkItem(_delegateCreator.Compile, null);
+#else
+                    new Task(_delegateCreator.Compile, null).Start();
+#endif
                 }
             }
 

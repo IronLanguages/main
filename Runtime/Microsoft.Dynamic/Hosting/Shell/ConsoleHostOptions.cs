@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_FULL_CONSOLE
 
 using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
@@ -54,3 +55,4 @@ namespace Microsoft.Scripting.Hosting.Shell {
         }
     }
 }
+#endif

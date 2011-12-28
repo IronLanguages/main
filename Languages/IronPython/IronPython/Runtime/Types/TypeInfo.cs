@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -923,10 +924,13 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
+            // TODO: CompilerHelpers.GetConstructors(type, binder.DomainManager.Configuration.PrivateBinding, true);
+            var ctors = CompilerHelpers.FilterConstructorsToPublicAndProtected(
+                type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            ).ToArray();
+
             // type has no Python __new__, just return the .NET constructors if they have
             // a custom new
-            ConstructorInfo[] ctors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);// CompilerHelpers.GetConstructors(type, binder.DomainManager.Configuration.PrivateBinding, true);
-            ctors = CompilerHelpers.FilterConstructorsToPublicAndProtected(ctors);
             if (!PythonTypeOps.IsDefaultNew(ctors)) {
                 return new MemberGroup(ctors);
             }
@@ -1398,30 +1402,33 @@ namespace IronPython.Runtime.Types {
             protected MemberGroup/*!*/ GetMember(Type/*!*/ type, string/*!*/ name, BindingFlags flags) {
                 Assert.NotNull(type, name);
 
-                MemberInfo[] foundMembers = type.GetMember(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | flags);
+                IEnumerable<MemberInfo> foundMembers = type.GetMember(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | flags);
 
                 if (!Binder.DomainManager.Configuration.PrivateBinding) {
                     foundMembers = CompilerHelpers.FilterNonVisibleMembers(type, foundMembers);
                 }
+
+                MemberInfo[] foundMembersArray = foundMembers.ToArray();
+
                 List<MemberInfo> filteredMembers = null;
-                for (int i = 0; i < foundMembers.Length; i++) {
-                    var member = foundMembers[i];
+                for (int i = 0; i < foundMembersArray.Length; i++) {
+                    var member = foundMembersArray[i];
                     if (member.DeclaringType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                         if (filteredMembers == null) {
                             filteredMembers = new List<MemberInfo>();
                             for (int j = 0; j < i; j++) {
-                                filteredMembers.Add(foundMembers[j]);
+                                filteredMembers.Add(foundMembersArray[j]);
                             }
                         }
                     } else if (filteredMembers != null) {
-                        filteredMembers.Add(foundMembers[i]);
+                        filteredMembers.Add(foundMembersArray[i]);
                     }
                 }
                 if (filteredMembers != null) {
                     foundMembers = filteredMembers.ToArray();
                 }
 
-                MemberGroup members = new MemberGroup(foundMembers);
+                MemberGroup members = new MemberGroup(foundMembersArray);
 
                 // check for generic types w/ arity...
                 Type[] types = type.GetNestedTypes(BindingFlags.Public | flags);

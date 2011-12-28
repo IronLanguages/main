@@ -34,13 +34,17 @@ namespace IronRuby.Builtins {
             _writer = writer;
         }
 
-        public override void Close() {
-            if (_reader != null) {
-                _reader.Close();
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                if (_reader != null) {
+                    _reader.Dispose();
+                }
+                if (_writer != null) {
+                    _writer.Dispose();
+                }
             }
-            if (_writer != null) {
-                _writer.Close();
-            }
+
+            base.Dispose(disposing);
         }
 
         public StreamReader Reader {

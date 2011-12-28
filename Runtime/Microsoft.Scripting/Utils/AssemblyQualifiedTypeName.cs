@@ -34,7 +34,11 @@ namespace Microsoft.Scripting.Utils {
 
         public AssemblyQualifiedTypeName(Type type) {
             TypeName = type.FullName;
-            AssemblyName = type.Assembly.GetName();
+#if SILVERLIGHT
+            AssemblyName = new AssemblyName(type.GetTypeInfo().Assembly.FullName);
+#else
+            AssemblyName = type.GetTypeInfo().Assembly.GetName();
+#endif
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]

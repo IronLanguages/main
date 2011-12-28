@@ -55,8 +55,8 @@ namespace IronPython.Runtime {
             return method;
         }
 
-        
-#if !SILVERLIGHT
+
+#if FEATURE_SERIALIZATION
         private PythonDynamicStackFrame(SerializationInfo info, StreamingContext context)
             : base((MethodBase)info.GetValue("method", typeof(MethodBase)), (string)info.GetValue("funcName", typeof(string)), (string)info.GetValue("filename", typeof(string)), (int)info.GetValue("line", typeof(int))) {
         }
@@ -84,7 +84,7 @@ namespace IronPython.Runtime {
                 return _code;
             }
         }
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         #region ISerializable Members
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {

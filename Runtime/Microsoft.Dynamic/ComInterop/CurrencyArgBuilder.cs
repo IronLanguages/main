@@ -14,7 +14,7 @@
  * ***************************************************************************/
 
 
-#if !SILVERLIGHT // ComObject
+#if FEATURE_COM
 #if !CLR2
 using System.Linq.Expressions;
 #else

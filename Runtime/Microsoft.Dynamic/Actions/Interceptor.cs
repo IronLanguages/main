@@ -13,10 +13,10 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
-using System.Linq.Expressions;
-#else
+#if CLR2
 using Microsoft.Scripting.Ast;
+#else
+using System.Linq.Expressions;
 #endif
 
 using System.Collections.ObjectModel;
@@ -73,12 +73,12 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        internal class InterceptorWalker : ExpressionVisitor {
+        internal class InterceptorWalker : System.Linq.Expressions.DynamicExpressionVisitor {
             protected override Expression VisitDynamic(DynamicExpression node) {
                 CallSiteBinder binder = node.Binder;
                 if (!(binder is InterceptorSiteBinder)) {
                     binder = new InterceptorSiteBinder(binder);
-                    return Expression.MakeDynamic(node.DelegateType, binder, node.Arguments);
+                    return DynamicExpression.MakeDynamic(node.DelegateType, binder, node.Arguments);
                 } else {
                     return node;
                 }

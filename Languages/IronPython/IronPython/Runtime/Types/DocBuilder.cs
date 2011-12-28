@@ -12,6 +12,10 @@
  *
  *
  * ***************************************************************************/
+#if !WIN8
+using System.Xml;
+using System.Xml.XPath;
+#endif
 
 using System;
 using System.Collections.Generic;
@@ -20,8 +24,6 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using System.Xml;
-using System.Xml.XPath;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
@@ -425,7 +427,7 @@ namespace IronPython.Runtime.Types {
             return DynamicHelpers.GetPythonTypeFromType(type).Name;
         }
 
-#if !SILVERLIGHT // XML doc
+#if !SILVERLIGHT && !WIN8 // XML doc
 
         private static readonly object _CachedDocLockObject = new object();
         private static readonly List<Assembly> _AssembliesWithoutXmlDoc = new List<Assembly>();

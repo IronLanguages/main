@@ -27,7 +27,7 @@ namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
 
     /// <summary>
-    /// Represents {condition} {and/or/&&/||} {jump-statement}, 
+    /// Represents {condition} {and/or/&amp;&amp;/||} {jump-statement}, 
     /// or {condition} ? {jump-statement} : {value}.
     /// </summary>
     public partial class ConditionalJumpExpression : Expression {

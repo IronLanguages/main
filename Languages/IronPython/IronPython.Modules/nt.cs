@@ -1502,7 +1502,7 @@ are defined in the signal module.")]
             int error = Marshal.GetLastWin32Error();
 #endif
             string message = e.Message;
-            int errorCode;
+            int errorCode = 0;
 
             bool isWindowsError = false;
             Win32Exception winExcep = e as Win32Exception;
@@ -1534,7 +1534,6 @@ are defined in the signal module.")]
                             throw PythonExceptions.CreateThrowable(WindowsError, error, "The process cannot access the file because it is being used by another process");
                     }
                 }
-#endif
 
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
                 if ((errorCode & ~0xfff) == (unchecked((int)0x80070000))) {
@@ -1544,6 +1543,7 @@ are defined in the signal module.")]
                     message = GetFormattedException(e, errorCode);
                     isWindowsError = true;
                 }
+#endif
             }
 
             if (isWindowsError) {

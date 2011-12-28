@@ -13,7 +13,8 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if FEATURE_SYNC_SOCKETS
+
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -33,7 +34,7 @@ using System.Globalization;
 using IronRuby.Compiler;
 
 namespace IronRuby.StandardLibrary.Sockets {
-    [RubyClass("BasicSocket", BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("BasicSocket", BuildConfig = "FEATURE_SYNC_SOCKETS")]
     public abstract class RubyBasicSocket : RubyIO {
         // TODO: do these escape out of the library?
         private static readonly MutableString BROADCAST_STRING = MutableString.CreateAscii("<broadcast>").Freeze();
@@ -139,7 +140,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             throw new NotSupportedException();
         }
 
-        #region do_not_reverse_lookup, for_fd
+#region do_not_reverse_lookup, for_fd
 
         /// <summary>
         /// Returns the value of the global reverse lookup flag.
@@ -188,9 +189,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             return new RuleGenerator(RuleGenerators.InstanceConstructor);
         }
 
-        #endregion
+#endregion
 
-        #region Public Instance Methods
+#region Public Instance Methods
 
         [RubyMethod("close_read")]
         public static void CloseRead(RubyContext/*!*/ context, RubyBasicSocket/*!*/ self) {
@@ -250,6 +251,8 @@ namespace IronRuby.StandardLibrary.Sockets {
         /// <summary>
         /// Sets a socket option. These are protocol and system specific, see your local sytem documentation for details. 
         /// </summary>
+        /// <param name="context"></param>
+        /// <param name="self"></param>
         /// <param name="level">level is an integer, usually one of the SOL_ constants such as Socket::SOL_SOCKET, or a protocol level.</param>
         /// <param name="optname">optname is an integer, usually one of the SO_ constants, such as Socket::SO_REUSEADDR.</param>
         /// <param name="value">value is the value of the option, it is passed to the underlying setsockopt() as a pointer to a certain number of bytes. How this is done depends on the type.</param>
@@ -397,9 +400,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
         }
 
-        #endregion
+#endregion
 
-        #region Internal Helpers
+#region Internal Helpers
 
         internal static void CheckSecurity(RubyContext/*!*/ context, object self, string message) {
             if (context.CurrentSafeLevel >= 4 && context.IsObjectTainted(self)) {
@@ -614,7 +617,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         
         /// <summary>
         /// Converts an Integer to a Fixnum.
-        /// Don't call any conversion methods--just handles Fixnum & Bignum
+        /// Don't call any conversion methods--just handles Fixnum and Bignum
         /// </summary>
         /// <param name="value"></param>
         /// <returns>true if value is an Integer, false otherwise</returns>
@@ -931,7 +934,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             new ServiceName(10012, "udp", "qmaster")
         };
 
-        #endregion
+#endregion
     }
 }
 #endif

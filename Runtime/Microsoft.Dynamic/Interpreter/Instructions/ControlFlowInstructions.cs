@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 #if !CLR2
+using System.Threading.Tasks;
 using System.Linq.Expressions;
 #endif
 
@@ -533,8 +534,13 @@ namespace Microsoft.Scripting.Interpreter {
                 if (frame.Interpreter.CompileSynchronously) {
                     Compile(frame);
                 } else {
-                    // Kick off the compile on another thread so this one can keep going
+                    // Kick off the compile on another thread so this one can keep going,
+                    // Compile method backpatches the instruction when finished so we don't need to await the task.
+#if CLR2
                     ThreadPool.QueueUserWorkItem(Compile, frame);
+#else
+                    new Task(Compile, frame).Start();
+#endif
                 }
             }
             return 1;
@@ -561,7 +567,7 @@ namespace Microsoft.Scripting.Interpreter {
                 var instructions = frame.Interpreter.Instructions.Instructions;
 
                 // replace this instruction with an optimized one:
-                instructions[_instructionIndex] = new CompiledLoopInstruction(compiler.CreateDelegate());
+                Interlocked.Exchange(ref instructions[_instructionIndex], new CompiledLoopInstruction(compiler.CreateDelegate()));
 
                 // invalidate this instruction, some threads may still hold on it:
                 _loop = null;

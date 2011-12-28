@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WIN8
 using System.IO.Compression;
 #endif
 
@@ -685,13 +685,13 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         #endregion
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WIN8
         #region GzipFile class
 
         // TODO: implement spec:
         // http://www.gzip.org/zlib/rfc-gzip.html#specification
 
-        [RubyClass("GzipFile", BuildConfig="!SILVERLIGHT")]
+        [RubyClass("GzipFile", BuildConfig="!SILVERLIGHT && !WIN8")]
         public abstract class GZipFile : RubyObject, IDisposable {
             private GZipStream _stream;
             private const int BufferSize = 2048;
@@ -821,7 +821,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 public Error(string message) : this(message, null) { }
                 public Error(string message, Exception inner) : base(message ?? "Error", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
                 protected Error(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                     : base(info, context) { }
 #endif
@@ -833,7 +833,7 @@ namespace IronRuby.StandardLibrary.Zlib {
         #region GzipReader class
 
         // TODO: Includes(typeof(Enumerable)
-        [RubyClass("GzipReader", BuildConfig="!SILVERLIGHT")]
+        [RubyClass("GzipReader", BuildConfig="!SILVERLIGHT && !WIN8")]
         public class GZipReader : GZipFile {
             private GZipReader(RubyClass/*!*/ cls, object io)
                 : base(cls, io, CompressionMode.Decompress) {
@@ -877,7 +877,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         #region GzipWriter class
 
-        [RubyClass("GzipWriter", BuildConfig="!SILVERLIGHT")]
+        [RubyClass("GzipWriter", BuildConfig="!SILVERLIGHT && !WIN8")]
         // TODO: [Includes(typeof(PrintOps), Copy = true)]
         public class GzipWriter : GZipFile {
             private GzipWriter(RubyClass/*!*/ cls, object io) 
@@ -966,7 +966,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             public Error(string message) : this(message, null) { }
             public Error(string message, Exception inner) : base(message ?? "Error", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected Error(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -978,7 +978,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             public DataError(string message) : this(message, null) { }
             public DataError(string message, Exception inner) : base(message ?? "DataError", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected DataError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -990,7 +990,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             public BufError(string message) : this(message, null) { }
             public BufError(string message, Exception inner) : base(message ?? "buffer error", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected BufError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -1002,7 +1002,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             public MemError(string message) : this(message, null) { }
             public MemError(string message, Exception inner) : base(message ?? "MemError", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected MemError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -1014,7 +1014,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             public NeedDict(string message) : this(message, null) { }
             public NeedDict(string message, Exception inner) : base(message ?? "need dictionary", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected NeedDict(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -1026,7 +1026,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             public StreamError(string message) : this(message, null) { }
             public StreamError(string message, Exception inner) : base(message ?? "StreamError", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected StreamError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif

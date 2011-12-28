@@ -39,7 +39,7 @@ namespace IronRuby.Compiler.Generation {
             foreach (Type interfaceType in _interfaces) {
                 if (interfaceType != typeof(IRubyType) && 
                     interfaceType != typeof(IRubyObject) && 
-#if !SILVERLIGHT
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
                     interfaceType != typeof(ICustomTypeDescriptor) &&
                     interfaceType != typeof(ISerializable) &&
 #endif

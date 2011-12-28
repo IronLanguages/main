@@ -208,10 +208,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("sysopen", RubyMethodAttributes.PublicSingleton)]
         public static int SysOpen(RubyClass/*!*/ self, [NotNull]MutableString path, [Optional]MutableString mode, [Optional]int perm) {
-            if (FileTest.DirectoryExists(self.Context, path)) {
+            if (RubyFileOps.DirectoryExists(self.Context, path)) {
                 // TODO: What file descriptor should be returned for a directory?
                 return -1;
             }
+
             RubyIO io = new RubyFile(self.Context, path.ToString(), IOModeEnum.Parse(mode));
             int fileDesc = io.GetFileDescriptor();
             io.Close();
@@ -249,7 +250,7 @@ namespace IronRuby.Builtins {
                         metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
                     }
 
-                    metaBuilder.Result = Ast.Call(new Func<UnaryOpStorage, BlockParam, object, object>(InvokeOpenBlock).Method, 
+                    metaBuilder.Result = Ast.Call(new Func<UnaryOpStorage, BlockParam, object, object>(InvokeOpenBlock).GetMethod(), 
                         Ast.Constant(new UnaryOpStorage(args.RubyContext)),
                         metaBuilder.BfcVariable, 
                         metaBuilder.Result
@@ -283,8 +284,8 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region pipe, popen
-
-        [RubyMethod("pipe", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+#if FEATURE_PROCESS
+        [RubyMethod("pipe", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static RubyArray/*!*/ OpenPipe(RubyClass/*!*/ self) {
             Stream reader, writer;
             RubyPipe.CreatePipe(out reader, out writer);
@@ -296,15 +297,14 @@ namespace IronRuby.Builtins {
 
         // TODO: params, conversions, options?
 
-#if !SILVERLIGHT
-        [RubyMethod("popen", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("popen", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static object OpenPipe(RubyContext/*!*/ context, BlockParam block, RubyClass/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ command, [DefaultProtocol, Optional, NotNull]MutableString modeString) {
 
             return TryInvokeOpenBlock(context, block, OpenPipe(context, self, command, modeString));
         }
 
-        [RubyMethod("popen", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("popen", RubyMethodAttributes.PublicSingleton, BuildConfig = "FEATURE_PROCESS")]
         public static RubyIO/*!*/ OpenPipe(RubyContext/*!*/ context, RubyClass/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ command, [DefaultProtocol, Optional, NotNull]MutableString modeString) {
             return OpenPipe(context, command, IOModeEnum.Parse(modeString));
@@ -364,7 +364,9 @@ namespace IronRuby.Builtins {
             RubyArray result;
 
             if (read == null && write == null && error == null) {
+#if !WIN8
                 Thread.Sleep(timeout);
+#endif
                 return null;
             }
 
@@ -372,7 +374,7 @@ namespace IronRuby.Builtins {
                 handles = GetWaitHandles(context, read, write, error);
                 int index;
                 try {
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8
                     index = WaitHandle.WaitAny(handles, timeout);
 #else
                     index = WaitHandle.WaitAny(handles, timeout, false);
@@ -406,7 +408,7 @@ namespace IronRuby.Builtins {
             RubyArray result = new RubyArray();
             if (ioObjects != null) {
                 for (int i = 0; i < ioObjects.Count; i++) {
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8
                     if (handleIndex == signaling || handles[handleIndex].WaitOne(0)) {
 #else
                     if (handleIndex == signaling || handles[handleIndex].WaitOne(0, false)) {
@@ -591,9 +593,9 @@ namespace IronRuby.Builtins {
 
         #region isatty
 
-#if !SILVERLIGHT
-        [RubyMethod("isatty", BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("tty?", BuildConfig = "!SILVERLIGHT")]
+#if !SILVERLIGHT && !WIN8
+        [RubyMethod("isatty", BuildConfig = "!SILVERLIGHT && !WIN8")]
+        [RubyMethod("tty?", BuildConfig = "!SILVERLIGHT && !WIN8")]
         public static bool IsAtty(RubyIO/*!*/ self) {
             ConsoleStreamType? console = self.ConsoleStreamType;
             if (console == null) {
@@ -1008,7 +1010,7 @@ namespace IronRuby.Builtins {
         public static RubyArray/*!*/ ReadLines(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString path, [DefaultProtocol]MutableString separator, 
             [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
 
-            using (RubyIO io = new RubyIO(self.Context, File.OpenRead(path.ConvertToString()), IOMode.ReadOnly)) {
+            using (RubyIO io = new RubyIO(self.Context, self.Context.Platform.OpenInputFileStream(path.ConvertToString()), IOMode.ReadOnly)) {
                 return ReadLines(self.Context, io, separator, limit);
             }
         }
@@ -1102,7 +1104,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("foreach", RubyMethodAttributes.PublicSingleton)]
         public static void ForEach(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path,
             [DefaultProtocol]MutableString separator, [DefaultProtocol, DefaultParameterValue(-1)]int limit) {
-            using (RubyIO io = new RubyIO(self.Context, File.OpenRead(path.ConvertToString()), IOMode.ReadOnly)) {
+            using (RubyIO io = new RubyIO(self.Context, self.Context.Platform.OpenInputFileStream(path.ConvertToString()), IOMode.ReadOnly)) {
                 Each(self.Context, block, io, separator, limit);
             }
         }
@@ -1199,14 +1201,14 @@ namespace IronRuby.Builtins {
                     var toPathSite = toPath.GetSite(TryConvertToPathAction.Make(toPath.Context));
                     var srcPath = toPathSite.Target(toPathSite, src);
                     if (srcPath != null) {
-                        srcStream = new FileStream(context.DecodePath(srcPath), FileMode.Open, FileAccess.Read);
+                        srcStream = self.Context.Platform.OpenInputFileStream(context.DecodePath(srcPath), FileMode.Open, FileAccess.Read, FileShare.Read);
                     } else {
                         readSite = readStorage.GetCallSite("read", 2);
                     }
 
                     var dstPath = toPathSite.Target(toPathSite, dst);
                     if (dstPath != null) {
-                        dstStream = new FileStream(context.DecodePath(dstPath), FileMode.Truncate);
+                        dstStream = self.Context.Platform.OpenInputFileStream(context.DecodePath(dstPath), FileMode.Truncate, FileAccess.ReadWrite, FileShare.Read);
                     } else {
                         writeSite = writeStorage.GetCallSite("write", 1);
                     }
@@ -1269,10 +1271,10 @@ namespace IronRuby.Builtins {
 
             } finally {
                 if (srcStream != null) {
-                    srcStream.Close();
+                    srcStream.Dispose();
                 }
                 if (dstStream != null) {
-                    dstStream.Close();
+                    dstStream.Dispose();
                 }
             }
         }

@@ -605,7 +605,7 @@ namespace IronRuby.Builtins {
     //
     // ISerializable implementation
     //
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
 
 #if GENERATOR
     Serializable = [:Exception]

@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_FULL_CONSOLE
 
 using System;
 using System.IO;
@@ -22,7 +23,6 @@ using System.Threading;
 namespace Microsoft.Scripting.Hosting.Shell {
 
     public class BasicConsole : IConsole, IDisposable {
-
         private TextWriter _output;
         private TextWriter _errorOutput;
         private AutoResetEvent _ctrlCEvent;
@@ -54,9 +54,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             set { _creatingThread = value; }
         }
 
-#if !SILVERLIGHT // ConsoleCancelEventHandler
         public ConsoleCancelEventHandler ConsoleCancelEventHandler { get; set; }
-#endif
         private ConsoleColor _promptColor;
         private ConsoleColor _outColor;
         private ConsoleColor _errorColor;
@@ -69,7 +67,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             _creatingThread = Thread.CurrentThread;            
 
-#if !SILVERLIGHT // ConsoleCancelEventHandler
             // Create the default handler
             this.ConsoleCancelEventHandler = delegate(object sender, ConsoleCancelEventArgs e) {
                 if (e.SpecialKey == ConsoleSpecialKey.ControlC) {
@@ -86,7 +83,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     this.ConsoleCancelEventHandler(sender, e);
                 }
             };
-#endif
+
             _ctrlCEvent = new AutoResetEvent(false);
         }
 
@@ -98,35 +95,26 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 _errorColor = PickColor(ConsoleColor.Red, ConsoleColor.White);
                 _warningColor = PickColor(ConsoleColor.Yellow, ConsoleColor.White);
             } else {
-#if !SILVERLIGHT
                 _promptColor = _outColor = _errorColor = _warningColor = Console.ForegroundColor;
-#endif
             }
         }
 
         private static ConsoleColor PickColor(ConsoleColor best, ConsoleColor other) {
-#if SILVERLIGHT
-            return best;
-#else
             if (Console.BackgroundColor != best) {
                 return best;
             }
 
             return other;
-#endif
         }
 
         protected void WriteColor(TextWriter output, string str, ConsoleColor c) {
-#if !SILVERLIGHT // Console.ForegroundColor
             ConsoleColor origColor = Console.ForegroundColor;
             Console.ForegroundColor = c;
-#endif
+      
             output.Write(str);
             output.Flush();
 
-#if !SILVERLIGHT // Console.ForegroundColor
             Console.ForegroundColor = origColor;
-#endif
         }
 
         #region IConsole Members
@@ -142,12 +130,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 // delay when shutting down the process via ctrl-z, but it's
                 // not really perceptible.  In the ctrl-C case we will return
                 // as soon as the event is signaled.
-#if SILVERLIGHT
-                if (_ctrlCEvent != null && _ctrlCEvent.WaitOne(100))
-#else
-                if (_ctrlCEvent != null && _ctrlCEvent.WaitOne(100, false))
-#endif
- {
+                if (_ctrlCEvent != null && _ctrlCEvent.WaitOne(100, false)) {
                     // received ctrl-C
                     return "";
                 } else {
@@ -189,6 +172,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
         #endregion
     }
-
 }
+
+#endif
 

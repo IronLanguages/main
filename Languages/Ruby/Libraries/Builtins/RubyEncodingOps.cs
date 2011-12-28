@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
 
 using System;
 using System.Collections.Generic;
@@ -25,7 +25,7 @@ using Microsoft.Scripting;
 using System.Globalization;
 
 namespace IronRuby.Builtins {
-    [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), BuildConfig = "FEATURE_ENCODING")]
     public static class RubyEncodingOps {
         #region Exceptions
 
@@ -47,7 +47,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Constants
+#region Constants
 
         [RubyConstant("ANSI_X3_4_1968")]
         [RubyConstant("US_ASCII")]
@@ -110,7 +110,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region to_s, inspect, based_encoding, dummy?, ascii_compatible?
+#region to_s, inspect, based_encoding, dummy?, ascii_compatible?
 
         [RubyMethod("name")]
         [RubyMethod("to_s")]
@@ -179,7 +179,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region aliases, name_list, list, find
+#region aliases, name_list, list, find
 
         [RubyMethod("aliases", RubyMethodAttributes.PublicSingleton)]
         public static Hash/*!*/ GetAliases(RubyClass/*!*/ self) {
@@ -239,7 +239,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region compatible?
+#region compatible?
 
         [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ str1, [NotNull]MutableString/*!*/ str2) {
@@ -293,7 +293,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region default_external, default_internal, locale_charmap
+#region default_external, default_internal, locale_charmap
 
         [RubyMethod("default_external", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding/*!*/ GetDefaultExternalEncoding(RubyClass/*!*/ self) {

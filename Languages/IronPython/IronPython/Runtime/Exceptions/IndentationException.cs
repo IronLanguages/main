@@ -30,8 +30,8 @@ namespace IronPython.Runtime.Exceptions {
         public IndentationException(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode, Severity severity)
             : base(message, sourceUnit, span, errorCode, severity) { }
 
-        
-#if !SILVERLIGHT
+
+#if FEATURE_SERIALIZATION
         protected IndentationException(SerializationInfo info, StreamingContext context)
             : base(info, context) {
         }

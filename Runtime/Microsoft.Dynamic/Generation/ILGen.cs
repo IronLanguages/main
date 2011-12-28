@@ -12,15 +12,19 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_PDBEMIT
+using System.Diagnostics.SymbolStore;
+#endif
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.SymbolStore;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Linq;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -258,13 +262,14 @@ namespace Microsoft.Scripting.Generation {
         }
 
 #if !SILVERLIGHT
+#if !WIN8
         /// <summary>
         /// Emits an unmanaged indirect call instruction.
         /// </summary>
         public virtual void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type returnType, Type[] parameterTypes) {
             _ilg.EmitCalli(opcode, unmanagedCallConv, returnType, parameterTypes);
         }
-
+#endif
         /// <summary>
         /// Emits a managed indirect call instruction.
         /// </summary>
@@ -273,13 +278,14 @@ namespace Microsoft.Scripting.Generation {
         }
 #endif
 
+#if FEATURE_PDBEMIT
         /// <summary>
         /// Marks a sequence point.
         /// </summary>
         public virtual void MarkSequencePoint(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn) {
             _ilg.MarkSequencePoint(document, startLine, startColumn, endLine, endColumn);
         }
-
+#endif
         /// <summary>
         /// Specifies the namespace to be used in evaluating locals and watches for the
         ///     current active lexical scope.
@@ -302,8 +308,9 @@ namespace Microsoft.Scripting.Generation {
         internal void Emit(OpCode opcode, MethodBase methodBase) {
             Debug.Assert(methodBase is MethodInfo || methodBase is ConstructorInfo);
 
-            if (methodBase.MemberType == MemberTypes.Constructor) {
-                Emit(opcode, (ConstructorInfo)methodBase);
+            ConstructorInfo ctor = methodBase as ConstructorInfo;
+            if (ctor != null) {
+                Emit(opcode, ctor);
             } else {
                 Emit(opcode, (MethodInfo)methodBase);
             }
@@ -365,7 +372,7 @@ namespace Microsoft.Scripting.Generation {
         public void EmitLoadValueIndirect(Type type) {
             ContractUtils.RequiresNotNull(type, "type");
 
-            if (type.IsValueType) {
+            if (type.IsValueType()) {
                 if (type == typeof(int)) {
                     Emit(OpCodes.Ldind_I4);
                 } else if (type == typeof(uint)) {
@@ -401,7 +408,7 @@ namespace Microsoft.Scripting.Generation {
         public void EmitStoreValueIndirect(Type type) {
             ContractUtils.RequiresNotNull(type, "type");
 
-            if (type.IsValueType) {
+            if (type.IsValueType()) {
                 if (type == typeof(int)) {
                     Emit(OpCodes.Stind_I4);
                 } else if (type == typeof(short)) {
@@ -431,12 +438,12 @@ namespace Microsoft.Scripting.Generation {
         public void EmitLoadElement(Type type) {
             ContractUtils.RequiresNotNull(type, "type");
 
-            if (!type.IsValueType) {
+            if (!type.IsValueType()) {
                 Emit(OpCodes.Ldelem_Ref);
-            } else if (type.IsEnum) {
+            } else if (type.IsEnum()) {
                 Emit(OpCodes.Ldelem, type);
             } else {
-                switch (Type.GetTypeCode(type)) {
+                switch (type.GetTypeCode()) {
                     case TypeCode.Boolean:
                     case TypeCode.SByte:
                         Emit(OpCodes.Ldelem_I1);
@@ -480,11 +487,11 @@ namespace Microsoft.Scripting.Generation {
         public void EmitStoreElement(Type type) {
             ContractUtils.RequiresNotNull(type, "type");
 
-            if (type.IsEnum) {
+            if (type.IsEnum()) {
                 Emit(OpCodes.Stelem, type);
                 return;
             }
-            switch (Type.GetTypeCode(type)) {
+            switch (type.GetTypeCode()) {
                 case TypeCode.Boolean:
                 case TypeCode.SByte:
                 case TypeCode.Byte:
@@ -510,7 +517,7 @@ namespace Microsoft.Scripting.Generation {
                     Emit(OpCodes.Stelem_R8);
                     break;
                 default:
-                    if (type.IsValueType) {
+                    if (type.IsValueType()) {
                         Emit(OpCodes.Stelem, type);
                     } else {
                         Emit(OpCodes.Stelem_Ref);
@@ -535,16 +542,6 @@ namespace Microsoft.Scripting.Generation {
 
         #region Fields, properties and methods
 
-        public void EmitPropertyGet(Type type, string name) {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.RequiresNotNull(name, "name");
-
-            PropertyInfo pi = type.GetProperty(name);
-            ContractUtils.Requires(pi != null, "name", Strings.PropertyDoesNotExist);
-
-            EmitPropertyGet(pi);
-        }
-
         public void EmitPropertyGet(PropertyInfo pi) {
             ContractUtils.RequiresNotNull(pi, "pi");
 
@@ -553,16 +550,6 @@ namespace Microsoft.Scripting.Generation {
             }
 
             EmitCall(pi.GetGetMethod());
-        }
-
-        public void EmitPropertySet(Type type, string name) {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.RequiresNotNull(name, "name");
-
-            PropertyInfo pi = type.GetProperty(name);
-            ContractUtils.Requires(pi != null, "name", Strings.PropertyDoesNotExist);
-
-            EmitPropertySet(pi);
         }
 
         public void EmitPropertySet(PropertyInfo pi) {
@@ -583,24 +570,6 @@ namespace Microsoft.Scripting.Generation {
             } else {
                 Emit(OpCodes.Ldflda, fi);
             }
-        }
-
-        public void EmitFieldGet(Type type, String name) {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.RequiresNotNull(name, "name");
-
-            FieldInfo fi = type.GetField(name);
-            ContractUtils.Requires(fi != null, "name", Strings.FieldDoesNotExist);
-            EmitFieldGet(fi);
-        }
-
-        public void EmitFieldSet(Type type, String name) {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.RequiresNotNull(name, "name");
-
-            FieldInfo fi = type.GetField(name);
-            ContractUtils.Requires(fi != null, "name", Strings.FieldDoesNotExist);
-            EmitFieldSet(fi);
         }
 
         public void EmitFieldGet(FieldInfo fi) {
@@ -627,7 +596,7 @@ namespace Microsoft.Scripting.Generation {
         public void EmitNew(ConstructorInfo ci) {
             ContractUtils.RequiresNotNull(ci, "ci");
 
-            if (ci.DeclaringType.ContainsGenericParameters) {
+            if (ci.DeclaringType.ContainsGenericParameters()) {
                 throw Error.IllegalNew_GenericParams(ci.DeclaringType);
             }
 
@@ -647,7 +616,7 @@ namespace Microsoft.Scripting.Generation {
         public void EmitCall(MethodInfo mi) {
             ContractUtils.RequiresNotNull(mi, "mi");
 
-            if (mi.IsVirtual && !mi.DeclaringType.IsValueType) {
+            if (mi.IsVirtual && !mi.DeclaringType.IsValueType()) {
                 Emit(OpCodes.Callvirt, mi);
             } else {
                 Emit(OpCodes.Call, mi);
@@ -826,7 +795,7 @@ namespace Microsoft.Scripting.Generation {
             if (mb != null && ShouldLdtoken(mb)) {
                 Emit(OpCodes.Ldtoken, mb);
                 Type dt = mb.DeclaringType;
-                if (dt != null && dt.IsGenericType) {
+                if (dt != null && dt.IsGenericType()) {
                     Emit(OpCodes.Ldtoken, dt);
                     EmitCall(typeof(MethodBase).GetMethod("GetMethodFromHandle", new Type[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) }));
                 } else {
@@ -844,7 +813,7 @@ namespace Microsoft.Scripting.Generation {
 
         // TODO: Can we always ldtoken and let restrictedSkipVisibility sort things out?
         public static bool ShouldLdtoken(Type t) {
-            return t is TypeBuilder || t.IsGenericParameter || t.IsVisible;
+            return t.GetTypeInfo() is TypeBuilder || t.IsGenericParameter || t.IsVisible();
         }
 
         public static bool ShouldLdtoken(MethodBase mb) {
@@ -859,7 +828,7 @@ namespace Microsoft.Scripting.Generation {
 
         //CONFORMING
         private bool TryEmitILConstant(object value, Type type) {
-            switch (Type.GetTypeCode(type)) {
+            switch (type.GetTypeCode()) {
                 case TypeCode.Boolean:
                     EmitBoolean((bool)value);
                     return true;
@@ -952,19 +921,19 @@ namespace Microsoft.Scripting.Generation {
                     }
                 }
 
-                if (from.IsValueType) {
+                if (from.IsValueType()) {
                     if (to == typeof(object)) {
                         EmitBoxing(from);
                         return true;
                     }
                 }
 
-                if (to.IsInterface) {
+                if (to.IsInterface()) {
                     Emit(OpCodes.Box, from);
                     return true;
                 }
 
-                if (from.IsEnum && to == typeof(Enum)) {
+                if (from.IsEnum() && to == typeof(Enum)) {
                     Emit(OpCodes.Box, from);
                     return true;
                 }
@@ -978,7 +947,7 @@ namespace Microsoft.Scripting.Generation {
                 return true;
             }
 
-            if (to.IsValueType && from == typeof(object)) {
+            if (to.IsValueType() && from == typeof(object)) {
                 if (implicitOnly) {
                     return false;
                 }
@@ -986,11 +955,11 @@ namespace Microsoft.Scripting.Generation {
                 return true;
             }
 
-            if (to.IsValueType != from.IsValueType) {
+            if (to.IsValueType() != from.IsValueType()) {
                 return false;
             }
 
-            if (!to.IsValueType) {
+            if (!to.IsValueType()) {
                 if (implicitOnly) {
                     return false;
                 }
@@ -998,10 +967,10 @@ namespace Microsoft.Scripting.Generation {
                 return true;
             }
 
-            if (to.IsEnum) {
+            if (to.IsEnum()) {
                 to = Enum.GetUnderlyingType(to);
             }
-            if (from.IsEnum) {
+            if (from.IsEnum()) {
                 from = Enum.GetUnderlyingType(from);
             }
 
@@ -1017,8 +986,8 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public bool EmitNumericCast(Type from, Type to, bool implicitOnly) {
-            TypeCode fc = Type.GetTypeCode(from);
-            TypeCode tc = Type.GetTypeCode(to);
+            TypeCode fc = from.GetTypeCode();
+            TypeCode tc = to.GetTypeCode();
             int fromx, fromy, tox, toy;
 
             if (!TypeUtils.GetNumericConversionOrder(fc, out fromx, out fromy) ||
@@ -1089,7 +1058,7 @@ namespace Microsoft.Scripting.Generation {
         public void EmitBoxing(Type type) {
             ContractUtils.RequiresNotNull(type, "type");
 
-            if (type.IsValueType) {
+            if (type.IsValueType()) {
                 if (type == typeof(void)) {
                     Emit(OpCodes.Ldnull);
                 } else if (type == typeof(int)) {
@@ -1098,10 +1067,10 @@ namespace Microsoft.Scripting.Generation {
                     var label = DefineLabel();
                     var end = DefineLabel();
                     Emit(OpCodes.Brtrue_S, label);
-                    Emit(OpCodes.Ldsfld, typeof(ScriptingRuntimeHelpers).GetField("False"));
+                    Emit(OpCodes.Ldsfld, typeof(ScriptingRuntimeHelpers).GetDeclaredField("False"));
                     Emit(OpCodes.Br_S, end);
                     MarkLabel(label);
-                    Emit(OpCodes.Ldsfld, typeof(ScriptingRuntimeHelpers).GetField("True"));
+                    Emit(OpCodes.Ldsfld, typeof(ScriptingRuntimeHelpers).GetDeclaredField("True"));
                     MarkLabel(end);
                 } else {
                     Emit(OpCodes.Box, type);
@@ -1144,8 +1113,8 @@ namespace Microsoft.Scripting.Generation {
             Type nnExprType = TypeUtils.GetNonNullableType(typeFrom);
             Type nnType = TypeUtils.GetNonNullableType(typeTo);
 
-            if (typeFrom.IsInterface || // interface cast
-               typeTo.IsInterface ||
+            if (typeFrom.IsInterface() || // interface cast
+               typeTo.IsInterface() ||
                typeFrom == typeof(object) || // boxing cast
                typeTo == typeof(object)) {
                 EmitCastToType(typeFrom, typeTo);
@@ -1167,14 +1136,14 @@ namespace Microsoft.Scripting.Generation {
 
         //CONFORMING
         private void EmitCastToType(Type typeFrom, Type typeTo) {
-            if (!typeFrom.IsValueType && typeTo.IsValueType) {
+            if (!typeFrom.IsValueType() && typeTo.IsValueType()) {
                 Emit(OpCodes.Unbox_Any, typeTo);
-            } else if (typeFrom.IsValueType && !typeTo.IsValueType) {
+            } else if (typeFrom.IsValueType() && !typeTo.IsValueType()) {
                 EmitBoxing(typeFrom);
                 if (typeTo != typeof(object)) {
                     Emit(OpCodes.Castclass, typeTo);
                 }
-            } else if (!typeFrom.IsValueType && !typeTo.IsValueType) {
+            } else if (!typeFrom.IsValueType() && !typeTo.IsValueType()) {
                 Emit(OpCodes.Castclass, typeTo);
             } else {
                 throw Error.InvalidCast(typeFrom, typeTo);
@@ -1194,7 +1163,7 @@ namespace Microsoft.Scripting.Generation {
                     Emit(OpCodes.Conv_R_Un);
                 Emit(OpCodes.Conv_R8);
             } else {
-                TypeCode tc = Type.GetTypeCode(typeTo);
+                TypeCode tc = typeTo.GetTypeCode();
                 if (isChecked) {
                     if (isFromUnsigned) {
                         switch (tc) {
@@ -1360,7 +1329,7 @@ namespace Microsoft.Scripting.Generation {
         private void EmitNullableToNonNullableConversion(Type typeFrom, Type typeTo, bool isChecked) {
             Debug.Assert(TypeUtils.IsNullableType(typeFrom));
             Debug.Assert(!TypeUtils.IsNullableType(typeTo));
-            if (typeTo.IsValueType)
+            if (typeTo.IsValueType())
                 EmitNullableToNonNullableStructConversion(typeFrom, typeTo, isChecked);
             else
                 EmitNullableToReferenceConversion(typeFrom);
@@ -1370,7 +1339,7 @@ namespace Microsoft.Scripting.Generation {
         private void EmitNullableToNonNullableStructConversion(Type typeFrom, Type typeTo, bool isChecked) {
             Debug.Assert(TypeUtils.IsNullableType(typeFrom));
             Debug.Assert(!TypeUtils.IsNullableType(typeTo));
-            Debug.Assert(typeTo.IsValueType);
+            Debug.Assert(typeTo.IsValueType());
             LocalBuilder locFrom = null;
             locFrom = DeclareLocal(typeFrom);
             Emit(OpCodes.Stloc, locFrom);
@@ -1404,21 +1373,21 @@ namespace Microsoft.Scripting.Generation {
         //CONFORMING
         internal void EmitHasValue(Type nullableType) {
             MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public);
-            Debug.Assert(nullableType.IsValueType);
+            Debug.Assert(nullableType.IsValueType());
             Emit(OpCodes.Call, mi);
         }
 
         //CONFORMING
         internal void EmitGetValue(Type nullableType) {
             MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public);
-            Debug.Assert(nullableType.IsValueType);
+            Debug.Assert(nullableType.IsValueType());
             Emit(OpCodes.Call, mi);
         }
 
         //CONFORMING
         internal void EmitGetValueOrDefault(Type nullableType) {
-            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes);
-            Debug.Assert(nullableType.IsValueType);
+            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", ReflectionUtils.EmptyTypes);
+            Debug.Assert(nullableType.IsValueType());
             Emit(OpCodes.Call, mi);
         }
 
@@ -1522,13 +1491,13 @@ namespace Microsoft.Scripting.Generation {
         /// Semantics match C# compiler behavior
         /// </summary>
         internal void EmitDefault(Type type) {
-            switch (Type.GetTypeCode(type)) {
+            switch (type.GetTypeCode()) {
                 case TypeCode.Object:
                 case TypeCode.DateTime:
-                    if (type.IsValueType) {
+                    if (type.IsValueType()) {
                         // Type.GetTypeCode on an enum returns the underlying
                         // integer TypeCode, so we won't get here.
-                        Debug.Assert(!type.IsEnum);
+                        Debug.Assert(!type.IsEnum());
 
                         // This is the IL for default(T) if T is a generic type
                         // parameter, so it should work for any type. It's also
@@ -1587,16 +1556,16 @@ namespace Microsoft.Scripting.Generation {
         public void EmitMissingValue(Type type) {
             LocalBuilder lb;
 
-            switch (Type.GetTypeCode(type)) {
+            switch (type.GetTypeCode()) {
                 default:
                 case TypeCode.Object:
                     if (type == typeof(object)) {
                         // parameter of type object receives the actual Missing value
-                        Emit(OpCodes.Ldsfld, typeof(Missing).GetField("Value"));
-                    } else if (!type.IsValueType) {
+                        Emit(OpCodes.Ldsfld, typeof(Missing).GetDeclaredField("Value"));
+                    } else if (!type.IsValueType()) {
                         // reference type
                         EmitNull();
-                    } else if (type.IsSealed && !type.IsEnum) {
+                    } else if (type.IsSealed() && !type.IsEnum()) {
                         lb = DeclareLocal(type);
                         Emit(OpCodes.Ldloca, lb);
                         Emit(OpCodes.Initobj, type);
@@ -1636,7 +1605,7 @@ namespace Microsoft.Scripting.Generation {
                     break;
 
                 case TypeCode.Decimal:
-                    EmitFieldGet(typeof(Decimal).GetField("Zero"));
+                    EmitFieldGet(typeof(Decimal).GetDeclaredField("Zero"));
                     break;
 
                 case TypeCode.DateTime:

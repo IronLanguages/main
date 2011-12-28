@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_FULL_CONSOLE
 
 using System;
 using Microsoft.Scripting.Utils;
@@ -33,7 +34,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         private bool _colorfulConsole;
         private bool _printUsage;
         private bool _isMta;
-#if !SILVERLIGHT // Remote console
+#if FEATURE_REMOTING
         private string _remoteRuntimeChannel;
 #endif
 
@@ -112,7 +113,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             set { _isMta = value; }
         }
 
-#if !SILVERLIGHT // Remote console
+#if FEATURE_REMOTING
         public string RemoteRuntimeChannel {
             get { return _remoteRuntimeChannel; }
             set { _remoteRuntimeChannel = value; }
@@ -138,9 +139,11 @@ namespace Microsoft.Scripting.Hosting.Shell {
             _colorfulConsole = options._colorfulConsole;
             _printUsage = options._printUsage;
             _isMta = options._isMta;
-#if !SILVERLIGHT // Remote console
+#if FEATURE_REMOTING
             _remoteRuntimeChannel = options._remoteRuntimeChannel;
 #endif
         }
     }
 }
+
+#endif

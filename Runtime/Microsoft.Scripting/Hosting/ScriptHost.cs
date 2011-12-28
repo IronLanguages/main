@@ -13,12 +13,17 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Dynamic;
-using System.Security.Permissions;
 using System.Text;
 using Microsoft.Scripting.Utils;
 
@@ -36,11 +41,7 @@ namespace Microsoft.Scripting.Hosting {
     /// and needs to access objects living in its app-domain it can pass MarshalByRefObject 
     /// as an argument to its ScriptHost subclass constructor.
     /// </summary>
-    public class ScriptHost
-#if !SILVERLIGHT
-        : MarshalByRefObject
-#endif
-    {
+    public class ScriptHost : MarshalByRefObject {
         /// <summary>
         /// The runtime the host is attached to.
         /// </summary>
@@ -93,7 +94,7 @@ namespace Microsoft.Scripting.Hosting {
 
         #endregion
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         // TODO: Figure out what is the right lifetime
         public override object InitializeLifetimeService() {
             return null;

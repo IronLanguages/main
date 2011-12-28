@@ -19,7 +19,14 @@ using System.Diagnostics;
 using System.Text;
 
 namespace Microsoft.Scripting.Utils {
-    static class ArrayUtils {
+    internal static class ArrayUtils {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+        public static readonly string[] EmptyStrings = new string[0];
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
+        public static readonly object[] EmptyObjects = new object[0];
+
+#if !WIN8
         internal sealed class FunctorComparer<T> : IComparer<T> {
             private readonly Comparison<T> _comparison;
 
@@ -32,12 +39,6 @@ namespace Microsoft.Scripting.Utils {
                 return _comparison(x, y);
             }
         }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        public static readonly string[] EmptyStrings = new string[0];
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        public static readonly object[] EmptyObjects = new object[0];
 
         public static IComparer<T> ToComparer<T>(Comparison<T> comparison) {
             return new FunctorComparer<T>(comparison);
@@ -79,6 +80,7 @@ namespace Microsoft.Scripting.Utils {
             return System.Array.FindAll(array, match);
 #endif
         }
+#endif
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "1#")] // TODO: fix
         public static void PrintTable(StringBuilder output, string[,] table) {

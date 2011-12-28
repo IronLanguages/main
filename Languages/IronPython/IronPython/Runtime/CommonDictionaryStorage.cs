@@ -47,11 +47,7 @@ namespace IronPython.Runtime {
     /// array to ensure that readers are not seeing multiple bucket arrays.
     /// </summary>
     [Serializable]
-    internal class CommonDictionaryStorage : DictionaryStorage
-#if !SILVERLIGHT
-, ISerializable, IDeserializationCallback
-#endif
- {
+    internal class CommonDictionaryStorage : DictionaryStorage, ISerializable, IDeserializationCallback {
         protected Bucket[] _buckets;
         private int _count;
         private int _version;
@@ -150,7 +146,7 @@ namespace IronPython.Runtime {
             _nullValue = nullValue;
         }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         private CommonDictionaryStorage(SerializationInfo info, StreamingContext context) {
             // remember the serialization info, we'll deserialize when we get the callback.  This
             // enables special types like DBNull.Value to successfully be deserialized inside of us.  We
@@ -827,7 +823,7 @@ namespace IronPython.Runtime {
                 Value = value;
             }
         }
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
 
         /// <summary>
         /// Special marker NullValue used during deserialization to not add

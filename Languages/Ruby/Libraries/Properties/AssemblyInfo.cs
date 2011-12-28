@@ -34,7 +34,7 @@ using System.Security;
 
 [assembly: SecurityTransparent]
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WIN8
 [assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]
 [assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
 [assembly: AllowPartiallyTrustedCallers]

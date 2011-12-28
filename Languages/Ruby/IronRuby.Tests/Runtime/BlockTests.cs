@@ -1569,7 +1569,7 @@ baz { |*a| puts a.inspect }
         }
 
         /// <summary>
-        /// !L(1,-) && R(0,*), empty array to splat.
+        /// !L(1,-) and R(0,*), empty array to splat.
         /// </summary>
         public void Scenario_RubyBlockArgs4A() {
             AssertOutput(delegate() {

@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-
 #if !CLR2
 using System.Linq.Expressions;
 #else
@@ -23,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -68,11 +68,15 @@ namespace Microsoft.Scripting {
             ContractUtils.RequiresNotNull(assemblyName, "assemblyName");
             ContractUtils.RequiresNotNullItems(codes, "codes");
 
+#if FEATURE_FILESYSTEM
             // break the assemblyName into it's dir/name/extension
             string dir = Path.GetDirectoryName(assemblyName);
             if (String.IsNullOrEmpty(dir)) {
                 dir = Environment.CurrentDirectory;
             }
+#else
+            string dir = null;
+#endif
 
             string name = Path.GetFileNameWithoutExtension(assemblyName);
             string ext = Path.GetExtension(assemblyName);
@@ -99,7 +103,7 @@ namespace Microsoft.Scripting {
                 "GetScriptCodeInfo",
                 MethodAttributes.SpecialName | MethodAttributes.Public | MethodAttributes.Static,
                 typeof(MutableTuple<Type[], Delegate[][], string[][], string[][]>),
-                Type.EmptyTypes);
+                ReflectionUtils.EmptyTypes);
 
             ILGen ilgen = new ILGen(mb.GetILGenerator());
 
@@ -155,7 +159,7 @@ namespace Microsoft.Scripting {
             ilgen.Emit(OpCodes.Ret);
 
             mb.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(DlrCachedCodeAttribute).GetConstructor(Type.EmptyTypes),
+                typeof(DlrCachedCodeAttribute).GetConstructor(ReflectionUtils.EmptyTypes),
                 ArrayUtils.EmptyObjects
             ));
 

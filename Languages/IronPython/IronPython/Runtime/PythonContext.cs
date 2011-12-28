@@ -73,7 +73,7 @@ namespace IronPython.Runtime {
         private readonly PythonOverloadResolverFactory _sharedOverloadResolverFactory;
         private readonly PythonBinder _binder;
         private readonly SysModuleDictionaryStorage _sysDict = new SysModuleDictionaryStorage();
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_RESOLVE
         private readonly AssemblyResolveHolder _resolveHolder;
 #if !CLR2
         private readonly HashSet<Assembly> _loadedAssemblies = new HashSet<Assembly>();
@@ -203,7 +203,6 @@ namespace IronPython.Runtime {
         internal readonly List<FunctionStack> _mainThreadFunctionStack;
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0LightEh;
         private List<WeakReference> _weakExtensionMethodSets;
-        private Thread _mainThread;
 
         #region Generated Python Shared Call Sites Storage
 
@@ -400,6 +399,7 @@ namespace IronPython.Runtime {
             }
         }
 
+#if FEATURE_THREAD
         /// <summary>
         /// Gets or sets the main thread which should be interupted by thread.interrupt_main
         /// </summary>
@@ -411,6 +411,9 @@ namespace IronPython.Runtime {
                 _mainThread = value;
             }
         }
+
+        private Thread _mainThread;
+#endif
 
         public IEqualityComparer<object>/*!*/ EqualityComparer {
             get { return _equalityComparer; }
@@ -1112,7 +1115,7 @@ namespace IronPython.Runtime {
             return builder.ToString();
         }
 
-#if !SILVERLIGHT
+#if FEATURE_CODEDOM
         // Convert a CodeDom to source code, and output the generated code and the line number mappings (if any)
         public override SourceUnit/*!*/ GenerateSourceCode(System.CodeDom.CodeObject codeDom, string path, SourceCodeKind kind) {
             return new IronPython.Hosting.PythonCodeDomCodeGen().GenerateCode((System.CodeDom.CodeMemberMethod)codeDom, this, path, kind);
@@ -1315,7 +1318,7 @@ namespace IronPython.Runtime {
         #region Assembly Loading
 
         internal Assembly LoadAssemblyFromFile(string file) {
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_RESOLVE
             // check all files in the path...
             List path;
             if (TryGetSystemPath(out path)) {
@@ -1336,7 +1339,7 @@ namespace IronPython.Runtime {
             return null;
         }
 
-#if !SILVERLIGHT // AssemblyResolve, files, path
+#if FEATURE_ASSEMBLY_RESOLVE
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
 #if CLR2
         private static bool TryLoadAssemblyFromFileWithPath(string path, out Assembly res) {
@@ -1430,7 +1433,7 @@ namespace IronPython.Runtime {
         public override void Shutdown() {
             object callable;
 
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_RESOLVE
             UnhookAssemblyResolve();
 #endif
 
@@ -1608,7 +1611,7 @@ namespace IronPython.Runtime {
             return PythonOps.GetDynamicStackFrames(exception);
         }
 
-#if SILVERLIGHT // stack trace
+#if FEATURE_STACK_TRACE
         private string FormatStackTraces(Exception e) {
 
             StringBuilder result = new StringBuilder();

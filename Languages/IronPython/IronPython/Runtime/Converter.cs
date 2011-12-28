@@ -547,7 +547,7 @@ namespace IronPython.Runtime {
                 return true;
             }
 
-#if !SILVERLIGHT
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
             // try available type conversions...
             object[] tcas = toType.GetCustomAttributes(typeof(TypeConverterAttribute), true);
             foreach (TypeConverterAttribute tca in tcas) {
@@ -568,7 +568,7 @@ namespace IronPython.Runtime {
             return HasNarrowingConversion(fromType, toType, allowNarrowing);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
         private static TypeConverter GetTypeConverter(TypeConverterAttribute tca) {
             try {
                 ConstructorInfo ci = Type.GetType(tca.ConverterTypeName).GetConstructor(Type.EmptyTypes);
@@ -580,7 +580,7 @@ namespace IronPython.Runtime {
 #endif
 
         private static bool HasImplicitNumericConversion(Type fromType, Type toType) {
-            if (fromType.IsEnum) return false;
+            if (fromType.IsEnum()) return false;
 
             if (fromType == typeof(BigInteger)) {
                 if (toType == typeof(double)) return true;

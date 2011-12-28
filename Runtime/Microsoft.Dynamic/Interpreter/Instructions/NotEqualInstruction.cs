@@ -126,7 +126,7 @@ namespace Microsoft.Scripting.Interpreter {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Instruction Create(Type type) {
             // Boxed enums can be unboxed as their underlying types:
-            switch (Type.GetTypeCode(type.IsEnum ? Enum.GetUnderlyingType(type) : type)) {
+            switch ((type.IsEnum() ? Enum.GetUnderlyingType(type) : type).GetTypeCode()) {
                 case TypeCode.Boolean: return _Boolean ?? (_Boolean = new NotEqualBoolean());
                 case TypeCode.SByte: return _SByte ?? (_SByte = new NotEqualSByte());
                 case TypeCode.Byte: return _Byte ?? (_Byte = new NotEqualByte());
@@ -143,7 +143,7 @@ namespace Microsoft.Scripting.Interpreter {
                 case TypeCode.Double: return _Double ?? (_Double = new NotEqualDouble());
 
                 case TypeCode.Object:
-                    if (!type.IsValueType) {
+                    if (!type.IsValueType()) {
                         return _Reference ?? (_Reference = new NotEqualReference());
                     }
                     // TODO: Nullable<T>

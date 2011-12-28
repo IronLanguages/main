@@ -17,7 +17,6 @@ using System;
 using System.Runtime.Serialization;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
-using System.Security.Permissions;
 using Microsoft.Scripting.Generation;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;

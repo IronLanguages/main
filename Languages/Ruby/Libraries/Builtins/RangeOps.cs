@@ -46,7 +46,7 @@ namespace IronRuby.Builtins {
     ///    ('a'...'e').to_a   #=> ["a", "b", "c", "d"]
     /// </example>
     /// <remarks>
-    /// Ranges can be constructed using objects of any type, as long as the objects can be compared using their <=> operator
+    /// Ranges can be constructed using objects of any type, as long as the objects can be compared using their &lt;=&gt; operator
     /// and they support the succ method to return the next object in sequence. 
     /// </remarks>
     [RubyClass("Range", Extends = typeof(Range), Inherits = typeof(Object)), Includes(typeof(Enumerable))]
@@ -142,7 +142,7 @@ namespace IronRuby.Builtins {
 
         /// <summary>
         /// Returns true only if self is a Range, has equivalent beginning and end items (by comparing them with ==),
-        /// and has the same exclude_end? setting as <i>other</t>. 
+        /// and has the same exclude_end? setting as <i>other</i>. 
         /// </summary>
         /// <example>
         /// (0..2) == (0..2)            #=> true
@@ -162,7 +162,7 @@ namespace IronRuby.Builtins {
 
         /// <summary>
         /// Returns true only if self is a Range, has equivalent beginning and end items (by comparing them with eql?),
-        /// and has the same exclude_end? setting as <i>other</t>. 
+        /// and has the same exclude_end? setting as <i>other</i>. 
         /// </summary>
         /// <example>
         /// (0..2).eql?(0..2)             #=> true

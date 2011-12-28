@@ -34,7 +34,7 @@ namespace IronRuby.Builtins {
         
         #region Time Zones
 
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8 // TODO: Use TimeZoneInfo
         public TimeSpan GetCurrentZoneOffset() {
             DateTime time = DateTime.Now;
             return time.ToLocalTime() - time.ToUniversalTime();
@@ -577,15 +577,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #endregion
-
-        #region times (deprecated)
-#if !SILVERLIGHT
-        [RubyMethod("times", RubyMethodAttributes.PublicSingleton, Compatibility = RubyCompatibility.Ruby186, BuildConfig = "!SILVERLIGHT")]
-        public static RubyStruct/*!*/ Times(RubyClass/*!*/ self) {
-            return RubyProcess.GetTimes(self);
-        }
-#endif
         #endregion
 
         #region _dump, _load

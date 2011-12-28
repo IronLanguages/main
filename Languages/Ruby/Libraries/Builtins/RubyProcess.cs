@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !SILVERLIGHT 
+#if FEATURE_PROCESS 
 
 using System;
 using System.Diagnostics;
@@ -30,7 +30,7 @@ namespace IronRuby.Builtins {
     /// <summary>
     /// Process builtin module
     /// </summary>
-    [RubyModule("Process", BuildConfig = "!SILVERLIGHT")]
+    [RubyModule("Process", BuildConfig = "FEATURE_PROCESS")]
     public static class RubyProcess {
         #region Utils
 
@@ -307,7 +307,7 @@ namespace IronRuby.Builtins {
 
         #region Status
 
-        [RubyClass("Status", BuildConfig = "!SILVERLIGHT")]
+        [RubyClass("Status", BuildConfig = "FEATURE_PROCESS")]
         [HideMethod("new", IsStatic = true)]
         public sealed class Status {
             private readonly Process/*!*/ _process;
@@ -479,7 +479,7 @@ namespace IronRuby.Builtins {
 
         internal static readonly object TmsStructClassKey = new object();
         
-        [RubyConstant("Tms", BuildConfig = "!SILVERLIGHT")]
+        [RubyConstant("Tms", BuildConfig = "FEATURE_PROCESS")]
         internal static RubyClass/*!*/ CreateTmsClass(RubyModule/*!*/ module) {
             // class is available for the library even if the constant is removed => store it on the context:
             return (RubyClass)module.Context.GetOrCreateLibraryData(TmsStructClassKey, () => RubyStruct.DefineStruct(
@@ -524,9 +524,9 @@ namespace IronRuby.Builtins {
             tms[3] = value;
         }
 
-        #endregion
+#endregion
     }
 
-    #endregion
+#endregion
 }
 #endif

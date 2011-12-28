@@ -12,6 +12,11 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REMOTING
+using System.Runtime.Serialization.Formatters.Binary;
+#else
+using MarshalByRefObject = System.Object;
+#endif
 
 using System;
 using System.Collections;
@@ -21,7 +26,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Xml;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -34,10 +38,9 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if !SILVERLIGHT
+#if FEATURE_COM
 using ComTypeLibInfo = Microsoft.Scripting.ComInterop.ComTypeLibInfo;
 using ComTypeLibDesc = Microsoft.Scripting.ComInterop.ComTypeLibDesc;
-using System.Runtime.Serialization.Formatters.Binary;
 #endif
 
 [assembly: PythonModule("clr", typeof(IronPython.Runtime.ClrModule))]
@@ -108,7 +111,7 @@ import Namespace.")]
             }
         }
 
-#if !SILVERLIGHT // files, paths
+#if FEATURE_COM
 
         /// <summary>
         /// LoadTypeLibrary(rcw) -> type lib desc
@@ -385,7 +388,7 @@ the assembly object.")]
             AddReference(context, asm);
         }
 
-#if !SILVERLIGHT // files, paths
+#if FEATURE_COM
         private static void AddReferenceByPartialName(CodeContext/*!*/ context, string name) {
             if (name == null) throw new TypeErrorException("Expected string, got NoneType");
             ContractUtils.RequiresNotNull(context, "context");
@@ -793,6 +796,7 @@ import Namespace.")]
             return Converter.Convert(o, toType);
         }
 
+#if FEATURE_FILESYSTEM
         /// <summary>
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
@@ -872,7 +876,7 @@ import Namespace.")]
 
             SavableScriptCode.SaveToAssembly(assemblyName, code.ToArray());
         }
-
+#endif
         /// <summary>
         /// clr.CompileSubclassTypes(assemblyName, *typeDescription)
         /// 
@@ -979,11 +983,7 @@ import Namespace.")]
             }
 
             [Serializable]
-            private class PALHolder
-#if !SILVERLIGHT
- : MarshalByRefObject
-#endif
- {
+            private class PALHolder : MarshalByRefObject {
                 [NonSerialized]
                 private readonly PlatformAdaptationLayer _pal;
 

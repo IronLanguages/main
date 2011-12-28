@@ -26,6 +26,7 @@ using Complex = Microsoft.Scripting.Math.Complex64;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
@@ -50,10 +51,6 @@ using IronPython.Modules;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
-
-#if !SILVERLIGHT
-using System.ComponentModel;
-#endif
 
 namespace IronPython.Runtime.Operations {
 
@@ -1108,7 +1105,7 @@ namespace IronPython.Runtime.Operations {
 
             List res = DynamicHelpers.GetPythonType(o).GetMemberNames(context, o);
 
-#if !SILVERLIGHT
+#if FEATURE_COM
 
             if (o != null && Microsoft.Scripting.ComInterop.ComBinder.IsComObject(o)) {
                 foreach (string name in Microsoft.Scripting.ComInterop.ComBinder.GetDynamicMemberNames(o)) {
@@ -1735,7 +1732,7 @@ namespace IronPython.Runtime.Operations {
             pc.CallWithContext(context, dispHook, value);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_FULL_CONSOLE
         public static void PrintException(CodeContext/*!*/ context, Exception/*!*/ exception, IConsole console) {
             PythonContext pc = PythonContext.GetContext(context);
             PythonTuple exInfo = GetExceptionInfoLocal(context, exception);

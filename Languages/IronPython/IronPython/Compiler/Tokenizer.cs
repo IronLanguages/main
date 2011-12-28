@@ -570,11 +570,11 @@ namespace IronPython.Compiler {
         }
 
         private static bool IsNameStart(int ch) {
-            return Char.IsLetter((char)ch) || ch == '_';
+            return Char.IsLetter(unchecked((char)ch)) || ch == '_';
         }
 
         private static bool IsNamePart(int ch) {
-            return Char.IsLetterOrDigit((char)ch) || ch == '_';
+            return Char.IsLetterOrDigit(unchecked((char)ch)) || ch == '_';
         }
 
         private Token ReadString(char quote, bool isRaw, bool isUni, bool isBytes) {

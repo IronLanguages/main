@@ -51,7 +51,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             RubyModule/*!*/ self, 
             [DefaultProtocol, NotNull]MutableString/*!*/ typeTag) {
             // Add a stub implementation to unblock Rails 3
-            Console.WriteLine("WARNING: YAML.add_builtin_type is not implemented");
+            self.Context.ReportWarning("WARNING: YAML.add_builtin_type is not implemented");
             return null;
         }
 

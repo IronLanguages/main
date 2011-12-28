@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic;
-using System.IO.IsolatedStorage;
 using System.Reflection;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;

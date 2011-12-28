@@ -15,7 +15,7 @@
 // debug only:
 // #define USE_SNIPPETS
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WIN8
 #if !CLR2
 using System.Linq.Expressions;
 #else
@@ -52,7 +52,7 @@ namespace IronRuby.StandardLibrary.Win32API {
     using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    [RubyClass("Win32API", BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("Win32API", BuildConfig = "!SILVERLIGHT && !WIN8")]
     public class Win32API : RubyObject {
         private enum ArgType : byte {
             // ignored
@@ -92,7 +92,7 @@ namespace IronRuby.StandardLibrary.Win32API {
             return this;
         }
 
-        #region Helpers
+#region Helpers
 
         [Emitted]
         public int Version {
@@ -175,9 +175,9 @@ namespace IronRuby.StandardLibrary.Win32API {
             return function;
         }
 
-        #endregion
+#endregion
 
-        #region Ruby API
+#region Ruby API
 
         [RubyConstructor]
         public static Win32API/*!*/ Create(RubyClass/*!*/ self,
@@ -252,9 +252,9 @@ namespace IronRuby.StandardLibrary.Win32API {
             return new RuleGenerator((metaBuilder, args, name) => ((Win32API)args.Target).BuildCall(metaBuilder, args, name));
         }
 
-        #endregion
+#endregion
 
-        #region Dynamic Call
+#region Dynamic Call
 
         private void BuildCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, Int32.MaxValue);
@@ -350,9 +350,9 @@ namespace IronRuby.StandardLibrary.Win32API {
             return RubyExceptions.CreateRuntimeError("wrong number of parameters: expected {0}, got {1}", expected, actual);
         }
 
-        #endregion
+#endregion
 
-        #region Calli Stubs
+#region Calli Stubs
 
         private MethodInfo/*!*/ EmitCalliStub() {
             if (_calliStub != null) {
@@ -432,7 +432,7 @@ namespace IronRuby.StandardLibrary.Win32API {
             }
         }
 
-        #endregion
+#endregion
     }
 }
 #endif

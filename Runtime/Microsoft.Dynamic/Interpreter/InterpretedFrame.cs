@@ -24,13 +24,20 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Interpreter {
+#if WIN8
+    using InterpretedFrameThreadLocal = ThreadLocal<InterpretedFrame>;
+#else
+    using InterpretedFrameThreadLocal = Microsoft.Scripting.Utils.ThreadLocal<InterpretedFrame>;
+#endif
+
     public sealed class InterpretedFrame {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly ThreadLocal<InterpretedFrame> CurrentFrame = new ThreadLocal<InterpretedFrame>();
+        public static readonly InterpretedFrameThreadLocal CurrentFrame = new InterpretedFrameThreadLocal();
 
         internal readonly Interpreter Interpreter;
         internal InterpretedFrame _parent;
@@ -120,6 +127,7 @@ namespace Microsoft.Scripting.Interpreter {
             return method.DeclaringType == typeof(Interpreter) && method.Name == "Run";
         }
 
+#if FEATURE_STACK_TRACE
         /// <summary>
         /// A single interpreted frame might be represented by multiple subsequent Interpreter.Run CLR frames.
         /// This method filters out the duplicate CLR frames.
@@ -138,6 +146,7 @@ namespace Microsoft.Scripting.Interpreter {
                 yield return frame;
             }
         }
+#endif
 
         public IEnumerable<InterpretedFrameInfo> GetStackTraceDebugInfo() {
             var frame = this;
@@ -148,13 +157,13 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         internal void SaveTraceToException(Exception exception) {
-            if (exception.Data[typeof(InterpretedFrameInfo)] == null) {
-                exception.Data[typeof(InterpretedFrameInfo)] = new List<InterpretedFrameInfo>(GetStackTraceDebugInfo()).ToArray();
+            if (exception.GetData(typeof(InterpretedFrameInfo)) == null) {
+                exception.SetData(typeof(InterpretedFrameInfo), new List<InterpretedFrameInfo>(GetStackTraceDebugInfo()).ToArray());
             }
         }
 
         public static InterpretedFrameInfo[] GetExceptionStackTrace(Exception exception) {
-            return exception.Data[typeof(InterpretedFrameInfo)] as InterpretedFrameInfo[];
+            return exception.GetData(typeof(InterpretedFrameInfo)) as InterpretedFrameInfo[];
         }
 
 #if DEBUG
@@ -171,17 +180,29 @@ namespace Microsoft.Scripting.Interpreter {
         }
 #endif
 
-        internal ThreadLocal<InterpretedFrame>.StorageInfo Enter() {
+#if WIN8
+        internal InterpretedFrameThreadLocal Enter() {
+            var currentFrame = InterpretedFrame.CurrentFrame;
+            _parent = currentFrame.Value;
+            currentFrame.Value = this;
+            return currentFrame;
+        }
+
+        internal void Leave(InterpretedFrameThreadLocal currentFrame) {
+            currentFrame.Value = _parent;
+        }
+#else
+        internal InterpretedFrameThreadLocal.StorageInfo Enter() {
             var currentFrame = InterpretedFrame.CurrentFrame.GetStorageInfo();
             _parent = currentFrame.Value;
             currentFrame.Value = this;
             return currentFrame;
         }
 
-        internal void Leave(ThreadLocal<InterpretedFrame>.StorageInfo currentFrame) {
+        internal void Leave(InterpretedFrameThreadLocal.StorageInfo currentFrame) {
             currentFrame.Value = _parent;
         }
-
+#endif
         #endregion
 
         #region Continuations

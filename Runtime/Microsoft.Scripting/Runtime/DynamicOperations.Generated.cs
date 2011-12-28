@@ -44,6 +44,9 @@ namespace Microsoft.Scripting.Runtime {
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private Func<DynamicOperations, CallSiteBinder, object, object[], object> EmitInvoker(int paramCount) {
+#if !FEATURE_REFEMIT
+            throw new NotSupportedException();
+#else
             ParameterExpression dynOps = Expression.Parameter(typeof(DynamicOperations));
             ParameterExpression callInfo = Expression.Parameter(typeof(CallSiteBinder));
             ParameterExpression target = Expression.Parameter(typeof(object));
@@ -57,7 +60,7 @@ namespace Microsoft.Scripting.Runtime {
                 siteArgs[i + 2] = Expression.ArrayIndex(args, Expression.Constant(i));
             }
 
-            var getOrCreateSiteFunc = new Func<CallSiteBinder, CallSite<Func<object>>>(GetOrCreateSite<Func<object>>).Method.GetGenericMethodDefinition();
+            var getOrCreateSiteFunc = new Func<CallSiteBinder, CallSite<Func<object>>>(GetOrCreateSite<Func<object>>).GetMethod().GetGenericMethodDefinition();
             return Expression.Lambda<Func<DynamicOperations, CallSiteBinder, object, object[], object>>(
                 Expression.Block(
                     new[] { site },
@@ -75,6 +78,7 @@ namespace Microsoft.Scripting.Runtime {
                 ),
                 new[] { dynOps, callInfo, target, args }
             ).Compile();
+#endif
         }
 
         private static Func<DynamicOperations, CallSiteBinder, object, object[], object> GetPregeneratedInvoker(int paramCount) {

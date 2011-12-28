@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if FEATURE_SYNC_SOCKETS
 
 using System.Net;
 using System.Net.Sockets;
@@ -23,7 +23,7 @@ using IronRuby.Runtime;
 using System.Runtime.InteropServices;
 
 namespace IronRuby.StandardLibrary.Sockets {
-    [RubyClass("UDPSocket", BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("UDPSocket", BuildConfig = "FEATURE_SYNC_SOCKETS")]
     public class UDPSocket : IPSocket {
         /// <summary>
         /// Creates an uninitialized socket.
@@ -55,7 +55,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             return new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
         }
 
-        #region Public Instance Methods
+#region Public Instance Methods
 
         [RubyMethod("bind")]
         public static int Bind(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 

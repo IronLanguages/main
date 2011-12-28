@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -1183,18 +1184,18 @@ namespace IronRuby.Builtins {
                     if(attributes.TryGetValue("excl", out excludeEnd))
                         attributes.Remove("excl");
 
-                    if (begin is int && end is int && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccRangeTypes1, null))) {
+                    if (begin is int && end is int && IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccRangeTypes1).SingleOrDefault())) {
                         return ci.Invoke(new object[] { begin, end, true.Equals(excludeEnd) });
-                    }  else if (begin is int && end is int && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccRangeSubclassTypes1, null))) {
+                    } else if (begin is int && end is int && IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccRangeSubclassTypes1).SingleOrDefault())) {
                         return ci.Invoke(new object[] { theClass, begin, end, true.Equals(excludeEnd) });
-                    } else if (begin is MutableString && end is MutableString && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccRangeTypes2, null))) {
+                    } else if (begin is MutableString && end is MutableString && IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccRangeTypes2).SingleOrDefault())) {
                         return ci.Invoke(new object[] { begin, end, true.Equals(excludeEnd) });
-                    } else if (begin is int && end is int && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccRangeSubclassTypes2, null))) {
+                    } else if (begin is int && end is int && IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccRangeSubclassTypes2).SingleOrDefault())) {
                         return ci.Invoke(new object[] { theClass, begin, end, true.Equals(excludeEnd) });
                     }
                 }
 
-                if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null))) {
+                if (IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(ReflectionUtils.EmptyTypes).Single())) {
                     return ci.Invoke(new object[0]);
                 }
 
@@ -1222,9 +1223,9 @@ namespace IronRuby.Builtins {
                         mesg = ((MutableString)mesg).ToString();
                }
 
-                if (mesg is string && IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccExceptionTypes1, null))) {
+                if (mesg is string && IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccExceptionTypes1).SingleOrDefault())) {
                     result = (Exception)ci.Invoke(new object[] { mesg });
-                } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null))) {
+                } else if (IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(ReflectionUtils.EmptyTypes).SingleOrDefault())) {
                     result = (Exception)ci.Invoke(new object[0]);
                 } else {
                     string message = String.Format("Class {0} does not have a valid constructor", theClass.Name);
@@ -1251,11 +1252,11 @@ namespace IronRuby.Builtins {
                     result = CreateRange(theClass, baseType, attributes);
                 } else if (typeof(Exception).IsAssignableFrom(baseType)) {
                     result = CreateException(theClass, baseType, attributes);
-                } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null))) {
+                } else if (IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(ReflectionUtils.EmptyTypes).SingleOrDefault())) {
                     result = ci.Invoke(new object[0] { });
-                } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccTypes1, null))) {
+                } else if (IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccTypes1).SingleOrDefault())) {
                     result = ci.Invoke(new object[1] { theClass });
-                } else if (IsAvailable(ci = baseType.GetConstructor(bindingFlags, null, _ccTypes2, null))) {
+                } else if (IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccTypes2).SingleOrDefault())) {
                     result = ci.Invoke(new object[1] { theClass.Context });
                 } else {
                     string message = String.Format("Class {0} does not have a valid constructor", theClass.Name);

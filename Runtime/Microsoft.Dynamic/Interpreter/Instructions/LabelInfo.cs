@@ -21,10 +21,11 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using Microsoft.Scripting.Utils;
-using System.Reflection.Emit;
-using System.Diagnostics;
 
 namespace Microsoft.Scripting.Interpreter {
 

@@ -49,6 +49,6 @@ using IronRuby.Runtime;
 
 
 [assembly: SecurityTransparent]
-#if !CLR2 && !SILVERLIGHT
+#if !CLR2 && !SILVERLIGHT && !WIN8
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

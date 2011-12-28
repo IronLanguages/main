@@ -12,16 +12,18 @@
  *
  *
  * ***************************************************************************/
-#if !CLR2
-using System.Linq.Expressions;
-#else
+
+#if CLR2
 using Microsoft.Scripting.Ast;
+#else
+using System.Linq.Expressions;
 #endif
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Reflection;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -31,7 +33,7 @@ namespace Microsoft.Scripting.Actions {
     /// turn them into a single combo dynamic site.  The combo dynamic site will then run the
     /// individual meta binders and produce the resulting code in a single dynamic site.
     /// </summary>
-    public class ComboActionRewriter : ExpressionVisitor {
+    public class ComboActionRewriter : System.Linq.Expressions.DynamicExpressionVisitor {
         /// <summary>
         /// A reducible node which we use to generate the combo dynamic sites.  Each time we encounter
         /// a dynamic site we replace it with a ComboDynamicSiteExpression.  When a child of a dynamic site
@@ -76,7 +78,7 @@ namespace Microsoft.Scripting.Actions {
 
             public override Expression Reduce() {
                 // we just reduce to a simple DynamicExpression
-                return Expression.Dynamic(
+                return DynamicExpression.Dynamic(
                     new ComboBinder(_binders),
                     Type,
                     _inputs

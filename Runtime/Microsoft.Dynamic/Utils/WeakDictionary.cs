@@ -41,7 +41,7 @@ namespace Microsoft.Scripting.Utils {
         IDictionary<object, TValue> dict = new Dictionary<object, TValue>(comparer);
         int version, cleanupVersion;
 
-#if SILVERLIGHT // GC
+#if SILVERLIGHT || WIN8 // GC
         WeakReference cleanupGC = new WeakReference(new object());
 #else
         int cleanupGC = 0;
@@ -127,9 +127,11 @@ namespace Microsoft.Scripting.Utils {
                 // WeakReferences can become zero only during the GC.
 
                 bool garbage_collected;
-#if SILVERLIGHT // GC.CollectionCount
+#if SILVERLIGHT || WIN8 // GC.CollectionCount
                 garbage_collected = !cleanupGC.IsAlive;
-                if (garbage_collected) cleanupGC = new WeakReference(new object());
+                if (garbage_collected) {
+                    cleanupGC = new WeakReference(new object());
+                }
 #else
                 int currentGC = GC.CollectionCount(0);
                 garbage_collected = currentGC != cleanupGC;
@@ -249,7 +251,7 @@ namespace Microsoft.Scripting.Utils {
         public WeakObject(object obj) {
             // CF throws doesn't support long weak references (NotSuportedException is thrown)
             weakReference = new WeakReference(obj, !PlatformAdaptationLayer.IsCompactFramework);
-            hashCode = (obj == null) ? 0 : RuntimeHelpers.GetHashCode(obj);
+            hashCode = (obj == null) ? 0 : ReferenceEqualityComparer<object>.Instance.GetHashCode(obj);
         }
 
         public object Target {
@@ -293,7 +295,7 @@ namespace Microsoft.Scripting.Utils {
             if (wobj != null)
                 return wobj.GetHashCode();
 
-            return (obj == null) ? 0 : RuntimeHelpers.GetHashCode(obj);
+            return (obj == null) ? 0 : ReferenceEqualityComparer<object>.Instance.GetHashCode(obj);
         }
     }
 

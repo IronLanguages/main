@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using System;
+#if FEATURE_REMOTING
 using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
+using System;
 using System.Runtime.Serialization;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -75,7 +80,7 @@ namespace Microsoft.Scripting.Hosting.Providers {
         public static ScriptScope CreateScriptScope(ScriptEngine engine, Scope scope) {
             ContractUtils.RequiresNotNull(engine, "engine");
             ContractUtils.RequiresNotNull(scope, "scope");
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
             ContractUtils.Requires(!RemotingServices.IsTransparentProxy(engine), "engine", "The engine cannot be a transparent proxy");
 #endif
             return new ScriptScope(engine, scope);

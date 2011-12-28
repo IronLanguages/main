@@ -47,7 +47,7 @@ namespace Microsoft.Scripting {
         }
 
         private static string ReadString(string name) {
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8
             return null;
 #else
             try {

@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-
 #if !CLR2
 using System.Linq.Expressions;
 #else
@@ -29,6 +28,7 @@ using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Runtime {
     public static class ExceptionHelpers {
+#if FEATURE_STACK_TRACE
         private const string prevStackTraces = "PreviousStackTraces";
 
         /// <summary>
@@ -70,5 +70,10 @@ namespace Microsoft.Scripting.Runtime {
             traces = e.Data[prevStackTraces] as List<StackTrace>;
             return traces != null;
         }        
+#else
+        public static Exception UpdateForRethrow(Exception rethrow) {
+            return rethrow;
+        }
+#endif
     }
 }

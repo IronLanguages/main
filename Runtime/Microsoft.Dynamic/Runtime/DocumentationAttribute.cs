@@ -20,7 +20,7 @@ namespace Microsoft.Scripting.Runtime {
     /// Provides a mechanism for providing documentation stored in an assembly as metadata.  
     /// 
     /// Applying this attribute will enable documentation to be provided to the user at run-time
-    /// even if XML Docuementation files are unavailable.
+    /// even if XML Documentation files are unavailable.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class DocumentationAttribute : Attribute {

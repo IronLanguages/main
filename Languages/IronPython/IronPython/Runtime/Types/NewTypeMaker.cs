@@ -115,7 +115,7 @@ namespace IronPython.Runtime.Types {
 
             AssemblyGen ag = new AssemblyGen(new AssemblyName(assemblyName), ".", ".dll", false);
             TypeBuilder tb = ag.DefinePublicType(_constructorTypeName, typeof(object), true);
-            tb.SetCustomAttribute(typeof(PythonCachedTypeInfoAttribute).GetConstructor(Type.EmptyTypes), new byte[0]);
+            tb.SetCustomAttribute(new CustomAttributeBuilder(typeof(PythonCachedTypeInfoAttribute).GetConstructor(Type.EmptyTypes), new object[0]));
 
             MethodBuilder mb = tb.DefineMethod(_constructorMethodName, MethodAttributes.Public | MethodAttributes.Static, typeof(CachedNewTypeInfo[]), Type.EmptyTypes);
             ILGenerator ilg = mb.GetILGenerator();
@@ -608,18 +608,20 @@ namespace IronPython.Runtime.Types {
                 Label noOverride = il.DefineLabel();
                 Label retNull = il.DefineLabel();
 
+                var valueProperty = typeof(ThreadLocal<bool>).GetDeclaredProperty("Value");
+
                 // check if the we're recursing (this enables the user to refer to self
                 // during GetMetaObject calls)
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldfld, _explicitMO);
-                il.EmitPropertyGet(typeof(ThreadLocal<bool>), "Value");
+                il.EmitPropertyGet(valueProperty);
                 il.Emit(OpCodes.Brtrue, ipyImpl);
 
                 // we're not recursing, set the flag...
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldfld, _explicitMO);
                 il.Emit(OpCodes.Ldc_I4_1);
-                il.EmitPropertySet(typeof(ThreadLocal<bool>), "Value");
+                il.EmitPropertySet(valueProperty);
 
                 il.BeginExceptionBlock();
 
@@ -655,7 +657,7 @@ namespace IronPython.Runtime.Types {
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldfld, _explicitMO);
                 il.Emit(OpCodes.Ldc_I4_0);
-                il.EmitPropertySet(typeof(ThreadLocal<bool>), "Value");
+                il.EmitPropertySet(typeof(ThreadLocal<bool>).GetDeclaredProperty("Value"));
 
                 il.EndExceptionBlock();
 
@@ -813,23 +815,21 @@ namespace IronPython.Runtime.Types {
             // we need to create public helper methods that expose them. These methods are
             // used by the IDynamicMetaObjectProvider implementation (in MetaUserObject)
 
-            FieldInfo[] fields = _baseType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-            foreach (FieldInfo fi in fields) {
+            foreach (FieldInfo fi in  _baseType.GetInheritedFields(flattenHierarchy: true)) {
                 if (!fi.IsProtected()) {
                     continue;
                 }
 
                 List<string> fieldAccessorNames = new List<string>();
 
-                PropertyBuilder pb = _tg.DefineProperty(fi.Name, PropertyAttributes.None, fi.FieldType, Type.EmptyTypes);
+                PropertyBuilder pb = _tg.DefineProperty(fi.Name, PropertyAttributes.None, fi.FieldType, ReflectionUtils.EmptyTypes);
                 MethodAttributes methodAttrs = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName;
                 if (fi.IsStatic) {
                     methodAttrs |= MethodAttributes.Static;
                 }
 
                 MethodBuilder method;
-                method = _tg.DefineMethod(FieldGetterPrefix + fi.Name, methodAttrs,
-                                          fi.FieldType, Type.EmptyTypes);
+                method = _tg.DefineMethod(FieldGetterPrefix + fi.Name, methodAttrs, fi.FieldType, ReflectionUtils.EmptyTypes);
                 ILGen il = new ILGen(method.GetILGenerator());
                 if (!fi.IsStatic) {
                     il.EmitLoadArg(0);
@@ -839,7 +839,7 @@ namespace IronPython.Runtime.Types {
                     // literal fields need to be inlined directly in here... We use GetRawConstant
                     // which will work even in partial trust if the constant is protected.
                     object value = fi.GetRawConstantValue();
-                    switch (Type.GetTypeCode(fi.FieldType)) {
+                    switch (fi.FieldType.GetTypeCode()) {
                         case TypeCode.Boolean:
                             if ((bool)value) {
                                 il.Emit(OpCodes.Ldc_I4_1);
@@ -1393,7 +1393,11 @@ namespace IronPython.Runtime.Types {
             return new ILGen(builder.GetILGenerator());
         }
 
+#if WIN8 // TODO: what is ReservedMask?
+        private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | (MethodAttributes)0xD000;
+#else
         private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
+#endif
 
         private ILGen DefineMethodOverride(MethodAttributes extra, Type type, string name, out MethodInfo decl, out MethodBuilder impl) {
             decl = type.GetMethod(name);
@@ -1468,7 +1472,7 @@ namespace IronPython.Runtime.Types {
             // Emit the site invoke
             //
             il.EmitFieldGet(site);
-            FieldInfo target = siteType.GetField("Target");
+            FieldInfo target = siteType.GetDeclaredField("Target");
             il.EmitFieldGet(target);
             il.EmitFieldGet(site);
 
@@ -1784,7 +1788,7 @@ namespace IronPython.Runtime.Types {
         private readonly int _index;
 
         private ReturnFixer(LocalBuilder reference, ParameterInfo parameter, int index) {
-            Debug.Assert(reference.LocalType.IsGenericType && reference.LocalType.GetGenericTypeDefinition() == typeof(StrongBox<>));
+            Debug.Assert(reference.LocalType.IsGenericType() && reference.LocalType.GetGenericTypeDefinition() == typeof(StrongBox<>));
             Debug.Assert(parameter.ParameterType.IsByRef);
 
             _parameter = parameter;
@@ -1795,7 +1799,7 @@ namespace IronPython.Runtime.Types {
         public void FixReturn(ILGen il) {
             il.EmitLoadArg(_index);
             il.Emit(OpCodes.Ldloc, _reference);
-            il.EmitFieldGet(_reference.LocalType.GetField("Value"));
+            il.EmitFieldGet(_reference.LocalType.GetDeclaredField("Value"));
             il.EmitStoreValueIndirect(_parameter.ParameterType.GetElementType());
         }
 

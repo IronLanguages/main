@@ -96,7 +96,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         internal override DynamicMetaObject Call(OverloadResolverFactory resolverFactory, ActionBinder binder, params DynamicMetaObject[] arguments) {
-            if (Method.IsPublic && Method.DeclaringType.IsVisible) {
+            if (Method.IsPublic && Method.DeclaringType.IsVisible()) {
                 return binder.MakeCallExpression(resolverFactory, Method, arguments);
             }
 

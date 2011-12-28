@@ -15,6 +15,7 @@
 
 using System;
 using Microsoft.Contracts;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions {
     public class NestedTypeTracker : TypeTracker {
@@ -38,7 +39,7 @@ namespace Microsoft.Scripting.Actions {
 
         public override bool IsPublic {
             get {
-                return _type.IsPublic;
+                return _type.IsPublic();
             }
         }
 
@@ -47,7 +48,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public override bool IsGenericType {
-            get { return _type.IsGenericType; }
+            get { return _type.IsGenericType(); }
         }
 
         [Confined]
