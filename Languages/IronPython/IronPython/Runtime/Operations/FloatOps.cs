@@ -48,33 +48,32 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, object x) {
-            if (cls == TypeCache.Double) {
-                if (x is string) {
-                    return ParseFloat((string)x);
-                } else if (x is Extensible<string>) {
-                    object res;
-                    if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__float__", out res)) {
-                        return res;
-                    }
-                    return ParseFloat(((Extensible<string>)x).Value);
-                } else if (x is char) {
-                    return ParseFloat(ScriptingRuntimeHelpers.CharToString((char)x));
+            object value = null;
+            if (x is string) {
+                value = ParseFloat((string)x);
+            } else if (x is Extensible<string>) {
+                if (!PythonTypeOps.TryInvokeUnaryOperator(context, x, "__float__", out value)) {
+                    value = ParseFloat(((Extensible<string>)x).Value);
                 }
-
-                if (x is Complex) {
-                    throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
-                }
-
+            } else if (x is char) {
+                value = ParseFloat(ScriptingRuntimeHelpers.CharToString((char)x));
+            } else if (x is Complex) {
+                throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
+            } else {
                 object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, "__float__"));
                 if (d is double) {
-                    return d;
+                    value = d;
                 } else if (d is Extensible<double>) {
-                    return ((Extensible<double>)d).Value;
+                    value = ((Extensible<double>)d).Value;
+                } else {
+                    throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(d));
                 }
+            }
 
-                throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(d));
+            if (cls == TypeCache.Double) {
+                return value;
             } else {
-                return cls.CreateInstance(context, x);
+                return cls.CreateInstance(context, value);
             }
         }
 
@@ -91,7 +90,7 @@ namespace IronPython.Runtime.Operations {
                 return ParseFloat(s.MakeString());
             }
 
-            return cls.CreateInstance(context, s);
+            return cls.CreateInstance(context, ParseFloat(s.MakeString()));
         }
 
         public static PythonTuple as_integer_ratio(double self) {
@@ -108,7 +107,7 @@ namespace IronPython.Runtime.Operations {
             }
             return PythonTuple.MakeTuple((BigInteger)self, dem);
         }
-        
+
         private static char[] _whitespace = new[] { ' ', '\t', '\n', '\f', '\v', '\r' };
 
         [ClassMethod, StaticExtensionMethod]
@@ -116,7 +115,7 @@ namespace IronPython.Runtime.Operations {
             if (String.IsNullOrEmpty(self)) {
                 throw PythonOps.ValueError("expected non empty string");
             }
-            
+
             self = self.Trim(_whitespace);
 
             // look for inf, infinity, nan, etc...
@@ -216,7 +215,7 @@ namespace IronPython.Runtime.Operations {
 
             int highBit = finalBits.GetBitCount();
             // minus 1 because we'll discard the high bit as it's implicit
-            int finalExponent = highBit - decimalPointBit - 1;  
+            int finalExponent = highBit - decimalPointBit - 1;
 
             while (finalExponent < -1023) {
                 // if we have a number with a very negative exponent
@@ -264,7 +263,7 @@ namespace IronPython.Runtime.Operations {
                                 // we overflowed and we're a denormalized number == 0.  Increase the exponent making us a normalized
                                 // number.  Don't adjust the bits because we're now gaining an implicit 1 bit.
                                 finalExponent++;
-                            } 
+                            }
                         }
 
                         rounded = true;
@@ -791,7 +790,7 @@ namespace IronPython.Runtime.Operations {
                 return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
             } else {
                 // Always pass isZero=false so that -0.0 shows up
-                return spec.AlignNumericText(digits, false, Double.IsNaN(self) ?  true : Sign(self) > 0);
+                return spec.AlignNumericText(digits, false, Double.IsNaN(self) ? true : Sign(self) > 0);
             }
         }
 
