@@ -56,28 +56,8 @@ namespace IronPython.Hosting {
         /// because it is intended to be outputted through the Python I/O system.
         /// </summary>
         public static string GetLogoDisplay() {
-            return GetVersionString() +
+            return PythonContext.GetVersionString() +
                    "\nType \"help\", \"copyright\", \"credits\" or \"license\" for more information.\n";
-        }
-
-        private static string/*!*/ VersionString {
-            get {
-                return GetVersionString();                    
-            }
-        }
-
-        private static string GetVersionString() {
-
-            return String.Format("{0}{3} ({1}) on .NET {2}",
-                                PythonContext.IronPythonDisplayName,
-                                PythonContext.GetPythonVersion().ToString(),
-                                Environment.Version,
-#if DEBUG
-                                " DEBUG"
-#else
-                                ""
-#endif
-                                );
         }
 
         private int GetEffectiveExitCode(SystemExitException/*!*/ e) {
@@ -245,9 +225,7 @@ namespace IronPython.Hosting {
 #endif
         }
 
-        private string InitializeModules() {
-            string version = VersionString;
-
+        private void InitializeModules() {
             string executable = "";
             string prefix = "";
 #if !SILVERLIGHT // paths     
@@ -258,8 +236,7 @@ namespace IronPython.Hosting {
                 prefix = Path.GetDirectoryName(executable);
             }
 #endif
-            PythonContext.SetHostVariables(prefix, executable, version);
-            return version;
+            PythonContext.SetHostVariables(prefix, executable, null);
         }
 
         /// <summary>
@@ -331,7 +308,7 @@ namespace IronPython.Hosting {
                     return PythonOps.ToString(context, value);
                 }
 
-                return "";
+                return ">>> ";
             }
         }
 
@@ -344,10 +321,10 @@ namespace IronPython.Hosting {
                     return PythonOps.ToString(context, value);
                 }
 
-                return "";
+                return "... ";
             }
         }
-
+        
         private void RunStartup() {
             if (Options.IgnoreEnvironmentVariables)
                 return;

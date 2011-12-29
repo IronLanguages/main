@@ -171,8 +171,58 @@ the initial output buffer size.")]
             [DefaultParameterValue(MAX_WBITS)]int wbits,
             [DefaultParameterValue(DEFAULTALLOC)]int bufsize)
         {
-            byte[] input = data.ToArray();
+            var bytes = Decompress(data.ToArray(), wbits, bufsize);
+            return PythonAsciiEncoding.Instance.GetString(bytes, 0, bytes.Length);
+        }
 
+        [Documentation(@"decompressobj([wbits]) -- Return a decompressor object.
+
+Optional arg wbits is the window buffer size.")]
+        public static Decompress decompressobj([DefaultParameterValue(MAX_WBITS)]int wbits)
+        {
+            return new Decompress(wbits);
+        }
+
+        [SpecialName]
+        public static void PerformModuleReload(PythonContext context, PythonDictionary dict)
+        {
+            error = context.EnsureModuleException("zlib.error", PythonExceptions.Exception, dict, "error", "zlib");
+        }
+
+        public static PythonType error;
+        internal static Exception MakeError(params object[] args)
+        {
+            return PythonOps.CreateThrowable(error, args);
+        }
+
+        internal static Exception zlib_error(ZStream zst, int err, string msg)
+        {
+            string zmsg = zst.msg;
+            if(zmsg == null)
+            {
+                switch(err)
+                {
+                    case Z_BUF_ERROR:
+                        zmsg = "incomplete or truncated stream";
+                        break;
+                    case Z_STREAM_ERROR:
+                        zmsg = "inconsistent stream state";
+                        break;
+                    case Z_DATA_ERROR:
+                        zmsg = "invalid input data";
+                        break;
+                }
+            }
+
+            if(zmsg == null)
+                return MakeError(string.Format("Error {0} {1}", err, msg));
+            else
+                return MakeError(string.Format("Error {0} {1}: {2}", err, msg, zmsg));
+        }
+
+        [PythonHidden]
+        internal static byte[] Decompress(byte[] input, int wbits=MAX_WBITS, int bufsize=DEFAULTALLOC) 
+        {
             byte[] outputBuffer = new byte[bufsize];
             byte[] output = new byte[bufsize];
             int outputOffset = 0;
@@ -234,52 +284,7 @@ the initial output buffer size.")]
             Array.Copy(outputBuffer, 0, output, outputOffset, outputBuffer.Length - zst.avail_out);
             outputOffset += outputBuffer.Length - zst.avail_out;
 
-            return PythonAsciiEncoding.Instance.GetString(output, 0, outputOffset);
-        }
-
-        [Documentation(@"decompressobj([wbits]) -- Return a decompressor object.
-
-Optional arg wbits is the window buffer size.")]
-        public static Decompress decompressobj([DefaultParameterValue(MAX_WBITS)]int wbits)
-        {
-            return new Decompress(wbits);
-        }
-
-        [SpecialName]
-        public static void PerformModuleReload(PythonContext context, PythonDictionary dict)
-        {
-            error = context.EnsureModuleException("zlib.error", PythonExceptions.Exception, dict, "error", "zlib");
-        }
-
-        public static PythonType error;
-        internal static Exception MakeError(params object[] args)
-        {
-            return PythonOps.CreateThrowable(error, args);
-        }
-
-        internal static Exception zlib_error(ZStream zst, int err, string msg)
-        {
-            string zmsg = zst.msg;
-            if(zmsg == null)
-            {
-                switch(err)
-                {
-                    case Z_BUF_ERROR:
-                        zmsg = "incomplete or truncated stream";
-                        break;
-                    case Z_STREAM_ERROR:
-                        zmsg = "inconsistent stream state";
-                        break;
-                    case Z_DATA_ERROR:
-                        zmsg = "invalid input data";
-                        break;
-                }
-            }
-
-            if(zmsg == null)
-                return MakeError(string.Format("Error {0} {1}", err, msg));
-            else
-                return MakeError(string.Format("Error {0} {1}: {2}", err, msg, zmsg));
+            return output.Take(outputOffset).ToArray();
         }
     }
 }

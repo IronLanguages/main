@@ -22,7 +22,7 @@ using System.Security;
 // associated with an assembly.
 [assembly: AssemblyTitle("IronPython.Modules")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyConfiguration(BuildInfo.Configuration)]
 [assembly: AssemblyProduct("IronPython.Modules")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

@@ -30,8 +30,13 @@ class FileTests(unittest.TestCase):
         f = os.open(test_support.TESTFN, os.O_CREAT|os.O_RDWR)
         os.close(f)
         self.assertTrue(os.access(test_support.TESTFN, os.W_OK))
+<<<<<<< HEAD
     
     @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/7267")
+=======
+
+    @unittest.skipIf(sys.platform == 'cli', 'IronPython has no os.dup')
+>>>>>>> add5aa5... A bunch of work to get the test suite running smoothly.
     def test_closerange(self):
         first = os.open(test_support.TESTFN, os.O_CREAT|os.O_RDWR)
         # We must allocate two consecutive file descriptors, otherwise
@@ -80,7 +85,8 @@ class TemporaryFileTests(unittest.TestCase):
         self.assertFalse(os.path.exists(name),
                     "file already exists for temporary file")
         # make sure we can create the file
-        open(name, "w")
+        with open(name, "w"):
+            pass
         self.files.append(name)
 
     def test_tempnam(self):

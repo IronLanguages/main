@@ -9,7 +9,7 @@
             Copyright (c) Microsoft Corporation.  All rights reserved.
             
             The use and distribution terms for this software are covered by the
-            Common Public License 1.0 (http://opensource.org/licenses/cpl.php)
+            Common Public License 1.0 (http://opensource.org/licenses/cpl1.0.php)
             which can be found in the file CPL.TXT at the root of this distribution.
             By using this software in any fashion, you are agreeing to be bound by
             the terms of this license.
@@ -25,7 +25,7 @@
     <xs:element name="Wix">
         <xs:annotation><xs:documentation>
             This is the top-level container element for every wxs file.  Among the possible children,
-            the Bundle, Product, Module, Patch, and PatchCreation elements are analogous to the main function in a C program.
+            the Product, Module, Patch, and PatchCreation elements are analogous to the main function in a C program.
             There can only be one of these present when linking occurs.  Product compiles into an msi file,
             Module compiles into an msm file, PatchCreation compiles into a pcp file.  The Fragment element
             is an atomic unit which ultimately links into either a Product, Module, or PatchCreation.  The
@@ -35,7 +35,6 @@
             <xs:choice minOccurs="0">
                 <xs:sequence>
                     <xs:choice minOccurs="0">
-                        <xs:element ref="Bundle"/>
                         <xs:element ref="Product"/>
                         <xs:element ref="Module"/>
                         <xs:element ref="Patch"/>
@@ -68,468 +67,10 @@
         </xs:complexType>
     </xs:element>
 
-    <xs:element name="Bundle">
-        <xs:annotation>
-            <xs:documentation>The root element for creating bundled packages.</xs:documentation>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="UX" minOccurs="1" maxOccurs="1"/>
-                <xs:element ref="Chain" minOccurs="1" maxOccurs="1"/>
-                <xs:element ref="Container"/>
-                <xs:element ref="ContainerRef"/>
-                <xs:element ref="LayoutDirectory"/>
-                <xs:element ref="LayoutDirectoryRef"/>
-                <xs:element ref="Variable"/>
-                <xs:any namespace="##other" processContents="lax">
-                    <xs:annotation>
-                        <xs:documentation>
-                            Extensibility point in the WiX XML Schema.  Schema extensions can register additional
-                            elements at this point in the schema.
-                        </xs:documentation>
-                    </xs:annotation>
-                </xs:any>
-            </xs:choice>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="UX">
-        <xs:annotation>
-            <xs:documentation>Contains all the relevant information about the setup UI.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Bundle" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Fragment" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="Payload"/>
-                <xs:element ref="PayloadGroupRef"/>
-            </xs:choice>
-            <xs:attribute name="SourceFile" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>The entry point of the UX.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="Name" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>The destination path and file name for this UX payload. The default is the source file name. Use this attribute to rename the UX entry point or extract it into a subfolder.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="Chain">
-        <xs:annotation>
-            <xs:documentation>Contains the chain of packages to install.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Bundle" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="MsiPackage"/>
-                <xs:element ref="MspPackage"/>
-                <xs:element ref="MsuPackage"/>
-                <xs:element ref="ExePackage"/>
-                <xs:element ref="PackageGroupRef"/>
-            </xs:choice>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="MsiPackage">
-        <xs:annotation>
-            <xs:documentation>Describes a single msi package to install.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Chain" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="PackageGroup" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="MsiProperty"/>
-                <xs:element ref="Payload"/>
-                <xs:element ref="PayloadGroupRef"/>
-                <xs:any namespace="##other" processContents="lax">
-                    <xs:annotation>
-                        <xs:documentation>
-                            Extensibility point in the WiX XML Schema.  Schema extensions can register additional
-                            elements at this point in the schema.  The extension's
-                            <html:code><html:nobr>CompilerExtension.ParseElement()</html:nobr></html:code>
-                            method will be called with the package identifier as the first value in
-                            <html:code>contextValues</html:code>.
-                        </xs:documentation>
-                    </xs:annotation>
-                </xs:any>
-            </xs:choice>
-            <xs:attributeGroup ref="ChainPackageCommonAttributes" />
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="MspPackage">
-        <xs:annotation>
-            <xs:documentation>Describes a single msp package to install.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Chain" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="PackageGroup" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="Payload"/>
-                <xs:element ref="PayloadGroupRef"/>
-                <xs:any namespace="##other" processContents="lax">
-                    <xs:annotation>
-                        <xs:documentation>
-                            Extensibility point in the WiX XML Schema.  Schema extensions can register additional
-                            elements at this point in the schema.  The extension's
-                            <html:code><html:nobr>CompilerExtension.ParseElement()</html:nobr></html:code>
-                            method will be called with the package identifier as the first value in
-                            <html:code>contextValues</html:code>.
-                        </xs:documentation>
-                    </xs:annotation>
-                </xs:any>
-            </xs:choice>
-            <xs:attributeGroup ref="ChainPackageCommonAttributes" />
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="MsuPackage">
-        <xs:annotation>
-            <xs:documentation>Describes a single msu package to install.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Chain" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="PackageGroup" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="Payload"/>
-                <xs:element ref="PayloadGroupRef"/>
-                <xs:any namespace="##other" processContents="lax">
-                    <xs:annotation>
-                        <xs:documentation>
-                            Extensibility point in the WiX XML Schema.  Schema extensions can register additional
-                            elements at this point in the schema.  The extension's
-                            <html:code><html:nobr>CompilerExtension.ParseElement()</html:nobr></html:code>
-                            method will be called with the package identifier as the first value in
-                            <html:code>contextValues</html:code>.
-                        </xs:documentation>
-                    </xs:annotation>
-                </xs:any>
-            </xs:choice>
-            <xs:attributeGroup ref="ChainPackageCommonAttributes" />
-        </xs:complexType>
-    </xs:element>
-    
-    <xs:element name="ExePackage">
-        <xs:annotation>
-            <xs:documentation>Describes a single exe package to install.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Chain" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="PackageGroup" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="Payload"/>
-                <xs:element ref="PayloadGroupRef"/>
-                <xs:any namespace="##other" processContents="lax">
-                    <xs:annotation>
-                        <xs:documentation>
-                            Extensibility point in the WiX XML Schema.  Schema extensions can register additional
-                            elements at this point in the schema.  The extension's
-                            <html:code><html:nobr>CompilerExtension.ParseElement()</html:nobr></html:code>
-                            method will be called with the package identifier as the first value in
-                            <html:code>contextValues</html:code>.
-                        </xs:documentation>
-                    </xs:annotation>
-                </xs:any>
-            </xs:choice>
-            <xs:attributeGroup ref="ChainPackageCommonAttributes" />
-            <xs:attribute name="InstallCommand" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>The command-line arguments to specify to indicate an install.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="RepairCommand" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>The command-line arguments to specify to indicate a repair.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="UninstallCommand" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>The command-line arguments to specify to indicate an uninstall.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:attributeGroup name="ChainPackageCommonAttributes">
-        <xs:attribute name="SourceFile" type="xs:string" use="required">
-            <xs:annotation>
-                <xs:documentation>Location of the package.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="Name" type="xs:string">
-            <xs:annotation>
-                <xs:documentation>The destination path and file name for this chain payload. The default is the source file name. Use this attribute to rename the chain entry point or extract it into a subfolder.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="DownloadUrl" type="xs:string">
-            <xs:annotation>
-                <xs:documentation>The URL to use to download the package.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="Id" type="xs:string">
-            <xs:annotation>
-                <xs:documentation>Identifier for this package, for ordering and cross-referencing.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="After" type="xs:string">
-            <xs:annotation>
-                <xs:documentation>The identifier of another package that this one should be installed after.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="InstallCondition" type="xs:string">
-            <xs:annotation>
-                <xs:documentation>A condition to evaluate before installing the package. The package will only be installed if the condition evaluates to true.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="Cache" type="YesNoType">
-            <xs:annotation>
-                <xs:documentation>Whether to cache the package.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="CacheId" type="xs:string">
-            <xs:annotation>
-                <xs:documentation>The identifier to use when caching the package.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="Vital" type="YesNoType">
-            <xs:annotation>
-                <xs:documentation>Whether the package should be considered "vital".</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:anyAttribute namespace="##other" processContents="lax">
-            <xs:annotation>
-                <xs:documentation>
-                    Extensibility point in the WiX XML Schema.  Schema extensions can register additional
-                    attributes at this point in the schema.  The extension's
-                    <html:code><html:nobr>CompilerExtension.ParseAttribute()</html:nobr></html:code>
-                    method will be called with the package identifier in
-                    <html:code><html:nobr>contextValues["PackageId"]</html:nobr></html:code>.
-                </xs:documentation>
-            </xs:annotation>
-        </xs:anyAttribute>
-    </xs:attributeGroup>
-
-    <xs:element name="PackageGroup">
-        <xs:annotation>
-            <xs:documentation>Describes a package group to a bootstrapper.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Fragment"/>
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="MsiPackage"/>
-                <xs:element ref="MspPackage"/>
-                <xs:element ref="MsuPackage"/>
-                <xs:element ref="ExePackage"/>
-                <xs:element ref="PackageGroupRef"/>
-            </xs:choice>
-            <xs:attribute name="Id" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>Identifier for package group.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="PackageGroupRef">
-        <xs:annotation>
-            <xs:documentation>Create a reference to PackageGroup element that exists inside a Bundle or Fragment element.</xs:documentation>
-            <xs:appinfo>
-                <xse:seeAlso ref="PackageGroup"/>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Chain" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="PackageGroup" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:attribute name="Id" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>The identifier of the PackageGroup element to reference.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="After" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>The identifier of a package that this group should be installed after.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="MsiProperty">
-        <xs:annotation>
-            <xs:documentation>Allows an MSI property to be set based on the value of a burn engine expression.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="MsiPackage" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:attribute name="Name" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>The name of the MSI property to set.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="Value" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>The value to set the property to. This string is evaluated by the burn engine and can be as simple as a burn engine variable reference or as complex as a full expression.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="Variable">
-        <xs:annotation>
-            <xs:documentation>Describes a burn engine variable to define.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Bundle" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:attribute name="Name" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>The name for the variable.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="Value" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>Starting value for the variable.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="Type">
-                <xs:annotation>
-                    <xs:documentation>Type of the variable, inferred from the value if not specified.</xs:documentation>
-                </xs:annotation>
-                <xs:simpleType>
-                    <xs:restriction base="xs:string">
-                        <xs:enumeration value="string" />
-                        <xs:enumeration value="numeric" />
-                        <xs:enumeration value="version" />
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="Container">
-        <xs:annotation>
-            <xs:documentation>Representation of a file that contains one or more files.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Bundle" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="Payload"/>
-            </xs:choice>
-            <xs:attribute name="Name" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>The destination path and file name for this container.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="ContainerRef">
-        <xs:annotation>
-            <xs:documentation>Create a reference to an existing Container element.</xs:documentation>
-            <xs:appinfo>
-                <xse:seeAlso ref="Container"/>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Bundle" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:attribute name="Id" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>The identifier of Container element to reference.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="Payload">
-        <xs:annotation>
-            <xs:documentation>Describes a payload to a bootstrapper.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="UX" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Container"/>
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:attribute name="SourceFile" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>Location of the source file.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="Name" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>The destination path and file name for this payload. The default is the source file name.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="DownloadUrl" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>The URL to use to download the package.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="PayloadGroup">
-        <xs:annotation>
-            <xs:documentation>Describes a payload group to a bootstrapper.</xs:documentation>
-            <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Fragment"/>
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element ref="Payload"/>
-                <xs:element ref="PayloadGroupRef"/>
-            </xs:choice>
-            <xs:attribute name="Id" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>Identifier for payload group.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="PayloadGroupRef">
-        <xs:annotation>
-            <xs:documentation>Create a reference to PayloadGroup element that exists inside a Bundle or Fragment element.</xs:documentation>
-            <xs:appinfo>
-                <xse:seeAlso ref="PayloadGroup"/>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="UX" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="PayloadGroup" />
-            </xs:appinfo>
-        </xs:annotation>
-        <xs:complexType>
-            <xs:attribute name="Id" type="xs:string" use="required">
-                <xs:annotation>
-                    <xs:documentation>The identifier of the PayloadGroup element to reference.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-        </xs:complexType>
-    </xs:element>
-
     <xs:element name="LayoutDirectory">
         <xs:annotation>
             <xs:documentation>Representation of layout directory.</xs:documentation>
             <xs:appinfo>
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Bundle" />
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Fragment" />
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Product" />
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Module" />
@@ -563,7 +104,6 @@
             <xs:appinfo>
                 <xse:seeAlso ref="LayoutDirectory"/>
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="LayoutDirectory" />
-                <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Bundle" />
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Fragment" />
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Product" />
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Module" />
@@ -587,7 +127,7 @@
 
     <xs:element name="LayoutFile">
         <xs:annotation>
-            <xs:documentation>Describes the payload to a bootstrapper.</xs:documentation>
+            <xs:documentation>Describes the file to copy into the final layout.</xs:documentation>
             <xs:appinfo>
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="LayoutDirectory" />
                 <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="LayoutDirectoryRef"/>
@@ -960,7 +500,6 @@
                 <xs:element ref="Component"/>
                 <xs:element ref="ComponentGroup"/>
                 <xs:element ref="Condition"/>
-                <xs:element ref="Container"/>
                 <xs:element ref="CustomAction"/>
                 <xs:element ref="CustomActionRef"/>
                 <xs:element ref="CustomTable"/>
@@ -977,11 +516,9 @@
                 <xs:element ref="LayoutDirectory"/>
                 <xs:element ref="LayoutDirectoryRef"/>
                 <xs:element ref="Media"/>
-                <xs:element ref="PackageGroup"/>
                 <xs:element ref="PackageCertificates"/>
                 <xs:element ref="PatchCertificates"/>
                 <xs:element ref="PatchFamily"/>
-                <xs:element ref="PayloadGroup"/>
                 <xs:element ref="Property"/>
                 <xs:element ref="PropertyRef"/>
                 <xs:element ref="SetDirectory"/>
@@ -2508,7 +2045,7 @@
                 <xse:msiRef table="Signature" href="http://msdn.microsoft.com/library/aa371853.aspx"/>
                 <xse:howtoRef href="check_the_version_number.htm">How To: Check the version number of a file during installation</xse:howtoRef>
                 <xse:remarks>
-                    <html:a>When the parent DirectorySearch/@Depth attribute is greater than 1, the FileSearch/@Id attribute must be absent or the same as the parent DirectorySearch/@Id attribute value, unless the parent DirectorySearch/@AssignToProperty attribute value is 'yes'.</html:a>
+                    <html:a>When the parent DirectorySearch/@Depth attribute is greater than 0, the FileSearch/@Id attribute must be absent or the same as the parent DirectorySearch/@Id attribute value, unless the parent DirectorySearch/@AssignToProperty attribute value is 'yes'.</html:a>
                 </xse:remarks>
             </xs:appinfo>
             <xs:documentation>Searches for file and assigns to fullpath value of parent Property</xs:documentation>
@@ -3855,6 +3392,8 @@
                             <xs:annotation>
                                 <xs:documentation>
                                     Creates the key, if absent, when the parent component is installed then remove the key with all its values and subkeys when the parent component is uninstalled.
+                                    Note that this value is useful only if your program creates additional values or subkeys under this key and you want an uninstall to remove them. MSI already
+                                    removes all values and subkeys that it creates, so this option just adds additional overhead to uninstall.
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:enumeration>
@@ -6245,8 +5784,13 @@
                 <xs:annotation>
                     <xs:documentation>
                         If this attribute's value is set to 'yes', then the Directory of this Component is used
-                        as the KeyPath.  To set a Registry key or File as the KeyPath of a component, set the
-                        KeyPath attribute to 'yes' on one of those child elements.
+                        as the KeyPath. To set a Registry value or File as the KeyPath of a component, set the
+                        KeyPath attribute to 'yes' on one of those child elements. If KeyPath is not set to 'yes' for the
+                        Component or for a child Registry value or File, WiX will look at the child elements under the
+                        Component in sequential order and try to automatically select one of them as a key path. Allowing
+                        WiX to automatically select a key path can be dangerous because adding or removing child elements
+                        under the Component can inadvertantly cause the key path to change, which can lead to
+                        installation problems.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
@@ -6795,7 +6339,7 @@
                         <xs:annotation><xs:documentation>The installer sets the REMOVE property to features specified in this column.  The features to be removed can be determined at run time.  The Formatted string entered in this field must evaluate to a comma-delimited list of feature names.  For example: [Feature1],[Feature2],[Feature3].  No features are removed if the field contains formatted text that evaluates to an empty string.  The installer sets REMOVE=ALL only if the Remove field is empty.</xs:documentation></xs:annotation>
                     </xs:attribute>
                     <xs:attribute name="Property" type="xs:string" use="required">
-                        <xs:annotation><xs:documentation>When the FindRelatedProducts action detects a related product installed on the system, it appends the product code to the property specified in this field.  Windows Installer documentation for the <html:a href="http://msdn2.microsoft.com/library/aa372379.aspx" target="_blank">Upgrade table</html:a> states that the property specified in this field must be a public property and must be added to the <html:a href="http://msdn2.microsoft.com/library/aa371571.aspx" target="_blank">SecureCustomProperties</html:a> property.  WiX automatically appends the property specified in this field to the SecureCustomProperties property when creating an MSI.  Each UpgradeVersion must have a unique Property value.  After the FindRelatedProducts action is run, the value of this property is a list product codes, separated by semicolons (;), detected on the system.</xs:documentation></xs:annotation>
+                        <xs:annotation><xs:documentation>When the FindRelatedProducts action detects a related product installed on the system, it appends the product code to the property specified in this field.  Windows Installer documentation for the <html:a href="http://msdn2.microsoft.com/library/aa372379.aspx" target="_blank">Upgrade table</html:a> states that the property specified in this field must be a public property and must be added to the <html:a href="http://msdn2.microsoft.com/library/aa371571.aspx" target="_blank">SecureCustomProperties</html:a> property.  WiX automatically appends the property specified in this field to the SecureCustomProperties property when creating an MSI.  Each UpgradeVersion must have a unique Property value.  After the FindRelatedProducts action is run, the value of this property is a list of product codes, separated by semicolons (;), detected on the system.</xs:documentation></xs:annotation>
                     </xs:attribute>
                     <xs:attribute name="MigrateFeatures" type="YesNoType">
                         <xs:annotation><xs:documentation>Set to "yes" to migrate feature states from upgraded products by enabling the logic in the MigrateFeatureStates action.</xs:documentation></xs:annotation>
@@ -8855,6 +8399,9 @@
                 <xs:element ref="InstallFiles">
                     <xs:annotation><xs:documentation>Copies files specified in the File table from the source directory to the destination directory.</xs:documentation></xs:annotation>
                 </xs:element>
+                <xs:element ref="PatchFiles">
+                    <xs:annotation><xs:documentation>Queries the Patch table to determine which patches are to be applied.</xs:documentation></xs:annotation>
+                </xs:element>
                 <xs:element ref="InstallFinalize">
                     <xs:annotation><xs:documentation>Marks the end of a sequence of actions that change the system.</xs:documentation></xs:annotation>
                 </xs:element>
@@ -9043,7 +8590,7 @@
                     <xs:attribute name="BinarySource" type="xs:string">
                         <xs:annotation>
                             <xs:documentation>
-                                Reference to the Binary element that contains the chainer executeable. Mutually exclusive with
+                                Reference to the Binary element that contains the chainer executable. Mutually exclusive with
                                 the FileSource and PropertySource attributes.
                             </xs:documentation>
                         </xs:annotation>
@@ -9051,7 +8598,7 @@
                     <xs:attribute name="FileSource" type="xs:string">
                         <xs:annotation>
                             <xs:documentation>
-                                Reference to the File element that is the chainer executeable. Mutually exclusive with
+                                Reference to the File element that is the chainer executable. Mutually exclusive with
                                 the BinarySource and PropertySource attributes.
                             </xs:documentation>
                         </xs:annotation>
@@ -9059,7 +8606,7 @@
                     <xs:attribute name="PropertySource" type="xs:string">
                         <xs:annotation>
                             <xs:documentation>
-                                Reference to a Property that resolves to the full path to the chainer executeable. Mutually exclusive with
+                                Reference to a Property that resolves to the full path to the chainer executable. Mutually exclusive with
                                 the BinarySource and FileSource attributes.
                             </xs:documentation>
                         </xs:annotation>
@@ -10388,24 +9935,53 @@
                 Simplifies authoring for major upgrades, including support for preventing downgrades.
 
                 The parent Product element must have valid UpgradeCode and Version attributes.
+
+                When the FindRelatedProducts action detects a related product installed on the system, 
+                it appends the product code to the property named WIX_UPGRADE_DETECTED. After the 
+                FindRelatedProducts action is run, the value of the WIX_UPGRADE_DETECTED property is a 
+                list of product codes, separated by semicolons (;), detected on the system.
             </xs:documentation>
       <xs:appinfo>
         <xse:parent namespace="http://schemas.microsoft.com/wix/2006/wi" ref="Product" />
       </xs:appinfo>
     </xs:annotation>
     <xs:complexType>
-      <xs:attribute name="AllowDowngrades" type="YesNoType">
-        <xs:annotation>
-          <xs:documentation>
-                        When set to no (the default), products with lower version numbers are blocked from
-                        installing when a product with a higher version is installed; the DowngradeErrorMessage
-                        attribute must also be specified.
+        <xs:attribute name="AllowDowngrades" type="YesNoType">
+            <xs:annotation>
+                <xs:documentation>
+                    When set to no (the default), products with lower version numbers are blocked from
+                    installing when a product with a higher version is installed; the DowngradeErrorMessage
+                    attribute must also be specified.
 
-                        When set to yes, any version can be installed over any other version.
-                    </xs:documentation>
-        </xs:annotation>
+                    When set to yes, any version can be installed over any other version.
+                </xs:documentation>
+            </xs:annotation>
         </xs:attribute>
-          <xs:attribute name="Disallow" type="YesNoType">
+        <xs:attribute name="AllowSameVersionUpgrades" type="YesNoType">
+            <xs:annotation>
+                <xs:documentation>
+                    When set to no (the default), installing a product with the same version and upgrade code
+                    (but different product code) is allowed and treated by MSI as two products. When set to yes,
+                    WiX sets the msidbUpgradeAttributesVersionMaxInclusive attribute, which tells MSI to treat
+                    a product with the same version as a major upgrade.
+
+                    This is useful when two product versions differ only in the fourth version field. MSI
+                    specifically ignores that field when comparing product versions, so two products that
+                    differ only in the fourth version field are the same product and need this attribute set to
+                    yes to be detected.
+
+                    Note that because MSI ignores the fourth product version field, setting this attribute to
+                    yes also allows downgrades when the first three product version fields are identical. 
+                    For example, product version 1.0.0.1 will "upgrade" 1.0.0.2998 because they're seen as the
+                    same version (1.0.0). That could reintroduce serious bugs so the safest choice is to change 
+                    the first three version fields and omit this attribute to get the default of no.
+
+                    This attribute cannot be "yes" when AllowDowngrades is also "yes" -- AllowDowngrades
+                    already allows two products with the same version number to upgrade each other.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="Disallow" type="YesNoType">
               <xs:annotation>
                   <xs:documentation>
                       When set to yes, products with higer version numbers are blocked from

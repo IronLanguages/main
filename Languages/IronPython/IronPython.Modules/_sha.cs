@@ -108,11 +108,6 @@ namespace IronPython.Modules {
                 update(initialBytes);
             }
 
-            internal sha(PythonBuffer initialBuffer) {
-                _bytes = new byte[0];
-                update(initialBuffer);
-            }
-
             [Documentation("update(string) -> None (update digest with string data)")]
             public void update(object newData) {
                 update(Converter.ConvertToString(newData).MakeByteArray());
@@ -123,7 +118,7 @@ namespace IronPython.Modules {
             }
 
             public void update(PythonBuffer newBytes) {
-                update(newBytes.ToString().MakeByteArray());
+                update((IList<byte>)newBytes);
             }
 
             public void update(ByteArray newBytes) {

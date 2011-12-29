@@ -38,9 +38,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 <Project
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003"
   InitialTargets="_CheckForInvalidConfigurationAndPlatform;
-                  _CheckRequiredProperties;
-                  _SetDefaultPathValues">
-
+                  _CheckRequiredProperties">
   <!--
   //////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,14 +56,14 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 
   <!-- These properties can be overridden to support non-default installations. -->
   <PropertyGroup>
-    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.5\Wix.targets</WixTargetsPath>
-    <WixTasksPath Condition=" '$(WixTasksPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.5\WixTasks.dll</WixTasksPath>
-    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.5\Wix.targets</WixTargetsPath>
-    <WixTasksPath Condition=" '$(WixTasksPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.5\WixTasks.dll</WixTasksPath>
-    <LuxTargetsPath Condition=" '$(LuxTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.5\Lux.targets</LuxTargetsPath>
-    <LuxTasksPath Condition=" '$(LuxTasksPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.5\LuxTasks.dll</LuxTasksPath>
-    <LuxTargetsPath Condition=" '$(LuxTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.5\Lux.targets</LuxTargetsPath>
-    <LuxTasksPath Condition=" '$(LuxTasksPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.5\LuxTasks.dll</LuxTasksPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTasksPath Condition=" '$(WixTasksPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\WixTasks.dll</WixTasksPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTasksPath Condition=" '$(WixTasksPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\WixTasks.dll</WixTasksPath>
+    <LuxTargetsPath Condition=" '$(LuxTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Lux.targets</LuxTargetsPath>
+    <LuxTasksPath Condition=" '$(LuxTasksPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\LuxTasks.dll</LuxTasksPath>
+    <LuxTargetsPath Condition=" '$(LuxTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Lux.targets</LuxTargetsPath>
+    <LuxTasksPath Condition=" '$(LuxTasksPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\LuxTasks.dll</LuxTasksPath>
   </PropertyGroup>
 
   <!-- This makes the project files a dependency of all targets so that things rebuild if they change -->
@@ -92,7 +90,6 @@ Copyright (c) Microsoft Corporation. All rights reserved.
   <UsingTask TaskName="Lit" AssemblyFile="$(WixTasksPath)" />
   <UsingTask TaskName="Light" AssemblyFile="$(WixTasksPath)" />
   <UsingTask TaskName="Torch" AssemblyFile="$(WixTasksPath)" />
-  <UsingTask TaskName="ReadRegistry" AssemblyFile="$(WixTasksPath)" />
 
   <!-- These tasks are extensions for harvesting WiX source code from other sources. -->
   <UsingTask TaskName="HeatFile" AssemblyFile="$(WixTasksPath)" />
@@ -113,6 +110,11 @@ Copyright (c) Microsoft Corporation. All rights reserved.
   <UsingTask TaskName="GetLooseFileList" AssemblyFile="$(WixTasksPath)" />
   <UsingTask TaskName="RefreshGeneratedFile" AssemblyFile="$(WixTasksPath)"/>
   <UsingTask TaskName="RefreshBundleGeneratedFile" AssemblyFile="$(WixTasksPath)"/>
+
+  <!-- WiX tools are 32bit EXEs, so run them out-of-proc when MSBuild is not 32bit. -->
+  <PropertyGroup>
+    <RunWixToolsOutOfProc Condition=" '$(PROCESSOR_ARCHITECTURE)'!='x86' ">true</RunWixToolsOutOfProc>
+  </PropertyGroup>
 
   <!--
   Several properties must be set in the main project file, before using this .targets file.
@@ -184,6 +186,12 @@ Copyright (c) Microsoft Corporation. All rights reserved.
       <IntermediateAssembly Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"/>
       <FinalDocFile Include="@(DocFileItem->'$(OutDir)%(Filename)%(Extension)')"/>
   </ItemGroup>
+
+  <PropertyGroup>
+    <WixToolPath Condition=" '$(WixToolPath)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Installer XML\3.5@InstallRoot)</WixToolPath>
+    <WixToolPath Condition=" '$(WixToolPath)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows Installer XML\3.5@InstallRoot)</WixToolPath>
+    <WixExtDir Condition=" '$(WixExtDir)' == ''">$(WixToolPath)</WixExtDir>
+  </PropertyGroup>
 
   <!--
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -330,6 +338,8 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     <HarvestProjectsSuppressFragments Condition=" '$(HarvestProjectsSuppressFragments)' == '' ">$(HarvestSuppressFragments)</HarvestProjectsSuppressFragments>
     <HarvestProjectsSuppressUniqueIds Condition=" '$(HarvestProjectsSuppressUniqueIds)' == '' ">$(HarvestSuppressUniqueIds)</HarvestProjectsSuppressUniqueIds>
     <HarvestProjectsTransforms Condition=" '$(HarvestProjectsTransforms)' == '' ">$(HarvestTransforms)</HarvestProjectsTransforms>
+    <HarvestProjectsGeneratedFile Condition=" '$(HarvestProjectsGeneratedFile)' == '' and '$(OutputType)' != 'Bundle' ">$(IntermediateOutputPath)Product.Generated.wxs</HarvestProjectsGeneratedFile>
+    <HarvestProjectsGeneratedFile Condition=" '$(HarvestProjectsGeneratedFile)' == '' and '$(OutputType)' == 'Bundle' ">$(IntermediateOutputPath)Bundle.Generated.wxs</HarvestProjectsGeneratedFile>
   </PropertyGroup>
 
   <!-- Default HarvestDirectory properties -->
@@ -403,6 +413,15 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     <LinkerVerboseOutput Condition=" '$(LinkerVerboseOutput)' == '' ">$(VerboseOutput)</LinkerVerboseOutput>
   </PropertyGroup>
 
+  <!-- Default Inscribe properties. -->
+  <PropertyGroup>
+    <InscribeNoLogo Condition=" '$(InscribeNoLogo)' == '' ">$(NoLogo)</InscribeNoLogo>
+    <InscribeSuppressAllWarnings Condition=" '$(InscribeSuppressAllWarnings)' == '' ">$(SuppressAllWarnings)</InscribeSuppressAllWarnings>
+    <InscribeSuppressSpecificWarnings Condition=" '$(InscribeSuppressSpecificWarnings)' == '' ">$(SuppressSpecificWarnings)</InscribeSuppressSpecificWarnings>
+    <InscribeTreatWarningsAsErrors Condition=" '$(InscribeTreatWarningsAsErrors)' == '' ">$(TreatWarningsAsErrors)</InscribeTreatWarningsAsErrors>
+    <InscribeTreatSpecificWarningsAsErrors Condition=" '$(InscribeTreatSpecificWarningsAsErrors)' == '' ">$(TreatSpecificWarningsAsErrors)</InscribeTreatSpecificWarningsAsErrors>
+    <InscribeVerboseOutput Condition=" '$(InscribeVerboseOutput)' == '' ">$(VerboseOutput)</InscribeVerboseOutput>
+  </PropertyGroup>
   <!--
   //////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -473,76 +492,6 @@ Copyright (c) Microsoft Corporation. All rights reserved.
       Code="WIXTARGETS103"
       Condition="'$(OutDir)' != '' and !HasTrailingSlash('$(OutDir)')"
       Text="The OutDir property must end with a trailing slash." />
-
-  </Target>
-
-  <!--
-  ==================================================================================================
-  _SetDefaultPathValues
-
-    Gets the default values of some paths from the registry.
-
-    [OUT]
-    $(WixExtDir) - Default Wix Extension Directory
-    $(WixToolPath) - Default Wix Tool install folder
-  ==================================================================================================
-  -->
-  <PropertyGroup>
-    <WixInstallRegKey>SOFTWARE\Microsoft\Windows Installer XML\3.5</WixInstallRegKey>
-    <WixInstallRegKeyWow64>SOFTWARE\Wow6432Node\Microsoft\Windows Installer XML\3.5</WixInstallRegKeyWow64>
-  </PropertyGroup>
-  <Target
-    Name="_SetDefaultPathValues">
-
-    <ReadRegistry
-      Hive="LocalMachine"
-      Key="$(WixInstallRegKey)"
-      Name="InstallRoot"
-      FailIfMissing="false"
-      Condition=" '$(WixExtDir)' == '' ">
-
-      <Output TaskParameter="Value" PropertyName="WixExtDir" />
-    </ReadRegistry>
-
-    <ReadRegistry
-      Hive="LocalMachine"
-      Key="$(WixInstallRegKey)"
-      Name="InstallRoot"
-      FailIfMissing="false"
-      Condition=" '$(WixToolPath)' == '' ">
-
-      <Output TaskParameter="Value" PropertyName="WixToolPath" />
-    </ReadRegistry>
-
-    <!-- If we didn't find the first registry paths, assume we're in a 64bit process. -->
-    <!-- WiX tools are 32bit EXEs, so run them out-of-proc when MSBuild is 64bit. -->
-    <CreateProperty Value="true" Condition=" '$(WixToolPath)' == '' ">
-      <Output TaskParameter="Value" PropertyName="RunWixToolsOutOfProc" />
-    </CreateProperty>
-
-    <ReadRegistry
-      Hive="LocalMachine"
-      Key="$(WixInstallRegKeyWow64)"
-      Name="InstallRoot"
-      FailIfMissing="false"
-      Condition=" '$(WixExtDir)' == '' ">
-
-      <Output TaskParameter="Value" PropertyName="WixExtDir" />
-    </ReadRegistry>
-
-    <ReadRegistry
-      Hive="LocalMachine"
-      Key="$(WixInstallRegKeyWow64)"
-      Name="InstallRoot"
-      FailIfMissing="false"
-      Condition=" '$(WixToolPath)' == '' ">
-
-      <Output TaskParameter="Value" PropertyName="WixToolPath" />
-    </ReadRegistry>
-    
-    <CreateProperty Value="$(WixToolPath)" Condition=" '$(WixExtDir)' == '' ">
-      <Output TaskParameter="Value" PropertyName="WixExtDir" />
-    </CreateProperty>
 
   </Target>
 
@@ -874,13 +823,6 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     Name="AssignProjectConfiguration"
     Condition=" '@(ProjectReference)' != '' ">
 
-    <!-- Set VC project references to get both native target path and the regular target path. Only one will have a value. -->
-    <ItemGroup>
-      <ProjectReference>
-        <Targets Condition="'%(Extension)' == '.vcxproj'">GetNativeTargetPath;%(ProjectReference.Targets)</Targets>
-      </ProjectReference>
-    </ItemGroup>
-
     <!-- Assign a project configuration to each project reference if we're building a solution file. -->
     <AssignProjectConfiguration
       ProjectReferences="@(ProjectReference)"
@@ -979,7 +921,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     -->
     <MSBuild
       Projects="@(_MSBuildProjectReferenceExistent)"
-      Targets="%(_MSBuildProjectReferenceExistent.Targets);GetTargetPath"
+      Targets="GetTargetPath"
       Properties="%(_MSBuildProjectReferenceExistent.SetConfiguration); %(_MSBuildProjectReferenceExistent.SetPlatform)"
       Condition="'@(_ProjectReferenceWithConfiguration)'!='' and ('$(BuildingInsideVisualStudio)' == 'true' or '$(BuildProjectReferences)' != 'true') and '@(_MSBuildProjectReferenceExistent)' != ''"
       ContinueOnError="!$(BuildingProject)">
@@ -1005,6 +947,21 @@ Copyright (c) Microsoft Corporation. All rights reserved.
       <Output TaskParameter="TargetOutputs" ItemName="_MSBuildResolvedProjectReferencePaths" />
     </MSBuild>
 
+    <!-- 
+    VC project references must build GetNativeTargetPath because neither GetTargetPath nor the return of the default build
+    target return the output for a native C++ project. 
+    This will not produce duplicate paths because GetNativeTargetPath is mutually exclusive with GetTargetPath & Build TargetOutputs. 
+    -->
+    <MSBuild
+      Projects="@(_MSBuildProjectReferenceExistent)"
+      Targets="GetNativeTargetPath"
+      Properties="%(_MSBuildProjectReferenceExistent.SetConfiguration); %(_MSBuildProjectReferenceExistent.SetPlatform)"
+      Condition="'@(_ProjectReferenceWithConfiguration)'!='' and '%(_MSBuildProjectReferenceExistent.Extension)' == '.vcxproj'">
+
+      <Output TaskParameter="TargetOutputs" ItemName="_ResolvedProjectReferencePaths" />
+      <Output TaskParameter="TargetOutputs" ItemName="_MSBuildResolvedProjectReferencePaths" />
+    </MSBuild>
+    
     <!-- Issue a warning for each non-existent project. -->
     <Warning
       Text="The referenced project '%(_MSBuildProjectReferenceNonexistent.Identity)' does not exist."
@@ -1412,21 +1369,27 @@ Copyright (c) Microsoft Corporation. All rights reserved.
   -->
   <Target
     Name="ConvertReferences"
-    Condition=" ('$(OutputType)' == 'Package' or '$(OutputType)' == 'PatchCreation' or '$(OutputType)' == 'Module' )">
+    Condition=" ('$(OutputType)' == 'Package' or '$(OutputType)' == 'PatchCreation' or '$(OutputType)' == 'Module' ) ">
 
     <ItemGroup>
-        <_HeatProjectReference Include="@(_MSBuildProjectReferenceExistent)" Condition=" '%(_MSBuildProjectReferenceExistent.DoNotHarvest)' == '' ">
-            <DirectoryIds>%(_MSBuildProjectReferenceExistent.RefTargetDir)</DirectoryIds>
-            <ProjectOutputGroups>Binaries;Symbols;Sources;Content;Satellites;Documents</ProjectOutputGroups>
-            <ProjectName>%(_MSBuildProjectReferenceExistent.Name)</ProjectName>
-            <HeatOutput>$(IntermediateOutputPath)_%(_MSBuildProjectReferenceExistent.Filename).wxs</HeatOutput>
-        </_HeatProjectReference>
-        <GeneratedFiles Include="@(Compile)" Condition=" '%(Compile.GenerateComponentGroups)' != '' " />
+      <_HeatProjectReference Include="@(_MSBuildProjectReferenceExistent)" Condition=" '%(_MSBuildProjectReferenceExistent.DoNotHarvest)' == '' ">
+        <DirectoryIds>%(_MSBuildProjectReferenceExistent.RefTargetDir)</DirectoryIds>
+        <ProjectOutputGroups>Binaries;Symbols;Sources;Content;Satellites;Documents</ProjectOutputGroups>
+        <ProjectName>%(_MSBuildProjectReferenceExistent.Name)</ProjectName>
+        <HeatOutput>$(IntermediateOutputPath)_%(_MSBuildProjectReferenceExistent.Filename).wxs</HeatOutput>
+      </_HeatProjectReference>
+      <HeatProject Include="@(_HeatProjectReference)" />
     </ItemGroup>
 
-    <CreateItem Include="@(_HeatProjectReference)">
-      <Output TaskParameter="Include" ItemName="HeatProject" />
-    </CreateItem>
+    <Error
+      Text="The following files are deprecated and should be removed from your project(s): @(Compile->'%(Identity)', ', ')"
+      Condition=" '%(Compile.GenerateComponentGroups)' != '' " />
+
+    <ItemGroup>
+      <!-- Unconditionally generate Compile items so they are always linked in. -->
+      <Compile Include="$(HarvestProjectsGeneratedFile)" />
+      <_GeneratedFiles Include="$(HarvestProjectsGeneratedFile)" />
+    </ItemGroup>
 
   </Target>
 
@@ -1441,14 +1404,24 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     Name="ConvertBundleReferences"
     Condition=" ('$(OutputType)' == 'Bundle')">
 
-    <CreateItem Include="@(_MSBuildProjectReferenceExistent)" Condition=" '%(_MSBuildProjectReferenceExistent.DoNotHarvest)' == '' " AdditionalMetadata="ProjectOutputGroups=Binaries%3BSymbols%3BSources%3BContent%3BSatellites%3BDocuments;GenerateType=payloadgroup;HeatOutput=$(IntermediateOutputPath)_%(_MSBuildProjectReferenceExistent.Filename).wxs">
-      <Output TaskParameter="Include" ItemName="HeatProject" />
-      <Output TaskParameter="Include" ItemName="_HeatProjectReference" />
-    </CreateItem>
+    <ItemGroup>
+      <_HeatProjectReference Include="@(_MSBuildProjectReferenceExistent)" Condition=" '%(_MSBuildProjectReferenceExistent.DoNotHarvest)' == '' ">
+        <ProjectOutputGroups>Binaries;Symbols;Sources;Content;Satellites;Documents</ProjectOutputGroups>
+        <GenerateType>payloadgroup</GenerateType>
+        <HeatOutput>$(IntermediateOutputPath)_%(_MSBuildProjectReferenceExistent.Filename).wxs</HeatOutput>
+      </_HeatProjectReference>
+      <HeatProject Include="@(_HeatProjectReference)" />
+    </ItemGroup>
 
-    <CreateItem Include="@(Compile)" Condition=" '%(Compile.GenerateComponentGroups)' != '' ">
-        <Output TaskParameter="Include" ItemName="GeneratedFiles" />
-    </CreateItem>
+    <Error
+      Text="The following files are deprecated and should be removed from your project(s): @(Compile->'%(Identity)', ', ')"
+      Condition=" '%(Compile.GenerateComponentGroups)' != '' " />
+
+    <ItemGroup>
+      <!-- Unconditionally generate Compile items so they are always linked in. -->
+      <Compile Include="$(HarvestProjectsGeneratedFile)" />
+      <_GeneratedFiles Include="$(HarvestProjectsGeneratedFile)" />
+    </ItemGroup>
 
   </Target>
 
@@ -1543,14 +1516,16 @@ Copyright (c) Microsoft Corporation. All rights reserved.
       SuppressFragments="$(HarvestProjectsSuppressFragments)"
       SuppressUniqueIds="$(HarvestProjectsSuppressUniqueIds)"
       Transforms="%(_AllHeatProjects.Transforms)"
-      Project="@(_AllHeatProjects)"
+      Project="%(_AllHeatProjects.FullPath)"
       ProjectOutputGroups="%(_AllHeatProjects.ProjectOutputGroups)"
       GenerateType="%(_AllHeatProjects.GenerateType)"
       DirectoryIds="%(_AllHeatProjects.DirectoryIds)"
       ProjectName="%(_AllHeatProjects.ProjectName)"
       Configuration="%(_AllHeatProjects.Configuration)"
       Platform="%(_AllHeatProjects.Platform)"
-      RunAsSeparateProcess="$(RunWixToolsOutOfProc)">
+      RunAsSeparateProcess="$(RunWixToolsOutOfProc)"
+      GenerateWixVariables="$(HarvestProjectsGenerateWixVariables)"
+      AdditionalOptions="$(HarvestProjectsAdditionalOptions)">
 
       <Output TaskParameter="OutputFile" ItemName="Compile" />
       <Output TaskParameter="OutputFile" ItemName="FileWrites" />
@@ -1636,7 +1611,8 @@ Copyright (c) Microsoft Corporation. All rights reserved.
       RunAsSeparateProcess="$(RunWixToolsOutOfProc)" 
       SuppressCom="%(HarvestDirectory.SuppressCom)"
       SuppressRootDirectory="%(HarvestDirectory.SuppressRootDirectory)"
-      SuppressRegistry="%(HarvestDirectory.SuppressRegistry)">
+      SuppressRegistry="%(HarvestDirectory.SuppressRegistry)"
+      AdditionalOptions="$(HarvestDirectoryAdditionalOptions)">
 
       <Output TaskParameter="OutputFile" ItemName="Compile" />
       <Output TaskParameter="OutputFile" ItemName="FileWrites" />
@@ -1710,7 +1686,8 @@ Copyright (c) Microsoft Corporation. All rights reserved.
       RunAsSeparateProcess="$(RunWixToolsOutOfProc)" 
       SuppressCom="%(HarvestFile.SuppressCom)"
       SuppressRegistry="%(HarvestFile.SuppressRegistry)"
-      SuppressRootDirectory="%(HarvestFile.SuppressRootDirectory)">
+      SuppressRootDirectory="%(HarvestFile.SuppressRootDirectory)"
+      AdditionalOptions="$(HarvestFileAdditionalOptions)">
 
       <Output TaskParameter="OutputFile" ItemName="Compile" />
       <Output TaskParameter="OutputFile" ItemName="FileWrites" />
@@ -1729,7 +1706,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     @(_MSBuildResolvedProjectReferencePaths) - The list of MSBuildable project references.
 
     [OUT]
-    @(GeneratedFiles) - The generated source file.
+    @(_GeneratedFiles) - The generated source file.
   ================================================================================================
   -->
   <PropertyGroup>
@@ -1738,11 +1715,11 @@ Copyright (c) Microsoft Corporation. All rights reserved.
   <Target Name="RefreshGeneratedFile"
     DependsOnTargets="$(RefreshGeneratedFileDependsOn)"
     Inputs="@(_MSBuildResolvedProjectReferencePaths);@(Compile);$(ProjectPath)"
-    Outputs="@(GeneratedFiles)"
-    Condition=" ('$(OutputType)' == 'Package' or '$(OutputType)' == 'PatchCreation' or '$(OutputType)' == 'Module') and '@(GeneratedFiles)' != '' ">
+    Outputs="@(_GeneratedFiles)"
+    Condition=" ('$(OutputType)' == 'Package' or '$(OutputType)' == 'PatchCreation' or '$(OutputType)' == 'Module') and '@(_GeneratedFiles)' != '' ">
 
     <RefreshGeneratedFile
-      GeneratedFiles="@(GeneratedFiles)"
+      GeneratedFiles="@(_GeneratedFiles)"
       ProjectReferencePaths="@(_MSBuildResolvedProjectReferencePaths)" />
 
   </Target>
@@ -1757,7 +1734,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     @(_MSBuildResolvedProjectReferencePaths) - The list of MSBuildable project references.
 
     [OUT]
-    @(GeneratedFiles) - The generated source file.
+    @(_GeneratedFiles) - The generated source file.
   ================================================================================================
   -->
   <PropertyGroup>
@@ -1766,12 +1743,37 @@ Copyright (c) Microsoft Corporation. All rights reserved.
   <Target Name="RefreshBundleGeneratedFile"
     DependsOnTargets="$(RefreshBundleGeneratedFileDependsOn)"
     Inputs="@(_MSBuildResolvedProjectReferencePaths);@(Compile);$(ProjectPath)"
-    Outputs="@(GeneratedFiles)"
-    Condition=" '$(OutputType)' == 'Bundle' and '@(GeneratedFiles)' != '' ">
+    Outputs="@(_GeneratedFiles)"
+    Condition=" '$(OutputType)' == 'Bundle' and '@(_GeneratedFiles)' != '' ">
 
     <RefreshBundleGeneratedFile
-      GeneratedFiles="@(GeneratedFiles)"
+      GeneratedFiles="@(_GeneratedFiles)"
       ProjectReferencePaths="@(_MSBuildResolvedProjectReferencePaths)" />
+
+  </Target>
+
+  <!--
+  ================================================================================================
+  GenerateCompileWithObjectPath
+
+    Generates metadata on the for compile output objects.
+
+  ================================================================================================
+  -->
+  <PropertyGroup>
+    <GenerateCompileWithObjectPathDependsOn></GenerateCompileWithObjectPathDependsOn>
+  </PropertyGroup>
+  <Target Name="GenerateCompileWithObjectPath"
+    Condition=" '@(Compile)' != '' ">
+
+    <ItemGroup>
+      <_CompileWithObjectPath Include="@(Compile)">
+        <!-- If RelativeDir is not rooted and not in IntermediateOutputPath, and ObjectPath is undefined use IntermediateOutputPath\RelativeDir -->
+        <ObjectPath Condition=" '%(RelativeDir)%(FileName)%(Extension)' != '%(FullPath)' AND '%(RelativeDir)%(FileName)%(Extension)' != '$(IntermediateOutputPath)%(FileName)%(Extension)' AND '%(Compile.ObjectPath)' == '' " >$(IntermediateOutputPath)%(RelativeDir)</ObjectPath>
+        <!-- If RelativeDir is rooted or in IntermediateOutputPath, and ObjectPath is undefined use IntermediateOutputPath -->
+        <ObjectPath Condition=" ('%(RelativeDir)%(FileName)%(Extension)' == '%(FullPath)' OR '%(RelativeDir)%(FileName)%(Extension)' == '$(IntermediateOutputPath)%(FileName)%(Extension)') AND '%(Compile.ObjectPath)' == '' " >$(IntermediateOutputPath)</ObjectPath>
+      </_CompileWithObjectPath>
+    </ItemGroup>
 
   </Target>
 
@@ -1793,7 +1795,8 @@ Copyright (c) Microsoft Corporation. All rights reserved.
   <PropertyGroup>
     <CompileDependsOn>
       PrepareForBuild;
-      ResolveWixExtensionReferences
+      ResolveWixExtensionReferences;
+      GenerateCompileWithObjectPath
     </CompileDependsOn>
   </PropertyGroup>
   <Target
@@ -1803,12 +1806,12 @@ Copyright (c) Microsoft Corporation. All rights reserved.
             @(_ResolvedWixExtensionPaths);
             @(_ResolvedProjectReferencePaths);
             $(MSBuildAllProjects)"
-    Outputs="@(Compile -> '$(IntermediateOutputPath)%(Filename)$(IntermediateExt)')"
+    Outputs="@(_CompileWithObjectPath  -> '%(ObjectPath)%(Filename)$(IntermediateExt)')"
     DependsOnTargets="$(CompileDependsOn)"
     Condition=" '@(Compile)' != '' ">
 
     <Candle
-      SourceFiles="@(Compile)"
+      SourceFiles="@(_CompileWithObjectPath)"
       AdditionalOptions="$(CompilerAdditionalOptions)" 
       DefineConstants="$(DefineConstants);$(SolutionDefineConstants);$(ProjectDefineConstants);$(ProjectReferenceDefineConstants)"
       ExtensionDirectory="$(WixExtDir)"
@@ -1821,7 +1824,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
       InstallerPlatform="$(InstallerPlatform)"
       NoLogo="$(CompilerNoLogo)"
       OnlyValidateDocuments="$(OnlyValidateDocuments)" 
-      OutputFile="$(IntermediateOutputPath)"
+      OutputFile="%(_CompileWithObjectPath.ObjectPath)"
       Pedantic="$(Pedantic)"
       ReferencePaths="$(ReferencePaths)"
       RunAsSeparateProcess="$(RunWixToolsOutOfProc)"
@@ -1836,7 +1839,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     </Candle>
 
     <ItemGroup>
-        <CompileObjOutput Include="@(Compile -> '$(IntermediateOutputPath)%(Filename)$(IntermediateExt)')" />
+        <CompileObjOutput Include="@(_CompileWithObjectPath -> '%(ObjectPath)%(Filename)$(IntermediateExt)')" />
     </ItemGroup>
   </Target>
 
@@ -1867,7 +1870,15 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 
     <Insignia
       DatabaseFiles="@(Inscribe)"
-      ToolPath="$(WixToolPath)">
+      ToolPath="$(WixToolPath)"
+      NoLogo="$(InscribeNoLogo)"
+      RunAsSeparateProcess="$(RunWixToolsOutOfProc)"
+      SuppressAllWarnings="$(InscribeSuppressAllWarnings)"
+      SuppressSpecificWarnings="$(InscribeSuppressSpecificWarnings)"
+      TreatWarningsAsErrors="$(InscribeTreatWarningsAsErrors)"
+      TreatSpecificWarningsAsErrors="$(InscribeTreatSpecificWarningsAsErrors)"
+      VerboseOutput="$(InscribeVerboseOutput)"
+      AdditionalOptions="$(InscribeAdditionalOptions)">
     </Insignia>
   </Target>
 
@@ -2106,13 +2117,13 @@ Copyright (c) Microsoft Corporation. All rights reserved.
       WixVariables="$(WixVariables)" />
 
     <GetCabList Database="$(TargetDir)%(CultureGroup.OutputFolder)$(TargetName)$(TargetExt)"
-        Condition="('$(OutputType)' == 'Package' or '$(OutputType)' == 'Module')" >
+        Condition="('$(OutputType)' == 'Package' or '$(OutputType)' == 'Module') and '$(OutputAsXml)' != 'true' " >
       <Output TaskParameter="CabList" PropertyName="OutputCabs" />
       <Output TaskParameter="CabList" ItemName="FileWrites" />
     </GetCabList>
 
     <GetLooseFileList Database="$(TargetDir)%(CultureGroup.OutputFolder)$(TargetName)$(TargetExt)"
-        Condition="('$(OutputType)' == 'Package' or '$(OutputType)' == 'Module')" >
+        Condition="('$(OutputType)' == 'Package' or '$(OutputType)' == 'Module') and '$(OutputAsXml)' != 'true' " >
       <Output TaskParameter="LooseFileList" ItemName="FileWrites" />
     </GetLooseFileList>
 
@@ -2238,17 +2249,12 @@ Copyright (c) Microsoft Corporation. All rights reserved.
     </CreateItem>
 
     <!-- Record the link ouput(s) -->
-    <CreateItem Include="@(TargetOutput)" Condition="Exists('%(FullPath)')">
-      <Output TaskParameter="Include" ItemName="FileWrites" />
+    <!-- Stuff into an itemgroup -->
+    <CreateItem Include="$(TargetPath);$(TargetPdbPath)">
+      <Output TaskParameter="Include" ItemName="_TempTargetOutputs" />
     </CreateItem>
 
-    <!--Stuff into an itemgroup-->
-    <CreateItem Include="$(TargetPdbPath)">
-      <Output TaskParameter="Include" ItemName="_TempTargetPdbPath" />
-    </CreateItem>
-    
-    <!-- Record the wixpdb file(s) generated -->
-    <CreateItem Include="@(_TempTargetPdbPath)" Condition="Exists('%(FullPath)')">
+    <CreateItem Include="@(_TempTargetOutputs)" Condition="Exists('%(FullPath)')">
       <Output TaskParameter="Include" ItemName="FileWrites" />
     </CreateItem>
   </Target>

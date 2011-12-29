@@ -39,14 +39,18 @@ namespace TestRunner
             foreach(var category in categories)
                 testSuiteResults.Add(CreateCategory(category.Name, category.Results));
 
-            testResults.Save(path);
+            using (var w = new StreamWriter(path, false, Encoding.UTF8))
+            {
+                testResults.Save(w);
+            }
         }
 
         XDocument CreateTestResults()
         {
             var now = DateTime.Now;
             
-            return new XDocument(new XElement("test-results",
+            return new XDocument(new XDeclaration("1.0", "UTF-8", "yes"),
+                        new XElement("test-results",
                         new XAttribute("name", Assembly.GetExecutingAssembly().Location),
                         new XAttribute("total", Results.Count),
                         new XAttribute("errors", 0),
@@ -131,13 +135,30 @@ namespace TestRunner
                 if (testResult.IsFailure)
                 {
                     var message = string.Join(Environment.NewLine, testResult.Output);
-                    testCase.Add(new XElement("failure"), new XElement("message", new XCData(message)));
+                    message = string.Join("", message.Where(c => IsLegalXmlChar((int)c)));
+                    testCase.Add(new XElement("failure", new XElement("message", new XCData(message))));
                 }
 
                 results.Add(testCase);
             }
 
             return testSuite;
+        }
+
+        /// <summary>
+        /// Whether a given character is allowed by XML 1.0.
+        /// </summary>
+        public static bool IsLegalXmlChar(int character)
+        {
+            return
+            (
+                 character == 0x9 /* == '\t' == 9   */          ||
+                 character == 0xA /* == '\n' == 10  */          ||
+                 character == 0xD /* == '\r' == 13  */          ||
+                (character >= 0x20 && character <= 0xD7FF) ||
+                (character >= 0xE000 && character <= 0xFFFD) ||
+                (character >= 0x10000 && character <= 0x10FFFF)
+            );
         }
     }
 }

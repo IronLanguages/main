@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <!--<Import Project="CustomBuild.proj" Condition="Exist('CustomBuild.proj')" />-->
+  <Import Project="Versioning.targets" />
+
+  <PropertyGroup>
+    <BaseConfiguration Condition=" '$(BaseConfiguration)' == '' ">Debug</BaseConfiguration>
+    
+    <Solution Condition="'$(Mono)' != 'true'">IronPython.sln</Solution>
+    <Solution Condition="'$(Mono)' == 'true'">IronPython.Mono.sln</Solution>
+
+    <BaseDir>$(MSBuildProjectDirectory)\..</BaseDir>
+    <StageDir>$(BaseDir)\Stage\$(BaseConfiguration)\IronPython-$(DisplayVersion)</StageDir>
+    <PackageDir>$(BaseDir)\Packages\$(BaseConfiguration)\IronPython-$(DisplayVersion)</PackageDir>
+    <UtilDir>$(BaseDir)\Util</UtilDir>
+    <BinDir>$(BaseDir)\bin</BinDir>
+    <ChmDocDir>$(BaseDir)\External.LCA_RESTRICTED\Languages\IronPython\27\Doc</ChmDocDir>
+    
+    <BuildDir>$(BinDir)\$(BaseConfiguration)</BuildDir>
+    <v2BuildDir>$(BinDir)\v2$(BaseConfiguration)</v2BuildDir>
+    <Silverlight4BuildDir>$(BinDir)\Silverlight4$(BaseConfiguration)</Silverlight4BuildDir>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=v2$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <!--<BuildProject Include="$(Solution)">
+      <Properties>Configuration=Silverlight3$(BaseConfiguration)</Properties>
+    </BuildProject>-->
+    <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
+      <Properties>Configuration=Silverlight4$(BaseConfiguration)</Properties>
+    </BuildProject>
+
+    <InstallerProject Include="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj">
+      <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)</Properties>
+    </InstallerProject>
+  </ItemGroup>
+
+  <ItemGroup>
+    <DlrLibs Include="Microsoft.Dynamic.dll" />
+    <DlrLibs Include="Microsoft.Dynamic.xml" />
+    <DlrLibs Include="Microsoft.Scripting.dll" />
+    <DlrLibs Include="Microsoft.Scripting.xml" />
+    <ClrDlrLibs Include="Microsoft.Scripting.Metadata.dll" />
+    <ClrDlrLibs Include="Microsoft.Scripting.Metadata.xml" />
+    <v2DlrLibs Include="Microsoft.Scripting.Core.dll" />
+    <v2DlrLibs Include="Microsoft.Scripting.Core.xml" />
+    <SilverlightDlrLibs Include="Microsoft.Scripting.Silverlight.dll" />
+
+    <IronPythonLibs Include="IronPython.dll" />
+    <IronPythonLibs Include="IronPython.xml" />
+    <IronPythonLibs Include="IronPython.Modules.dll" />
+    <IronPythonLibs Include="IronPython.Modules.xml" />
+    
+    <IronPythonModules Include="DLLs\IronPython.Wpf.dll" Condition="'$(Mono)' != 'true'" />
+    <IronPythonModules Include="DLLs\IronPython.Wpf.xml" Condition="'$(Mono)' != 'true'" />
+    
+    <IronPythonBins Include="ipy.exe" />
+    <IronPythonBins Include="ipy64.exe" />
+    <IronPythonBins Include="ipyw.exe" />
+    <IronPythonBins Include="ipyw64.exe" />
+
+    <SilverlightBins Include="Chiron.exe" />
+    <SilverlightBins Include="Chiron.exe.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SilverlightScriptFiles Include="$(BaseDir)\Hosts\Silverlight\Public\script\*.*" />
+    <SilverlightScriptTemplates Include="$(BaseDir)\Hosts\Silverlight\Public\script\templates\python\**\*.*" />
+
+    <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.html" />
+    <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.rtf" />
+    <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.txt" />
+    <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\Readme.html" />
+
+    <ChmInputFiles Include="$(ChmDocDir)\IronPythonDocs\**\*.*" Condition="'$(OS)' == 'Windows_NT'" />
+    <DocFiles Include="$(BaseDir)\Languages\IronPython\Public\Doc\**\*.*" />
+    <DocFiles Include="$(BuildDir)\IronPython.chm" Condition="'$(OS)' == 'Windows_NT'" />
+    
+    <ToolFiles Include="$(BaseDir)\Languages\IronPython\Public\Tools\**\*.*" />
+    <TutorialFiles Include="$(BaseDir)\Languages\IronPython\Public\Tutorial\**\*.*" />
+  </ItemGroup>
+
+  <Target Name="Build">
+    <MSBuild Projects="@(BuildProject)" Targets="Build" Properties="%(BuildProject.Properties)" />
+  </Target>
+
+  <Target Name="Rebuild">
+    <MSBuild Projects="@(BuildProject)" Targets="Rebuild" Properties="%(BuildProject.Properties)" />
+  </Target>
+
+  <Target Name="Clean">
+    <MSBuild Projects="@(BuildProject)" Targets="Clean" Properties="%(BuildProject.Properties)" />
+    <MSBuild Projects="@(InstallerProject)" Targets="Clean" Condition=" '$(OS)' == 'Windows_NT'" />
+    <RemoveDir Directories="$(ChmDocDir)\Output" Condition="Exists('$(ChmDocDir)\Output')" />
+  </Target>
+
+  <Target Name="StageClean">
+    <RemoveDir Directories="$(StageDir)" />
+  </Target>
+  
+  <Target Name="BuildChm"
+          Condition="'$(OS)' == 'Windows_NT'"
+          Inputs="@(ChmInputFiles)" 
+          Outputs="$(BuildDir)\IronPython.chm">
+    <PropertyGroup>
+      <HtmlHelp>$(MSBuildProgramFiles32)\HTML Help Workshop\hhc.exe</HtmlHelp>
+      <CPython>$(BaseDir)\External.LCA_RESTRICTED\Languages\CPython\27\python.exe</CPython>
+      <CPythonPath>$(BaseDir)\External.LCA_RESTRICTED\Languages\CPython\27\Lib;$(ChmDocDir)</CPythonPath>
+      <OutputHtml>Output\CHtml</OutputHtml>
+    </PropertyGroup>
+    
+    <MakeDir Directories="$(OutputHtml)" Condition="!Exists('$(OutputHtml)')" />
+    
+    <Exec Command='(set PYTHONPATH=$(CPythonPath)) &amp; (set PYDOC_VERSION=$(DisplayVersion)) &amp; "$(CPython)" IronPythonDocs\tools\sphinx-build.py -bhtmlhelp IronPythonDocs\ "$(OutputHtml)"' WorkingDirectory="$(ChmDocDir)" />
+    <Exec Command='"$(HtmlHelp)" "$(OutputHtml)\IronPython.hhp"' WorkingDirectory="$(ChmDocDir)" IgnoreExitCode="true" />
+    
+    <Move SourceFiles="$(ChmDocDir)\$(OutputHtml)\IronPython.chm" DestinationFolder="$(BuildDir)" />
+  </Target>
+
+  <Target Name="Stage" DependsOnTargets="StageClean;Build;BuildChm">
+    <Warning Text="The CHM help file can only be built on Windows machines." Condition="'$(OS)' != 'Windows_NT'" />
+  
+    <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="@(IronPythonBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="@(IronPythonModules->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\DLLs" />
+    <Copy SourceFiles="@(MiscFiles)" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="$(BaseDir)\External.LCA_RESTRICTED\Languages\IronPython\27\LICENSE.txt" DestinationFiles="$(StageDir)\License.StdLib.txt" />
+
+    <!--<MSBuild Projects="$(BaseDir)\Languages\IronPython\StdLib\StdLib.pyproj" Properties="OutputPath=$(StageDir)\Lib" Targets="CopyFilesForZip" />-->
+    <MakeDir Directories="$(StageDir)\Lib" Condition="!Exists('$(StageDir)\Lib')" />
+    <Touch Files="$(StageDir)\Lib\no_std_lib" AlwaysCreate="true" />
+
+    <Copy SourceFiles="@(DocFiles)" DestinationFiles="@(DocFiles->'$(StageDir)\Doc\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(ToolFiles)" DestinationFiles="@(ToolFiles->'$(StageDir)\Tools\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(TutorialFiles)" DestinationFiles="@(TutorialFiles->'$(StageDir)\Tutorial\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Continue to copy the Silverlight files here for compatibility with previous releases. -->
+    <Copy SourceFiles="@(DlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+    <Copy SourceFiles="@(SilverlightBins->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+
+    <Copy SourceFiles="@(SilverlightScriptFiles)" DestinationFiles="@(SilverlightScriptFiles->'$(StageDir)\Silverlight\script\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SilverlightScriptTemplates)" DestinationFiles="@(SilverlightScriptTemplates->'$(StageDir)\Silverlight\script\templates\python\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
+    <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
+
+    <Copy SourceFiles="@(DlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+    <Copy SourceFiles="@(ClrDlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+    <Copy SourceFiles="@(v2DlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+
+    <Copy SourceFiles="@(DlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
+    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
+  </Target>
+  
+  <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+    <!--<Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />-->
+  </Target>
+
+  <Target Name="ZipPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <Exec Command="$(UtilDir)\Misc\zip.exe -9 -r &quot;$(PackageDir)\IronPython-$(DisplayVersion).zip&quot; &quot;IronPython-$(DisplayVersion)&quot;" WorkingDirectory="$(StageDir)\.." />
+  </Target>
+  
+  <Target Name="Installer" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+    <MSBuild Projects="@(InstallerProject)" Targets="Build" />
+  </Target>
+</Project>

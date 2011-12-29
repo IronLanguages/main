@@ -46,7 +46,7 @@ namespace IronPython.Modules {
         // argv is set by PythonContext and only on the initial load
         public static readonly string byteorder = BitConverter.IsLittleEndian ? "little" : "big";
         // builtin_module_names is set by PythonContext and updated on reload
-        public const string copyright = "Copyright (c) Microsoft Corporation. All rights reserved.";
+        public const string copyright = "Copyright (c) IronPython Team";
 
         private static string GetPrefix() {
             string prefix;
@@ -303,7 +303,7 @@ namespace IronPython.Modules {
         // version and version_info are set by PythonContext
         public static PythonTuple subversion = PythonTuple.MakeTuple("IronPython", "", "");
 
-        public const string winver = "3.0";
+        public const string winver = CurrentVersion.Series;
 
         #region Special types
 

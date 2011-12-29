@@ -10,11 +10,7 @@
     <AssemblyName>PyStdLib</AssemblyName>
     <Name>PyStdLib</Name>
     <RootNamespace>PyStdLib</RootNamespace>
-    <StdLibPath>$(SolutionDir)\..\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</StdLibPath>
-    <SccProjectName>%24/DevDiv/Dev11/PU/MQPro/dlr/Languages/IronPython/StdLib</SccProjectName>
-    <SccLocalPath>.</SccLocalPath>
-    <SccAuxPath>http://vstfdevdiv:8080</SccAuxPath>
-    <SccProvider>{4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}</SccProvider>
+    <StdLibPath>$(SolutionDir)..\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</StdLibPath>
   </PropertyGroup>
   <ItemGroup>
     <!-- Begin Generated Project Items -->
@@ -23,6 +19,7 @@
     <Content Include="$(StdLibPath)\antigravity.py" />
     <Content Include="$(StdLibPath)\anydbm.py" />
     <Content Include="$(StdLibPath)\argparse.py" />
+    <Content Include="$(StdLibPath)\ast.py" />
     <Content Include="$(StdLibPath)\asynchat.py" />
     <Content Include="$(StdLibPath)\asyncore.py" />
     <Content Include="$(StdLibPath)\atexit.py" />
@@ -51,6 +48,7 @@
     <Content Include="$(StdLibPath)\Cookie.py" />
     <Content Include="$(StdLibPath)\cookielib.py" />
     <Content Include="$(StdLibPath)\copy.py" />
+    <Content Include="$(StdLibPath)\csv.py" />
     <Content Include="$(StdLibPath)\decimal.py" />
     <Content Include="$(StdLibPath)\difflib.py" />
     <Content Include="$(StdLibPath)\dircache.py" />
@@ -88,7 +86,6 @@
     <Content Include="$(StdLibPath)\inspect.py" />
     <Content Include="$(StdLibPath)\io.py" />
     <Content Include="$(StdLibPath)\keyword.py" />
-    <Content Include="$(StdLibPath)\LICENSE.txt" />
     <Content Include="$(StdLibPath)\linecache.py" />
     <Content Include="$(StdLibPath)\locale.py" />
     <Content Include="$(StdLibPath)\macpath.py" />
@@ -390,6 +387,8 @@
     <Content Include="$(StdLibPath)\json\scanner.py" />
     <Content Include="$(StdLibPath)\json\tool.py" />
     <Content Include="$(StdLibPath)\json\__init__.py" />
+    <Content Include="$(StdLibPath)\lib2to3\btm_matcher.py" />
+    <Content Include="$(StdLibPath)\lib2to3\btm_utils.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixer_base.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixer_util.py" />
     <Content Include="$(StdLibPath)\lib2to3\main.py" />
@@ -398,6 +397,7 @@
     <Content Include="$(StdLibPath)\lib2to3\pytree.py" />
     <Content Include="$(StdLibPath)\lib2to3\refactor.py" />
     <Content Include="$(StdLibPath)\lib2to3\__init__.py" />
+    <Content Include="$(StdLibPath)\lib2to3\__main__.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixes\fix_apply.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixes\fix_basestring.py" />
     <Content Include="$(StdLibPath)\lib2to3\fixes\fix_buffer.py" />
@@ -491,6 +491,7 @@
     <Content Include="$(StdLibPath)\xml\etree\ElementInclude.py" />
     <Content Include="$(StdLibPath)\xml\etree\ElementPath.py" />
     <Content Include="$(StdLibPath)\xml\etree\ElementTree.py" />
+    <Content Include="$(StdLibPath)\xml\etree\SimpleXMLTreeBuilder.py" />
     <Content Include="$(StdLibPath)\xml\etree\__init__.py" />
     <Content Include="$(StdLibPath)\xml\parsers\__init__.py" />
     <Content Include="$(StdLibPath)\xml\sax\handler.py" />
@@ -503,41 +504,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets"/>
 
-  <UsingTask
-    TaskName="CopyStdLib"
-    TaskFactory="CodeTaskFactory"
-    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll" >
-    <ParameterGroup>
-      <SourceFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-      <Destination ParameterType="System.String" Required="true" />
-      <BasePath ParameterType="System.String" Required="true" />
-    </ParameterGroup>
+  <Import Project="$(SolutionDir)Bootstrap.targets" />
 
-    <Task>
-      <Using Namespace="System"/>
-      <Using Namespace="System.IO"/>
-      <Code Type="Fragment" Language="cs">
-<![CDATA[
-	if (!Directory.Exists(Destination)) {
-		Directory.CreateDirectory(Destination);
-	}
-	
-	foreach(var item in SourceFiles) {
-		var dest = item.ItemSpec.Replace(BasePath, Destination);
-		if (!Directory.Exists(Path.GetDirectoryName(dest))) {
-			Directory.CreateDirectory(Path.GetDirectoryName(dest));
-		}
-		
-		File.Copy(item.ItemSpec, dest, true);
-		var info = new FileInfo(dest);
-		info.Attributes = info.Attributes & ~(FileAttributes.ReadOnly);
-	}
-]]>
-      </Code>
-    </Task>
-  </UsingTask>
-
-  <Target Name="CopyFilesForZip">
-	<CopyStdLib SourceFiles="@(Content)" Destination="$(OutputPath)" BasePath="$(StdLibPath)" />
+  <Target Name="CopyFilesForZip" DependsOnTargets="Bootstrap">
+    <CopyStdLib SourceFiles="@(Content)" Destination="$(OutputPath)" BasePath="$(StdLibPath)" />
   </Target>
 </Project>

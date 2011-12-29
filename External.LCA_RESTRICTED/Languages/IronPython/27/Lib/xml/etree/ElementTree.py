@@ -127,7 +127,7 @@ try:
     from . import ElementPath
 except ImportError:
     ElementPath = _SimpleElementPath()
-
+    
 ##
 # Parser error.  This is a subclass of <b>SyntaxError</b>.
 # <p>
@@ -1636,6 +1636,10 @@ class XMLParser(object):
         tree = self.target.close()
         del self.target, self._parser # get rid of circular references
         return tree
+
+if sys.platform == 'cli':
+    from . import SimpleXMLTreeBuilder
+    XMLParser = SimpleXMLTreeBuilder.TreeBuilder
 
 # compatibility
 XMLTreeBuilder = XMLParser
