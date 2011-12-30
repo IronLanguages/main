@@ -565,7 +565,8 @@ namespace IronPython.Runtime.Types {
         class ProtectedMemberResolver : MemberResolver {
             public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
                 foreach (Type t in binder.GetContributingTypes(type)) {
-                    MemberGroup res = new MemberGroup(ArrayUtils.FindAll(t.GetMember(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy), ProtectedOnly));
+                    MemberGroup res = new MemberGroup(ArrayUtils.FindAll(
+                        t.GetMember(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy), ProtectedOnly));
 
                     for (int i = 0; i < res.Count; i++) {
                         MethodTracker meth = res[i] as MethodTracker;                        
