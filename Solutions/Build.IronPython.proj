@@ -6,8 +6,7 @@
   <PropertyGroup>
     <BaseConfiguration Condition=" '$(BaseConfiguration)' == '' ">Debug</BaseConfiguration>
     
-    <Solution Condition="'$(Mono)' != 'true'">IronPython.sln</Solution>
-    <Solution Condition="'$(Mono)' == 'true'">IronPython.Mono.sln</Solution>
+    <Solution>IronPython.sln</Solution>
 
     <BaseDir>$(MSBuildProjectDirectory)\..</BaseDir>
     <StageDir>$(BaseDir)\Stage\$(BaseConfiguration)\IronPython-$(DisplayVersion)</StageDir>
@@ -64,8 +63,8 @@
     <IronPythonBins Include="ipyw.exe" />
     <IronPythonBins Include="ipyw64.exe" />
 
-    <SilverlightBins Include="Chiron.exe" />
-    <SilverlightBins Include="Chiron.exe.config" />
+    <ChironBins Include="Chiron.exe" />
+    <ChironBins Include="Chiron.exe.config" />
   </ItemGroup>
 
   <ItemGroup>
@@ -145,7 +144,7 @@
     <Copy SourceFiles="@(DlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
     <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
     <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
-    <Copy SourceFiles="@(SilverlightBins->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+    <Copy SourceFiles="@(ChironBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
 
     <Copy SourceFiles="@(SilverlightScriptFiles)" DestinationFiles="@(SilverlightScriptFiles->'$(StageDir)\Silverlight\script\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(SilverlightScriptTemplates)" DestinationFiles="@(SilverlightScriptTemplates->'$(StageDir)\Silverlight\script\templates\python\%(RecursiveDir)%(Filename)%(Extension)')" />

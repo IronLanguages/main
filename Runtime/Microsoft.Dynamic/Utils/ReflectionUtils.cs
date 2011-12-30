@@ -32,12 +32,13 @@ using System.Reflection.RuntimeExtensions;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
-
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
 using System.Runtime.InteropServices;
 using System.Dynamic;
 using System.Linq.Expressions;
+
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 #if WIN8
 namespace System {
@@ -560,16 +561,16 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static IEnumerable<MemberInfo> GetInheritedMembers(this Type type, string name = null, bool flattenHierarchy = false) {
-            var result = 
-                type.GetInheritedMethods(name, flattenHierarchy).Concat<MemberInfo>(
-                type.GetInheritedProperties(name, flattenHierarchy).Concat<MemberInfo>(
-                type.GetInheritedEvents(name, flattenHierarchy).Concat<MemberInfo>(
-                type.GetInheritedFields(name, flattenHierarchy))));
+            var result =
+                type.GetInheritedMethods(name, flattenHierarchy).Cast<MethodInfo, MemberInfo>().Concat(
+                type.GetInheritedProperties(name, flattenHierarchy).Cast<PropertyInfo, MemberInfo>().Concat(
+                type.GetInheritedEvents(name, flattenHierarchy).Cast<EventInfo, MemberInfo>().Concat(
+                type.GetInheritedFields(name, flattenHierarchy).Cast<FieldInfo, MemberInfo>())));
 
             if (name == null) {
                 return result.Concat<MemberInfo>(
-                    type.GetDeclaredConstructors().Concat<MemberInfo>(
-                    type.GetDeclaredNestedTypes()));
+                    type.GetDeclaredConstructors().Cast<ConstructorInfo, MemberInfo>().Concat(
+                    type.GetDeclaredNestedTypes().Cast<TypeInfo, MemberInfo>()));
             }
 
             var nestedType = type.GetDeclaredNestedType(name);

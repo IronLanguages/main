@@ -36,12 +36,16 @@
     <ConfigurationFlavor Condition="'$(Configuration)' == 'Win8Release'">Release</ConfigurationFlavor>
     <ConfigurationFlavor Condition="'$(Configuration)' == 'Silverlight3Release'">Release</ConfigurationFlavor>
     <ConfigurationFlavor Condition="'$(Configuration)' == 'Silverlight4Release'">Release</ConfigurationFlavor>
+    <ConfigurationFlavor Condition="'$(Configuration)' == 'Silverlight5Release'">Release</ConfigurationFlavor>
+    <ConfigurationFlavor Condition="'$(Configuration)' == 'AndroidRelease'">Release</ConfigurationFlavor>
 
     <ReferencedPlatform>V4</ReferencedPlatform>
     <ReferencedPlatform Condition="'$(Configuration)' == 'v2Release' or '$(Configuration)' == 'v2Debug'">V2</ReferencedPlatform>
     <ReferencedPlatform Condition="'$(Configuration)' == 'Win8Release' or '$(Configuration)' == 'Win8Debug'">Win8</ReferencedPlatform>
     <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight3Release' or '$(Configuration)' == 'Silverlight3Debug'">WP75</ReferencedPlatform>
-    <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight4Release' or '$(Configuration)' == 'Silverlight4Debug'">Silverlight5</ReferencedPlatform>
+    <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight4Release' or '$(Configuration)' == 'Silverlight4Debug'">Silverlight4</ReferencedPlatform>
+    <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight5Release' or '$(Configuration)' == 'Silverlight5Debug'">Silverlight5</ReferencedPlatform>
+    <ReferencedPlatform Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">Android</ReferencedPlatform>
   </PropertyGroup>
 
   <!-- References -->
@@ -56,7 +60,7 @@
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'V4'">
     <WpfReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\WPF\4.0</WpfReferences>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <Features>FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_STACK_TRACE;FEATURE_TYPE_EQUIVALENCE;FEATURE_NUMERICS;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_METADATA_READER;FEATURE_COM;FEATURE_WPF;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_CODEDOM</Features>
+    <Features>FEATURE_TASKS;FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_STACK_TRACE;FEATURE_TYPE_EQUIVALENCE;FEATURE_NUMERICS;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_METADATA_READER;FEATURE_COM;FEATURE_WPF;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_CODEDOM</Features>
     <PlatformSymbols>CLR4</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>true</IsFullFramework>
@@ -67,18 +71,42 @@
     <NoStdLib>true</NoStdLib>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
-    <Features>FEATURE_NUMERICS;FEATURE_REFEMIT</Features>
+    <Features>FEATURE_TASKS;FEATURE_NUMERICS;FEATURE_REFEMIT</Features>
     <PlatformSymbols>WIN8;CLR4;CLR45</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'WP75'">
+    <!-- TODO: use WP 7.5 reference assemblies instead -->
     <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\Silverlight\3.0.50106.0</FrameworkReferences>
     <NoStdLib>true</NoStdLib>
+    <!-- TODO: what features are available? -->
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <Features>FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE</Features>
     <PlatformSymbols>SILVERLIGHT;CLR2;WP75</PlatformSymbols>
+    <IsSilverlight>true</IsSilverlight>
+    <IsFullFramework>false</IsFullFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Android'">
+    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\MonoAndroid\1.0</FrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <!-- TODO: what features are available? -->
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <Features>FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE</Features>
+    <PlatformSymbols>SILVERLIGHT;CLR2;ANDROID</PlatformSymbols>
+    <IsSilverlight>false</IsSilverlight>
+    <IsFullFramework>false</IsFullFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Silverlight4'">
+    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\Silverlight\4.0</FrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <TargetFrameworkIdentifier>Silverlight</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <Features>FEATURE_CRYPTOGRAPHY;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE;FEATURE_NUMERICS;FEATURE_PDBEMIT;FEATURE_REFEMIT;FEATURE_BASIC_CONSOLE</Features>
+    <PlatformSymbols>SILVERLIGHT;SILVERLIGHT4;CLR4</PlatformSymbols>
     <IsSilverlight>true</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
   </PropertyGroup>
@@ -88,7 +116,7 @@
     <NoStdLib>true</NoStdLib>
     <TargetFrameworkIdentifier>Silverlight</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
-    <Features>FEATURE_CRYPTOGRAPHY;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE;FEATURE_NUMERICS;FEATURE_PDBEMIT;FEATURE_REFEMIT;FEATURE_BASIC_CONSOLE</Features>
+    <Features>FEATURE_TASKS;FEATURE_CRYPTOGRAPHY;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE;FEATURE_NUMERICS;FEATURE_PDBEMIT;FEATURE_REFEMIT;FEATURE_BASIC_CONSOLE</Features>
     <PlatformSymbols>SILVERLIGHT;SILVERLIGHT5;CLR4</PlatformSymbols>
     <IsSilverlight>true</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
@@ -153,6 +181,50 @@
     <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Net.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(ReferencedPlatform)' == 'Android'">
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(ReferencedPlatform)' == 'Silverlight4'">
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798ex">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Xml.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition="'$(ReferencedPlatform)' == 'Silverlight5'">

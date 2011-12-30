@@ -57,7 +57,7 @@
     <Compile Include="TypeDescriptor.cs" />
     <AppDesigner Include="Properties\" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' and '$(TargetFrameworkVersion)' != 'v3.5'" >
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>

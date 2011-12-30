@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if FEATURE_CRYPTOGRAPHY
+#if FEATURE_PROCESS
 
 using System.Diagnostics;
 using IronRuby.Builtins;
@@ -21,7 +21,7 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.StandardLibrary.Open3 {
 
-    [RubyModule("Open3", BuildConfig = "!SILVERLIGHT")]
+    [RubyModule("Open3", BuildConfig = "FEATURE_PROCESS")]
     public static class Open3 {
         [RubyMethod("popen3", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ OpenPipe(

@@ -37,6 +37,17 @@ namespace Microsoft.Scripting.Utils {
     }
 
     public static class CollectionUtils {
+#if CLR2
+        public static IEnumerable<T> Cast<S, T>(this IEnumerable<S> sequence) where S : T {
+            foreach (var item in sequence) {
+                yield return (T)item;
+            }
+        }
+#else
+        public static IEnumerable<T> Cast<S, T>(this IEnumerable<S> sequence) where S : T {
+            return (IEnumerable<T>)sequence;
+        }
+#endif
 
         public static void AddRange<T>(ICollection<T> collection, IEnumerable<T> items) {
             ContractUtils.RequiresNotNull(collection, "collection");

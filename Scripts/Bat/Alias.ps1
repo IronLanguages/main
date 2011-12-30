@@ -80,10 +80,8 @@ function global:msir { cmd /C "${env:windir}\system32\WindowsPowerShell\v1.0\pow
 # Chiron aliases
 #
 
-function global:chd { cmd /C "`"${env:DLR_ROOT}\Bin\Silverlight Debug\Chiron.exe`" $args" }
-function global:chr { cmd /C "`"${env:DLR_ROOT}\Bin\Silverlight Release\Chiron.exe`" $args" }
-function global:chd4 { cmd /C "`"${env:DLR_ROOT}\Bin\Silverlight 4 Debug\Chiron.exe`" $args" }
-function global:chr4 { cmd /C "`"${env:DLR_ROOT}\Bin\Silverlight 4 Release\Chiron.exe`" $args" }
+function global:chd4 { cmd /C "`"${env:DLR_ROOT}\Bin\Debug\Chiron.exe`" $args" }
+function global:chr4 { cmd /C "`"${env:DLR_ROOT}\Bin\Release\Chiron.exe`" $args" }
 
 #=============================================================================
 # Miscellaneous utilities

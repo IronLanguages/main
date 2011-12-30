@@ -291,7 +291,7 @@ namespace IronRuby.Builtins {
                 exception = new RuntimeError();
             }
 
-#if DEBUG && FEATURE_THREAD
+#if DEBUG && FEATURE_THREAD && !SILVERLIGHT
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
@@ -308,7 +308,7 @@ namespace IronRuby.Builtins {
         public static void RaiseException(object self, [NotNull]MutableString/*!*/ message) {
             Exception exception = RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
 
-#if DEBUG && FEATURE_THREAD
+#if DEBUG && FEATURE_THREAD && !SILVERLIGHT
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
@@ -326,7 +326,7 @@ namespace IronRuby.Builtins {
             object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
             Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, obj, arg, backtrace);
-#if DEBUG && FEATURE_THREAD
+#if DEBUG && FEATURE_THREAD && !SILVERLIGHT
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }

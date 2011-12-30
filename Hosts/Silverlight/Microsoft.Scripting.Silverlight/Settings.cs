@@ -165,7 +165,7 @@ namespace Microsoft.Scripting.Silverlight {
                 var vfs = BrowserPAL.PAL.VirtualFilesystem;
                 var stream = vfs.GetFile(entryPoint);
                 if (stream == null) {
-                    throw new ApplicationException(
+                    throw new Exception(
                       string.Format(
 "Application expected to have an entry point called {0}, but was not found (check the {1})", 
                         entryPoint, BrowserPAL.PAL.VirtualFilesystem.Name()));
@@ -201,7 +201,7 @@ namespace Microsoft.Scripting.Silverlight {
                     var tempStream = BrowserPAL.PAL.VirtualFilesystem.GetFile(file);
                     if (tempStream != null) {
                         if (entryPoint != null) {
-                            throw new ApplicationException(string.Format(
+                            throw new Exception(string.Format(
 "Application can only have one entry point, but found two: {0}, {1}", 
                               _entryPoint, file
                             ));

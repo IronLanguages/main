@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !WIN8
+#if !WIN8 && !SILVERLIGHT
 using System.Xml;
 using System.Xml.XPath;
 #endif

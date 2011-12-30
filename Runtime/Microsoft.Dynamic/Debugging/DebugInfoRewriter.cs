@@ -35,7 +35,7 @@ namespace Microsoft.Scripting.Debugging {
     /// <summary>
     /// Used to rewrite expressions containing DebugInfoExpressions.
     /// </summary>
-    internal class DebugInfoRewriter : DynamicExpressionVisitor {
+    internal class DebugInfoRewriter : MSAst.DynamicExpressionVisitor {
         private readonly DebugContext _debugContext;
         private readonly bool _transformToGenerator;
         private readonly MSAst.Expression _thread;

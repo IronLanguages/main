@@ -23,16 +23,39 @@ namespace Microsoft.Scripting.Utils {
 
         // TODO: some memory can be saved here
         // { queried-type -> immutable { member-name, members } }
-        private readonly ConditionalWeakTable<Type, Dictionary<string, List<T>>> _typeMembersByName;
+#if CLR2
+        private readonly Dictionary<Type, Dictionary<string, List<T>>> _typeMembersByName =
+            new Dictionary<Type, Dictionary<string, List<T>>>();
+
+        private Dictionary<string, List<T>> GetMembers(Type type) {
+            lock (_typeMembersByName) {
+                Dictionary<string, List<T>> result;
+                if (_typeMembersByName.TryGetValue(type, out result)) {
+                    return result;
+                }
+
+                result = ReflectMembers(type);
+                _typeMembersByName[type] = result;
+                return result;
+            }
+        }
+#else
+        private readonly ConditionalWeakTable<Type, Dictionary<string, List<T>>> _typeMembersByName = 
+            new ConditionalWeakTable<Type, Dictionary<string, List<T>>>();
+
+        private Dictionary<string, List<T>> GetMembers(Type type) {
+            return _typeMembersByName.GetValue(type, t => ReflectMembers(t));
+        }
+#endif
+
         private readonly Func<Type, IEnumerable<T>> _reflector;
 
         public TypeMemberCache(Func<Type, IEnumerable<T>> reflector) {
-            _typeMembersByName = new ConditionalWeakTable<Type, Dictionary<string, List<T>>>();
             _reflector = reflector;
         }
 
         public IEnumerable<T> GetMembers(Type type, string name = null, bool inherited = false) {
-            var membersByName = _typeMembersByName.GetValue(type, t => ReflectMembers(t));
+            var membersByName = GetMembers(type);
 
             if (name == null) {
                 var allMembers = membersByName.Values.SelectMany(memberList => memberList);

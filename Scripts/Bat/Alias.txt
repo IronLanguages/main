@@ -107,10 +107,8 @@ msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command
 ;= Chiron aliases
 ;=
 
-chd     ="%DLR_ROOT%\Bin\Silverlight3Debug\Chiron.exe" $*
-chr     ="%DLR_ROOT%\Bin\Silverlight3Release\Chiron.exe" $*
-chd4    ="%DLR_ROOT%\Bin\Silverlight4Debug\Chiron.exe" $*
-chr4    ="%DLR_ROOT%\Bin\Silverlight4Release\Chiron.exe" $*
+chd4    ="%DLR_ROOT%\Bin\Debug\Chiron.exe" $*
+chr4    ="%DLR_ROOT%\Bin\Release\Chiron.exe" $*
 
 ;==============================================================================
 ;= Miscellaneous utilities

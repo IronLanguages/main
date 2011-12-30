@@ -1433,7 +1433,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private IEnumerable<OverloadInfo>/*!*/ GetConstructors(Type/*!*/ type) {
+        private IEnumerable<ReflectionOverloadInfo>/*!*/ GetConstructors(Type/*!*/ type) {
             return 
                 from ctor in type.GetDeclaredConstructors()
                 where !ctor.IsStatic && (Context.DomainManager.Configuration.PrivateBinding || ctor.IsPublic)

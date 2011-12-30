@@ -13,11 +13,14 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
-using System.Linq.Expressions;
+#if FEATURE_TASKS
 using System.Threading.Tasks;
-#else
+#endif
+
+#if CLR2
 using Microsoft.Scripting.Ast;
+#else
+using System.Linq.Expressions;
 #endif
 
 using System;
@@ -206,10 +209,10 @@ namespace Microsoft.Scripting.Interpreter {
                     return TryGetCompiled();
                 } else {
                     // Kick off the compile on another thread so this one can keep going
-#if CLR2
-                    ThreadPool.QueueUserWorkItem(_delegateCreator.Compile, null);
-#else
+#if FEATURE_TASKS
                     new Task(_delegateCreator.Compile, null).Start();
+#else
+                    ThreadPool.QueueUserWorkItem(_delegateCreator.Compile, null);
 #endif
                 }
             }

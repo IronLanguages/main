@@ -11978,12 +11978,12 @@ namespace IronRuby.StandardLibrary.Open3 {
         protected override void LoadModules() {
             
             
-            #if !SILVERLIGHT
+            #if FEATURE_PROCESS
             DefineGlobalModule("Open3", typeof(IronRuby.StandardLibrary.Open3.Open3), 0x00000008, null, LoadOpen3_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
             #endif
         }
         
-        #if !SILVERLIGHT
+        #if FEATURE_PROCESS
         private static void LoadOpen3_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineLibraryMethod(module, "popen3", 0x21, 
                 0x00020004U, 

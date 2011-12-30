@@ -13,10 +13,14 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
-using System.Linq.Expressions;
-#else
+#if FEATURE_TASKS
+using System.Threading.Tasks;
+#endif
+
+#if CLR2
 using Microsoft.Scripting.Ast;
+#else
+using System.Linq.Expressions;
 #endif
 
 using System;
@@ -31,7 +35,11 @@ using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 
 #if !WIN8
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
     public abstract class DynamicExpressionVisitor : ExpressionVisitor {
     }
 }
@@ -39,7 +47,6 @@ namespace System.Linq.Expressions {
 
 namespace Microsoft.Scripting.Utils {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using System.Threading.Tasks;
 
     public static class DynamicUtils {
         /// <summary>
@@ -271,10 +278,10 @@ namespace Microsoft.Scripting.Utils {
                 // start compiling the target if no one else has
                 var lambda = Interlocked.Exchange(ref Target, null);
                 if (lambda != null) {
-#if CLR2
-                    ThreadPool.QueueUserWorkItem(x => { CompiledTarget = lambda.Compile(); });
-#else
+#if FEATURE_TASKS
                     new Task(() => { CompiledTarget = lambda.Compile(); }).Start();
+#else
+                    ThreadPool.QueueUserWorkItem(x => { CompiledTarget = lambda.Compile(); });
 #endif
                 }
             }

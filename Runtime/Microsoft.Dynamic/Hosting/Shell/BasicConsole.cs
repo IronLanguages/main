@@ -99,15 +99,9 @@ namespace Microsoft.Scripting.Hosting.Shell {
         }
 
         private static ConsoleColor PickColor(ConsoleColor best, ConsoleColor other) {
-<<<<<<< HEAD
-=======
-#if SILVERLIGHT
-            return best;
-#else
             best = IsDark(Console.BackgroundColor) ? MakeLight(best) : MakeDark(best);
             other = IsDark(Console.BackgroundColor) ? MakeLight(other) : MakeDark(other);
 
->>>>>>> 5ae57eba20e93eb63cac794643ca13cc750469a0
             if (Console.BackgroundColor != best) {
                 return best;
             }
@@ -207,4 +201,3 @@ namespace Microsoft.Scripting.Hosting.Shell {
 }
 
 #endif
-

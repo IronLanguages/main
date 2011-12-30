@@ -42,7 +42,6 @@
     <Compile Include="NativeSignal.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
-    <Compile Include="Properties\BuildInfo.Generated.cs" />
     <Compile Include="signal.cs" />
     <Compile Include="zipimport.cs" />
     <Compile Include="zlib\Compress.cs" />
@@ -141,4 +140,7 @@
       <Name>IronPython</Name>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />  <Import Project="$(SolutionDir)Versioning.targets" />  <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo" /></Project>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(SolutionDir)Versioning.targets" />
+  <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo" />
+</Project>

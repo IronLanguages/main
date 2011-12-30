@@ -4,7 +4,7 @@ echo Building samples
 call %~dp0build.bat
 
 echo Building dlr.xap
-%~dp0..\..\..\Bin\"Silverlight Release"\Chiron.exe /s /d:%~dp0dlr\dlr /z:%~dp0dlr\dlr.xap /e:"/dlr-slvx"
+%~dp0..\..\..\Bin\Release\Chiron.exe /s /d:%~dp0dlr\dlr /z:%~dp0dlr\dlr.xap /e:"/dlr-slvx"
 
 echo Deploying samples
 if not exist C:\inetpub\wwwroot\gestalt ( mkdir C:\inetpub\wwwroot\gestalt )

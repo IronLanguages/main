@@ -74,8 +74,8 @@ mkdir Silverlight\bin
 copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\Microsoft.Dynamic.dll Silverlight\bin\
 copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\Microsoft.Scripting.dll Silverlight\bin\
 copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\Microsoft.Scripting.Silverlight.dll Silverlight\bin\
-copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\Chiron.exe Silverlight\bin\
-copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\Chiron.exe.config Silverlight\bin\
+copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\Chiron.exe Silverlight\bin\
+copy %DLR_ROOT%\Bin\%BUILD_FLAVOR%\Chiron.exe.config Silverlight\bin\
 
 copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\IronPython.dll Silverlight\bin\
 copy %DLR_ROOT%\Bin\Silverlight4%BUILD_FLAVOR%\IronPython.Modules.dll Silverlight\bin\

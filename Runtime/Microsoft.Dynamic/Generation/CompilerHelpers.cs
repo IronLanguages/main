@@ -384,11 +384,7 @@ namespace Microsoft.Scripting.Generation {
                 // structs don't define a parameterless ctor, add a generic method for that.
                 List<MethodBase> result = new List<MethodBase>();
                 result.Add(GetStructDefaultCtor(t));
-#if CLR2
-                result.AddRange(ctors.Cast<MethodBase>());
-#else
-                result.AddRange(ctors);
-#endif
+                result.AddRange(ctors.Cast<ConstructorInfo, MethodBase>());
                 return result.ToArray();
             } else {
                 return ctors.ToArray();
@@ -789,7 +785,7 @@ namespace Microsoft.Scripting.Generation {
         /// <summary>
         /// Removes all live objects and places them in static fields of a type.
         /// </summary>
-        private sealed class DebuggableCodeRewriter : System.Linq.Expressions.DynamicExpressionVisitor {
+        private sealed class DebuggableCodeRewriter : DynamicExpressionVisitor {
             private readonly Dictionary<object, FieldBuilder> _fields = new Dictionary<object, FieldBuilder>(ReferenceEqualityComparer<object>.Instance);
             private readonly TypeBuilder _type;
             private readonly HashSet<string> _methodNames = new HashSet<string>();
