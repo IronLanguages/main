@@ -94,8 +94,8 @@
     <NoStdLib>true</NoStdLib>
     <!-- TODO: what features are available? -->
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <Features>FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE</Features>
-    <PlatformSymbols>SILVERLIGHT;CLR2;ANDROID</PlatformSymbols>
+    <Features>FEATURE_SERIALIZATION;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE</Features>
+    <PlatformSymbols>ANDROID</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
   </PropertyGroup>

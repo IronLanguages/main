@@ -22,6 +22,10 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(IsSilverlight)' == 'true' ">
       <Link>Properties\SilverlightVersion.cs</Link>

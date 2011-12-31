@@ -34,6 +34,10 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Release|AnyCPU' ">
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Compiler\Ast\AndExpression.cs" />
     <Compile Include="Compiler\Ast\Arg.cs" />
