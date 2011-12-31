@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_CORE_DLR
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -23,12 +29,6 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-#if CLR2
-using Microsoft.Scripting.Ast;
-#else
-using System.Linq.Expressions;
-#endif
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 

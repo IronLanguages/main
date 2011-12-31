@@ -26,7 +26,7 @@ using System.Dynamic.Utils;
 using System.Core;
 #endif
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast.Compiler {
 #else
 namespace System.Linq.Expressions.Compiler {
@@ -321,7 +321,7 @@ namespace System.Linq.Expressions.Compiler {
                     ResolveVariable(v, _closureHoistedLocals).EmitLoad();
                     lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));
                 } else {
-#if CLR2
+#if !FEATURE_CORE_DLR
                     // array[i] = new StrongBox<T>(default(T));
                     lc.IL.EmitDefault(v.Type);
                     lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));

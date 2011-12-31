@@ -13,13 +13,14 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if FEATURE_CORE_DLR
+using System.Linq.Expressions;
+#else
 using Microsoft.Scripting.Ast;
 #endif
 
 using System;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;

@@ -14,7 +14,7 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
 #else

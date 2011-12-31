@@ -17,7 +17,7 @@
 using System.Threading.Tasks;
 #endif
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #endif
 

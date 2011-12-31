@@ -19,7 +19,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast.Compiler {
 #else
 namespace System.Linq.Expressions.Compiler {
