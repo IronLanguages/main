@@ -21,7 +21,6 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Contracts;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -81,7 +80,6 @@ namespace Microsoft.Scripting.Runtime {
 
         #region IEquatable<ContextId> Members
 
-        [StateIndependent]
         public bool Equals(ContextId other) {
             return this._id == other._id;
         }

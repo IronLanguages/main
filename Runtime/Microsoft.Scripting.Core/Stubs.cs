@@ -15,7 +15,11 @@
 
 using System.Diagnostics;
 
-#if SILVERLIGHT
+namespace Microsoft.Scripting.Utils {
+
+}
+
+#if !FEATURE_SERIALIZATION
 
 namespace System {
     /// <summary>

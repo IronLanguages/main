@@ -26,7 +26,6 @@ using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
@@ -609,19 +608,16 @@ namespace Microsoft.Scripting.Runtime {
                 _siteType = siteType;
             }
 
-            [Confined]
             public override bool Equals(object obj) {
                 return Equals(obj as SiteKey);
             }
 
-            [Confined]
             public override int GetHashCode() {
                 return SiteBinder.GetHashCode() ^ _siteType.GetHashCode();
             }
 
             #region IEquatable<SiteKey> Members
 
-            [StateIndependent]
             public bool Equals(SiteKey other) {
                 if (other == null) return false;
 
@@ -631,7 +627,6 @@ namespace Microsoft.Scripting.Runtime {
 
             #endregion
 #if DEBUG
-            [Confined]
             public override string ToString() {
                 return String.Format("{0} {1}", SiteBinder.ToString(), HitCount);
             }

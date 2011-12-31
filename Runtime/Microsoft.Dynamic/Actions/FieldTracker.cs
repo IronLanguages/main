@@ -24,7 +24,6 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
 
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Utils;
 
@@ -89,7 +88,6 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        [Confined]
         public override string ToString() {
             return _field.ToString();
         }

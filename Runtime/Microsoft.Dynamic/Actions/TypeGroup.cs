@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -71,7 +70,6 @@ namespace Microsoft.Scripting.Actions {
             _name = existingTypes.Name;
         }
 
-        [Confined]
         public override string ToString() {
             StringBuilder repr = new StringBuilder(base.ToString());
             repr.Append(":" + Name + "(");

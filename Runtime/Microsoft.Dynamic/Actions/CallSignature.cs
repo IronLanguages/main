@@ -24,7 +24,6 @@ using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -120,7 +119,6 @@ namespace Microsoft.Scripting.Actions {
 
         #region IEquatable<CallSignature> Members
 
-        [StateIndependent]
         public bool Equals(CallSignature other) {
             if (_infos == null) {
                 return other._infos == null && other._argumentCount == _argumentCount;

@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Scripting.Utils;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions;
 
 namespace Microsoft.Scripting.Runtime {

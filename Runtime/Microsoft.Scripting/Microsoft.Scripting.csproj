@@ -115,7 +115,6 @@
     <Compile Include="SourceLocation.cs" />
     <Compile Include="SourceSpan.cs" />
     <Compile Include="SourceUnit.cs" />
-    <Compile Include="SpecSharp.cs" />
     <Compile Include="SyntaxErrorException.cs" />
     <Compile Include="TextContentProvider.cs" />
     <Compile Include="TokenCategory.cs" />

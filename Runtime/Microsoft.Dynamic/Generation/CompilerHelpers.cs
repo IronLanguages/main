@@ -29,7 +29,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Reflection.RuntimeExtensions;
 using System.Runtime.CompilerServices;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Interpreter;
@@ -576,8 +575,6 @@ namespace Microsoft.Scripting.Generation {
             }
 
             ret[count] = returnType;
-
-            NonNullType.AssertInitialized(ret);
             return ret;
         }
 

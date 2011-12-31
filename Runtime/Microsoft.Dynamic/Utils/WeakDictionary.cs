@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Microsoft.Contracts;
 
 namespace Microsoft.Scripting.Utils {
     /// <summary>
@@ -223,7 +222,6 @@ namespace Microsoft.Scripting.Utils {
 
         #region IEnumerable<KeyValuePair<TKey,TValue>> Members
 
-        [Pure]
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
             // TODO:
             throw new NotImplementedException();
@@ -233,7 +231,6 @@ namespace Microsoft.Scripting.Utils {
 
         #region IEnumerable Members
 
-        [Pure]
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
             // TODO:
             throw new NotImplementedException();

@@ -341,7 +341,6 @@
     <Compile Include="Utils\WeakDictionary.cs" />
     <Compile Include="Utils\WeakHandle.cs" />
     <Compile Include="DebugOptions.cs" />
-    <Compile Include="SpecSharp.cs" />
     <Compile Include="MutableTuple.cs" />
     <Compile Include="Actions\ActionBinder.cs" />
     <Compile Include="Actions\Argument.cs" />

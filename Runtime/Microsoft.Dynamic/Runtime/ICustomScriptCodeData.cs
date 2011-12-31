@@ -25,7 +25,6 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
-using Microsoft.Contracts;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;

@@ -20,7 +20,6 @@ using System.Dynamic;
 using System.Reflection;
 using System.Threading;
 
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions.Calls;
 
 namespace Microsoft.Scripting.Actions {
@@ -162,7 +161,6 @@ namespace Microsoft.Scripting.Actions {
                 _types = types;
             }
 
-            [Confined]
             public override bool Equals(object obj) {
                 TypeList tl = obj as TypeList;
                 if (tl == null || _types.Length != tl._types.Length) return false;
@@ -173,7 +171,6 @@ namespace Microsoft.Scripting.Actions {
                 return true;
             }
 
-            [Confined]
             public override int GetHashCode() {
                 int hc = 6551;
                 foreach (Type t in _types) {

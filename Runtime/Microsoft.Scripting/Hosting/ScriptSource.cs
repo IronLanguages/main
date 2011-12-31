@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 using dynamic = System.Object;
 #endif
 

@@ -16,7 +16,6 @@
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Generation {
@@ -53,7 +52,6 @@ namespace Microsoft.Scripting.Generation {
             _myType = myType;
         }
 
-        [Confined]
         public override string ToString() {
             return _myType.ToString();
         }

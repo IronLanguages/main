@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System;
-using Microsoft.Contracts;
 
 namespace Microsoft.Scripting {
 
@@ -48,7 +47,6 @@ namespace Microsoft.Scripting {
 
         #region IEquatable<TokenInfo> Members
 
-        [StateIndependent]
         public bool Equals(TokenInfo other) {
             return _category == other._category && _trigger == other._trigger && _span == other._span;
         }

@@ -139,7 +139,7 @@ namespace System.Runtime.CompilerServices {
             //
             // finally produce the new rule if we need to
             //
-#if !CLR2 && !SILVERLIGHT
+#if !CLR2 && !SILVERLIGHT && !ANDROID
             // We cannot compile rules in the heterogeneous app domains since they
             // may come from less trusted sources
             // Silverlight always uses a homogenous appdomain, so we don’t need this check

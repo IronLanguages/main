@@ -27,7 +27,6 @@ using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -1191,7 +1190,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return dynamicObject.LimitType;
         }
 
-        [Confined]
         public override string ToString() {
             string res = "";
             foreach (CandidateSet set in _candidateSets.Values) {

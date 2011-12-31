@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions {
@@ -51,7 +50,6 @@ namespace Microsoft.Scripting.Actions {
             get { return _type.IsGenericType(); }
         }
 
-        [Confined]
         public override string ToString() {
             return _type.ToString();
         }

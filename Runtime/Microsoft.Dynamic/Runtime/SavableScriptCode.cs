@@ -26,7 +26,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -221,7 +220,6 @@ namespace Microsoft.Scripting {
             throw new NotSupportedException();
         }
 
-        [Confined]
         public override string ToString() {
             return String.Format("ScriptCode '{0}' from {1}", SourceUnit.Path, LanguageContext.GetType().Name);
         }

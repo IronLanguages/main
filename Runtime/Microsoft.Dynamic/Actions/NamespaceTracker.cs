@@ -26,7 +26,6 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Scripting.Utils;
 using System.Threading;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -56,7 +55,6 @@ namespace Microsoft.Scripting.Actions {
             _fullName = name;
         }
 
-        [Confined]
         public override string ToString() {
             return base.ToString() + ":" + _fullName;
         }
@@ -347,7 +345,6 @@ namespace Microsoft.Scripting.Actions {
 
         #region IEnumerable<KeyValuePair<string, object>> Members
 
-        [Pure]
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator() {
             foreach (var key in Keys) {
                 yield return new KeyValuePair<string, object>(key, this[key]);
@@ -356,7 +353,6 @@ namespace Microsoft.Scripting.Actions {
 
         #endregion
 
-        [Pure]
         IEnumerator IEnumerable.GetEnumerator() {
             foreach (var key in Keys) {
                 yield return new KeyValuePair<string, object>(key, this[key]);
