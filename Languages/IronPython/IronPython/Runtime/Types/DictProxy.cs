@@ -17,12 +17,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 using System.Runtime.InteropServices;
+using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
     [PythonType("dictproxy")]

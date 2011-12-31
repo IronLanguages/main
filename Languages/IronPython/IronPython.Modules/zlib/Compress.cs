@@ -24,6 +24,7 @@ using ComponentAce.Compression.Libs.ZLib;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Zlib
 {

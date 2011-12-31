@@ -12,7 +12,8 @@
  *
  *
  * ***************************************************************************/
-#if !SILVERLIGHT
+#if FEATURE_NATIVE
+
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
@@ -171,7 +172,7 @@ namespace IronPython.Modules {
                 return addr != IntPtr.Zero;
             }
 
-            #region Public APIs
+#region Public APIs
 
             [SpecialName, PropertyMethod]
             public object Geterrcheck() {
@@ -250,7 +251,7 @@ namespace IronPython.Modules {
             
             #endregion
 
-            #region Internal APIs
+#region Internal APIs
 
             internal CallingConvention CallingConvention {
                 get {
@@ -278,7 +279,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            #region IDynamicObject Members
+#region IDynamicObject Members
 
             // needs to be public so that derived base classes can call it.
             [PythonHidden]
@@ -288,7 +289,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            #region MetaObject
+#region MetaObject
 
             private class Meta : MetaPythonObject {
                 public Meta(Expression parameter, _CFuncPtr func)
@@ -682,7 +683,7 @@ namespace IronPython.Modules {
                     return signature;
                 }
 
-                #region Argument Marshalling
+#region Argument Marshalling
 
                 /// <summary>
                 /// Base class for marshalling arguments from the user provided value to the

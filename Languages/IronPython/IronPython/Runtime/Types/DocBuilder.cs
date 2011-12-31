@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !WIN8 && !SILVERLIGHT
+#if FEATURE_XMLDOC
 using System.Xml;
 using System.Xml.XPath;
 #endif
@@ -70,7 +70,7 @@ namespace IronPython.Runtime.Types {
                 StringBuilder autoDoc = new StringBuilder();
 
                 string summary = null;
-#if !SILVERLIGHT // XML doc
+#if FEATURE_XMLDOC
                 string returns = null;
                 GetXmlDocForProperty(declaringType, propertyName, out summary, out returns);
 #endif
@@ -142,7 +142,7 @@ namespace IronPython.Runtime.Types {
 
         public static string CreateAutoDoc(EventInfo info) {
             string summary = null;
-#if !SILVERLIGHT // XML doc      
+#if FEATURE_XMLDOC
             string returns;
             GetXmlDoc(info, out summary, out returns);
 #endif
@@ -152,7 +152,7 @@ namespace IronPython.Runtime.Types {
         public static string CreateAutoDoc(Type t) {
             string summary = null;
 
-#if !SILVERLIGHT // XML doc
+#if FEATURE_XMLDOC
             GetXmlDoc(t, out summary);
 #endif
             if (t.IsEnum) {
@@ -201,7 +201,7 @@ namespace IronPython.Runtime.Types {
             string summary = null, returns = null;
             List<KeyValuePair<string, string>> parameters = null;
 
-#if !SILVERLIGHT // XML doc
+#if FEATURE_XMLDOC
             GetXmlDoc(info, out summary, out returns, out parameters);
 #endif
 
@@ -353,7 +353,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal static string CreateAutoDoc(MethodBase info, string name, int endParamSkip, bool includeSelf) {
-#if !SILVERLIGHT // Console
+#if FEATURE_FULL_CONSOLE
             int lineWidth;
             try {
                 lineWidth = Console.WindowWidth - 30;
@@ -427,7 +427,7 @@ namespace IronPython.Runtime.Types {
             return DynamicHelpers.GetPythonTypeFromType(type).Name;
         }
 
-#if !SILVERLIGHT && !WIN8 // XML doc
+#if FEATURE_XMLDOC
 
         private static readonly object _CachedDocLockObject = new object();
         private static readonly List<Assembly> _AssembliesWithoutXmlDoc = new List<Assembly>();

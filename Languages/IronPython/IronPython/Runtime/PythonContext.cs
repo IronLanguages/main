@@ -281,7 +281,7 @@ namespace IronPython.Runtime {
             }
 
             List path = new List(_options.SearchPaths);
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
             _resolveHolder = new AssemblyResolveHolder(this);
             try {
                 Assembly entryAssembly = Assembly.GetEntryAssembly();
@@ -302,7 +302,7 @@ namespace IronPython.Runtime {
 
             RecursionLimit = _options.RecursionLimit;
 
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
             object asmResolve;
             if (options == null ||
                 !options.TryGetValue("NoAssemblyResolveHook", out asmResolve) ||
@@ -315,7 +315,6 @@ namespace IronPython.Runtime {
                 }
             }
 #endif
-
             _equalityComparer = new PythonEqualityComparer(this);
             _equalityComparerNonGeneric = (IEqualityComparer)_equalityComparer;
 
@@ -1451,9 +1450,11 @@ namespace IronPython.Runtime {
                     PythonCalls.Call(SharedContext, callable);
                 }
             } finally {
+#if FEATURE_BASIC_CONSOLE
                 if (PythonOptions.PerfStats) {
                     PerfTrack.DumpStats();
                 }
+#endif
             }
         }
 

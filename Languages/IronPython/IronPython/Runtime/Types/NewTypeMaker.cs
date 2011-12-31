@@ -296,7 +296,7 @@ namespace IronPython.Runtime.Types {
 
             ImplementDynamicObject();
 
-#if !SILVERLIGHT // ICustomTypeDescriptor
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
             ImplementCustomTypeDescriptor();
 #endif
 #if CLR2
@@ -529,7 +529,7 @@ namespace IronPython.Runtime.Types {
             return _cctor;
         }
 
-#if !SILVERLIGHT // ICustomTypeDescriptor
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
         private void ImplementCustomTypeDescriptor() {
             ImplementInterface(typeof(ICustomTypeDescriptor));
 

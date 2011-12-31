@@ -132,7 +132,7 @@ namespace IronPython.Runtime.Binding {
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Conversion");
 
             DynamicMetaObject res;
-#if !SILVERLIGHT
+#if FEATURE_COM
             DynamicMetaObject comConvert;
             if (Microsoft.Scripting.ComInterop.ComBinder.TryConvert(CompatBinder, self, out comConvert)) {
                 res = comConvert;
@@ -301,7 +301,7 @@ namespace IronPython.Runtime.Binding {
                 // Special cases:
                 //  - string or bytes to IEnumerable or IEnumerator
                 //  - CLR 4 only: BigInteger -> Complex
-#if !CLR2
+#if FEATURE_NUMERICS
                 if (target is BigInteger) {
                     if (typeof(T) == typeof(Func<CallSite, BigInteger, Complex>)) {
                         res = (T)(object)new Func<CallSite, BigInteger, Complex>(BigIntegerToComplexConversion);
@@ -523,7 +523,7 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, IEnumerator>>)site).Update(site, value);
         }
 
-#if !CLR2
+#if FEATURE_NUMERICS
         public Complex BigIntegerToComplexConversion(CallSite site, BigInteger value) {
             return BigIntegerOps.ConvertToComplex(value);
         }

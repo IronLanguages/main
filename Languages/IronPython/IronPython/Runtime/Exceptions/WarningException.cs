@@ -1,6 +1,7 @@
-﻿#if WIN8
+﻿#if WIN8 || ANDROID
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.ComponentModel {
     [Serializable]
@@ -41,6 +42,10 @@ namespace System.ComponentModel {
             this.helpUrl = helpUrl;
             this.helpTopic = helpTopic;
         }
+
+#if FEATURE_SERIALIZATION
+        protected WarningException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+#endif
     }
 }
 #endif

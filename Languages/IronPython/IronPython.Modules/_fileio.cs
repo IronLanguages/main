@@ -41,6 +41,7 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using IronPython.Runtime.Exceptions;
+using Microsoft.Scripting.Utils;
 
 // TODO: Documentation copied from CPython is inadequate in some places and wrong in others.
 

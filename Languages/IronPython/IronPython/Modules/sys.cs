@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,12 +36,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
-using System.Numerics;
-#endif
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("sys", typeof(IronPython.Modules.SysModule))]
 namespace IronPython.Modules {

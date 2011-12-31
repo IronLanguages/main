@@ -1519,7 +1519,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool TryGetEncoding(string name, out Encoding encoding) {
-#if SILVERLIGHT // EncodingInfo
+#if FEATURE_ENCODING
+            name = NormalizeEncodingName(name);
+
+            EncodingInfoWrapper encInfo;
+            if (CodecsInfo.Codecs.TryGetValue(name, out encInfo)) {
+                encoding = (Encoding)encInfo.GetEncoding().Clone();
+                return true;
+            }
+#else
             switch (NormalizeEncodingName(name)) {
                 case "us_ascii":
                 case "ascii": encoding = PythonAsciiEncoding.Instance; return true;
@@ -1527,14 +1535,6 @@ namespace IronPython.Runtime.Operations {
                 case "utf_16_le": encoding = (Encoding)new EncodingWrapper(Encoding.Unicode, new byte[0]).Clone(); return true;
                 case "utf_16_be": encoding = (Encoding)new EncodingWrapper(Encoding.BigEndianUnicode, new byte[0]).Clone(); return true;
                 case "utf_8_sig": encoding = Encoding.UTF8; return true;
-            }
-#else
-            name = NormalizeEncodingName(name);
-
-            EncodingInfoWrapper encInfo;
-            if (CodecsInfo.Codecs.TryGetValue(name, out encInfo)) {
-                encoding = (Encoding)encInfo.GetEncoding().Clone();
-                return true;
             }
 #endif
             encoding = null;

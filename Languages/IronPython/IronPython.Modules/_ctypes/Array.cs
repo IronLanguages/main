@@ -13,6 +13,14 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
+#if CLR2
+using Microsoft.Scripting.Math;
+#else
+using System.Numerics;
+#endif
+
 using System;
 using System.Collections;
 using System.Text;
@@ -24,13 +32,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using System.Collections.Generic;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
-using System.Numerics;
-#endif
-
-#if !SILVERLIGHT
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.
@@ -164,7 +165,7 @@ namespace IronPython.Modules {
                 );
             }
 
-            #region IBufferProtocol
+#region IBufferProtocol
 
             public override int ItemCount {
                 [PythonHidden]
@@ -196,7 +197,7 @@ namespace IronPython.Modules {
                 return shape;
             }
 
-            #endregion
+#endregion
         }
     }
 }

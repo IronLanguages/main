@@ -642,7 +642,6 @@ namespace Microsoft.Scripting.Generation {
             return (T)(object)LightCompile((LambdaExpression)lambda, compilationThreshold);
         }
 
-#if FEATURE_PDBEMIT
         /// <summary>
         /// Compiles the lambda into a method definition.
         /// </summary>
@@ -650,13 +649,15 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="method">A <see cref="MethodBuilder"/> which will be used to hold the lambda's IL.</param>
         /// <param name="emitDebugSymbols">A parameter that indicates if debugging information should be emitted to a PDB symbol store.</param>
         public static void CompileToMethod(this LambdaExpression lambda, MethodBuilder method, bool emitDebugSymbols) {
+#if FEATURE_PDBEMIT
             if (emitDebugSymbols) {
                 var module = method.Module as ModuleBuilder;
                 ContractUtils.Requires(module != null, "method", "MethodBuilder does not have a valid ModuleBuilder");
                 lambda.CompileToMethod(method, DebugInfoGenerator.CreatePdbGenerator());
-            } else {
-                lambda.CompileToMethod(method);
+                return;
             }
+#endif
+            lambda.CompileToMethod(method);
         }
 
         /// <summary>
@@ -673,9 +674,13 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="emitDebugSymbols">true to generate a debuggable method, false otherwise</param>
         /// <returns>the compiled delegate</returns>
         public static T Compile<T>(this Expression<T> lambda, bool emitDebugSymbols) {
-            return emitDebugSymbols ? CompileToMethod(lambda, DebugInfoGenerator.CreatePdbGenerator(), true) : lambda.Compile();
-        }
+#if FEATURE_PDBEMIT
+            if (emitDebugSymbols) {
+                return CompileToMethod(lambda, DebugInfoGenerator.CreatePdbGenerator(), true);
+            }
 #endif
+            return lambda.Compile();
+        }
 
         /// <summary>
         /// Compiles the LambdaExpression, emitting it into a new type, and

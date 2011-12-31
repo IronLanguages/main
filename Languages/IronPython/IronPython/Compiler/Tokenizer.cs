@@ -1529,7 +1529,7 @@ namespace IronPython.Compiler {
 
             // and we have the magic ending as well...
             if (StringOps.TryGetEncoding(encName, out enc)) {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 enc.DecoderFallback = new NonStrictDecoderFallback();
 #endif
                 return true;

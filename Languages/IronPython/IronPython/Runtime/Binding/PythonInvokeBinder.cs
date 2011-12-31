@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Binding {
             } else if (target.Value is IDynamicMetaObjectProvider) {
                 return InvokeForeignObject(target, args);
             }
-#if !SILVERLIGHT
+#if FEATURE_COM
             else if (Microsoft.Scripting.ComInterop.ComBinder.CanComBind(target.Value)) {
                 return InvokeForeignObject(target, args);
             }

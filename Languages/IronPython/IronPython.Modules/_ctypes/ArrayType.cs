@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -34,8 +36,6 @@ using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
 #endif
-
-#if !SILVERLIGHT
 
 namespace IronPython.Modules {
     /// <summary>
@@ -173,7 +173,7 @@ namespace IronPython.Modules {
                 return MakeArrayType(type, count);
             }
 
-            #region INativeType Members
+#region INativeType Members
 
             int INativeType.Size {
                 get {

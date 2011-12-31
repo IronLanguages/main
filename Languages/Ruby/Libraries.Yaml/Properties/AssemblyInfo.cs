@@ -25,7 +25,7 @@ using IronRuby.Runtime;
 
 [assembly: SecurityTransparent]
 
-#if !SILVERLIGHT && !WIN8
+#if !SILVERLIGHT && !WIN8 && !ANDROID
 [assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]
 [assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
 [assembly: AllowPartiallyTrustedCallers]

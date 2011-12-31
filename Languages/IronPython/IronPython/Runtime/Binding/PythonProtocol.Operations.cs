@@ -514,7 +514,7 @@ namespace IronPython.Runtime.Binding {
                     self.Restrict(self.GetLimitType()).Restrictions
                 );
 
-#if !SILVERLIGHT
+#if FEATURE_COM
                 if (Microsoft.Scripting.ComInterop.ComBinder.IsComObject(self.Value)) {
                     ieres = new DynamicMetaObject(
                          MakeEnumeratorResult(

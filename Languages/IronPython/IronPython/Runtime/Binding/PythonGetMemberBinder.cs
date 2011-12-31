@@ -80,8 +80,8 @@ namespace IronPython.Runtime.Binding {
             } else if (target.Value is IDynamicMetaObjectProvider) {
                 return GetForeignObject(target);
             }
-#if !SILVERLIGHT
- else if (Microsoft.Scripting.ComInterop.ComBinder.IsComObject(target.Value)) {
+#if FEATURE_COM
+            else if (Microsoft.Scripting.ComInterop.ComBinder.IsComObject(target.Value)) {
                 return GetForeignObject(target);
             }
 #endif
@@ -151,10 +151,11 @@ namespace IronPython.Runtime.Binding {
             }
 
             if (args[0] != null &&
-#if !SILVERLIGHT
- !Microsoft.Scripting.ComInterop.ComBinder.IsComObject(args[0]) &&
+#if FEATURE_COM
+                !Microsoft.Scripting.ComInterop.ComBinder.IsComObject(args[0]) &&
 #endif
- !(args[0] is IDynamicMetaObjectProvider)) {
+                !(args[0] is IDynamicMetaObjectProvider)) {
+
                 Type selfType = typeof(T).GetMethod("Invoke").GetParameters()[1].ParameterType;
                 CodeContext context = (CodeContext)args[1];
                 T res = null;
@@ -758,7 +759,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
-#if !SILVERLIGHT
+#if FEATURE_COM
             DynamicMetaObject com;
             if (Microsoft.Scripting.ComInterop.ComBinder.TryBindGetMember(this, self, out com, true)) {
                 return com;

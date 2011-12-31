@@ -13,11 +13,12 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
 using System;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
-#if !SILVERLIGHT
 //[assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
 namespace IronPython.Modules {
     /// <summary>

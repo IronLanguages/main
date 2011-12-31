@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Types {
